@@ -15,45 +15,7 @@ try:
 except:
   fqdn = os.uname()[1]
 
-def _obs_fetch_rev_entry(self, apiurl, project, package, revision=None, verbose=False):
-    if revision:
-      url = makeurl(apiurl, ['source', project, package, '_history'], {'rev':revision})
-    else:
-      # API supports ?deleted=1&meta=1&rev=4
-      # but not rev=current,rev=latest,rev=top, or anything like this.
-      # we have to loop through all rev and find the highest one, if none given.
-      #
-      # Hello mls: this needs an xpath query to retrieve the latest history entry.
-      # getting all history entries and searching for the latest one is inefficient.
-      url = makeurl(apiurl, ['source', project, package, '_history'])
-    f = http_GET(url)
-    xml = ET.parse(f)
-    ent = None
-    for new in xml.findall('revision'):
-        # remember the newest one.
-        if not ent:
-            ent = new
-        elif ent.find('time').text < new.find('time').text:
-            ent = new
-    if not ent:
-        return HASH({ 'version': None, 'error':'empty revisionlist: no such package?' })
-    e = {}
-    for k in ent.keys():
-        e[k] = ent.get(k)
-    for k in list(ent):
-        e[k.tag] = k.text
-    e = HASH(e)
-    if e.version == 'unknown':
-        # mls does this on purpose for all linked and branched packages.
-        # try the specfile(s) instead.
-        specfiles = self._best_specfiles(apiurl, project, package, revision, verbose)
-        for specfile in (specfiles):
-           if verbose: print "version is unknown in _history, trying specfile " + specfile
-           ver = self._fetch_specfile_version(e, apiurl, project, package, specfile, revision, verbose)
-           if ver: break
-    return e
-
-def _change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
+def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
   """ taken from osc/osc/core.py, improved: 
       - verbose option added, 
       - empty by_user=& removed.
@@ -63,13 +25,13 @@ def _change_review_state(self, opts, id, newstate, by_group='', by_user='', mess
   if by_group:  query['by_group'] = by_group
   if by_user:   query['by_user'] = by_user
   if supersed: query['superseded_by'] = supersed
+  if message: query['comment'] = message
   u = makeurl(opts.apiurl, ['request', str(id)], query=query)
-  if opts.verbose: print "_change_review_state: " + u
-  f = http_POST(u, data=message)
+  f = http_POST(u)
   root = ET.parse(f).getroot()
   return root.attrib['code']
 
-def _checkout_add(self, prj, pkg, rev, opts):
+def _checker_checkout_add(self, prj, pkg, rev, opts):
   dir = opts.directory + '/' + re.sub('.*//', '', opts.apiurl) + '/' + prj + '/' + pkg
   if rev: dir = dir + '%r' + rev
   if opts.no_op:
@@ -97,9 +59,9 @@ def _checkout_add(self, prj, pkg, rev, opts):
 
     if do_co:
       os.chdir(dir)
-      nc = conf.config['checkout_no_colon']
-      conf.config['checkout_no_colon'] = False
-      conf.config['checkout_rooted'] = False
+      nc = conf.config['checker_checkout_no_colon']
+      conf.config['checker_checkout_no_colon'] = False
+      conf.config['checker_checkout_rooted'] = False
       conf.config['package_tracking'] = False
 
       # FIXME: this creates .../PACKAGE-rREV_NR/PACKAGE/.. - can we skip the extra /PACKAGE/ there?
@@ -109,18 +71,18 @@ def _checkout_add(self, prj, pkg, rev, opts):
         f.write(opts.origin)
         f.close()
 
-      conf.config['checkout_no_colon'] = nc
+      conf.config['checker_checkout_no_colon'] = nc
       os.chdir(oldcwd)
 
 
 def _check_repo(self, repo):
   allfine = True
   for arch in repo.findall('arch'):
-    if arch.attrib['result'] != 'succeeded' or arch.attrib.has_key('missing'):
+    if not (arch.attrib['result'] in ['succeeded', 'excluded']) or arch.attrib.has_key('missing'):
       allfine = False
   return allfine
   
-def _one_request(self, rq, cmd, opts):
+def _checker_one_request(self, rq, cmd, opts):
     if (opts.verbose): 
         ET.dump(rq)
         print(opts)
@@ -138,20 +100,12 @@ def _one_request(self, rq, cmd, opts):
             tprj = act.find('target').get('project')
             tpkg = act.find('target').get('package')
 
-            srev = self._obs_fetch_rev_entry(opts.apiurl, prj, pkg, rev, opts.verbose)
-
-            src = HASH({ 'package': pkg, 'project': prj, 'rev':rev, 'version': srev.version, 'error': None })
+            src = HASH({ 'package': pkg, 'project': prj, 'rev':rev, 'error': None })
             e = []
             if not pkg: 
                 e.append('no source/package in request %d, action %d' % (id, act_id))
             if not prj: 
                 e.append('no source/project in request %d, action %d' % (id, act_id))
-            if pkg and prj and not srev.version: 
-                e.append('build service _history of %s %s has no version number' % (prj,pkg))
-            if pkg and prj and srev.version == 'unknown': 
-                e.append('build service reports %s %s version = "unknown"' % (prj,pkg))
-            if srev.has_key('error'):
-                e.append(srev.error)
             if len(e): src.error = '; '.join(e)
 
             e = []
@@ -163,13 +117,14 @@ def _one_request(self, rq, cmd, opts):
 
             subm_id = "SUBMIT(%d):" % id
             plen = max(len(prj),len(tprj))
-            print "\n%s %-*s/%s %s -> %-*s/%s" % (subm_id,
-                plen, prj,  pkg,  srev.version, 
+            print "\n%s %-*s/%s -> %-*s/%s" % (subm_id,
+                plen, prj,  pkg,  
                 plen, tprj, tpkg)
             url = makeurl(opts.apiurl, ['status', "bsrequest?id=%d" % id])
             root = ET.parse(http_GET(url)).getroot()
             if root.attrib.has_key('code'):
-              sys.exit(1)
+                print ET.tostring(root)
+                continue
             result = False
             for repo in root.findall('repository'):
               result = result or self._check_repo(repo)
@@ -185,6 +140,7 @@ def _one_request(self, rq, cmd, opts):
             os.chdir(dir)
             checkout_package(opts.apiurl, prj, pkg, revision=rev, pathname=dir, server_service_files=True, expand_link=True)
             os.chdir(pkg)
+            shutil.rmtree(".osc")
             p = subprocess.Popen("/work/src/bin/check_if_valid_source_dir --batchmode < /dev/null 2>&1", shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
@@ -196,21 +152,21 @@ def _one_request(self, rq, cmd, opts):
             if len(checked):
               msg = msg + "\n\nOutput of check script (non-fatal):\n  "
               output = '  '.join(checked)
-              msg = msg + output.translate(None, '\027')
+              msg = msg + output.translate(None, '\033')
               #print msg
               #sys.exit(0)
-            self._change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
+            self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
             print "accepted"
 
             if cmd == "list":
               pass
-            elif cmd == "checkout" or cmd == "co":
+            elif cmd == "checker_checkout" or cmd == "co":
                 opts.origin = opts.apiurl + '/request/' + str(id) + "\n";
-                self._checkout_add(prj, pkg, rev, opts)
+                self._checker_checkout_add(prj, pkg, rev, opts)
             else:
                   print "unknown command: %s" % cmd
         else:
-            if opts.verbose: print "ignored action type=%s\n" % _type
+          self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message="Unchecked request type %s" % _type)
 
 
 def do_checker(self, subcmd, opts, *args):
@@ -230,8 +186,8 @@ def do_checker(self, subcmd, opts, *args):
     opts.verbose = False
     if args[0] == 'auto':     opts.mode = 'auto'
     if args[0] == 'review':   opts.mode = 'both'
-    if args[0] == 'co':       opts.mode = 'checkout'
-    if args[0] == 'checkout': opts.mode = 'checkout'
+    if args[0] == 'co':       opts.mode = 'checker_checkout'
+    if args[0] == 'checker_checkout': opts.mode = 'checkout'
     if len(args) > 1 and args[0] in ('auto','manual') and args[1] in ('approve', 'reject'):
       args = args[1:]
 
@@ -255,7 +211,7 @@ def do_checker(self, subcmd, opts, *args):
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
             tprj = rq.find('action/target').get('project')
-            self._one_request(rq, args[0], opts)
+            self._checker_one_request(rq, args[0], opts)
     else:
         # we have a list, use them.
         for id in ids.keys():
@@ -263,4 +219,4 @@ def do_checker(self, subcmd, opts, *args):
             f = http_GET(url)
             xml = ET.parse(f)
             root = xml.getroot()
-            self._one_request(root, args[0], opts)
+            self._checker_one_request(root, args[0], opts)
