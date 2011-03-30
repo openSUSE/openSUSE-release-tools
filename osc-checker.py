@@ -162,11 +162,11 @@ def _checker_one_request(self, rq, cmd, opts):
                 continue
             os.mkdir(dir)
             os.chdir(dir)
-	    checkout_package(opts.apiurl, tprj, tpkg, pathname=dir, 
+            checkout_package(opts.apiurl, tprj, tpkg, pathname=dir,
                              server_service_files=True, expand_link=True)
             self._checker_prepare_dir(tpkg)
             os.rename(tpkg, "_old")
-            checkout_package(opts.apiurl, prj, pkg, revision=rev, 
+            checkout_package(opts.apiurl, prj, pkg, revision=rev,
                              pathname=dir, server_service_files=True, expand_link=True)
             self._checker_prepare_dir(pkg)
 
@@ -178,14 +178,14 @@ def _checker_one_request(self, rq, cmd, opts):
                 print ''.join(checked)
                 continue
 
-            msg="Builds for Factory repos found"
+            msg="Builds for repo %s" % goodrepo
             if len(checked):
                 msg = msg + "\n\nOutput of check script (non-fatal):\n  "
                 output = '  '.join(checked)
                 msg = msg + output.translate(None, '\033')
                 #print msg
                 #sys.exit(0)
-	    #self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
+            self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
             print "accepted " + msg
 
             if cmd == "list":
@@ -196,7 +196,9 @@ def _checker_one_request(self, rq, cmd, opts):
             else:
                 print "unknown command: %s" % cmd
         else:
-            self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message="Unchecked request type %s" % _type)
+            self._checker_change_review_state(opts, id, 'accepted',
+                                              by_group='factory-auto',
+                                              message="Unchecked request type %s" % _type)
 
 
 def do_checker(self, subcmd, opts, *args):
