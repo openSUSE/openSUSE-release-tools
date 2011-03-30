@@ -5,6 +5,7 @@
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc checker --help' to see the usage.
 
+
 import socket
 import os
 import traceback
@@ -82,6 +83,25 @@ def _check_repo(self, repo):
             allfine = False
     return allfine
 
+def _checker_prepare_dir(self, dir):
+    olddir=os.getcwd()
+    os.chdir(dir)
+    shutil.rmtree(".osc")
+    try:
+        os.remove("_service")
+    except OSError, e:
+        pass
+    for file in os.listdir("."):
+        if file.startswith("_service"):
+            nfile=re.sub("_service.*:", '', file)
+            # overwrite
+            try:
+                os.remove(nfile)
+            except OSError, e:
+                pass
+            os.rename(file, nfile)
+    os.chdir(olddir)
+
 def _checker_one_request(self, rq, cmd, opts):
     if (opts.verbose):
         ET.dump(rq)
@@ -126,8 +146,12 @@ def _checker_one_request(self, rq, cmd, opts):
                 print ET.tostring(root)
                 continue
             result = False
+            goodrepo = None
             for repo in root.findall('repository'):
-                result = result or self._check_repo(repo)
+                if self._check_repo(repo):
+                    goodrepo = repo.attrib['name']
+                    result = True
+
             if result == False:
                 print ET.tostring(root)
                 continue
@@ -138,25 +162,31 @@ def _checker_one_request(self, rq, cmd, opts):
                 continue
             os.mkdir(dir)
             os.chdir(dir)
-            checkout_package(opts.apiurl, prj, pkg, revision=rev, pathname=dir, server_service_files=True, expand_link=True)
-            os.chdir(pkg)
-            shutil.rmtree(".osc")
-            p = subprocess.Popen("/work/src/bin/check_if_valid_source_dir --batchmode < /dev/null 2>&1", shell=True, stdout=subprocess.PIPE, close_fds=True)
+	    checkout_package(opts.apiurl, tprj, tpkg, pathname=dir, 
+                             server_service_files=True, expand_link=True)
+            self._checker_prepare_dir(tpkg)
+            os.rename(tpkg, "_old")
+            checkout_package(opts.apiurl, prj, pkg, revision=rev, 
+                             pathname=dir, server_service_files=True, expand_link=True)
+            self._checker_prepare_dir(pkg)
+
+            civs = "/work/src/bin/check_if_valid_source_dir --batchmode --dest _old %s < /dev/null 2>&1" % pkg
+            p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
             if ret != 0:
                 print ''.join(checked)
                 continue
 
-            msg="Builds for all Factory repos found"
+            msg="Builds for Factory repos found"
             if len(checked):
                 msg = msg + "\n\nOutput of check script (non-fatal):\n  "
                 output = '  '.join(checked)
                 msg = msg + output.translate(None, '\033')
                 #print msg
                 #sys.exit(0)
-            self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
-            print "accepted"
+	    #self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
+            print "accepted " + msg
 
             if cmd == "list":
                 pass
@@ -220,3 +250,9 @@ def do_checker(self, subcmd, opts, *args):
             xml = ET.parse(f)
             root = xml.getroot()
             self._checker_one_request(root, args[0], opts)
+
+#Local Variables:
+#mode: python
+#py-indent-offset: 4
+#tab-width: 8
+#End:
