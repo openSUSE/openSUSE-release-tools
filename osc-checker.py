@@ -65,7 +65,6 @@ def _checker_checkout_add(self, prj, pkg, rev, opts):
             conf.config['checker_checkout_rooted'] = False
             conf.config['package_tracking'] = False
 
-            # FIXME: this creates .../PACKAGE-rREV_NR/PACKAGE/.. - can we skip the extra /PACKAGE/ there?
             checkout_package(opts.apiurl, prj, pkg, revision=rev, pathname=dir, server_service_files=True, expand_link=True)
             if opts.origin:
                 f = open('.origin', 'wb')
@@ -75,13 +74,17 @@ def _checker_checkout_add(self, prj, pkg, rev, opts):
             conf.config['checker_checkout_no_colon'] = nc
             os.chdir(oldcwd)
 
-
 def _check_repo(self, repo):
     allfine = True
+    missings = {}
     for arch in repo.findall('arch'):
-        if not (arch.attrib['result'] in ['succeeded', 'excluded']) or arch.attrib.has_key('missing'):
+        if arch.attrib.has_key('missing'):
+            for pkg in arch.attrib['missing'].split(','):
+                missings[pkg] = 1
+        if not (arch.attrib['result'] in ['succeeded', 'excluded']):
             allfine = False
-    return allfine
+
+    return [allfine, missings.keys()]
 
 def _checker_prepare_dir(self, dir):
     olddir=os.getcwd()
@@ -136,10 +139,9 @@ def _checker_one_request(self, rq, cmd, opts):
             # it is no error, if the target package dies not exist
 
             subm_id = "SUBMIT(%d):" % id
-            plen = max(len(prj),len(tprj))
-            print "\n%s %-*s/%s -> %-*s/%s" % (subm_id,
-                plen, prj,  pkg,
-                plen, tprj, tpkg)
+            print "\n%s %s/%s -> %s/%s" % (subm_id,
+                prj,  pkg,
+                tprj, tpkg)
             url = makeurl(opts.apiurl, ['status', "bsrequest?id=%d" % id])
             root = ET.parse(http_GET(url)).getroot()
             if root.attrib.has_key('code'):
@@ -147,12 +149,21 @@ def _checker_one_request(self, rq, cmd, opts):
                 continue
             result = False
             goodrepo = None
+            missings = []
             for repo in root.findall('repository'):
-                if self._check_repo(repo):
-                    goodrepo = repo.attrib['name']
-                    result = True
+                [isgood, missings] = self._check_repo(repo)
+                if isgood:
+                    if len(missings) == 0:
+                        goodrepo = repo.attrib['name']
+                        result = True
 
             if result == False:
+                if len(missings):
+                    missings.sort()
+                    msg = "please make sure to wait before these depencencies are in {}: {}".format(tprj, ', '.join(missings))
+                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                    print "declined " + msg
+                    continue
                 print ET.tostring(root)
                 continue
 
@@ -162,10 +173,13 @@ def _checker_one_request(self, rq, cmd, opts):
                 continue
             os.mkdir(dir)
             os.chdir(dir)
-            checkout_package(opts.apiurl, tprj, tpkg, pathname=dir,
-                             server_service_files=True, expand_link=True)
-            self._checker_prepare_dir(tpkg)
-            os.rename(tpkg, "_old")
+            try:
+                checkout_package(opts.apiurl, tprj, tpkg, pathname=dir,
+                                 server_service_files=True, expand_link=True)
+                self._checker_prepare_dir(tpkg)
+                os.rename(tpkg, "_old")
+            except urllib2.HTTPError:
+                pass
             checkout_package(opts.apiurl, prj, pkg, revision=rev,
                              pathname=dir, server_service_files=True, expand_link=True)
             self._checker_prepare_dir(pkg)
