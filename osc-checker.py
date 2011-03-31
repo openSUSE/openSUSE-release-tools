@@ -76,6 +76,7 @@ def _checker_checkout_add(self, prj, pkg, rev, opts):
 
 def _check_repo(self, repo):
     allfine = True
+    founddisabled = False
     missings = {}
     for arch in repo.findall('arch'):
         if arch.attrib.has_key('missing'):
@@ -83,8 +84,10 @@ def _check_repo(self, repo):
                 missings[pkg] = 1
         if not (arch.attrib['result'] in ['succeeded', 'excluded']):
             allfine = False
+        if arch.attrib['result'] == 'disabled':
+            founddisabled = True
 
-    return [allfine, missings.keys()]
+    return [allfine, founddisabled, missings.keys()]
 
 def _checker_prepare_dir(self, dir):
     olddir=os.getcwd()
@@ -150,12 +153,16 @@ def _checker_one_request(self, rq, cmd, opts):
             result = False
             goodrepo = None
             missings = []
+            alldisabled = True
             for repo in root.findall('repository'):
-                [isgood, missings] = self._check_repo(repo)
+                [isgood, founddisabled, missings] = self._check_repo(repo)
+                if not founddisabled:
+                    alldisabled = False
                 if isgood:
                     if len(missings) == 0:
                         goodrepo = repo.attrib['name']
                         result = True
+
 
             if result == False:
                 if len(missings):
@@ -164,6 +171,12 @@ def _checker_one_request(self, rq, cmd, opts):
                     self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                     print "declined " + msg
                     continue
+                if alldisabled:
+                    msg = "the package is disabled or does not build against factory. Please fix and resubmit"
+                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                    print "declined " + msg
+                    continue
+
                 print ET.tostring(root)
                 continue
 
@@ -201,6 +214,8 @@ def _checker_one_request(self, rq, cmd, opts):
                 #sys.exit(0)
             self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
             print "accepted " + msg
+            os.chdir("/tmp")
+            shutil.rmtree(dir)
 
             if cmd == "list":
                 pass
