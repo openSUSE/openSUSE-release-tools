@@ -145,6 +145,22 @@ def _checker_one_request(self, rq, cmd, opts):
             print "\n%s %s/%s -> %s/%s" % (subm_id,
                 prj,  pkg,
                 tprj, tpkg)
+            dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
+            if dpkg:
+                [dprj, dpkg] = dpkg.split('/')
+            else:
+                dprj = None
+            if dprj and (dprj != prj or dpkg != pkg):
+                msg = "'%s/%s' is the devel package, submission is from '%s'" % (dprj, dpkg, prj)
+                self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                print "declined " + msg
+                continue
+            if not dprj and not self._devel_projects.has_key(prj + "/"):
+                msg = "'%s' is not a valid devel project of %s - please pick one of the existent" % (prj, tprj)
+                self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                print "declined " + msg
+                continue
+
             url = makeurl(opts.apiurl, ['status', "bsrequest?id=%d" % id])
             root = ET.parse(http_GET(url)).getroot()
             if root.attrib.has_key('code'):
@@ -162,7 +178,6 @@ def _checker_one_request(self, rq, cmd, opts):
                     if len(missings) == 0:
                         goodrepo = repo.attrib['name']
                         result = True
-
 
             if result == False:
                 if len(missings):
@@ -229,6 +244,25 @@ def _checker_one_request(self, rq, cmd, opts):
                                               by_group='factory-auto',
                                               message="Unchecked request type %s" % _type)
 
+def _checker_check_devel_package(self, opts, project, package):
+    if not self._devel_projects.has_key(project):
+        url = makeurl(opts.apiurl, ['search','package'], "match=[@project='%s']" % project)
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        for p in root.findall('package'):
+            name = p.attrib['name']
+            d = p.find('devel')
+            if d != None:
+                dprj = d.attrib['project']
+                self._devel_projects["%s/%s" % (project, name)] = "%s/%s" % (dprj, d.attrib['package'])
+                # for new packages to check
+                self._devel_projects[dprj + "/"] = 1
+            # mark we tried
+            self._devel_projects[project] = 1
+    try:
+        return self._devel_projects["%s/%s" % (project, package)]
+    except KeyError:
+        return None
 
 def do_checker(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
@@ -243,6 +277,7 @@ def do_checker(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs("Please give a subcommand to 'osc checker' or try 'osc help checker'")
 
+    self._devel_projects = {}
     opts.mode = ''
     opts.verbose = False
     if args[0] == 'auto':     opts.mode = 'auto'
