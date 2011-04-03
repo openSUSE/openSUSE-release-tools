@@ -264,6 +264,33 @@ def _checker_check_devel_package(self, opts, project, package):
     except KeyError:
         return None
 
+def _checker_check_dups(self, project, opts):
+    url = makeurl(opts.apiurl, ['request'], "state=pending&project=%s&view=collection" % project)
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    rqs = {}
+    for rq in root.findall('request'):
+        id = rq.attrib['id']
+        for a in rq.findall('action'):
+            source = a.find('source')
+            target = a.find('target')
+            type = a.attrib['type']
+            assert target != None
+            assert target.attrib['project'] == project
+            package = target.attrib['package']
+            if rqs.has_key(type + package):
+                [oldid, oldsource] = rqs[type + package]
+                assert oldid < id
+                if source != None and oldsource != None:
+                    if (source.attrib['project'] == oldsource.attrib['project'] and
+                       source.attrib['package'] == oldsource.attrib['package']):
+                        change_request_state(opts.apiurl, str(oldid), 'superseded',
+                                     'superseded by %s' % id, id)
+                        continue
+                print "DUPS found:", id, oldid
+            rqs[type + package] = [id, source]
+
+
 def do_checker(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
 
@@ -282,8 +309,6 @@ def do_checker(self, subcmd, opts, *args):
     opts.verbose = False
     if args[0] == 'auto':     opts.mode = 'auto'
     if args[0] == 'review':   opts.mode = 'both'
-    if args[0] == 'co':       opts.mode = 'checker_checkout'
-    if args[0] == 'checker_checkout': opts.mode = 'checkout'
     if len(args) > 1 and args[0] in ('auto','manual') and args[1] in ('approve', 'reject'):
         args = args[1:]
 
@@ -292,6 +317,11 @@ def do_checker(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
 
     tmphome = None
+
+    if args[0] == 'dups':
+        for p in args[1:]:
+            self._checker_check_dups(p, opts)
+        return
 
     ids = {}
     for a in args:
