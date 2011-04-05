@@ -276,7 +276,7 @@ def _checker_check_dups(self, project, opts):
             target = a.find('target')
             type = a.attrib['type']
             assert target != None
-            assert target.attrib['project'] == project
+            if target.attrib['project'] != project: continue
             package = target.attrib['package']
             if rqs.has_key(type + package):
                 [oldid, oldsource] = rqs[type + package]
