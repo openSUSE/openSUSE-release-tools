@@ -2,6 +2,9 @@
 
 use File::Basename;
 use File::Temp qw/ :mktemp  /;
+use XML::Simple;
+use Data::Dumper;
+use Cwd;
 
 my $old = $ARGV[0];
 my $dir = $ARGV[1];
@@ -69,3 +72,13 @@ exit(1) if system("/usr/lib/obs/service/download_files","--enforceupstream","--e
 chdir($odir);
 
 exit(1) if system("/work/src/bin/check_if_valid_source_dir --batchmode --dest _old $dir < /dev/null 2>&1 | grep -v '##ASK'") != 0;
+
+if (-f "$dir/_service") {
+    my $service = XMLin("$dir/_service", ForceArray => [ 'service' ]);
+    while( my ($name, $s) = each %{$service->{service}} ) {
+	my $mode = $s->{mode} || '';
+	next if ($mode eq "localonly");
+	print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
+	exit(1);
+    }
+}
