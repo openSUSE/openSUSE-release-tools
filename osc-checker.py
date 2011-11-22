@@ -26,9 +26,9 @@ def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user=
     if by_group:  query['by_group'] = by_group
     if by_user:   query['by_user'] = by_user
     if supersed: query['superseded_by'] = supersed
-    if message: query['comment'] = message
+#    if message: query['comment'] = message
     u = makeurl(opts.apiurl, ['request', str(id)], query=query)
-    f = http_POST(u)
+    f = http_POST(u, data=message)
     root = ET.parse(f).getroot()
     return root.attrib['code']
 
@@ -108,6 +108,21 @@ def _checker_prepare_dir(self, dir):
             os.rename(file, nfile)
     os.chdir(olddir)
 
+def _checker_accept_request(self, opts, id, msg):
+    code = 100
+    query = { 'cmd': 'addreview', 'by_group':'autobuild-team' }
+    url = makeurl(opts.apiurl, ['request', str(id)], query)
+    if opts.verbose: print url
+    try:
+        r = http_POST(url, data="Please review sources")
+    except urllib2.HTTPError, err:
+        return 1
+    code = ET.parse(r).getroot().attrib['code']
+    if code == 100 or code == 'ok':
+         self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
+         print "accepted " + msg
+    return 0
+
 def _checker_one_request(self, rq, cmd, opts):
     if (opts.verbose):
         ET.dump(rq)
@@ -126,7 +141,7 @@ def _checker_one_request(self, rq, cmd, opts):
             tprj = act.find('target').get('project')
             tpkg = act.find('target').get('package')
 
-            src = HASH({ 'package': pkg, 'project': prj, 'rev':rev, 'error': None })
+            src = { 'package': pkg, 'project': prj, 'rev':rev, 'error': None }
             e = []
             if not pkg:
                 e.append('no source/package in request %d, action %d' % (id, act_id))
@@ -161,8 +176,12 @@ def _checker_one_request(self, rq, cmd, opts):
                 print "declined " + msg
                 continue
 
-            url = makeurl(opts.apiurl, ['status', "bsrequest?id=%d" % id])
-            root = ET.parse(http_GET(url)).getroot()
+            try:
+                url = makeurl(opts.apiurl, ['status', "bsrequest?id=%d" % id])
+                root = ET.parse(http_GET(url)).getroot()
+            except urllib2.HTTPError:
+                print "error"
+                continue
             if root.attrib.has_key('code'):
                 print ET.tostring(root)
                 continue
@@ -183,7 +202,7 @@ def _checker_one_request(self, rq, cmd, opts):
                 if len(missings):
                     missings.sort()
                     msg = "please make sure to wait before these depencencies are in {}: {}".format(tprj, ', '.join(missings))
-                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                    #self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                     print "declined " + msg
                     continue
                 if alldisabled:
@@ -207,30 +226,34 @@ def _checker_one_request(self, rq, cmd, opts):
                 self._checker_prepare_dir(tpkg)
                 os.rename(tpkg, "_old")
             except urllib2.HTTPError:
+		print "failed to checkout %s/%s" % (tprj, tpkg)
                 pass
             checkout_package(opts.apiurl, prj, pkg, revision=rev,
                              pathname=dir, server_service_files=True, expand_link=True)
-            self._checker_prepare_dir(pkg)
+            os.rename(pkg, tpkg)
+            self._checker_prepare_dir(tpkg)
 
-            civs = "/work/src/bin/check_if_valid_source_dir --batchmode --dest _old %s < /dev/null 2>&1" % pkg
+            civs = "perl /suse/coolo/checker/source-checker.pl _old %s 2>&1" % tpkg
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
+            output = '  '.join(checked).translate(None, '\033')
+            os.chdir("/tmp")
+            shutil.rmtree(dir)
+
             if ret != 0:
-                print ''.join(checked)
+                msg = "Output of check script:\n" + output
+                sys.exit(1)
+                self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                print "declined " + msg
                 continue
 
             msg="Builds for repo %s" % goodrepo
             if len(checked):
-                msg = msg + "\n\nOutput of check script (non-fatal):\n  "
-                output = '  '.join(checked)
-                msg = msg + output.translate(None, '\033')
-                #print msg
-                #sys.exit(0)
-            self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
-            print "accepted " + msg
-            os.chdir("/tmp")
-            shutil.rmtree(dir)
+                msg = msg + "\n\nOutput of check script (non-fatal):\n" + output
+                
+            if self._checker_accept_request(opts, id, msg):
+               continue
 
             if cmd == "list":
                 pass
@@ -257,6 +280,8 @@ def _checker_check_devel_package(self, opts, project, package):
                 self._devel_projects["%s/%s" % (project, name)] = "%s/%s" % (dprj, d.attrib['package'])
                 # for new packages to check
                 self._devel_projects[dprj + "/"] = 1
+            elif not name.startswith("_product"):
+                print "NO DEVEL IN", name
             # mark we tried
             self._devel_projects[project] = 1
     try:
@@ -265,7 +290,7 @@ def _checker_check_devel_package(self, opts, project, package):
         return None
 
 def _checker_check_dups(self, project, opts):
-    url = makeurl(opts.apiurl, ['request'], "state=pending&project=%s&view=collection" % project)
+    url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&view=collection" % project)
     f = http_GET(url)
     root = ET.parse(f).getroot()
     rqs = {}
@@ -280,6 +305,7 @@ def _checker_check_dups(self, project, opts):
             package = target.attrib['package']
             if rqs.has_key(type + package):
                 [oldid, oldsource] = rqs[type + package]
+		print oldid, id
                 assert oldid < id
                 if source != None and oldsource != None:
                     if (source.attrib['project'] == oldsource.attrib['project'] and
@@ -323,6 +349,10 @@ def do_checker(self, subcmd, opts, *args):
             self._checker_check_dups(p, opts)
         return
 
+    if args[0] == 'skip':
+        for id in args[1:]:
+           self._checker_accept_request(opts, id, "skip review")
+        return
     ids = {}
     for a in args:
         if (re.match('\d+', a)):
