@@ -239,9 +239,7 @@ def _checker_one_request(self, rq, cmd, opts):
             checked = p.stdout.readlines()
             output = '  '.join(checked).translate(None, '\033')
             os.chdir("/tmp")
-            shutil.rmtree(dir)
-
-            print ret
+            #shutil.rmtree(dir)
 
             if ret != 0:
                 msg = "Output of check script:\n" + output

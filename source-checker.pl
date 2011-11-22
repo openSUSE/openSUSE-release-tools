@@ -1,6 +1,7 @@
 #! /usr/bin/perl
 
 use File::Basename;
+use File::Temp qw/ :mktemp  /;
 
 my $old = $ARGV[0];
 my $dir = $ARGV[1];
@@ -20,7 +21,7 @@ open(SPEC, "$dir/$bname.spec");
 my $spec = join("", <SPEC>);
 close(SPEC);
 my $sname = '';
-if ($spec =~ m/\nName:\s*(\w+)\s*/) {
+if ($spec =~ m/\nName:\s*(\S+)\s*/) {
   $sname = $1;
 }
 
@@ -50,7 +51,21 @@ if ($spec !~ m/#\s+Copyright\s/) {
     print "$bname.spec does not appear to contain a Copyright comment. Please stick to the format\n\n";
     print "# Copyright (c) 2011 Stephan Kulow\n\n";
     print "or use osc service localrun format_spec_file\n";
+    exit(1);
 }
 
+if ($spec !~ m/(#[^\n]*license)/i) {
+    print "$bname.spec does not appear to have a license, the file needs to contain a free software license\n";
+    print "Suggestion: use `osc service localrun format_spec_file` to get our default license or\n";
+    print "the minimal license:\n\n";
+    print "# This file is under MIT license\n";
+    exit(1);
+}
+
+my $odir = getcwd;
+chdir($dir);
+my $tmpdir = mkdtemp("/tmp/obs-XXXXXXX");
+exit(1) if system("/usr/lib/obs/service/download_files","--enforceupstream","--enforcelocal","--outdir", $tmpdir) != 0;
+chdir($odir);
+
 exit(1) if system("/work/src/bin/check_if_valid_source_dir --batchmode --dest _old $dir < /dev/null 2>&1 | grep -v '##ASK'") != 0;
- 
