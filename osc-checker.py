@@ -77,6 +77,9 @@ def _checker_checkout_add(self, prj, pkg, rev, opts):
 def _check_repo(self, repo):
     allfine = True
     founddisabled = False
+    foundbuilding = None
+    foundfailed = None
+    foundoutdated = None
     missings = {}
     for arch in repo.findall('arch'):
         if arch.attrib.has_key('missing'):
@@ -86,8 +89,14 @@ def _check_repo(self, repo):
             allfine = False
         if arch.attrib['result'] == 'disabled':
             founddisabled = True
+        if arch.attrib['result'] == 'failed':
+            foundfailed = repo.attrib['name']
+        if arch.attrib['result'] == 'building':
+            foundbuilding = repo.attrib['name']
+        if arch.attrib['result'] == 'outdated':
+            foundoutdated = repo.attrib['name']
 
-    return [allfine, founddisabled, missings.keys()]
+    return [allfine, founddisabled, foundbuilding, foundfailed, foundoutdated, missings.keys()]
 
 def _checker_prepare_dir(self, dir):
     olddir=os.getcwd()
@@ -187,28 +196,54 @@ def _checker_one_request(self, rq, cmd, opts):
                 continue
             result = False
             goodrepo = None
-            missings = []
+            missings = {}
             alldisabled = True
+	    foundbuilding = None
+	    foundfailed = None
+	    foundoutdated = None
             for repo in root.findall('repository'):
-                [isgood, founddisabled, missings] = self._check_repo(repo)
+                [isgood, founddisabled, r_foundbuilding, r_foundfailed, r_foundoutdated, r_missings] = self._check_repo(repo)
+		for p in r_missings:
+		    missings[p] = 1
                 if not founddisabled:
                     alldisabled = False
                 if isgood:
                     if len(missings) == 0:
                         goodrepo = repo.attrib['name']
                         result = True
+		if r_foundbuilding:
+		     foundbuilding = r_foundbuilding
+		if r_foundfailed:
+                     foundfailed = r_foundfailed
+		if r_foundoutdated:
+		     foundoutdated = r_foundoutdated
 
             if result == False:
-                if len(missings):
-                    missings.sort()
+                if len(missings.keys()):
+                    missings.keys().sort()
                     msg = "please make sure to wait before these depencencies are in {}: {}".format(tprj, ', '.join(missings))
-                    #self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-                    print "declined " + msg
+                    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
+                    print "updated " + msg
                     continue
                 if alldisabled:
                     msg = "the package is disabled or does not build against factory. Please fix and resubmit"
                     self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                     print "declined " + msg
+                    continue
+	        if foundoutdated:
+		    msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
+	            self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+		    print "declined " + msg
+		    continue
+		if foundbuilding:	
+		    msg = "the package is still building for repo {}".format(foundbuilding)
+		    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
+                    print "updated " + msg
+		    continue
+	        if foundfailed:
+                    msg = "the package is failed for repo {} - not accepting".format(foundfailed)
+                    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
+		    print "updated " + msg
                     continue
 
                 print ET.tostring(root)
@@ -233,17 +268,16 @@ def _checker_one_request(self, rq, cmd, opts):
             os.rename(pkg, tpkg)
             self._checker_prepare_dir(tpkg)
 
-            civs = "perl /suse/coolo/checker/source-checker.pl _old %s 2>&1" % tpkg
+            civs = "LC_ALL=C perl /suse/coolo/checker/source-checker.pl _old %s 2>&1" % tpkg
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
             output = '  '.join(checked).translate(None, '\033')
             os.chdir("/tmp")
-            #shutil.rmtree(dir)
-
+            shutil.rmtree(dir)
+            
             if ret != 0:
                 msg = "Output of check script:\n" + output
-                sys.exit(1)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                 print "declined " + msg
                 continue
