@@ -31,16 +31,6 @@ if ($spec !~ m/#\s+Copyright\s/) {
     exit(1);
 }
 
-my $sname = '';
-if ($spec =~ m/\nName:\s*(\S+)\s*/) {
-  $sname = $1;
-}
-
-if ($bname ne $sname) {
-  print "$bname.spec needs to contain Name: $bname, found '$sname'\n";
-  exit(1);
-}
-
 if ($spec =~ m/\nVendor:/) {
   print "$bname.spec contains a Vendor line, this is forbidden.\n";
   exit(1);

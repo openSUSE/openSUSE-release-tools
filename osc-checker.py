@@ -16,6 +16,54 @@ try:
 except:
     fqdn = os.uname()[1]
 
+class HASH(object):
+    def __init__(self,h=None):
+        if h:
+            for k in h.keys():
+                setattr(self, k, h[k])
+    def __repr__(self):
+        return str(self.__dict__)
+    def __str__(self):
+        return str(self.__dict__)
+    def delete(self, key):
+        del self.__dict__[key]
+    def insert(self, key, val):
+        self.__dict__[key] = val
+    def keys(self):
+        return self.__dict__.keys()
+    def has_key(self,name):
+        return self.__dict__.has_key(name)
+
+globals()['HASH'] = HASH                        # evil hack, needed as we are already inside osc.commandline
+
+def _checker_fetch_rev_entry(self, apiurl, project, package, revision=None, brief=False, verbose=False):
+    """ a misnomer. This fetches the revision number and the rpm license strings.
+        option brief=True suppresses fetching of specfile and thus does not return License strings.
+    """
+
+    if revision:
+        url = makeurl(apiurl, ['source', project, package], { 'view':'info', 'parse':1, 'rev':revision})
+    else:
+        url = makeurl(apiurl, ['source', project, package], { 'view':'info', 'parse':1  } )
+
+    try:
+        f = http_GET(url)
+    except urllib2.HTTPError, err:
+        return HASH({ 'version': None, 'name':None })
+    xml = ET.parse(f)
+
+    name = xml.find('name')
+    if name is None or not name.text:
+       return HASH({ 'version': None, 'name': None, 'error':'no error and no name'})
+
+    vers = xml.find('version')
+    if vers is None or not vers.text:
+        return HASH({ 'version': None, 'name': name.text, 'error':'no error and no version'})
+
+    r = { 'version': vers.text, 'name': name.text }
+
+    return HASH(r)
+
 def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
     """ taken from osc/osc/core.py, improved:
         - verbose option added,
@@ -267,6 +315,12 @@ def _checker_one_request(self, rq, cmd, opts):
                              pathname=dir, server_service_files=True, expand_link=True)
             os.rename(pkg, tpkg)
             self._checker_prepare_dir(tpkg)
+
+  	    r=self._checker_fetch_rev_entry(opts.apiurl, prj, pkg, revision=rev)
+	    if r.name != tpkg:
+		msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r.name)
+                self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
+		continue	 
 
             civs = "LC_ALL=C perl /suse/coolo/checker/source-checker.pl _old %s 2>&1" % tpkg
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
