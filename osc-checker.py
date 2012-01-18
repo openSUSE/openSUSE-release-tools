@@ -122,6 +122,17 @@ def _checker_checkout_add(self, prj, pkg, rev, opts):
             conf.config['checker_checkout_no_colon'] = nc
             os.chdir(oldcwd)
 
+def _checker_find_submit_request(self, opts, project, package):
+	xpath = "(action/target/@project='%s' and action/target/@package='%s')" % (project, package)
+        url = makeurl(opts.apiurl, ['search','request'], 'match=%s' % quote_plus(xpath))
+        f = http_GET(url)
+        collection = ET.parse(f).getroot()
+        for root in collection.findall('request'):
+           r = Request()
+           r.read(root)
+	   return r.reqid
+	return None
+        
 def _check_repo(self, repo):
     allfine = True
     founddisabled = False
@@ -268,8 +279,15 @@ def _checker_one_request(self, rq, cmd, opts):
 
             if result == False:
                 if len(missings.keys()):
-                    missings.keys().sort()
-                    msg = "please make sure to wait before these depencencies are in {}: {}".format(tprj, ', '.join(missings))
+	            smissing = []
+		    missings.keys().sort()
+                    for package in missings:
+			request = self._checker_find_submit_request(opts, tprj, package)
+			if request:
+			   package = "%s(rq%s)" % (package, request) 
+                        smissing.append(package)
+
+                    msg = "please make sure to wait before these depencencies are in {}: {}".format(tprj, ', '.join(smissing))
                     self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
                     print "updated " + msg
                     continue
@@ -284,12 +302,12 @@ def _checker_one_request(self, rq, cmd, opts):
 		    print "declined " + msg
 		    continue
 		if foundbuilding:	
-		    msg = "the package is still building for repo {}".format(foundbuilding)
+		    msg = "the package is still building for repository {}".format(foundbuilding)
 		    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
                     print "updated " + msg
 		    continue
 	        if foundfailed:
-                    msg = "the package is failed for repo {} - not accepting".format(foundfailed)
+                    msg = "the package failed to build in repository {} - not accepting".format(foundfailed)
                     self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
 		    print "updated " + msg
                     continue
