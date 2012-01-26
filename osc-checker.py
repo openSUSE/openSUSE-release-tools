@@ -161,19 +161,6 @@ def _checker_prepare_dir(self, dir):
     olddir=os.getcwd()
     os.chdir(dir)
     shutil.rmtree(".osc")
-    try:
-        os.remove("_service")
-    except OSError, e:
-        pass
-    for file in os.listdir("."):
-        if file.startswith("_service"):
-            nfile=re.sub("_service.*:", '', file)
-            # overwrite
-            try:
-                os.remove(nfile)
-            except OSError, e:
-                pass
-            os.rename(file, nfile)
     os.chdir(olddir)
 
 def _checker_accept_request(self, opts, id, msg):
@@ -268,7 +255,7 @@ def _checker_one_request(self, rq, cmd, opts):
                     alldisabled = False
                 if isgood:
                     if len(missings) == 0:
-                        goodrepo = repo.attrib['name']
+                        goodrepo = repo
                         result = True
 		if r_foundbuilding:
 		     foundbuilding = r_foundbuilding
@@ -337,7 +324,7 @@ def _checker_one_request(self, rq, cmd, opts):
   	    r=self._checker_fetch_rev_entry(opts.apiurl, prj, pkg, revision=rev)
 	    if r.name != tpkg:
 		msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r.name)
-                self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
+                self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
 		continue	 
 
             civs = "LC_ALL=C perl /suse/coolo/checker/source-checker.pl _old %s 2>&1" % tpkg
@@ -346,15 +333,40 @@ def _checker_one_request(self, rq, cmd, opts):
             checked = p.stdout.readlines()
             output = '  '.join(checked).translate(None, '\033')
             os.chdir("/tmp")
-            shutil.rmtree(dir)
             
             if ret != 0:
                 msg = "Output of check script:\n" + output
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                 print "declined " + msg
+		shutil.rpmtree(dir)
                 continue
 
-            msg="Builds for repo %s" % goodrepo
+	    firstarch=goodrepo.find('arch')
+	    if not firstarch is None:
+                url = makeurl(opts.apiurl, ['build', prj, goodrepo.attrib['name'], firstarch.attrib['arch'], pkg, "rpmlint.log"])
+                f = http_GET(url)
+		lines = f.readlines()
+		isdeclined = False
+		for line in lines:
+		    if re.search('W:.*invalid-license ', line):
+	                msg = "Found rpmlint warning: \n" + line
+                        msg += "Try the following patch\n"
+                        civs = "export LC_ALL=C; for i in %s/%s/*.spec; do perl ~coolo/obs-service-format_spec_file/patch_license $i > $i.new || cp $i $i.new; diff -U0 $i $i.new; done 2>&1" % (dir, tpkg)
+                        p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
+                        ret = os.waitpid(p.pid, 0)[1]
+                        checked = p.stdout.readlines()
+                        output = '  '.join(checked).translate(None, '\033')
+			msg += output
+			print "declined " + msg
+       		        self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+			isdeclined = True
+			break
+		if isdeclined: 
+   		     shutil.rmtree(dir)
+		     continue
+ 
+	    shutil.rmtree(dir)
+            msg="Builds for repo %s" % goodrepo.attrib['name']
             if len(checked):
                 msg = msg + "\n\nOutput of check script (non-fatal):\n" + output
                 

@@ -36,11 +36,43 @@ if ($spec =~ m/\nVendor:/) {
   exit(1);
 }
 
-if (-f "$old/$bname.changes") {
-    if (!system("cmp -s $old/$bname.changes $dir/$bname.changes")) {
-	print "$bname.changes didn't change. Please use osc vc\n";
+if (-f "$dir/_service") {
+    my $service = XMLin("$dir/_service", ForceArray => [ 'service' ]);
+    while( my ($name, $s) = each %{$service->{service}} ) {
+        my $mode = $s->{mode} || '';
+        next if ($mode eq "localonly");
+        print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
+        exit(1);
+    }
+}
+
+foreach my $file (glob("$dir/_service:*")) {
+   $file=basename($file);
+   print "Found _service generate file $file in checkout. Please clean this up first.";
+   exit(1);
+}
+
+# Check that we have for each spec file a changes file - and that at least one
+# contains changes
+my $changes_updated = 0;
+for my $spec (glob ("$dir/*.spec")) {
+    $changes = basename ($spec);
+    $changes =~ s/\.spec$/.changes/;
+    if (! -f "$dir/$changes") {
+	print "A $changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
 	exit(1);
     }
+    if (-f "$old/$changes") {
+	if (system("cmp -s $old/$changes $dir/$changes")) {
+	    $changes_updated = 1;
+	}
+    } else { # a new file is an update too
+	$changes_updated = 1;
+    }
+}
+if (!$changes_updated) {
+    print "No changelog. Please use 'osc vc' to update the changes file(s).\n";
+    exit(1); 
 }
 
 if ($spec !~ m/\n%changelog\s/) {
@@ -55,8 +87,6 @@ if ($spec !~ m/(#[^\n]*license)/i) {
     print "# This file is under MIT license\n";
     exit(1);
 }
-
-use File::Basename;
 
 my $checkivsd = `/work/src/bin/check_if_valid_source_dir --batchmode --dest _old $dir < /dev/null 2>&1`;
 if ($?) {
@@ -115,26 +145,6 @@ if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--
     exit(1);
 }
 chdir($odir);
-
-if (-f "$dir/_service") {
-    my $service = XMLin("$dir/_service", ForceArray => [ 'service' ]);
-    while( my ($name, $s) = each %{$service->{service}} ) {
-	my $mode = $s->{mode} || '';
-	next if ($mode eq "localonly");
-	print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
-	exit(1);
-    }
-}
-
-if (-f "$dir/_service") {
-    my $service = XMLin("$dir/_service", ForceArray => [ 'service' ]);
-    while( my ($name, $s) = each %{$service->{service}} ) {
-	my $mode = $s->{mode} || '';
-	next if ($mode eq "localonly");
-	print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
-	exit(1);
-    }
-}
 
 foreach my $rpmlint (glob("$dir/*rpmlintrc")) {
     open(RPMLINTRC, $rpmlint);
