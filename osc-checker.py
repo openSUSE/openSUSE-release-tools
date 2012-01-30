@@ -216,6 +216,7 @@ def _checker_one_request(self, rq, cmd, opts):
                 prj,  pkg,
                 tprj, tpkg)
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
+	    self._devel_projects['GNOME:Cinnamon/'] = 'cinnamon'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
@@ -274,7 +275,7 @@ def _checker_one_request(self, rq, cmd, opts):
 			   package = "%s(rq%s)" % (package, request) 
                         smissing.append(package)
 
-                    msg = "please make sure to wait before these depencencies are in {}: {}".format(tprj, ', '.join(smissing))
+                    msg = "please make sure to wait before these depencencies are in {0}: {1}".format(tprj, ', '.join(smissing))
                     self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
                     print "updated " + msg
                     continue
@@ -289,12 +290,12 @@ def _checker_one_request(self, rq, cmd, opts):
 		    print "declined " + msg
 		    continue
 		if foundbuilding:	
-		    msg = "the package is still building for repository {}".format(foundbuilding)
+		    msg = "the package is still building for repository {0}".format(foundbuilding)
 		    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
                     print "updated " + msg
 		    continue
 	        if foundfailed:
-                    msg = "the package failed to build in repository {} - not accepting".format(foundfailed)
+                    msg = "the package failed to build in repository {0} - not accepting".format(foundfailed)
                     self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
 		    print "updated " + msg
                     continue
@@ -302,7 +303,7 @@ def _checker_one_request(self, rq, cmd, opts):
                 print ET.tostring(root)
                 continue
 
-            dir = "/work/users/coolo/checker/%s" % str(id)
+            dir = os.path.expanduser("~/co/%s" % str(id))
             if os.path.exists(dir):
                 print "%s already exists" % dir
                 continue
@@ -338,20 +339,24 @@ def _checker_one_request(self, rq, cmd, opts):
                 msg = "Output of check script:\n" + output
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                 print "declined " + msg
-		shutil.rpmtree(dir)
+		shutil.rmtree(dir)
                 continue
 
 	    firstarch=goodrepo.find('arch')
 	    if not firstarch is None:
                 url = makeurl(opts.apiurl, ['build', prj, goodrepo.attrib['name'], firstarch.attrib['arch'], pkg, "rpmlint.log"])
-                f = http_GET(url)
-		lines = f.readlines()
+		try:
+                   f = http_GET(url)
+		   lines = f.readlines()
+                except urllib2.HTTPError, err:
+		   lines = []
+
 		isdeclined = False
 		for line in lines:
 		    if re.search('W:.*invalid-license ', line):
 	                msg = "Found rpmlint warning: \n" + line
                         msg += "Try the following patch\n"
-                        civs = "export LC_ALL=C; for i in %s/%s/*.spec; do perl ~coolo/obs-service-format_spec_file/patch_license $i > $i.new || cp $i $i.new; diff -U0 $i $i.new; done 2>&1" % (dir, tpkg)
+                        civs = "export LC_ALL=C; for i in %s/%s/*.spec; do perl /suse/coolo/obs-service-format_spec_file/patch_license $i > $i.new || cp $i $i.new; diff -U0 $i $i.new; done 2>&1" % (dir, tpkg)
                         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
                         ret = os.waitpid(p.pid, 0)[1]
                         checked = p.stdout.readlines()
