@@ -363,7 +363,7 @@ def _checker_one_request(self, rq, cmd, opts):
                         output = '  '.join(checked).translate(None, '\033')
 			msg += output
 			print "declined " + msg
-       		        self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+       		        self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
 			isdeclined = True
 			break
 		if isdeclined: 
