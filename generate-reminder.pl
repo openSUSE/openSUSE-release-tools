@@ -5,6 +5,7 @@ use JSON;
 use POSIX;
 use Carp::Always;
 use Data::Dumper;
+use URI::Escape;
 
 my $user = $ARGV[0];
 my $tproject = "openSUSE:Factory";
@@ -44,6 +45,18 @@ sub fetch_user_infos($)
     return ($mywork, $projstat);
 }
 
+my $shortener = LWP::UserAgent->new;
+
+sub shorten_url($$)
+{
+    my ($url, $slug) = @_;
+
+    $url = uri_escape($url);
+    my $ret = $shortener->get("http://s.kulow.org/-/?url=$url&api=6cf62823d52e6d95582c07f55acdecc7&custom_url=$slug&overwrite=1");
+    die $ret->status_line unless ($ret->is_success);
+    return $ret->decoded_content;
+}
+
 ($mywork, $projstat) = fetch_user_infos($user);
 
 #print to_json($mywork, {pretty => 1 });
@@ -55,7 +68,7 @@ for my $package (@{$projstat}) {
     push($projects{$package->{develproject}}, $package);
 }
 
-my $baseurl = "https://build.opensuse.org/stage";
+my $baseurl = "https://build.opensuse.org/";
 
 sub time_distance($)
 {
@@ -91,8 +104,9 @@ for my $request (@{$mywork->{review}}) {
     $reviews = [$reviews] if (ref($reviews) eq "HASH");
     for my $review (@{$reviews}) {
 	next if ($review->{state} ne 'new');
-	if ($review->{by_user} eq $user) {
+	if (($review->{by_user} || '') eq $user) {
 	    print "Request $request->{id} is waiting for your review!\n";
+	    print "  https://build.opensuse.org/request/show/$request->{id}\n\n";
 	    $requests_to_ignore{$request->{id}} = 1;
 	    next;
 	}
@@ -104,11 +118,13 @@ for my $request (@{$mywork->{review}}) {
 	if ($review->{by_project}) {
 	    my $bproj = $review->{by_project};
 	    my $bpack = $review->{by_package};
-	    $reviews_by{$bproj + "/" + $bpack} = $request;
+	    $reviews_by{"$bproj/$bpack"} = $request;
 	    next;
 	}
     }
 }
+
+my %upstream_versions;
 
 for my $project (sort(keys %projects)) {
     my @lines;
@@ -130,7 +146,15 @@ for my $project (sort(keys %projects)) {
 	if ($package->{firstfail} && $package->{develfirstfail}) {
 	    my $fail = time_distance($package->{firstfail});
 	    my $comment = $package->{failedcomment};
-	    push(@lines, "  $package->{name} fails for $fail ($comment)\n");
+	    $comment =~ s,^\s+,,;
+	    $comment =~ s,\s+$,,;
+	    my $url = "$baseurl/package/live_build_log?arch=" . uri_escape($package->{failedarch});
+	    $url   .= "&package=" . uri_escape($package->{name});
+	    $url   .= "&project=" . uri_escape($tproject);
+	    $url   .= "&repository=" . uri_escape($package->{failedrepo});
+	    $url = shorten_url($url, "bf-$package->{name}");
+	    push(@lines, "  $package->{name} fails for $fail ($comment):\n");
+	    push(@lines, "    $url\n\n");
 	    $ignorechanges = 1;
 	}
 
@@ -138,27 +162,31 @@ for my $project (sort(keys %projects)) {
 	    if ($problem eq 'different_changes') {
 		my $url = "$baseurl/package/rdiff?opackage=$package->{name}&oproject=$tproject&package=$package->{develpackage}&project=$package->{develproject}";
 		if ($ignorechanges == 0) {
-		    push(@lines, "  $package->{name} has unsubmitted changes.\n");
+		    $url = shorten_url($url, "rd-$package->{name}");
+		    push(@lines, "  $package->{name} has unsubmitted changes:\n");
+		    push(@lines, "    $url\n\n");
 		    $showversion = 0;
 		}
 	    } elsif ($problem eq 'currently_declined') {
-		push(@lines, "  $package->{name} was declined in request $package->{currently_declined}. Please check the reason.\n");
+		push(@lines, "  $package->{name} was declined. Please check the reason:\n");
+		push(@lines, "    https://build.opensuse.org/request/show/$package->{currently_declined}\n\n");
 		$showversion = 0;
 	    } 
 	}
 	
 	for my $request (@{$package->{requests_to}}) {
 	    push(@lines, "  $package->{name} has pending request $request\n");
+	    push(@lines, "    https://build.opensuse.org/request/show/$request\n\n");
 	    $requests_to_ignore{$request} = 1;
 	    $showversion = 0;
 	}
 
 	if ($showversion && $package->{upstream_version}) {
-	    push(@lines, "  $package->{name} has new upstream version $package->{upstream_version} available.\n");
+	    $upstream_versions{$package->{name}} = $package->{upstream_version};
 	}
     }
     if (@lines) {
-	print "PROJ $project\n";
+	print "Project $project\n";
 	print join('',@lines);
     }
 }
@@ -166,16 +194,32 @@ for my $project (sort(keys %projects)) {
 sub explain_request($$)
 {
     my ($request, $list) = @_;
-    next if (defined($requests_to_ignore{$request->{id}}));
-    if ($request->{action} &&  $request->{action}->{type} eq "submit") {
-	my $source = $request->{action}->{source};
-	my $target = $request->{action}->{target};
-	$list->{int($request->{id})} = "Submit request $request->{id} from $source->{project}/$source->{package} to $target->{project}\n";
-    } elsif ($request->{action} &&  $request->{action}->{type} eq "delete") {
-	my $target = $request->{action}->{target};
-	$list->{int($request->{id})} = "Delete request $request->{id} for $target->{project}/$target->{package}\n";
+    return if (defined($requests_to_ignore{$request->{id}}));
+    #print Dumper($request);
+    $actions = $request->{action};
+    $actions = [$actions] if (ref($actions) eq "HASH");
+    my $line = '';
+    for my $action (@{$actions || []}) {
+	my $source = $action->{source};
+	my $target = $action->{target};
+		    
+	if ($action->{type} eq "submit") {
+	    $line .= "  Submit request from $source->{project}/$source->{package} to $target->{project}\n";
+	} elsif ($action->{type} eq "delete") {
+	    $line .= "  Delete request for $target->{project}/$target->{package}\n";
+	} elsif ($action->{type} eq "maintenance_release") {
+	    $line .= "  Maintenance release request from $source->{project}/$source->{package} to $target->{project}\n";
+	} elsif ($action->{type} eq "maintenance_incident") {
+	    $line .= "  Maintenance incident request from $source->{project}/$source->{package} to $target->{project}\n";
+	} elsif ($action->{type} eq "add_role") {
+	    $line .= "  User $action->{person}->{name} wants to be $action->{person}->{role} in $target->{project}\n";
+	} elsif ($action->{type} eq "change_devel") {
+            $line .= "  Package $target->{project}/$target->{package} should be developed in $source->{project}\n";
+	} else {
+	    print STDERR "HUH" . Dumper($action);
+	}
     }
-    
+    $list->{int($request->{id})} = $line if ($line);
 }
 
 my %list;
@@ -191,6 +235,7 @@ if (%list) {
     my @lkeys = keys %list;
     foreach my $request (sort { $a <=> $b } @lkeys) {
 	print $list{$request};
+	print "    https://build.opensuse.org/request/show/$request\n\n";
     }
 }
 
@@ -206,6 +251,13 @@ if (%list) {
     my @lkeys = keys %list;
     foreach my $request (sort { $a <=> $b } @lkeys) {
 	print $list{$request};
+	print "    https://build.opensuse.org/request/show/$request\n\n";
     }
 }
 
+if (%upstream_versions) {
+    print "\nAdditionally these new upstream versions are recorded:\n";
+    for my $package (sort keys %upstream_versions) {
+	print "  $package has new upstream version $upstream_versions{$package} available.\n";
+    }
+}
