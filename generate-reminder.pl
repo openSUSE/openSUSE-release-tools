@@ -51,6 +51,7 @@ sub shorten_url($$)
 {
     my ($url, $slug) = @_;
 
+#    return $url;
     $url = uri_escape($url);
     my $ret = $shortener->get("http://s.kulow.org/-/?url=$url&api=6cf62823d52e6d95582c07f55acdecc7&custom_url=$slug&overwrite=1");
     die $ret->status_line unless ($ret->is_success);
@@ -124,10 +125,8 @@ for my $request (@{$mywork->{review}}) {
     }
 }
 
-my %upstream_versions;
-
 for my $project (sort(keys %projects)) {
-    my @lines;
+    my $lines = {};
 
     for my $package (@{$projects{$project}}) {
 	next if @{$package->{requests_from}};
@@ -139,7 +138,7 @@ for my $project (sort(keys %projects)) {
 	my $key = "$project/$package->{name}";
 	if ($reviews_by{$key}) {
 	    my $r = $reviews_by{$key};
-	    push(@lines, "Request $r->{id} for $package->{name} waits for review!\n");
+	    push(@{$lines->{reviews}}, "  $package->{name} has request $r->{id} waiting for review!");
 	    delete $reviews_by{$key};
 	}
 
@@ -153,8 +152,8 @@ for my $project (sort(keys %projects)) {
 	    $url   .= "&project=" . uri_escape($tproject);
 	    $url   .= "&repository=" . uri_escape($package->{failedrepo});
 	    $url = shorten_url($url, "bf-$package->{name}");
-	    push(@lines, "  $package->{name} fails for $fail ($comment):\n");
-	    push(@lines, "    $url\n\n");
+	    push(@{$lines->{fails}}, "  $package->{name} fails for $fail ($comment):");
+	    push(@{$lines->{fails}}, "    $url\n");
 	    $ignorechanges = 1;
 	}
 
@@ -163,32 +162,45 @@ for my $project (sort(keys %projects)) {
 		my $url = "$baseurl/package/rdiff?opackage=$package->{name}&oproject=$tproject&package=$package->{develpackage}&project=$package->{develproject}";
 		if ($ignorechanges == 0) {
 		    $url = shorten_url($url, "rd-$package->{name}");
-		    push(@lines, "  $package->{name} has unsubmitted changes:\n");
-		    push(@lines, "    $url\n\n");
+		    push(@{$lines->{unsubmit}}, "    $package->{name} - $url");
 		    $showversion = 0;
 		}
 	    } elsif ($problem eq 'currently_declined') {
-		push(@lines, "  $package->{name} was declined. Please check the reason:\n");
-		push(@lines, "    https://build.opensuse.org/request/show/$package->{currently_declined}\n\n");
+                my $url = "https://build.opensuse.org/request/show/$package->{currently_declined}";
+		push(@{$lines->{declined}}, "    $package->{name} - $url");
 		$showversion = 0;
 	    } 
 	}
 	
 	for my $request (@{$package->{requests_to}}) {
-	    push(@lines, "  $package->{name} has pending request $request\n");
-	    push(@lines, "    https://build.opensuse.org/request/show/$request\n\n");
+	    push(@{$lines->{requests}}, "    $package->{name} - https://build.opensuse.org/request/show/$request");
 	    $requests_to_ignore{$request} = 1;
 	    $showversion = 0;
 	}
 
 	if ($showversion && $package->{upstream_version}) {
-	    $upstream_versions{$package->{name}} = $package->{upstream_version};
+	    push(@{$lines->{upstream}}, "    $package->{name} - packaged: $package->{version}, upstream: $package->{upstream_version}");
 	}
     }
-    if (@lines) {
-	print "Project $project\n";
-	print join('',@lines);
+    print "Project $project\n" if %$lines;
+    for my $reason (qw(reviews fails declined unsubmit requests upstream)) {
+	next unless $lines->{$reason};
+	if ($reason eq "fails") {
+           print "\n";
+	} elsif ($reason eq "upstream") {
+	   print "\n  Packages with new upstream versions:\n";
+	} elsif ($reason eq "unsubmit") {
+	   print "\n  Packages with unsubmitted changes:\n";
+	} elsif ($reason eq "requests") {
+   	   print "\n  Packages with pending requests:\n";
+	} elsif ($reason eq "declined") {
+	   print "\n  Declined submit requests - please check the reason:\n";
+	}
+
+	print join("\n",@{$lines->{$reason}}); 
+	print "\n" if ($reason ne "fails");
     }
+    print "\n" if %$lines;
 }
 
 sub explain_request($$)
@@ -255,9 +267,3 @@ if (%list) {
     }
 }
 
-if (%upstream_versions) {
-    print "\nAdditionally these new upstream versions are recorded:\n";
-    for my $package (sort keys %upstream_versions) {
-	print "  $package has new upstream version $upstream_versions{$package} available.\n";
-    }
-}
