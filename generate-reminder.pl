@@ -59,7 +59,7 @@ sub shorten_url($$)
     return $ret->decoded_content;
 }
 
-my $baseurl = "https://build.opensuse.org/";
+my $baseurl = "https://build.opensuse.org";
 
 sub time_distance($)
 {
@@ -267,7 +267,7 @@ sub generate_report($)
 	explain_request($request->{request}, \%list);
     }
 
-    if (%list) {
+    if (%list && $report) {
 	$report .= "Other new requests (not related to your factory packages):\n";
 	my @lkeys = keys %list;
 	foreach my $request (sort { $a <=> $b } @lkeys) {
@@ -282,6 +282,11 @@ sub generate_report($)
 my $report = generate_report($user);
 
 if ($report) {
+    my $url = "$baseurl/stage/project/status?project=" . uri_escape($tproject);
+    $url .= "&limit_to_fails=false&include_versions=true";
+    $url .= "&filter_for_user=" . uri_escape($user);
+    $url = shorten_url($url, "fs-$user");
+
     my $prefix = <<END;
 Dear openSUSE contributor,
 
@@ -294,19 +299,19 @@ But please note that I filtered the information as good as I could and that
 if you find a package that you have no connection to and wonder why I send
 this information to you, then you are most likely "maintainer" in a project
 for some reason. The best option IMO then is to remove yourself from that
-role.
+role - or if you know the real package maintainer, set it in the package.
 
 I intent to send these reminders on a weekly basis, you can find more details
 in this thread: http://lists.opensuse.org/opensuse-packaging/2012-02/msg00011.html
     
 The following packages are sorted by devel project of openSUSE:Factory
-
 END
 
+    $prefix .= "(you can find an uptodate version under $url)\n\n";
     $report = $prefix . $report;
     my $fortune = '';
-    open(FORTUNE, "fortune -s linuxcookie|");
-    while ( <FORTUNE> ) { $fortune .= $_; }
+    open(FORTUNE, "fortune -s|");
+    while ( <FORTUNE> ) { $fortune .= "  " . $_; }
     close(FORTUNE);
     $report .= "\n\n--\nYour fortune cookie:\n" . $fortune;
 
@@ -319,11 +324,16 @@ END
     close(USER);
     
     my $info = XMLin($xml);
+    my $to = $info->{email};
+    if (ref($info->{realname}) ne "HASH") {
+      $to = "$info->{realname} <$to>";
+	
+    }
     my $email = 
 	Email::Simple->create(
 	    header => [
 		From    => 'Stephan Kulow <coolo@suse.de>',
-		To      => ($info->{realname} . " <" . $info->{email} . ">"),
+		To      => $to,
 		Subject => 'Reminder for openSUSE:Factory work',
 	    ],
 	    body => $report
