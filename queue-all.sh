@@ -10,8 +10,6 @@ tuser=`mktemp`
 tail -f $mbox &
 for i in `cat $users`; do 
   osc meta user $i  > $tuser
-  if grep @novell.com $tuser || grep @suse.com $tuser; then
-    perl generate-reminder.pl $i >> $mbox
-  fi
+  perl generate-reminder.pl $i >> $mbox
 done
 echo "DONE $mbox"

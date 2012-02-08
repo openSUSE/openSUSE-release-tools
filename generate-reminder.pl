@@ -307,13 +307,13 @@ in this thread: http://lists.opensuse.org/opensuse-packaging/2012-02/msg00011.ht
 The following packages are sorted by devel project of openSUSE:Factory
 END
 
-    $prefix .= "(you can find an uptodate version under $url)\n\n";
+    $prefix .= "( you can find an uptodate version under $url )\n\n";
     $report = $prefix . $report;
     my $fortune = '';
     open(FORTUNE, "fortune -s|");
     while ( <FORTUNE> ) { $fortune .= "  " . $_; }
     close(FORTUNE);
-    $report .= "\n\n--\nYour fortune cookie:\n" . $fortune;
+    $report .= "\n\n-- \nYour fortune cookie:\n" . $fortune;
 
     use Email::Simple;
     use XML::Simple;
