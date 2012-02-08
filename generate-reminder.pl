@@ -199,7 +199,11 @@ sub generate_report($)
 
 	    for my $problem (sort @{$package->{problems}}) {
 		if ($problem eq 'different_changes') {
-		    my $url = "$baseurl/package/rdiff?opackage=$package->{name}&oproject=$tproject&package=$package->{develpackage}&project=$package->{develproject}";
+                    my $url = "$baseurl/package/rdiff?";
+		    $url .= "opackage=" .  uri_escape($package->{name});
+                    $url .= "&oproject=" . uri_escape($tproject);
+                    $url .= "&package=" . uri_escape($package->{develpackage});
+                    $url .= "&project=" . uri_escape($package->{develproject});
 		    if ($ignorechanges == 0) {
 			$url = shorten_url($url, "rd-$package->{name}");
 			push(@{$lines->{unsubmit}}, "    $package->{name} - $url");
@@ -290,7 +294,7 @@ if ($report) {
     my $prefix = <<END;
 Dear openSUSE contributor,
 
-The following status report is a reminder I sent to you in the hope that
+The following status report is a reminder I sent to you in the hope that it
 proves useful to you. I do not intend to spam you - if you don't want these
 reports, please tell me why and I'll either fix the issue or disable the
 mail to you.
