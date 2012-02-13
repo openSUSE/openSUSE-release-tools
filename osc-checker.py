@@ -216,7 +216,7 @@ def _checker_one_request(self, rq, cmd, opts):
                 prj,  pkg,
                 tprj, tpkg)
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
-	    self._devel_projects['GNOME:Cinnamon/'] = 'cinnamon'
+            self._devel_projects['network:messaging:amqp/'] = 'rabbitmq'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:

@@ -294,7 +294,7 @@ if ($report) {
     my $prefix = <<END;
 Dear openSUSE contributor,
 
-The following status report is a reminder I sent to you in the hope that it
+The following status report is a reminder I send to you in the hope that it
 proves useful to you. I do not intend to spam you - if you don't want these
 reports, please tell me why and I'll either fix the issue or disable the
 mail to you.
