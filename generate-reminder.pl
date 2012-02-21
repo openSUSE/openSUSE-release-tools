@@ -1,6 +1,7 @@
 #! /usr/bin/perl -w
 
 require LWP::UserAgent;
+use strict;
 use JSON;
 use POSIX;
 use Carp::Always;
@@ -26,22 +27,22 @@ sub fetch_user_infos($)
     my $ua = LWP::UserAgent->new;
     $ua->timeout(15);
     $ua->default_header("Accept" => "application/json");
-    $mywork = $ua->get("https://build.opensuse.org/stage/home/my_work?user=$user");
+    my $mywork = $ua->get("https://build.opensuse.org/stage/home/my_work?user=$user");
     unless ($mywork->is_success) { die $mywork->status_line; }
 
     $mywork = from_json( $mywork->decoded_content, { utf8 => 1 });
 
     my $url = "https://build.opensuse.org/stage/project/status?project=$tproject&ignore_pending=0";
     $url .= "&limit_to_fails=false&limit_to_old=false&include_versions=true&filter_for_user=$user";
-    $projstat = $ua->get($url);
+    my $projstat = $ua->get($url);
     die $projstat->status_line unless ($projstat->is_success);
     $projstat = from_json( $projstat->decoded_content, { utf8 => 1 });
 
     my %st = ();
-    $st->{'mywork'} = $mywork;
-    $st->{'projstat'} = $projstat;
+    $st{'mywork'} = $mywork;
+    $st{'projstat'} = $projstat;
    # open(my $fh, '>', "reports/$user");
-   # print $fh to_json($st);
+   # print $fh to_json(%st);
    # close $fh;
     return ($mywork, $projstat);
 }
@@ -92,7 +93,7 @@ sub explain_request($$)
     my ($request, $list) = @_;
     return if (defined($requests_to_ignore{$request->{id}}));
     #print Dumper($request);
-    $actions = $request->{action};
+    my $actions = $request->{action};
     $actions = [$actions] if (ref($actions) eq "HASH");
     my $line = '';
     for my $action (@{$actions || []}) {
@@ -123,7 +124,7 @@ sub generate_report($)
 {
     my ($user) = @_;
     
-    ($mywork, $projstat) = fetch_user_infos($user);
+    my ($mywork, $projstat) = fetch_user_infos($user);
 
     #print to_json($mywork, {pretty => 1 });
     #print to_json($projstat, {pretty => 1});
@@ -140,8 +141,6 @@ sub generate_report($)
     my $report = '';
 
     for my $request (@{$mywork->{review}}) {
-	# stupid ruby... :)
-	$request = $request->{request};
 	my $reviews = $request->{review};
 	$reviews = [$reviews] if (ref($reviews) eq "HASH");
 	for my $review (@{$reviews}) {
@@ -253,7 +252,7 @@ sub generate_report($)
     %list = ();
 
     for my $request (@{$mywork->{declined}}) {
-	explain_request($request->{request}, \%list);
+	explain_request($request, \%list);
     }
 
     if (%list) {
@@ -268,8 +267,7 @@ sub generate_report($)
     %list = ();
 
     for my $request (@{$mywork->{new}}) {
-	# stupid ruby... :)
-	explain_request($request->{request}, \%list);
+	explain_request($request, \%list);
     }
 
     if (%list && $report) {
