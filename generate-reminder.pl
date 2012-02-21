@@ -2,8 +2,10 @@
 
 require LWP::UserAgent;
 use strict;
+#use warnings FATAL => 'all';
 use JSON;
 use POSIX;
+use Encode;
 use Carp::Always;
 use Data::Dumper;
 use URI::Escape;
@@ -110,7 +112,9 @@ sub explain_request($$)
 	} elsif ($atype eq "maintenance_incident") {
 	    $line .= "  Maintenance incident request from $source->{project} to $target->{project}\n";
 	} elsif ($atype eq "add_role") {
-	    $line .= "  User $action->{person}->{name} wants to be $action->{person}->{role} in $target->{project}\n";
+            while ( my ($name, $role) = each(%{$action->{person}})) {
+	      $line .= "  User $name wants to be $role->{role} in $target->{project}\n";
+            }
 	} elsif ($atype eq "change_devel") {
             $line .= "  Package $target->{project}/$target->{package} should be developed in $source->{project}\n";
 	} else {
@@ -329,8 +333,9 @@ END
     my $info = XMLin($xml);
     my $to = $info->{email};
     if (ref($info->{realname}) ne "HASH") {
-      $to = "$info->{realname} <$to>";
-	
+      my $octets = decode("iso-8859-1", $info->{realname});
+      my $name = encode('utf-8', $octets);
+      $to = "$name <$to>";
     }
     my $email = 
 	Email::Simple->create(
