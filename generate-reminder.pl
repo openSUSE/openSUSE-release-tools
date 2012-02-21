@@ -326,7 +326,7 @@ END
     use XML::Simple;
 
     my $xml = '';
-    open(USER, "osc meta user $user|") || die "osc meta user $user failed";
+    open(USER, "osc meta user -- '$user'|") || die "osc meta user $user failed";
     while ( <USER> ) { $xml .= $_; }
     close(USER);
     
