@@ -7,8 +7,9 @@ done
 osc api /status/project/openSUSE:Factory | grep '<person.*role="maintainer"'
 ) | sed -e 's,.*userid=",,; s,".*,,'  | sort -u > $users
 tuser=`mktemp`
-tail -f $mbox &
+#tail -f $mbox &
 for i in `cat $users`; do 
+  echo "generate $i"
   osc meta user $i  > $tuser
   perl generate-reminder.pl $i >> $mbox
 done

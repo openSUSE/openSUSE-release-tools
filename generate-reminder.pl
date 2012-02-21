@@ -99,17 +99,18 @@ sub explain_request($$)
 	my $source = $action->{source};
 	my $target = $action->{target};
 		    
-	if ($action->{type} eq "submit") {
+        my $atype = $action->{type} || '';
+	if ($atype eq "submit") {
 	    $line .= "  Submit request from $source->{project}/$source->{package} to $target->{project}\n";
-	} elsif ($action->{type} eq "delete") {
+	} elsif ($atype eq "delete") {
 	    $line .= "  Delete request for $target->{project}/$target->{package}\n";
-	} elsif ($action->{type} eq "maintenance_release") {
+	} elsif ($atype eq "maintenance_release") {
 	    $line .= "  Maintenance release request from $source->{project}/$source->{package} to $target->{project}\n";
-	} elsif ($action->{type} eq "maintenance_incident") {
-	    $line .= "  Maintenance incident request from $source->{project}/$source->{package} to $target->{project}\n";
-	} elsif ($action->{type} eq "add_role") {
+	} elsif ($atype eq "maintenance_incident") {
+	    $line .= "  Maintenance incident request from $source->{project} to $target->{project}\n";
+	} elsif ($atype eq "add_role") {
 	    $line .= "  User $action->{person}->{name} wants to be $action->{person}->{role} in $target->{project}\n";
-	} elsif ($action->{type} eq "change_devel") {
+	} elsif ($atype eq "change_devel") {
             $line .= "  Package $target->{project}/$target->{package} should be developed in $source->{project}\n";
 	} else {
 	    print STDERR "HUH" . Dumper($action);
@@ -347,6 +348,7 @@ END
     $email->header_set( 'MIME-Version', '1.0' );
     $email->header_set( 'User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0');
     $email->header_set( 'Content-Type', 'text/plain; charset=UTF-8');
+    $email->header_set( 'X-Mailer', 'https://github.com/coolo/factory-auto/blob/master/generate-reminder.pl');
     $email->header_set( 'Content-Transfer-Encoding', '7bit');
 
     print "From - " . Date::Format::time2str("%a %b %d %T %Y\n", time);
