@@ -102,6 +102,11 @@ sub explain_request($$)
 	my $source = $action->{source};
 	my $target = $action->{target};
 		    
+        if ($target->{project} eq $tproject) {
+                print "ignore $request->{id}\n";
+                next;
+       }
+
         my $atype = $action->{type} || '';
 	if ($atype eq "submit") {
 	    $line .= "  Submit request from $source->{project}/$source->{package} to $target->{project}\n";
@@ -112,9 +117,8 @@ sub explain_request($$)
 	} elsif ($atype eq "maintenance_incident") {
 	    $line .= "  Maintenance incident request from $source->{project} to $target->{project}\n";
 	} elsif ($atype eq "add_role") {
-            while ( my ($name, $role) = each(%{$action->{person}})) {
-	      $line .= "  User $name wants to be $role->{role} in $target->{project}\n";
-            }
+            my %person = %{$action->{person}};
+	    $line .= "  User $person{name} wants to be $person{role} in $target->{project}\n";
 	} elsif ($atype eq "change_devel") {
             $line .= "  Package $target->{project}/$target->{package} should be developed in $source->{project}\n";
 	} else {
@@ -135,10 +139,11 @@ sub generate_report($)
 
     my %projects;
     for my $package (@{$projstat}) {
-	$projects{$package->{develproject}} ||= [];
-	push($projects{$package->{develproject}}, $package);
+        my $develproject = $package->{develproject} || next;
+        next if ($develproject eq $tproject); 
+	$projects{$develproject} ||= [];
+	push($projects{$develproject}, $package);
     }
-
 
     my %reviews_by;
 
@@ -188,7 +193,7 @@ sub generate_report($)
 
 	    if ($package->{firstfail} && $package->{develfirstfail}) {
 		my $fail = time_distance($package->{firstfail});
-		my $comment = $package->{failedcomment};
+		my $comment = $package->{failedcomment} || 'unknown failure';
 		$comment =~ s,^\s+,,;
 		$comment =~ s,\s+$,,;
 		my $url = "$baseurl/package/live_build_log?arch=" . uri_escape($package->{failedarch});
@@ -259,8 +264,8 @@ sub generate_report($)
 	explain_request($request, \%list);
     }
 
-    if (%list) {
-	$report .= "Your declined requests (not related to factory, please revoke or reopen):\n";
+    if (%list && $report) {
+	$report .= "Your declined requests (not related to your factory packages, please revoke or reopen):\n";
 	my @lkeys = keys %list;
 	foreach my $request (sort { $a <=> $b } @lkeys) {
 	    $report .= $list{$request};
