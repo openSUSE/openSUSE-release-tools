@@ -186,6 +186,12 @@ def _checker_one_request(self, rq, cmd, opts):
     act_id = 0
     approved_actions = 0
     actions = rq.findall('action')
+    if len(actions) > 1:
+       msg = "2 actions in one SR is not supported - https://github.com/coolo/factory-auto/fork_select"
+       self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+       print "declined " + msg
+       return
+ 
     for act in actions:
         act_id += 1
         _type = act.get('type');
