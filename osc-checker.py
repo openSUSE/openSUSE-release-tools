@@ -165,7 +165,7 @@ def _checker_prepare_dir(self, dir):
 
 def _checker_accept_request(self, opts, id, msg):
     code = 100
-    query = { 'cmd': 'addreview', 'by_group':'autobuild-team' }
+    query = { 'cmd': 'addreview', 'by_group':'opensuse-review-team' }
     url = makeurl(opts.apiurl, ['request', str(id)], query)
     if opts.verbose: print url
     try:
@@ -222,7 +222,11 @@ def _checker_one_request(self, rq, cmd, opts):
                 prj,  pkg,
                 tprj, tpkg)
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
-            self._devel_projects['network:messaging:amqp/'] = 'rabbitmq'
+            self._devel_projects['X11:QtDesktop/'] = 'rabbitmq'
+	    self._devel_projects['GNOME:Cinnamon/'] = 'ruby19'
+            self._devel_projects['devel:languages:nodejs/'] = 'nodejs'
+	    self._devel_projects['Publishing:TeXLive/'] = 'texlive'
+	    self._devel_projects['isv:ownCloud:owncloud-factory'] = 'owncloud'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
@@ -261,9 +265,10 @@ def _checker_one_request(self, rq, cmd, opts):
                 if not founddisabled:
                     alldisabled = False
                 if isgood:
-                    if len(missings) == 0:
+                    if len(missings) == 0 or os.environ.has_key("IGNORE_MISSINGS"):
                         goodrepo = repo
                         result = True
+			missings = {}
 		if r_foundbuilding:
 		     foundbuilding = r_foundbuilding
 		if r_foundfailed:
@@ -272,6 +277,16 @@ def _checker_one_request(self, rq, cmd, opts):
 		     foundoutdated = r_foundoutdated
 
             if result == False:
+                if foundoutdated:
+                    msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
+                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                    print "declined " + msg
+                    continue
+                if alldisabled:
+                    msg = "the package is disabled or does not build against factory. Please fix and resubmit"
+                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
+                    print "declined " + msg
+                    continue
                 if len(missings.keys()):
 	            smissing = []
 		    missings.keys().sort()
@@ -285,16 +300,6 @@ def _checker_one_request(self, rq, cmd, opts):
                     self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
                     print "updated " + msg
                     continue
-                if alldisabled:
-                    msg = "the package is disabled or does not build against factory. Please fix and resubmit"
-                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-                    print "declined " + msg
-                    continue
-	        if foundoutdated:
-		    msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
-	            self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-		    print "declined " + msg
-		    continue
 		if foundbuilding:	
 		    msg = "the package is still building for repository {0}".format(foundbuilding)
 		    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
@@ -348,7 +353,7 @@ def _checker_one_request(self, rq, cmd, opts):
 		shutil.rmtree(dir)
                 continue
 
-	    firstarch=goodrepo.find('arch')
+            firstarch=None
 	    if not firstarch is None:
                 url = makeurl(opts.apiurl, ['build', prj, goodrepo.attrib['name'], firstarch.attrib['arch'], pkg, "rpmlint.log"])
 		try:
@@ -431,6 +436,9 @@ def _checker_check_dups(self, project, opts):
             type = a.attrib['type']
             assert target != None
             if target.attrib['project'] != project: continue
+	    #print id
+            #ET.dump(target)
+	    if not target.attrib.has_key('package'): continue
             package = target.attrib['package']
             if rqs.has_key(type + package):
                 [oldid, oldsource] = rqs[type + package]

@@ -75,7 +75,7 @@ if (!$changes_updated) {
     exit(1); 
 }
 
-if ($spec !~ m/\n%changelog\s/) {
+if ($spec !~ m/\n%changelog\s/ && $spec != m/\n%changelog$/) {
     print "$bname.spec does not contain a %changelog line. We don't want a changelog in the spec file, but the %changelog section needs to be present\n";
     exit(1);
 }

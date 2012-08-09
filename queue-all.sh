@@ -1,3 +1,5 @@
+rm -f missingdeps
+wget "http://gitorious.org/opensuse/package-lists/blobs/raw/master/output/opensuse/missingdeps"
 list=`osc api /status/project/openSUSE:Factory | grep '<develpack' | sed -e 's,.*proj=",,; s,".*,,' | sort -u`
 users=`mktemp`
 mbox=`mktemp`
