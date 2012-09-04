@@ -10,6 +10,16 @@ my $old = $ARGV[0];
 my $dir = $ARGV[1];
 my $bname = basename($dir);
 
+if (-f "$dir/_service") {
+    my $service = XMLin("$dir/_service", ForceArray => [ 'service' ]);
+    while( my ($name, $s) = each %{$service->{service}} ) {
+        my $mode = $s->{mode} || '';
+        next if ($mode eq "localonly" || $mode eq "disabled");
+        print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
+        exit(1);
+    }
+}
+
 if (! -f "$dir/$bname.changes") {
   print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
   exit(1);
@@ -34,16 +44,6 @@ if ($spec !~ m/#\s+Copyright\s/) {
 if ($spec =~ m/\nVendor:/) {
   print "$bname.spec contains a Vendor line, this is forbidden.\n";
   exit(1);
-}
-
-if (-f "$dir/_service") {
-    my $service = XMLin("$dir/_service", ForceArray => [ 'service' ]);
-    while( my ($name, $s) = each %{$service->{service}} ) {
-        my $mode = $s->{mode} || '';
-        next if ($mode eq "localonly" || $mode eq "disabled");
-        print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
-        exit(1);
-    }
 }
 
 foreach my $file (glob("$dir/_service:*")) {
