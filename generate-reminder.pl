@@ -103,7 +103,7 @@ sub explain_request($$)
 	my $target = $action->{target};
 		    
         if ($target->{project} eq $tproject) {
-                print "ignore $request->{id}\n";
+                #print "ignore $request->{id}\n";
                 next;
        }
 

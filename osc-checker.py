@@ -223,10 +223,11 @@ def _checker_one_request(self, rq, cmd, opts):
                 tprj, tpkg)
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
             self._devel_projects['X11:QtDesktop/'] = 'rabbitmq'
-	    self._devel_projects['GNOME:Cinnamon/'] = 'ruby19'
+	    self._devel_projects['devel:languages:erlang/'] = 'ruby19'
             self._devel_projects['devel:languages:nodejs/'] = 'nodejs'
-	    self._devel_projects['Publishing:TeXLive/'] = 'texlive'
+	    self._devel_projects['X11:Enlightenment:Factory/'] = 'x2go'
 	    self._devel_projects['isv:ownCloud:owncloud-factory'] = 'owncloud'
+	    self._devel_projects['X11:Wayland/'] = 'wayland'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:

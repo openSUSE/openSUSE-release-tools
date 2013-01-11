@@ -1,7 +1,7 @@
 #! /usr/bin/perl
 
 use File::Basename;
-use File::Temp qw/ :mktemp  /;
+use File::Temp qw/ tempdir  /;
 use XML::Simple;
 use Data::Dumper;
 use Cwd;
@@ -18,6 +18,12 @@ if (-f "$dir/_service") {
         print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
         exit(1);
     }
+    # now remove it to have full service from source validator
+    unlink("$dir/_service");
+}
+
+if (-f "$dir/_constraints") {
+  unlink("$dir/_constraints");
 }
 
 if (! -f "$dir/$bname.changes") {
@@ -138,8 +144,8 @@ if (-d "_old") {
 }
 
 my $odir = getcwd;
-my $tmpdir = mkdtemp("/tmp/obs-XXXXXXX");
-chdir($dir);
+my $tmpdir = tempdir ( "obs-XXXXXXX", TMPDIR => 1 );
+chdir($dir) || die 'tempdir failed';
 if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--enforcelocal", "yes", "--outdir", $tmpdir)) {
     print "Source URLs are not valid. Try \"osc service localrun download_files\"\n";
     exit(1);
