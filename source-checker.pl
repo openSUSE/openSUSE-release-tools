@@ -94,12 +94,15 @@ if ($spec !~ m/(#[^\n]*license)/i) {
     exit(1);
 }
 
-my $checkivsd = `/work/src/bin/check_if_valid_source_dir --batchmode --dest _old $dir < /dev/null 2>&1`;
-if ($?) {
+foreach my $test (glob("/usr/lib/obs/service/source_validators/*")) {
+  next if (!-f "$test");
+  my $checkivsd = `/bin/bash $test --batchmode --verbose $dir $old < /dev/null 2>&1`;
+  if ($?) {
     print "Source validator failed. Try \"osc service localrun source_validator\"\n";
     print $checkivsd;
     print "\n";
     exit(1);
+  }
 }
 
 if (-d "_old") {
