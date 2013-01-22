@@ -232,7 +232,7 @@ def _checker_one_request(self, rq, cmd, opts):
                 [dprj, dpkg] = dpkg.split('/')
             else:
                 dprj = None
-            if dprj and (dprj != prj or dpkg != pkg):
+            if dprj and (dprj != prj or dpkg != pkg) and (not os.environ.has_key("IGNORE_DEVEL_PROJECTS")):
                 msg = "'%s/%s' is the devel package, submission is from '%s'" % (dprj, dpkg, prj)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                 print "declined " + msg
