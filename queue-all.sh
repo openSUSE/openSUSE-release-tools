@@ -12,7 +12,7 @@ tuser=`mktemp`
 #tail -f $mbox &
 for i in `cat $users`; do 
   echo "generate $i"
-  osc meta user $i  > $tuser
+  osc meta user -- $i  > $tuser
   perl generate-reminder.pl $i >> $mbox
 done
 echo "DONE $mbox"

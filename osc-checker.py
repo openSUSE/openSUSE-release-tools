@@ -11,11 +11,6 @@ import os
 import traceback
 import subprocess
 
-try:
-    fqdn = socket.gethostbyaddr(socket.gethostname())[0]
-except:
-    fqdn = os.uname()[1]
-
 class HASH(object):
     def __init__(self,h=None):
         if h:
@@ -338,7 +333,7 @@ def _checker_one_request(self, rq, cmd, opts):
 	    if r.name != tpkg:
 		msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r.name)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-		continue	 
+		continue
 
             civs = "LC_ALL=C perl /suse/coolo/checker/source-checker.pl _old %s 2>&1" % tpkg
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
@@ -354,7 +349,7 @@ def _checker_one_request(self, rq, cmd, opts):
 		shutil.rmtree(dir)
                 continue
 
-            firstarch=None
+            firstarch=goodrepo.find('arch')
 	    if not firstarch is None:
                 url = makeurl(opts.apiurl, ['build', prj, goodrepo.attrib['name'], firstarch.attrib['arch'], pkg, "rpmlint.log"])
 		try:
@@ -367,18 +362,11 @@ def _checker_one_request(self, rq, cmd, opts):
 		for line in lines:
 		    if re.search('W:.*invalid-license ', line):
 	                msg = "Found rpmlint warning: \n" + line
-                        msg += "Try the following patch\n"
-                        civs = "export LC_ALL=C; for i in %s/%s/*.spec; do perl /suse/coolo/obs-service-format_spec_file/patch_license $i > $i.new || cp $i $i.new; diff -U0 $i $i.new; done 2>&1" % (dir, tpkg)
-                        p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
-                        ret = os.waitpid(p.pid, 0)[1]
-                        checked = p.stdout.readlines()
-                        output = '  '.join(checked).translate(None, '\033')
-			msg += output
 			print "declined " + msg
        		        self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
 			isdeclined = True
 			break
-		if isdeclined: 
+		if isdeclined:
    		     shutil.rmtree(dir)
 		     continue
  
@@ -424,37 +412,6 @@ def _checker_check_devel_package(self, opts, project, package):
     except KeyError:
         return None
 
-def _checker_check_dups(self, project, opts):
-    url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&view=collection" % project)
-    f = http_GET(url)
-    root = ET.parse(f).getroot()
-    rqs = {}
-    for rq in root.findall('request'):
-        id = rq.attrib['id']
-        for a in rq.findall('action'):
-            source = a.find('source')
-            target = a.find('target')
-            type = a.attrib['type']
-            assert target != None
-            if target.attrib['project'] != project: continue
-	    #print id
-            #ET.dump(target)
-	    if not target.attrib.has_key('package'): continue
-            package = target.attrib['package']
-            if rqs.has_key(type + package):
-                [oldid, oldsource] = rqs[type + package]
-		print oldid, id
-                assert oldid < id
-                if source != None and oldsource != None:
-                    if (source.attrib['project'] == oldsource.attrib['project'] and
-                       source.attrib['package'] == oldsource.attrib['package']):
-                        change_request_state(opts.apiurl, str(oldid), 'superseded',
-                                     'superseded by %s' % id, id)
-                        continue
-                print "DUPS found:", id, oldid
-            rqs[type + package] = [id, source]
-
-
 def do_checker(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
 
@@ -481,11 +438,6 @@ def do_checker(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
 
     tmphome = None
-
-    if args[0] == 'dups':
-        for p in args[1:]:
-            self._checker_check_dups(p, opts)
-        return
 
     if args[0] == 'skip':
         for id in args[1:]:
