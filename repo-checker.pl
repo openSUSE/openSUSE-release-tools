@@ -37,8 +37,8 @@ print PACKAGES "=Ver: 2.0\n";
 
 sub write_package($$) 
 {
-  my $package = shift;
   my $ignore = shift;
+  my $package = shift;
 
   # RPMTAG_FILEMODES            = 1030, /* h[] */
   # RPMTAG_FILEFLAGS            = 1037, /* i[] */
@@ -48,8 +48,8 @@ sub write_package($$)
   my %qq = Build::Rpm::rpmq("$package", qw{NAME VERSION RELEASE ARCH OLDFILENAMES DIRNAMES BASENAMES DIRINDEXES 1030 1037 1039 1040
 			   1047 1112 1113 1049 1048 1050 1090 1114 1115 1054 1053 1055
 					});
-  if ($ignore && defined $toignore{$qq{'NAME'}[0]}) {
-      next;
+  if ($ignore == 1 && defined $toignore{$qq{'NAME'}[0]}) {
+      return;
   }
 
   Build::Rpm::add_flagsvers(\%qq, 1049, 1048, 1050); # requires

@@ -202,7 +202,7 @@ def _check_repo_one_request(self, rq, cmd, opts):
             toignore = []
             for bin in  binaries.findall('binary'):
 	      fn=bin.attrib['filename']
-              result = re.match("(.*)-([^-]*)-([^-]*).x86_64.rpm", fn) 
+              result = re.match("(.*)-([^-]*)-([^-]*).[^-\.]*.rpm", fn) 
 	      if not result: continue
 	      toignore.append(result.group(1))
 
