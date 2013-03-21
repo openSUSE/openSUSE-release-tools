@@ -191,11 +191,23 @@ def _check_repo_one_request(self, rq, cmd, opts):
 
             opts.destdir = os.path.expanduser("~/co/%s" % str(id))
             opts.sources = False
-            opts.debug = True
-            opts.quiet = False
+            opts.debug = False
+            opts.quiet = True
             # we can assume x86_64 is there
             self.do_getbinaries(None, opts, prj, pkg, goodrepo.attrib['name'], 'x86_64')
-            civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' 2>&1" % opts.destdir
+
+            url = makeurl(opts.apiurl, ['build',tprj, 'standard', 'x86_64', tpkg])
+	    f = http_GET(url)
+	    binaries = ET.parse(f).getroot()
+            toignore = []
+            for bin in  binaries.findall('binary'):
+	      fn=bin.attrib['filename']
+              result = re.match("(.*)-([^-]*)-([^-]*).x86_64.rpm", fn) 
+	      if not result: continue
+	      toignore.append(result.group(1))
+
+            civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (opts.destdir, ','.join(toignore))
+	    print civs
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
