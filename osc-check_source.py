@@ -11,30 +11,7 @@ import os
 import traceback
 import subprocess
 
-class HASH(object):
-    def __init__(self,h=None):
-        if h:
-            for k in h.keys():
-                setattr(self, k, h[k])
-    def __repr__(self):
-        return str(self.__dict__)
-    def __str__(self):
-        return str(self.__dict__)
-    def delete(self, key):
-        del self.__dict__[key]
-    def insert(self, key, val):
-        self.__dict__[key] = val
-    def keys(self):
-        return self.__dict__.keys()
-    def has_key(self,name):
-        return self.__dict__.has_key(name)
-
-globals()['HASH'] = HASH                        # evil hack, needed as we are already inside osc.commandline
-
-def _checker_fetch_rev_entry(self, apiurl, project, package, revision=None, brief=False, verbose=False):
-    """ a misnomer. This fetches the revision number and the rpm license strings.
-        option brief=True suppresses fetching of specfile and thus does not return License strings.
-    """
+def _checker_parse_name(self, apiurl, project, package, revision=None, brief=False, verbose=False):
 
     if revision:
         url = makeurl(apiurl, ['source', project, package], { 'view':'info', 'parse':1, 'rev':revision})
@@ -44,20 +21,14 @@ def _checker_fetch_rev_entry(self, apiurl, project, package, revision=None, brie
     try:
         f = http_GET(url)
     except urllib2.HTTPError, err:
-        return HASH({ 'version': None, 'name':None })
+        return None
     xml = ET.parse(f)
 
     name = xml.find('name')
     if name is None or not name.text:
-       return HASH({ 'version': None, 'name': None, 'error':'no error and no name'})
+       return None
 
-    vers = xml.find('version')
-    if vers is None or not vers.text:
-        return HASH({ 'version': None, 'name': name.text, 'error':'no error and no version'})
-
-    r = { 'version': vers.text, 'name': name.text }
-
-    return HASH(r)
+    return name.text
 
 def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
     """ taken from osc/osc/core.py, improved:
@@ -74,83 +45,6 @@ def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user=
     f = http_POST(u, data=message)
     root = ET.parse(f).getroot()
     return root.attrib['code']
-
-def _checker_checkout_add(self, prj, pkg, rev, opts):
-    dir = opts.directory + '/' + re.sub('.*//', '', opts.apiurl) + '/' + prj + '/' + pkg
-    if rev: dir = dir + '%r' + rev
-    if opts.no_op:
-        print "package NOT checked out to " + dir
-    else:
-        oldcwd = os.getcwd()
-        do_co = True
-
-        try:
-            os.rmdir(dir)     # remove if empty.
-        except:
-            pass
-
-        if os.path.exists(dir):
-            print "Oops, %s already checked out.\n Please remove to pull a fresh copy." % dir
-            return
-
-        o_umask = os.umask(002)             # allow group writable
-        try:
-            os.makedirs(dir, mode=0777)       # ask for (at least) group writable
-        except Exception,e:
-            do_co = False
-            print "os.makedirs(%s) failed: %s" % (dir, str(e))
-        os.umask(o_umask)
-
-        if do_co:
-            os.chdir(dir)
-            nc = conf.config['checker_checkout_no_colon']
-            conf.config['checker_checkout_no_colon'] = False
-            conf.config['checker_checkout_rooted'] = False
-            conf.config['package_tracking'] = False
-
-            checkout_package(opts.apiurl, prj, pkg, revision=rev, pathname=dir, server_service_files=True, expand_link=True)
-            if opts.origin:
-                f = open('.origin', 'wb')
-                f.write(opts.origin)
-                f.close()
-
-            conf.config['checker_checkout_no_colon'] = nc
-            os.chdir(oldcwd)
-
-def _checker_find_submit_request(self, opts, project, package):
-	xpath = "(action/target/@project='%s' and action/target/@package='%s')" % (project, package)
-        url = makeurl(opts.apiurl, ['search','request'], 'match=%s' % quote_plus(xpath))
-        f = http_GET(url)
-        collection = ET.parse(f).getroot()
-        for root in collection.findall('request'):
-           r = Request()
-           r.read(root)
-	   return r.reqid
-	return None
-        
-def _check_repo(self, repo):
-    allfine = True
-    founddisabled = False
-    foundbuilding = None
-    foundfailed = None
-    foundoutdated = None
-    missings = {}
-    for arch in repo.findall('arch'):
-        if arch.attrib.has_key('missing'):
-            for pkg in arch.attrib['missing'].split(','):
-                missings[pkg] = 1
-        if not (arch.attrib['result'] in ['succeeded', 'excluded']):
-            allfine = False
-        if arch.attrib['result'] == 'disabled':
-            founddisabled = True
-        if arch.attrib['result'] == 'failed':
-            foundfailed = repo.attrib['name']
-        if arch.attrib['result'] == 'building':
-            foundbuilding = repo.attrib['name']
-        if arch.attrib['result'] == 'outdated':
-            foundoutdated = repo.attrib['name']
-
-    return [allfine, founddisabled, foundbuilding, foundfailed, foundoutdated, missings.keys()]
 
 def _checker_prepare_dir(self, dir):
     olddir=os.getcwd()
@@ -171,6 +65,13 @@ def _checker_accept_request(self, opts, id, msg):
     if code == 100 or code == 'ok':
          self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
          print "accepted " + msg
+    # now gets risky
+    query = { 'cmd': 'addreview', 'by_user':'factory-repo-checker' }
+    url = makeurl(opts.apiurl, ['request', str(id)], query)
+    try:
+        r = http_POST(url, data="Please review build success")
+    except urllib2.HTTPError, err:
+        pass # there is no good mean to undo
     return 0
 
 def _checker_one_request(self, rq, cmd, opts):
@@ -217,12 +118,12 @@ def _checker_one_request(self, rq, cmd, opts):
                 prj,  pkg,
                 tprj, tpkg)
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
-            self._devel_projects['X11:QtDesktop/'] = 'rabbitmq'
-	    self._devel_projects['devel:languages:erlang/'] = 'ruby19'
-            self._devel_projects['devel:languages:nodejs/'] = 'nodejs'
-	    self._devel_projects['X11:Enlightenment:Factory/'] = 'x2go'
-	    self._devel_projects['isv:ownCloud:owncloud-factory'] = 'owncloud'
-	    self._devel_projects['X11:Wayland/'] = 'wayland'
+            #self._devel_projects['X11:QtDesktop/'] = 'rabbitmq'
+	    #self._devel_projects['devel:languages:erlang/'] = 'ruby19'
+            #self._devel_projects['devel:languages:nodejs/'] = 'nodejs'
+	    #self._devel_projects['X11:Enlightenment:Factory/'] = 'x2go'
+	    #self._devel_projects['isv:ownCloud:owncloud-factory'] = 'owncloud'
+	    #self._devel_projects['X11:Wayland/'] = 'wayland'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
@@ -236,78 +137,6 @@ def _checker_one_request(self, rq, cmd, opts):
                 msg = "'%s' is not a valid devel project of %s - please pick one of the existent" % (prj, tprj)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                 print "declined " + msg
-                continue
-
-            try:
-                url = makeurl(opts.apiurl, ['status', "bsrequest?id=%d" % id])
-                root = ET.parse(http_GET(url)).getroot()
-            except urllib2.HTTPError:
-                print "error"
-                continue
-            if root.attrib.has_key('code'):
-                print ET.tostring(root)
-                continue
-            result = False
-            goodrepo = None
-            missings = {}
-            alldisabled = True
-	    foundbuilding = None
-	    foundfailed = None
-	    foundoutdated = None
-            for repo in root.findall('repository'):
-                [isgood, founddisabled, r_foundbuilding, r_foundfailed, r_foundoutdated, r_missings] = self._check_repo(repo)
-		for p in r_missings:
-		    missings[p] = 1
-                if not founddisabled:
-                    alldisabled = False
-                if isgood:
-                    if len(missings) == 0 or os.environ.has_key("IGNORE_MISSINGS"):
-                        goodrepo = repo
-                        result = True
-			missings = {}
-		if r_foundbuilding:
-		     foundbuilding = r_foundbuilding
-		if r_foundfailed:
-                     foundfailed = r_foundfailed
-		if r_foundoutdated:
-		     foundoutdated = r_foundoutdated
-
-            if result == False:
-                if foundoutdated:
-                    msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
-                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-                    print "declined " + msg
-                    continue
-                if alldisabled:
-                    msg = "the package is disabled or does not build against factory. Please fix and resubmit"
-                    self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-                    print "declined " + msg
-                    continue
-                if len(missings.keys()):
-	            smissing = []
-		    missings.keys().sort()
-                    for package in missings:
-			request = self._checker_find_submit_request(opts, tprj, package)
-			if request:
-			   package = "%s(rq%s)" % (package, request) 
-                        smissing.append(package)
-
-                    msg = "please make sure to wait before these depencencies are in {0}: {1}".format(tprj, ', '.join(smissing))
-                    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
-                    print "updated " + msg
-                    continue
-		if foundbuilding:	
-		    msg = "the package is still building for repository {0}".format(foundbuilding)
-		    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
-                    print "updated " + msg
-		    continue
-	        if foundfailed:
-                    msg = "the package failed to build in repository {0} - not accepting".format(foundfailed)
-                    self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
-		    print "updated " + msg
-                    continue
-
-                print ET.tostring(root)
                 continue
 
             dir = os.path.expanduser("~/co/%s" % str(id))
@@ -329,8 +158,8 @@ def _checker_one_request(self, rq, cmd, opts):
             os.rename(pkg, tpkg)
             self._checker_prepare_dir(tpkg)
 
-  	    r=self._checker_fetch_rev_entry(opts.apiurl, prj, pkg, revision=rev)
-	    if r.name != tpkg:
+  	    r=self._checker_parse_name(opts.apiurl, prj, pkg, revision=rev)
+	    if r != tpkg:
 		msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r.name)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
 		continue
@@ -349,42 +178,14 @@ def _checker_one_request(self, rq, cmd, opts):
 		shutil.rmtree(dir)
                 continue
 
-            firstarch=goodrepo.find('arch')
-	    if not firstarch is None:
-                url = makeurl(opts.apiurl, ['build', prj, goodrepo.attrib['name'], firstarch.attrib['arch'], pkg, "rpmlint.log"])
-		try:
-                   f = http_GET(url)
-		   lines = f.readlines()
-                except urllib2.HTTPError, err:
-		   lines = []
-
-		isdeclined = False
-		for line in lines:
-		    if re.search('W:.*invalid-license ', line):
-	                msg = "Found rpmlint warning: \n" + line
-			print "declined " + msg
-       		        self._checker_change_review_state(opts, id, 'new', by_group='factory-auto', message=msg)
-			isdeclined = True
-			break
-		if isdeclined:
-   		     shutil.rmtree(dir)
-		     continue
- 
 	    shutil.rmtree(dir)
-            msg="Builds for repo %s" % goodrepo.attrib['name']
+            msg="Check script succeeded"
             if len(checked):
                 msg = msg + "\n\nOutput of check script (non-fatal):\n" + output
                 
             if self._checker_accept_request(opts, id, msg):
                continue
 
-            if cmd == "list":
-                pass
-            elif cmd == "checker_checkout" or cmd == "co":
-                opts.origin = opts.apiurl + '/request/' + str(id) + "\n";
-                self._checker_checkout_add(prj, pkg, rev, opts)
-            else:
-                print "unknown command: %s" % cmd
         else:
             self._checker_change_review_state(opts, id, 'accepted',
                                               by_group='factory-auto',
@@ -412,11 +213,11 @@ def _checker_check_devel_package(self, opts, project, package):
     except KeyError:
         return None
 
-def do_checker(self, subcmd, opts, *args):
+def do_check_source(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
 
     Usage:
-      osc checker [OPT] [list] [FILTER|PACKAGE_SRC]
+      osc check_source [OPT] [list] [FILTER|PACKAGE_SRC]
            Shows pending review requests and their current state.
 
     ${cmd_option_list}
@@ -426,12 +227,7 @@ def do_checker(self, subcmd, opts, *args):
         raise oscerr.WrongArgs("Please give a subcommand to 'osc checker' or try 'osc help checker'")
 
     self._devel_projects = {}
-    opts.mode = ''
     opts.verbose = False
-    if args[0] == 'auto':     opts.mode = 'auto'
-    if args[0] == 'review':   opts.mode = 'both'
-    if len(args) > 1 and args[0] in ('auto','manual') and args[1] in ('approve', 'reject'):
-        args = args[1:]
 
     from pprint import pprint
 
