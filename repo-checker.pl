@@ -31,10 +31,6 @@ while ( <GREP> ) {
   exit(1);
 }
 
-my @rpms = glob("~/factory-repo/*.rpm");
-open(PACKAGES, ">", $ENV{'HOME'} . "/packages") || die 'can not open';
-print PACKAGES "=Ver: 2.0\n";
-
 sub write_package($$) 
 {
   my $ignore = shift;
@@ -110,6 +106,11 @@ sub write_package($$)
 
 }
 
+my @rpms = glob("~/factory-repo/*.rpm");
+my $pfile = $ENV{'HOME'} . "/packages";
+open(PACKAGES, ">", $pfile) || die 'can not open';
+print PACKAGES "=Ver: 2.0\n";
+
 foreach my $package (@rpms) {
     write_package(1, $package);
 }
@@ -120,5 +121,13 @@ foreach my $package (@rpms) {
 }
 
 close(PACKAGES);
+
+open(INSTALL, "~mls/bin/installcheck x86_64 $pfile 2>&1|");
+while ( <INSTALL> ) {
+    chomp;
+    #next if (m/unknown line:.*Flx/);
+    print STDERR "$_\n";
+}
+close(INSTALL);
 
 exit(0);
