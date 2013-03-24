@@ -1,0 +1,271 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my %dirs;
+my @dirs;
+my %modes;
+my @modes;
+my @modes_type;
+my @modes_ghost;
+my %files;
+my %filesc;
+
+$dirs{'/'} = 0;
+push @dirs, '/';
+
+$modes{'40755 0 root:root'} = 0;
+push @modes, '40755 0 root:root';
+push @modes_type, 040000;
+push @modes_ghost, 0;
+
+my $pkg = '';
+my $fls = 0;
+my $prv = 0;
+my $con = 0;
+
+my %con;
+my %whatprovides;
+
+die("Usage: findfileconflicts2 packages[.gz]\n") unless @ARGV == 1;
+
+my @ftypes;
+$ftypes[001] = 'p';
+$ftypes[002] = 'c';
+$ftypes[004] = 'd';
+$ftypes[006] = 'b';
+$ftypes[010] = '-';
+$ftypes[012] = 'l';
+$ftypes[014] = 's';
+
+sub beautify_mode {
+  my @m = split(' ', $modes[$_[0]], 3);
+  my $fm = oct($m[0]);
+  my $ft = $fm & 0770000;
+  $fm &= ~0770000;
+  $ft = $ftypes[$ft >> 12 & 077] || '?';
+
+  my $rts = '';
+  my $rt = oct($m[1]);
+  $rts .= 'd' if $rt  & 02;
+  $rts .= 'c' if $rt  & 01;
+  $rts .= 'm' if $rt  & 010;
+  $rts .= 'n' if $rt  & 020;
+  $rts .= 'g' if $rt  & 0100;
+  $rts .= 'l' if $rt  & 0200;
+  $rts .= 'r' if $rt  & 0400;
+  $rt &= ~0733;
+  $rts .= sprintf("%o", $rt) if $rt;
+  $rts .= ' ' if $rts;
+  return "$rts$ft".sprintf("%03o", $fm)." $m[2]";
+}
+
+print "scanning file list\n";
+if ($ARGV[0] =~ /\.gz$/) {
+  open(FL, "-|", 'gunzip', '-dc', $ARGV[0]) || die("open $ARGV[0]: $!\n");
+} else {
+  open(FL, '<', $ARGV[0]) || die("open $ARGV[0]: $!\n");
+}
+
+while(<FL>) {
+  chomp;
+  if ($fls) {
+    if ($_ eq '-Flx:') {
+      $fls = 0;
+      next;
+    }
+    next unless /^(\d+ (\d+) \S+) (.*\/)(.*?)$/;
+    my $n = $dirs{$3};
+    if (!defined($n)) {
+      $n = @dirs;
+      $dirs{$3} = $n;
+      $dirs[$n] = $3;
+    }
+    my $m = $modes{$1};
+    if (!defined($m)) {
+      $m = @modes;
+      $modes{$1} = $m;
+      $modes[$m] = $1;
+      $modes_type[$m] = oct($1) & 07770000;
+      $modes_ghost[$m] = oct($2) & 0100;
+    }
+    my $f = "$n/$4";
+    if (exists $files{$f}) {
+      $filesc{$f} ||= [ $files{$f} ];
+      push @{$filesc{$f}}, "$pkg/$m";
+    } else {
+      $files{$f} = "$pkg/$m";
+    }
+    next;
+  }
+  if ($prv) {
+    if ($_ eq '-Prv:') {
+      $prv = 0;
+      next;
+    }
+    s/ .*//;	# no version stuff;
+    push @{$whatprovides{$_}}, $pkg;
+    next;
+  }
+  if ($con) {
+    if ($_ eq '-Con:') {
+      $con = 0;
+      next;
+    }
+    s/ .*//;	# no version stuff;
+    s/^otherproviders\((.*)\)$/$1/;
+    push @{$con{$pkg}}, $_;
+    next;
+  }
+  if (/^=Pkg: (.*)/) {
+    $pkg = $1;
+    my $n = $pkg;
+    $n =~ s/ .*//;
+    push @{$con{$pkg}}, $n;
+    next;
+  }
+  if ($_ eq '+Con:') {
+    $con = 1 if $pkg;
+    next;
+  }
+  if ($_ eq '+Prv:') {
+    $prv = 1 if $pkg;
+    next;
+  }
+  if ($_ eq '+Flx:') {
+    $fls = 1;
+    next;
+  }
+}
+close(FL) || die("close failed\n");
+
+
+# connect dirs and add all dirs as files
+print "connecting ".@dirs." directories\n";
+for (@dirs) {
+  next unless /^(.*\/)(.*?)$/;
+  my $n = $dirs{$1};
+  if (!defined $n) {
+    $n = @dirs;
+    $dirs{$1} = $n;
+    $dirs[$n] = $1;
+    next;
+  }
+  my $f = "$n/$2";
+  next unless $files{$f};
+  my (undef, $m) = split('/', $files{$f}, 2);
+  next if $modes_type[$m] == 040000;
+  # whoa, have a conflict. search for other dirs
+  my $have_dir;
+  for my $pkg (@{$filesc{$f} || []}) {
+    (undef, $m) = split('/', $pkg, 2);
+    $have_dir = 1 if $modes_type[$m] == 040000;
+  }
+  next if $have_dir;
+  $filesc{$f} ||= [ $files{$f} ];
+  push @{$filesc{$f}}, "implicit_directory 0 0 noarch pkg/0";
+}
+
+%files = ();	# free mem
+
+# reduce all-dir conflicts and trivial multiarch conflicts
+print "reducing trivial conflicts\n";
+for my $f (sort keys %filesc) {
+  my $allm;
+  my $allc = 1;
+  my $pkgn;
+  for my $pkg (@{$filesc{$f}}) {
+    my (undef, $m) = split('/', $pkg, 2);
+    die unless $pkg =~ /^([^ ]+) /;
+    $allm = $m unless defined $allm;
+    $allm = -1 if $allm != $m;
+    $pkgn = $1 unless defined $pkgn;
+    $allc = 0 if $pkgn ne $1;
+  }
+  if ($allc) {
+    delete $filesc{$f};
+    next;
+  }
+  if (defined($allm) && $allm >= 0 && $modes_type[$allm] == 040000) {
+    delete $filesc{$f};
+    next;
+  }
+}
+
+print "checking conflicts\n";
+my %pkgneeded;
+my %tocheck;
+my %tocheck_files;
+for my $f (sort keys %filesc) {
+  my @p = sort(@{$filesc{$f}});	# normalize
+  $filesc{$f} = [ @p ];
+  s/\/.*// for @p;
+  $pkgneeded{$_} = 1 for @p;
+  my $pn = join("\n", @p);
+  $tocheck{$pn} ||= [ @p ];
+  push @{$tocheck_files{$pn}}, $f;
+}
+
+my %conflicts;
+for my $pkg (sort keys %con) {
+  next unless $pkgneeded{$pkg};
+  for my $c (@{$con{$pkg}}) {
+    for my $p (@{$whatprovides{$c} || []}) {
+      $conflicts{"$pkg\n$p"} = 1;
+      $conflicts{"$p\n$pkg"} = 1;
+    }
+  }
+}
+
+# let 32bit packages conflict with the i586 version
+for my $pkg (sort keys %pkgneeded) {
+  next unless $pkg =~ /^([^ ]+)-32bit /;
+  my $n = $1;
+  for my $p (@{$whatprovides{$n} || []}) {
+    next unless $p =~ /^\Q$n\E .* i[56]86$/;
+    $conflicts{"$pkg\n$p"} = 1;
+    $conflicts{"$p\n$pkg"} = 1;
+  }
+}
+
+print "found ".(keys %tocheck)." conflict candidates\n";
+print "checking...\n";
+# now check each package combination for all candidates
+for my $tc (sort keys %tocheck) {
+  my @p = @{$tocheck{$tc}};
+  while (@p) {
+    my $p1 = shift @p;
+    for my $p2 (@p) {
+      next if $conflicts{"$p1\n$p2"};
+      my @con;
+      for my $f (@{$tocheck_files{$tc}}) {
+	my @pp = grep {s/^(?:\Q$p1\E|\Q$p2\E)\///} map {$_} @{$filesc{$f}};
+	next unless @pp;
+	# ignore if (all directories or all ghosts) and all same mode;
+	my %allm = map {$_ => 1} @pp;
+	my $info = '';
+	if (keys(%allm) == 1) {
+	  my $m = (keys(%allm))[0];
+	  # all modes/flags are the same
+	  # no conflict if all dirs or all ghosts
+	  next if $modes_type[$m] == 040000 || $modes_ghost[$m] == 0100;
+	} else {
+	  my $m = (keys(%allm))[0];
+	  # don't report mode mismatches for files/symlinks that are not ghosts
+	  if (($modes_type[$m] != 0100000 && $modes_type[$m] != 0120000) || $modes_ghost[$m] == 0100) {
+	    $info = ' [mode mismatch: '.join(', ', map {beautify_mode($_)} @pp).']';
+	  }
+	}
+	# got one!
+	$f =~ /^(\d+)\/(.*)/;
+	push @con, "$dirs[$1]$2$info";
+      }
+      next unless @con;
+      my @sp1 = split(' ', $p1);
+      my @sp2 = split(' ', $p2);
+      print "found conflict of $sp1[0]-$sp1[1]-$sp1[2].$sp1[3] with $sp2[0]-$sp2[1]-$sp2[2].$sp2[3]:\n";
+      print "  - $_\n" for @con;
+    }
+  }
+}
+

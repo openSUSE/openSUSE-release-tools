@@ -31,7 +31,16 @@ while ( <GREP> ) {
   exit(1);
 }
 
-sub write_package($$) 
+my %targets;
+my %cache;
+
+foreach my $file (glob("~/cache/*")) {
+  if ($file =~ m,/(\d+)\.(\d+)-([^/]*)$,) {
+    $cache{"$1.$2"} = $3;
+  }
+}
+
+sub write_package($$)
 {
   my $ignore = shift;
   my $package = shift;
@@ -40,22 +49,49 @@ sub write_package($$)
   # RPMTAG_FILEFLAGS            = 1037, /* i[] */
   # RPMTAG_FILEUSERNAME         = 1039, /* s[] */
   # RPMTAG_FILEGROUPNAME        = 1040, /* s[] */
-    
-  my %qq = Build::Rpm::rpmq("$package", qw{NAME VERSION RELEASE ARCH OLDFILENAMES DIRNAMES BASENAMES DIRINDEXES 1030 1037 1039 1040
-			   1047 1112 1113 1049 1048 1050 1090 1114 1115 1054 1053 1055
-					});
-  if ($ignore == 1 && defined $toignore{$qq{'NAME'}[0]}) {
+
+  my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+      $atime,$mtime,$ctime,$blksize,$blocks);
+
+  # use cache
+  if ($ignore == 1) {
+    ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+      $atime,$mtime,$ctime,$blksize,$blocks) = stat($package);
+    if ($cache{"$mtime.$ino"}) {
+      my $name = $cache{"$mtime.$ino"};
+      if (defined $toignore{$name}) {
+	return;
+      }
+      open(C, $ENV{'HOME'} . "/cache/$mtime.$ino-$name") || die "no cache for $package";
+      while ( <C> ) {
+	print PACKAGES $_;
+      }
+      close(C);
       return;
+    }
+  }
+
+  my %qq = Build::Rpm::rpmq("$package", qw{NAME VERSION RELEASE ARCH OLDFILENAMES DIRNAMES BASENAMES DIRINDEXES 1030 1037 1039 1040
+					   1047 1112 1113 1049 1048 1050 1090 1114 1115 1054 1053 1055
+					});
+
+  my $name = $qq{'NAME'}[0];
+  if ($ignore == 1 && defined $toignore{$name}) {
+      return;
+  }
+
+  if ($ignore == 0) {
+    $targets{$name} = 1;
   }
 
   Build::Rpm::add_flagsvers(\%qq, 1049, 1048, 1050); # requires
   Build::Rpm::add_flagsvers(\%qq, 1047, 1112, 1113); # provides
   Build::Rpm::add_flagsvers(\%qq, 1090, 1114, 1115); # obsoletes
   Build::Rpm::add_flagsvers(\%qq, 1054, 1053, 1055); # conflicts
-  
-  #print Dumper(\%qq);
-  printf PACKAGES "=Pkg: %s %s %s %s\n", $qq{'NAME'}[0], $qq{'VERSION'}[0], $qq{'RELEASE'}[0], $qq{'ARCH'}[0];
-  print  PACKAGES "+Flx:\n";
+
+  my $out = '';
+  $out .= sprintf("=Pkg: %s %s %s %s\n", $name, $qq{'VERSION'}[0], $qq{'RELEASE'}[0], $qq{'ARCH'}[0]);
+  $out .= "+Flx:\n";
   my @modes = @{$qq{1030} || []};
   my @basenames = @{$qq{BASENAMES} || []};
   my @dirs = @{$qq{DIRNAMES} || []};
@@ -72,38 +108,45 @@ sub write_package($$)
     my $user = shift @users;
     my $group = shift @groups;
     my $flag = shift @flags;
-    
+
     my $filename = $dirs[$di] . $bname;
-    printf PACKAGES "%o %o %s:%s %s\n", $mode, $flag, $user, $group, $filename;
+    $out .= sprintf "%o %o %s:%s %s\n", $mode, $flag, $user, $group, $filename;
     if ( $filename =~ /^\/etc\// || $filename =~ /bin\// || $filename eq "/usr/lib/sendmail" ) {
       push @xprvs, $filename;
     }
   }
-  print PACKAGES "-Flx:\n";
-  print PACKAGES "+Prv:\n";
+  $out .= "-Flx:\n";
+  $out .= "+Prv:\n";
   foreach my $prv (@{$qq{1047} || []}) {
-    print PACKAGES "$prv\n";
+    $out .= "$prv\n";
   }
   foreach my $prv (@xprvs) {
-    print PACKAGES "$prv\n";
+    $out .= "$prv\n";
   }
-  print PACKAGES "-Prv:\n";
-  print PACKAGES "+Con:\n";
+  $out .= "-Prv:\n";
+  $out .= "+Con:\n";
   foreach my $prv (@{$qq{1054} || []}) {
-    print  PACKAGES "$prv\n";
+    $out .= "$prv\n";
   }
-  print PACKAGES "-Con:\n";
-  print PACKAGES "+Req:\n";
+  $out .= "-Con:\n";
+  $out .= "+Req:\n";
   foreach my $prv (@{$qq{1049} || []}) {
-    print PACKAGES "$prv\n" unless $prv =~ m/^rpmlib/;
+    $out .= "$prv\n" unless $prv =~ m/^rpmlib/;
   }
-  print PACKAGES "-Req:\n";
-  print PACKAGES "+Obs:\n";
+  $out .= "-Req:\n";
+  $out .= "+Obs:\n";
   foreach my $prv (@{$qq{1090} || []}) {
-    print PACKAGES "$prv\n";
+    $out .= "$prv\n";
   }
-  print PACKAGES "-Obs:\n";
+  $out .= "-Obs:\n";
 
+  if ($ignore == 1) {
+    open(C, '>', $ENV{'HOME'} . "/cache/$mtime.$ino-$name") || die "no writeable cache for $package";
+    print C $out;
+    close(C);
+  }
+
+  print PACKAGES $out;
 }
 
 my @rpms = glob("~/factory-repo/*.rpm");
@@ -122,11 +165,38 @@ foreach my $package (@rpms) {
 
 close(PACKAGES);
 
+#print "calling installcheck\n";
+#print Dumper(%targets);
 open(INSTALL, "~mls/bin/installcheck x86_64 $pfile 2>&1|");
 while ( <INSTALL> ) {
     chomp;
-    #next if (m/unknown line:.*Flx/);
-    print STDERR "$_\n";
+    next if (m/unknown line:.*Flx/);
+    if ($_ =~ m/can't install (.*)-([^-]*)-[^-\.]/) {
+#	print "CI $1\n";
+        if (defined $targets{$1}) {
+	  print "$_\n";
+	  while ( <INSTALL> ) {
+	    last if (m/^can't install /);
+	    print "$_";
+	  }
+	  close(INSTALL);
+          exit(1);
+        }
+    }
+}
+close(INSTALL);
+
+#print "checking file conflicts\n";
+open(INSTALL, "perl findfileconflicts $pfile 2>&1|");
+while ( <INSTALL> ) {
+    chomp;
+    #print STDERR "$_\n";
+    if ($_ =~ m/found conflict of (\S+) .* with (\S+) /) {
+        if (defined $targets{$1} || defined $targets{$2}) {
+          print "FC $1 $2\n";
+          exit(1);
+        }
+    }
 }
 close(INSTALL);
 

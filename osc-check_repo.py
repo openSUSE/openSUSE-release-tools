@@ -76,8 +76,8 @@ def _check_repo_one_request(self, rq, cmd, opts):
     actions = rq.findall('action')
     if len(actions) > 1:
        msg = "2 actions in one SR is not supported - https://github.com/coolo/factory-auto/fork_select"
-       self._check_repo_change_review_state(opts, id, 'declined', message=msg)
        print "declined " + msg
+       self._check_repo_change_review_state(opts, id, 'declined', message=msg)
        return
  
     for act in actions:
@@ -149,13 +149,13 @@ def _check_repo_one_request(self, rq, cmd, opts):
             if result == False:
                 if foundoutdated:
                     msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
-                    self._check_repo_change_review_state(opts, id, 'declined', message=msg)
                     print "declined " + msg
+                    self._check_repo_change_review_state(opts, id, 'declined', message=msg)
                     continue
                 if alldisabled:
                     msg = "the package is disabled or does not build against factory. Please fix and resubmit"
-                    self._check_repo_change_review_state(opts, id, 'declined', message=msg)
                     print "declined " + msg
+                    self._check_repo_change_review_state(opts, id, 'declined', message=msg)
                     continue
                 if len(missings.keys()):
 	            smissing = []
@@ -196,26 +196,45 @@ def _check_repo_one_request(self, rq, cmd, opts):
             # we can assume x86_64 is there
             self.do_getbinaries(None, opts, prj, pkg, goodrepo.attrib['name'], 'x86_64')
 
+            # now fetch -32bit packs
+            url = makeurl(opts.apiurl, ['build', prj, goodrepo.attrib['name'], 'i586', pkg])
+            try:
+              f = http_GET(url)
+              binaries = ET.parse(f).getroot()
+              for bin in  binaries.findall('binary'):
+                fn=bin.attrib['filename']
+                result = re.match("(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm", fn)
+                if not result: continue
+                if result.group(4) != 'x86_64': continue
+                get_binary_file(opts.apiurl,
+                                prj, goodrepo.attrib['name'], 'i586', fn, package = pkg, target_filename = os.path.join(opts.destdir, fn))
+            except urllib2.HTTPError, err:
+              print err
+              pass
+
             url = makeurl(opts.apiurl, ['build',tprj, 'standard', 'x86_64', tpkg])
-	    f = http_GET(url)
-	    binaries = ET.parse(f).getroot()
             toignore = []
-            for bin in  binaries.findall('binary'):
-	      fn=bin.attrib['filename']
-              result = re.match("(.*)-([^-]*)-([^-]*).[^-\.]*.rpm", fn) 
-	      if not result: continue
-	      toignore.append(result.group(1))
+            try:
+	      f = http_GET(url)
+	      binaries = ET.parse(f).getroot()
+              for bin in  binaries.findall('binary'):
+	        fn=bin.attrib['filename']
+                result = re.match("(.*)-([^-]*)-([^-]*)\.[^-\.]*.rpm", fn) 
+	        if not result: continue
+	        toignore.append(result.group(1))
+            except urllib2.HTTPError, err:
+               print "new package?"
 
             civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (opts.destdir, ','.join(toignore))
-	    print civs
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
             output = '  '.join(checked).translate(None, '\033')
-
-            print ret, "OUT", output
-            exit(0)
             shutil.rmtree(opts.destdir)
+
+	    if ret:
+                print ret, "OUT", output
+                continue
 
             msg="Builds for repo %s" % goodrepo.attrib['name']
                 
