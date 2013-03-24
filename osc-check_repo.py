@@ -224,6 +224,20 @@ def _check_repo_one_request(self, rq, cmd, opts):
 	        toignore.append(result.group(1))
             except urllib2.HTTPError, err:
                print "new package?"
+            # now fetch -32bit pack list
+            url = makeurl(opts.apiurl, ['build',tprj, 'standard', 'i586', tpkg])
+            try:
+              f = http_GET(url)
+              binaries = ET.parse(f).getroot()
+              for bin in  binaries.findall('binary'):
+                fn=bin.attrib['filename']
+                result = re.match("(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm", fn)
+                if not result: continue
+                if result.group(4) != 'x86_64': continue
+                toignore.append(result.group(1))
+            except urllib2.HTTPError, err:
+               print "new package?"
+
 
             civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (opts.destdir, ','.join(toignore))
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
