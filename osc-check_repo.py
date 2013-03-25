@@ -26,7 +26,7 @@ def _check_repo_change_review_state(self, opts, id, newstate, message='', supers
     return root.attrib['code']
 
 def _check_repo_find_submit_request(self, opts, project, package):
-	xpath = "(action/target/@project='%s' and action/target/@package='%s')" % (project, package)
+	xpath = "(action/target/@project='%s' and action/target/@package='%s' and action/@type='submit' and (state/@name='new' or state/@name='review' or state/@name='accepted'))" % (project, package)
         url = makeurl(opts.apiurl, ['search','request'], 'match=%s' % quote_plus(xpath))
         f = http_GET(url)
         collection = ET.parse(f).getroot()

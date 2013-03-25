@@ -167,7 +167,7 @@ close(PACKAGES);
 
 #print "calling installcheck\n";
 #print Dumper(%targets);
-open(INSTALL, "~mls/bin/installcheck x86_64 $pfile 2>&1|");
+open(INSTALL, "~mls/bin/installcheck x86_64 $pfile 2>&1|") || die 'exec installcheck';
 while ( <INSTALL> ) {
     chomp;
     next if (m/unknown line:.*Flx/);
@@ -187,7 +187,7 @@ while ( <INSTALL> ) {
 close(INSTALL);
 
 #print "checking file conflicts\n";
-open(INSTALL, "perl findfileconflicts $pfile 2>&1|");
+open(INSTALL, "perl findfileconflicts $pfile 2>&1|") || die 'exec fileconflicts';
 while ( <INSTALL> ) {
     chomp;
     #print STDERR "$_\n";
