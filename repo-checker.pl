@@ -13,6 +13,7 @@ use Rpm;
 
 use strict;
 
+my $ret = 0;
 my $dir = $ARGV[0];
 my %toignore;
 foreach my $name (split(/,/, $ARGV[1])) {
@@ -21,14 +22,14 @@ foreach my $name (split(/,/, $ARGV[1])) {
 
 if (! -f "$dir/rpmlint.log") {
   print "Couldn't find a rpmlint.log in the build results. This is mandatory\n";
-  exit(1);
-}
-
-open(GREP, "grep 'W:.*invalid-lcense ' $dir/rpmlint.log |");
-while ( <GREP> ) {
-  print "Found rpmlint warning: ";
-  print $_;
-  exit(1);
+  $ret = 1;
+} else {
+  open(GREP, "grep 'W:.*invalid-lcense ' $dir/rpmlint.log |");
+  while ( <GREP> ) {
+    print "Found rpmlint warning: ";
+    print $_;
+    $ret = 1;
+  }
 }
 
 my %targets;
@@ -179,8 +180,8 @@ while ( <INSTALL> ) {
 	    last if (m/^can't install /);
 	    print "$_";
 	  }
-	  close(INSTALL);
-          exit(1);
+          $ret = 1;
+          last;
         }
     }
 }
@@ -194,10 +195,11 @@ while ( <INSTALL> ) {
     if ($_ =~ m/found conflict of (\S+) .* with (\S+) /) {
         if (defined $targets{$1} || defined $targets{$2}) {
           print "FC $1 $2\n";
-          exit(1);
+          $ret = 1;
+          last;
         }
     }
 }
 close(INSTALL);
 
-exit(0);
+exit($ret);

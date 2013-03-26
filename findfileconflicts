@@ -142,8 +142,9 @@ close(FL) || die("close failed\n");
 
 # connect dirs and add all dirs as files
 print "connecting ".@dirs." directories\n";
+my @implicit_conflicts;
 for (@dirs) {
-  next unless /^(.*\/)(.*?)$/;
+  next unless /^(.*\/)(.*?)\/$/;
   my $n = $dirs{$1};
   if (!defined $n) {
     $n = @dirs;
@@ -162,8 +163,61 @@ for (@dirs) {
     $have_dir = 1 if $modes_type[$m] == 040000;
   }
   next if $have_dir;
-  $filesc{$f} ||= [ $files{$f} ];
-  push @{$filesc{$f}}, "implicit_directory 0 0 noarch pkg/0";
+  push @implicit_conflicts, $f;
+}
+print "now ".@dirs." directories\n";
+
+# the old and fast way
+#
+#for my $f (@implicit_conflicts) {
+#  $filesc{$f} ||= [ $files{$f} ];
+#  push @{$filesc{$f}}, "implicit_directory 0 0 noarch pkg/0";
+#}
+
+if (@implicit_conflicts) {
+  print "have implicit conflicts, calculating dir owners\n";
+  my @pdirs;	# parent dirs
+  for (@dirs) {
+    next unless /^(.*\/)(.*?)\/$/;
+    $pdirs[$dirs{$_}] = $dirs{$1};
+  }
+  my %baddir;
+  for (@implicit_conflicts) {
+    my ($n, $x) = split('/', $_, 2);
+    $baddir{$dirs{"$dirs[$n]$x/"}} = $_;
+  }
+  my $done;
+  while (!$done) {
+    $done = 1;
+    my $i = -1;
+    for (@pdirs) {
+      $i++;
+      next unless defined $_;
+      next unless $baddir{$_} && !$baddir{$i};
+      $baddir{$i} ||= $baddir{$_};
+      undef $done;
+    }
+  }
+  undef @pdirs;
+  # this is not cheap, sorry
+  my %baddir_pkgs;
+  for my $ff (keys %files) {
+    my ($n, undef) = split('/', $ff, 2);
+    next unless $baddir{$n};
+    if (!$filesc{$ff}) {
+      my ($pkg, undef) = split('/', $files{$ff}, 2);
+      $baddir_pkgs{$baddir{$n}}->{"$pkg/0"} = 1;
+    } else {
+      for (@{$filesc{$ff} || []}) {
+        my ($pkg, undef) = split('/', $_, 2);
+        $baddir_pkgs{$baddir{$n}}->{"$pkg/0"} = 1;
+      }
+    }
+  }
+  for my $f (sort keys %baddir_pkgs) {
+    $filesc{$f} ||= [ $files{$f} ];
+    push @{$filesc{$f}}, sort keys %{$baddir_pkgs{$f}};
+  }
 }
 
 %files = ();	# free mem
@@ -250,10 +304,12 @@ for my $tc (sort keys %tocheck) {
 	  # no conflict if all dirs or all ghosts
 	  next if $modes_type[$m] == 040000 || $modes_ghost[$m] == 0100;
 	} else {
-	  my $m = (keys(%allm))[0];
 	  # don't report mode mismatches for files/symlinks that are not ghosts
-	  if (($modes_type[$m] != 0100000 && $modes_type[$m] != 0120000) || $modes_ghost[$m] == 0100) {
-	    $info = ' [mode mismatch: '.join(', ', map {beautify_mode($_)} @pp).']';
+	  for my $m (keys %allm) {
+	    if (($modes_type[$m] != 0100000 && $modes_type[$m] != 0120000) || $modes_ghost[$m] == 0100) {
+	      $info = ' [mode mismatch: '.join(', ', map {beautify_mode($_)} @pp).']';
+	      last;
+	    }
 	  }
 	}
 	# got one!
