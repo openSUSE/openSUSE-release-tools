@@ -24,8 +24,10 @@ my $pkg = '';
 my $fls = 0;
 my $prv = 0;
 my $con = 0;
+my $obs = 0;
 
 my %con;
+my %obs;
 my %whatprovides;
 
 die("Usage: findfileconflicts2 packages[.gz]\n") unless @ARGV == 1;
@@ -118,15 +120,28 @@ while(<FL>) {
     push @{$con{$pkg}}, $_;
     next;
   }
+  if ($obs) {
+    if ($_ eq '-Obs:') {
+      $obs= 0;
+      next;
+    }
+    s/ .*//;	# no version stuff;
+    push @{$obs{$pkg}}, $_;
+    next;
+  }
   if (/^=Pkg: (.*)/) {
     $pkg = $1;
     my $n = $pkg;
     $n =~ s/ .*//;
-    push @{$con{$pkg}}, $n;
+    push @{$obs{$pkg}}, $n;
     next;
   }
   if ($_ eq '+Con:') {
     $con = 1 if $pkg;
+    next;
+  }
+  if ($_ eq '+Obs:') {
+    $obs = 1 if $pkg;
     next;
   }
   if ($_ eq '+Prv:') {
@@ -266,6 +281,18 @@ for my $pkg (sort keys %con) {
   for my $c (@{$con{$pkg}}) {
     for my $p (@{$whatprovides{$c} || []}) {
       next if $p eq $pkg;
+      $conflicts{"$pkg\n$p"} = 1;
+      $conflicts{"$p\n$pkg"} = 1;
+    }
+  }
+}
+
+for my $pkg (sort keys %obs) {
+  next unless $pkgneeded{$pkg};
+  for my $c (@{$obs{$pkg}}) {
+    for my $p (@{$whatprovides{$c} || []}) {
+      next if $p eq $pkg;
+      next unless $p =~ /^\Q$c\E /;
       $conflicts{"$pkg\n$p"} = 1;
       $conflicts{"$p\n$pkg"} = 1;
     }
