@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 
+$| = 1;
 use strict;
 
 my %dirs;
@@ -204,18 +205,14 @@ if (@implicit_conflicts) {
   for my $ff (keys %files) {
     my ($n, undef) = split('/', $ff, 2);
     next unless $baddir{$n};
-    if (!$filesc{$ff}) {
-      my ($pkg, undef) = split('/', $files{$ff}, 2);
+    for (@{$filesc{$ff} || [ $files{$ff} ]}) {
+      my ($pkg, undef) = split('/', $_, 2);
       $baddir_pkgs{$baddir{$n}}->{"$pkg/0"} = 1;
-    } else {
-      for (@{$filesc{$ff} || []}) {
-        my ($pkg, undef) = split('/', $_, 2);
-        $baddir_pkgs{$baddir{$n}}->{"$pkg/0"} = 1;
-      }
     }
   }
-  for my $f (sort keys %baddir_pkgs) {
+  for my $f (@implicit_conflicts) {
     $filesc{$f} ||= [ $files{$f} ];
+    $baddir_pkgs{$f} ||= { "implicit_directory 0 0 noarch pkg/0" => 1 };
     push @{$filesc{$f}}, sort keys %{$baddir_pkgs{$f}};
   }
 }
@@ -228,13 +225,16 @@ for my $f (sort keys %filesc) {
   my $allm;
   my $allc = 1;
   my $pkgn;
+  my $pl;
   for my $pkg (@{$filesc{$f}}) {
-    my (undef, $m) = split('/', $pkg, 2);
-    die unless $pkg =~ /^([^ ]+) /;
+    my ($p, $m) = split('/', $pkg, 2);
+    die unless $p =~ /^([^ ]+) /;
     $allm = $m unless defined $allm;
     $allm = -1 if $allm != $m;
     $pkgn = $1 unless defined $pkgn;
     $allc = 0 if $pkgn ne $1;
+    $allc = 0 if $pl && $p eq $pl;
+    $pl = $p;
   }
   if ($allc) {
     delete $filesc{$f};
@@ -265,6 +265,7 @@ for my $pkg (sort keys %con) {
   next unless $pkgneeded{$pkg};
   for my $c (@{$con{$pkg}}) {
     for my $p (@{$whatprovides{$c} || []}) {
+      next if $p eq $pkg;
       $conflicts{"$pkg\n$p"} = 1;
       $conflicts{"$p\n$pkg"} = 1;
     }
@@ -277,6 +278,7 @@ for my $pkg (sort keys %pkgneeded) {
   my $n = $1;
   for my $p (@{$whatprovides{$n} || []}) {
     next unless $p =~ /^\Q$n\E .* i[56]86$/;
+    next if $p eq $pkg;
     $conflicts{"$pkg\n$p"} = 1;
     $conflicts{"$p\n$pkg"} = 1;
   }

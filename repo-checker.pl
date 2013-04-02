@@ -188,16 +188,22 @@ while ( <INSTALL> ) {
 close(INSTALL);
 
 #print "checking file conflicts\n";
-open(INSTALL, "perl findfileconflicts $pfile 2>&1|") || die 'exec fileconflicts';
+my $cmd = sprintf("perl %s/findfileconflicts $pfile", dirname($0));
+open(INSTALL, "$cmd |") || die 'exec fileconflicts';
+my $inc = 0;
 while ( <INSTALL> ) {
     chomp;
     #print STDERR "$_\n";
-    if ($_ =~ m/found conflict of (\S+) .* with (\S+) /) {
+    if ($_ =~ m/found conflict of (.*)-[^-]*-[^-]* with (.*)-[^-]*-[^-]*:/) {
+        $inc = 0;
+	#print STDERR "F $1 $2\n";
         if (defined $targets{$1} || defined $targets{$2}) {
-          print "FC $1 $2\n";
+	  $inc = 1;
           $ret = 1;
-          last;
         }
+    }
+    if ($inc) {
+	print "$_\n";
     }
 }
 close(INSTALL);
