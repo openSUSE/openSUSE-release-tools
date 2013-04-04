@@ -24,7 +24,7 @@ if (! -f "$dir/rpmlint.log") {
   print "Couldn't find a rpmlint.log in the build results. This is mandatory\n";
   $ret = 1;
 } else {
-  open(GREP, "grep 'W:.*invalid-lcense ' $dir/rpmlint.log |");
+  open(GREP, "grep 'W:.*invalid-license ' $dir/rpmlint.log |");
   while ( <GREP> ) {
     print "Found rpmlint warning: ";
     print $_;
