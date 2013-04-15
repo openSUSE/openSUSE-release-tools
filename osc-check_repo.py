@@ -247,7 +247,8 @@ def _check_repo_one_request(self, rq, cmd, opts):
             shutil.rmtree(opts.destdir)
 
 	    if ret:
-                print ret, "OUT", output
+                print output
+                self._check_repo_change_review_state(opts, id, 'new', message=output)
                 continue
 
             msg="Builds for repo %s" % goodrepo.attrib['name']

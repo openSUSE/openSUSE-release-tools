@@ -29,7 +29,7 @@ sub fetch_user_infos($)
     my $ua = LWP::UserAgent->new;
     $ua->timeout(15);
     $ua->default_header("Accept" => "application/json");
-    my $mywork = $ua->get("https://build.opensuse.org/stage/home/my_work?user=$user");
+    my $mywork = $ua->get("https://build.opensuse.org/home/requests?user=$user");
     unless ($mywork->is_success) { die $mywork->status_line; }
 
     $mywork = from_json( $mywork->decoded_content, { utf8 => 1 });
