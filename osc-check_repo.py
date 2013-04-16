@@ -21,22 +21,22 @@ def _check_repo_change_review_state(self, opts, id, newstate, message='', supers
     if supersed: query['superseded_by'] = supersed
 #    if message: query['comment'] = message
     u = makeurl(opts.apiurl, ['request', str(id)], query=query)
-    print u
+    print u, message
     return
     f = http_POST(u, data=message)
     root = ET.parse(f).getroot()
     return root.attrib['code']
 
 def _check_repo_find_submit_request(self, opts, project, package):
-	xpath = "(action/target/@project='%s' and action/target/@package='%s' and action/@type='submit' and (state/@name='new' or state/@name='review' or state/@name='accepted'))" % (project, package)
-        url = makeurl(opts.apiurl, ['search','request'], 'match=%s' % quote_plus(xpath))
-        f = http_GET(url)
-        collection = ET.parse(f).getroot()
-        for root in collection.findall('request'):
-           r = Request()
-           r.read(root)
-	   return r.reqid
-	return None
+    xpath = "(action/target/@project='%s' and action/target/@package='%s' and action/@type='submit' and (state/@name='new' or state/@name='review' or state/@name='accepted'))" % (project, package)
+    url = makeurl(opts.apiurl, ['search','request'], 'match=%s' % quote_plus(xpath))
+    f = http_GET(url)
+    collection = ET.parse(f).getroot()
+    for root in collection.findall('request'):
+        r = Request()
+        r.read(root)
+        return r.reqid
+    return None
         
 def _check_repo(self, repo):
     allfine = True
@@ -68,26 +68,32 @@ def _check_repo(self, repo):
 
     return [allfine, founddisabled, foundbuilding, foundfailed, foundoutdated, missings.keys(), found64]
 
+
+
 def _check_repo_one_request(self, rq, cmd, opts):
-    if (opts.verbose):
+
+    class CheckRepoPackage:
+        def __repr__(self):
+            return "[%s/%s]" % (self.sproject, self.spackage)
+
+    if opts.verbose:
         ET.dump(rq)
         print(opts)
     id = int(rq.get('id'))
-    act_id = 0
     approved_actions = 0
     actions = rq.findall('action')
     if len(actions) != 1:
        msg = "only one action per request is supported - create a group instead: https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow"
        print "declined " + msg
        self._check_repo_change_review_state(opts, id, 'declined', message=msg)
-       return
+       return []
  
     act = actions[0]
     _type = act.get('type')
     if _type != "submit":
         self._check_repo_change_review_state(opts, id, 'accepted',
                                              message="Unchecked request type %s" % _type)
-        return
+        return []
 
     pkg = act.find('source').get('package')
     prj = act.find('source').get('project')
@@ -95,34 +101,88 @@ def _check_repo_one_request(self, rq, cmd, opts):
     tprj = act.find('target').get('project')
     tpkg = act.find('target').get('package')
 
-    src = { 'package': pkg, 'project': prj, 'rev':rev, 'error': None }
-    e = []
-    if not pkg:
-        e.append('no source/package in request %d, action %d' % (id, act_id))
-    if not prj:
-        e.append('no source/project in request %d, action %d' % (id, act_id))
-    if len(e): src.error = '; '.join(e)
-
-    e = []
-    if not tpkg:
-        e.append('no target/package in request %d, action %d; ' % (id, act_id))
-    if not prj:
-        e.append('no target/project in request %d, action %d; ' % (id, act_id))
-    # it is no error, if the target package dies not exist
-
     subm_id = "SUBMIT(%d):" % id
     print "\n%s %s/%s -> %s/%s" % (subm_id,
                                    prj,  pkg,
                                    tprj, tpkg)
+
+    group = id
     try:
-        url = makeurl(opts.apiurl, ['status', "bsrequest?id=%d" % id])
+        url = makeurl(opts.apiurl, ["search", "request", "id?match=action/grouped/@id=%s" % id])
+        root = ET.parse(http_GET(url)).getroot()
+        for req in root.findall('request'):
+            group = req.attrib['id']
+            break
+    except urllib2.HTTPError:
+        pass
+
+    packs = []
+    p = CheckRepoPackage()
+    p.spackage = pkg
+    p.sproject = prj
+    p.tpackage = tpkg
+    p.tproject = tprj
+    p.group = group
+    p.request = id
+    try:
+        url = makeurl(opts.apiurl, ["source", prj, pkg, "?expand=1&rev=%s" % rev])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError:
         print "error"
-        return
+        return []
+    #print ET.tostring(root)
+    p.rev = root.attrib['srcmd5']
+    specs = []
+    for entry in root.findall('entry'):
+        if not entry.attrib['name'].endswith('.spec'): continue
+        name = entry.attrib['name'][:-5]
+        specs.append(name)
+    # source checker validated it exists
+    specs.remove(tpkg)
+    packs.append(p)
+    for spec in specs:
+        lprj = ''
+        lpkg = ''
+        lmd5 = ''
+        try:
+            url = makeurl(opts.apiurl, ["source", prj, spec, "?expand=1"])
+            root = ET.parse(http_GET(url)).getroot()
+            link = root.find('linkinfo')
+            lprj = link.attrib['project']
+            lpkg = link.attrib['package']
+            lmd5 = link.attrib['srcmd5']
+        except urllib2.HTTPError:
+            pass # leave lprj
+        if lprj != prj or lpkg != pkg:
+            msg = "%s/%s should _link to %s/%s" % (prj,spec,prj,pkg)
+            self._check_repo_change_review_state(opts, id, 'declined', message=msg)
+            return []
+        if lmd5 != p.rev:
+            msg = "%s/%s is a link but has a different md5sum than %s?" % (prj,spec,pkg)
+            self._check_repo_change_review_state(opts, id, 'new', message=msg)
+            return []
+
+        sp = CheckRepoPackage()
+        sp.spackage = spec
+        sp.sproject = prj
+        sp.tpackage = spec
+        sp.tproject = tprj
+        sp.group = p.group
+        sp.request = id
+        packs.append(sp)
+        sp.rev = root.attrib['srcmd5']
+    return packs
+
+def _check_repo_buildsuccess(self, p, opts):
+    try:
+        url = makeurl(opts.apiurl, ['build', p.sproject, "_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s" % (p.spackage,p.tproject,p.rev)])
+        root = ET.parse(http_GET(url)).getroot()
+    except urllib2.HTTPError:
+        print "error"
+        return False
     if root.attrib.has_key('code'):
         print ET.tostring(root)
-        return
+        return False
     result = False
     goodrepo = None
     missings = {}
@@ -151,49 +211,52 @@ def _check_repo_one_request(self, rq, cmd, opts):
         if r_found64:
             found64 = r_found64
 
-    if result == False:
-        if foundoutdated:
-            msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
-            print "declined " + msg
-            self._check_repo_change_review_state(opts, id, 'declined', message=msg)
-            return
-        if alldisabled:
-            msg = "the package is disabled or does not build against factory. Please fix and resubmit"
-            print "declined " + msg
-            self._check_repo_change_review_state(opts, id, 'declined', message=msg)
-            return
-        if len(missings.keys()):
-            smissing = []
-            missings.keys().sort()
-            for package in missings:
-                request = self._check_repo_find_submit_request(opts, tprj, package)
-                if request:
-                   package = "%s(rq%s)" % (package, request) 
-                smissing.append(package)
+    if result: 
+        return True
 
-            msg = "please make sure to wait before these depencencies are in {0}: {1}".format(tprj, ', '.join(smissing))
-            self._check_repo_change_review_state(opts, id, 'new', message=msg)
-            print "updated " + msg
-            return
-        if foundbuilding:	
-            msg = "the package is still building for repository {0}".format(foundbuilding)
-            self._check_repo_change_review_state(opts, id, 'new', message=msg)
-            print "updated " + msg
-            return
-        if foundfailed:
-            msg = "the package failed to build in repository {0} - not accepting".format(foundfailed)
-            self._check_repo_change_review_state(opts, id, 'new', message=msg)
-            print "updated " + msg
-            return
-        if not found64:
-            msg = "Missing x86_64 in the repo list"
-            self._check_repo_change_review_state(opts, id, 'new', message=msg)
-            print "updated " + msg
-            return
+    if foundoutdated:
+        msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
+        print "declined " + msg
+        self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+        return False
+    if alldisabled:
+        msg = "the package is disabled or does not build against factory. Please fix and resubmit"
+        print "declined " + msg
+        self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+        return False
+    if len(missings.keys()):
+        smissing = []
+        missings.keys().sort()
+        for package in missings:
+            request = self._check_repo_find_submit_request(opts, tprj, package)
+            if request:
+               package = "%s(rq%s)" % (package, request) 
+            smissing.append(package)
 
-        print ET.tostring(root)
-        return
+        msg = "please make sure to wait before these depencencies are in {0}: {1}".format(tprj, ', '.join(smissing))
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        print "updated " + msg
+        return False
+    if foundbuilding:	
+        msg = "the package is still building for repository {0}".format(foundbuilding)
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        print "updated " + msg
+        return False
+    if foundfailed:
+        msg = "the package failed to build in repository {0} - not accepting".format(foundfailed)
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        print "updated " + msg
+        return False
+    if not found64:
+        msg = "Missing x86_64 in the repo list"
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        print "updated " + msg
+        return False
 
+    print ET.tostring(root)
+    return True
+
+def _check_repo_download(self, p, opts):
     opts.destdir = os.path.expanduser("~/co/%s" % str(id))
     opts.sources = False
     opts.debug = False
@@ -265,6 +328,13 @@ def _check_repo_one_request(self, rq, cmd, opts):
         print "unknown command: %s" % cmd
 
 
+def _check_repo_group(self, reqs, opts):
+    print "check group", reqs
+    for p in reqs:
+        if not self._check_repo_buildsuccess(p, opts):
+            print "failed, go out"
+            return
+
 def do_check_repo(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
 
@@ -296,6 +366,7 @@ def do_check_repo(self, subcmd, opts, *args):
         if (re.match('\d+', a)):
             ids[a] = 1
 
+    packs = []
     if (not len(ids)):
         # xpath query, using the -m, -r, -s options
         where = "@by_user='factory-repo-checker'+and+@state='new'"
@@ -305,7 +376,7 @@ def do_check_repo(self, subcmd, opts, *args):
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
             tprj = rq.find('action/target').get('project')
-            self._check_repo_one_request(rq, args[0], opts)
+            packs.extend(self._check_repo_one_request(rq, args[0], opts))
     else:
         # we have a list, use them.
         for id in ids.keys():
@@ -313,7 +384,16 @@ def do_check_repo(self, subcmd, opts, *args):
             f = http_GET(url)
             xml = ET.parse(f)
             root = xml.getroot()
-            self._check_repo_one_request(root, args[0], opts)
+            packs.extend(self._check_repo_one_request(root, args[0], opts))
+
+    groups = {}
+    for p in packs:
+        a = groups.get(p.group, [])
+        a.append(p)
+        groups[p.group] = a
+
+    for reqs in groups.values():
+        self._check_repo_group(reqs, opts)
 
 #Local Variables:
 #mode: python
