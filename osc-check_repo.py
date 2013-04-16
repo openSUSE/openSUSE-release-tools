@@ -70,7 +70,7 @@ def _check_repo(self, repo):
 
 
 
-def _check_repo_one_request(self, rq, cmd, opts):
+def _check_repo_one_request(self, rq, opts):
 
     class CheckRepoPackage:
         def __repr__(self):
@@ -184,7 +184,7 @@ def _check_repo_buildsuccess(self, p, opts):
         print ET.tostring(root)
         return False
     result = False
-    goodrepo = None
+    p.goodrepo = None
     missings = {}
     alldisabled = True
     foundbuilding = None
@@ -199,7 +199,7 @@ def _check_repo_buildsuccess(self, p, opts):
             alldisabled = False
         if isgood:
             if len(missings) == 0 or os.environ.has_key("IGNORE_MISSINGS"):
-                goodrepo = repo
+                p.goodrepo = repo.attrib['name']
                 result = True
                 missings = {}
         if r_foundbuilding:
@@ -253,19 +253,18 @@ def _check_repo_buildsuccess(self, p, opts):
         print "updated " + msg
         return False
 
-    print ET.tostring(root)
     return True
 
 def _check_repo_download(self, p, opts):
-    opts.destdir = os.path.expanduser("~/co/%s" % str(id))
+    p.destdir = opts.destdir = os.path.expanduser("~/co/%s/%s" % (str(p.group), p.tpackage))
     opts.sources = False
     opts.debug = False
     opts.quiet = True
     # we can assume x86_64 is there
-    self.do_getbinaries(None, opts, prj, pkg, goodrepo.attrib['name'], 'x86_64')
+    self.do_getbinaries(None, opts, p.sproject, p.spackage, p.goodrepo, 'x86_64')
 
     # now fetch -32bit packs
-    url = makeurl(opts.apiurl, ['build', prj, goodrepo.attrib['name'], 'i586', pkg])
+    url = makeurl(opts.apiurl, ['build', p.sproject, p.goodrepo, 'i586', p.spackage])
     try:
       f = http_GET(url)
       binaries = ET.parse(f).getroot()
@@ -275,12 +274,13 @@ def _check_repo_download(self, p, opts):
         if not result: continue
         if result.group(4) != 'x86_64': continue
         get_binary_file(opts.apiurl,
-                        prj, goodrepo.attrib['name'], 'i586', fn, package = pkg, target_filename = os.path.join(opts.destdir, fn))
+                        prj, p.goodrepo, 'i586', fn, 
+                        package = p.spackage, target_filename = os.path.join(opts.destdir, fn))
     except urllib2.HTTPError, err:
       print err
       pass
 
-    url = makeurl(opts.apiurl, ['build',tprj, 'standard', 'x86_64', tpkg])
+    url = makeurl(opts.apiurl, ['build', p.tproject, 'standard', 'x86_64', p.tpackage])
     toignore = []
     try:
       f = http_GET(url)
@@ -291,9 +291,9 @@ def _check_repo_download(self, p, opts):
         if not result: continue
         toignore.append(result.group(1))
     except urllib2.HTTPError, err:
-       print "new package?"
+       pass
     # now fetch -32bit pack list
-    url = makeurl(opts.apiurl, ['build',tprj, 'standard', 'i586', tpkg])
+    url = makeurl(opts.apiurl, ['build', p.tproject, 'standard', 'i586', p.tpackage])
     try:
       f = http_GET(url)
       binaries = ET.parse(f).getroot()
@@ -304,13 +304,11 @@ def _check_repo_download(self, p, opts):
         if result.group(4) != 'x86_64': continue
         toignore.append(result.group(1))
     except urllib2.HTTPError, err:
-       print "new package?"
+       pass
+    return toignore
 
-    civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (opts.destdir, ','.join(toignore))
-    p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
-    ret = os.waitpid(p.pid, 0)[1]
-    checked = p.stdout.readlines()
-    output = '  '.join(checked).translate(None, '\033')
+def _check_repo_repo_checker(self, p, opts):
+
     shutil.rmtree(opts.destdir)
 
     if ret:
@@ -318,22 +316,28 @@ def _check_repo_download(self, p, opts):
         self._check_repo_change_review_state(opts, id, 'new', message=output)
         return
 
-    msg="Builds for repo %s" % goodrepo.attrib['name']
+    msg="Builds for repo %s" % p.goodrepo
 
     self._check_repo_change_review_state(opts, id, 'accepted', message=msg)
 
-    if cmd == "list":
-        pass
-    else:
-        print "unknown command: %s" % cmd
 
-
-def _check_repo_group(self, reqs, opts):
+def _check_repo_group(self, id, reqs, opts):
     print "check group", reqs
     for p in reqs:
         if not self._check_repo_buildsuccess(p, opts):
-            print "failed, go out"
             return
+    # all succeeded
+    toignore = []
+    for p in reqs:
+        toignore.extend(self._check_repo_download(p, opts))
+
+    civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (opts.destdir, ','.join(toignore))
+    print civs
+    p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
+    ret = os.waitpid(p.pid, 0)[1]
+    checked = p.stdout.readlines()
+    output = '  '.join(checked).translate(None, '\033')
+    print output
 
 def do_check_repo(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
@@ -376,7 +380,7 @@ def do_check_repo(self, subcmd, opts, *args):
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
             tprj = rq.find('action/target').get('project')
-            packs.extend(self._check_repo_one_request(rq, args[0], opts))
+            packs.extend(self._check_repo_one_request(rq, opts))
     else:
         # we have a list, use them.
         for id in ids.keys():
@@ -384,7 +388,7 @@ def do_check_repo(self, subcmd, opts, *args):
             f = http_GET(url)
             xml = ET.parse(f)
             root = xml.getroot()
-            packs.extend(self._check_repo_one_request(root, args[0], opts))
+            packs.extend(self._check_repo_one_request(root, opts))
 
     groups = {}
     for p in packs:
@@ -392,8 +396,8 @@ def do_check_repo(self, subcmd, opts, *args):
         a.append(p)
         groups[p.group] = a
 
-    for reqs in groups.values():
-        self._check_repo_group(reqs, opts)
+    for id, reqs in groups.items():
+        self._check_repo_group(id, reqs, opts)
 
 #Local Variables:
 #mode: python
