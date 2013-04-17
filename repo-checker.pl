@@ -20,15 +20,17 @@ foreach my $name (split(/,/, $ARGV[1])) {
    $toignore{$name} = 1;
 }
 
-if (! -f "$dir/rpmlint.log") {
-  print "Couldn't find a rpmlint.log in the build results. This is mandatory\n";
-  $ret = 1;
-} else {
-  open(GREP, "grep 'W:.*invalid-license ' $dir/rpmlint.log |");
-  while ( <GREP> ) {
-    print "Found rpmlint warning: ";
-    print $_;
+for my $pdir (glob("$dir/*")) {
+  if (! -f "$pdir/rpmlint.log") {
+    print "Couldn't find a rpmlint.log in the build results in $pdir. This is mandatory\n";
     $ret = 1;
+  } else {
+    open(GREP, "grep 'W:.*invalid-license ' $pdir/rpmlint.log |");
+    while ( <GREP> ) {
+      print "Found rpmlint warning: ";
+      print $_;
+      $ret = 1;
+    }
   }
 }
 
@@ -159,7 +161,7 @@ foreach my $package (@rpms) {
     write_package(1, $package);
 }
 
-@rpms = glob("$dir/*.rpm");
+@rpms = glob("$dir/*/*.rpm");
 foreach my $package (@rpms) {
     write_package(0, $package);
 }
