@@ -56,7 +56,7 @@ def _checker_accept_request(self, opts, id, msg):
     code = 100
     query = { 'cmd': 'addreview', 'by_group':'opensuse-review-team' }
     url = makeurl(opts.apiurl, ['request', str(id)], query)
-    if opts.verbose: print url
+    if opts.verbose: print(url)
     try:
         r = http_POST(url, data="Please review sources")
     except urllib2.HTTPError, err:
@@ -64,7 +64,7 @@ def _checker_accept_request(self, opts, id, msg):
     code = ET.parse(r).getroot().attrib['code']
     if code == 100 or code == 'ok':
          self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
-         print "accepted " + msg
+         print("accepted " + msg)
     # now gets risky
     query = { 'cmd': 'addreview', 'by_user':'factory-repo-checker' }
     url = makeurl(opts.apiurl, ['request', str(id)], query)
@@ -85,7 +85,7 @@ def _checker_one_request(self, rq, cmd, opts):
     if len(actions) > 1:
        msg = "2 actions in one SR is not supported - https://github.com/coolo/factory-auto/fork_select"
        self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-       print "declined " + msg
+       print("declined " + msg)
        return
  
     for act in actions:
@@ -114,9 +114,9 @@ def _checker_one_request(self, rq, cmd, opts):
             # it is no error, if the target package dies not exist
 
             subm_id = "SUBMIT(%d):" % id
-            print "\n%s %s/%s -> %s/%s" % (subm_id,
+            print ("\n%s %s/%s -> %s/%s" % (subm_id,
                 prj,  pkg,
-                tprj, tpkg)
+                tprj, tpkg))
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
             #self._devel_projects['X11:QtDesktop/'] = 'rabbitmq'
 	    #self._devel_projects['devel:languages:erlang/'] = 'ruby19'
@@ -131,17 +131,17 @@ def _checker_one_request(self, rq, cmd, opts):
             if dprj and (dprj != prj or dpkg != pkg) and (not os.environ.has_key("IGNORE_DEVEL_PROJECTS")):
                 msg = "'%s/%s' is the devel package, submission is from '%s'" % (dprj, dpkg, prj)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-                print "declined " + msg
+                print("declined " + msg)
                 continue
             if not dprj and not self._devel_projects.has_key(prj + "/"):
                 msg = "'%s' is not a valid devel project of %s - please pick one of the existent" % (prj, tprj)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-                print "declined " + msg
+                print("declined " + msg)
                 continue
 
             dir = os.path.expanduser("~/co/%s" % str(id))
             if os.path.exists(dir):
-                print "%s already exists" % dir
+                print("%s already exists" % dir)
                 continue
             os.mkdir(dir)
             os.chdir(dir)
@@ -151,7 +151,7 @@ def _checker_one_request(self, rq, cmd, opts):
                 self._checker_prepare_dir(tpkg)
                 os.rename(tpkg, "_old")
             except urllib2.HTTPError:
-		print "failed to checkout %s/%s" % (tprj, tpkg)
+		print("failed to checkout %s/%s" % (tprj, tpkg))
                 pass
             checkout_package(opts.apiurl, prj, pkg, revision=rev,
                              pathname=dir, server_service_files=True, expand_link=True)
@@ -174,7 +174,7 @@ def _checker_one_request(self, rq, cmd, opts):
             if ret != 0:
                 msg = "Output of check script:\n" + output
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
-                print "declined " + msg
+                print("declined " + msg)
 		shutil.rmtree(dir)
                 continue
 
@@ -205,7 +205,7 @@ def _checker_check_devel_package(self, opts, project, package):
                 # for new packages to check
                 self._devel_projects[dprj + "/"] = 1
             elif not name.startswith("_product"):
-                print "NO DEVEL IN", name
+                print("NO DEVEL IN", name)
             # mark we tried
             self._devel_projects[project] = 1
     try:

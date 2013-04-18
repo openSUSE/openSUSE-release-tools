@@ -37,10 +37,32 @@ def _check_repo_find_submit_request(self, opts, project, package):
     for root in collection.findall('request'):
         r = Request()
         r.read(root)
-        return r.reqid
+        return int(r.reqid)
     return None
         
-def _check_repo(self, repo):
+def _check_repo_fetch_group(self, opts, group):
+    if opts.groups.get(group): return
+    u = makeurl(opts.apiurl, ['request', str(group)])
+    f = http_GET(u)
+    root = ET.parse(f).getroot()
+    a = []
+    for req in root.find('action').findall('grouped'):
+      a.append(int(req.attrib['id']))
+    opts.groups[group] = a
+
+def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
+    try:
+        url = makeurl(opts.apiurl, ["build", prj, repo, arch, pkg])
+        root = ET.parse(http_GET(url)).getroot()
+    except urllib2.HTTPError:
+        print "error"
+        return False
+    for binary in root.findall('binary'):
+        # if there are binaries, we're out
+        return False
+    return True
+
+def _check_repo(self, project, repo, opts):
     allfine = True
     founddisabled = False
     foundbuilding = None
@@ -51,7 +73,8 @@ def _check_repo(self, repo):
     for arch in repo.findall('arch'):
         if arch.attrib.has_key('missing'):
             for pkg in arch.attrib['missing'].split(','):
-                missings[pkg] = 1
+                if not self._check_repo_avoid_wrong_friends(project, repo.attrib['name'], arch.attrib['arch'], pkg, opts):
+                    missings[pkg] = 1
         if not (arch.attrib['result'] in ['succeeded', 'excluded']):
             allfine = False
         if arch.attrib['result'] == 'disabled':
@@ -71,16 +94,15 @@ def _check_repo(self, repo):
     return [allfine, founddisabled, foundbuilding, foundfailed, foundoutdated, missings.keys(), found64]
 
 
-
 def _check_repo_one_request(self, rq, opts):
 
     class CheckRepoPackage:
         def __repr__(self):
-            return "[%s/%s]" % (self.sproject, self.spackage)
+            return "[%d:%s/%s]" % (int(self.request),self.sproject, self.spackage)
 
-    if opts.verbose:
-        ET.dump(rq)
-        print(opts)
+	def __init__(self):
+	    self.updated = False
+
     id = int(rq.get('id'))
     approved_actions = 0
     actions = rq.findall('action')
@@ -114,6 +136,7 @@ def _check_repo_one_request(self, rq, opts):
         root = ET.parse(http_GET(url)).getroot()
         for req in root.findall('request'):
             group = req.attrib['id']
+	    self._check_repo_fetch_group(opts, group)
             break
     except urllib2.HTTPError:
         pass
@@ -194,9 +217,14 @@ def _check_repo_buildsuccess(self, p, opts):
     foundoutdated = None
     found64 = True
     for repo in root.findall('repository'):
-        [isgood, founddisabled, r_foundbuilding, r_foundfailed, r_foundoutdated, r_missings, r_found64] = self._check_repo(repo)
-        for rm in r_missings:
-            missings[rm] = 1
+        [isgood, founddisabled, r_foundbuilding, r_foundfailed, r_foundoutdated, r_missings, r_found64] = self._check_repo(p.sproject, repo, opts)
+        for pkg in r_missings:
+            request = self._check_repo_find_submit_request(opts, p.tproject, pkg)
+            if request:
+                greqs = opts.groups.get(p.group, [])
+                if request in greqs: continue
+                pkg = "%s(rq%s)" % (pkg, request) 
+            missings[pkg] = 1
         if not founddisabled:
             alldisabled = False
         if isgood:
@@ -231,11 +259,7 @@ def _check_repo_buildsuccess(self, p, opts):
         missings.keys().sort()
         print missings
         for package in missings:
-            request = self._check_repo_find_submit_request(opts, p.tproject, package)
-            if request:
-               package = "%s(rq%s)" % (package, request) 
             smissing.append(package)
-
         msg = "please make sure to wait before these depencencies are in {0}: {1}".format(p.tproject, ', '.join(smissing))
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         print "updated " + msg
@@ -322,16 +346,29 @@ def _check_repo_group(self, id, reqs, opts):
     # all succeeded
     toignore = []
     destdir = ''
+    fetched = dict()
+    for r in opts.groups.get(id, []):
+      fetched[r] = 0
+    goodrepo = ''
     for p in reqs:
-        toignore.extend(self._check_repo_download(p, opts))
-        destdir = p.groupdir
+      toignore.extend(self._check_repo_download(p, opts))
+      fetched[p.request] = 1
+      destdir = p.groupdir
+      goodrepo = p.goodrepo
+    packs = []
+    for req, f in fetched.items():
+      if f: continue 
+      packs.extend(self._check_repo_fetch_request(req, opts))
+    for p in packs:
+      p.goodrepo = goodrepo
+      p.updated = True
+      self._check_repo_download(p, opts)
 
     civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (destdir, ','.join(toignore))
     p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
     ret = os.waitpid(p.pid, 0)[1]
     checked = p.stdout.readlines()
     output = '  '.join(checked).translate(None, '\033')
-    shutil.rmtree(destdir)
     
     updated = dict()
 
@@ -339,15 +376,26 @@ def _check_repo_group(self, id, reqs, opts):
         print output, set(map(lambda x: x.request, reqs))
 
         for p in reqs:
-            if updated.get(p.request, False): continue
+            if updated.get(p.request, False) or p.updated: continue
             self._check_repo_change_review_state(opts, p.request, 'new', message=output)
             updated[p.request] = 1
+	    p.updated = True
         return
     for p in reqs:
-        if updated.get(p.request, False): continue
+        if updated.get(p.request, False) or p.updated: continue
         msg="Builds for repo %s" % p.goodrepo
         self._check_repo_change_review_state(opts, p.request, 'accepted', message=msg)
         updated[p.request] = 1
+	p.updated = True
+    shutil.rmtree(destdir)
+
+def _check_repo_fetch_request(self, id, opts):
+  url = makeurl(opts.apiurl, ['request', str(id)])
+  f = http_GET(url)
+  xml = ET.parse(f)
+  root = xml.getroot()
+  return self._check_repo_one_request(root, opts)
+
 
 def do_check_repo(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
@@ -390,16 +438,11 @@ def do_check_repo(self, subcmd, opts, *args):
         f = http_GET(url)
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
-            tprj = rq.find('action/target').get('project')
             packs.extend(self._check_repo_one_request(rq, opts))
     else:
         # we have a list, use them.
         for id in ids.keys():
-            url = makeurl(opts.apiurl, ['request', id])
-            f = http_GET(url)
-            xml = ET.parse(f)
-            root = xml.getroot()
-            packs.extend(self._check_repo_one_request(root, opts))
+	    packs.extend(self._check_repo_fetch_request(id, opts))
 
     groups = {}
     for p in packs:

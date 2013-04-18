@@ -23,7 +23,12 @@ foreach my $name (split(/,/, $ARGV[1])) {
 for my $pdir (glob("$dir/*")) {
   if (! -f "$pdir/rpmlint.log") {
     print "Couldn't find a rpmlint.log in the build results in $pdir. This is mandatory\n";
-    $ret = 1;
+    my $name = basename($pdir);
+    if ($name eq "rpm" || $name eq "rpm-python" || $name eq "popt") {
+	print "ignoring - whitelist\n";
+    } else {
+        $ret = 1;
+    }
   } else {
     open(GREP, "grep 'W:.*invalid-license ' $pdir/rpmlint.log |");
     while ( <GREP> ) {

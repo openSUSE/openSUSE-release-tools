@@ -24,7 +24,7 @@ def _checker_check_dups(self, project, opts):
             package = target.attrib['package']
             if rqs.has_key(type + package):
                 [oldid, oldsource] = rqs[type + package]
-		print oldid, id
+                print(oldid, id)
                 assert oldid < id
                 if source != None and oldsource != None:
                     if (source.attrib['project'] == oldsource.attrib['project'] and
@@ -32,7 +32,7 @@ def _checker_check_dups(self, project, opts):
                         change_request_state(opts.apiurl, str(oldid), 'superseded',
                                      'superseded by %s' % id, id)
                         continue
-                print "DUPS found:", id, oldid
+                print("DUPS found:", id, oldid)
             rqs[type + package] = [id, source]
 
 
