@@ -245,19 +245,18 @@ def _check_repo_buildsuccess(self, p, opts):
         return True
 
     if foundoutdated:
-        msg = "the package sources were changed after submissions and the old sources never built. Please resubmit"
+        msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % p.spackage
         print "declined " + msg
-        self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         return False
     if alldisabled:
-        msg = "the package is disabled or does not build against factory. Please fix and resubmit"
+        msg = "%s is disabled or does not build against factory. Please fix and resubmit" % p.spackage
         print "declined " + msg
         self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
         return False
     if len(missings.keys()):
         smissing = []
         missings.keys().sort()
-        print missings
         for package in missings:
             smissing.append(package)
         msg = "please make sure to wait before these depencencies are in {0}: {1}".format(p.tproject, ', '.join(smissing))
@@ -265,12 +264,12 @@ def _check_repo_buildsuccess(self, p, opts):
         print "updated " + msg
         return False
     if foundbuilding:	
-        msg = "the package is still building for repository {0}".format(foundbuilding)
+        msg = "{1} is still building for repository {0}".format(foundbuilding, p.spackage)
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         print "updated " + msg
         return False
     if foundfailed:
-        msg = "the package failed to build in repository {0} - not accepting".format(foundfailed)
+        msg = "{1} failed to build in repository {0} - not accepting".format(foundfailed, p.spackage)
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         print "updated " + msg
         return False
@@ -339,7 +338,7 @@ def _check_repo_download(self, p, opts):
     return toignore
 
 def _check_repo_group(self, id, reqs, opts):
-    print "check group", reqs
+    print "\ncheck group", reqs
     for p in reqs:
         if not self._check_repo_buildsuccess(p, opts):
             return
@@ -362,9 +361,11 @@ def _check_repo_group(self, id, reqs, opts):
     for p in packs:
       p.goodrepo = goodrepo
       p.updated = True
-      self._check_repo_download(p, opts)
+      toignore.extend(self._check_repo_download(p, opts))
 
     civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (destdir, ','.join(toignore))
+    #print civs
+    #exit(1)
     p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
     ret = os.waitpid(p.pid, 0)[1]
     checked = p.stdout.readlines()
