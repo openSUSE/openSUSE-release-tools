@@ -139,7 +139,10 @@ sub write_package($$)
   $out .= "-Con:\n";
   $out .= "+Req:\n";
   foreach my $prv (@{$qq{1049} || []}) {
-    $out .= "$prv\n" unless $prv =~ m/^rpmlib/;
+    next if ($prv =~ m/^rpmlib/);
+    next if ($name eq "libqmmp0-plugin-mplayer" && $prv eq "/usr/bin/mplayer");
+    next if ($name eq "systemd-mini" && $prv eq "this-is-only-for-build-envs");
+    $out .= "$prv\n";
   }
   $out .= "-Req:\n";
   $out .= "+Obs:\n";

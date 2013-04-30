@@ -21,9 +21,13 @@ def _check_repo_change_review_state(self, opts, id, newstate, message='', supers
     if supersed: query['superseded_by'] = supersed
 #    if message: query['comment'] = message
     u = makeurl(opts.apiurl, ['request', str(id)], query=query)
-    f = http_POST(u, data=message)
-    root = ET.parse(f).getroot()
-    return root.attrib['code']
+    try:
+      f = http_POST(u, data=message)
+      root = ET.parse(f).getroot()
+      return root.attrib['code']
+    except urllib2.HTTPError:
+      print "error", u
+      return 404
 
 def _check_repo_find_submit_request(self, opts, project, package):
     xpath = "(action/target/@project='%s' and action/target/@package='%s' and action/@type='submit' and (state/@name='new' or state/@name='review' or state/@name='accepted'))" % (project, package)
@@ -32,7 +36,7 @@ def _check_repo_find_submit_request(self, opts, project, package):
         f = http_GET(url)
         collection = ET.parse(f).getroot()
     except urllib2.HTTPError:
-        print "error"
+        print "error", url
         return None
     for root in collection.findall('request'):
         r = Request()
@@ -47,7 +51,9 @@ def _check_repo_fetch_group(self, opts, group):
     root = ET.parse(f).getroot()
     a = []
     for req in root.find('action').findall('grouped'):
-      a.append(int(req.attrib['id']))
+        id = int(req.attrib['id'])
+        a.append(id)
+        opts.grouped[id] = group
     opts.groups[group] = a
 
 def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
@@ -55,7 +61,7 @@ def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
         url = makeurl(opts.apiurl, ["build", prj, repo, arch, pkg])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError:
-        print "error"
+        print "error", url
         return False
     for binary in root.findall('binary'):
         # if there are binaries, we're out
@@ -102,6 +108,7 @@ def _check_repo_one_request(self, rq, opts):
 
 	def __init__(self):
 	    self.updated = False
+            self.error = None
 
     id = int(rq.get('id'))
     approved_actions = 0
@@ -132,12 +139,15 @@ def _check_repo_one_request(self, rq, opts):
 
     group = id
     try:
-        url = makeurl(opts.apiurl, ["search", "request", "id?match=action/grouped/@id=%s" % id])
-        root = ET.parse(http_GET(url)).getroot()
-        for req in root.findall('request'):
-            group = req.attrib['id']
-	    self._check_repo_fetch_group(opts, group)
-            break
+        if opts.grouped.has_key(id):
+            group = opts.grouped[id]
+        else:
+            url = makeurl(opts.apiurl, ["search", "request", "id?match=action/grouped/@id=%s" % id])
+            root = ET.parse(http_GET(url)).getroot()
+            for req in root.findall('request'):
+                group = int(req.attrib['id'])
+                self._check_repo_fetch_group(opts, group)
+                break
     except urllib2.HTTPError:
         pass
 
@@ -153,7 +163,7 @@ def _check_repo_one_request(self, rq, opts):
         url = makeurl(opts.apiurl, ["source", prj, pkg, "?expand=1&rev=%s" % rev])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError:
-        print "error"
+        print "error", url
         return []
     #print ET.tostring(root)
     p.rev = root.attrib['srcmd5']
@@ -181,11 +191,9 @@ def _check_repo_one_request(self, rq, opts):
         if lprj != prj or lpkg != pkg:
             msg = "%s/%s should _link to %s/%s" % (prj,spec,prj,pkg)
             self._check_repo_change_review_state(opts, id, 'declined', message=msg)
-            return []
         if lmd5 != p.rev:
             msg = "%s/%s is a link but has a different md5sum than %s?" % (prj,spec,pkg)
             self._check_repo_change_review_state(opts, id, 'new', message=msg)
-            return []
 
         sp = CheckRepoPackage()
         sp.spackage = spec
@@ -200,10 +208,10 @@ def _check_repo_one_request(self, rq, opts):
 
 def _check_repo_buildsuccess(self, p, opts):
     try:
-        url = makeurl(opts.apiurl, ['build', p.sproject, "_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s" % (p.spackage,p.tproject,p.rev)])
+        url = makeurl(opts.apiurl, ['build', p.sproject, "_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s" % (quote_plus(p.spackage),quote_plus(p.tproject),p.rev)])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError:
-        print "error"
+        print "error", url
         return False
     if root.attrib.has_key('code'):
         print ET.tostring(root)
@@ -217,21 +225,15 @@ def _check_repo_buildsuccess(self, p, opts):
     foundoutdated = None
     found64 = True
     for repo in root.findall('repository'):
-        [isgood, founddisabled, r_foundbuilding, r_foundfailed, r_foundoutdated, r_missings, r_found64] = self._check_repo(p.sproject, repo, opts)
+        [isgood, founddisabled, r_foundbuilding, r_foundfailed, 
+         r_foundoutdated, r_missings, r_found64] = self._check_repo(p.sproject, repo, opts)
         for pkg in r_missings:
-            request = self._check_repo_find_submit_request(opts, p.tproject, pkg)
-            if request:
-                greqs = opts.groups.get(p.group, [])
-                if request in greqs: continue
-                pkg = "%s(rq%s)" % (pkg, request) 
             missings[pkg] = 1
         if not founddisabled:
             alldisabled = False
         if isgood:
-            if len(missings) == 0 or os.environ.has_key("IGNORE_MISSINGS"):
-                p.goodrepo = repo.attrib['name']
-                result = True
-                missings = {}
+            p.goodrepo = repo.attrib['name']
+            result = True
         if r_foundbuilding:
              foundbuilding = r_foundbuilding
         if r_foundfailed:
@@ -240,6 +242,9 @@ def _check_repo_buildsuccess(self, p, opts):
              foundoutdated = r_foundoutdated
         if r_found64:
             found64 = r_found64
+
+    p.missings = missings.keys()
+    p.missings.sort()
 
     if result: 
         return True
@@ -253,15 +258,6 @@ def _check_repo_buildsuccess(self, p, opts):
         msg = "%s is disabled or does not build against factory. Please fix and resubmit" % p.spackage
         print "declined " + msg
         self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
-        return False
-    if len(missings.keys()):
-        smissing = []
-        missings.keys().sort()
-        for package in missings:
-            smissing.append(package)
-        msg = "please make sure to wait before these depencencies are in {0}: {1}".format(p.tproject, ', '.join(smissing))
-        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-        print "updated " + msg
         return False
     if foundbuilding:	
         msg = "{1} is still building for repository {0}".format(foundbuilding, p.spackage)
@@ -281,61 +277,75 @@ def _check_repo_buildsuccess(self, p, opts):
 
     return True
 
-def _check_repo_download(self, p, opts):
-    
-    p.groupdir = os.path.expanduser("~/co/%s" % str(p.group))
-    p.destdir = opts.destdir = p.groupdir + "/%s" % p.tpackage
+def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
+    url = makeurl(opts.apiurl, ['build', prj, repo, arch, pkg])
+    files = []
+    try:
+        f = http_GET(url)
+        binaries = ET.parse(f).getroot()
+        for bin in  binaries.findall('binary'):
+            fn=bin.attrib['filename']
+            result = re.match("(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm", fn)
+            if not result: 
+                if fn == 'rpmlint.log':
+                    files.append((fn, '', ''))
+                continue
+            pname=result.group(1)
+            if pname.endswith('-debuginfo') or pname.endswith('-debuginfo-32bit'):
+                continue
+            if pname.endswith('-debugsource'):
+                continue
+            if result.group(4) == 'src':
+                continue
+            files.append((fn, pname, result.group(4)))
+    except urllib2.HTTPError, err:
+        pass
+    return files
+
+def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target):
+    if os.path.exists(target):
+        return
+    get_binary_file(apiurl, prj, repo, arch, file, package = package, target_filename = target)
+
+def _check_repo_download(self, p, destdir, opts):
+    p.destdir = destdir + "/%s" % p.tpackage
     if not os.path.isdir(p.destdir):
       os.makedirs(p.destdir, 0755)
-    opts.sources = False
-    opts.debug = False
-    opts.quiet = True
     # we can assume x86_64 is there
-    self.do_getbinaries(None, opts, p.sproject, p.spackage, p.goodrepo, 'x86_64')
-
+    todownload = []
+    for fn in self._check_repo_repo_list(p.sproject, p.goodrepo, 'x86_64', p.spackage, opts):
+        todownload.append(('x86_64', fn[0]))
+        
     # now fetch -32bit packs
-    url = makeurl(opts.apiurl, ['build', p.sproject, p.goodrepo, 'i586', p.spackage])
-    try:
-      f = http_GET(url)
-      binaries = ET.parse(f).getroot()
-      for bin in  binaries.findall('binary'):
-        fn=bin.attrib['filename']
-        result = re.match("(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm", fn)
-        if not result: continue
-        if result.group(4) != 'x86_64': continue
-        get_binary_file(opts.apiurl,
-                        p.sproject, p.goodrepo, 'i586', fn, 
-                        package = p.spackage, target_filename = os.path.join(opts.destdir, fn))
-    except urllib2.HTTPError, err:
-      print err
-      pass
+    for fn in self._check_repo_repo_list(p.sproject, p.goodrepo, 'i586', p.spackage, opts):
+        if fn[2] != 'x86_64': continue
+        todownload.append(('i586', fn[0]))
+        
+    downloads = []
+    for arch, fn in todownload:
+        t = os.path.join(p.destdir, fn)
+        self._check_repo_get_binary(opts.apiurl, p.sproject, p.goodrepo, 
+                                    arch, p.spackage, fn, t)
+        downloads.append(t)
+        if fn.endswith('.rpm'):
+            pid = subprocess.Popen(["rpm", "--nosignature", "--queryformat", "%{DISTURL}", "-qp", t], 
+                                   stdout=subprocess.PIPE, close_fds=True)
+            ret = os.waitpid(pid.pid, 0)[1]
+            disturl = pid.stdout.readlines()
+            
+            if not os.path.basename(disturl[0]).startswith(p.rev):
+                p.error = "disturl %s does not match revision %s" % (disturl[0], p.rev)
+                return [], []
 
-    url = makeurl(opts.apiurl, ['build', p.tproject, 'standard', 'x86_64', p.tpackage])
     toignore = []
-    try:
-      f = http_GET(url)
-      binaries = ET.parse(f).getroot()
-      for bin in  binaries.findall('binary'):
-        fn=bin.attrib['filename']
-        result = re.match("(.*)-([^-]*)-([^-]*)\.[^-\.]*.rpm", fn) 
-        if not result: continue
-        toignore.append(result.group(1))
-    except urllib2.HTTPError, err:
-       pass
+    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'x86_64', p.tpackage, opts):
+        toignore.append(fn[1])
+
     # now fetch -32bit pack list
-    url = makeurl(opts.apiurl, ['build', p.tproject, 'standard', 'i586', p.tpackage])
-    try:
-      f = http_GET(url)
-      binaries = ET.parse(f).getroot()
-      for bin in  binaries.findall('binary'):
-        fn=bin.attrib['filename']
-        result = re.match("(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm", fn)
-        if not result: continue
-        if result.group(4) != 'x86_64': continue
-        toignore.append(result.group(1))
-    except urllib2.HTTPError, err:
-       pass
-    return toignore
+    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'i586', p.tpackage, opts):
+        if fn[2] != 'x86_64': continue
+        toignore.append(fn[1])
+    return toignore, downloads
 
 def _check_repo_group(self, id, reqs, opts):
     print "\ncheck group", reqs
@@ -344,32 +354,76 @@ def _check_repo_group(self, id, reqs, opts):
             return
     # all succeeded
     toignore = []
-    destdir = ''
+    downloads = []
+    destdir = os.path.expanduser("~/co/%s" % str(p.group))
     fetched = dict()
     for r in opts.groups.get(id, []):
-      fetched[r] = 0
+        fetched[r] = 0
     goodrepo = ''
     for p in reqs:
-      toignore.extend(self._check_repo_download(p, opts))
-      fetched[p.request] = 1
-      destdir = p.groupdir
-      goodrepo = p.goodrepo
+        i, d = self._check_repo_download(p, destdir, opts)
+        if p.error:
+            print p.error
+            self._check_repo_change_review_state(opts, p.request, 'new', message=p.error)
+            return
+        downloads.extend(d)
+        toignore.extend(i)
+        fetched[p.request] = 1
+        goodrepo = p.goodrepo
+
+    print "FETCHED", fetched
     packs = []
     for req, f in fetched.items():
-      if f: continue 
-      packs.extend(self._check_repo_fetch_request(req, opts))
+        if f: continue 
+        packs.extend(self._check_repo_fetch_request(req, opts))
     for p in packs:
-      p.goodrepo = goodrepo
-      p.updated = True
-      toignore.extend(self._check_repo_download(p, opts))
+        p.goodrepo = goodrepo
+        p.updated = True
+        i, d = self._check_repo_download(p, destdir, opts)
+        if p.error:
+            print "already accepted: ", p.error
+        downloads.extend(d)
+        toignore.extend(i)
 
+    print "REQS", reqs
+    for p in reqs:
+        smissing = []
+        for package in p.missings:
+            alreadyin=False
+            for t in packs:
+                if package == t.tpackage: alreadyin=True
+            if alreadyin:
+                continue
+            print package, packs, downloads, toignore
+            request = self._check_repo_find_submit_request(opts, p.tproject, package)
+            if request:
+                greqs = opts.groups.get(p.group, [])
+                if request in greqs: continue
+                package = "%s(rq%s)" % (package, request) 
+            smissing.append(package)
+        if len(smissing):
+            msg = "please make sure to wait before these depencencies are in {0}: {1}".format(p.tproject, ', '.join(smissing))
+            self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+            print "updated " + msg
+            return
+
+    print "walking"
+    for dirname, dirnames, filenames in os.walk(destdir):
+        for filename in filenames:
+            fn = os.path.join(dirname, filename)
+            if not fn in downloads:
+                os.unlink(fn)
+            #print fn, fn in downloads
+
+    print "repo checker"
     civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (destdir, ','.join(toignore))
-    #print civs
+    print civs
     #exit(1)
     p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
-    ret = os.waitpid(p.pid, 0)[1]
-    checked = p.stdout.readlines()
-    output = '  '.join(checked).translate(None, '\033')
+    #ret = os.waitpid(p.pid, 0)[1]
+    output, _ = p.communicate()
+    ret = p.returncode
+    print output
     
     updated = dict()
 
@@ -413,6 +467,7 @@ def do_check_repo(self, subcmd, opts, *args):
 
     opts.mode = ''
     opts.groups = {}
+    opts.grouped = {}
     opts.verbose = False
 
     from pprint import pprint
