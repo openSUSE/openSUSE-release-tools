@@ -160,7 +160,7 @@ def _checker_one_request(self, rq, cmd, opts):
 
   	    r=self._checker_parse_name(opts.apiurl, prj, pkg, revision=rev)
 	    if r != tpkg:
-		msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r.name)
+		msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r)
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
 		continue
 
