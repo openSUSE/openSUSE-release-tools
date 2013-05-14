@@ -414,11 +414,12 @@ def _check_repo_group(self, id, reqs, opts):
             return
 
     for dirname, dirnames, filenames in os.walk(destdir):
+        if len(dirnames) + len(filenames) == 0:
+            os.rmdir(dirname)
         for filename in filenames:
             fn = os.path.join(dirname, filename)
             if not fn in downloads:
                 os.unlink(fn)
-            #print fn, fn in downloads
 
     civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (destdir, ','.join(toignore))
     #print civs
