@@ -24,7 +24,7 @@ for my $pdir (glob("$dir/*")) {
   if (! -f "$pdir/rpmlint.log") {
     print "Couldn't find a rpmlint.log in the build results in $pdir. This is mandatory\n";
     my $name = basename($pdir);
-    if ($name eq "rpm" || $name eq "rpm-python" || $name eq "popt") {
+    if ($name eq "rpm" || $name eq "rpm-python" || $name eq "popt" || $name eq "rpmlint" ) {
 	print "ignoring - whitelist\n";
     } else {
         $ret = 1;
@@ -142,6 +142,7 @@ sub write_package($$)
     next if ($prv =~ m/^rpmlib/);
     next if ($name eq "libqmmp0-plugin-mplayer" && $prv eq "/usr/bin/mplayer");
     next if ($name eq "systemd-mini" && $prv eq "this-is-only-for-build-envs");
+    next if ($name eq "build-config" && $prv eq "this-is-only-for-build-envs");
     $out .= "$prv\n";
   }
   $out .= "-Req:\n";

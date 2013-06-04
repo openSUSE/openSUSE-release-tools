@@ -396,6 +396,7 @@ def _check_repo_group(self, id, reqs, opts):
         smissing = []
         for package in p.missings:
             alreadyin=False
+            print package, packs
             for t in packs:
                 if package == t.tpackage: alreadyin=True
             if alreadyin:

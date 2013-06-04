@@ -24,7 +24,6 @@ def _checker_check_dups(self, project, opts):
             package = target.attrib['package']
             if rqs.has_key(type + package):
                 [oldid, oldsource] = rqs[type + package]
-                print(oldid, id)
                 assert oldid < id
                 if source != None and oldsource != None:
                     if (source.attrib['project'] == oldsource.attrib['project'] and

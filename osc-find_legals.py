@@ -11,7 +11,7 @@ def _find_legals(self, package, opts):
     if factory_time > queue_time:
        queue_time = factory_time
        queue_who = factory_who
-    print(package, queue_who, queue_time, version_updates)
+    #print("F", package, queue_who, queue_time, version_updates)
     return queue_time, version_updates
 
 def _find_legal_get_versions_update(self, review):
@@ -90,6 +90,7 @@ def do_find_legals(self, subcmd, opts, *args):
        lastreview, lastupdate = self._find_legals(p, opts)
        packages.append((p, lastreview, lastupdate))
     packages = sorted(packages, cmp=_find_legal_cmp)
+    print("ORDER")
     for p in packages:
 	update = 'never'
 	if p[2]: 
