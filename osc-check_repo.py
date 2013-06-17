@@ -162,10 +162,12 @@ def _check_repo_one_request(self, rq, opts):
         if lprj != prj or lpkg != pkg and not p.updated:
             msg = "%s/%s should _link to %s/%s" % (prj,spec,prj,pkg)
             self._check_repo_change_review_state(opts, id, 'declined', message=msg)
+            print msg
             p.updated = True
         if lmd5 != p.rev and not p.updated:
             msg = "%s/%s is a link but has a different md5sum than %s?" % (prj,spec,pkg)
             self._check_repo_change_review_state(opts, id, 'new', message=msg)
+            print msg
             p.updated = True
 
         sp = CheckRepoPackage()
@@ -365,8 +367,9 @@ def _check_repo_group(self, id, reqs, opts):
     destdir = os.path.expanduser("~/co/%s" % str(p.group))
     fetched = dict()
     for r in opts.groups.get(id, []):
-        fetched[r] = 0
+        fetched[r] = False
     goodrepo = ''
+    packs = []
     for p in reqs:
         i, d = self._check_repo_download(p, destdir, opts)
         if p.error:
@@ -376,19 +379,19 @@ def _check_repo_group(self, id, reqs, opts):
             return
         downloads.extend(d)
         toignore.extend(i)
-        fetched[p.request] = 1
+        fetched[p.request] = True
         goodrepo = p.goodrepo
+        packs.append(p)
 
-    packs = []
     for req, f in fetched.items():
-        if f: continue 
-        packs.extend(self._check_repo_fetch_request(req, opts))
+        if not f: 
+            packs.extend(self._check_repo_fetch_request(req, opts))
     for p in packs:
         p.goodrepo = goodrepo
-        p.updated = True
         i, d = self._check_repo_download(p, destdir, opts)
         if p.error:
             print "already accepted: ", p.error
+            p.updated = True
         downloads.extend(d)
         toignore.extend(i)
 
@@ -423,7 +426,6 @@ def _check_repo_group(self, id, reqs, opts):
                 os.unlink(fn)
 
     civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (destdir, ','.join(toignore))
-    #print civs
     #exit(1)
     p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
     #ret = os.waitpid(p.pid, 0)[1]
@@ -455,7 +457,6 @@ def _check_repo_fetch_request(self, id, opts):
   xml = ET.parse(f)
   root = xml.getroot()
   return self._check_repo_one_request(root, opts)
-
 
 def do_check_repo(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
