@@ -3,31 +3,52 @@
 # Distribute under GPLv2 or GPLv3
 #
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
-# Then try to run 'osc checker --help' to see the usage.
+# Then try to run 'osc check_repo --help' to see the usage.
 
-import socket
 import os
-import traceback
+import re
 import subprocess
+import shutil
+from urllib import quote_plus
+import urllib2
 
-def _check_repo_change_review_state(self, opts, id, newstate, message='', supersed=None):
+from xml.etree import cElementTree as ET
+
+from osc import oscerr
+from osc.core import (get_binary_file,
+                      get_buildinfo,
+                      http_GET,
+                      http_POST,
+                      makeurl,
+                      Request)
+
+
+def _check_repo_change_review_state(self, opts, id_, newstate, message='', supersed=None):
     """ taken from osc/osc/core.py, improved:
         - verbose option added,
         - empty by_user=& removed.
         - numeric id can be int().
     """
-    query = {'cmd': 'changereviewstate', 'newstate': newstate }
-    query['by_user']= 'factory-repo-checker'
-    if supersed: query['superseded_by'] = supersed
-#    if message: query['comment'] = message
-    u = makeurl(opts.apiurl, ['request', str(id)], query=query)
+    query = {
+        'cmd': 'changereviewstate',
+        'newstate': newstate,
+        'by_user': 'factory-repo-checker',
+    }
+    if supersed:
+        query['superseded_by'] = supersed
+    # if message:
+    #     query['comment'] = message
+
+    code = 404
+    u = makeurl(opts.apiurl, ['request', str(id_)], query=query)
     try:
-      f = http_POST(u, data=message)
-      root = ET.parse(f).getroot()
-      return root.attrib['code']
-    except urllib2.HTTPError:
-      print "error", u
-      return 404
+        f = http_POST(u, data=message)
+        root = ET.parse(f).getroot()
+        code = root.attrib['code']
+    except urllib2.HTTPError, e:
+        print 'ERROR in URL %s [%s]'%(u, e)
+    return code
+
 
 def _check_repo_find_submit_request(self, opts, project, package):
     xpath = "(action/target/@project='%s' and action/target/@package='%s' and action/@type='submit' and (state/@name='new' or state/@name='review' or state/@name='accepted'))" % (project, package)
@@ -43,6 +64,7 @@ def _check_repo_find_submit_request(self, opts, project, package):
         r.read(root)
         return int(r.reqid)
     return None
+
         
 def _check_repo_fetch_group(self, opts, group):
     if opts.groups.get(group): return
@@ -56,6 +78,7 @@ def _check_repo_fetch_group(self, opts, group):
         opts.grouped[id] = group
     opts.groups[group] = a
 
+
 def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
     try:
         url = makeurl(opts.apiurl, ["build", prj, repo, arch, pkg])
@@ -68,11 +91,12 @@ def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
         return False
     return True
 
+
 def _check_repo_one_request(self, rq, opts):
 
     class CheckRepoPackage:
         def __repr__(self):
-            return "[%d:%s/%s]" % (int(self.request),self.sproject, self.spackage)
+            return '[%d:%s/%s]' % (int(self.request), self.sproject, self.spackage)
 
 	def __init__(self):
 	    self.updated = False
@@ -81,7 +105,6 @@ def _check_repo_one_request(self, rq, opts):
 
 
     id = int(rq.get('id'))
-    approved_actions = 0
     actions = rq.findall('action')
     if len(actions) != 1:
        msg = "only one action per request is supported - create a group instead: https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow"
@@ -181,9 +204,10 @@ def _check_repo_one_request(self, rq, opts):
         sp.rev = root.attrib['srcmd5']
     return packs
 
+
 def _check_repo_buildsuccess(self, p, opts):
     try:
-        url = makeurl(opts.apiurl, ['build', p.sproject, "_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s" % (quote_plus(p.spackage),quote_plus(p.tproject),p.rev)])
+        url = makeurl(opts.apiurl, ['build', p.sproject, "_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s" % (quote_plus(p.spackage), quote_plus(p.tproject), p.rev)])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError:
         print "error", url
@@ -197,7 +221,6 @@ def _check_repo_buildsuccess(self, p, opts):
     alldisabled = True
     foundbuilding = None
     foundfailed = None
-    found64 = True
 
     tocheckrepos = []
     for repo in root.findall('repository'):
@@ -283,6 +306,7 @@ def _check_repo_buildsuccess(self, p, opts):
 
     return True
 
+
 def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
     url = makeurl(opts.apiurl, ['build', prj, repo, arch, pkg])
     files = []
@@ -304,14 +328,16 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
             if result.group(4) == 'src':
                 continue
             files.append((fn, pname, result.group(4)))
-    except urllib2.HTTPError, err:
-        pass
+    except urllib2.HTTPError:
+        print "error", url
     return files
+
 
 def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target):
     if os.path.exists(target):
         return
     get_binary_file(apiurl, prj, repo, arch, file, package = package, target_filename = target)
+
 
 def _check_repo_download(self, p, destdir, opts):
     if p.build_excluded:
@@ -356,6 +382,32 @@ def _check_repo_download(self, p, destdir, opts):
         toignore.append(fn[1])
     return toignore, downloads
 
+
+def _get_build_deps(self, prj, repo, arch, pkg, opts):
+    xml = get_buildinfo(opts.apiurl, prj, pkg, repo, arch)
+    root = ET.fromstring(xml)
+    return [e.attrib['name'] for e in root.findall('bdep')]
+
+
+def _get_base_build_bin(self, opts):
+    """Get Base:build pagacke list"""
+    binaries = {}
+    for arch in ('x86_64', 'i586'):
+        url = makeurl(opts.apiurl, ['/build/Base:build/standard/%s/_repository'%arch,])
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        binaries[arch] = set([e.attrib['filename'][:-4] for e in root.findall('binary')])
+    return binaries
+
+
+def _get_base_build_src(self, opts):
+    """Get Base:build pagacke list"""
+    url = makeurl(opts.apiurl, ['/source/Base:build',])
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    return set([e.attrib['name'] for e in root.findall('entry')])
+
+
 def _check_repo_group(self, id, reqs, opts):
     print "\ncheck group", reqs
     for p in reqs:
@@ -394,6 +446,20 @@ def _check_repo_group(self, id, reqs, opts):
             p.updated = True
         downloads.extend(d)
         toignore.extend(i)
+
+    # Get all the Base:build packages (source and binary)
+    base_build_bin = self._get_base_build_bin(opts)
+    base_build_src = self._get_base_build_src(opts)
+    for p in reqs:
+        # Be sure that if the package is in Base:build, all the
+        # dependecies are also in Base:build
+        if p.spackage in base_build_src:
+            # TODO - Check all the arch for this package
+            for arch in ('x86_64', 'i586'):
+                build_deps = set(self._get_build_deps(p.sproject, p.goodrepo, arch, p.spackage, opts))
+                outliers = build_deps - base_build_bin[arch]
+                if outliers:
+                    print 'Outliers (%s)'%arch, outliers
 
     for p in reqs:
         smissing = []
@@ -451,60 +517,56 @@ def _check_repo_group(self, id, reqs, opts):
 	p.updated = True
     shutil.rmtree(destdir)
 
-def _check_repo_fetch_request(self, id, opts):
-  url = makeurl(opts.apiurl, ['request', str(id)])
-  f = http_GET(url)
-  xml = ET.parse(f)
-  root = xml.getroot()
-  return self._check_repo_one_request(root, opts)
+
+def _check_repo_fetch_request(self, id_, opts):
+    url = makeurl(opts.apiurl, ['request', str(id_)])
+    f = http_GET(url)
+    xml = ET.parse(f)
+    root = xml.getroot()
+    return self._check_repo_one_request(root, opts)
+
 
 def do_check_repo(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
 
     Usage:
-      osc checker [OPT] [list] [FILTER|PACKAGE_SRC]
+      osc check_repo [OPT] [list] [FILTER|PACKAGE_SRC]
            Shows pending review requests and their current state.
 
     ${cmd_option_list}
     """
 
     if len(args) == 0:
-        raise oscerr.WrongArgs("Please give a subcommand to 'osc checker' or try 'osc help checker'")
+        raise oscerr.WrongArgs("Please give a subcommand to 'osc check_repo' or try 'osc help check_repo'")
 
     opts.mode = ''
     opts.groups = {}
     opts.grouped = {}
     opts.verbose = False
 
-    from pprint import pprint
-
     opts.apiurl = self.get_api_url()
 
-    tmphome = None
-
     if args[0] == 'skip':
-        for id in args[1:]:
-            self._check_repo_change_review_state(opts, id, 'accepted', message="skip review")
+        for id_ in args[1:]:
+            self._check_repo_change_review_state(opts, id_, 'accepted', message='skip review')
         return
-    ids = {}
-    for a in args:
-        if (re.match('\d+', a)):
-            ids[a] = 1
+
+    ids = [arg for arg in args if arg.isdigit()]
 
     packs = []
-    if (not len(ids)):
+    if not ids:
         # xpath query, using the -m, -r, -s options
         where = "@by_user='factory-repo-checker'+and+@state='new'"
-
-        url = makeurl(opts.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
+        url = makeurl(opts.apiurl, ['search', 'request'], 
+                      "match=state/@name='review'+and+review["+where+"]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
             packs.extend(self._check_repo_one_request(rq, opts))
     else:
         # we have a list, use them.
-        for id in ids.keys():
-	    packs.extend(self._check_repo_fetch_request(id, opts))
+        for id_ in ids:
+	    packs.extend(self._check_repo_fetch_request(id_, opts))
 
     groups = {}
     for p in packs:
@@ -512,11 +574,5 @@ def do_check_repo(self, subcmd, opts, *args):
         a.append(p)
         groups[p.group] = a
 
-    for id, reqs in groups.items():
-        self._check_repo_group(id, reqs, opts)
-
-#Local Variables:
-#mode: python
-#py-indent-offset: 4
-#tab-width: 8
-#End:
+    for id_, reqs in groups.items():
+        self._check_repo_group(id_, reqs, opts)
