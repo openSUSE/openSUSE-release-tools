@@ -18,7 +18,7 @@ def _checker_check_dups(self, project, opts):
             type = a.attrib['type']
             assert target != None
             if target.attrib['project'] != project: continue
-	    #print id
+	    #print(id)
             #ET.dump(target)
 	    if not target.attrib.has_key('package'): continue
             package = target.attrib['package']

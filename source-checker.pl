@@ -5,6 +5,10 @@ use File::Temp qw/ tempdir  /;
 use XML::Simple;
 use Data::Dumper;
 use Cwd;
+BEGIN {
+  unshift @INC, ($::ENV{'BUILD_DIR'} || '/usr/lib/build');
+}
+use Build;
 
 my $old = $ARGV[0];
 my $dir = $ARGV[1];
@@ -27,13 +31,13 @@ if (-f "$dir/_constraints") {
 }
 
 if (! -f "$dir/$bname.changes") {
-  print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
-  exit(1);
+    print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
+    exit(1);
 }
 
 if (! -f "$dir/$bname.spec") {
-  print "A $bname.spec is missing. Packages submitted as FooBar, need to have a FooBar.spec file\n";
-  exit(1);
+    print "A $bname.spec is missing. Packages submitted as FooBar, need to have a FooBar.spec file\n";
+    exit(1);
 }
 
 open(SPEC, "$dir/$bname.spec");
@@ -48,8 +52,8 @@ if ($spec !~ m/#\s+Copyright\s/) {
 }
 
 if ($spec =~ m/\nVendor:/) {
-  print "$bname.spec contains a Vendor line, this is forbidden.\n";
-  exit(1);
+    print "$bname.spec contains a Vendor line, this is forbidden.\n";
+    exit(1);
 }
 
 foreach my $file (glob("$dir/_service:*")) {
@@ -95,31 +99,36 @@ if ($spec !~ m/(#[^\n]*license)/i) {
 }
 
 foreach my $test (glob("/usr/lib/obs/service/source_validators/*")) {
-  next if (!-f "$test");
-  my $checkivsd = `/bin/bash $test --batchmode --verbose $dir $old < /dev/null 2>&1`;
-  if ($?) {
-    print "Source validator failed. Try \"osc service localrun source_validator\"\n";
-    print $checkivsd;
-    print "\n";
-    exit(1);
-  }
+    next if (!-f "$test");
+    my $checkivsd = `/bin/bash $test --batchmode --verbose $dir $old < /dev/null 2>&1`;
+    if ($?) {
+	print "Source validator failed. Try \"osc service localrun source_validator\"\n";
+	print $checkivsd;
+	print "\n";
+	exit(1);
+    }
 }
 
-if (-d "_old") {
-    chdir("_old") || die "chdir _old failed";
+if (-d "$old") {
+    my $odir = getcwd();
+    chdir($old) || die "chdir $old failed";
+    my $cf = Build::read_config("x86_64", "/usr/lib/build/configs/default.conf");
+
     my %thash = ();
     my %rhash = ();
     for my $spec (glob("*.spec")) {
-	open(PIPE, "grep '^Source' $spec |");
-	while (<PIPE>) {
-	    chomp;
-	    s/^Source[0-9]*\s*:\s*//;
-	    $thash{$_} = 1;
+	my $ps = Build::Rpm::parse($cf, $spec);
+
+	while (my ($k, $v) = each %$ps) {
+	    if ($k =~ m/^source/) {
+		$thash{$v} = 1;
+	    }
 	}
-	close(PIPE);
     }
-    chdir("../$dir") || die "chdir failed";
+    chdir($odir) || die "chdir $odir failed";
+    chdir($dir) || die "chdir $dir failed";
     for my $spec (glob("*.spec")) {
+	my $ps = Build::Rpm::parse($cf, $spec);
 	open(OSPEC, "$spec");
 	open(NSPEC, ">$spec.new");
 	while (<OSPEC>) {
@@ -128,7 +137,8 @@ if (-d "_old") {
 		my $line = $_;
 		$line =~ s/^(Source[0-9]*)\s*:\s*//;
 		my $prefix = $1;
-		if (defined $thash{$line}) {
+		my $parsedline = $ps->{lc $prefix};
+		if (defined $thash{$parsedline}) {
 		    my $file = $line;
 		    my $bname = basename($file);
 		    print NSPEC "$prefix: $bname\n";
@@ -141,9 +151,11 @@ if (-d "_old") {
 	}
 	close(OSPEC);
 	close(NSPEC);
-	rename("$spec.new", "$spec") || die "rename failed";
+	#system("diff -u $spec $spec.new");
+	#exit(0);
+	#rename("$spec.new", "$spec") || die "rename failed";
     }
-    chdir("..");
+    chdir($odir);
 }
 
 my $odir = getcwd;

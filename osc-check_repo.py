@@ -399,12 +399,12 @@ def _check_repo_group(self, id, reqs, opts):
         smissing = []
         for package in p.missings:
             alreadyin=False
-            print package, packs
+            #print package, packs
             for t in packs:
                 if package == t.tpackage: alreadyin=True
             if alreadyin:
                 continue
-            print package, packs, downloads, toignore
+            #print package, packs, downloads, toignore
             request = self._check_repo_find_submit_request(opts, p.tproject, package)
             if request:
                 greqs = opts.groups.get(p.group, [])
