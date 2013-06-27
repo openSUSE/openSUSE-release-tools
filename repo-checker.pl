@@ -10,6 +10,7 @@ use XML::Simple;
 use Data::Dumper;
 use Cwd;
 use Rpm;
+use Fcntl;
 
 use strict;
 
@@ -80,7 +81,7 @@ sub write_package($$)
   }
 
   my %qq = Build::Rpm::rpmq("$package", qw{NAME VERSION RELEASE ARCH OLDFILENAMES DIRNAMES BASENAMES DIRINDEXES 1030 1037 1039 1040
-					   1047 1112 1113 1049 1048 1050 1090 1114 1115 1054 1053 1055
+					   1047 1112 1113 1049 1048 1050 1090 1114 1115 1054 1053 1055 1036
 					});
 
   my $name = $qq{'NAME'}[0];
@@ -107,6 +108,7 @@ sub write_package($$)
   my @users = @{$qq{1039} || []};
   my @groups = @{$qq{1040} || []};
   my @flags = @{$qq{1037} || []};
+  my @linktos = @{$qq{1036} || []};
 
   my @xprvs;
 
@@ -116,12 +118,18 @@ sub write_package($$)
     my $user = shift @users;
     my $group = shift @groups;
     my $flag = shift @flags;
+    my $linkto = shift @linktos;
 
     my $filename = $dirs[$di] . $bname;
-    $out .= sprintf "%o %o %s:%s %s\n", $mode, $flag, $user, $group, $filename;
+    my $fs = $filename;
+    if (Fcntl::S_ISLNK($mode)) {
+      $fs = "$filename -> $linkto";
+    }
+    $out .= sprintf "%o %o %s:%s %s\n", $mode, $flag, $user, $group, $fs;
     if ( $filename =~ /^\/etc\// || $filename =~ /bin\// || $filename eq "/usr/lib/sendmail" ) {
       push @xprvs, $filename;
     }
+
   }
   $out .= "-Flx:\n";
   $out .= "+Prv:\n";

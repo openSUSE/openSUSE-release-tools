@@ -329,7 +329,8 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
                 continue
             files.append((fn, pname, result.group(4)))
     except urllib2.HTTPError:
-        print "error", url
+	pass
+        #print "error", url
     return files
 
 
@@ -393,7 +394,7 @@ def _get_base_build_bin(self, opts):
     """Get Base:build pagacke list"""
     binaries = {}
     for arch in ('x86_64', 'i586'):
-        url = makeurl(opts.apiurl, ['/build/Base:build/standard/%s/_repository'%arch,])
+        url = makeurl(opts.apiurl, ['/build/openSUSE:Factory:Build/standard/%s/_repository'%arch,])
         f = http_GET(url)
         root = ET.parse(f).getroot()
         binaries[arch] = set([e.attrib['filename'][:-4] for e in root.findall('binary')])
@@ -402,7 +403,7 @@ def _get_base_build_bin(self, opts):
 
 def _get_base_build_src(self, opts):
     """Get Base:build pagacke list"""
-    url = makeurl(opts.apiurl, ['/source/Base:build',])
+    url = makeurl(opts.apiurl, ['/source/openSUSE:Factory:Build',])
     f = http_GET(url)
     root = ET.parse(f).getroot()
     return set([e.attrib['name'] for e in root.findall('entry')])
@@ -460,6 +461,7 @@ def _check_repo_group(self, id, reqs, opts):
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
                     print 'Outliers (%s)'%arch, outliers
+                    p.updated = True
 
     for p in reqs:
         smissing = []
