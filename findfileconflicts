@@ -339,7 +339,7 @@ for my $tc (sort keys %tocheck) {
 	  my $m = (keys(%allm))[0];
 	  # all modes/flags are the same
 	  # no conflict if all dirs or all ghosts or all links
-	  next if $modes_type[$m] == 040000 || $modes_type[$m] == 120000 || $modes_ghost[$m] == 0100;
+	  next if $modes_type[$m] == 040000 || $modes_type[$m] == 0120000 || $modes_ghost[$m] == 0100;
 	} else {
 	  # don't report mode mismatches for files/symlinks that are not ghosts
 	  for my $m (keys %allm) {

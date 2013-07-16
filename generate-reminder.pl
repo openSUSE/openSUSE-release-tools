@@ -27,14 +27,15 @@ sub fetch_user_infos($)
     }
 
     my $ua = LWP::UserAgent->new;
-    $ua->timeout(15);
+    $ua->timeout(180);
+    $ua->max_size(100000000);
     $ua->default_header("Accept" => "application/json");
-    my $mywork = $ua->get("https://build.opensuse.org/home/requests?user=$user");
+    my $mywork = $ua->get("https://build.opensuse.org/home/requests.json?user=$user");
     unless ($mywork->is_success) { die $mywork->status_line; }
 
     $mywork = from_json( $mywork->decoded_content, { utf8 => 1 });
 
-    my $url = "https://build.opensuse.org/stage/project/status?project=$tproject&ignore_pending=0";
+    my $url = "https://build.opensuse.org/project/status/$tproject?ignore_pending=0";
     $url .= "&limit_to_fails=false&limit_to_old=false&include_versions=true&filter_for_user=$user";
     my $projstat = $ua->get($url);
     die $projstat->status_line unless ($projstat->is_success);
@@ -338,8 +339,11 @@ END
     my $info = XMLin($xml);
     my $to = $info->{email};
     if (ref($info->{realname}) ne "HASH") {
-      my $octets = decode("iso-8859-1", $info->{realname});
-      my $name = encode('utf-8', $octets);
+      my $name = $info->{realname};
+      #eval { my $octets = decode("iso-8859-1", $info->{realname}); 
+      #       $name = encode('utf-8', $octets);
+      #
+      #           };
       $to = "$name <$to>";
     }
     my $email = 
