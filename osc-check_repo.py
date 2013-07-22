@@ -56,8 +56,8 @@ def _check_repo_find_submit_request(self, opts, project, package):
         url = makeurl(opts.apiurl, ['search','request'], 'match=%s' % quote_plus(xpath))
         f = http_GET(url)
         collection = ET.parse(f).getroot()
-    except urllib2.HTTPError:
-        print "error", url
+    except urllib2.HTTPError, e:
+        print 'ERROR in URL %s [%s]'%(url, e)
         return None
     for root in collection.findall('request'):
         r = Request()
@@ -67,7 +67,8 @@ def _check_repo_find_submit_request(self, opts, project, package):
 
         
 def _check_repo_fetch_group(self, opts, group):
-    if opts.groups.get(group): return
+    if group in opts.groups:
+        return
     u = makeurl(opts.apiurl, ['request', str(group)])
     f = http_GET(u)
     root = ET.parse(f).getroot()
@@ -84,7 +85,7 @@ def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
         url = makeurl(opts.apiurl, ["build", prj, repo, arch, pkg])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError:
-        print "error", url
+        print 'ERROR in URL %s [%s]'%(url, e)
         return False
     for binary in root.findall('binary'):
         # if there are binaries, we're out
@@ -109,7 +110,7 @@ def _check_repo_one_request(self, rq, opts):
     if len(actions) > 1:
        msg = 'only one action per request is supported - create a group instead: '\
              'https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow'
-       print 'declined ' + msg
+       print 'DECLINED', msg
        self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
        return []
  
@@ -144,8 +145,8 @@ def _check_repo_one_request(self, rq, opts):
                 self._check_repo_fetch_group(opts, group)
     except urllib2.HTTPError:
         pass
-        # XXX Why not exit?
-        # print 'Error', url
+        # XXX Why not exit with:
+        # print 'ERROR in URL %s [%s]'%(url, e)
         # return []
 
     packs = []
@@ -159,8 +160,8 @@ def _check_repo_one_request(self, rq, opts):
     try:
         url = makeurl(opts.apiurl, ['source', prj, pkg, '?expand=1&rev=%s'%rev])
         root = ET.parse(http_GET(url)).getroot()
-    except urllib2.HTTPError:
-        print 'Error', url
+    except urllib2.HTTPError, e:
+        print 'ERROR in URL %s [%s]'%(url, e)
         return []
 
     p.rev = root.attrib['srcmd5']
@@ -178,7 +179,6 @@ def _check_repo_one_request(self, rq, opts):
         try:
             url = makeurl(opts.apiurl, ['source', prj, spec, '?expand=1'])
             root = ET.parse(http_GET(url)).getroot()
-            print 'SPEC', ET.dump(root)
             link = root.find('linkinfo')
             if link != None:
                 lprj = link.attrib.get('project', '')
@@ -212,14 +212,19 @@ def _check_repo_one_request(self, rq, opts):
 
 def _check_repo_buildsuccess(self, p, opts):
     try:
-        url = makeurl(opts.apiurl, ['build', p.sproject, "_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s" % (quote_plus(p.spackage), quote_plus(p.tproject), p.rev)])
+        url = makeurl(opts.apiurl,
+                      ['build', p.sproject,
+                       '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s'%(quote_plus(p.spackage),
+                                                                                  quote_plus(p.tproject),
+                                                                                  p.rev)])
         root = ET.parse(http_GET(url)).getroot()
-    except urllib2.HTTPError:
-        print "error", url
+    except urllib2.HTTPError, e:
+        print 'ERROR in URL %s [%s]'%(url, e)
         return False
-    if root.attrib.has_key('code'):
+    if 'code' in root.attrib:
         print ET.tostring(root)
         return False
+
     result = False
     p.goodrepo = None
     missings = {}
@@ -229,22 +234,17 @@ def _check_repo_buildsuccess(self, p, opts):
 
     tocheckrepos = []
     for repo in root.findall('repository'):
-        foundarchs=0
-        for arch in repo.findall('arch'):
-            arch = arch.attrib['arch']
-            if arch == 'i586':
-                foundarchs += 1
-            if arch == 'x86_64':
-                foundarchs += 1
+        archs = [a.attrib['arch'] for a in repo.findall('arch')]
+        foundarchs = len([a for a in archs if a in ('i586', 'x86_64')])
         if foundarchs == 2:
             tocheckrepos.append(repo)
-            
-    if len(tocheckrepos) == 0:
-        msg = "Missing i586 and x86_64 in the repo list"
+
+    if not tocheckrepos:
+        msg = 'Missing i586 and x86_64 in the repo list'
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-        print "updated " + msg
+        print 'UPDATED', msg
         return False
-        
+
     for repo in tocheckrepos:
         isgood = True
         founddisabled = False
@@ -252,9 +252,9 @@ def _check_repo_buildsuccess(self, p, opts):
         r_foundfailed = None
         r_missings = {}
         for arch in repo.findall('arch'):
-            if not (arch.attrib['arch'] == 'i586' or arch.attrib['arch'] == 'x86_64'):
+            if arch.attrib['arch'] not in ('i586', 'x86_64'):
                 continue
-            if arch.attrib.has_key('missing'):
+            if 'missing' in arch.attrib:
                 for pkg in arch.attrib['missing'].split(','):
                     if not self._check_repo_avoid_wrong_friends(p.sproject, repo.attrib['name'], arch.attrib['arch'], pkg, opts):
                         missings[pkg] = 1
@@ -270,7 +270,7 @@ def _check_repo_buildsuccess(self, p, opts):
                 r_foundbuilding = repo.attrib['name']
             if arch.attrib['result'] == 'outdated':
                 msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % p.spackage
-                print "declined " + msg
+                print 'DECLINED', msg
                 self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
                 return False
 
@@ -295,18 +295,18 @@ def _check_repo_buildsuccess(self, p, opts):
 
     if alldisabled:
         msg = "%s is disabled or does not build against factory. Please fix and resubmit" % p.spackage
-        print "declined " + msg
+        print 'DECLINED', msg
         self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
         return False
     if foundbuilding:	
         msg = "{1} is still building for repository {0}".format(foundbuilding, p.spackage)
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-        print "updated " + msg
+        print 'UPDATED', msg
         return False
     if foundfailed:
         msg = "{1} failed to build in repository {0} - not accepting".format(foundfailed, p.spackage)
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-        print "updated " + msg
+        print 'UPDATED',msg
         return False
 
     return True
@@ -333,8 +333,8 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
             if result.group(4) == 'src':
                 continue
             files.append((fn, pname, result.group(4)))
-    except urllib2.HTTPError:
-        print "error", url
+    except urllib2.HTTPError, e:
+        print 'ERROR in URL %s [%s]'%(url, e)
     return files
 
 
@@ -370,7 +370,7 @@ def _check_repo_download(self, p, destdir, opts):
         if fn.endswith('.rpm'):
             pid = subprocess.Popen(["rpm", "--nosignature", "--queryformat", "%{DISTURL}", "-qp", t], 
                                    stdout=subprocess.PIPE, close_fds=True)
-            ret = os.waitpid(pid.pid, 0)[1]
+            os.waitpid(pid.pid, 0)[1]
             disturl = pid.stdout.readlines()
             
             if not os.path.basename(disturl[0]).startswith(p.rev):
@@ -414,15 +414,14 @@ def _get_base_build_src(self, opts):
 
 
 def _check_repo_group(self, id_, reqs, opts):
-    print "\ncheck group", reqs
-    for p in reqs:
-        if not self._check_repo_buildsuccess(p, opts):
-            return
+    print '\nCheck group', reqs
+    if not all(self._check_repo_buildsuccess(r, opts) for r in reqs):
+        return
+
     # all succeeded
-    toignore = []
-    downloads = []
-    destdir = os.path.expanduser("~/co/%s" % str(p.group))
-    fetched = dict()
+    toignore, downloads = [], []
+    destdir = os.path.expanduser('~/co/%s'%str(reqs[0].group))
+    fetched = {}
     for r in opts.groups.get(id_, []):
         fetched[r] = False
     goodrepo = ''
@@ -447,7 +446,7 @@ def _check_repo_group(self, id_, reqs, opts):
         p.goodrepo = goodrepo
         i, d = self._check_repo_download(p, destdir, opts)
         if p.error:
-            print "already accepted: ", p.error
+            print 'ALREADY ACEPTED:', p.error
             p.updated = True
         downloads.extend(d)
         toignore.extend(i)
@@ -464,7 +463,7 @@ def _check_repo_group(self, id_, reqs, opts):
                 build_deps = set(self._get_build_deps(p.sproject, p.goodrepo, arch, p.spackage, opts))
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
-                    print 'Outliers (%s)'%arch, outliers
+                    print 'OUTLIERS (%s)'%arch, outliers
                     
 
     for p in reqs:
@@ -486,7 +485,7 @@ def _check_repo_group(self, id_, reqs, opts):
         if len(smissing):
             msg = "please make sure to wait before these depencencies are in {0}: {1}".format(p.tproject, ', '.join(smissing))
             self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-            print "updated " + msg
+            print 'UPDATED', msg
             return
 
     for dirname, dirnames, filenames in os.walk(destdir):
