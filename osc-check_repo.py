@@ -74,7 +74,7 @@ def _check_repo_fetch_group(self, opts, group):
     a = []
     for req in root.find('action').findall('grouped'):
         id_ = int(req.attrib['id'])
-        a.append(id)
+        a.append(id_)
         opts.grouped[id_] = group
     opts.groups[group] = a
 
@@ -188,12 +188,12 @@ def _check_repo_one_request(self, rq, opts):
             pass # leave lprj
 
         if lprj != prj or lpkg != pkg and not p.updated:
-            msg = "%s/%s should _link to %s/%s" % (prj,spec,prj,pkg)
+            msg = '%s/%s should _link to %s/%s' % (prj,spec,prj,pkg)
             self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             print msg
             p.updated = True
         if lmd5 != p.rev and not p.updated:
-            msg = "%s/%s is a link but has a different md5sum than %s?" % (prj,spec,pkg)
+            msg = '%s/%s is a link but has a different md5sum than %s?' % (prj,spec,pkg)
             self._check_repo_change_review_state(opts, id_, 'new', message=msg)
             print msg
             p.updated = True
