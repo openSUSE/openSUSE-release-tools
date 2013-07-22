@@ -24,10 +24,10 @@ from osc.core import (get_binary_file,
 
 
 def _check_repo_change_review_state(self, opts, id_, newstate, message='', supersed=None):
-    """ taken from osc/osc/core.py, improved:
-        - verbose option added,
-        - empty by_user=& removed.
-        - numeric id can be int().
+    """Taken from osc/osc/core.py, improved:
+       - verbose option added,
+       - empty by_user=& removed.
+       - numeric id can be int().
     """
     query = {
         'cmd': 'changereviewstate',
@@ -576,5 +576,5 @@ def do_check_repo(self, subcmd, opts, *args):
         a.append(p)
         groups[p.group] = a
 
-    # for id_, reqs in groups.items():
-    #    self._check_repo_group(id_, reqs, opts)
+    for id_, reqs in groups.items():
+        self._check_repo_group(id_, reqs, opts)
