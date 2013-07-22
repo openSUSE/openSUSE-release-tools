@@ -73,9 +73,9 @@ def _check_repo_fetch_group(self, opts, group):
     root = ET.parse(f).getroot()
     a = []
     for req in root.find('action').findall('grouped'):
-        id = int(req.attrib['id'])
+        id_ = int(req.attrib['id'])
         a.append(id)
-        opts.grouped[id] = group
+        opts.grouped[id_] = group
     opts.groups[group] = a
 
 
@@ -104,19 +104,20 @@ def _check_repo_one_request(self, rq, opts):
             self.build_excluded = False
 
 
-    id = int(rq.get('id'))
+    id_ = int(rq.get('id'))
     actions = rq.findall('action')
-    if len(actions) != 1:
-       msg = "only one action per request is supported - create a group instead: https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow"
-       print "declined " + msg
-       self._check_repo_change_review_state(opts, id, 'declined', message=msg)
+    if len(actions) > 1:
+       msg = 'only one action per request is supported - create a group instead: '\
+             'https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow'
+       print 'declined ' + msg
+       self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
        return []
  
     act = actions[0]
-    _type = act.get('type')
-    if _type != "submit":
-        self._check_repo_change_review_state(opts, id, 'accepted',
-                                             message="Unchecked request type %s" % _type)
+    type_ = act.get('type')
+    if type_ != 'submit':
+        self._check_repo_change_review_state(opts, id_, 'accepted',
+                                             message='Unchecked request type %s'%type_)
         return []
 
     pkg = act.find('source').get('package')
@@ -125,17 +126,17 @@ def _check_repo_one_request(self, rq, opts):
     tprj = act.find('target').get('project')
     tpkg = act.find('target').get('package')
 
-    subm_id = "SUBMIT(%d):" % id
-    print "%s %s/%s -> %s/%s" % (subm_id,
+    subm_id = 'SUBMIT(%d):' % id_
+    print '%s %s/%s -> %s/%s' % (subm_id,
                                  prj,  pkg,
                                  tprj, tpkg)
 
-    group = id
+    group = id_
     try:
-        if opts.grouped.has_key(id):
-            group = opts.grouped[id]
+        if opts.grouped.has_key(id_):
+            group = opts.grouped[id_]
         else:
-            url = makeurl(opts.apiurl, ["search", "request", "id?match=action/grouped/@id=%s" % id])
+            url = makeurl(opts.apiurl, ["search", "request", "id?match=action/grouped/@id=%s" % id_])
             root = ET.parse(http_GET(url)).getroot()
             for req in root.findall('request'):
                 group = int(req.attrib['id'])
@@ -151,7 +152,7 @@ def _check_repo_one_request(self, rq, opts):
     p.tpackage = tpkg
     p.tproject = tprj
     p.group = group
-    p.request = id
+    p.request = id_
     try:
         url = makeurl(opts.apiurl, ["source", prj, pkg, "?expand=1&rev=%s" % rev])
         root = ET.parse(http_GET(url)).getroot()
@@ -184,12 +185,12 @@ def _check_repo_one_request(self, rq, opts):
             pass # leave lprj
         if lprj != prj or lpkg != pkg and not p.updated:
             msg = "%s/%s should _link to %s/%s" % (prj,spec,prj,pkg)
-            self._check_repo_change_review_state(opts, id, 'declined', message=msg)
+            self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             print msg
             p.updated = True
         if lmd5 != p.rev and not p.updated:
             msg = "%s/%s is a link but has a different md5sum than %s?" % (prj,spec,pkg)
-            self._check_repo_change_review_state(opts, id, 'new', message=msg)
+            self._check_repo_change_review_state(opts, id_, 'new', message=msg)
             print msg
             p.updated = True
 
@@ -199,7 +200,7 @@ def _check_repo_one_request(self, rq, opts):
         sp.tpackage = spec
         sp.tproject = tprj
         sp.group = p.group
-        sp.request = id
+        sp.request = id_
         packs.append(sp)
         sp.rev = root.attrib['srcmd5']
     return packs
@@ -408,7 +409,7 @@ def _get_base_build_src(self, opts):
     return set([e.attrib['name'] for e in root.findall('entry')])
 
 
-def _check_repo_group(self, id, reqs, opts):
+def _check_repo_group(self, id_, reqs, opts):
     print "\ncheck group", reqs
     for p in reqs:
         if not self._check_repo_buildsuccess(p, opts):
@@ -418,7 +419,7 @@ def _check_repo_group(self, id, reqs, opts):
     downloads = []
     destdir = os.path.expanduser("~/co/%s" % str(p.group))
     fetched = dict()
-    for r in opts.groups.get(id, []):
+    for r in opts.groups.get(id_, []):
         fetched[r] = False
     goodrepo = ''
     packs = []
@@ -460,6 +461,7 @@ def _check_repo_group(self, id, reqs, opts):
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
                     print 'Outliers (%s)'%arch, outliers
+                    
 
     for p in reqs:
         smissing = []
@@ -536,7 +538,7 @@ def do_check_repo(self, subcmd, opts, *args):
     ${cmd_option_list}
     """
 
-    if len(args) == 0:
+    if not len(args):
         raise oscerr.WrongArgs("Please give a subcommand to 'osc check_repo' or try 'osc help check_repo'")
 
     opts.mode = ''
@@ -574,5 +576,5 @@ def do_check_repo(self, subcmd, opts, *args):
         a.append(p)
         groups[p.group] = a
 
-    for id_, reqs in groups.items():
-        self._check_repo_group(id_, reqs, opts)
+    # for id_, reqs in groups.items():
+    #    self._check_repo_group(id_, reqs, opts)
