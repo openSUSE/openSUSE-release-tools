@@ -14,7 +14,7 @@ import urllib2
 
 from xml.etree import cElementTree as ET
 
-from osc import oscerr
+from osc import oscerr, cmdln
 from osc.core import (get_binary_file,
                       get_buildinfo,
                       http_GET,
@@ -133,17 +133,20 @@ def _check_repo_one_request(self, rq, opts):
 
     group = id_
     try:
-        if opts.grouped.has_key(id_):
+        if id_ in opts.grouped:
             group = opts.grouped[id_]
         else:
-            url = makeurl(opts.apiurl, ["search", "request", "id?match=action/grouped/@id=%s" % id_])
+            url = makeurl(opts.apiurl, ['search', 'request', 'id?match=action/grouped/@id=%s'%id_])
             root = ET.parse(http_GET(url)).getroot()
-            for req in root.findall('request'):
-                group = int(req.attrib['id'])
+            reqs = root.findall('request')
+            if reqs:
+                group = int(reqs[0].attrib['id'])
                 self._check_repo_fetch_group(opts, group)
-                break
     except urllib2.HTTPError:
         pass
+        # XXX Why not exit?
+        # print 'Error', url
+        # return []
 
     packs = []
     p = CheckRepoPackage()
@@ -154,28 +157,28 @@ def _check_repo_one_request(self, rq, opts):
     p.group = group
     p.request = id_
     try:
-        url = makeurl(opts.apiurl, ["source", prj, pkg, "?expand=1&rev=%s" % rev])
+        url = makeurl(opts.apiurl, ['source', prj, pkg, '?expand=1&rev=%s'%rev])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError:
-        print "error", url
+        print 'Error', url
         return []
-    #print ET.tostring(root)
+
     p.rev = root.attrib['srcmd5']
     specs = []
     for entry in root.findall('entry'):
-        if not entry.attrib['name'].endswith('.spec'): continue
+        if not entry.attrib['name'].endswith('.spec'):
+            continue
         name = entry.attrib['name'][:-5]
         specs.append(name)
     # source checker validated it exists
     specs.remove(tpkg)
     packs.append(p)
     for spec in specs:
-        lprj = ''
-        lpkg = ''
-        lmd5 = ''
+        lprj, lpkg, lmd5 = '', '', ''
         try:
-            url = makeurl(opts.apiurl, ["source", prj, spec, "?expand=1"])
+            url = makeurl(opts.apiurl, ['source', prj, spec, '?expand=1'])
             root = ET.parse(http_GET(url)).getroot()
+            print 'SPEC', ET.dump(root)
             link = root.find('linkinfo')
             if link != None:
                 lprj = link.attrib.get('project', '')
@@ -183,6 +186,7 @@ def _check_repo_one_request(self, rq, opts):
                 lmd5 = link.attrib['srcmd5']
         except urllib2.HTTPError:
             pass # leave lprj
+
         if lprj != prj or lpkg != pkg and not p.updated:
             msg = "%s/%s should _link to %s/%s" % (prj,spec,prj,pkg)
             self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
@@ -528,18 +532,16 @@ def _check_repo_fetch_request(self, id_, opts):
     return self._check_repo_one_request(root, opts)
 
 
+@cmdln.alias('check', 'cr')
+@cmdln.option('-s', '--skip', action='store_true', help='skip review')
 def do_check_repo(self, subcmd, opts, *args):
-    """${cmd_name}: checker review of submit requests.
+    """${cmd_name}: Checker review of submit requests.
 
     Usage:
-      osc check_repo [OPT] [list] [FILTER|PACKAGE_SRC]
+       ${cmd_name} [SRID]...
            Shows pending review requests and their current state.
-
     ${cmd_option_list}
     """
-
-    if not len(args):
-        raise oscerr.WrongArgs("Please give a subcommand to 'osc check_repo' or try 'osc help check_repo'")
 
     opts.mode = ''
     opts.groups = {}
@@ -548,8 +550,10 @@ def do_check_repo(self, subcmd, opts, *args):
 
     opts.apiurl = self.get_api_url()
 
-    if args[0] == 'skip':
-        for id_ in args[1:]:
+    if opts.skip:
+        if not len(args):
+            raise oscerr.WrongArgs('Please give, if you want to skip a review specify a SRID' )
+        for id_ in args:
             self._check_repo_change_review_state(opts, id_, 'accepted', message='skip review')
         return
 
