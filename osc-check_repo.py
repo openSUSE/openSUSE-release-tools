@@ -5,9 +5,13 @@
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc check_repo --help' to see the usage.
 
+import cPickle
+from datetime import datetime
+from functools import wraps
 import os
 import re
 import subprocess
+import shelve
 import shutil
 from urllib import quote_plus
 import urllib2
@@ -21,6 +25,94 @@ from osc.core import (get_binary_file,
                       http_POST,
                       makeurl,
                       Request)
+
+
+def memoize(f):
+    """Decorator function to implement a persistent cache.
+
+    >>> @memoize
+    ... def test_func(a):
+    ...     return a
+
+    Internally, the memoized function has a cache:
+
+    >>> cache = [c.cell_contents for c in test_func.func_closure if 'sync' in dir(c.cell_contents)][0]
+    >>> 'sync' in dir(cache)
+    True
+
+    There is a limit of the size of the cache
+
+    >>> for k in cache:
+    ...     del cache[k]
+    >>> len(cache)
+    0
+
+    >>> for i in range(4095):
+    ...     test_func(i)
+    ... len(cache)
+    4095
+
+    >>> test_func(0)
+    0
+
+    >>> len(cache)
+    4095
+
+    >>> test_func(4095)
+    4095
+
+    >>> len(cache)
+    3072
+
+    >>> test_func(0)
+    0
+
+    >>> len(cache)
+    3073
+
+    >>> from datetime import timedelta
+    >>> k = [k for k in cache if cPickle.loads(k) == ((0,), {})][0]
+    >>> t, v = cache[k]
+    >>> t = t - timedelta(days=10)
+    >>> cache[k] = (t, v)
+    >>> test_func(0)
+    0
+    >>> t2, v = cache[k]
+    >>> t != t2
+    True
+    
+    """
+    # Configuration variables
+    TMPDIR = '/tmp'     # Where the cache files are stored
+    SLOTS = 4096        # Number of slots in the cache file
+    NCLEAN = 1024       # Number of slots to remove when limit reached
+    TIMEOUT = 60*60*10  # Time to live for every cache slot (seconds)
+
+    def _clean_cache():
+        len_cache = len(cache)
+        if len_cache >= SLOTS:
+            nclean = NCLEAN + len_cache - SLOTS
+            keys_to_delete = sorted(cache, key=lambda k: cache[k][0])[:nclean]
+            for key in keys_to_delete:
+                del cache[key]
+
+    @wraps(f)
+    def _f(*args, **kwargs):
+        now = datetime.now()
+        key = cPickle.dumps((args, kwargs), protocol=-1)
+        updated = False
+        if key in cache:
+            timestamp, value = cache[key]
+            updated = True if (now-timestamp).total_seconds() < TIMEOUT else False
+        if not updated:
+            value = f(*args, **kwargs)
+            cache[key] = (now, value)
+        _clean_cache()
+        return value
+
+    cache_name = os.path.join(TMPDIR, f.__name__)
+    cache = shelve.open(cache_name, protocol=-1)
+    return _f
 
 
 def _check_repo_change_review_state(self, opts, id_, newstate, message='', supersed=None):
@@ -210,17 +302,28 @@ def _check_repo_one_request(self, rq, opts):
     return packs
 
 
-def _check_repo_buildsuccess(self, p, opts):
+@memoize
+def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
+    root = None
     try:
-        url = makeurl(opts.apiurl,
-                      ['build', p.sproject,
-                       '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s'%(quote_plus(p.spackage),
-                                                                                  quote_plus(p.tproject),
-                                                                                  p.rev)])
+        url = makeurl(apiurl,
+                      ['build', src_project,
+                       '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s'%(quote_plus(src_package),
+                                                                                  quote_plus(tgt_project),
+                                                                                  rev)])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError, e:
         print 'ERROR in URL %s [%s]'%(url, e)
+
+    return root
+
+
+def _check_repo_buildsuccess(self, p, opts):
+    root = last_build_success(opts.apiurl, p.sproject, p.tproject, p.spackage, p.rev)
+
+    if not root:
         return False
+
     if 'code' in root.attrib:
         print ET.tostring(root)
         return False
@@ -306,7 +409,7 @@ def _check_repo_buildsuccess(self, p, opts):
     if foundfailed:
         msg = "{1} failed to build in repository {0} - not accepting".format(foundfailed, p.spackage)
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-        print 'UPDATED',msg
+        print 'UPDATED', msg
         return False
 
     return True
