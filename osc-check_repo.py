@@ -9,22 +9,33 @@ import cPickle
 from datetime import datetime
 from functools import wraps
 import os
+import shelve
 import re
 import subprocess
-import shelve
 import shutil
 from urllib import quote_plus
 import urllib2
-
 from xml.etree import cElementTree as ET
 
-from osc import oscerr, cmdln
-from osc.core import (get_binary_file,
-                      get_buildinfo,
-                      http_GET,
-                      http_POST,
-                      makeurl,
-                      Request)
+from osc import oscerr
+from osc import cmdln
+
+from osc.core import get_binary_file
+from osc.core import get_buildinfo
+from osc.core import http_GET
+from osc.core import http_POST
+from osc.core import makeurl
+from osc.core import Request
+
+
+#
+# Ugly hack -- because the way that osc import plugings we need to
+# declase some functions and objects used in the decorator as global
+#
+global cPickle
+global datetime
+global shelve
+global wraps
 
 
 def memoize(f):
@@ -114,6 +125,8 @@ def memoize(f):
     cache = shelve.open(cache_name, protocol=-1)
     return _f
 
+global memoize
+
 
 def _check_repo_change_review_state(self, opts, id_, newstate, message='', supersed=None):
     """Taken from osc/osc/core.py, improved:
@@ -176,7 +189,7 @@ def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
     try:
         url = makeurl(opts.apiurl, ["build", prj, repo, arch, pkg])
         root = ET.parse(http_GET(url)).getroot()
-    except urllib2.HTTPError:
+    except urllib2.HTTPError, e:
         print 'ERROR in URL %s [%s]'%(url, e)
         return False
     for binary in root.findall('binary'):
@@ -311,19 +324,19 @@ def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
                        '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s'%(quote_plus(src_package),
                                                                                   quote_plus(tgt_project),
                                                                                   rev)])
-        root = ET.parse(http_GET(url)).getroot()
+        root = http_GET(url).read()
     except urllib2.HTTPError, e:
         print 'ERROR in URL %s [%s]'%(url, e)
 
     return root
+global last_build_success
 
 
 def _check_repo_buildsuccess(self, p, opts):
-    root = last_build_success(opts.apiurl, p.sproject, p.tproject, p.spackage, p.rev)
-
+    root_xml = last_build_success(opts.apiurl, p.sproject, p.tproject, p.spackage, p.rev)
+    root = ET.fromstring(root_xml)
     if not root:
         return False
-
     if 'code' in root.attrib:
         print ET.tostring(root)
         return False
