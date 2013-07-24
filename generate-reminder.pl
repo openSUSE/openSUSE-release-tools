@@ -209,11 +209,11 @@ sub generate_report($)
 
 	    for my $problem (sort @{$package->{problems}}) {
 		if ($problem eq 'different_changes') {
-                    my $url = "$baseurl/package/rdiff?";
-		    $url .= "opackage=" .  uri_escape($package->{name});
+                    my $url = "$baseurl/package/rdiff/";
+                    $url .= uri_escape($package->{develproject});
+		    $url .= "/" . uri_escape($package->{develpackage});
+		    $url .= "?opackage=" .  uri_escape($package->{name});
                     $url .= "&oproject=" . uri_escape($tproject);
-                    $url .= "&package=" . uri_escape($package->{develpackage});
-                    $url .= "&project=" . uri_escape($package->{develproject});
 		    if ($ignorechanges == 0) {
 			$url = shorten_url($url, "rd-$package->{name}");
 			push(@{$lines->{unsubmit}}, "    $package->{name} - $url");
@@ -328,7 +328,7 @@ END
     close(FORTUNE);
     $report .= "\n\n-- \nYour fortune cookie:\n" . $fortune;
 
-    use Email::Simple;
+    use MIME::Lite;
     use XML::Simple;
 
     my $xml = '';
@@ -340,29 +340,21 @@ END
     my $to = $info->{email};
     if (ref($info->{realname}) ne "HASH") {
       my $name = $info->{realname};
-      #eval { my $octets = decode("iso-8859-1", $info->{realname}); 
-      #       $name = encode('utf-8', $octets);
-      #
-      #           };
-      $to = "$name <$to>";
+      $to = encode('MIME-Header', "$name <$to>");
     }
     my $email = 
-	Email::Simple->create(
-	    header => [
-		From    => 'Stephan Kulow <coolo@suse.de>',
-		To      => $to,
-		Subject => 'Reminder for openSUSE:Factory work',
-	    ],
-	    body => $report
+	MIME::Lite->new(
+   	   From    => 'Stephan Kulow <coolo@suse.de>',
+	   To      => $to,
+	   Subject => 'Reminder for openSUSE:Factory work',
+	   Data => $report,
+	   Encoding => '7bit',
 	);
     
     # update from time to time :)
-    $email->header_set( 'MIME-Version', '1.0' );
-    $email->header_set( 'User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0');
-    $email->header_set( 'Content-Type', 'text/plain; charset=UTF-8');
-    $email->header_set( 'X-Mailer', 'https://github.com/coolo/factory-auto/blob/master/generate-reminder.pl');
-    $email->header_set( 'Content-Transfer-Encoding', '7bit');
+    $email->add( 'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0');
+    $email->add( 'X-Mailer' => 'https://github.com/coolo/factory-auto/blob/master/generate-reminder.pl');
 
     print "From - " . Date::Format::time2str("%a %b %d %T %Y\n", time);
-    print $email->as_string;
+    $email->print(\*STDOUT);
 }
