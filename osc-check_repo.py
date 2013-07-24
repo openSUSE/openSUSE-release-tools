@@ -315,7 +315,7 @@ def _check_repo_one_request(self, rq, opts):
     return packs
 
 
-@memoize
+# @memoize
 def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
     root = None
     try:
@@ -333,8 +333,10 @@ global last_build_success
 
 
 def _check_repo_buildsuccess(self, p, opts):
+    print 'PRE'
     root_xml = last_build_success(opts.apiurl, p.sproject, p.tproject, p.spackage, p.rev)
     root = ET.fromstring(root_xml)
+    print 'POST'
     if not root:
         return False
     if 'code' in root.attrib:
