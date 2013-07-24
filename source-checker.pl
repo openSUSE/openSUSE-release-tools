@@ -153,7 +153,7 @@ if (-d "$old") {
 	close(NSPEC);
 	#system("diff -u $spec $spec.new");
 	#exit(0);
-	#rename("$spec.new", "$spec") || die "rename failed";
+	rename("$spec.new", "$spec") || die "rename failed";
     }
     chdir($odir);
 }
