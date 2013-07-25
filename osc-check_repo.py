@@ -447,7 +447,6 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
                     files.append((fn, '', ''))
                 continue
             pname = result.group(1)
-            print 'PNAME', pname
             if pname.endswith('-debuginfo') or pname.endswith('-debuginfo-32bit'):
                 continue
             if pname.endswith('-debugsource'):
