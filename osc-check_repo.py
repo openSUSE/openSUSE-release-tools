@@ -477,12 +477,12 @@ def _check_repo_download(self, p, destdir, opts):
     todownload = []
     for fn in self._check_repo_repo_list(p.sproject, p.goodrepo, 'x86_64', p.spackage, opts):
         todownload.append(('x86_64', fn[0]))
-        
+
     # now fetch -32bit packs
     for fn in self._check_repo_repo_list(p.sproject, p.goodrepo, 'i586', p.spackage, opts):
         if fn[2] != 'x86_64': continue
         todownload.append(('i586', fn[0]))
-        
+
     downloads = []
     for arch, fn in todownload:
         t = os.path.join(p.destdir, fn)
@@ -494,7 +494,7 @@ def _check_repo_download(self, p, destdir, opts):
                                    stdout=subprocess.PIPE, close_fds=True)
             os.waitpid(pid.pid, 0)[1]
             disturl = pid.stdout.readlines()
-            
+
             if not os.path.basename(disturl[0]).startswith(p.rev):
                 p.error = "disturl %s does not match revision %s" % (disturl[0], p.rev)
                 return [], []
@@ -584,7 +584,10 @@ def _check_repo_group(self, id_, reqs, opts):
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
                     print 'OUTLIERS (%s)'%arch, outliers
-                    
+                    msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)'%(', '.join(outliers))
+                    # self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+                    print 'NON-(FIX)-UPDATED', msg
+                    return
 
     for p in reqs:
         smissing = []
