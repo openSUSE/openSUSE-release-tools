@@ -434,12 +434,11 @@ def _check_repo_buildsuccess(self, p, opts):
     return True
 
 
-def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
+def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
     url = makeurl(opts.apiurl, ['build', prj, repo, arch, pkg])
     files = []
     try:
-        f = http_GET(url)
-        binaries = ET.parse(f).getroot()
+        binaries = ET.parse(http_GET(url)).getroot()
         for bin in  binaries.findall('binary'):
             fn=bin.attrib['filename']
             result = re.match("(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm", fn)
@@ -456,7 +455,8 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
                 continue
             files.append((fn, pname, result.group(4)))
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(url, e)
+        if not ignore:
+            print 'ERROR in URL %s [%s]'%(url, e)
     return files
 
 
@@ -500,11 +500,11 @@ def _check_repo_download(self, p, destdir, opts):
                 return [], []
 
     toignore = []
-    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'x86_64', p.tpackage, opts):
+    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'x86_64', p.tpackage, opts, ignore=True):
         toignore.append(fn[1])
 
     # now fetch -32bit pack list
-    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'i586', p.tpackage, opts):
+    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'i586', p.tpackage, opts, ignore=True):
         if fn[2] != 'x86_64': continue
         toignore.append(fn[1])
     return toignore, downloads
