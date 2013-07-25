@@ -100,7 +100,7 @@ def memoize(f):
     TMPDIR = '/tmp'     # Where the cache files are stored
     SLOTS = 4096        # Number of slots in the cache file
     NCLEAN = 1024       # Number of slots to remove when limit reached
-    TIMEOUT = 60*60*10  # Time to live for every cache slot (seconds)
+    TIMEOUT = 60*60*2   # Time to live for every cache slot (seconds)
 
     def _clean_cache():
         len_cache = len(cache)
@@ -175,15 +175,17 @@ def _check_repo_find_submit_request(self, opts, project, package):
 def _check_repo_fetch_group(self, opts, group):
     if group in opts.groups:
         return
-    u = makeurl(opts.apiurl, ['request', str(group)])
-    f = http_GET(u)
-    root = ET.parse(f).getroot()
-    a = []
-    for req in root.find('action').findall('grouped'):
-        id_ = int(req.attrib['id'])
-        a.append(id_)
-        opts.grouped[id_] = group
-    opts.groups[group] = a
+    url = makeurl(opts.apiurl, ['request', str(group)])
+    root = ET.parse(http_GET(url)).getroot()
+
+    # Every opts.groups[group_id] will contains the list of ids that
+    # conform the group
+    groups = [int(req.attrib['id']) for req in root.find('action').findall('grouped')]
+    opts.groups[group] = groups
+
+    # opts.grouped[id] will point to the group_id which belongs to
+    grouped = {id_: group for id_ in groups}
+    opts.grouped.update(grouped)
 
 
 def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
@@ -243,17 +245,20 @@ def _check_repo_one_request(self, rq, opts):
         if id_ in opts.grouped:
             group = opts.grouped[id_]
         else:
+            # Search in which group this id_ is included. The result
+            # in an XML document pointing to a single submit request
+            # ID if this id_ is actually part of a group
             url = makeurl(opts.apiurl, ['search', 'request', 'id?match=action/grouped/@id=%s'%id_])
             root = ET.parse(http_GET(url)).getroot()
             reqs = root.findall('request')
             if reqs:
                 group = int(reqs[0].attrib['id'])
+                # Recover the full group description, with more SRIDs
+                # and populate opts.group and opts.grouped
                 self._check_repo_fetch_group(opts, group)
-    except urllib2.HTTPError:
-        pass
-        # XXX Why not exit with:
-        # print 'ERROR in URL %s [%s]'%(url, e)
-        # return []
+    except urllib2.HTTPError, e:
+        print 'ERROR in URL %s [%s]'%(url, e)
+        return []
 
     packs = []
     p = CheckRepoPackage()
@@ -263,23 +268,25 @@ def _check_repo_one_request(self, rq, opts):
     p.tproject = tprj
     p.group = group
     p.request = id_
+
+    # Get source information about the SR:
+    #   - Source MD5
+    #   - Entries (.tar.gz, .changes, .spec ...) and MD5
     try:
         url = makeurl(opts.apiurl, ['source', prj, pkg, '?expand=1&rev=%s'%rev])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError, e:
         print 'ERROR in URL %s [%s]'%(url, e)
         return []
-
     p.rev = root.attrib['srcmd5']
-    specs = []
-    for entry in root.findall('entry'):
-        if not entry.attrib['name'].endswith('.spec'):
-            continue
-        name = entry.attrib['name'][:-5]
-        specs.append(name)
+
+    # Recover the .spec files
+    specs = [e.attrib['name'][:-5] for e in root.findall('entry') if e.attrib['name'].endswith('.spec')]
+
     # source checker validated it exists
     specs.remove(tpkg)
     packs.append(p)
+    # Validate the rest of the spec files
     for spec in specs:
         lprj, lpkg, lmd5 = '', '', ''
         try:
@@ -403,8 +410,7 @@ def _check_repo_buildsuccess(self, p, opts):
         if r_foundfailed:
              foundfailed = r_foundfailed
 
-    p.missings = missings.keys()
-    p.missings.sort()
+    p.missings = sorted(missings)
 
     if result:
         return True
@@ -537,9 +543,7 @@ def _check_repo_group(self, id_, reqs, opts):
     # all succeeded
     toignore, downloads = [], []
     destdir = os.path.expanduser('~/co/%s'%str(reqs[0].group))
-    fetched = {}
-    for r in opts.groups.get(id_, []):
-        fetched[r] = False
+    fetched = {r: False for r in opts.groups.get(id_, [])}
     goodrepo = ''
     packs = []
     for p in reqs:
@@ -641,9 +645,7 @@ def _check_repo_group(self, id_, reqs, opts):
 
 def _check_repo_fetch_request(self, id_, opts):
     url = makeurl(opts.apiurl, ['request', str(id_)])
-    f = http_GET(url)
-    xml = ET.parse(f)
-    root = xml.getroot()
+    root = ET.parse(http_GET(url)).getroot()
     return self._check_repo_one_request(root, opts)
 
 
