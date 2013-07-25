@@ -439,14 +439,15 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
     files = []
     try:
         binaries = ET.parse(http_GET(url)).getroot()
-        for bin in  binaries.findall('binary'):
-            fn=bin.attrib['filename']
+        for bin_ in  binaries.findall('binary'):
+            fn = bin_.attrib['filename']
             result = re.match("(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm", fn)
             if not result: 
                 if fn == 'rpmlint.log':
                     files.append((fn, '', ''))
                 continue
-            pname=result.group(1)
+            pname = result.group(1)
+            print 'PNAME', pname
             if pname.endswith('-debuginfo') or pname.endswith('-debuginfo-32bit'):
                 continue
             if pname.endswith('-debugsource'):
