@@ -151,6 +151,7 @@ sub write_package($$)
     next if ($name eq "libqmmp0-plugin-mplayer" && $prv eq "/usr/bin/mplayer");
     next if ($name eq "systemd-mini" && $prv eq "this-is-only-for-build-envs");
     next if ($name eq "build-config" && $prv eq "this-is-only-for-build-envs");
+    next if ($name eq "installation-images-debuginfodeps" && $prv =~ m/debuginfo.build/);
     $out .= "$prv\n";
   }
   $out .= "-Req:\n";

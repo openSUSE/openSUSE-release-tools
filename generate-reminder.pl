@@ -45,7 +45,7 @@ sub fetch_user_infos($)
     $st{'mywork'} = $mywork;
     $st{'projstat'} = $projstat;
    # open(my $fh, '>', "reports/$user");
-   # print $fh to_json(%st);
+   # print STDOUT to_json(\%st);
    # close $fh;
     return ($mywork, $projstat);
 }
@@ -151,7 +151,8 @@ sub generate_report($)
     my $report = '';
 
     for my $request (@{$mywork->{review}}) {
-	my $reviews = $request->{review};
+      # as we query the build service as anonymous, we always get the reviews for "the others"
+	my $reviews = $request->{other_open_reviews};
 	$reviews = [$reviews] if (ref($reviews) eq "HASH");
 	for my $review (@{$reviews}) {
 	    next if ($review->{state} ne 'new');
@@ -197,10 +198,11 @@ sub generate_report($)
 		my $comment = $package->{failedcomment} || 'unknown failure';
 		$comment =~ s,^\s+,,;
 		$comment =~ s,\s+$,,;
-		my $url = "$baseurl/package/live_build_log?arch=" . uri_escape($package->{failedarch});
-		$url   .= "&package=" . uri_escape($package->{name});
-		$url   .= "&project=" . uri_escape($tproject);
-		$url   .= "&repository=" . uri_escape($package->{failedrepo});
+		my $url = "$baseurl/package/live_build_log/";
+		$url   .= uri_escape($tproject) . "/";
+		$url   .= uri_escape($package->{name}) . "/";
+		$url   .= uri_escape($package->{failedrepo}) . "/";
+		$url   .= uri_escape($package->{failedarch});
 		$url = shorten_url($url, "bf-$package->{name}");
 		push(@{$lines->{fails}}, "  $package->{name} fails for $fail ($comment):");
 		push(@{$lines->{fails}}, "    $url\n");
