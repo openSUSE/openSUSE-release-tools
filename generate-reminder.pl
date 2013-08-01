@@ -102,7 +102,7 @@ sub explain_request($$)
     for my $action (@{$actions || []}) {
 	my $source = $action->{source};
 	my $target = $action->{target};
-		    
+
         if ($target->{project} eq $tproject) {
                 #print "ignore $request->{id}\n";
                 next;
@@ -132,7 +132,7 @@ sub explain_request($$)
 sub generate_report($)
 {
     my ($user) = @_;
-    
+
     my ($mywork, $projstat) = fetch_user_infos($user);
 
     #print to_json($mywork, {pretty => 1 });
@@ -225,9 +225,9 @@ sub generate_report($)
 		    my $url = "https://build.opensuse.org/request/show/$package->{currently_declined}";
 		    push(@{$lines->{declined}}, "    $package->{name} - $url");
 		    $showversion = 0;
-		} 
+		}
 	    }
-	    
+
 	    for my $request (@{$package->{requests_to}}) {
 		push(@{$lines->{requests}}, "    $package->{name} - https://build.opensuse.org/request/show/$request");
 		$requests_to_ignore{$request} = 1;
@@ -318,7 +318,7 @@ role - or if you know the real package maintainer, set it in the package.
 
 I intent to send these reminders on a weekly basis, you can find more details
 in this thread: http://lists.opensuse.org/opensuse-packaging/2012-02/msg00011.html
-    
+
 The following packages are sorted by devel project of openSUSE:Factory
 END
 
@@ -337,7 +337,7 @@ END
     open(USER, "osc meta user -- '$user'|") || die "osc meta user $user failed";
     while ( <USER> ) { $xml .= $_; }
     close(USER);
-    
+
     my $info = XMLin($xml);
     my $to = $info->{email};
     if (ref($info->{realname}) ne "HASH") {
@@ -352,7 +352,7 @@ END
 	   Data => $report,
 	   Encoding => '7bit',
 	);
-    
+
     # update from time to time :)
     $email->add( 'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0');
     $email->add( 'X-Mailer' => 'https://github.com/coolo/factory-auto/blob/master/generate-reminder.pl');
