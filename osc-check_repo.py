@@ -480,8 +480,8 @@ def _check_repo_download(self, p, destdir, opts):
 
     # now fetch -32bit packs
     for fn in self._check_repo_repo_list(p.sproject, p.goodrepo, 'i586', p.spackage, opts):
-        if fn[2] != 'x86_64': continue
-        todownload.append(('i586', fn[0]))
+        if fn[2] == 'x86_64':
+            todownload.append(('i586', fn[0]))
 
     downloads = []
     for arch, fn in todownload:
@@ -490,13 +490,13 @@ def _check_repo_download(self, p, destdir, opts):
                                     arch, p.spackage, fn, t)
         downloads.append(t)
         if fn.endswith('.rpm'):
-            pid = subprocess.Popen(["rpm", "--nosignature", "--queryformat", "%{DISTURL}", "-qp", t], 
+            pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t], 
                                    stdout=subprocess.PIPE, close_fds=True)
             os.waitpid(pid.pid, 0)[1]
             disturl = pid.stdout.readlines()
 
             if not os.path.basename(disturl[0]).startswith(p.rev):
-                p.error = "disturl %s does not match revision %s" % (disturl[0], p.rev)
+                p.error = 'disturl %s does not match revision %s' % (disturl[0], p.rev)
                 return [], []
 
     toignore = []
@@ -505,8 +505,8 @@ def _check_repo_download(self, p, destdir, opts):
 
     # now fetch -32bit pack list
     for fn in self._check_repo_repo_list(p.tproject, 'standard', 'i586', p.tpackage, opts, ignore=True):
-        if fn[2] != 'x86_64': continue
-        toignore.append(fn[1])
+        if fn[2] == 'x86_64':
+            toignore.append(fn[1])
     return toignore, downloads
 
 
@@ -588,6 +588,7 @@ def _check_repo_group(self, id_, reqs, opts):
                     # self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
                     print 'NON-(FIX)-UPDATED', msg
                     return
+
 
     for p in reqs:
         smissing = []
