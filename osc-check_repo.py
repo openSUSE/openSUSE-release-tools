@@ -852,7 +852,7 @@ def _check_repo_group(self, id_, reqs, opts):
             # Update the currect graph and see if we have different cycles
             if p.spackage in current_graph:
                 pkg = current_graph[p.spackage]
-                current_graph.remove_edges_from(set((pkg.pkg, subpkgs[p]) for p in pkg.deps))
+                current_graph.remove_edges_from(set((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs))
                 pkg.deps = build_deps
                 pkg.subs = bins
                 current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
