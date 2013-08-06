@@ -77,6 +77,11 @@ while(<FL>) {
       $fls = 0;
       next;
     }
+    my $lnk = '';
+    if (/^(12.*)( -> .*?)$/) {
+      $_ = $1;
+      $lnk = $2;
+    }
     next unless /^(\d+ (\d+) \S+) (.*\/)(.*?)$/;
     my $n = $dirs{$3};
     if (!defined($n)) {
@@ -84,11 +89,13 @@ while(<FL>) {
       $dirs{$3} = $n;
       $dirs[$n] = $3;
     }
-    my $m = $modes{$1};
+    # ignore link targets of ghosts
+    $lnk = '' if $lnk && (oct($2) & 0100) != 0;
+    my $m = $modes{"$1$lnk"};
     if (!defined($m)) {
       $m = @modes;
-      $modes{$1} = $m;
-      $modes[$m] = $1;
+      $modes{"$1$lnk"} = $m;
+      $modes[$m] = "$1$lnk";
       $modes_type[$m] = oct($1) & 07770000;
       $modes_ghost[$m] = oct($2) & 0100;
     }
@@ -155,6 +162,7 @@ while(<FL>) {
 }
 close(FL) || die("close failed\n");
 
+print "currently have ".@dirs." dirs and ".@modes." modes\n";
 
 # connect dirs and add all dirs as files
 print "connecting ".@dirs." directories\n";
@@ -324,14 +332,14 @@ for my $tc (sort keys %tocheck) {
       for my $f (@{$tocheck_files{$tc}}) {
 	my @pp = grep {s/^(?:\Q$p1\E|\Q$p2\E)\///} map {$_} @{$filesc{$f}};
 	next unless @pp;
-	# ignore if (all directories or all ghosts) and all same mode;
+	# ignore if (all directories or all ghosts or all links) and all same mode;
 	my %allm = map {$_ => 1} @pp;
 	my $info = '';
 	if (keys(%allm) == 1) {
 	  my $m = (keys(%allm))[0];
 	  # all modes/flags are the same
-	  # no conflict if all dirs or all ghosts
-	  next if $modes_type[$m] == 040000 || $modes_ghost[$m] == 0100;
+	  # no conflict if all dirs or all ghosts or all links
+	  next if $modes_type[$m] == 040000 || $modes_type[$m] == 0120000 || $modes_ghost[$m] == 0100;
 	} else {
 	  # don't report mode mismatches for files/symlinks that are not ghosts
 	  for my $m (keys %allm) {

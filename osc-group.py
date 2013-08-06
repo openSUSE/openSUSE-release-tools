@@ -6,7 +6,7 @@
 # Then try to run 'osc checker --help' to see the usage.
 
 def _group_find_request(self, package, opts):
-    url = makeurl(opts.apiurl, ['request'], "states=new,review,declined&project=openSUSE:Factory&view=collection&package=%s" % package )
+    url = makeurl(opts.apiurl, ['request'], "states=new,review&project=openSUSE:Factory&view=collection&package=%s" % package )
     f = http_GET(url)
     root = ET.parse(f).getroot()
     maxid=0
@@ -16,6 +16,19 @@ def _group_find_request(self, package, opts):
         if id > maxid:
             maxid = id
     return maxid
+
+def _group_find_request_project(self, source_project, opts):
+    url = makeurl(opts.apiurl, ['request'], "states=new,review&project=openSUSE:Factory&view=collection" )
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    res = []
+    for rq in root.findall('request'):
+        for a in rq.findall('action'):
+            s = a.find('source')
+            if s is not None and s.get('project') ==  source_project:
+                id = int(rq.attrib['id'])
+                res.append(id)
+    return res
 
 def _group_find_group(self, request, opts):
     url = makeurl(opts.apiurl, ['search', "request", "id?match=action/grouped/@id=%s" % request] )
@@ -47,17 +60,23 @@ def do_group(self, subcmd, opts, *args):
     for p in args[:]:
         request = self._group_find_request(p, opts)
         if not request:
-            print("Can't find a request for", p)
-            exit(1)
-        group = self._group_find_group(request, opts)
-        if group > 0:
-            if grouptoadd > 0 and grouptoadd != group:
-                print("there are two groups:", grouptoadd, group)
+            prequests = self._group_find_request_project(p, opts)
+            if not len(prequests):
+                print("Can't find a request for package", p)
                 exit(1)
-            else:
-                grouptoadd = group
         else:
-            requests.append(request)
+            prequests = [ request ]
+
+        for request in prequests:
+            group = self._group_find_group(request, opts)
+            if group > 0:
+                if grouptoadd > 0 and grouptoadd != group:
+                    print("there are two groups:", grouptoadd, group)
+                    exit(1)
+                else:
+                    grouptoadd = group
+            else:
+                requests.append(request)
 
     if grouptoadd > 0:
         for r in requests:

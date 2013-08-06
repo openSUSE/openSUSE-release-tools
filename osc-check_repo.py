@@ -613,8 +613,9 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
                 continue
             files.append((fn, pname, result.group(4)))
     except urllib2.HTTPError, e:
-        if not ignore:
-            print 'ERROR in URL %s [%s]'%(url, e)
+        pass
+        # if not ignore:
+        #     print 'ERROR in URL %s [%s]'%(url, e)
     return files
 
 
@@ -678,7 +679,7 @@ def _get_base_build_bin(self, opts):
     """Get Base:build pagacke list"""
     binaries = {}
     for arch in ('x86_64', 'i586'):
-        url = makeurl(opts.apiurl, ['/build/Base:build/standard/%s/_repository'%arch,])
+        url = makeurl(opts.apiurl, ['/build/openSUSE:Factory:Build/standard/%s/_repository'%arch,])
         root = ET.parse(http_GET(url)).getroot()
         binaries[arch] = set([e.attrib['filename'][:-4] for e in root.findall('binary')])
     return binaries
@@ -686,7 +687,7 @@ def _get_base_build_bin(self, opts):
 
 def _get_base_build_src(self, opts):
     """Get Base:build pagacke list"""
-    url = makeurl(opts.apiurl, ['/source/Base:build',])
+    url = makeurl(opts.apiurl, ['/source/openSUSE:Factory:Build',])
     root = ET.parse(http_GET(url)).getroot()
     return set([e.attrib['name'] for e in root.findall('entry')])
 
@@ -799,10 +800,10 @@ def _check_repo_group(self, id_, reqs, opts):
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
                     print 'OUTLIERS (%s)'%arch, outliers
-                    msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)'%(', '.join(outliers))
+                    # msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)'%(', '.join(outliers))
                     # self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-                    print 'NON-(FIX)-UPDATED', msg
-                    return
+                    # print 'NON-(FIX)-UPDATED', msg
+                    p.updated = True
 
     # Detect cycles - We create the full graph from _builddepinfo.
     for arch in ('x86_64',):
@@ -855,12 +856,12 @@ def _check_repo_group(self, id_, reqs, opts):
         smissing = []
         for package in p.missings:
             alreadyin = False
-            print package, packs
+            # print package, packs
             for t in packs:
                 if package == t.tpackage: alreadyin=True
             if alreadyin:
                 continue
-            print package, packs, downloads, toignore
+            #print package, packs, downloads, toignore
             request = self._check_repo_find_submit_request(opts, p.tproject, package)
             if request:
                 greqs = opts.groups.get(p.group, [])

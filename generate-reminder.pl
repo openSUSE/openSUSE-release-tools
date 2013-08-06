@@ -27,14 +27,15 @@ sub fetch_user_infos($)
     }
 
     my $ua = LWP::UserAgent->new;
-    $ua->timeout(15);
+    $ua->timeout(180);
+    $ua->max_size(100000000);
     $ua->default_header("Accept" => "application/json");
-    my $mywork = $ua->get("https://build.opensuse.org/home/requests?user=$user");
+    my $mywork = $ua->get("https://build.opensuse.org/home/requests.json?user=$user");
     unless ($mywork->is_success) { die $mywork->status_line; }
 
     $mywork = from_json( $mywork->decoded_content, { utf8 => 1 });
 
-    my $url = "https://build.opensuse.org/stage/project/status?project=$tproject&ignore_pending=0";
+    my $url = "https://build.opensuse.org/project/status/$tproject?ignore_pending=0";
     $url .= "&limit_to_fails=false&limit_to_old=false&include_versions=true&filter_for_user=$user";
     my $projstat = $ua->get($url);
     die $projstat->status_line unless ($projstat->is_success);
@@ -44,7 +45,7 @@ sub fetch_user_infos($)
     $st{'mywork'} = $mywork;
     $st{'projstat'} = $projstat;
    # open(my $fh, '>', "reports/$user");
-   # print $fh to_json(%st);
+   # print STDOUT to_json(\%st);
    # close $fh;
     return ($mywork, $projstat);
 }
@@ -101,7 +102,7 @@ sub explain_request($$)
     for my $action (@{$actions || []}) {
 	my $source = $action->{source};
 	my $target = $action->{target};
-		    
+
         if ($target->{project} eq $tproject) {
                 #print "ignore $request->{id}\n";
                 next;
@@ -131,7 +132,7 @@ sub explain_request($$)
 sub generate_report($)
 {
     my ($user) = @_;
-    
+
     my ($mywork, $projstat) = fetch_user_infos($user);
 
     #print to_json($mywork, {pretty => 1 });
@@ -150,7 +151,8 @@ sub generate_report($)
     my $report = '';
 
     for my $request (@{$mywork->{review}}) {
-	my $reviews = $request->{review};
+      # as we query the build service as anonymous, we always get the reviews for "the others"
+	my $reviews = $request->{other_open_reviews};
 	$reviews = [$reviews] if (ref($reviews) eq "HASH");
 	for my $review (@{$reviews}) {
 	    next if ($review->{state} ne 'new');
@@ -196,10 +198,11 @@ sub generate_report($)
 		my $comment = $package->{failedcomment} || 'unknown failure';
 		$comment =~ s,^\s+,,;
 		$comment =~ s,\s+$,,;
-		my $url = "$baseurl/package/live_build_log?arch=" . uri_escape($package->{failedarch});
-		$url   .= "&package=" . uri_escape($package->{name});
-		$url   .= "&project=" . uri_escape($tproject);
-		$url   .= "&repository=" . uri_escape($package->{failedrepo});
+		my $url = "$baseurl/package/live_build_log/";
+		$url   .= uri_escape($tproject) . "/";
+		$url   .= uri_escape($package->{name}) . "/";
+		$url   .= uri_escape($package->{failedrepo}) . "/";
+		$url   .= uri_escape($package->{failedarch});
 		$url = shorten_url($url, "bf-$package->{name}");
 		push(@{$lines->{fails}}, "  $package->{name} fails for $fail ($comment):");
 		push(@{$lines->{fails}}, "    $url\n");
@@ -208,11 +211,11 @@ sub generate_report($)
 
 	    for my $problem (sort @{$package->{problems}}) {
 		if ($problem eq 'different_changes') {
-                    my $url = "$baseurl/package/rdiff?";
-		    $url .= "opackage=" .  uri_escape($package->{name});
+                    my $url = "$baseurl/package/rdiff/";
+                    $url .= uri_escape($package->{develproject});
+		    $url .= "/" . uri_escape($package->{develpackage});
+		    $url .= "?opackage=" .  uri_escape($package->{name});
                     $url .= "&oproject=" . uri_escape($tproject);
-                    $url .= "&package=" . uri_escape($package->{develpackage});
-                    $url .= "&project=" . uri_escape($package->{develproject});
 		    if ($ignorechanges == 0) {
 			$url = shorten_url($url, "rd-$package->{name}");
 			push(@{$lines->{unsubmit}}, "    $package->{name} - $url");
@@ -222,9 +225,9 @@ sub generate_report($)
 		    my $url = "https://build.opensuse.org/request/show/$package->{currently_declined}";
 		    push(@{$lines->{declined}}, "    $package->{name} - $url");
 		    $showversion = 0;
-		} 
+		}
 	    }
-	    
+
 	    for my $request (@{$package->{requests_to}}) {
 		push(@{$lines->{requests}}, "    $package->{name} - https://build.opensuse.org/request/show/$request");
 		$requests_to_ignore{$request} = 1;
@@ -315,7 +318,7 @@ role - or if you know the real package maintainer, set it in the package.
 
 I intent to send these reminders on a weekly basis, you can find more details
 in this thread: http://lists.opensuse.org/opensuse-packaging/2012-02/msg00011.html
-    
+
 The following packages are sorted by devel project of openSUSE:Factory
 END
 
@@ -327,38 +330,33 @@ END
     close(FORTUNE);
     $report .= "\n\n-- \nYour fortune cookie:\n" . $fortune;
 
-    use Email::Simple;
+    use MIME::Lite;
     use XML::Simple;
 
     my $xml = '';
     open(USER, "osc meta user -- '$user'|") || die "osc meta user $user failed";
     while ( <USER> ) { $xml .= $_; }
     close(USER);
-    
+
     my $info = XMLin($xml);
     my $to = $info->{email};
     if (ref($info->{realname}) ne "HASH") {
-      my $octets = decode("iso-8859-1", $info->{realname});
-      my $name = encode('utf-8', $octets);
-      $to = "$name <$to>";
+      my $name = $info->{realname};
+      $to = encode('MIME-Header', "$name <$to>");
     }
     my $email = 
-	Email::Simple->create(
-	    header => [
-		From    => 'Stephan Kulow <coolo@suse.de>',
-		To      => $to,
-		Subject => 'Reminder for openSUSE:Factory work',
-	    ],
-	    body => $report
+	MIME::Lite->new(
+   	   From    => 'Stephan Kulow <coolo@suse.de>',
+	   To      => $to,
+	   Subject => 'Reminder for openSUSE:Factory work',
+	   Data => $report,
+	   Encoding => '7bit',
 	);
-    
+
     # update from time to time :)
-    $email->header_set( 'MIME-Version', '1.0' );
-    $email->header_set( 'User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0');
-    $email->header_set( 'Content-Type', 'text/plain; charset=UTF-8');
-    $email->header_set( 'X-Mailer', 'https://github.com/coolo/factory-auto/blob/master/generate-reminder.pl');
-    $email->header_set( 'Content-Transfer-Encoding', '7bit');
+    $email->add( 'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0');
+    $email->add( 'X-Mailer' => 'https://github.com/coolo/factory-auto/blob/master/generate-reminder.pl');
 
     print "From - " . Date::Format::time2str("%a %b %d %T %Y\n", time);
-    print $email->as_string;
+    $email->print(\*STDOUT);
 }
