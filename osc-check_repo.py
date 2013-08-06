@@ -234,10 +234,10 @@ def memoize(ttl=None):
     
     """
     # Configuration variables
-    TMPDIR = '/tmp'     # Where the cache files are stored
-    SLOTS = 4096        # Number of slots in the cache file
-    NCLEAN = 1024       # Number of slots to remove when limit reached
-    TIMEOUT = 60*60*2   # Time to live for every cache slot (seconds)
+    TMPDIR = '~/.cr-cache' # Where the cache files are stored
+    SLOTS = 4096           # Number of slots in the cache file
+    NCLEAN = 1024          # Number of slots to remove when limit reached
+    TIMEOUT = 60*60*2      # Time to live for every cache slot (seconds)
 
     def _memoize(f):
         def _clean_cache():
@@ -262,7 +262,10 @@ def memoize(ttl=None):
             _clean_cache()
             return value
 
-        cache_name = os.path.join(TMPDIR, f.__name__)
+        cache_dir = os.path.expanduser(TMPDIR)
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        cache_name = os.path.join(cache_dir, f.__name__)
         cache = shelve.open(cache_name, protocol=-1)
         return _f
 
