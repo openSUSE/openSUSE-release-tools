@@ -171,8 +171,8 @@ class Package(object):
         self.src = [e.text for e in element.findall('source')]
         assert len(self.src) == 1, 'There are more that one source packages in the graph'
         self.src = self.src[0]
-        self.deps = {e.text for e in element.findall('pkgdep')}
-        self.subs = {e.text for e in element.findall('subpkg')}
+        self.deps = set(e.text for e in element.findall('pkgdep'))
+        self.subs = set(e.text for e in element.findall('subpkg'))
 
     def __repr__(self):
         return 'PKG: %s\nSRC: %s\nDEPS: %s\n SUBS:%s'%(self.pkg, self.src, self.deps, self.subs)
@@ -363,7 +363,7 @@ def _check_repo_fetch_group(self, opts, group):
     opts.groups[group] = groups
 
     # opts.grouped[id] will point to the group_id which belongs to
-    grouped = {id_: group for id_ in groups}
+    grouped = dict((id_, group) for id_ in groups)
     opts.grouped.update(grouped)
 
 
@@ -759,7 +759,7 @@ def _check_repo_group(self, id_, reqs, opts):
     # all succeeded
     toignore, downloads = [], []
     destdir = os.path.expanduser('~/co/%s'%str(reqs[0].group))
-    fetched = {r: False for r in opts.groups.get(id_, [])}
+    fetched = dict((r, False) for r in opts.groups.get(id_, []))
     goodrepo = ''
     packs = []
     for p in reqs:
