@@ -82,9 +82,15 @@ class Graph(dict):
 
     def remove_edge(self, u, v, directed=True):
         """Remove the edge u -> v, an v -> u if not directed."""
-        self.adj[u].remove(v)
+        try:
+            self.adj[u].remove(v)
+        except KeyError:
+            pass
         if not directed:
-            self.adj[v].remove(u)
+            try:
+                self.adj[v].remove(u)
+            except KeyError:
+                pass
 
     def remove_edges_from(self, edges, directed=True):
         """Remove the edges from an iterator."""
@@ -697,6 +703,10 @@ def _get_base_build_src(self, opts):
     return set([e.attrib['name'] for e in root.findall('entry')])
 
 
+# Store packages prevoiusly ignored. Don't pollute the screen.
+_ignore_packages = set()
+global _ignore_packages
+
 def _get_builddepinfo_graph(self, opts, package='openSUSE:Factory', repository='standard', arch='x86_64'):
     """Generate the buildepinfo graph for a given architecture."""
 
@@ -735,7 +745,9 @@ def _get_builddepinfo_graph(self, opts, package='openSUSE:Factory', repository='
         deps = [d for d in p.deps if not 'branding' in d]
         missing = [d for d in deps if not d.startswith(_IGNORE_PREFIX) and d not in subpkgs]
         if missing:
-            print 'Ignoring package. Missing dependencies %s -> (%s) %s...'%(p.pkg, len(missing), missing[:5])
+            if p.pkg not in _ignore_packages:
+                print 'Ignoring package. Missing dependencies %s -> (%s) %s...'%(p.pkg, len(missing), missing[:5])
+                _ignore_packages.add(p.pkg)
             continue
 
         # XXX - Ugly Hack. Subpagackes for texlive are not correctly
@@ -840,7 +852,7 @@ def _check_repo_group(self, id_, reqs, opts):
             # Update the currect graph and see if we have different cycles
             if p.spackage in current_graph:
                 pkg = current_graph[p.spackage]
-                current_graph.remove_edges_from(set((pkg.pkg, subpkgs[p]) for p in pkg.deps))
+                current_graph.remove_edges_from(set((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs))
                 pkg.deps = build_deps
                 pkg.subs = bins
                 current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
@@ -850,7 +862,9 @@ def _check_repo_group(self, id_, reqs, opts):
                               deps=build_deps,
                               subs=bins)
                 current_graph.add_node(pkg.pkg, pkg)
-                current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps)
+                current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
+
+            subpkgs.update(dict((p, pkg.pkg) for p in pkg.deps))
 
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
