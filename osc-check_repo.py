@@ -250,12 +250,14 @@ def memoize(ttl=None):
 
         @wraps(f)
         def _f(*args, **kwargs):
+            def total_seconds(td):
+                return (td.microseconds + (td.seconds + td.days * 24 * 3600.) * 10**6) / 10**6
             now = datetime.now()
             key = cPickle.dumps((args, kwargs), protocol=-1)
             updated = False
             if key in cache:
                 timestamp, value = cache[key]
-                updated = True if (now-timestamp).total_seconds() < ttl else False
+                updated = True if total_seconds(now-timestamp) < ttl else False
             if not updated:
                 value = f(*args, **kwargs)
                 cache[key] = (now, value)
