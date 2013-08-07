@@ -308,11 +308,11 @@ def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
 
 
 @memoize(ttl=60*60*6)
-def builddepinfo(apiurl, package, repository, arch):
+def builddepinfo(apiurl, project, repository, arch):
     root = None
     try:
-        print 'Generating _builddepinfo for (%s, %s, %s)'%(package, repository, arch)
-        url = makeurl(apiurl, ['/build/%s/%s/%s/_builddepinfo'%(package, repository, arch),])
+        print 'Generating _builddepinfo for (%s, %s, %s)'%(project, repository, arch)
+        url = makeurl(apiurl, ['/build/%s/%s/%s/_builddepinfo'%(project, repository, arch),])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
         print 'ERROR in URL %s [%s]'%(url, e)
@@ -421,9 +421,7 @@ def _check_repo_one_request(self, rq, opts):
     tpkg = act.find('target').get('package')
 
     subm_id = 'SUBMIT(%d):' % id_
-    print '%s %s/%s -> %s/%s' % (subm_id,
-                                 prj,  pkg,
-                                 tprj, tpkg)
+    print '%s %s/%s -> %s/%s' % (subm_id, prj, pkg, tprj, tpkg)
 
     group = id_
     try:
@@ -680,10 +678,19 @@ def _check_repo_download(self, p, destdir, opts):
     return toignore, downloads
 
 
-def _get_build_deps(self, prj, repo, arch, pkg, opts):
+def _get_buildinfo(self, opts, prj, repo, arch, pkg):
+    """Get the build info for a package"""
     xml = get_buildinfo(opts.apiurl, prj, pkg, repo, arch)
     root = ET.fromstring(xml)
     return [e.attrib['name'] for e in root.findall('bdep')]
+
+
+def _get_builddepinfo(self, opts, prj, repo, arch, pkg):
+    """Get the builddep info for a single package"""
+    root = ET.fromstring(builddepinfo(opts.apiurl, prj, repo, arch))
+    packages = [Package(element=e) for e in root.findall('package')]
+    package = [p for p in packages if p.pkg == pkg][0]
+    return package
 
 
 def _get_base_build_bin(self, opts):
@@ -707,17 +714,17 @@ def _get_base_build_src(self, opts):
 _ignore_packages = set()
 global _ignore_packages
 
-def _get_builddepinfo_graph(self, opts, package='openSUSE:Factory', repository='standard', arch='x86_64'):
+def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='standard', arch='x86_64'):
     """Generate the buildepinfo graph for a given architecture."""
 
     _IGNORE_PREFIX = ('texlive-', 'master-boot-code')
 
     # Note, by default generate the graph for all Factory. If you only
     # need the base packages you can use:
-    #   package = 'Base:System'
+    #   project = 'Base:System'
     #   repository = 'openSUSE_Factory'
 
-    root = ET.fromstring(builddepinfo(opts.apiurl, package, repository, arch))
+    root = ET.fromstring(builddepinfo(opts.apiurl, project, repository, arch))
     # Reset the subpackages dict here, so for every graph is a
     # different object.
     packages = [Package(element=e) for e in root.findall('package')]
@@ -813,7 +820,7 @@ def _check_repo_group(self, id_, reqs, opts):
         if p.spackage in base_build_src:
             # TODO - Check all the arch for this package
             for arch in ('x86_64', 'i586'):
-                build_deps = set(self._get_build_deps(p.sproject, p.goodrepo, arch, p.spackage, opts))
+                build_deps = set(self._get_buildinfo(opts, p.sproject, p.goodrepo, arch, p.spackage))
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
                     print 'OUTLIERS (%s)'%arch, outliers
@@ -833,42 +840,22 @@ def _check_repo_group(self, id_, reqs, opts):
         subpkgs = factory_graph.subpkgs
 
         for p in reqs:
-            # Take the dependencies
-            build_deps = self._get_build_deps(p.sproject, p.goodrepo, arch, p.spackage, opts)
-            # ... and the package binaries generated.
-            bins = set()
-            build_xml = build(opts.apiurl, p.sproject, p.goodrepo, arch, p.spackage)
-            for bin_ in ET.fromstring(build_xml).findall('binary'):
-                fn = bin_.attrib['filename']
-                # Ingore source packages. Can be useful to detect
-                # another kind of problem, but not related with this
-                # check
-                if fn.endswith('src.rpm'):
-                    continue
-                result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', fn)
-                if result: 
-                    bins.add(result.group(1))
+            # Take the dependencies and subpackages
+            pkg = self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage)
 
             # Update the currect graph and see if we have different cycles
             if p.spackage in current_graph:
-                pkg = current_graph[p.spackage]
+                current_graph[p.spackage] = pkg
                 current_graph.remove_edges_from(set((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs))
-                pkg.deps = build_deps
-                pkg.subs = bins
-                current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
             else:
-                pkg = Package(pkg=p.spackage,
-                              src=p.spackage,
-                              deps=build_deps,
-                              subs=bins)
                 current_graph.add_node(pkg.pkg, pkg)
-                current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
+            current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
 
             subpkgs.update(dict((p, pkg.pkg) for p in pkg.deps))
 
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
-                print '\nNew cycle detected:', cycle
+                print '\nNew cycle detected:', sorted(cycle)
                 print
 
     for p in reqs:
