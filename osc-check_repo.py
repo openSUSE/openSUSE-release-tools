@@ -97,6 +97,10 @@ class Graph(dict):
         for u, v in edges:
             self.remove_edge(u, v, directed)
 
+    def edges(self, v):
+        """Get the adjancent list for a vertex"""
+        return sorted(self.adj[v])
+
     def cycles(self):
         """Detect cycles using Tarjan algorithm."""
         index = [0]
@@ -131,6 +135,7 @@ class Graph(dict):
                 scc(node, v)
         return frozenset(cycles)
 
+    # XXX - Deprecated - Remove in a future release
     def cycles_fragments(self):
         """Detect partial cycles using DFS."""
         cycles = set()
@@ -711,8 +716,9 @@ def _get_base_build_src(self, opts):
 
 
 # Store packages prevoiusly ignored. Don't pollute the screen.
-_ignore_packages = set()
 global _ignore_packages
+_ignore_packages = set()
+
 
 def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='standard', arch='x86_64'):
     """Generate the buildepinfo graph for a given architecture."""
@@ -832,7 +838,6 @@ def _check_repo_group(self, id_, reqs, opts):
     # Detect cycles - We create the full graph from _builddepinfo.
     for arch in ('x86_64',):
         factory_graph = self._get_builddepinfo_graph(opts, arch=arch)
-        # factory_cycles = self._get_builddepinfo_cycles(opts, arch=arch)
         factory_cycles = factory_graph.cycles()
         # This graph will be updated for every request
         current_graph = deepcopy(factory_graph)
@@ -855,8 +860,11 @@ def _check_repo_group(self, id_, reqs, opts):
 
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
-                print '\nNew cycle detected:', sorted(cycle)
                 print
+                print 'New cycle detected:', sorted(cycle)
+                factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
+                current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
+                print 'New edjes:', sorted(current_edges - factory_edges)
 
     for p in reqs:
         smissing = []
