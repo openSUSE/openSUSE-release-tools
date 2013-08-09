@@ -9,11 +9,12 @@ import cPickle
 from copy import deepcopy
 from datetime import datetime
 from functools import wraps
+import fcntl
 import os
-import shelve
 import re
-import subprocess
+import shelve
 import shutil
+import subprocess
 from urllib import quote_plus
 import urllib2
 from xml.etree import cElementTree as ET
@@ -36,6 +37,7 @@ from osc.core import Request
 global cPickle
 global deepcopy
 global datetime
+global fcntl
 global shelve
 global wraps
 
@@ -244,6 +246,7 @@ def memoize(ttl=None):
     True
     
     """
+
     # Configuration variables
     TMPDIR = '~/.cr-cache' # Where the cache files are stored
     SLOTS = 4096           # Number of slots in the cache file
@@ -251,6 +254,13 @@ def memoize(ttl=None):
     TIMEOUT = 60*60*2      # Time to live for every cache slot (seconds)
 
     def _memoize(f):
+        # Implement a POSIX lock / unlock extension for shelves. Inspired
+        # on ActiveState Code recipe #576591
+        def _lock(filename):
+            lckfile = open(filename + '.lck', 'w')
+            fcntl.flock(lckfile.fileno(), fcntl.LOCK_EX)
+            return lckfile
+
         def _clean_cache():
             len_cache = len(cache)
             if len_cache >= SLOTS:
@@ -279,7 +289,10 @@ def memoize(ttl=None):
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         cache_name = os.path.join(cache_dir, f.__name__)
+        lckfile = _lock(cache_name)
         cache = shelve.open(cache_name, protocol=-1)
+        # Store a reference to the lckfile to avoid to be closed by gc
+        cache.lckfile = lckfile
         return _f
 
     ttl = ttl if ttl else TIMEOUT
@@ -694,8 +707,8 @@ def _get_builddepinfo(self, opts, prj, repo, arch, pkg):
     """Get the builddep info for a single package"""
     root = ET.fromstring(builddepinfo(opts.apiurl, prj, repo, arch))
     packages = [Package(element=e) for e in root.findall('package')]
-    package = [p for p in packages if p.pkg == pkg][0]
-    return package
+    package = [p for p in packages if p.pkg == pkg]
+    return package[0] if package else None
 
 
 def _get_base_build_bin(self, opts):
@@ -847,6 +860,11 @@ def _check_repo_group(self, id_, reqs, opts):
         for p in reqs:
             # Take the dependencies and subpackages
             pkg = self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage)
+
+            # Some packages can't be found in x86_64 architecture. We
+            # can ignore them.
+            if not pkg:
+                continue
 
             # Update the currect graph and see if we have different cycles
             if p.spackage in current_graph:
