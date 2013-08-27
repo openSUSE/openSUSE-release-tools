@@ -124,7 +124,6 @@ def _group_find_sr(self, pkgs, opts):
     :param pkgs: mesh of argumets to search for
     :param opts: obs options
     """
-    import itertools
 
     print("Searching for SR#s based on the arguments...")
     srids = []
@@ -138,9 +137,18 @@ def _group_find_sr(self, pkgs, opts):
             raise oscerr.ServiceRuntimeError('No SR# found for: {0}'.format(p))
         else:
             srids.append(request)
+    
+    # Flattens the multi level list we actually have here
+    def iterFlatten(root):
+        if isinstance(root, (list, tuple)):
+            for element in root:
+                for e in iterFlatten(element):
+                    yield e
+        else:
+            yield root
 
     # this is needed in order to ensure we have one level list not nested one
-    return list(itertools.chain(*srids))
+    return list(iterFlatten(srids))
 
 def _group_verify_grouping(self, srids, opts, require_grouping = False):
     """
@@ -154,13 +162,16 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
     grids = []
     for sr in srids:
         group = self._group_find_request_group(sr, opts)
-        if require_grouping:
-            if group:
+        if group:
+            if require_grouping:
                 grids.append(group)
             else:
-                raise oscerr.ServiceRuntimeError('SR#{0} is not member of any group request'.format(sr))
+                raise oscerr.ServiceRuntimeError('SR#{0} is already in GR#{1}'.format(sr, group))
         else:
-            raise oscerr.ServiceRuntimeError('SR#{0} is already in GR#{1}'.format(sr, group))
+            if require_grouping:
+                # Can't assert as in the automagic group finding we need to pass here
+                #raise oscerr.ServiceRuntimeError('SR#{0} is not member of any group request'.format(sr))
+                grids.append(0)
     
     return grids
 
@@ -184,10 +195,14 @@ def _group_verify_type(self, grid, opts):
     try:
         i = int(grid)
     except ValueError:
-        raise oscerr.ServiceRuntimeError('GR#{0} is not proper open grouping request'.format(grid))
+        #raise oscerr.ServiceRuntimeError('GR#{0} is not proper open grouping request'.format(grid))
+        return None
 
     if not i in res:
-        raise oscerr.ServiceRuntimeError('GR#{0} is not proper open grouping request'.format(grid))
+        #raise oscerr.ServiceRuntimeError('GR#{0} is not proper open grouping request'.format(grid))
+        return None
+    
+    return i
 
 def _group_create(self, name, pkgs, opts):
     """
@@ -221,16 +236,40 @@ def _group_add(self, grid, pkgs, opts):
     :param pkgs: list of packages to append
     :param opts: obs options
     """
+    
+    # check if first argument is actual grouping ID and if not try to find
+    # the group id in other requests
+    returned_group = self._group_verify_type(grid, opts)
+    if returned_group:
+        srids = self._group_find_sr(pkgs, opts)
+        self._group_verify_grouping(srids, opts)
+    else:
+        # here we add the grid to pkgs and search among all to get at least one
+        # usefull group request id
+        pkgs += (grid,)
+        srids = self._group_find_sr(pkgs, opts)
 
-    srids = self._group_find_sr(pkgs, opts)
-    self._group_verify_type(grid, opts)
-    self._group_verify_grouping(srids, opts)
+        pkg_grids = self._group_verify_grouping(srids, opts, True)
+        pkg_grids = list(set(pkg_grids))
+        # if there is 1 group it means we found only the fallback 0
+        if len(pkg_grids) == 1:
+            raise oscerr.ServiceRuntimeError('There is no grouping request ID among all submitted pacakges:')
+        # if the groups are more than 2 we have multiple grouping IDs which is also not good
+        if len(pkg_grids) > 2:
+            raise oscerr.ServiceRuntimeError('There are multiple grouping request IDs among added pacakges: {0}'.format(', '.join(pkg_grids)))
+        grid = pkg_grids[1]
+        
+        # now remove the package that provided the GR# from the pkgs addition list
+        for sr in srids:
+            group = self._group_find_request_group(sr, opts)
+            if group:
+                srids.remove(sr)
     
     for r in srids:
         query = {'cmd': 'addrequest'}
         query['newid'] = str(r)
-        u = makeurl(opts.apiurl, ['request', str(grid)], query=query)
-        f = http_POST(u)
+        url = makeurl(opts.apiurl, ['request', str(grid)], query=query)
+        f = http_POST(url)
         root = ET.parse(f).getroot()
         print('Added SR#{0} to group request GR#{1}'.format(r, grid))
         
@@ -311,7 +350,8 @@ def do_group(self, subcmd, opts, *args):
     "list" (or "l") will list SR ids grouped into selected group or without
         argument will list all current group requests (GR#)
     
-    "add" (or "a") will add package(s) into selected group request
+    "add" (or "a") will add package(s) into selected group request or group all packages in to
+        group request if one of the packages is in such and no GR# is specified
     
     "create" (or "c") will create new group request with added package(s)
     
@@ -321,7 +361,7 @@ def do_group(self, subcmd, opts, *args):
     
     Usage:
             osc group list [GR#]
-            osc group add GR# [package-name | Source:Repository:/ | SR#]
+            osc group add [GR#] [package-name | Source:Repository:/ | SR#]
             osc group create "Name of the group" [package-name | Source:Repository:/ | SR#]
             osc group remove GR# [package-name | Source:Repository:/ | SR#]
             osc group approve GR# FIXME: finish this command in obs first
