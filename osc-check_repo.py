@@ -101,7 +101,9 @@ class Graph(dict):
 
     def edges(self, v):
         """Get the adjancent list for a vertex"""
-        return sorted(self.adj[v])
+        return sorted(self.adj[v]) if v in self else set()
+
+
 
     def cycles(self):
         """Detect cycles using Tarjan algorithm."""
@@ -883,6 +885,8 @@ def _check_repo_group(self, id_, reqs, opts):
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
                 print 'New edjes:', sorted(current_edges - factory_edges)
+                # Exit if cycle found
+                return
 
     for p in reqs:
         smissing = []
