@@ -323,7 +323,7 @@ def do_group(self, subcmd, opts, *args):
             osc group list [GR#]
             osc group add GR# [package-name | Source:Repository:/ | SR#]
             osc group create "Name of the group" [package-name | Source:Repository:/ | SR#]
-            osc group remove GR# SR# [SR#]
+            osc group remove GR# [package-name | Source:Repository:/ | SR#]
             osc group approve GR# FIXME: finish this command in obs first
 
     ${cmd_option_list}
