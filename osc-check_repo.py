@@ -101,7 +101,9 @@ class Graph(dict):
 
     def edges(self, v):
         """Get the adjancent list for a vertex"""
-        return sorted(self.adj[v])
+        return sorted(self.adj[v]) if v in self else set()
+
+
 
     def cycles(self):
         """Detect cycles using Tarjan algorithm."""
@@ -869,12 +871,12 @@ def _check_repo_group(self, id_, reqs, opts):
             # Update the currect graph and see if we have different cycles
             if p.spackage in current_graph:
                 current_graph[p.spackage] = pkg
-                current_graph.remove_edges_from(set((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs))
+                current_graph.remove_edges_from(set((pkg.pkg, subpkgs[p_]) for p_ in pkg.deps if p_ in subpkgs))
             else:
                 current_graph.add_node(pkg.pkg, pkg)
-            current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
+            current_graph.add_edges_from((pkg.pkg, subpkgs[p_]) for p_ in pkg.deps if p_ in subpkgs)
 
-            subpkgs.update(dict((p, pkg.pkg) for p in pkg.deps))
+            subpkgs.update(dict((p_, pkg.pkg) for p_ in pkg.deps))
 
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
@@ -883,6 +885,8 @@ def _check_repo_group(self, id_, reqs, opts):
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
                 print 'New edjes:', sorted(current_edges - factory_edges)
+                # Exit if cycle found
+                return
 
     for p in reqs:
         smissing = []
