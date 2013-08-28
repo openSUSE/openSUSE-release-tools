@@ -357,14 +357,11 @@ def do_group(self, subcmd, opts, *args):
     
     "remove" (or "r") will remove SR#(s) from selected group request
     
-    "approve" will approve the GR# and thus all of its SR#s will be merged to factory
-    
     Usage:
             osc group list [GR#]
             osc group add [GR#] [package-name | Source:Repository:/ | SR#]
             osc group create "Name of the group" [package-name | Source:Repository:/ | SR#]
             osc group remove GR# [package-name | Source:Repository:/ | SR#]
-            osc group approve GR# FIXME: finish this command in obs first
 
     ${cmd_option_list}
     """
@@ -373,7 +370,7 @@ def do_group(self, subcmd, opts, *args):
         self._print_version()
 
     # available commands
-    cmds = ['list', 'l', 'add', 'a', 'create', 'c', 'remove', 'r', 'approve']
+    cmds = ['list', 'l', 'add', 'a', 'create', 'c', 'remove', 'r']
     if not args or args[0] not in cmds:
         raise oscerr.WrongArgs('Unknown grouping action. Choose one of the {0}.'.format(', '.join(cmds)))
 
@@ -385,8 +382,6 @@ def do_group(self, subcmd, opts, *args):
         min_args, max_args = 2, None
     elif cmd in ['create', 'c']:
         min_args, max_args = 2, None
-    elif cmd in ['approve']:
-        min_args, max_args = 1, 1
     else:
         raise oscerr.WrongArgs('Unknown command: {0}'.format(cmd))
     if len(args) - 1 < min_args:
@@ -409,8 +404,6 @@ def do_group(self, subcmd, opts, *args):
         self._group_remove(args[1], args[2:], opts)
     elif cmd in ['create', 'c']:
         self._group_create(args[1], args[2:], opts)
-    elif cmd in ['approve']:
-        self._group_approve(args[1], opts)
 
 #Local Variables:
 #mode: python
