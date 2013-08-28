@@ -19,6 +19,9 @@ def _print_version(self):
     print('{0}'.format(self.OSC_GROUP_VERSION))
     quit(0)
 
+def _extract(attr, type_, from_, root):
+    return [type_(x.attrib[attr]) for x in root.findall(from_)]
+
 def _group_find_request_id(self, submit_request, opts):
     """
     Look up the submit_request by ID to verify if it is correct
@@ -30,9 +33,7 @@ def _group_find_request_id(self, submit_request, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
+    res = _extract('id', int, 'request', root)
 
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
@@ -57,9 +58,7 @@ def _group_find_request_package(self, package, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
+    res = _extract('id', int, 'request', root)
 
     if len(res) > 1:
         raise oscerr.ServiceRuntimeError('There are multiple requests for package "{0}"'.format(package))
@@ -105,9 +104,7 @@ def _group_find_request_group(self, request, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
+    res = _extract('id', int, 'request', root)
 
     if len(res) > 1:
         raise oscerr.ServiceRuntimeError('There are multiple group requests for package "{0}". This should not happen.'.format(request))
@@ -187,9 +184,7 @@ def _group_verify_type(self, grid, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
+    res = _extract('id', int, 'request', root)
 
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
@@ -323,15 +318,13 @@ def _group_list_requests(self, grid, opts):
     :param opts: obs options
     """
 
-    res = []
     if not grid:
         # search up the GR#s
         url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20(state/@name=\'new\'%20or@20state/@name=\'review\'))'] )
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
-        for rq in root.findall('request'):
-            res.append(int(rq.attrib['id']))
+        res = _extract('id', int, 'request', root)
 
         print('Listing current open grouping requests...')
         for rq in res:
