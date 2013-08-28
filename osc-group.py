@@ -110,7 +110,7 @@ def _group_find_request_group(self, request, opts):
         res.append(int(rq.attrib['id']))
         
     if len(res) > 1:
-        raise oscerr.ServiceRuntimeError('There are multiple group requests for package "{0}". This should not happen.'.format(package))
+        raise oscerr.ServiceRuntimeError('There are multiple group requests for package "{0}". This should not happen.'.format(request))
 
     if len(res) == 0 or res[0] == 0:
         #raise oscerr.ServiceRuntimeError('There is no grouping request for package "{0}"'.format(package))
