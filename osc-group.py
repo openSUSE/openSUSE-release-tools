@@ -318,21 +318,22 @@ def _group_list_requests(self, grid, opts):
     :param opts: obs options
     """
 
-    if not grid:
-        # search up the GR#s
-        url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20(state/@name=\'new\'%20or@20state/@name=\'review\'))'] )
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
+    # FIXME: find all requests in grouping request and print their content
+    #        currently the we have to search for all grouping requests and then filter for proper id, highly suboptimal
 
-        res = _extract('id', int, 'request', root)
-
-        print('Listing current open grouping requests...')
-        for rq in res:
-            self._print_group_header(rq, opts)
-    else:
+    if grid:
         self._print_group_header(grid, opts)
-        # FIXME: find all requests in grouping request and print their content
-        #        currently the we have to search for all grouping requests and then filter for proper id, highly suboptimal
+        return
+
+    # search up the GR#s
+    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20(state/@name=\'new\'%20or@20state/@name=\'review\'))'] )
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+
+    print('Listing current open grouping requests...')
+    for rq in _extract('id', int, 'request', root):
+        self._print_group_header(rq, opts)
+
 
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
