@@ -19,7 +19,7 @@ def _print_version(self):
     print('{0}'.format(self.OSC_GROUP_VERSION))
     quit(0)
 
-def _extract(attr, type_, from_, root):
+def _extract(self, attr, type_, from_, root):
     return [type_(x.attrib[attr]) for x in root.findall(from_)]
 
 def _group_find_request_id(self, submit_request, opts):
@@ -33,7 +33,7 @@ def _group_find_request_id(self, submit_request, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = _extract('id', int, 'request', root)
+    res = self._extract('id', int, 'request', root)
 
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
@@ -58,7 +58,7 @@ def _group_find_request_package(self, package, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = _extract('id', int, 'request', root)
+    res = self._extract('id', int, 'request', root)
 
     if len(res) > 1:
         raise oscerr.ServiceRuntimeError('There are multiple requests for package "{0}"'.format(package))
@@ -104,7 +104,7 @@ def _group_find_request_group(self, request, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = _extract('id', int, 'request', root)
+    res = self._extract('id', int, 'request', root)
 
     if len(res) > 1:
         raise oscerr.ServiceRuntimeError('There are multiple group requests for package "{0}". This should not happen.'.format(request))
@@ -184,7 +184,7 @@ def _group_verify_type(self, grid, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = _extract('id', int, 'request', root)
+    res = self._extract('id', int, 'request', root)
 
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
@@ -222,7 +222,7 @@ def _group_create(self, name, pkgs, opts):
     f = http_POST(u, data=xml)
     root = ET.parse(f).getroot().attrib['id']
 
-    print('Created GR#{0} with following submit requests: {1}'.format(str(root), ', '.join(map(str, srids)))
+    print('Created GR#{0} with following submit requests: {1}'.format(str(root), ', '.join(map(str, srids))))
 
 def _group_add(self, grid, pkgs, opts):
     """
@@ -318,11 +318,31 @@ def _group_list_requests(self, grid, opts):
     :param opts: obs options
     """
 
-    # FIXME: find all requests in grouping request and print their content
-    #        currently the we have to search for all grouping requests and then filter for proper id, highly suboptimal
-
     if grid:
         self._print_group_header(grid, opts)
+        print('\nContains following requests:')
+        
+        # search up for all submit ids in group
+        url = url = makeurl(opts.apiurl, ['request', str(grid)])
+        f = http_GET(url)
+        root = ET.parse(f).getroot().find('action')
+        res = self._extract('id', int, 'grouped', root)
+        
+        # print their context out to make nice table
+        for x in res:
+            url = url = makeurl(opts.apiurl, ['request', str(x)])
+            f = http_GET(url)
+            root = ET.parse(f).getroot()
+            
+            # relevant info for printing
+            package = str(root.find('action').find('source').attrib['package'])
+            project = str(root.find('action').find('source').attrib['project'])
+            revision = str(root.find('action').find('source').attrib['rev'])
+            date = str(root.find('state').attrib['when'])
+            author = str(root.find('state').attrib['who'])
+            state = str(root.find('state').attrib['name'])
+            
+            print('SR#{0} | {1}/{2}:{3} | {4} | {5} | {6}'.format(x, project, package, revision, author, date, state))
         return
 
     # search up the GR#s
@@ -331,7 +351,7 @@ def _group_list_requests(self, grid, opts):
     root = ET.parse(f).getroot()
 
     print('Listing current open grouping requests...')
-    for rq in _extract('id', int, 'request', root):
+    for rq in self._extract('id', int, 'request', root):
         self._print_group_header(rq, opts)
 
 
