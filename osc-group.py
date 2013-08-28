@@ -16,8 +16,11 @@ OSC_GROUP_VERSION='0.0.3'
 def _print_version(self):
     """ Print version information about this extension. """
 
-    print('%s' % self.OSC_GROUP_VERSION)
+    print('{0}'.format(self.OSC_GROUP_VERSION))
     quit(0)
+
+def _extract(self, attr, type_, from_, root):
+    return [type_(x.attrib[attr]) for x in root.findall(from_)]
 
 def _group_find_request_id(self, submit_request, opts):
     """
@@ -29,11 +32,9 @@ def _group_find_request_id(self, submit_request, opts):
     url = makeurl(opts.apiurl, ['request'], 'states=new,review&project=openSUSE:Factory&view=collection')
     f = http_GET(url)
     root = ET.parse(f).getroot()
-    
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
-    
+
+    res = self._extract('id', int, 'request', root)
+
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
         i = int(submit_request)
@@ -57,10 +58,8 @@ def _group_find_request_package(self, package, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
-        
+    res = self._extract('id', int, 'request', root)
+
     if len(res) > 1:
         raise oscerr.ServiceRuntimeError('There are multiple requests for package "{0}"'.format(package))
 
@@ -104,13 +103,11 @@ def _group_find_request_group(self, request, opts):
     url = makeurl(opts.apiurl, ['search', 'request', 'id?match=action/grouped/@id={0}'.format(request)] )
     f = http_GET(url)
     root = ET.parse(f).getroot()
-    
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
-        
+
+    res = self._extract('id', int, 'request', root)
+
     if len(res) > 1:
-        raise oscerr.ServiceRuntimeError('There are multiple group requests for package "{0}". This should not happen.'.format(package))
+        raise oscerr.ServiceRuntimeError('There are multiple group requests for package "{0}". This should not happen.'.format(request))
 
     if len(res) == 0 or res[0] == 0:
         #raise oscerr.ServiceRuntimeError('There is no grouping request for package "{0}"'.format(package))
@@ -137,7 +134,7 @@ def _group_find_sr(self, pkgs, opts):
             raise oscerr.ServiceRuntimeError('No SR# found for: {0}'.format(p))
         else:
             srids.append(request)
-    
+
     # Flattens the multi level list we actually have here
     def iterFlatten(root):
         if isinstance(root, (list, tuple)):
@@ -157,7 +154,7 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
     :param opts: obs options
     :param require_grouping: if passed return list of GR#s for the SR#s and fail if they are not members of any
     """
-    
+
     print("Checking wether the SR#s are already in grouping project...")
     grids = []
     for sr in srids:
@@ -172,7 +169,7 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
                 # Can't assert as in the automagic group finding we need to pass here
                 #raise oscerr.ServiceRuntimeError('SR#{0} is not member of any group request'.format(sr))
                 grids.append(0)
-    
+
     return grids
 
 def _group_verify_type(self, grid, opts):
@@ -187,10 +184,8 @@ def _group_verify_type(self, grid, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = []
-    for rq in root.findall('request'):
-        res.append(int(rq.attrib['id']))
-    
+    res = self._extract('id', int, 'request', root)
+
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
         i = int(grid)
@@ -201,7 +196,7 @@ def _group_verify_type(self, grid, opts):
     if not i in res:
         #raise oscerr.ServiceRuntimeError('GR#{0} is not proper open grouping request'.format(grid))
         return None
-    
+
     return i
 
 def _group_create(self, name, pkgs, opts):
@@ -214,7 +209,7 @@ def _group_create(self, name, pkgs, opts):
 
     srids = self._group_find_sr(pkgs, opts)
     self._group_verify_grouping(srids, opts)
-    
+
     # compose the xml
     xml='<request><action type="group">'
     for r in srids:
@@ -226,8 +221,8 @@ def _group_create(self, name, pkgs, opts):
     u = makeurl(opts.apiurl, ['request'], query=query)
     f = http_POST(u, data=xml)
     root = ET.parse(f).getroot().attrib['id']
-    
-    print('Created GR#{0} with following submit requests: {1}'.format(str(root), ', '.join([str(i) for i in srids])))
+
+    print('Created GR#{0} with following submit requests: {1}'.format(str(root), ', '.join(map(str, srids))))
 
 def _group_add(self, grid, pkgs, opts):
     """
@@ -236,7 +231,7 @@ def _group_add(self, grid, pkgs, opts):
     :param pkgs: list of packages to append
     :param opts: obs options
     """
-    
+
     # check if first argument is actual grouping ID and if not try to find
     # the group id in other requests
     returned_group = self._group_verify_type(grid, opts)
@@ -258,13 +253,13 @@ def _group_add(self, grid, pkgs, opts):
         if len(pkg_grids) > 2:
             raise oscerr.ServiceRuntimeError('There are multiple grouping request IDs among added pacakges: {0}'.format(', '.join(pkg_grids)))
         grid = pkg_grids[1]
-        
+
         # now remove the package that provided the GR# from the pkgs addition list
         for sr in srids:
             group = self._group_find_request_group(sr, opts)
             if group:
                 srids.remove(sr)
-    
+
     for r in srids:
         query = {'cmd': 'addrequest'}
         query['newid'] = str(r)
@@ -272,7 +267,7 @@ def _group_add(self, grid, pkgs, opts):
         f = http_POST(url)
         root = ET.parse(f).getroot()
         print('Added SR#{0} to group request GR#{1}'.format(r, grid))
-        
+
 def _group_remove(self, grid, pkgs, opts):
     """
     Remove selected packages from grouping request
@@ -280,16 +275,16 @@ def _group_remove(self, grid, pkgs, opts):
     :param pkgs: list of packages to remove
     :param opts: obs options
     """
-    
+
     srids = self._group_find_sr(pkgs, opts)
     self._group_verify_type(grid, opts)
     srid_groups = self._group_verify_grouping(srids, opts, True)
-    
+
     # ensure there are no mixed packages from different group request
     for i in srid_groups:
         if not int(i) == int(grid):
             raise oscerr.ServiceRuntimeError('Some of the SR#s do not belong to group request GR#{0}'.format(grid))
-    
+
     # remove the SR#s from the GR#
     for r in srids:
         query = {'cmd': 'removerequest'}
@@ -308,13 +303,13 @@ def _print_group_header(self, grid, opts):
     url = makeurl(opts.apiurl, ['request', str(grid)])
     f = http_GET(url)
     root = ET.parse(f).getroot()
-    
+
     description = str(root.find('description').text)
     date = str(root.find('state').attrib['when'])
     author = str(root.find('state').attrib['who'])
-    
+
     print('GR#{0} | {1} | {2} | {3}'.format(grid, author, date, description))
-    
+
 
 def _group_list_requests(self, grid, opts):
     """
@@ -322,49 +317,65 @@ def _group_list_requests(self, grid, opts):
     :param grid: grouping request id if None lists all open grouping requests
     :param opts: obs options
     """
-    
-    res = []
-    if not grid:
-        # search up the GR#s
-        url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20(state/@name=\'new\'%20or@20state/@name=\'review\'))'] )
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
-    
-        for rq in root.findall('request'):
-            res.append(int(rq.attrib['id']))
-        
-        print('Listing current open grouping requests...')
-        for rq in res:
-            self._print_group_header(rq, opts)
-    else:
+
+    if grid:
         self._print_group_header(grid, opts)
-        # FIXME: find all requests in grouping request and print their content
-        #        currently the we have to search for all grouping requests and then filter for proper id, highly suboptimal
+        print('\nContains following requests:')
+        
+        # search up for all submit ids in group
+        url = url = makeurl(opts.apiurl, ['request', str(grid)])
+        f = http_GET(url)
+        root = ET.parse(f).getroot().find('action')
+        res = self._extract('id', int, 'grouped', root)
+        
+        # print their context out to make nice table
+        for x in res:
+            url = url = makeurl(opts.apiurl, ['request', str(x)])
+            f = http_GET(url)
+            root = ET.parse(f).getroot()
+            
+            # relevant info for printing
+            package = str(root.find('action').find('source').attrib['package'])
+            project = str(root.find('action').find('source').attrib['project'])
+            revision = str(root.find('action').find('source').attrib['rev'])
+            date = str(root.find('state').attrib['when'])
+            author = str(root.find('state').attrib['who'])
+            state = str(root.find('state').attrib['name'])
+            
+            print('SR#{0} | {1}/{2}:{3} | {4} | {5} | {6}'.format(x, project, package, revision, author, date, state))
+        return
+
+    # search up the GR#s
+    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20(state/@name=\'new\'%20or@20state/@name=\'review\'))'] )
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+
+    print('Listing current open grouping requests...')
+    for rq in self._extract('id', int, 'request', root):
+        self._print_group_header(rq, opts)
+
 
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
               help='show version of the plugin')
 def do_group(self, subcmd, opts, *args):
     """${cmd_name}: group packages into one group for verification
-      
+
     "list" (or "l") will list SR ids grouped into selected group or without
         argument will list all current group requests (GR#)
-    
+
     "add" (or "a") will add package(s) into selected group request or group all packages in to
         group request if one of the packages is in such and no GR# is specified
-    
+
     "create" (or "c") will create new group request with added package(s)
-    
+
     "remove" (or "r") will remove SR#(s) from selected group request
-    
-    "approve" will approve the GR# and thus all of its SR#s will be merged to factory
-    
+
     Usage:
             osc group list [GR#]
             osc group add [GR#] [package-name | Source:Repository:/ | SR#]
             osc group create "Name of the group" [package-name | Source:Repository:/ | SR#]
             osc group remove GR# [package-name | Source:Repository:/ | SR#]
-            osc group approve GR# FIXME: finish this command in obs first
 
     ${cmd_option_list}
     """
@@ -373,7 +384,7 @@ def do_group(self, subcmd, opts, *args):
         self._print_version()
 
     # available commands
-    cmds = ['list', 'l', 'add', 'a', 'create', 'c', 'remove', 'r', 'approve']
+    cmds = ['list', 'l', 'add', 'a', 'create', 'c', 'remove', 'r']
     if not args or args[0] not in cmds:
         raise oscerr.WrongArgs('Unknown grouping action. Choose one of the {0}.'.format(', '.join(cmds)))
 
@@ -385,8 +396,6 @@ def do_group(self, subcmd, opts, *args):
         min_args, max_args = 2, None
     elif cmd in ['create', 'c']:
         min_args, max_args = 2, None
-    elif cmd in ['approve']:
-        min_args, max_args = 1, 1
     else:
         raise oscerr.WrongArgs('Unknown command: {0}'.format(cmd))
     if len(args) - 1 < min_args:
@@ -396,7 +405,7 @@ def do_group(self, subcmd, opts, *args):
 
     # init the obs access
     opts.apiurl = conf.config['apiurl']
-    
+
     if cmd in ['list', 'l']:
         # check if there is GR#
         if len(args) < 2:
@@ -409,8 +418,6 @@ def do_group(self, subcmd, opts, *args):
         self._group_remove(args[1], args[2:], opts)
     elif cmd in ['create', 'c']:
         self._group_create(args[1], args[2:], opts)
-    elif cmd in ['approve']:
-        self._group_approve(args[1], opts)
 
 #Local Variables:
 #mode: python
