@@ -883,8 +883,6 @@ def _check_repo_group(self, id_, reqs, opts):
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
                 print 'New edjes:', sorted(current_edges - factory_edges)
-                print 'xml-commons-apis-bootstrap', current_graph.edges('xml-commons-apis-bootstrap')
-                print 'xml-commons', current_graph.edges('xml-commons')
                 # Exit if cycle found
                 return
 
