@@ -16,7 +16,7 @@ OSC_GROUP_VERSION='0.0.3'
 def _print_version(self):
     """ Print version information about this extension. """
 
-    print('%s' % self.OSC_GROUP_VERSION)
+    print('{0}'.format(self.OSC_GROUP_VERSION))
     quit(0)
 
 def _group_find_request_id(self, submit_request, opts):
@@ -227,7 +227,7 @@ def _group_create(self, name, pkgs, opts):
     f = http_POST(u, data=xml)
     root = ET.parse(f).getroot().attrib['id']
     
-    print('Created GR#{0} with following submit requests: {1}'.format(str(root), ', '.join([str(i) for i in srids])))
+    print('Created GR#{0} with following submit requests: {1}'.format(str(root), ', '.join(map(str, srids)))
 
 def _group_add(self, grid, pkgs, opts):
     """
