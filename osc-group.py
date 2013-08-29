@@ -44,7 +44,7 @@ def _group_find_request_id(self, submit_request, opts):
     if i in res:
         return submit_request
     else:
-        # raise oscerr.ServiceRuntimeError('There is no request for SR#{0}'.format(submit_request))
+        # raise oscerr.WrongArgs('There is no request for SR#{0}'.format(submit_request))
         return None
 
 def _group_find_request_package(self, package, opts):
@@ -61,10 +61,10 @@ def _group_find_request_package(self, package, opts):
     res = self._extract('id', int, 'request', root)
 
     if len(res) > 1:
-        raise oscerr.ServiceRuntimeError('There are multiple requests for package "{0}"'.format(package))
+        raise oscerr.WrongArgs('There are multiple requests for package "{0}"'.format(package))
 
     if len(res) == 0 or res[0] == 0:
-        #raise oscerr.ServiceRuntimeError('There is no request for package "{0}"'.format(package))
+        #raise oscerr.WrongArgs('There is no request for package "{0}"'.format(package))
         return None
 
     return res[0]
@@ -88,7 +88,7 @@ def _group_find_request_project(self, source_project, opts):
                 res.append(int(rq.attrib['id']))
 
     if len(res) == 0:
-        #raise oscerr.ServiceRuntimeError('There are no requests for base project "{0}"'.format(source_project))
+        #raise oscerr.WrongArgs('There are no requests for base project "{0}"'.format(source_project))
         return None
 
     return res
@@ -107,10 +107,10 @@ def _group_find_request_group(self, request, opts):
     res = self._extract('id', int, 'request', root)
 
     if len(res) > 1:
-        raise oscerr.ServiceRuntimeError('There are multiple group requests for package "{0}". This should not happen.'.format(request))
+        raise oscerr.WrongArgs('There are multiple group requests for package "{0}". This should not happen.'.format(request))
 
     if len(res) == 0 or res[0] == 0:
-        #raise oscerr.ServiceRuntimeError('There is no grouping request for package "{0}"'.format(package))
+        #raise oscerr.WrongArgs('There is no grouping request for package "{0}"'.format(package))
         return None
 
     return res[0]
@@ -131,7 +131,7 @@ def _group_find_sr(self, pkgs, opts):
         if not request:
             request = self._group_find_request_project(p, opts)
         if not request:
-            raise oscerr.ServiceRuntimeError('No SR# found for: {0}'.format(p))
+            raise oscerr.WrongArgs('No SR# found for: {0}'.format(p))
         else:
             srids.append(request)
 
@@ -163,11 +163,11 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
             if require_grouping:
                 grids.append(group)
             else:
-                raise oscerr.ServiceRuntimeError('SR#{0} is already in GR#{1}'.format(sr, group))
+                raise oscerr.WrongArgs('SR#{0} is already in GR#{1}'.format(sr, group))
         else:
             if require_grouping:
                 # Can't assert as in the automagic group finding we need to pass here
-                #raise oscerr.ServiceRuntimeError('SR#{0} is not member of any group request'.format(sr))
+                #raise oscerr.WrongArgs('SR#{0} is not member of any group request'.format(sr))
                 grids.append(0)
 
     return grids
@@ -190,11 +190,11 @@ def _group_verify_type(self, grid, opts):
     try:
         i = int(grid)
     except ValueError:
-        #raise oscerr.ServiceRuntimeError('GR#{0} is not proper open grouping request'.format(grid))
+        #raise oscerr.WrongArgs('GR#{0} is not proper open grouping request'.format(grid))
         return None
 
     if not i in res:
-        #raise oscerr.ServiceRuntimeError('GR#{0} is not proper open grouping request'.format(grid))
+        #raise oscerr.WrongArgs('GR#{0} is not proper open grouping request'.format(grid))
         return None
 
     return i
@@ -248,10 +248,10 @@ def _group_add(self, grid, pkgs, opts):
         pkg_grids = list(set(pkg_grids))
         # if there is 1 group it means we found only the fallback 0
         if len(pkg_grids) == 1:
-            raise oscerr.ServiceRuntimeError('There is no grouping request ID among all submitted pacakges:')
+            raise oscerr.WrongArgs('There is no grouping request ID among all submitted pacakges:')
         # if the groups are more than 2 we have multiple grouping IDs which is also not good
         if len(pkg_grids) > 2:
-            raise oscerr.ServiceRuntimeError('There are multiple grouping request IDs among added pacakges: {0}'.format(', '.join(pkg_grids)))
+            raise oscerr.WrongArgs('There are multiple grouping request IDs among added pacakges: {0}'.format(', '.join(pkg_grids)))
         grid = pkg_grids[1]
 
         # now remove the package that provided the GR# from the pkgs addition list
@@ -283,7 +283,7 @@ def _group_remove(self, grid, pkgs, opts):
     # ensure there are no mixed packages from different group request
     for i in srid_groups:
         if not int(i) == int(grid):
-            raise oscerr.ServiceRuntimeError('Some of the SR#s do not belong to group request GR#{0}'.format(grid))
+            raise oscerr.WrongArgs('Some of the SR#s do not belong to group request GR#{0}'.format(grid))
 
     # remove the SR#s from the GR#
     for r in srids:
@@ -328,7 +328,7 @@ def _group_list_requests(self, grid, opts):
     if grid:
         # if we have assigned id we need to ensure it is actually grouped id
         if not self._group_verify_type(grid, opts):
-            raise oscerr.ServiceRuntimeError('Request {0} is not a proper grouping request'.format(grid))
+            raise oscerr.WrongArgs('Request {0} is not a proper grouping request'.format(grid))
         self._print_group_header(grid, opts)
         print('\nContains following requests:')
         
