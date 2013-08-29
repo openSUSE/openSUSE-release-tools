@@ -185,7 +185,7 @@ def _group_verify_type(self, grid, opts):
     root = ET.parse(f).getroot()
 
     res = self._extract('id', int, 'request', root)
-        
+
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
         i = int(grid)
