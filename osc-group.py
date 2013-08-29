@@ -11,7 +11,7 @@ import osc.core
 from osc import cmdln
 from osc import conf
 
-OSC_GROUP_VERSION='0.0.3'
+OSC_GROUP_VERSION='0.0.4'
 
 def _print_version(self):
     """ Print version information about this extension. """
@@ -307,8 +307,12 @@ def _print_group_header(self, grid, opts):
     description = str(root.find('description').text)
     date = str(root.find('state').attrib['when'])
     author = str(root.find('state').attrib['who'])
-
-    print('GR#{0} | {1} | {2} | {3}'.format(grid, author, date, description))
+    
+    # count the elements:
+    counter = root.find('action')
+    res = self._extract('id', int, 'grouped', counter)
+    items = len(res)
+    print('GR#{0} | {1} | {2} | {3} | {4}'.format(grid, author, date, items, description))
 
 
 def _group_list_requests(self, grid, opts):
@@ -317,6 +321,9 @@ def _group_list_requests(self, grid, opts):
     :param grid: grouping request id if None lists all open grouping requests
     :param opts: obs options
     """
+
+    # header content description
+    print('   ID    |  Author  |      Date     | Open items |  Name ')
 
     if grid:
         self._print_group_header(grid, opts)
@@ -350,7 +357,6 @@ def _group_list_requests(self, grid, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    print('Listing current open grouping requests...')
     for rq in self._extract('id', int, 'request', root):
         self._print_group_header(rq, opts)
 
@@ -358,6 +364,8 @@ def _group_list_requests(self, grid, opts):
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
               help='show version of the plugin')
+@cmdln.option('-n', '--name',
+              help='set name of created group')
 def do_group(self, subcmd, opts, *args):
     """${cmd_name}: group packages into one group for verification
 
@@ -374,7 +382,7 @@ def do_group(self, subcmd, opts, *args):
     Usage:
             osc group list [GR#]
             osc group add [GR#] [package-name | Source:Repository:/ | SR#]
-            osc group create "Name of the group" [package-name | Source:Repository:/ | SR#]
+            osc group create [--name "Name of the group"] [package-name | Source:Repository:/ | SR#]
             osc group remove GR# [package-name | Source:Repository:/ | SR#]
 
     ${cmd_option_list}
@@ -395,7 +403,7 @@ def do_group(self, subcmd, opts, *args):
     elif cmd in ['add', 'a', 'remove', 'r']:
         min_args, max_args = 2, None
     elif cmd in ['create', 'c']:
-        min_args, max_args = 2, None
+        min_args, max_args = 1, None
     else:
         raise oscerr.WrongArgs('Unknown command: {0}'.format(cmd))
     if len(args) - 1 < min_args:
@@ -417,7 +425,12 @@ def do_group(self, subcmd, opts, *args):
     elif cmd in [ 'remove', 'r']:
         self._group_remove(args[1], args[2:], opts)
     elif cmd in ['create', 'c']:
-        self._group_create(args[1], args[2:], opts)
+        # check if name is set
+        if opts.name:
+            name = opts.name
+        else:
+            name = ', '.join(args[1:])
+        self._group_create(name, args[1:], opts)
 
 #Local Variables:
 #mode: python
