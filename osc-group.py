@@ -180,20 +180,12 @@ def _group_verify_type(self, grid, opts):
     """
 
     print("Checking if GR# is proper type...")
-    # ( new or review ) does not work so we have to do two queries
-    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20state/@name=\'new\')'] )
+    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'+and+(state/@name=\'new\'+or+state/@name=\'review\'))'])
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
     res = self._extract('id', int, 'request', root)
-    
-    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20state/@name=\'review\')'] )
-    f = http_GET(url)
-    root = ET.parse(f).getroot()
-    
-    # ensure we have only unique ids
-    res = list(set(res + self._extract('id', int, 'request', root)))
-    
+        
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
         i = int(grid)
@@ -360,21 +352,12 @@ def _group_list_requests(self, grid, opts):
             print('SR#{0} | {1}/{2}:{3} | {4} | {5} | {6}'.format(x, project, package, revision, author, date, state))
         return
 
-    # search up the GR#s ; can't be done in one command, se the _group_verify_type function
-    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20state/@name=\'new\')'] )
+    # search up the GR#s
+    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'+and+(state/@name=\'new\'+or+state/@name=\'review\'))'] )
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    res = self._extract('id', int, 'request', root)
-    
-    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20state/@name=\'review\')'] )
-    f = http_GET(url)
-    root = ET.parse(f).getroot()
-    
-    # ensure we have only unique ids
-    res = list(set(res + self._extract('id', int, 'request', root)))
-
-    for rq in res:
+    for rq in self._extract('id', int, 'request', root):
         self._print_group_header(rq, opts)
 
 
