@@ -857,7 +857,7 @@ def _check_repo_group(self, id_, reqs, opts):
 
         subpkgs = factory_graph.subpkgs
 
-        for p in reqs:
+        for p in packs:
             # Take the dependencies and subpackages
             pkg = self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage)
 
@@ -866,7 +866,7 @@ def _check_repo_group(self, id_, reqs, opts):
             if not pkg:
                 continue
 
-            # Update the currect graph and see if we have different cycles
+            # Update the current graph and see if we have different cycles
             if pkg.pkg in current_graph:
                 current_graph[pkg.pkg] = pkg
                 current_graph.remove_edges_from(set((pkg.pkg, p_) for p_ in current_graph.edges(pkg.pkg)))
