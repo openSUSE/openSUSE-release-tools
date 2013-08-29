@@ -887,8 +887,6 @@ def _check_repo_group(self, id_, reqs, opts):
                 current_graph.add_node(pkg.pkg, pkg)
             current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
 
-            print p, pkg
-            #print p, subpkgs[
             subpkgs.update(dict((p, pkg.pkg) for p in pkg.subs))
 
         for cycle in current_graph.cycles():
