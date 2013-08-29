@@ -11,7 +11,7 @@ import osc.core
 from osc import cmdln
 from osc import conf
 
-OSC_GROUP_VERSION='0.0.3'
+OSC_GROUP_VERSION='0.0.4'
 
 def _print_version(self):
     """ Print version information about this extension. """
@@ -307,8 +307,12 @@ def _print_group_header(self, grid, opts):
     description = str(root.find('description').text)
     date = str(root.find('state').attrib['when'])
     author = str(root.find('state').attrib['who'])
-
-    print('GR#{0} | {1} | {2} | {3}'.format(grid, author, date, description))
+    
+    # count the elements:
+    counter = root.find('action')
+    res = self._extract('id', int, 'grouped', counter)
+    items = len(res)
+    print('GR#{0} | {1} | {2} | {3} | {4}'.format(grid, author, date, items, description))
 
 
 def _group_list_requests(self, grid, opts):
@@ -317,6 +321,9 @@ def _group_list_requests(self, grid, opts):
     :param grid: grouping request id if None lists all open grouping requests
     :param opts: obs options
     """
+
+    # header content description
+    print('   ID    |  Author  |      Date     | Open items |  Name ')
 
     if grid:
         self._print_group_header(grid, opts)
@@ -350,7 +357,6 @@ def _group_list_requests(self, grid, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
-    print('Listing current open grouping requests...')
     for rq in self._extract('id', int, 'request', root):
         self._print_group_header(rq, opts)
 
