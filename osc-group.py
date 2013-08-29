@@ -180,7 +180,7 @@ def _group_verify_type(self, grid, opts):
     """
 
     print("Checking if GR# is proper type...")
-    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20(state/@name=\'new\'%20or@20state/@name=\'review\'))'] )
+    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'+and+(state/@name=\'new\'+or+state/@name=\'review\'))'])
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
@@ -326,6 +326,9 @@ def _group_list_requests(self, grid, opts):
     print('   ID    |  Author  |      Date     | Open items |  Name ')
 
     if grid:
+        # if we have assigned id we need to ensure it is actually grouped id
+        if not self._group_verify_type(grid, opts):
+            raise oscerr.ServiceRuntimeError('Request {0} is not a proper grouping request'.format(grid))
         self._print_group_header(grid, opts)
         print('\nContains following requests:')
         
@@ -353,7 +356,7 @@ def _group_list_requests(self, grid, opts):
         return
 
     # search up the GR#s
-    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'%20and%20(state/@name=\'new\'%20or@20state/@name=\'review\'))'] )
+    url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'+and+(state/@name=\'new\'+or+state/@name=\'review\'))'] )
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
