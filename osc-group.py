@@ -322,6 +322,9 @@ def _group_list_requests(self, grid, opts):
     :param opts: obs options
     """
 
+    # header content description
+    print('   ID    |  Author  |      Date     | Open items |  Name ')
+
     if grid:
         # if we have assigned id we need to ensure it is actually grouped id
         if not self._group_verify_type(grid, opts):
