@@ -261,7 +261,22 @@ def memoize(ttl=None):
             fcntl.flock(lckfile.fileno(), fcntl.LOCK_EX)
             return lckfile
 
-        def _clean_cache():
+        def _unlock(lckfile):
+            fcntl.flock(lckfile.fileno(), fcntl.LOCK_UN)
+            lckfile.close()
+
+        def _open_cache(cache_name):
+            lckfile = _lock(cache_name)
+            cache = shelve.open(cache_name, protocol=-1)
+            # Store a reference to the lckfile to avoid to be closed by gc
+            cache.lckfile = lckfile
+            return cache
+
+        def _close_cache(cache):
+            cache.close()
+            _unlock(cache.lckfile)
+
+        def _clean_cache(cache):
             len_cache = len(cache)
             if len_cache >= SLOTS:
                 nclean = NCLEAN + len_cache - SLOTS
@@ -276,23 +291,21 @@ def memoize(ttl=None):
             now = datetime.now()
             key = cPickle.dumps((args, kwargs), protocol=-1)
             updated = False
+            cache = _open_cache(cache_name)
             if key in cache:
                 timestamp, value = cache[key]
                 updated = True if total_seconds(now-timestamp) < ttl else False
             if not updated:
                 value = f(*args, **kwargs)
                 cache[key] = (now, value)
-            _clean_cache()
+            _clean_cache(cache)
+            _close_cache(cache)
             return value
 
         cache_dir = os.path.expanduser(TMPDIR)
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         cache_name = os.path.join(cache_dir, f.__name__)
-        lckfile = _lock(cache_name)
-        cache = shelve.open(cache_name, protocol=-1)
-        # Store a reference to the lckfile to avoid to be closed by gc
-        cache.lckfile = lckfile
         return _f
 
     ttl = ttl if ttl else TIMEOUT
@@ -855,26 +868,28 @@ def _check_repo_group(self, id_, reqs, opts):
         # This graph will be updated for every request
         current_graph = deepcopy(factory_graph)
 
-        subpkgs = factory_graph.subpkgs
+        subpkgs = current_graph.subpkgs
 
-        for p in packs:
+        # Recover all packages at once, ingoring some packages that
+        # can't be found in x86_64 architecture
+        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage) for p in packs]
+        all_packages = [pkg for pkg in all_packages if pkg]
+
+        for pkg in all_packages:
             # Take the dependencies and subpackages
             pkg = self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage)
-
-            # Some packages can't be found in x86_64 architecture. We
-            # can ignore them.
-            if not pkg:
-                continue
 
             # Update the current graph and see if we have different cycles
             if pkg.pkg in current_graph:
                 current_graph[pkg.pkg] = pkg
-                current_graph.remove_edges_from(set((pkg.pkg, p_) for p_ in current_graph.edges(pkg.pkg)))
+                current_graph.remove_edges_from(set((pkg.pkg, p) for p in current_graph.edges(pkg.pkg)))
             else:
                 current_graph.add_node(pkg.pkg, pkg)
-            current_graph.add_edges_from((pkg.pkg, subpkgs[p_]) for p_ in pkg.deps if p_ in subpkgs)
+            current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
 
-            subpkgs.update(dict((p_, pkg.pkg) for p_ in pkg.subs))
+            print p, pkg
+            #print p, subpkgs[
+            subpkgs.update(dict((p, pkg.pkg) for p in pkg.subs))
 
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
