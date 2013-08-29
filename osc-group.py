@@ -358,6 +358,8 @@ def _group_list_requests(self, grid, opts):
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
               help='show version of the plugin')
+@cmdln.option('-n', '--name',
+              help='set name of created group')
 def do_group(self, subcmd, opts, *args):
     """${cmd_name}: group packages into one group for verification
 
@@ -374,7 +376,7 @@ def do_group(self, subcmd, opts, *args):
     Usage:
             osc group list [GR#]
             osc group add [GR#] [package-name | Source:Repository:/ | SR#]
-            osc group create "Name of the group" [package-name | Source:Repository:/ | SR#]
+            osc group create [--name "Name of the group"] [package-name | Source:Repository:/ | SR#]
             osc group remove GR# [package-name | Source:Repository:/ | SR#]
 
     ${cmd_option_list}
@@ -395,7 +397,7 @@ def do_group(self, subcmd, opts, *args):
     elif cmd in ['add', 'a', 'remove', 'r']:
         min_args, max_args = 2, None
     elif cmd in ['create', 'c']:
-        min_args, max_args = 2, None
+        min_args, max_args = 1, None
     else:
         raise oscerr.WrongArgs('Unknown command: {0}'.format(cmd))
     if len(args) - 1 < min_args:
@@ -417,7 +419,12 @@ def do_group(self, subcmd, opts, *args):
     elif cmd in [ 'remove', 'r']:
         self._group_remove(args[1], args[2:], opts)
     elif cmd in ['create', 'c']:
-        self._group_create(args[1], args[2:], opts)
+        # check if name is set
+        if opts.name:
+            name = opts.name
+        else:
+            name = ', '.join(args[1:])
+        self._group_create(name, args[1:], opts)
 
 #Local Variables:
 #mode: python
