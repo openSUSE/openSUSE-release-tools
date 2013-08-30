@@ -896,8 +896,9 @@ def _check_repo_group(self, id_, reqs, opts):
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
                 print 'New edjes:', sorted(current_edges - factory_edges)
-                # Exit if cycle found
-                return
+                # Mark all packages as updated, to avoid to be accepted
+                for p in reqs:
+                    p.updated = True
 
     for p in reqs:
         smissing = []
