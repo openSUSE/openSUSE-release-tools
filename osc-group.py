@@ -173,6 +173,9 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
             else:
                 # package is not in group so we append it for return
                 grids.append(sr)
+    
+    if not require_grouping and len(grids) < 1:
+        raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(', '.join(srids)))
 
     return grids
 
@@ -187,7 +190,7 @@ def _group_verify_type(self, grid, opts):
     url = makeurl(opts.apiurl, ['search', 'request', 'id?match=(action/@type=\'group\'+and+(state/@name=\'new\'+or+state/@name=\'review\'))'])
     f = http_GET(url)
     root = ET.parse(f).getroot()
-    
+
     res = self._extract('id', int, 'request', root)
 
     # we have various stuff passed, and it might or might not be int we need for the comparison
@@ -212,12 +215,7 @@ def _group_create(self, name, pkgs, opts):
     """
 
     srids = self._group_find_sr(pkgs, opts)
-    srids_filtered = self._group_verify_grouping(srids, opts)
-    
-    if len(srids_filtered) > 0:
-        srids = srids_filtered
-    else:
-        raise oscerr.WrongArgs('All added submit request already are in some group: {0}'.format(', '.join(srids)))
+    srids = self._group_verify_grouping(srids, opts)
 
     # compose the xml
     xml='<request><action type="group">'
@@ -246,12 +244,7 @@ def _group_add(self, grid, pkgs, opts):
     returned_group = self._group_verify_type(grid, opts)
     if returned_group:
         srids = self._group_find_sr(pkgs, opts)
-        srids_filtered = self._group_verify_grouping(srids, opts)
-        
-        if len(srids_filtered) > 0:
-            srids = srids_filtered
-        else:
-            raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(', '.join(srids)))
+        srids = self._group_verify_grouping(srids, opts)
     else:
         # here we add the grid to pkgs and search among all to get at least one
         # usefull group request id
