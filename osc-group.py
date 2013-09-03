@@ -374,7 +374,7 @@ def _group_list_requests(self, grid, opts):
             else:
                 state = 'missing reviews: ' + ', '.join(failing_groups)
 
-            print('SR#{0} | {1}/{2}:{3} | {5} | {6}'.format(x, project, package, revision, date, state))
+            print('SR#{0} | {1}/{2}:{3} | {4} | {5}'.format(x, project, package, revision, date, state))
         return
 
     # search up the GR#s
