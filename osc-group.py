@@ -173,7 +173,7 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
             else:
                 # package is not in group so we append it for return
                 grids.append(sr)
-    
+
     if not require_grouping and len(grids) < 1:
         raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(', '.join(srids)))
 
@@ -314,7 +314,7 @@ def _print_group_header(self, grid, opts):
     description = str(root.find('description').text)
     date = str(root.find('state').attrib['when'])
     author = str(root.find('state').attrib['who'])
-    
+
     # count the elements:
     counter = root.find('action')
     res = self._extract('id', int, 'grouped', counter)
@@ -338,28 +338,43 @@ def _group_list_requests(self, grid, opts):
             raise oscerr.WrongArgs('Request {0} is not a proper grouping request'.format(grid))
         self._print_group_header(grid, opts)
         print('\nContains following requests:')
-        
+
         # search up for all submit ids in group
         url = url = makeurl(opts.apiurl, ['request', str(grid)])
         f = http_GET(url)
         root = ET.parse(f).getroot().find('action')
         res = self._extract('id', int, 'grouped', root)
-        
+
         # print their context out to make nice table
         for x in res:
             url = url = makeurl(opts.apiurl, ['request', str(x)])
             f = http_GET(url)
             root = ET.parse(f).getroot()
-            
+
             # relevant info for printing
             package = str(root.find('action').find('source').attrib['package'])
             project = str(root.find('action').find('source').attrib['project'])
             revision = str(root.find('action').find('source').attrib['rev'])
             date = str(root.find('state').attrib['when'])
-            author = str(root.find('state').attrib['who'])
-            state = str(root.find('state').attrib['name'])
-            
-            print('SR#{0} | {1}/{2}:{3} | {4} | {5} | {6}'.format(x, project, package, revision, author, date, state))
+
+            # instead of just printing the state of the whole request find out who is
+            # remaining on the review and print it out, otherwise print out that it is
+            # ready for approval and waiting on others from GR to be accepted
+            review_state = root.findall('review')
+            failing_groups = []
+            for i in review_state:
+                if not i.attrib['state'] == 'accepted':
+                    try:
+                        failing_groups.append(i.attrib['by_group'])
+                    except KeyError:
+                        failing_groups.append(i.attrib['by_user'])
+
+            if not failing_groups:
+                state = 'approvable'
+            else:
+                state = 'missing reviews: ' + ', '.join(failing_groups)
+
+            print('SR#{0} | {1}/{2}:{3} | {5} | {6}'.format(x, project, package, revision, date, state))
         return
 
     # search up the GR#s
