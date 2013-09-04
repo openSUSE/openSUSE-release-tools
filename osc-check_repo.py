@@ -878,9 +878,6 @@ def _check_repo_group(self, id_, reqs, opts):
         all_packages = [pkg for pkg in all_packages if pkg]
 
         for pkg in all_packages:
-            # Take the dependencies and subpackages
-            pkg = self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage)
-
             # Update the current graph and see if we have different cycles
             if pkg.pkg in current_graph:
                 current_graph[pkg.pkg] = pkg
