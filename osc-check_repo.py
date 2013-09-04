@@ -15,6 +15,7 @@ import re
 import shelve
 import shutil
 import subprocess
+import tempfile
 from urllib import quote_plus
 import urllib2
 from xml.etree import cElementTree as ET
@@ -39,6 +40,7 @@ global deepcopy
 global datetime
 global fcntl
 global shelve
+global tempfile
 global wraps
 
 global Graph
@@ -930,7 +932,12 @@ def _check_repo_group(self, id_, reqs, opts):
             if not fn in downloads:
                 os.unlink(fn)
 
-    civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' '%s' 2>&1" % (destdir, ','.join(toignore))
+    # Create a temporal file for the params
+    params_file = tempfile.NamedTemporaryFile(delete=False)
+    params_file.write('\n'.join(f for f in toignore if f.strip()))
+    params_file.close()
+    civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' -f %s 2>&1" % (destdir, params_file.name)
+    os.unlink(params_file.name)
     #exit(1)
     p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
     #ret = os.waitpid(p.pid, 0)[1]
