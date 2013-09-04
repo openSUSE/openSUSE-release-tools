@@ -1,0 +1,23 @@
+digraph staging {
+
+   nodesep=1.5;
+
+   graph [ sep="+2" ]
+
+   node [ shape=rectangle ]
+
+   devel   [ label="Devel project" ];
+   review  [ label="Review team", shape=ellipse, style=dashed ];
+   factory [ label="openSUSE Factory" ];
+   staging [ label="Staging project" ];
+      
+   devel -> review    [ label="Developer submits fixes from staging repo" ];
+   devel -> review    [ label="Developer submits packages" ];
+   review -> review   [ label="Initial grouping of requests" ];
+   review -> staging  [ label="Review team creates staging project from GR/SR" ];
+   staging -> devel   [ label="Developer updates staging and fixes stuff" ];
+   review -> factory  [ label=<Review team accepts the group<br/><i>(verified to produce same result as staging repo)</i>> ];
+   factory -> staging [ label="Factory maintainers have rights in staging", style=dotted ];
+   devel -> staging   [ label="Devel project maintainers have rights in staging", style=dotted ];
+   staging -> staging [ label="Developer does changes" ];
+}
