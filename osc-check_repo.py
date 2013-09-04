@@ -102,8 +102,12 @@ class Graph(dict):
             self.remove_edge(u, v, directed)
 
     def edges(self, v):
-        """Get the adjancent list for a vertex"""
-        return sorted(self.adj[v]) if v in self else set()
+        """Get the adjancent list for a vertex."""
+        return sorted(self.adj[v]) if v in self else ()
+
+    def edges_to(self, v):
+        """Get the all the vertex that point to v."""
+        return sorted(u for u in self.adj if v in self.adj[u])
 
     def cycles(self):
         """Detect cycles using Tarjan algorithm."""
@@ -771,7 +775,7 @@ def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='
     graph = Graph()
     graph.add_nodes_from((p.pkg, p) for p in packages)
 
-    subpkgs = {}
+    subpkgs = {}    # Given a subpackage, recover the source package
     for p in packages:
         # Check for packages that provides the same subpackage
         for subpkg in p.subs:
@@ -872,24 +876,26 @@ def _check_repo_group(self, id_, reqs, opts):
 
         subpkgs = current_graph.subpkgs
 
-        # Recover all packages at once, ingoring some packages that
+        # Recover all packages at once, ignoring some packages that
         # can't be found in x86_64 architecture
         all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage) for p in packs]
         all_packages = [pkg for pkg in all_packages if pkg]
 
-        for pkg in all_packages:
-            # Take the dependencies and subpackages
-            pkg = self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage)
+        subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
 
+        for pkg in all_packages:
             # Update the current graph and see if we have different cycles
+            edges_to = ()
             if pkg.pkg in current_graph:
                 current_graph[pkg.pkg] = pkg
                 current_graph.remove_edges_from(set((pkg.pkg, p) for p in current_graph.edges(pkg.pkg)))
+                edges_to = current_graph.edges_to(pkg.pkg)
+                current_graph.remove_edges_from(set((p, pkg.pkg) for p in edges_to))
             else:
                 current_graph.add_node(pkg.pkg, pkg)
             current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
-
-            subpkgs.update(dict((p, pkg.pkg) for p in pkg.subs))
+            current_graph.add_edges_from((p, pkg.pkg) for p in edges_to
+                                         if pkg.pkg in set(subpkgs[sp] for sp in current_graph[p].deps if sp in subpkgs))
 
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
@@ -897,7 +903,7 @@ def _check_repo_group(self, id_, reqs, opts):
                 print 'New cycle detected:', sorted(cycle)
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
-                print 'New edjes:', sorted(current_edges - factory_edges)
+                print 'New edges:', sorted(current_edges - factory_edges)
                 # Mark all packages as updated, to avoid to be accepted
                 for p in reqs:
                     p.updated = True
