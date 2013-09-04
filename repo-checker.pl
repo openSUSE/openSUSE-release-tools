@@ -17,8 +17,17 @@ use strict;
 my $ret = 0;
 my $dir = $ARGV[0];
 my %toignore;
-foreach my $name (split(/,/, $ARGV[1])) {
-   $toignore{$name} = 1;
+if ($ARGV[1] eq "-f") {
+  open(TOIGNORE, $ARGV[2]);
+  while ( <TOIGNORE> ) {
+    chomp;
+    $toignore{$_} = 1;
+  }
+  close(TOIGNORE);
+} else {
+  foreach my $name (split(/,/, $ARGV[1])) {
+    $toignore{$name} = 1;
+  }
 }
 
 for my $pdir (glob("$dir/*")) {
