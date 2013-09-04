@@ -18,7 +18,7 @@ my $ret = 0;
 my $dir = $ARGV[0];
 my %toignore;
 if ($ARGV[1] eq "-f") {
-  open(TOIGNORE, $ARGV[2]);
+  open(TOIGNORE, $ARGV[2]) || die "can't open $ARGV[2]";
   while ( <TOIGNORE> ) {
     chomp;
     $toignore{$_} = 1;
