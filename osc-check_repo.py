@@ -937,12 +937,12 @@ def _check_repo_group(self, id_, reqs, opts):
     params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
     civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' -f %s 2>&1" % (destdir, params_file.name)
-    os.unlink(params_file.name)
     #exit(1)
     p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
     #ret = os.waitpid(p.pid, 0)[1]
     output, _ = p.communicate()
     ret = p.returncode
+    os.unlink(params_file.name)
     
     updated = dict()
 
