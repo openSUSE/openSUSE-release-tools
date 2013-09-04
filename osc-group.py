@@ -319,7 +319,7 @@ def _print_group_header(self, grid, opts):
     counter = root.find('action')
     res = self._extract('id', int, 'grouped', counter)
     items = len(res)
-    print('GR#{0} | {1} | {2} | {3} | {4}'.format(grid, author, date, items, description))
+    print('{0} | {1} | {2} | {3} | {4}'.format(grid, author, date, items, description))
 
 
 def _group_list_requests(self, grid, opts):
@@ -374,7 +374,7 @@ def _group_list_requests(self, grid, opts):
             else:
                 state = 'missing reviews: ' + ', '.join(failing_groups)
 
-            print('SR#{0} | {1}/{2}:{3} | {4} | {5}'.format(x, project, package, revision, date, state))
+            print('{0} | {1}/{2}:{3} | {4} | {5}'.format(x, project, package, revision, date, state))
         return
 
     # search up the GR#s
