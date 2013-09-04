@@ -40,6 +40,7 @@ global deepcopy
 global datetime
 global fcntl
 global shelve
+global tempfile
 global wraps
 
 global Graph
@@ -932,8 +933,8 @@ def _check_repo_group(self, id_, reqs, opts):
                 os.unlink(fn)
 
     # Create a temporal file for the params
-    params_file = tempfile.NamedTemporaryFile(deleted=False)
-    params_file.write('\n'.join(toignore))
+    params_file = tempfile.NamedTemporaryFile(delete=False)
+    params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
     civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' -f %s 2>&1" % (destdir, params_file.name)
     os.unlink(params_file.name)
