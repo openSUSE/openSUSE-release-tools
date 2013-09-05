@@ -600,6 +600,9 @@ def _check_repo_buildsuccess(self, p, opts):
                 print 'DECLINED', msg
                 self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
                 return False
+            if arch.attrib['result'] == 'unknown':
+                print 'UNKOWN state -- Stoping check for this package'
+                return False
 
         r_missings = r_missings.keys()
         for pkg in r_missings:
