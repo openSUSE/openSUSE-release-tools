@@ -352,9 +352,13 @@ def _group_list_requests(self, grid, opts):
             root = ET.parse(f).getroot()
 
             # relevant info for printing
-            package = str(root.find('action').find('source').attrib['package'])
-            project = str(root.find('action').find('source').attrib['project'])
-            revision = str(root.find('action').find('source').attrib['rev'])
+            package = str(root.find('action').find('target').attrib['package'])
+            if root.find('action').attrib['type'] == "delete":
+                project = "openSUSE:Factory"
+                revision = "0"
+            else:
+                project = str(root.find('action').find('source').attrib['project'])
+                revision = str(root.find('action').find('source').attrib['rev'])
             date = str(root.find('state').attrib['when'])
 
             # instead of just printing the state of the whole request find out who is
