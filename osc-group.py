@@ -367,11 +367,15 @@ def _group_list_requests(self, grid, opts):
             review_state = root.findall('review')
             failing_groups = []
             for i in review_state:
-                if not i.attrib['state'] == 'accepted':
+                if i.attrib['state'] == 'accepted':
+                    continue
+                try:
+                    failing_groups.append(i.attrib['by_group'])
+                except KeyError:
                     try:
-                        failing_groups.append(i.attrib['by_group'])
-                    except KeyError:
                         failing_groups.append(i.attrib['by_user'])
+                    except KeyError:
+                        failing_groups.append(i.attrib['by_package'])
 
             if not failing_groups:
                 state = 'approvable'
