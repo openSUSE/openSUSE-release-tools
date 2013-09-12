@@ -175,7 +175,12 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
                 grids.append(sr)
 
     if not require_grouping and len(grids) < 1:
-        raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(', '.join(srids)))
+        # we can have just one srid
+        if isinstance(srids, int):
+            srids = str(srids)
+        else:
+            srids = ', '.join(map(str, srids))
+        raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(srids))
 
     return grids
 
