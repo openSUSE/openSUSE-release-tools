@@ -358,7 +358,7 @@ def _group_list_requests(self, grid, opts):
 
             # relevant info for printing
             package = str(root.find('action').find('target').attrib['package'])
-            if root.find('action').attrib['type'] == "delete":
+            if root.find('action').attrib['type'] == "delete" or root.find('action').attrib['type'] == 'change_devel':
                 project = "openSUSE:Factory"
                 revision = "0"
             else:
