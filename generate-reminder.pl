@@ -9,6 +9,7 @@ use Encode;
 use Carp::Always;
 use Data::Dumper;
 use URI::Escape;
+use Net::Netrc;
 require Date::Format;
 
 my $user = $ARGV[0];
@@ -27,6 +28,9 @@ sub fetch_user_infos($)
     }
 
     my $ua = LWP::UserAgent->new;
+    $ua->agent("generate-reminder.pl");
+    my $mach = Net::Netrc->lookup('api.opensuse.org');
+    $ua->credentials("api.opensuse.org:443", "Use your novell account", $mach->login(), $mach->password());
     $ua->timeout(180);
     $ua->max_size(100000000);
     $ua->default_header("Accept" => "application/json");
@@ -35,7 +39,7 @@ sub fetch_user_infos($)
 
     $mywork = from_json( $mywork->decoded_content, { utf8 => 1 });
 
-    my $url = "https://build.opensuse.org/project/status/$tproject?ignore_pending=0";
+    my $url = "https://api.opensuse.org/webui/projects/$tproject/status?ignore_pending=0";
     $url .= "&limit_to_fails=false&limit_to_old=false&include_versions=true&filter_for_user=$user";
     my $projstat = $ua->get($url);
     die $projstat->status_line unless ($projstat->is_success);
@@ -139,7 +143,7 @@ sub generate_report($)
     #print to_json($projstat, {pretty => 1});
 
     my %projects;
-    for my $package (@{$projstat}) {
+    for my $package (@{$projstat->{'packages'}}) {
         my $develproject = $package->{develproject} || next;
         next if ($develproject eq $tproject); 
 	$projects{$develproject} ||= [];
@@ -193,7 +197,7 @@ sub generate_report($)
 		delete $reviews_by{$key};
 	    }
 
-	    if ($package->{firstfail} && $package->{develfirstfail}) {
+	    if ($package->{firstfail}) {
 		my $fail = time_distance($package->{firstfail});
 		my $comment = $package->{failedcomment} || 'unknown failure';
 		$comment =~ s,^\s+,,;
