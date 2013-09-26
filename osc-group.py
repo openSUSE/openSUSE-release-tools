@@ -175,7 +175,12 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
                 grids.append(sr)
 
     if not require_grouping and len(grids) < 1:
-        raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(', '.join(srids)))
+        # we can have just one srid
+        if isinstance(srids, int):
+            srids = str(srids)
+        else:
+            srids = ', '.join(map(str, srids))
+        raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(srids))
 
     return grids
 
@@ -352,9 +357,13 @@ def _group_list_requests(self, grid, opts):
             root = ET.parse(f).getroot()
 
             # relevant info for printing
-            package = str(root.find('action').find('source').attrib['package'])
-            project = str(root.find('action').find('source').attrib['project'])
-            revision = str(root.find('action').find('source').attrib['rev'])
+            package = str(root.find('action').find('target').attrib['package'])
+            if root.find('action').attrib['type'] == "delete" or root.find('action').attrib['type'] == 'change_devel':
+                project = "openSUSE:Factory"
+                revision = "0"
+            else:
+                project = str(root.find('action').find('source').attrib['project'])
+                revision = str(root.find('action').find('source').attrib['rev'])
             date = str(root.find('state').attrib['when'])
 
             # instead of just printing the state of the whole request find out who is
@@ -363,11 +372,15 @@ def _group_list_requests(self, grid, opts):
             review_state = root.findall('review')
             failing_groups = []
             for i in review_state:
-                if not i.attrib['state'] == 'accepted':
+                if i.attrib['state'] == 'accepted':
+                    continue
+                try:
+                    failing_groups.append(i.attrib['by_group'])
+                except KeyError:
                     try:
-                        failing_groups.append(i.attrib['by_group'])
-                    except KeyError:
                         failing_groups.append(i.attrib['by_user'])
+                    except KeyError:
+                        failing_groups.append(i.attrib['by_package'])
 
             if not failing_groups:
                 state = 'approvable'
