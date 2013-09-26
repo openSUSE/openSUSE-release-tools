@@ -945,7 +945,9 @@ def _check_repo_group(self, id_, reqs, opts):
     params_file = tempfile.NamedTemporaryFile(delete=False)
     params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
-    civs = "LC_ALL=C perl /suse/coolo/checker/repo-checker.pl '%s' -f %s 2>&1" % (destdir, params_file.name)
+    repochecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
+    repochecker = os.path.join(repochecker, 'repo-checker.pl')
+    civs = "LC_ALL=C perl %s '%s' -f %s 2>&1" % (repochecker, destdir, params_file.name)
     #exit(1)
     p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
     #ret = os.waitpid(p.pid, 0)[1]
