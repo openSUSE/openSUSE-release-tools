@@ -164,7 +164,9 @@ def _checker_one_request(self, rq, cmd, opts):
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
 		continue
 
-            civs = "LC_ALL=C perl /suse/coolo/checker/source-checker.pl _old %s 2>&1" % tpkg
+            sourcechecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_source.py')))
+            sourcechecker = os.path.join(sourcechecker, 'source-checker.pl')
+            civs = "LC_ALL=C perl %s _old %s 2>&1" % (sourcechecker, tpkg)
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
