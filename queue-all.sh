@@ -5,9 +5,9 @@ users=`mktemp`
 dir=reports-`date +%F`
 mkdir $dir
 ( for i in $list ; do 
-  echo "query $i" >&2
+  echo "query '$i'" >&2
   osc meta prj $i 
-  osc api /search/package/?match='@project="$i"'
+  osc api "/search/package/?match=@project='$i'"
 done | grep '<person.*role="maintainer"'
 ) | sed -e 's,.*userid=",,; s,".*,,'  | sort -u > $users
 for i in `cat $users`; do 

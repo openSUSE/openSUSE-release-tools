@@ -122,8 +122,8 @@ def _checker_one_request(self, rq, cmd, opts):
 	    #self._devel_projects['devel:languages:erlang/'] = 'ruby19'
             #self._devel_projects['devel:languages:nodejs/'] = 'nodejs'
 	    #self._devel_projects['X11:Enlightenment:Factory/'] = 'x2go'
-	    #self._devel_projects['isv:ownCloud:owncloud-factory'] = 'owncloud'
-	    #self._devel_projects['X11:Wayland/'] = 'wayland'
+	    self._devel_projects['X11:MATE:Factory/'] = 'mate'
+	    self._devel_projects['network:wicked:factory/'] = 'wicked'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
