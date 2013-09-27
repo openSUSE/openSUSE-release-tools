@@ -320,12 +320,12 @@ def memoize(ttl=None):
 
 @memoize()
 def build(apiurl, project, repo, arch, package):
+    root = None
     try:
         url = makeurl(apiurl, ['build', project, repo, arch, package])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
         print 'ERROR in URL %s [%s]'%(url, e)
-        return False
     return root
 
 
@@ -416,10 +416,12 @@ def _check_repo_fetch_group(self, opts, group):
 
 
 def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
-    root = ET.fromstring(build(opts.apiurl, prj, repo, arch, pkg))
-    for binary in root.findall('binary'):
-        # if there are binaries, we're out
-        return False
+    xml = build(opts.apiurl, prj, repo, arch, pkg)
+    if xml:
+        root = ET.fromstring(xml)
+        for binary in root.findall('binary'):
+            # if there are binaries, we're out
+            return False
     return True
 
 
@@ -627,7 +629,7 @@ def _check_repo_buildsuccess(self, p, opts):
         print 'DECLINED', msg
         self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
         return False
-    if foundbuilding:	
+    if foundbuilding:
         msg = "{1} is still building for repository {0}".format(foundbuilding, p.spackage)
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         print 'UPDATED', msg
