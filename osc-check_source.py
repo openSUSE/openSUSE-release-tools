@@ -121,7 +121,7 @@ def _checker_one_request(self, rq, cmd, opts):
             #self._devel_projects['X11:QtDesktop/'] = 'rabbitmq'
 	    #self._devel_projects['devel:languages:erlang/'] = 'ruby19'
             #self._devel_projects['devel:languages:nodejs/'] = 'nodejs'
-	    #self._devel_projects['X11:Enlightenment:Factory/'] = 'x2go'
+	    self._devel_projects['KDE:Qt51/'] = 'x2go'
 	    self._devel_projects['X11:MATE:Factory/'] = 'mate'
 	    self._devel_projects['network:wicked:factory/'] = 'wicked'
             if dpkg:
