@@ -194,7 +194,7 @@ class Package(object):
         self.subs = set(e.text for e in element.findall('subpkg'))
 
     def __repr__(self):
-        return 'PKG: %s\nSRC: %s\nDEPS: %s\n SUBS: %s'%(self.pkg, self.src, self.deps, self.subs)
+        return 'PKG: %s\nSRC: %s\nDEPS: %s\n SUBS: %s' % (self.pkg, self.src, self.deps, self.subs)
 
 
 def memoize(ttl=None):
@@ -325,7 +325,7 @@ def build(apiurl, project, repo, arch, package):
         url = makeurl(apiurl, ['build', project, repo, arch, package])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(url, e)
+        print 'ERROR in URL %s [%s]' % (url, e)
     return root
 
 
@@ -335,12 +335,13 @@ def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
     try:
         url = makeurl(apiurl,
                       ['build', src_project,
-                       '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s'%(quote_plus(src_package),
-                                                                                  quote_plus(tgt_project),
-                                                                                  rev)])
+                       '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s' % (
+                           quote_plus(src_package),
+                           quote_plus(tgt_project),
+                           rev)])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(url, e)
+        print 'ERROR in URL %s [%s]' % (url, e)
     return root
 
 
@@ -348,11 +349,11 @@ def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
 def builddepinfo(apiurl, project, repository, arch):
     root = None
     try:
-        print 'Generating _builddepinfo for (%s, %s, %s)'%(project, repository, arch)
-        url = makeurl(apiurl, ['/build/%s/%s/%s/_builddepinfo'%(project, repository, arch),])
+        print 'Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch)
+        url = makeurl(apiurl, ['/build/%s/%s/%s/_builddepinfo' % (project, repository, arch),])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(url, e)
+        print 'ERROR in URL %s [%s]' % (url, e)
     return root
 
 
@@ -373,24 +374,28 @@ def _check_repo_change_review_state(self, opts, id_, newstate, message='', super
     #     query['comment'] = message
 
     code = 404
-    u = makeurl(opts.apiurl, ['request', str(id_)], query=query)
+    url = makeurl(opts.apiurl, ['request', str(id_)], query=query)
     try:
-        f = http_POST(u, data=message)
+        f = http_POST(url, data=message)
         root = ET.parse(f).getroot()
         code = root.attrib['code']
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(u, e)
+        print 'ERROR in URL %s [%s]' % (url, e)
     return code
 
 
 def _check_repo_find_submit_request(self, opts, project, package):
-    xpath = "(action/target/@project='%s' and action/target/@package='%s' and action/@type='submit' and (state/@name='new' or state/@name='review' or state/@name='accepted'))" % (project, package)
+    xpath = "(action/target/@project='%s' and "\
+             "action/target/@package='%s' and "\
+             "action/@type='submit' and "\
+             "(state/@name='new' or state/@name='review' or "\
+              "state/@name='accepted'))" % (project, package)
     try:
         url = makeurl(opts.apiurl, ['search','request'], 'match=%s' % quote_plus(xpath))
         f = http_GET(url)
         collection = ET.parse(f).getroot()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(url, e)
+        print 'ERROR in URL %s [%s]' % (url, e)
         return None
     for root in collection.findall('request'):
         r = Request()
@@ -449,8 +454,9 @@ def _check_repo_one_request(self, rq, opts):
     act = actions[0]
     type_ = act.get('type')
     if type_ != 'submit':
-        self._check_repo_change_review_state(opts, id_, 'accepted',
-                                             message='Unchecked request type %s'%type_)
+        msg = 'Unchecked request type %s' % type_
+        print 'ACCEPTED', msg
+        self._check_repo_change_review_state(opts, id_, 'accepted', message=msg)
         return []
 
     pkg = act.find('source').get('package')
@@ -470,7 +476,7 @@ def _check_repo_one_request(self, rq, opts):
             # Search in which group this id_ is included. The result
             # in an XML document pointing to a single submit request
             # ID if this id_ is actually part of a group
-            url = makeurl(opts.apiurl, ['search', 'request', 'id?match=action/grouped/@id=%s'%id_])
+            url = makeurl(opts.apiurl, ['search', 'request', 'id?match=action/grouped/@id=%s' % id_])
             root = ET.parse(http_GET(url)).getroot()
             reqs = root.findall('request')
             if reqs:
@@ -479,7 +485,7 @@ def _check_repo_one_request(self, rq, opts):
                 # and populate opts.group and opts.grouped
                 self._check_repo_fetch_group(opts, group)
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(url, e)
+        print 'ERROR in URL %s [%s]' % (url, e)
         return []
 
     packs = []
@@ -495,10 +501,10 @@ def _check_repo_one_request(self, rq, opts):
     #   - Source MD5
     #   - Entries (.tar.gz, .changes, .spec ...) and MD5
     try:
-        url = makeurl(opts.apiurl, ['source', prj, pkg, '?expand=1&rev=%s'%rev])
+        url = makeurl(opts.apiurl, ['source', prj, pkg, '?expand=1&rev=%s' % rev])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]'%(url, e)
+        print 'ERROR in URL %s [%s]' % (url, e)
         return []
     p.rev = root.attrib['srcmd5']
 
@@ -523,14 +529,14 @@ def _check_repo_one_request(self, rq, opts):
             pass # leave lprj
 
         if lprj != prj or lpkg != pkg and not p.updated:
-            msg = '%s/%s should _link to %s/%s' % (prj,spec,prj,pkg)
+            msg = '%s/%s should _link to %s/%s' % (prj, spec, prj, pkg)
+            print 'DECLINED', msg
             self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
-            print msg
             p.updated = True
         if lmd5 != p.rev and not p.updated:
-            msg = '%s/%s is a link but has a different md5sum than %s?' % (prj,spec,pkg)
+            msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
+            print 'UPDATED', msg
             self._check_repo_change_review_state(opts, id_, 'new', message=msg)
-            print msg
             p.updated = True
 
         sp = CheckRepoPackage()
@@ -600,7 +606,7 @@ def _check_repo_buildsuccess(self, p, opts):
             if arch.attrib['result'] == 'outdated':
                 msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % p.spackage
                 print 'DECLINED', msg
-                self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+                self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
                 return False
             if arch.attrib['result'] == 'unknown':
                 print 'UNKOWN state -- Stoping check for this package'
@@ -615,9 +621,9 @@ def _check_repo_buildsuccess(self, p, opts):
             p.goodrepo = repo.attrib['name']
             result = True
         if r_foundbuilding:
-             foundbuilding = r_foundbuilding
+            foundbuilding = r_foundbuilding
         if r_foundfailed:
-             foundfailed = r_foundfailed
+            foundfailed = r_foundfailed
 
     p.missings = sorted(missings)
 
@@ -666,7 +672,7 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
     except urllib2.HTTPError, e:
         pass
         # if not ignore:
-        #     print 'ERROR in URL %s [%s]'%(url, e)
+        #     print 'ERROR in URL %s [%s]' % (url, e)
     return files
 
 
@@ -680,7 +686,7 @@ def _check_repo_download(self, p, destdir, opts):
     if p.build_excluded:
         return [], []
 
-    p.destdir = destdir + "/%s" % p.tpackage
+    p.destdir = destdir + '/%s' % p.tpackage
     if not os.path.isdir(p.destdir):
       os.makedirs(p.destdir, 0755)
     # we can assume x86_64 is there
@@ -739,7 +745,7 @@ def _get_base_build_bin(self, opts):
     """Get Base:build pagacke list"""
     binaries = {}
     for arch in ('x86_64', 'i586'):
-        url = makeurl(opts.apiurl, ['/build/openSUSE:Factory:Build/standard/%s/_repository'%arch,])
+        url = makeurl(opts.apiurl, ['/build/openSUSE:Factory:Build/standard/%s/_repository' % arch,])
         root = ET.parse(http_GET(url)).getroot()
         binaries[arch] = set([e.attrib['filename'][:-4] for e in root.findall('binary')])
     return binaries
@@ -785,7 +791,7 @@ def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='
         # Check for packages that provides the same subpackage
         for subpkg in p.subs:
             if subpkg in subpkgs:
-                # print 'Subpackage duplication %s - %s (subpkg: %s)'%(p.pkg, subpkgs[subpkg], subpkg)
+                # print 'Subpackage duplication %s - %s (subpkg: %s)' % (p.pkg, subpkgs[subpkg], subpkg)
                 pass
             else:
                 subpkgs[subpkg] = p.pkg
@@ -796,7 +802,7 @@ def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='
         missing = [d for d in deps if not d.startswith(_IGNORE_PREFIX) and d not in subpkgs]
         if missing:
             if p.pkg not in _ignore_packages:
-                print 'Ignoring package. Missing dependencies %s -> (%s) %s...'%(p.pkg, len(missing), missing[:5])
+                print 'Ignoring package. Missing dependencies %s -> (%s) %s...' % (p.pkg, len(missing), missing[:5])
                 _ignore_packages.add(p.pkg)
             continue
 
@@ -825,7 +831,7 @@ def _check_repo_group(self, id_, reqs, opts):
 
     # all succeeded
     toignore, downloads = [], []
-    destdir = os.path.expanduser('~/co/%s'%str(reqs[0].group))
+    destdir = os.path.expanduser('~/co/%s' % str(reqs[0].group))
     fetched = dict((r, False) for r in opts.groups.get(id_, []))
     goodrepo = ''
     packs = []
@@ -866,9 +872,9 @@ def _check_repo_group(self, id_, reqs, opts):
                 build_deps = set(self._get_buildinfo(opts, p.sproject, p.goodrepo, arch, p.spackage))
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
-                    print 'OUTLIERS (%s)'%arch, outliers
-                    # msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)'%(', '.join(outliers))
-                    # self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+                    print 'OUTLIERS (%s)' % arch, outliers
+                    # msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)' % (', '.join(outliers))
+                    # self._check_repo_change_review_state(opts, p.request, 'disabled', message=msg)
                     # print 'NON-(FIX)-UPDATED', msg
                     p.updated = True
 
@@ -927,10 +933,10 @@ def _check_repo_group(self, id_, reqs, opts):
             if request:
                 greqs = opts.groups.get(p.group, [])
                 if request in greqs: continue
-                package = "%s(rq%s)" % (package, request) 
+                package = '%s(rq%s)' % (package, request)
             smissing.append(package)
         if len(smissing):
-            msg = "please make sure to wait before these depencencies are in {0}: {1}".format(p.tproject, ', '.join(smissing))
+            msg = 'Please make sure to wait before these depencencies are in %s: %s' % (p.tproject, ', '.join(smissing))
             self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
             print 'UPDATED', msg
             return
@@ -970,7 +976,7 @@ def _check_repo_group(self, id_, reqs, opts):
         return
     for p in reqs:
         if updated.get(p.request, False) or p.updated: continue
-        msg="Builds for repo %s" % p.goodrepo
+        msg = 'Builds for repo %s' % p.goodrepo
         self._check_repo_change_review_state(opts, p.request, 'accepted', message=msg)
         updated[p.request] = 1
 	p.updated = True
@@ -1005,7 +1011,9 @@ def do_check_repo(self, subcmd, opts, *args):
         if not len(args):
             raise oscerr.WrongArgs('Please give, if you want to skip a review specify a SRID' )
         for id_ in args:
-            self._check_repo_change_review_state(opts, id_, 'accepted', message='skip review')
+            msg = 'skip review'
+            print 'ACCEPTED', msg
+            self._check_repo_change_review_state(opts, id_, 'accepted', message=msg)
         return
 
     ids = [arg for arg in args if arg.isdigit()]
@@ -1015,7 +1023,7 @@ def do_check_repo(self, subcmd, opts, *args):
         # xpath query, using the -m, -r, -s options
         where = "@by_user='factory-repo-checker'+and+@state='new'"
         url = makeurl(opts.apiurl, ['search', 'request'], 
-                      "match=state/@name='review'+and+review["+where+"]")
+                      "match=state/@name='review'+and+review[%s]" % where)
         f = http_GET(url)
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
