@@ -650,6 +650,7 @@ def _check_repo_buildsuccess(self, p, opts):
         return False
     if foundfailed:
         msg = '%s failed to build in repository %s - not accepting' % (p.spackage, foundfailed)
+        # XXX Do we need to autodecline this case?
         print 'UPDATED', msg
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         # Next line not needed, but for documentation
