@@ -576,8 +576,10 @@ def _check_repo_buildsuccess(self, p, opts):
 
     if not tocheckrepos:
         msg = 'Missing i586 and x86_64 in the repo list'
-        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         print 'UPDATED', msg
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        # Next line not needed, but for documentation
+        p.updated = True
         return False
 
     for repo in tocheckrepos:
@@ -607,6 +609,8 @@ def _check_repo_buildsuccess(self, p, opts):
                 msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % p.spackage
                 print 'DECLINED', msg
                 self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+                # Next line is not needed, but for documentation
+                p.updated = True
                 return False
             if arch.attrib['result'] == 'unknown':
                 print 'UNKOWN state -- Stoping check for this package'
@@ -631,19 +635,25 @@ def _check_repo_buildsuccess(self, p, opts):
         return True
 
     if alldisabled:
-        msg = "%s is disabled or does not build against factory. Please fix and resubmit" % p.spackage
+        msg = '%s is disabled or does not build against factory. Please fix and resubmit' % p.spackage
         print 'DECLINED', msg
         self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+        # Next line not needed, but for documentation
+        p.updated = True
         return False
     if foundbuilding:
-        msg = "{1} is still building for repository {0}".format(foundbuilding, p.spackage)
-        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        msg = '%s is still building for repository %s' % (foundbuilding, p.spackage)
         print 'UPDATED', msg
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        # Next line not needed, but for documentation
+        p.updated = True
         return False
     if foundfailed:
-        msg = "{1} failed to build in repository {0} - not accepting".format(foundfailed, p.spackage)
-        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        msg = '%s failed to build in repository %s - not accepting' % (p.spackage, foundfailed)
         print 'UPDATED', msg
+        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        # Next line not needed, but for documentation
+        p.updated = True
         return False
 
     return True
@@ -838,9 +848,12 @@ def _check_repo_group(self, id_, reqs, opts):
     for p in reqs:
         i, d = self._check_repo_download(p, destdir, opts)
         if p.error:
-            print p.error
-            p.updated = True
-            self._check_repo_change_review_state(opts, p.request, 'new', message=p.error)
+            if not p.updated:
+                print 'UPDATED', p.error
+                self._check_repo_change_review_state(opts, p.request, 'new', message=p.error)
+                p.updated = True
+            else:
+                print p.error
             return
         downloads.extend(d)
         toignore.extend(i)
@@ -872,11 +885,13 @@ def _check_repo_group(self, id_, reqs, opts):
                 build_deps = set(self._get_buildinfo(opts, p.sproject, p.goodrepo, arch, p.spackage))
                 outliers = build_deps - base_build_bin[arch]
                 if outliers:
-                    print 'OUTLIERS (%s)' % arch, outliers
-                    # msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)' % (', '.join(outliers))
-                    # self._check_repo_change_review_state(opts, p.request, 'disabled', message=msg)
-                    # print 'NON-(FIX)-UPDATED', msg
-                    p.updated = True
+                    if not p.updated:
+                        msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)' % (', '.join(outliers))
+                        print 'DECLINED', msg
+                        self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+                        p.updated = True
+                    else:
+                        print 'OUTLIERS (%s)' % arch, outliers
 
     # Detect cycles - We create the full graph from _builddepinfo.
     for arch in ('x86_64',):
@@ -937,8 +952,12 @@ def _check_repo_group(self, id_, reqs, opts):
             smissing.append(package)
         if len(smissing):
             msg = 'Please make sure to wait before these depencencies are in %s: %s' % (p.tproject, ', '.join(smissing))
-            self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-            print 'UPDATED', msg
+            if not p.updated:
+                self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+                print 'UPDATED', msg
+                p.updated = True
+            else:
+                print msg
             return
 
     for dirname, dirnames, filenames in os.walk(destdir):
@@ -969,17 +988,21 @@ def _check_repo_group(self, id_, reqs, opts):
         print output, set(map(lambda x: x.request, reqs))
 
         for p in reqs:
-            if updated.get(p.request, False) or p.updated: continue
+            if updated.get(p.request, False) or p.updated:
+                continue
+            print 'UPDATED', output
             self._check_repo_change_review_state(opts, p.request, 'new', message=output)
+            p.updated = True
             updated[p.request] = 1
-	    p.updated = True
         return
     for p in reqs:
-        if updated.get(p.request, False) or p.updated: continue
+        if updated.get(p.request, False) or p.updated:
+            continue
         msg = 'Builds for repo %s' % p.goodrepo
+        print 'ACCEPTED', msg
         self._check_repo_change_review_state(opts, p.request, 'accepted', message=msg)
+        p.updated = True
         updated[p.request] = 1
-	p.updated = True
     shutil.rmtree(destdir)
 
 
