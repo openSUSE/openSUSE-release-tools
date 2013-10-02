@@ -535,8 +535,8 @@ def _check_repo_one_request(self, rq, opts):
             p.updated = True
         if lmd5 != p.rev and not p.updated:
             msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
-            print 'UPDATED', msg
-            self._check_repo_change_review_state(opts, id_, 'new', message=msg)
+            print 'DECLINED', msg
+            self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             p.updated = True
 
         sp = CheckRepoPackage()
