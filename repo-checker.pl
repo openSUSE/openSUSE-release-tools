@@ -197,7 +197,7 @@ close(PACKAGES);
 
 #print "calling installcheck\n";
 #print Dumper(%targets);
-open(INSTALL, "~mls/bin/installcheck x86_64 $pfile 2>&1|") || die 'exec installcheck';
+open(INSTALL, "/usr/bin/installcheck x86_64 $pfile 2>&1|") || die 'exec installcheck';
 while ( <INSTALL> ) {
     chomp;
     next if (m/unknown line:.*Flx/);
