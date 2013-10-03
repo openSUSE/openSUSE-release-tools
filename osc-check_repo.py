@@ -693,6 +693,27 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target)
     get_binary_file(apiurl, prj, repo, arch, file, package = package, target_filename = target)
 
 
+def _get_verifymd5(self, p, rev):
+    try:
+        url = makeurl(self.get_api_url(), ['source', p.sproject, p.spackage, '?view=info&rev=%s' % rev])
+        root = ET.parse(http_GET(url)).getroot()
+    except urllib2.HTTPError, e:
+        print 'ERROR in URL %s [%s]' % (url, e)
+        return []
+    return root.attrib['verifymd5']
+
+def _checker_compare_disturl(self, disturl, p):
+    distmd5 = os.path.basename(disturl).split('-')[0]
+    if distmd5 == p.rev:
+        return True
+
+    vrev1 = self._get_verifymd5(p, p.rev)
+    vrev2 = self._get_verifymd5(p, distmd5)
+    if vrev1 == vrev2:
+        return True
+    print vrev1, vrev2
+    return False
+
 def _check_repo_download(self, p, destdir, opts):
     if p.build_excluded:
         return [], []
@@ -720,10 +741,10 @@ def _check_repo_download(self, p, destdir, opts):
             pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t], 
                                    stdout=subprocess.PIPE, close_fds=True)
             os.waitpid(pid.pid, 0)[1]
-            disturl = pid.stdout.readlines()
+            disturl = pid.stdout.readlines()[0]
 
-            if not os.path.basename(disturl[0]).startswith(p.rev):
-                p.error = 'disturl %s does not match revision %s' % (disturl[0], p.rev)
+            if not self._checker_compare_disturl(disturl, p):
+                p.error = 'disturl %s does not match revision %s' % (disturl, p.rev)
                 return [], []
 
     toignore = []
