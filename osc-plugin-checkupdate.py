@@ -18,6 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import osc
+import osc.core
+import urllib2
+
+from osc import cmdln
+from osc import conf
+
 def _xxx_diff_filter_changes(self, diff):
     lines = []
     ischanges = False
