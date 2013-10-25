@@ -642,7 +642,7 @@ def _check_repo_buildsuccess(self, p, opts):
         p.updated = True
         return False
     if foundbuilding:
-        msg = '%s is still building for repository %s' % (foundbuilding, p.spackage)
+        msg = '%s is still building for repository %s' % (p.spackage, foundbuilding)
         print 'UPDATED', msg
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         # Next line not needed, but for documentation
