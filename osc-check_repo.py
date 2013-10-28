@@ -702,6 +702,7 @@ def _get_verifymd5(self, p, rev):
         return []
     return root.attrib['verifymd5']
 
+
 def _checker_compare_disturl(self, disturl, p):
     distmd5 = os.path.basename(disturl).split('-')[0]
     if distmd5 == p.rev:
@@ -711,8 +712,9 @@ def _checker_compare_disturl(self, disturl, p):
     vrev2 = self._get_verifymd5(p, distmd5)
     if vrev1 == vrev2:
         return True
-    print vrev1, vrev2
+    print 'ERROR Revision missmatch: %s, %s' % (vrev1, vrev2)
     return False
+
 
 def _check_repo_download(self, p, destdir, opts):
     if p.build_excluded:
@@ -744,7 +746,7 @@ def _check_repo_download(self, p, destdir, opts):
             disturl = pid.stdout.readlines()[0]
 
             if not self._checker_compare_disturl(disturl, p):
-                p.error = 'disturl %s does not match revision %s' % (disturl, p.rev)
+                p.error = '[%s] %s does not match revision %s' % (p, disturl, p.rev)
                 return [], []
 
     toignore = []
@@ -890,7 +892,7 @@ def _check_repo_group(self, id_, reqs, opts):
         p.goodrepo = goodrepo
         i, d = self._check_repo_download(p, destdir, opts)
         if p.error:
-            print 'ALREADY ACEPTED:', p.error
+            print 'ERROR (ALREADY ACEPTED?):', p.error
             p.updated = True
         downloads.extend(d)
         toignore.extend(i)
