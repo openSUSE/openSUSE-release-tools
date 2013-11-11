@@ -601,7 +601,10 @@ def _check_repo_buildsuccess(self, p, opts):
                 p.build_excluded = True
             if arch.attrib['result'] == 'disabled':
                 founddisabled = True
-            if arch.attrib['result'] == 'failed':
+            if arch.attrib['result'] == 'failed' or arch.attrib['result'] == 'unknown':
+                # Sometimes an unknown status is equivalent to
+                # disabled, but we map it as failed to have a human
+                # check (no autoreject)
                 r_foundfailed = repo.attrib['name']
             if arch.attrib['result'] == 'building':
                 r_foundbuilding = repo.attrib['name']
@@ -611,9 +614,6 @@ def _check_repo_buildsuccess(self, p, opts):
                 self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
                 # Next line is not needed, but for documentation
                 p.updated = True
-                return False
-            if arch.attrib['result'] == 'unknown':
-                print 'UNKOWN state -- Stoping check for this package'
                 return False
 
         r_missings = r_missings.keys()
