@@ -60,14 +60,15 @@ def _group_find_request_package(self, package, opts):
 
     res = self._extract('id', int, 'request', root)
 
-    if len(res) > 1:
-        raise oscerr.WrongArgs('There are multiple requests for package "{0}"'.format(package))
+# Remove this check as obs is case insensitive and in some cases we want to add even multiple pkgs
+#    if len(res) > 1:
+#        raise oscerr.WrongArgs('There are multiple requests for package "{0}": {1}'.format(package, ', '.join(map(str, res))))
 
     if len(res) == 0 or res[0] == 0:
         #raise oscerr.WrongArgs('There is no request for package "{0}"'.format(package))
         return None
 
-    return res[0]
+    return res
 
 def _group_find_request_project(self, source_project, opts):
     """
