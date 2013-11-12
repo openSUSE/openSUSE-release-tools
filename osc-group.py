@@ -61,7 +61,7 @@ def _group_find_request_package(self, package, opts):
     res = self._extract('id', int, 'request', root)
 
     if len(res) > 1:
-        raise oscerr.WrongArgs('There are multiple requests for package "{0}"'.format(package))
+        raise oscerr.WrongArgs('There are multiple requests for package "{0}": {1}'.format(package, ', '.join(map(str, res))))
 
     if len(res) == 0 or res[0] == 0:
         #raise oscerr.WrongArgs('There is no request for package "{0}"'.format(package))
