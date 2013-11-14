@@ -113,6 +113,7 @@ print sorted(result)
 
 for package in result:
     rebuild_pkg_in_factory(package, 'openSUSE:Factory', testmode, None)
+    rebuild_pkg_in_factory(package, 'openSUSE:Factory:Rebuild', testmode, None)
 
 
 
