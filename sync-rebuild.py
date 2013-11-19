@@ -34,12 +34,11 @@ def get_prj_results(prj):
         if pkg.attrib['code'] == 'failed': 
             results.append(pkg.attrib['package'])
                    
-             
     return results
 
 def compare_results(factory, rebuild, testmode):
 
-    com_res = set(rebuild).difference(set(factory))
+    com_res = set(rebuild).symmetric_difference(set(factory))
     
     if testmode != False:
         print com_res
@@ -83,6 +82,7 @@ def rebuild_pkg_in_factory(package, prj, testmode, code=None):
         except:
             print 'could not trigger rebuild for project \'%s\' package \'%s\'' % (prj, pkg)
                 
+testmode = False
 try:
     if sys.argv[1] != None:
         if sys.argv[1] == '-test':
@@ -91,14 +91,10 @@ try:
     else:
         testmode = False
 except:
-    testmode = False
+    pass
 
 fact_result = get_prj_results('openSUSE:Factory')
 rebuild_result = get_prj_results('openSUSE:Factory:Rebuild')
-#print fact_result
-#print rebuild_result
-#result = compare_results(fact_result, rebuild_result, testmode)
-#print sorted(result)
 rebuild_result = check_pkgs(rebuild_result)
 fact_result = check_pkgs(fact_result)
 result = compare_results(fact_result, rebuild_result, testmode)
