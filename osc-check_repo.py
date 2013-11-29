@@ -898,9 +898,11 @@ def _check_repo_group(self, id_, reqs, opts):
         toignore.extend(i)
 
     # Get all the Base:build packages (source and binary)
-    base_build_bin = self._get_base_build_bin(opts)
-    base_build_src = self._get_base_build_src(opts)
+    #base_build_bin = self._get_base_build_bin(opts)
+    #base_build_src = self._get_base_build_src(opts)
     for p in reqs:
+	continue
+
         # Be sure that if the package is in Base:build, all the
         # dependecies are also in Base:build
         if p.spackage in base_build_src:
