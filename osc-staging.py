@@ -5,13 +5,8 @@
 # (C) 2013 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
+# XXX: don't do this
 from __future__ import print_function
-
-import osc
-import osc.core
-
-from osc import cmdln
-from osc import conf
 
 OSC_STAGING_VERSION='0.0.1'
 
@@ -28,9 +23,10 @@ def _staging_check(self, project, check_everything, opts):
     :param everything: do not stop on first verification failure
     :param opts: pointer to options
     """
+    apiurl = self.get_api_url()
 
     ret = 0
-    for pkg in osc.core.meta_get_packagelist(opts.apiurl, project):
+    for pkg in meta_get_packagelist(apiurl, project):
         if ret == 1 and not check_everything:
             break
         f = http_GET(makeurl(apiurl, ['source', project, pkg]))
@@ -46,7 +42,7 @@ def _staging_check(self, project, check_everything, opts):
         t = linkinfo.get('project')
         p = linkinfo.get('package')
         r = linkinfo.get('revision')
-        if len(server_diff(opts.apiurl, t, p, r, project, pkg, None, True)) > 0:
+        if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
             print('Error: Has local modifications: {0}/{1}'.format(project, pkg), file=sys.stderr)
             ret = 1
             continue
@@ -59,8 +55,10 @@ def _staging_create(self, sr, opts):
     :param opts: pointer to options
     """
 
+    apiurl = self.get_api_url()
+
     # read info from sr
-    req = get_request(opts.apiurl, sr)
+    req = get_request(apiurl, sr)
     act = req.get_actions("submit")[0]
 
     trg_prj = act.tgt_project
@@ -71,7 +69,7 @@ def _staging_create(self, sr, opts):
 
     # test if staging project exists
     found = 1
-    url = make_meta_url('prj', stg_prj, opts.apiurl)
+    url = make_meta_url('prj', stg_prj, apiurl)
     try:
        data = http_GET(url).readlines()
     except HTTPError as e:
@@ -87,7 +85,7 @@ def _staging_create(self, sr, opts):
             exit(1)
  
     # parse metadata from parent project
-    trg_meta_url = make_meta_url("prj", trg_prj, opts.apiurl)
+    trg_meta_url = make_meta_url("prj", trg_prj, apiurl)
     data = http_GET(trg_meta_url).readlines()
 
     dis_repo = []
@@ -114,12 +112,12 @@ def _staging_create(self, sr, opts):
                 repos.append(re.sub(r'.*name="([^"]+)".*', r'\1', line).strip())
    
     # add maintainers of source project
-    trg_meta_url = make_meta_url("prj", src_prj, opts.apiurl)
+    trg_meta_url = make_meta_url("prj", src_prj, apiurl)
     data = http_GET(trg_meta_url).readlines()
     perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
     
     # add maintainers of source package
-    trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), opts.apiurl)
+    trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), apiurl)
     data = http_GET(trg_meta_url).readlines()
     perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
 
@@ -144,7 +142,7 @@ def _staging_create(self, sr, opts):
 
     # creation of new staging project
     print('Creating staging project "{0}"...'.format(stg_prj))
-    url = make_meta_url('prj',stg_prj,opts.apiurl,True,False)
+    url = make_meta_url('prj',stg_prj,apiurl,True,False)
     f = metafile(url, new_xml, False)
     http_PUT(f.url, file=f.filename)
 
@@ -161,7 +159,8 @@ def _staging_remove(self, project, opts):
     :param project: staging project to delete
     :param opts: pointer to options
     """
-    delete_project(opts.apiurl, project, force=True, msg=None)
+    apiurl = self.get_api_url()
+    delete_project(apiurl, project, force=True, msg=None)
     print("Deleted.")
     return
 
@@ -171,11 +170,12 @@ def _staging_push(self, project, opts):
     :param project: staging project to submit
     :param opts: pointer to options
     """
-    if not self._staging_check(opts.apiurl, project):
+    apiurl = self.get_api_url()
+    if not self._staging_check(apiurl, project):
         raise oscerr.ServiceRuntimeError('Verification of staging repo failed.')
 
     # loop over packages
-    for pkg in osc.core.meta_get_packagelist(opts.apiurl, project):
+    for pkg in meta_get_packagelist(apiurl, project):
         # decompose symlinks
         u = makeurl(apiurl, ['source', project, pkg])
         f = http_GET(u)
@@ -191,7 +191,7 @@ def _staging_push(self, project, opts):
         p = linkinfo.get('package')
         r = linkinfo.get('revision')
         # Get rid of old requests
-        for rq in get_exact_request_list(opts.apiurl, t, project, pkg, pkg, ('new', 'review')):
+        for rq in get_exact_request_list(apiurl, t, project, pkg, pkg, ('new', 'review')):
             # obsolete submit requests that contain the package (notify!)
             print('.')
     # sent new submitrequest for the package
@@ -257,7 +257,7 @@ def do_staging(self, subcmd, opts, *args):
         raise oscerr.WrongArgs('Too many arguments.')
 
     # init the obs access
-    opts.apiurl = conf.config['apiurl']
+    apiurl = self.get_api_url()
     
     # check for the opts
     staging_check_everything = False
