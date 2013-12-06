@@ -5,14 +5,11 @@
 # (C) 2013 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
-# XXX: don't do this
-from __future__ import print_function
-
 OSC_STAGING_VERSION='0.0.1'
 
 def _print_version(self):
     """ Print version information about this extension. """
-    print('{0}'.format(self.OSC_STAGING_VERSION))
+    print '%s'%(self.OSC_STAGING_VERSION)
     quit(0)
 
 def _staging_check(self, project, check_everything, opts):
@@ -32,18 +29,18 @@ def _staging_check(self, project, check_everything, opts):
         f = http_GET(makeurl(apiurl, ['source', project, pkg]))
         linkinfo = ET.parse(f).getroot().find('linkinfo')
         if linkinfo is None:
-            print('Error: Not a source link: {0}/{1}'.format(project,pkg), file=sys.stderr)
+            print >>sys.stderr, 'Error: Not a source link: %s/%s'%(project,pkg)
             ret = 1
             continue
         if linkinfo.get('error'):
-            print('Error: Broken source link: {0}/{1}'.format(project, pkg), file=sys.stderr)
+            print >>sys.stderr, 'Error: Broken source link: %s/%s'%(project, pkg)
             ret = 1
             continue
         t = linkinfo.get('project')
         p = linkinfo.get('package')
         r = linkinfo.get('revision')
         if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
-            print('Error: Has local modifications: {0}/{1}'.format(project, pkg), file=sys.stderr)
+            print >>sys.stderr, 'Error: Has local modifications: %s/%s'%(project, pkg)
             ret = 1
             continue
     return ret
@@ -122,32 +119,32 @@ def _staging_create(self, sr, opts):
     perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
 
     # create xml for new project
-    new_xml  = '<project name="{0}">\n'.format(stg_prj)
-    new_xml += '  <title>Staging project for package {0} (sr#{1})</title>\n'.format(trg_pkg, req.reqid)
+    new_xml  = '<project name="%s">\n'%(stg_prj)
+    new_xml += '  <title>Staging project for package %s (sr#%s)</title>\n'%(trg_pkg, req.reqid)
     new_xml += '  <description></description>\n'
-    new_xml += '  <link project="{0}"/>\n'.format(trg_prj)
-    new_xml += '  <person userid="{0}" role="maintainer"/>\n'.format(req.get_creator())
+    new_xml += '  <link project="%s"/>\n'%(trg_prj)
+    new_xml += '  <person userid="%s" role="maintainer"/>\n'%(req.get_creator())
     new_xml += perm
     new_xml += '  <build><enable/></build>\n'
     new_xml += '  <debuginfo><enable/></debuginfo>\n'
     new_xml += '  <publish><disable/></publish>\n'
     for repo in repos:
         if repo not in dis_repo:
-            new_xml += '  <repository name="{0}" rebuild="direct" linkedbuild="all">\n'.format(repo)
-            new_xml += '    <path project="{0}" repository="{1}"/>\n'.format(trg_prj,repo)
+            new_xml += '  <repository name="%s" rebuild="direct" linkedbuild="all">\n'%(repo)
+            new_xml += '    <path project="%s" repository="%s"/>\n'%(trg_prj,repo)
             new_xml += '    <arch>i586</arch>\n'
             new_xml += '    <arch>x86_64</arch>\n'
             new_xml += '  </repository>\n'
     new_xml += '</project>\n'
 
     # creation of new staging project
-    print('Creating staging project "{0}"...'.format(stg_prj))
+    print('Creating staging project "%s"...'%(stg_prj))
     url = make_meta_url('prj',stg_prj,apiurl,True,False)
     f = metafile(url, new_xml, False)
     http_PUT(f.url, file=f.filename)
 
     # link package there
-    print('Linking package {0}/{1} -> {2}/{3}...'.format(src_pkg,src_prj,stg_prj,trg_pkg))
+    print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
     link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
     print
     
@@ -182,10 +179,10 @@ def _staging_push(self, project, opts):
         root = ET.parse(f).getroot()
         linkinfo = root.find('linkinfo')
         if linkinfo == None:
-            print("Not a source link: {0}".format(pkg), file=sys.stderr)
+            print >>sys.stderr, "Not a source link: %s"%(pkg)
             quit(1)
         if linkinfo.get('error'):
-            print("Broken source link: {0}".format(pkg), file=sys.stderr)
+            print >>sys.stderr, "Broken source link: %s"%(pkg)
             quit(1)
         t = linkinfo.get('project')
         p = linkinfo.get('package')
@@ -239,7 +236,7 @@ def do_staging(self, subcmd, opts, *args):
     # available commands
     cmds = ['check', 'push', 'p', 'create', 'c', 'remove', 'r']
     if not args or args[0] not in cmds:
-        raise oscerr.WrongArgs('Unknown stagings action. Choose one of the {0}.'.format(', '.join(cmds)))
+        raise oscerr.WrongArgs('Unknown stagings action. Choose one of the %s.'%(', '.join(cmds)))
 
     # verify the argument counts match the commands
     cmd = args[0]
@@ -250,7 +247,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['create', 'c']:
         min_args, max_args = 1, 1
     else:
-        raise RuntimeError('Unknown command: {0}'.format(cmd))
+        raise RuntimeError('Unknown command: %s'%(cmd))
     if len(args) - 1 < min_args:
         raise oscerr.WrongArgs('Too few arguments.')
     if not max_args is None and len(args) - 1 > max_args:
