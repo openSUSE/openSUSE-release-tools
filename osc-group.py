@@ -22,10 +22,10 @@ def _print_version(self):
 def _extract(self, attr, type_, from_, root):
     return [type_(x.attrib[attr]) for x in root.findall(from_)]
 
-def _group_find_request_id(self, submit_request, opts):
+def _group_find_request_id(self, request, opts):
     """
-    Look up the submit_request by ID to verify if it is correct
-    :param submit_request: ID of the added request
+    Look up the request by ID to verify if it is correct
+    :param request: ID of the added request
     :param opts: obs options
     """
 
@@ -37,14 +37,14 @@ def _group_find_request_id(self, submit_request, opts):
 
     # we have various stuff passed, and it might or might not be int we need for the comparison
     try:
-        i = int(submit_request)
+        i = int(request)
     except ValueError:
         return None
 
     if i in res:
-        return submit_request
+        return request
     else:
-        # raise oscerr.WrongArgs('There is no request for SR#{0}'.format(submit_request))
+        # raise oscerr.WrongArgs('There is no request for SR#{0}'.format(request))
         return None
 
 def _group_find_request_package(self, package, opts):
@@ -151,18 +151,20 @@ def _group_find_sr(self, pkgs, opts):
 def _group_verify_grouping(self, srids, opts, require_grouping = False):
     """
     Verifies if the SRs are part of some GR and if not return list of those remaining.
-    :param srids: list of submit request IDs
+    :param srids: list of request IDs
     :param opts: obs options
     :param require_grouping: if passed return list of GR#s for the SR#s and fail if they are not members of any
     """
 
-    print("Checking wether the SR#s are already in grouping project...")
+    print("Checking wether the requests are already in grouping project...")
     grids = []
     for sr in srids:
         group = self._group_find_request_group(sr, opts)
         if group:
             if require_grouping:
                 grids.append(group)
+	    else:
+		print "Request #{0} is already in Group {1}".format(sr,group)
 #            # only remove the ID from grouping, we will error out only if we return empty set
 #            else:
 #                #raise oscerr.WrongArgs('SR#{0} is already in GR#{1}'.format(sr, group))
@@ -181,7 +183,7 @@ def _group_verify_grouping(self, srids, opts, require_grouping = False):
             srids = str(srids)
         else:
             srids = ', '.join(map(str, srids))
-        raise oscerr.WrongArgs('All added submit request already are in groups: {0}'.format(srids))
+        raise oscerr.WrongArgs('All added request already are in groups: {0}'.format(srids))
 
     return grids
 
@@ -235,7 +237,7 @@ def _group_create(self, name, pkgs, opts):
     f = http_POST(u, data=xml)
     root = ET.parse(f).getroot().attrib['id']
 
-    print('Created GR#{0} with following submit requests: {1}'.format(str(root), ', '.join(map(str, srids))))
+    print('Created GR#{0} with following requests: {1}'.format(str(root), ', '.join(map(str, srids))))
 
 def _group_add(self, grid, pkgs, opts):
     """
@@ -261,10 +263,10 @@ def _group_add(self, grid, pkgs, opts):
         pkg_grids = list(set(pkg_grids))
         # if there is 1 group it means we found only the fallback 0
         if len(pkg_grids) == 1:
-            raise oscerr.WrongArgs('There is no grouping request ID among all submitted pacakges:')
+            raise oscerr.WrongArgs('There is no grouping request ID among all submitted packages:')
         # if the groups are more than 2 we have multiple grouping IDs which is also not good
         if len(pkg_grids) > 2:
-            raise oscerr.WrongArgs('There are multiple grouping request IDs among added pacakges: {0}'.format(', '.join(pkg_grids)))
+            raise oscerr.WrongArgs('There are multiple grouping request IDs among added packages: {0}'.format(', '.join(pkg_grids)))
         grid = pkg_grids[1]
 
         # now remove the package that provided the GR# from the pkgs addition list
@@ -345,7 +347,7 @@ def _group_list_requests(self, grid, opts):
         self._print_group_header(grid, opts)
         print('\nContains following requests:')
 
-        # search up for all submit ids in group
+        # search up for all request ids in group
         url = url = makeurl(opts.apiurl, ['request', str(grid)])
         f = http_GET(url)
         root = ET.parse(f).getroot().find('action')
