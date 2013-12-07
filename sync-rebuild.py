@@ -20,8 +20,8 @@ projects = ['openSUSE:Factory','openSUSE:Factory:Rebuild']
 #initialize osc config
 osc.conf.get_config()
 
-def get_prj_results(prj):
-    url = osc.core.makeurl(osc.conf.config['apiurl'], ['build', prj, "/standard/i586/_jobhistory?code=lastfailures"])
+def get_prj_results(prj, arch):
+    url = osc.core.makeurl(osc.conf.config['apiurl'], ['build', prj, 'standard', arch, "_jobhistory?code=lastfailures"])
     f = osc.core.http_GET(url)
     xml = f.read() 
     results = []
@@ -61,8 +61,8 @@ def check_pkgs(rebuild_list):
 
     return pkglist
 
-def rebuild_pkg_in_factory(package, prj, testmode, code=None): 
-    query = { 'cmd': 'rebuild' }
+def rebuild_pkg_in_factory(package, prj, arch, testmode, code=None): 
+    query = { 'cmd': 'rebuild', 'arch': arch }
     #prj = "home:jzwickl"
     if package:
         query['package'] = package
@@ -93,32 +93,17 @@ try:
 except:
     pass
 
-fact_result = get_prj_results('openSUSE:Factory')
-rebuild_result = get_prj_results('openSUSE:Factory:Rebuild')
-rebuild_result = check_pkgs(rebuild_result)
-fact_result = check_pkgs(fact_result)
-result = compare_results(fact_result, rebuild_result, testmode)
+for arch in architectures:
+  fact_result = get_prj_results('openSUSE:Factory', arch)
+  rebuild_result = get_prj_results('openSUSE:Factory:Rebuild', arch)
+  rebuild_result = check_pkgs(rebuild_result)
+  fact_result = check_pkgs(fact_result)
+  result = compare_results(fact_result, rebuild_result, testmode)
 
-print sorted(result)
-#print liste
-#print "\n"
-#print "------"
-#print "\n"
-#print rebuild_result
+  print sorted(result)
 
-
-for package in result:
-    rebuild_pkg_in_factory(package, 'openSUSE:Factory', testmode, None)
-    rebuild_pkg_in_factory(package, 'openSUSE:Factory:Rebuild', testmode, None)
-
-
-
-####
-#testing
-#rebuild_pkg_in_factory('google-merriweather-fonts')
-#if (re.search("<result", package)) or (re.search("</resultlist", package)):
-####
-
-
+  for package in result:
+    rebuild_pkg_in_factory(package, 'openSUSE:Factory', arch, testmode, None)
+    rebuild_pkg_in_factory(package, 'openSUSE:Factory:Rebuild', arch, testmode, None)
 
 
