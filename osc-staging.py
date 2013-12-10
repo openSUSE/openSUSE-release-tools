@@ -5,6 +5,11 @@
 # (C) 2013 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
+from osc import cmdln
+from osc import conf
+
+import pprint
+
 OSC_STAGING_VERSION='0.0.1'
 
 def _print_version(self):
@@ -23,6 +28,7 @@ def _staging_check(self, project, check_everything, opts):
     apiurl = self.get_api_url()
 
     ret = 0
+    # Check whether there are no local changes
     for pkg in meta_get_packagelist(apiurl, project):
         if ret == 1 and not check_everything:
             break
@@ -43,6 +49,56 @@ def _staging_check(self, project, check_everything, opts):
             print >>sys.stderr, 'Error: Has local modifications: %s/%s'%(project, pkg)
             ret = 1
             continue
+    if ret == 1:
+        print >>sys.stderr, "Error: Check for local changes failed"
+    else:
+        print "Check for local changes passed"
+
+    # Check for regressions
+    print "Getting build status"
+    # Get staging project results
+    f = show_prj_results_meta(apiurl, project)
+    root = ET.fromstring(''.join(f))
+    # Get parent project results
+    f = show_prj_results_meta(apiurl, re.sub(r":Staging:[^:]*$", "", project))
+    p_root = ET.fromstring(''.join(f))
+    print "Comparing build statuses"
+
+    # Iterate through all repos/archs
+    if root.find('result') != None:
+        for results in root.findall('result'):
+            if results.get("state") not in [ "published", "unpublished" ]:
+                print >>sys.stderr, "Warning: Building not finished yet for %s/%s (%s)!"%(results.get("repository"),results.get("arch"),results.get("state"))
+                ret |= 2
+            # Find coresponding set of results in parent project
+            p_results = p_root.find("result[@repository='%s'][@arch='%s']"%(results.get("repository"),results.get("arch")))
+            if p_results == None:
+                print >>sys.stderr, "Error: Inconsistent setup!"
+                ret |= 4
+            else:
+                # Iterate through packages
+                for node in results:
+                    result = node.get("code")
+                    # Skip not rebuilt
+                    if result in [ "blocked", "building", "disabled" "excluded", "finished", "unpublished", "published" ]:
+                        next
+                    # Get status of package in parent project
+                    p_node = p_results.find("status[@package='%s']"%(node.get("package")))
+                    if p_node == None:
+                        p_result = None
+                    else:
+                        p_result = p_node.get("code")
+                    # Skip packages not built in parent project
+                    if p_result in [ None, "disabled", "excluded" ]:
+                        next
+                    # Find regressions
+                    if result in [ "broken", "failed", "unresolvable" ] and result != p_result:
+                        print >>sys.stderr, "Error: Regression (%s -> %s) in package '%s' in %s/%s!"%(p_result, result, node.get("package"),results.get("repository"),results.get("arch"))
+                        ret |= 8
+                    # Find fixed builds
+                    if result in [ "succeeded" ] and result != p_result:
+                        print "Package '%s' fixed (%s -> %s) in staging for %s/%s."%(node.get("package"), p_result, result, results.get("repository"),results.get("arch"))
+
     return ret
 
 def _staging_create(self, sr, opts):
@@ -130,7 +186,7 @@ def _staging_create(self, sr, opts):
     new_xml += '  <publish><disable/></publish>\n'
     for repo in repos:
         if repo not in dis_repo:
-            new_xml += '  <repository name="%s" rebuild="direct" linkedbuild="all">\n'%(repo)
+            new_xml += '  <repository name="%s" rebuild="direct" linkedbuild="localdep">\n'%(repo)
             new_xml += '    <path project="%s" repository="%s"/>\n'%(trg_prj,repo)
             new_xml += '    <arch>i586</arch>\n'
             new_xml += '    <arch>x86_64</arch>\n'
@@ -270,7 +326,7 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_create(sr, opts)
     elif cmd in ['check']:
         project = args[1]
-        self._staging_check(project, staging_check_everything, opts)
+        return self._staging_check(project, staging_check_everything, opts)
     elif cmd in ['remove', 'r']:
         project = args[1]
         self._staging_remove(project, opts)
