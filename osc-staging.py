@@ -5,6 +5,11 @@
 # (C) 2013 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
+from osc import cmdln
+from osc import conf
+
+import pprint
+
 OSC_STAGING_VERSION='0.0.1'
 
 def _print_version(self):
@@ -23,6 +28,7 @@ def _staging_check(self, project, check_everything, opts):
     apiurl = self.get_api_url()
 
     ret = 0
+    # Check whether there are no local changes
     for pkg in meta_get_packagelist(apiurl, project):
         if ret == 1 and not check_everything:
             break
@@ -130,7 +136,7 @@ def _staging_create(self, sr, opts):
     new_xml += '  <publish><disable/></publish>\n'
     for repo in repos:
         if repo not in dis_repo:
-            new_xml += '  <repository name="%s" rebuild="direct" linkedbuild="all">\n'%(repo)
+            new_xml += '  <repository name="%s" rebuild="direct" linkedbuild="localdep">\n'%(repo)
             new_xml += '    <path project="%s" repository="%s"/>\n'%(trg_prj,repo)
             new_xml += '    <arch>i586</arch>\n'
             new_xml += '    <arch>x86_64</arch>\n'
