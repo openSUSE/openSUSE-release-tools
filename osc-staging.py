@@ -55,14 +55,17 @@ def _staging_check(self, project, check_everything, opts):
         print "Check for local changes passed"
 
     # Check for regressions
-    print "Getting build status"
+    print "Getting build status, this may take a while"
     # Get staging project results
     f = show_prj_results_meta(apiurl, project)
     root = ET.fromstring(''.join(f))
-    # Get parent project results
-    f = show_prj_results_meta(apiurl, re.sub(r":Staging:[^:]*$", "", project))
-    p_root = ET.fromstring(''.join(f))
-    print "Comparing build statuses"
+
+    # Get parent project
+    m_url = make_meta_url("prj", project, apiurl)
+    m_data = http_GET(m_url).readlines()
+    m_root = ET.fromstring(''.join(m_data))
+
+    print "Comparing build statuses, this may take a while"
 
     # Iterate through all repos/archs
     if root.find('result') != None:
@@ -70,7 +73,17 @@ def _staging_check(self, project, check_everything, opts):
             if results.get("state") not in [ "published", "unpublished" ]:
                 print >>sys.stderr, "Warning: Building not finished yet for %s/%s (%s)!"%(results.get("repository"),results.get("arch"),results.get("state"))
                 ret |= 2
-            # Find coresponding set of results in parent project
+
+            # Get parent project results
+            p_project = m_root.find("repository[@name='%s']/path"%(results.get("repository")))
+            if p_project == None:
+                print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
+                ret |= 4
+                next
+            f = show_prj_results_meta(apiurl, p_project.get("project"))
+            p_root = ET.fromstring(''.join(f))
+
+            # Find corresponding set of results in parent project
             p_results = p_root.find("result[@repository='%s'][@arch='%s']"%(results.get("repository"),results.get("arch")))
             if p_results == None:
                 print >>sys.stderr, "Error: Inconsistent setup!"
@@ -92,7 +105,7 @@ def _staging_check(self, project, check_everything, opts):
                     if p_result in [ None, "disabled", "excluded" ]:
                         next
                     # Find regressions
-                    if result in [ "broken", "failed", "unresolvable" ] and result != p_result:
+                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "disabled", "failed", "unresolvable" ]:
                         print >>sys.stderr, "Error: Regression (%s -> %s) in package '%s' in %s/%s!"%(p_result, result, node.get("package"),results.get("repository"),results.get("arch"))
                         ret |= 8
                     # Find fixed builds
