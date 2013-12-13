@@ -8,8 +8,6 @@
 from osc import cmdln
 from osc import conf
 
-import pprint
-
 OSC_STAGING_VERSION='0.0.1'
 
 def _print_version(self):
@@ -30,7 +28,7 @@ def _staging_check(self, project, check_everything, opts):
     ret = 0
     # Check whether there are no local changes
     for pkg in meta_get_packagelist(apiurl, project):
-        if ret == 1 and not check_everything:
+        if ret != 0 and not check_everything:
             break
         f = http_GET(makeurl(apiurl, ['source', project, pkg]))
         linkinfo = ET.parse(f).getroot().find('linkinfo')
@@ -54,22 +52,26 @@ def _staging_check(self, project, check_everything, opts):
     else:
         print "Check for local changes passed"
 
-    # Check for regressions
-    print "Getting build status, this may take a while"
-    # Get staging project results
-    f = show_prj_results_meta(apiurl, project)
-    root = ET.fromstring(''.join(f))
+    root = None
+    if ret == 0 or check_everything:
+        # Check for regressions
+        print "Getting build status, this may take a while"
+        # Get staging project results
+        f = show_prj_results_meta(apiurl, project)
+        root = ET.fromstring(''.join(f))
 
-    # Get parent project
-    m_url = make_meta_url("prj", project, apiurl)
-    m_data = http_GET(m_url).readlines()
-    m_root = ET.fromstring(''.join(m_data))
+        # Get parent project
+        m_url = make_meta_url("prj", project, apiurl)
+        m_data = http_GET(m_url).readlines()
+        m_root = ET.fromstring(''.join(m_data))
 
-    print "Comparing build statuses, this may take a while"
+        print "Comparing build statuses, this may take a while"
 
     # Iterate through all repos/archs
-    if root.find('result') != None:
+    if root != None and root.find('result') != None:
         for results in root.findall('result'):
+            if ret != 0 and not check_everything:
+                break
             if results.get("state") not in [ "published", "unpublished" ]:
                 print >>sys.stderr, "Warning: Building not finished yet for %s/%s (%s)!"%(results.get("repository"),results.get("arch"),results.get("state"))
                 ret |= 2
@@ -79,7 +81,7 @@ def _staging_check(self, project, check_everything, opts):
             if p_project == None:
                 print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
                 ret |= 4
-                next
+                continue
             f = show_prj_results_meta(apiurl, p_project.get("project"))
             p_root = ET.fromstring(''.join(f))
 
@@ -91,10 +93,12 @@ def _staging_check(self, project, check_everything, opts):
             else:
                 # Iterate through packages
                 for node in results:
+                    if ret != 0 and not check_everything:
+                        break
                     result = node.get("code")
                     # Skip not rebuilt
                     if result in [ "blocked", "building", "disabled" "excluded", "finished", "unpublished", "published" ]:
-                        next
+                        continue
                     # Get status of package in parent project
                     p_node = p_results.find("status[@package='%s']"%(node.get("package")))
                     if p_node == None:
@@ -103,7 +107,7 @@ def _staging_check(self, project, check_everything, opts):
                         p_result = p_node.get("code")
                     # Skip packages not built in parent project
                     if p_result in [ None, "disabled", "excluded" ]:
-                        next
+                        continue
                     # Find regressions
                     if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "disabled", "failed", "unresolvable" ]:
                         print >>sys.stderr, "Error: Regression (%s -> %s) in package '%s' in %s/%s!"%(p_result, result, node.get("package"),results.get("repository"),results.get("arch"))
@@ -112,6 +116,10 @@ def _staging_check(self, project, check_everything, opts):
                     if result in [ "succeeded" ] and result != p_result:
                         print "Package '%s' fixed (%s -> %s) in staging for %s/%s."%(node.get("package"), p_result, result, results.get("repository"),results.get("arch"))
 
+    if ret != 0:
+        print "Staging check failed!"
+    else:
+        print "Staging check succeeded!"
     return ret
 
 def _staging_create(self, sr, opts):
@@ -284,8 +292,6 @@ def do_staging(self, subcmd, opts, *args):
 
     "create" (or "c") will create staging repo from specified submit request
 
-    "push" (or "p") will push the staging project into grouped submit requests for openSUSE:Factory
-
     "remove" (or "r") will delete the staging project into submit requests for openSUSE:Factory
 
     "submit-devel" (or "s") will create review requests for changed packages in staging project
@@ -295,7 +301,6 @@ def do_staging(self, subcmd, opts, *args):
     Usage:
         osc staging check [--everything] REPO
         osc staging create SR#
-        osc staging push REPO
         osc staging remove REPO
         osc stating submit-devel REPO
     """
@@ -309,7 +314,7 @@ def do_staging(self, subcmd, opts, *args):
 
     # verify the argument counts match the commands
     cmd = args[0]
-    if cmd in ['push', 'p', 'submit-devel', 's', 'remove', 'r']:
+    if cmd in ['submit-devel', 's', 'remove', 'r']:
         min_args, max_args = 1, 1
     elif cmd in ['check']:
         min_args, max_args = 1, 2
