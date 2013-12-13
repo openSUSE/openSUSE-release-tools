@@ -15,6 +15,8 @@ def _print_version(self):
     print '%s'%(self.OSC_STAGING_VERSION)
     quit(0)
 
+# Get last build results (optionally only for specified repo/arch)
+# Works even when rebuild is triggered
 def _get_build_res(apiurl, prj, repo=None, arch=None):
     query = {}
     query['lastbuild'] = 1
@@ -26,6 +28,7 @@ def _get_build_res(apiurl, prj, repo=None, arch=None):
     f = http_GET(u)
     return f.readlines()
 
+# Checks the state of staging repo (local modifications, regressions, ...)
 def _staging_check(self, project, check_everything, opts):
     """
     Checks whether project does not contain local changes
@@ -63,9 +66,9 @@ def _staging_check(self, project, check_everything, opts):
     else:
         print "Check for local changes passed"
 
+    # Check for regressions
     root = None
     if ret == 0 or check_everything:
-        # Check for regressions
         print "Getting build status, this may take a while"
         # Get staging project results
         f = _get_build_res(apiurl, project)
@@ -87,7 +90,7 @@ def _staging_check(self, project, check_everything, opts):
                 print >>sys.stderr, "Warning: Building not finished yet for %s/%s (%s)!"%(results.get("repository"),results.get("arch"),results.get("state"))
                 ret |= 2
 
-            # Get parent project results
+            # Get parent project results for this repo/arch
             p_project = m_root.find("repository[@name='%s']/path"%(results.get("repository")))
             if p_project == None:
                 print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
@@ -117,10 +120,10 @@ def _staging_check(self, project, check_everything, opts):
                     else:
                         p_result = p_node.get("code")
                     # Skip packages not built in parent project
-                    if p_result in [ None, "disabled", "excluded" ]:
+                    if p_result in [ None, "disabled", "excluded", "unknown", "unresolvable" ]:
                         continue
                     # Find regressions
-                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "disabled", "failed", "unknown", "unresolvable" ]:
+                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "failed" ]:
                         print >>sys.stderr, "Error: Regression (%s -> %s) in package '%s' in %s/%s!"%(p_result, result, node.get("package"),results.get("repository"),results.get("arch"))
                         ret |= 8
                     # Find fixed builds
@@ -151,6 +154,8 @@ def _staging_create(self, sr, opts):
     src_prj = act.src_project
     src_pkg = act.src_package
     stg_prj = trg_prj + ":Staging:" + trg_pkg
+    if opts.parent:
+        trg_prj = opts.parent
 
     # test if staging project exists
     found = 1
@@ -163,7 +168,7 @@ def _staging_create(self, sr, opts):
        else:
             raise e
     if found == 1:
-        print('Such a staging project already exists, overwrite? (Y/n)')
+        print('Staging project "%s" already exists, overwrite? (Y/n)'%(stg_prj))
         answer = sys.stdin.readline()
         if re.search("^\s*[Nn]", answer):
             print('Aborting...')
@@ -293,6 +298,8 @@ def _staging_submit_devel(self, project, opts):
 
 @cmdln.option('-e', '--everything', action='store_true', dest='everything',
               help='during check do not stop on first first issue and show them all')
+@cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
+              help='manually specify different parent project during creation of staging')
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
               help='show version of the plugin')
@@ -311,7 +318,7 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging check [--everything] REPO
-        osc staging create SR#
+        osc staging create [--parent project] SR#
         osc staging remove REPO
         osc stating submit-devel REPO
     """
@@ -330,7 +337,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['check']:
         min_args, max_args = 1, 2
     elif cmd in ['create', 'c']:
-        min_args, max_args = 1, 1
+        min_args, max_args = 1, 2
     else:
         raise RuntimeError('Unknown command: %s'%(cmd))
     if len(args) - 1 < min_args:
