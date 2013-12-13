@@ -136,24 +136,47 @@ def _staging_check(self, project, check_everything, opts):
         print "Staging check succeeded!"
     return ret
 
-def _staging_create(self, sr, opts):
+def _staging_create(self, trg, opts):
     """
     Creates new staging project based on the submit request.
-    :param sr: submit request containing package to test directed for openSUSE:Factory
+    :param trg: submit request to create staging project for or parent project/package
     :param opts: pointer to options
     """
 
     apiurl = self.get_api_url()
+    req = None
 
-    # read info from sr
-    req = get_request(apiurl, sr)
-    act = req.get_actions("submit")[0]
+    # We are dealing with sr
+    if re.match('^\d+$', trg):
+        # read info from sr
+        req = get_request(apiurl, trg)
+        act = req.get_actions("submit")[0]
 
-    trg_prj = act.tgt_project
-    trg_pkg = act.tgt_package
-    src_prj = act.src_project
-    src_pkg = act.src_package
-    stg_prj = trg_prj + ":Staging:" + trg_pkg
+        trg_prj = act.tgt_project
+        trg_pkg = act.tgt_package
+        src_prj = act.src_project
+        src_pkg = act.src_package
+
+    # We are dealing with project
+    else:
+        data = re.split('/', trg)
+        o_stg_prj = data[0]
+        trg_prj = re.sub(':Staging:.*','',data[0])
+        src_prj = re.sub(':Staging:.*','',data[0])
+        if len(data)>1:
+            trg_pkg = data[1]
+            src_pkg = data[1]
+        else:
+            trg_pkg = None
+            src_pkg = None
+
+    # Set staging name and maybe parent
+    if trg_pkg != None:
+        stg_prj = trg_prj + ":Staging:" + trg_pkg
+
+    if re.search(':Staging:',trg):
+        stg_prj = o_stg_prj
+
     if opts.parent:
         trg_prj = opts.parent
 
@@ -207,16 +230,21 @@ def _staging_create(self, sr, opts):
     perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
     
     # add maintainers of source package
-    trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), apiurl)
-    data = http_GET(trg_meta_url).readlines()
-    perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
+    if src_pkg != None:
+        trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), apiurl)
+        data = http_GET(trg_meta_url).readlines()
+        perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
 
     # create xml for new project
     new_xml  = '<project name="%s">\n'%(stg_prj)
-    new_xml += '  <title>Staging project for package %s (sr#%s)</title>\n'%(trg_pkg, req.reqid)
+    if req != None:
+        new_xml += '  <title>Staging project for package %s (sr#%s)</title>\n'%(trg_pkg, req.reqid)
+    else:
+        new_xml += '  <title>Staging project "%s"</title>\n'%(trg)
     new_xml += '  <description></description>\n'
     new_xml += '  <link project="%s"/>\n'%(trg_prj)
-    new_xml += '  <person userid="%s" role="maintainer"/>\n'%(req.get_creator())
+    if req != None:
+        new_xml += '  <person userid="%s" role="maintainer"/>\n'%(req.get_creator())
     new_xml += perm
     new_xml += '  <build><enable/></build>\n'
     new_xml += '  <debuginfo><enable/></debuginfo>\n'
@@ -237,8 +265,9 @@ def _staging_create(self, sr, opts):
     http_PUT(f.url, file=f.filename)
 
     # link package there
-    print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
-    link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
+    if src_pkg != None and trg_pkg != None:
+        print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
+        link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
     print
     
     return
@@ -319,6 +348,7 @@ def do_staging(self, subcmd, opts, *args):
     Usage:
         osc staging check [--everything] REPO
         osc staging create [--parent project] SR#
+        osc staging create [--parent project] PROJECT[/PACKAGE]
         osc staging remove REPO
         osc stating submit-devel REPO
     """
