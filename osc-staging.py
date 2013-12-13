@@ -8,8 +8,6 @@
 from osc import cmdln
 from osc import conf
 
-import pprint
-
 OSC_STAGING_VERSION='0.0.1'
 
 def _print_version(self):
@@ -17,6 +15,20 @@ def _print_version(self):
     print '%s'%(self.OSC_STAGING_VERSION)
     quit(0)
 
+# Get last build results (optionally only for specified repo/arch)
+# Works even when rebuild is triggered
+def _get_build_res(apiurl, prj, repo=None, arch=None):
+    query = {}
+    query['lastbuild'] = 1
+    if repo != None:
+        query['repository'] = repo
+    if arch != None:
+        query['arch'] = arch
+    u = makeurl(apiurl, ['build', prj, '_result'], query=query)
+    f = http_GET(u)
+    return f.readlines()
+
+# Checks the state of staging repo (local modifications, regressions, ...)
 def _staging_check(self, project, check_everything, opts):
     """
     Checks whether project does not contain local changes
@@ -30,7 +42,7 @@ def _staging_check(self, project, check_everything, opts):
     ret = 0
     # Check whether there are no local changes
     for pkg in meta_get_packagelist(apiurl, project):
-        if ret == 1 and not check_everything:
+        if ret != 0 and not check_everything:
             break
         f = http_GET(makeurl(apiurl, ['source', project, pkg]))
         linkinfo = ET.parse(f).getroot().find('linkinfo')
@@ -55,32 +67,36 @@ def _staging_check(self, project, check_everything, opts):
         print "Check for local changes passed"
 
     # Check for regressions
-    print "Getting build status, this may take a while"
-    # Get staging project results
-    f = show_prj_results_meta(apiurl, project)
-    root = ET.fromstring(''.join(f))
+    root = None
+    if ret == 0 or check_everything:
+        print "Getting build status, this may take a while"
+        # Get staging project results
+        f = _get_build_res(apiurl, project)
+        root = ET.fromstring(''.join(f))
 
-    # Get parent project
-    m_url = make_meta_url("prj", project, apiurl)
-    m_data = http_GET(m_url).readlines()
-    m_root = ET.fromstring(''.join(m_data))
+        # Get parent project
+        m_url = make_meta_url("prj", project, apiurl)
+        m_data = http_GET(m_url).readlines()
+        m_root = ET.fromstring(''.join(m_data))
 
-    print "Comparing build statuses, this may take a while"
+        print "Comparing build statuses, this may take a while"
 
     # Iterate through all repos/archs
-    if root.find('result') != None:
+    if root != None and root.find('result') != None:
         for results in root.findall('result'):
+            if ret != 0 and not check_everything:
+                break
             if results.get("state") not in [ "published", "unpublished" ]:
                 print >>sys.stderr, "Warning: Building not finished yet for %s/%s (%s)!"%(results.get("repository"),results.get("arch"),results.get("state"))
                 ret |= 2
 
-            # Get parent project results
+            # Get parent project results for this repo/arch
             p_project = m_root.find("repository[@name='%s']/path"%(results.get("repository")))
             if p_project == None:
                 print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
                 ret |= 4
-                next
-            f = show_prj_results_meta(apiurl, p_project.get("project"))
+                continue
+            f = _get_build_res(apiurl, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
             p_root = ET.fromstring(''.join(f))
 
             # Find corresponding set of results in parent project
@@ -91,10 +107,12 @@ def _staging_check(self, project, check_everything, opts):
             else:
                 # Iterate through packages
                 for node in results:
+                    if ret != 0 and not check_everything:
+                        break
                     result = node.get("code")
                     # Skip not rebuilt
-                    if result in [ "blocked", "building", "disabled" "excluded", "finished", "unpublished", "published" ]:
-                        next
+                    if result in [ "blocked", "building", "disabled" "excluded", "finished", "unknown", "unpublished", "published" ]:
+                        continue
                     # Get status of package in parent project
                     p_node = p_results.find("status[@package='%s']"%(node.get("package")))
                     if p_node == None:
@@ -102,36 +120,65 @@ def _staging_check(self, project, check_everything, opts):
                     else:
                         p_result = p_node.get("code")
                     # Skip packages not built in parent project
-                    if p_result in [ None, "disabled", "excluded" ]:
-                        next
+                    if p_result in [ None, "disabled", "excluded", "unknown", "unresolvable" ]:
+                        continue
                     # Find regressions
-                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "disabled", "failed", "unresolvable" ]:
+                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "failed" ]:
                         print >>sys.stderr, "Error: Regression (%s -> %s) in package '%s' in %s/%s!"%(p_result, result, node.get("package"),results.get("repository"),results.get("arch"))
                         ret |= 8
                     # Find fixed builds
                     if result in [ "succeeded" ] and result != p_result:
                         print "Package '%s' fixed (%s -> %s) in staging for %s/%s."%(node.get("package"), p_result, result, results.get("repository"),results.get("arch"))
 
+    if ret != 0:
+        print "Staging check failed!"
+    else:
+        print "Staging check succeeded!"
     return ret
 
-def _staging_create(self, sr, opts):
+def _staging_create(self, trg, opts):
     """
     Creates new staging project based on the submit request.
-    :param sr: submit request containing package to test directed for openSUSE:Factory
+    :param trg: submit request to create staging project for or parent project/package
     :param opts: pointer to options
     """
 
     apiurl = self.get_api_url()
+    req = None
 
-    # read info from sr
-    req = get_request(apiurl, sr)
-    act = req.get_actions("submit")[0]
+    # We are dealing with sr
+    if re.match('^\d+$', trg):
+        # read info from sr
+        req = get_request(apiurl, trg)
+        act = req.get_actions("submit")[0]
 
-    trg_prj = act.tgt_project
-    trg_pkg = act.tgt_package
-    src_prj = act.src_project
-    src_pkg = act.src_package
-    stg_prj = trg_prj + ":Staging:" + trg_pkg
+        trg_prj = act.tgt_project
+        trg_pkg = act.tgt_package
+        src_prj = act.src_project
+        src_pkg = act.src_package
+
+    # We are dealing with project
+    else:
+        data = re.split('/', trg)
+        o_stg_prj = data[0]
+        trg_prj = re.sub(':Staging:.*','',data[0])
+        src_prj = re.sub(':Staging:.*','',data[0])
+        if len(data)>1:
+            trg_pkg = data[1]
+            src_pkg = data[1]
+        else:
+            trg_pkg = None
+            src_pkg = None
+
+    # Set staging name and maybe parent
+    if trg_pkg != None:
+        stg_prj = trg_prj + ":Staging:" + trg_pkg
+
+    if re.search(':Staging:',trg):
+        stg_prj = o_stg_prj
+
+    if opts.parent:
+        trg_prj = opts.parent
 
     # test if staging project exists
     found = 1
@@ -144,7 +191,7 @@ def _staging_create(self, sr, opts):
        else:
             raise e
     if found == 1:
-        print('Such a staging project already exists, overwrite? (Y/n)')
+        print('Staging project "%s" already exists, overwrite? (Y/n)'%(stg_prj))
         answer = sys.stdin.readline()
         if re.search("^\s*[Nn]", answer):
             print('Aborting...')
@@ -183,16 +230,21 @@ def _staging_create(self, sr, opts):
     perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
     
     # add maintainers of source package
-    trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), apiurl)
-    data = http_GET(trg_meta_url).readlines()
-    perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
+    if src_pkg != None:
+        trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), apiurl)
+        data = http_GET(trg_meta_url).readlines()
+        perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
 
     # create xml for new project
     new_xml  = '<project name="%s">\n'%(stg_prj)
-    new_xml += '  <title>Staging project for package %s (sr#%s)</title>\n'%(trg_pkg, req.reqid)
+    if req != None:
+        new_xml += '  <title>Staging project for package %s (sr#%s)</title>\n'%(trg_pkg, req.reqid)
+    else:
+        new_xml += '  <title>Staging project "%s"</title>\n'%(trg)
     new_xml += '  <description></description>\n'
     new_xml += '  <link project="%s"/>\n'%(trg_prj)
-    new_xml += '  <person userid="%s" role="maintainer"/>\n'%(req.get_creator())
+    if req != None:
+        new_xml += '  <person userid="%s" role="maintainer"/>\n'%(req.get_creator())
     new_xml += perm
     new_xml += '  <build><enable/></build>\n'
     new_xml += '  <debuginfo><enable/></debuginfo>\n'
@@ -213,8 +265,9 @@ def _staging_create(self, sr, opts):
     http_PUT(f.url, file=f.filename)
 
     # link package there
-    print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
-    link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
+    if src_pkg != None and trg_pkg != None:
+        print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
+        link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
     print
     
     return
@@ -274,6 +327,8 @@ def _staging_submit_devel(self, project, opts):
 
 @cmdln.option('-e', '--everything', action='store_true', dest='everything',
               help='during check do not stop on first first issue and show them all')
+@cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
+              help='manually specify different parent project during creation of staging')
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
               help='show version of the plugin')
@@ -284,8 +339,6 @@ def do_staging(self, subcmd, opts, *args):
 
     "create" (or "c") will create staging repo from specified submit request
 
-    "push" (or "p") will push the staging project into grouped submit requests for openSUSE:Factory
-
     "remove" (or "r") will delete the staging project into submit requests for openSUSE:Factory
 
     "submit-devel" (or "s") will create review requests for changed packages in staging project
@@ -294,8 +347,8 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging check [--everything] REPO
-        osc staging create SR#
-        osc staging push REPO
+        osc staging create [--parent project] SR#
+        osc staging create [--parent project] PROJECT[/PACKAGE]
         osc staging remove REPO
         osc stating submit-devel REPO
     """
@@ -309,12 +362,12 @@ def do_staging(self, subcmd, opts, *args):
 
     # verify the argument counts match the commands
     cmd = args[0]
-    if cmd in ['push', 'p', 'submit-devel', 's', 'remove', 'r']:
+    if cmd in ['submit-devel', 's', 'remove', 'r']:
         min_args, max_args = 1, 1
     elif cmd in ['check']:
         min_args, max_args = 1, 2
     elif cmd in ['create', 'c']:
-        min_args, max_args = 1, 1
+        min_args, max_args = 1, 2
     else:
         raise RuntimeError('Unknown command: %s'%(cmd))
     if len(args) - 1 < min_args:
