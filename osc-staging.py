@@ -15,6 +15,17 @@ def _print_version(self):
     print '%s'%(self.OSC_STAGING_VERSION)
     quit(0)
 
+def _get_build_res(apiurl, prj, repo=None, arch=None):
+    query = {}
+    query['lastbuild'] = 1
+    if repo != None:
+        query['repository'] = repo
+    if arch != None:
+        query['arch'] = arch
+    u = makeurl(apiurl, ['build', prj, '_result'], query=query)
+    f = http_GET(u)
+    return f.readlines()
+
 def _staging_check(self, project, check_everything, opts):
     """
     Checks whether project does not contain local changes
@@ -57,7 +68,7 @@ def _staging_check(self, project, check_everything, opts):
         # Check for regressions
         print "Getting build status, this may take a while"
         # Get staging project results
-        f = show_prj_results_meta(apiurl, project)
+        f = _get_build_res(apiurl, project)
         root = ET.fromstring(''.join(f))
 
         # Get parent project
@@ -82,7 +93,7 @@ def _staging_check(self, project, check_everything, opts):
                 print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
                 ret |= 4
                 continue
-            f = show_prj_results_meta(apiurl, p_project.get("project"))
+            f = _get_build_res(apiurl, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
             p_root = ET.fromstring(''.join(f))
 
             # Find corresponding set of results in parent project
@@ -97,7 +108,7 @@ def _staging_check(self, project, check_everything, opts):
                         break
                     result = node.get("code")
                     # Skip not rebuilt
-                    if result in [ "blocked", "building", "disabled" "excluded", "finished", "unpublished", "published" ]:
+                    if result in [ "blocked", "building", "disabled" "excluded", "finished", "unknown", "unpublished", "published" ]:
                         continue
                     # Get status of package in parent project
                     p_node = p_results.find("status[@package='%s']"%(node.get("package")))
@@ -109,7 +120,7 @@ def _staging_check(self, project, check_everything, opts):
                     if p_result in [ None, "disabled", "excluded" ]:
                         continue
                     # Find regressions
-                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "disabled", "failed", "unresolvable" ]:
+                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "disabled", "failed", "unknown", "unresolvable" ]:
                         print >>sys.stderr, "Error: Regression (%s -> %s) in package '%s' in %s/%s!"%(p_result, result, node.get("package"),results.get("repository"),results.get("arch"))
                         ret |= 8
                     # Find fixed builds
