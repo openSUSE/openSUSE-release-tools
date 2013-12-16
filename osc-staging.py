@@ -28,6 +28,29 @@ def _get_build_res(apiurl, prj, repo=None, arch=None):
     f = http_GET(u)
     return f.readlines()
 
+def _get_changed(apiurl, project, everything):
+    ret = []
+    # Check for local changes
+    for pkg in meta_get_packagelist(apiurl, project):
+        if len(ret) != 0 and not everything:
+            break
+        f = http_GET(makeurl(apiurl, ['source', project, pkg]))
+        linkinfo = ET.parse(f).getroot().find('linkinfo')
+        if linkinfo is None:
+            ret.append({'pkg': pkg, 'code': 'NOT_LINK', 'msg': 'Not a source link'})
+            continue
+        if linkinfo.get('error'):
+            ret.append({'pkg': pkg, 'code': 'BROKEN', 'msg': 'Broken source link'})
+            continue
+        t = linkinfo.get('project')
+        p = linkinfo.get('package')
+        r = linkinfo.get('revision')
+        if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
+            ret.append({'pkg': pkg, 'code': 'MODIFIED', 'msg': 'Has local modifications'})
+            continue
+    return ret
+
+
 # Checks the state of staging repo (local modifications, regressions, ...)
 def _staging_check(self, project, check_everything, opts):
     """
@@ -40,29 +63,12 @@ def _staging_check(self, project, check_everything, opts):
     apiurl = self.get_api_url()
 
     ret = 0
-    # Check whether there are no local changes
-    for pkg in meta_get_packagelist(apiurl, project):
-        if ret != 0 and not check_everything:
-            break
-        f = http_GET(makeurl(apiurl, ['source', project, pkg]))
-        linkinfo = ET.parse(f).getroot().find('linkinfo')
-        if linkinfo is None:
-            print >>sys.stderr, 'Error: Not a source link: %s/%s'%(project,pkg)
-            ret = 1
-            continue
-        if linkinfo.get('error'):
-            print >>sys.stderr, 'Error: Broken source link: %s/%s'%(project, pkg)
-            ret = 1
-            continue
-        t = linkinfo.get('project')
-        p = linkinfo.get('package')
-        r = linkinfo.get('revision')
-        if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
-            print >>sys.stderr, 'Error: Has local modifications: %s/%s'%(project, pkg)
-            ret = 1
-            continue
-    if ret == 1:
+    chng = _get_changed(apiurl, project, check_everything)
+    if len(chng) > 0:
+        for pair in chng:
+            print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
         print >>sys.stderr, "Error: Check for local changes failed"
+        ret = 1
     else:
         print "Check for local changes passed"
 
@@ -279,6 +285,18 @@ def _staging_remove(self, project, opts):
     :param opts: pointer to options
     """
     apiurl = self.get_api_url()
+    chng = _get_changed(apiurl, project, True)
+    if len(chng) > 0:
+        print('Staging project "%s" is not clean:'%(project))
+        print('')
+        for pair in chng:
+            print(' * %s : %s'%(pair['pkg'],pair['msg']))
+        print('')
+        print('Really delete? (N/y)')
+        answer = sys.stdin.readline()
+        if not re.search("^\s*[Yy]", answer):
+            print('Aborting...')
+            exit(1)
     delete_project(apiurl, project, force=True, msg=None)
     print("Deleted.")
     return
