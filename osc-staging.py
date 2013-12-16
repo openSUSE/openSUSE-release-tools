@@ -301,38 +301,6 @@ def _staging_remove(self, project, opts):
     print("Deleted.")
     return
 
-def _staging_push(self, project, opts):
-    """
-    Generate new submit requests group based on staging project.
-    :param project: staging project to submit
-    :param opts: pointer to options
-    """
-    apiurl = self.get_api_url()
-    if not self._staging_check(apiurl, project):
-        raise oscerr.ServiceRuntimeError('Verification of staging repo failed.')
-
-    # loop over packages
-    for pkg in meta_get_packagelist(apiurl, project):
-        # decompose symlinks
-        u = makeurl(apiurl, ['source', project, pkg])
-        f = http_GET(u)
-        root = ET.parse(f).getroot()
-        linkinfo = root.find('linkinfo')
-        if linkinfo == None:
-            print >>sys.stderr, "Not a source link: %s"%(pkg)
-            quit(1)
-        if linkinfo.get('error'):
-            print >>sys.stderr, "Broken source link: %s"%(pkg)
-            quit(1)
-        t = linkinfo.get('project')
-        p = linkinfo.get('package')
-        r = linkinfo.get('revision')
-        # Get rid of old requests
-        for rq in get_exact_request_list(apiurl, t, project, pkg, pkg, ('new', 'review')):
-            # obsolete submit requests that contain the package (notify!)
-            print('.')
-    # sent new submitrequest for the package
-
 def _staging_submit_devel(self, project, opts):
     """
     Generate new review requests for devel-projects based on our staging changes.
