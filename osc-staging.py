@@ -7,6 +7,7 @@
 
 from osc import cmdln
 from osc import conf
+from osc import commandline
 
 OSC_STAGING_VERSION='0.0.1'
 
@@ -28,6 +29,29 @@ def _get_build_res(apiurl, prj, repo=None, arch=None):
     f = http_GET(u)
     return f.readlines()
 
+def _get_changed(apiurl, project, everything):
+    ret = []
+    # Check for local changes
+    for pkg in meta_get_packagelist(apiurl, project):
+        if len(ret) != 0 and not everything:
+            break
+        f = http_GET(makeurl(apiurl, ['source', project, pkg]))
+        linkinfo = ET.parse(f).getroot().find('linkinfo')
+        if linkinfo is None:
+            ret.append({'pkg': pkg, 'code': 'NOT_LINK', 'msg': 'Not a source link'})
+            continue
+        if linkinfo.get('error'):
+            ret.append({'pkg': pkg, 'code': 'BROKEN', 'msg': 'Broken source link'})
+            continue
+        t = linkinfo.get('project')
+        p = linkinfo.get('package')
+        r = linkinfo.get('revision')
+        if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
+            ret.append({'pkg': pkg, 'code': 'MODIFIED', 'msg': 'Has local modifications', 'pprj': t, 'ppkg': p})
+            continue
+    return ret
+
+
 # Checks the state of staging repo (local modifications, regressions, ...)
 def _staging_check(self, project, check_everything, opts):
     """
@@ -40,29 +64,12 @@ def _staging_check(self, project, check_everything, opts):
     apiurl = self.get_api_url()
 
     ret = 0
-    # Check whether there are no local changes
-    for pkg in meta_get_packagelist(apiurl, project):
-        if ret != 0 and not check_everything:
-            break
-        f = http_GET(makeurl(apiurl, ['source', project, pkg]))
-        linkinfo = ET.parse(f).getroot().find('linkinfo')
-        if linkinfo is None:
-            print >>sys.stderr, 'Error: Not a source link: %s/%s'%(project,pkg)
-            ret = 1
-            continue
-        if linkinfo.get('error'):
-            print >>sys.stderr, 'Error: Broken source link: %s/%s'%(project, pkg)
-            ret = 1
-            continue
-        t = linkinfo.get('project')
-        p = linkinfo.get('package')
-        r = linkinfo.get('revision')
-        if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
-            print >>sys.stderr, 'Error: Has local modifications: %s/%s'%(project, pkg)
-            ret = 1
-            continue
-    if ret == 1:
+    chng = _get_changed(apiurl, project, check_everything)
+    if len(chng) > 0:
+        for pair in chng:
+            print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
         print >>sys.stderr, "Error: Check for local changes failed"
+        ret = 1
     else:
         print "Check for local changes passed"
 
@@ -279,41 +286,21 @@ def _staging_remove(self, project, opts):
     :param opts: pointer to options
     """
     apiurl = self.get_api_url()
+    chng = _get_changed(apiurl, project, True)
+    if len(chng) > 0:
+        print('Staging project "%s" is not clean:'%(project))
+        print('')
+        for pair in chng:
+            print(' * %s : %s'%(pair['pkg'],pair['msg']))
+        print('')
+        print('Really delete? (N/y)')
+        answer = sys.stdin.readline()
+        if not re.search("^\s*[Yy]", answer):
+            print('Aborting...')
+            exit(1)
     delete_project(apiurl, project, force=True, msg=None)
     print("Deleted.")
     return
-
-def _staging_push(self, project, opts):
-    """
-    Generate new submit requests group based on staging project.
-    :param project: staging project to submit
-    :param opts: pointer to options
-    """
-    apiurl = self.get_api_url()
-    if not self._staging_check(apiurl, project):
-        raise oscerr.ServiceRuntimeError('Verification of staging repo failed.')
-
-    # loop over packages
-    for pkg in meta_get_packagelist(apiurl, project):
-        # decompose symlinks
-        u = makeurl(apiurl, ['source', project, pkg])
-        f = http_GET(u)
-        root = ET.parse(f).getroot()
-        linkinfo = root.find('linkinfo')
-        if linkinfo == None:
-            print >>sys.stderr, "Not a source link: %s"%(pkg)
-            quit(1)
-        if linkinfo.get('error'):
-            print >>sys.stderr, "Broken source link: %s"%(pkg)
-            quit(1)
-        t = linkinfo.get('project')
-        p = linkinfo.get('package')
-        r = linkinfo.get('revision')
-        # Get rid of old requests
-        for rq in get_exact_request_list(apiurl, t, project, pkg, pkg, ('new', 'review')):
-            # obsolete submit requests that contain the package (notify!)
-            print('.')
-    # sent new submitrequest for the package
 
 def _staging_submit_devel(self, project, opts):
     """
@@ -321,13 +308,38 @@ def _staging_submit_devel(self, project, opts):
     :param apiurl: pointer to obs api url link
     :param project: staging project to submit into devel projects
     """
-    print("Not implemented.")
+    apiurl = self.get_api_url()
+    chng = _get_changed(apiurl, project, True)
+    msg = "Fixes from staging project %s" % project
+    if opts.message != None:
+        msg = opts.message
+    if len(chng) > 0:
+        for pair in chng:
+            if pair['code'] != 'MODIFIED':
+                print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
+            else:
+                print('Sending changes back %s/%s -> %s/%s'%(project,pair['pkg'],pair['pprj'],pair['ppkg']))
+                action_xml  = '<request>';
+                action_xml += '   <action type="submit"> <source project="%s" package="%s" /> <target project="%s" package="%s" />' % (project, pair['pkg'], pair['pprj'], pair['ppkg'])
+                action_xml += '   </action>'
+                action_xml += '   <state name="new"/> <description>%s</description>' % msg
+                action_xml += '</request>'
+
+                u = makeurl(apiurl, ['request'], query='cmd=create&addrevision=1')
+                f = http_POST(u, data=action_xml)
+
+                root = ET.parse(f).getroot()
+                print("Created request %s" % (root.get('id')))
+    else:
+        print("No changes to submit")
     return
 
 
 @cmdln.option('-e', '--everything', action='store_true', dest='everything',
               help='during check do not stop on first first issue and show them all')
 @cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
+              help='manually specify different parent project during creation of staging')
+@cmdln.option('-m', '--message', metavar='TEXT',
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
@@ -350,13 +362,13 @@ def do_staging(self, subcmd, opts, *args):
         osc staging create [--parent project] SR#
         osc staging create [--parent project] PROJECT[/PACKAGE]
         osc staging remove REPO
-        osc stating submit-devel REPO
+        osc stating submit-devel [-m message] REPO
     """
     if opts.version:
         self._print_version()
 
     # available commands
-    cmds = ['check', 'push', 'p', 'create', 'c', 'remove', 'r']
+    cmds = ['check', 'create', 'c', 'remove', 'r', 'submit-devel', 's']
     if not args or args[0] not in cmds:
         raise oscerr.WrongArgs('Unknown stagings action. Choose one of the %s.'%(', '.join(cmds)))
 
