@@ -7,6 +7,7 @@
 
 from osc import cmdln
 from osc import conf
+from osc import commandline
 
 OSC_STAGING_VERSION='0.0.1'
 
@@ -46,7 +47,7 @@ def _get_changed(apiurl, project, everything):
         p = linkinfo.get('package')
         r = linkinfo.get('revision')
         if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
-            ret.append({'pkg': pkg, 'code': 'MODIFIED', 'msg': 'Has local modifications'})
+            ret.append({'pkg': pkg, 'code': 'MODIFIED', 'msg': 'Has local modifications', 'pprj': t, 'ppkg': p})
             continue
     return ret
 
@@ -307,13 +308,38 @@ def _staging_submit_devel(self, project, opts):
     :param apiurl: pointer to obs api url link
     :param project: staging project to submit into devel projects
     """
-    print("Not implemented.")
+    apiurl = self.get_api_url()
+    chng = _get_changed(apiurl, project, True)
+    msg = "Fixes from staging project %s" % project
+    if opts.message != None:
+        msg = opts.message
+    if len(chng) > 0:
+        for pair in chng:
+            if pair['code'] != 'MODIFIED':
+                print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
+            else:
+                print('Sending changes back %s/%s -> %s/%s'%(project,pair['pkg'],pair['pprj'],pair['ppkg']))
+                action_xml  = '<request>';
+                action_xml += '   <action type="submit"> <source project="%s" package="%s" /> <target project="%s" package="%s" />' % (project, pair['pkg'], pair['pprj'], pair['ppkg'])
+                action_xml += '   </action>'
+                action_xml += '   <state name="new"/> <description>%s</description>' % msg
+                action_xml += '</request>'
+
+                u = makeurl(apiurl, ['request'], query='cmd=create&addrevision=1')
+                f = http_POST(u, data=action_xml)
+
+                root = ET.parse(f).getroot()
+                print("Created request %s" % (root.get('id')))
+    else:
+        print("No changes to submit")
     return
 
 
 @cmdln.option('-e', '--everything', action='store_true', dest='everything',
               help='during check do not stop on first first issue and show them all')
 @cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
+              help='manually specify different parent project during creation of staging')
+@cmdln.option('-m', '--message', metavar='TEXT',
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-v', '--version', action='store_true',
               dest='version',
@@ -336,13 +362,13 @@ def do_staging(self, subcmd, opts, *args):
         osc staging create [--parent project] SR#
         osc staging create [--parent project] PROJECT[/PACKAGE]
         osc staging remove REPO
-        osc stating submit-devel REPO
+        osc stating submit-devel [-m message] REPO
     """
     if opts.version:
         self._print_version()
 
     # available commands
-    cmds = ['check', 'push', 'p', 'create', 'c', 'remove', 'r']
+    cmds = ['check', 'create', 'c', 'remove', 'r', 'submit-devel', 's']
     if not args or args[0] not in cmds:
         raise oscerr.WrongArgs('Unknown stagings action. Choose one of the %s.'%(', '.join(cmds)))
 
