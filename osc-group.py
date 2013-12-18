@@ -29,7 +29,7 @@ def _group_find_request_id(self, request, opts):
     :param opts: obs options
     """
 
-    url = makeurl(opts.apiurl, ['request'], 'states=new,review&project=openSUSE:Factory&view=collection')
+    url = makeurl(opts.apiurl, ['request'], 'states=new,review,declined&project=openSUSE:Factory&view=collection')
     f = http_GET(url)
     root = ET.parse(f).getroot()
 

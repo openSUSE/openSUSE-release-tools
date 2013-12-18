@@ -10,6 +10,7 @@ import socket
 import os
 import traceback
 import subprocess
+import urllib2
 
 def _checker_parse_name(self, apiurl, project, package, revision=None, brief=False, verbose=False):
 

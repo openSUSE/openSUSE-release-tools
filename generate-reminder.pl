@@ -14,6 +14,7 @@ require Date::Format;
 
 my $user = $ARGV[0];
 my $tproject = "openSUSE:Factory";
+my $baseurl = "https://build.opensuse.org";
 
 sub fetch_user_infos($)
 {
@@ -34,12 +35,12 @@ sub fetch_user_infos($)
     $ua->timeout(180);
     $ua->max_size(100000000);
     $ua->default_header("Accept" => "application/json");
-    my $mywork = $ua->get("https://build.opensuse.org/home/requests.json?user=$user");
+    my $mywork = $ua->get("$baseurl/home/requests.json?user=$user");
     unless ($mywork->is_success) { die $mywork->status_line; }
 
     $mywork = from_json( $mywork->decoded_content, { utf8 => 1 });
 
-    my $url = "https://api.opensuse.org/webui/projects/$tproject/status?ignore_pending=0";
+    my $url = "$baseurl/project/status/$tproject?ignore_pending=0";
     $url .= "&limit_to_fails=false&limit_to_old=false&include_versions=true&filter_for_user=$user";
     my $projstat = $ua->get($url);
     die $projstat->status_line unless ($projstat->is_success);
@@ -66,8 +67,6 @@ sub shorten_url($$)
     die $ret->status_line unless ($ret->is_success);
     return $ret->decoded_content;
 }
-
-my $baseurl = "https://build.opensuse.org";
 
 sub time_distance($)
 {
@@ -143,7 +142,7 @@ sub generate_report($)
     #print to_json($projstat, {pretty => 1});
 
     my %projects;
-    for my $package (@{$projstat->{'packages'}}) {
+    for my $package (@$projstat) {
         my $develproject = $package->{develproject} || next;
         next if ($develproject eq $tproject); 
 	$projects{$develproject} ||= [];
@@ -301,7 +300,7 @@ sub generate_report($)
 my $report = generate_report($user);
 
 if ($report) {
-    my $url = "$baseurl/stage/project/status?project=" . uri_escape($tproject);
+    my $url = "$baseurl/project/status?project=" . uri_escape($tproject);
     $url .= "&limit_to_fails=false&include_versions=true";
     $url .= "&filter_for_user=" . uri_escape($user);
     $url = shorten_url($url, "fs-$user");
