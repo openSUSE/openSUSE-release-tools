@@ -44,7 +44,7 @@ global tempfile
 global wraps
 
 global Graph
-global Package
+global Package_
 
 global memoize
 
@@ -173,7 +173,7 @@ class Graph(dict):
         return frozenset(cycles)
 
 
-class Package(object):
+class Package_(object):
     """Simple package container. Used in a graph as a vertex."""
 
     def __init__(self, pkg=None, src=None, deps=None, subs=None, element=None):
@@ -770,7 +770,7 @@ def _get_buildinfo(self, opts, prj, repo, arch, pkg):
 def _get_builddepinfo(self, opts, prj, repo, arch, pkg):
     """Get the builddep info for a single package"""
     root = ET.fromstring(builddepinfo(opts.apiurl, prj, repo, arch))
-    packages = [Package(element=e) for e in root.findall('package')]
+    packages = [Package_(element=e) for e in root.findall('package')]
     package = [p for p in packages if p.pkg == pkg]
     return package[0] if package else None
 
@@ -810,7 +810,7 @@ def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='
     root = ET.fromstring(builddepinfo(opts.apiurl, project, repository, arch))
     # Reset the subpackages dict here, so for every graph is a
     # different object.
-    packages = [Package(element=e) for e in root.findall('package')]
+    packages = [Package_(element=e) for e in root.findall('package')]
 
     # XXX - Ugly Exception. We need to ignore branding packages and
     # packages that one of his dependencies do not exist. Also ignore
