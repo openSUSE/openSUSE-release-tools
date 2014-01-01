@@ -561,7 +561,7 @@ def _check_repo_buildsuccess(self, p, opts):
         return False
 
     result = False
-    p.goodrepo = None
+    p.goodrepos = []
     missings = {}
     alldisabled = True
     foundbuilding = None
@@ -622,7 +622,7 @@ def _check_repo_buildsuccess(self, p, opts):
         if not founddisabled:
             alldisabled = False
         if isgood:
-            p.goodrepo = repo.attrib['name']
+            p.goodrepos.append(repo.attrib['name'])
             result = True
         if r_foundbuilding:
             foundbuilding = r_foundbuilding
@@ -716,49 +716,50 @@ def _checker_compare_disturl(self, disturl, p):
     return False
 
 
-def _check_repo_download(self, p, destdir, opts):
+def _check_repo_download(self, p, opts):
     if p.build_excluded:
         return [], []
 
-    p.destdir = destdir + '/%s' % p.tpackage
-    if not os.path.isdir(p.destdir):
-      os.makedirs(p.destdir, 0755)
-    # we can assume x86_64 is there
-    todownload = []
-    for fn in self._check_repo_repo_list(p.sproject, p.goodrepo, 'x86_64', p.spackage, opts):
-        todownload.append(('x86_64', fn[0]))
+    p.downloads = dict()
+    for repo in p.goodrepos:
+        # we can assume x86_64 is there
+        todownload = []
+        for fn in self._check_repo_repo_list(p.sproject, repo, 'x86_64', p.spackage, opts):
+            todownload.append(('x86_64', fn[0]))
 
-    # now fetch -32bit packs
-    for fn in self._check_repo_repo_list(p.sproject, p.goodrepo, 'i586', p.spackage, opts):
-        if fn[2] == 'x86_64':
-            todownload.append(('i586', fn[0]))
+        # now fetch -32bit packs
+        for fn in self._check_repo_repo_list(p.sproject, repo, 'i586', p.spackage, opts):
+            if fn[2] == 'x86_64':
+                todownload.append(('i586', fn[0]))
 
-    downloads = []
-    for arch, fn in todownload:
-        t = os.path.join(p.destdir, fn)
-        self._check_repo_get_binary(opts.apiurl, p.sproject, p.goodrepo, 
-                                    arch, p.spackage, fn, t)
-        downloads.append(t)
-        if fn.endswith('.rpm'):
-            pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t], 
-                                   stdout=subprocess.PIPE, close_fds=True)
-            os.waitpid(pid.pid, 0)[1]
-            disturl = pid.stdout.readlines()[0]
+        p.downloads[repo] = []
+        for arch, fn in todownload:
+            repodir = os.path.join(opts.downloads, p.spackage, repo)
+            if not os.path.exists(repodir):
+              os.makedirs(repodir)
+            t = os.path.join(repodir, fn)
+            self._check_repo_get_binary(opts.apiurl, p.sproject, repo, 
+                                        arch, p.spackage, fn, t)
+            p.downloads[repo].append(t)
+            if fn.endswith('.rpm'):
+                pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t], 
+                                       stdout=subprocess.PIPE, close_fds=True)
+                os.waitpid(pid.pid, 0)[1]
+                disturl = pid.stdout.readlines()[0]
 
-            if not self._checker_compare_disturl(disturl, p):
-                p.error = '[%s] %s does not match revision %s' % (p, disturl, p.rev)
-                return [], []
+                if not self._checker_compare_disturl(disturl, p):
+                    p.error = '[%s] %s does not match revision %s' % (p, disturl, p.rev)
+                    return [], []
 
-    toignore = []
+    toignore = set()
     for fn in self._check_repo_repo_list(p.tproject, 'standard', 'x86_64', p.tpackage, opts, ignore=True):
-        toignore.append(fn[1])
+        toignore.add(fn[1])
 
     # now fetch -32bit pack list
     for fn in self._check_repo_repo_list(p.tproject, 'standard', 'i586', p.tpackage, opts, ignore=True):
         if fn[2] == 'x86_64':
-            toignore.append(fn[1])
-    return toignore, downloads
-
+            toignore.add(fn[1])
+    return toignore
 
 def _get_buildinfo(self, opts, prj, repo, arch, pkg):
     """Get the build info for a package"""
@@ -864,13 +865,14 @@ def _check_repo_group(self, id_, reqs, opts):
         return
 
     # all succeeded
-    toignore, downloads = [], []
+    toignore = set()
     destdir = os.path.expanduser('~/co/%s' % str(reqs[0].group))
     fetched = dict((r, False) for r in opts.groups.get(id_, []))
-    goodrepo = ''
+    goodrepos = []
     packs = []
+
     for p in reqs:
-        i, d = self._check_repo_download(p, destdir, opts)
+        i = self._check_repo_download(p, opts)
         if p.error:
             if not p.updated:
                 print 'UPDATED', p.error
@@ -879,23 +881,22 @@ def _check_repo_group(self, id_, reqs, opts):
             else:
                 print p.error
             return
-        downloads.extend(d)
-        toignore.extend(i)
+        toignore.update(i)
         fetched[p.request] = True
-        goodrepo = p.goodrepo
+        goodrepos = p.goodrepos
         packs.append(p)
 
     for req, f in fetched.items():
         if not f: 
             packs.extend(self._check_repo_fetch_request(req, opts))
     for p in packs:
-        p.goodrepo = goodrepo
-        i, d = self._check_repo_download(p, destdir, opts)
+        if fetched[p.request] == True: continue
+        p.goodrepos = goodrepos
+        i = self._check_repo_download(p, opts)
         if p.error:
             print 'ERROR (ALREADY ACEPTED?):', p.error
             p.updated = True
-        downloads.extend(d)
-        toignore.extend(i)
+        toignore.update(i)
 
     # Get all the Base:build packages (source and binary)
     #base_build_bin = self._get_base_build_bin(opts)
@@ -930,7 +931,7 @@ def _check_repo_group(self, id_, reqs, opts):
 
         # Recover all packages at once, ignoring some packages that
         # can't be found in x86_64 architecture
-        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepo, arch, p.spackage) for p in packs]
+        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepos[0], arch, p.spackage) for p in packs]
         all_packages = [pkg for pkg in all_packages if pkg]
 
         subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
@@ -986,26 +987,49 @@ def _check_repo_group(self, id_, reqs, opts):
                 print msg
             return
 
-    for dirname, dirnames, filenames in os.walk(destdir):
-        if len(dirnames) + len(filenames) == 0:
-            os.rmdir(dirname)
-        for filename in filenames:
-            fn = os.path.join(dirname, filename)
-            if not fn in downloads:
-                os.unlink(fn)
-
     # Create a temporal file for the params
     params_file = tempfile.NamedTemporaryFile(delete=False)
     params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
-    repochecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
-    repochecker = os.path.join(repochecker, 'repo-checker.pl')
-    civs = "LC_ALL=C perl %s '%s' -f %s 2>&1" % (repochecker, destdir, params_file.name)
-    #exit(1)
-    p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
-    #ret = os.waitpid(p.pid, 0)[1]
-    output, _ = p.communicate()
-    ret = p.returncode
+
+    reposets = []
+
+    if len(packs) == 1:
+        p = packs[0]
+        for r in p.downloads.keys():
+            reposets.append([(p, r, p.downloads[r])])
+    else:
+        # TODO: for groups we just pick the first repo - we'd need to create a smart
+        # matrix
+        dirstolink = []
+        for p in packs:
+	    r = p.downloads.keys()[0]
+            dirstolink.append((p, r, p.downloads[r]))
+        reposets.append(dirstolink)
+
+    for dirstolink in reposets:
+        if os.path.exists(destdir):
+            shutil.rmtree(destdir)
+        os.makedirs(destdir)
+        for p, repo, downloads in dirstolink:
+            dir = destdir + '/%s' % p.tpackage
+            for d in downloads:
+                if not os.path.exists(dir): os.mkdir(dir)
+                os.symlink(d, os.path.join(dir, os.path.basename(d)))
+
+        repochecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
+        repochecker = os.path.join(repochecker, 'repo-checker.pl')
+        civs = "LC_ALL=C perl %s '%s' -f %s 2>&1" % (repochecker, destdir, params_file.name)
+        #print civs
+        #continue
+        #exit(1)
+        p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
+        #ret = os.waitpid(p.pid, 0)[1]
+        output, _ = p.communicate()
+        ret = p.returncode
+	if not ret: # skip the others
+          for p, repo, downloads in dirstolink: 	
+		p.goodrepo = repo
     os.unlink(params_file.name)
     
     updated = dict()
@@ -1055,6 +1079,8 @@ def do_check_repo(self, subcmd, opts, *args):
     opts.verbose = False
 
     opts.apiurl = self.get_api_url()
+
+    opts.downloads = os.path.expanduser('~/co/downloads')
 
     if opts.skip:
         if not len(args):
