@@ -718,7 +718,7 @@ def _checker_compare_disturl(self, disturl, p):
 
 def _check_repo_download(self, p, opts):
     if p.build_excluded:
-        return [], []
+        return set()
 
     p.downloads = dict()
     for repo in p.goodrepos:
