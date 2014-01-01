@@ -100,8 +100,8 @@ sub check_package($$$) {
   my $spkg = shift;
   my $tpkg = shift;
 
-  my $p1 = XMLin(fetch_api("/source/$spkg/$package?expand=1"));
-  my $p2 = XMLin(fetch_api("/source/$tpkg/$package?expand=1"));
+  my $p1 = XMLin(fetch_api("/source/$spkg/$package?view=info"));
+  my $p2 = XMLin(fetch_api("/source/$tpkg/$package?view=info"));
 
   return if ($p1->{verifymd5} eq $p2->{verifymd5});
   print "osc linkpac -f -r $p1->{srcmd5} $spkg $package $tpkg\n";
