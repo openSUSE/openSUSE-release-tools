@@ -1,3 +1,5 @@
+#! /usr/bin/perl
+
 use XML::Simple;
 use LWP::UserAgent;
 use Data::Dumper;
