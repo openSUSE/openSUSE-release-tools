@@ -868,7 +868,6 @@ def _check_repo_group(self, id_, reqs, opts):
     toignore = set()
     destdir = os.path.expanduser('~/co/%s' % str(reqs[0].group))
     fetched = dict((r, False) for r in opts.groups.get(id_, []))
-    goodrepos = []
     packs = []
 
     for p in reqs:
@@ -883,7 +882,6 @@ def _check_repo_group(self, id_, reqs, opts):
             return
         toignore.update(i)
         fetched[p.request] = True
-        goodrepos = p.goodrepos
         packs.append(p)
 
     for req, f in fetched.items():
@@ -891,7 +889,9 @@ def _check_repo_group(self, id_, reqs, opts):
             packs.extend(self._check_repo_fetch_request(req, opts))
     for p in packs:
         if fetched[p.request] == True: continue
-        p.goodrepos = goodrepos
+        # we need to call it to fetch the good repos to download
+        # but the return value is of no interest right now
+        self._check_repo_buildsuccess(p, opts)
         i = self._check_repo_download(p, opts)
         if p.error:
             print 'ERROR (ALREADY ACEPTED?):', p.error
