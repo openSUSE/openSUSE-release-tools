@@ -717,10 +717,11 @@ def _checker_compare_disturl(self, disturl, p):
 
 
 def _check_repo_download(self, p, opts):
+    p.downloads = dict()
+
     if p.build_excluded:
         return set()
 
-    p.downloads = dict()
     for repo in p.goodrepos:
         # we can assume x86_64 is there
         todownload = []
@@ -1003,7 +1004,9 @@ def _check_repo_group(self, id_, reqs, opts):
         # matrix
         dirstolink = []
         for p in packs:
-	    r = p.downloads.keys()[0]
+            keys = p.downloads.keys()
+            if len(keys) == 0: continue
+            r = keys[0]
             dirstolink.append((p, r, p.downloads[r]))
         reposets.append(dirstolink)
 
