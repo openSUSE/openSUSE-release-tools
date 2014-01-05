@@ -82,7 +82,16 @@ sub check_depinfo_ring($$) {
 	  push(@{$dinfo->{MYdvd}->{pkgdep}}, $bdep->{name});
       }
   }
+  if ($prj eq 'openSUSE:Factory:MainDesktops') {
+    $dinfo->{MYcds} = {};
+    $dinfo->{MYcds}->{pkgdep} = ();
+    $dinfo->{MYcds}->{source} = 'MYcds';
+    push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-gnome');
+    push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-kde');
 
+  }
+
+  if ($prj eq 'openSUSE:Factory:Build') {
   my @pi;
   for my $line (split("\n", fetch_api("/build/$prj/standard/_buildconfig"))) {
     if ($line =~ m/^Preinstall:/ || $line =~ m/^Support:/) {
@@ -99,6 +108,8 @@ sub check_depinfo_ring($$) {
   $dinfo->{MYinstall} = {};
   $dinfo->{MYinstall}->{source} = 'MYinstall';
   $dinfo->{MYinstall}->{pkgdep} = \@pi;
+  }
+
   for my $key (keys %$dinfo) {
     my $p = $dinfo->{$key};
     for my $s (@{$p->{'pkgdep'}}) {
@@ -108,8 +119,9 @@ sub check_depinfo_ring($$) {
   }
 
   for my $key (keys %$dinfo) {
+    my $source = $dinfo->{$key}->{source};
     next if ($key =~ m/^MY/ || $key =~ m/^texlive-specs-/ || $key =~ m/^kernel-/);
-    if (!defined $pkgdeps{$key}) {
+    if (!defined $pkgdeps{$source}) {
       print "osc rdelete -m cleanup $prj $key\n";
       if ($nextprj) {
 	print "osc linkpac -c openSUSE:Factory $key $nextprj\n";
@@ -120,6 +132,7 @@ sub check_depinfo_ring($$) {
 
 check_depinfo_ring('openSUSE:Factory:Build', 'openSUSE:Factory:Core');
 check_depinfo_ring('openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops');
+check_depinfo_ring('openSUSE:Factory:MainDesktops', 'openSUSE:Factory:DVD');
 
 my $fact = fetch_prj('openSUSE:Factory');
 
