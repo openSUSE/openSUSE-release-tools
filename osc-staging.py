@@ -21,9 +21,9 @@ def _print_version(self):
 def _get_build_res(apiurl, prj, repo=None, arch=None):
     query = {}
     query['lastbuild'] = 1
-    if repo != None:
+    if repo is not None:
         query['repository'] = repo
-    if arch != None:
+    if arch is not None:
         query['arch'] = arch
     u = makeurl(apiurl, ['build', prj, '_result'], query=query)
     f = http_GET(u)
@@ -89,7 +89,7 @@ def _staging_check(self, project, check_everything, opts):
         print "Comparing build statuses, this may take a while"
 
     # Iterate through all repos/archs
-    if root != None and root.find('result') != None:
+    if root is not None and root.find('result') is not None:
         for results in root.findall('result'):
             if ret != 0 and not check_everything:
                 break
@@ -178,7 +178,7 @@ def _staging_create(self, trg, opts):
             src_pkg = None
 
     # Set staging name and maybe parent
-    if trg_pkg != None:
+    if trg_pkg is not None:
         stg_prj = trg_prj + ":Staging:" + trg_pkg
 
     if re.search(':Staging:',trg):
@@ -234,23 +234,23 @@ def _staging_create(self, trg, opts):
     # add maintainers of source project
     trg_meta_url = make_meta_url("prj", src_prj, apiurl)
     data = http_GET(trg_meta_url).readlines()
-    perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
+    perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) is not None)), data))
     
     # add maintainers of source package
-    if src_pkg != None:
+    if src_pkg is not None:
         trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), apiurl)
         data = http_GET(trg_meta_url).readlines()
-        perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) != None)), data))
+        perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) is not None)), data))
 
     # create xml for new project
     new_xml  = '<project name="%s">\n'%(stg_prj)
-    if req != None:
+    if req is not None:
         new_xml += '  <title>Staging project for package %s (sr#%s)</title>\n'%(trg_pkg, req.reqid)
     else:
         new_xml += '  <title>Staging project "%s"</title>\n'%(trg)
     new_xml += '  <description></description>\n'
     new_xml += '  <link project="%s"/>\n'%(trg_prj)
-    if req != None:
+    if req is not None:
         new_xml += '  <person userid="%s" role="maintainer"/>\n'%(req.get_creator())
     new_xml += perm
     new_xml += '  <build><enable/></build>\n'
@@ -272,7 +272,7 @@ def _staging_create(self, trg, opts):
     http_PUT(f.url, file=f.filename)
 
     # link package there
-    if src_pkg != None and trg_pkg != None:
+    if src_pkg is not None and trg_pkg is not None:
         print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
         link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
     print
@@ -311,7 +311,7 @@ def _staging_submit_devel(self, project, opts):
     apiurl = self.get_api_url()
     chng = _get_changed(apiurl, project, True)
     msg = "Fixes from staging project %s" % project
-    if opts.message != None:
+    if opts.message is not None:
         msg = opts.message
     if len(chng) > 0:
         for pair in chng:
