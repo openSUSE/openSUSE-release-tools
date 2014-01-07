@@ -73,6 +73,12 @@ def _checker_accept_request(self, opts, id, msg):
         r = http_POST(url, data="Please review build success")
     except urllib2.HTTPError, err:
         pass # there is no good mean to undo
+    query = { 'cmd': 'addreview', 'by_group':'factory-staging' }
+    url = makeurl(opts.apiurl, ['request', str(id)], query)
+    try:
+        r = http_POST(url, data="Check Staging Project")
+    except urllib2.HTTPError, err:
+        pass # there is no good mean to undo
     return 0
 
 def _checker_one_request(self, rq, cmd, opts):
