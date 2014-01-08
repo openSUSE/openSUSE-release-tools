@@ -24,8 +24,6 @@ def _checkercore_change_review_state(self, opts, id, newstate, by_group='', by_u
     if supersed: query['superseded_by'] = supersed
 #    if message: query['comment'] = message
     u = makeurl(opts.apiurl, ['request', str(id)], query=query)
-    print "POST", u
-    return 
     f = http_POST(u, data=message)
     root = ET.parse(f).getroot()
     return root.attrib['code']
@@ -68,7 +66,7 @@ def _checkercore_one_request(self, rq, cmd, opts):
         print "ring", ring
         return
 
-    self._checker_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
+    self._checkercore_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
 
 def do_check_core(self, subcmd, opts, *args):
     """${cmd_name}: check_core review of submit requests.
