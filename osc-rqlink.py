@@ -48,6 +48,7 @@ def do_rqlink(self, subcmd, opts, *args):
     url =  makeurl(opts.apiurl, ['source', prj, pkg], { 'rev': rev, 'expand': 1 })
     f = http_GET(url)
     rev =  ET.parse(f).getroot().attrib['srcmd5']
+    print "osc linkpac -r %s %s/%s %s/%s" % (rev, prj, pkg, args[1], tpkg)
     link_pac(prj, pkg, args[1], tpkg, force=True, rev=rev)
     #print pkg, prj, rev
 
