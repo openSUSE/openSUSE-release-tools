@@ -31,7 +31,8 @@ def do_rqlink(self, subcmd, opts, *args):
 
     opts.apiurl = self.get_api_url()
 
-    url = makeurl(opts.apiurl, ['request', args[0]])
+    rqid = args[0]
+    url = makeurl(opts.apiurl, ['request', rqid])
     f = http_GET(url)
     rq =  ET.parse(f).getroot()
     act = rq.findall('action')[0]
@@ -50,6 +51,19 @@ def do_rqlink(self, subcmd, opts, *args):
     rev =  ET.parse(f).getroot().attrib['srcmd5']
     print "osc linkpac -r %s %s/%s %s/%s" % (rev, prj, pkg, args[1], tpkg)
     link_pac(prj, pkg, args[1], tpkg, force=True, rev=rev)
+
+    url =  makeurl(opts.apiurl, ['source', args[1], '_meta'])
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    title = root.find('title')
+    text = title.text
+    rqtext = "%s(%s)" % (pkg, rqid)
+    if text is None:
+       text = rqtext
+    else:
+       text = text + (", %s" % rqtext)
+    title.text = text
+    http_PUT(url, data=ET.tostring(root))
     #print pkg, prj, rev
 
 #Local Variables:

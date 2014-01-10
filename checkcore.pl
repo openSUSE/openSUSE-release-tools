@@ -60,7 +60,7 @@ sub fill_arrays($$$) {
       }
       for my $s (@$subpkgs) {
 	  if (defined $bin2src{$s}) {
-	      warn "bin $s defined twice\n";
+	      warn "bin $s defined twice $prj $source - $bin2src{$s}\n";
 	  }
 	  $bin2src{$s} = $source;
       }
