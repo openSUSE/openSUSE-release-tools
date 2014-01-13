@@ -57,16 +57,29 @@ def _checkercore_one_request(self, rq, cmd, opts):
         e.append('no target/project in request %d, action %d; ' % (id, act_id))
     # it is no error, if the target package dies not exist
 
-    print "Request(%d): %s" % (id, tpkg)
-
     ring = self.rings.get(tpkg, None)
     if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
         msg = "Not core enough for our staging"
     else:
-        print "ring", ring
+        print "Request(%d): %s -> %s" % (id, tpkg, ring)
+        print self.packages_staged.get(tpkg, '')
         return
 
     self._checkercore_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
+
+def _checker_parse_staging_prjs(self, opts):
+    self.packages_staged = dict()
+
+    for letter in range(ord('A'), ord('I')):
+        prj = "openSUSE:Factory:Staging:%s" % chr(letter)
+        u = makeurl(opts.apiurl, ['source', prj, '_meta'])
+        f = http_GET(u)
+        title = ET.parse(f).getroot().find('title').text
+        if title is None: continue
+        for rq in title.split(','):
+            m = re.match(r" *([\w-]+)\((\d+)\)", rq)
+            if m is None: continue
+            self.packages_staged[m.group(1)] = (chr(letter), m.group(2))
 
 def do_check_core(self, subcmd, opts, *args):
     """${cmd_name}: check_core review of submit requests.
@@ -98,6 +111,7 @@ def do_check_core(self, subcmd, opts, *args):
         if (re.match('\d+', a)):
             ids[a] = 1
 
+    self._checker_parse_staging_prjs(opts)
     self.rings = self._checkercore_get_rings(opts)
 
     if (not len(ids)):
@@ -118,6 +132,7 @@ def do_check_core(self, subcmd, opts, *args):
             xml = ET.parse(f)
             root = xml.getroot()
             self._checkercore_one_request(root, args[0], opts)
+
 
 #Local Variables:
 #mode: python
