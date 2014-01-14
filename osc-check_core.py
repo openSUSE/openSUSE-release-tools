@@ -66,13 +66,15 @@ def _checkercore_one_request(self, rq, opts):
             stprj = 'openSUSE:Factory:Staging:%s' % self.letter_to_accept
             msg = 'ok, tested in %s' % stprj
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
-        elif int(stage_info[1]) != id:
+        elif stage_info[1] != 0 and int(stage_info[1]) != id:
+	    print stage_info
             print "osc rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
+	    return
         elif stage_info[1] != 0: # keep silent about those already asigned
             return
         else:
             print "Request(%d): %s -> %s" % (id, tpkg, ring)
-            print stage_info
+	    print "osc rqlink %s openSUSE:Factory:Staging:" % id
             return
 
     self._checkercore_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
