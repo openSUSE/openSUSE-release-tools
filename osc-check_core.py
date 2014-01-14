@@ -70,7 +70,7 @@ def _checkercore_one_request(self, rq, cmd, opts):
 def _checker_parse_staging_prjs(self, opts):
     self.packages_staged = dict()
 
-    for letter in range(ord('A'), ord('I')):
+    for letter in range(ord('A'), ord('J')):
         prj = "openSUSE:Factory:Staging:%s" % chr(letter)
         u = makeurl(opts.apiurl, ['source', prj, '_meta'])
         f = http_GET(u)
