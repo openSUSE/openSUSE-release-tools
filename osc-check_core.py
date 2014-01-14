@@ -37,7 +37,7 @@ def _checkercore_get_rings(self, opts):
             ret[entry.attrib['name']] = prj
     return ret
 
-def _checkercore_one_request(self, rq, cmd, opts):
+def _checkercore_one_request(self, rq, opts):
     if (opts.verbose):
         ET.dump(rq)
         print(opts)
@@ -59,11 +59,21 @@ def _checkercore_one_request(self, rq, cmd, opts):
 
     ring = self.rings.get(tpkg, None)
     if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
-        msg = "Not core enough for our staging"
+        msg = "ok"
     else:
-        print "Request(%d): %s -> %s" % (id, tpkg, ring)
-        print self.packages_staged.get(tpkg, '')
-        return
+        stage_info = self.packages_staged.get(tpkg, ('', 0))
+        if stage_info[0] == self.letter_to_accept and int(stage_info[1]) == id:
+            stprj = 'openSUSE:Factory:Staging:%s' % self.letter_to_accept
+            msg = 'ok, tested in %s' % stprj
+            delete_package(opts.apiurl, stprj, tpkg, msg='done')
+        elif int(stage_info[1]) != id:
+            print "osc rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
+        elif stage_info[1] != 0: # keep silent about those already asigned
+            return
+        else:
+            print "Request(%d): %s -> %s" % (id, tpkg, ring)
+            print stage_info
+            return
 
     self._checkercore_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
 
@@ -102,37 +112,28 @@ def do_check_core(self, subcmd, opts, *args):
 
     tmphome = None
 
-    if args[0] == 'skip':
-        for id in args[1:]:
-           self._checkcore_accept_request(opts, id, "skip review")
-        return
-    ids = {}
-    for a in args:
-        if (re.match('\d+', a)):
-            ids[a] = 1
-
     self._checker_parse_staging_prjs(opts)
     self.rings = self._checkercore_get_rings(opts)
 
-    if (not len(ids)):
-        # xpath query, using the -m, -r, -s options
-        where = "@by_group='factory-staging'+and+@state='new'"
+    self.letter_to_accept = None
+    if args[0] == 'accept':
+        self.letter_to_accept = args[1]
 
-        url = makeurl(opts.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
+    # xpath query, using the -m, -r, -s options
+    where = "@by_group='factory-staging'+and+@state='new'"
+
+    url = makeurl(opts.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for rq in root.findall('request'):
+        tprj = rq.find('action/target').get('project')
+        self._checkercore_one_request(rq, opts)
+
+    if self.letter_to_accept:
+        url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory:Staging:%s' % self.letter_to_accept])
         f = http_GET(url)
         root = ET.parse(f).getroot()
-        for rq in root.findall('request'):
-            tprj = rq.find('action/target').get('project')
-            self._checkercore_one_request(rq, args[0], opts)
-    else:
-        # we have a list, use them.
-        for id in ids.keys():
-            url = makeurl(opts.apiurl, ['request', id])
-            f = http_GET(url)
-            xml = ET.parse(f)
-            root = xml.getroot()
-            self._checkercore_one_request(root, args[0], opts)
-
+        print ET.tostring(root)
 
 #Local Variables:
 #mode: python
