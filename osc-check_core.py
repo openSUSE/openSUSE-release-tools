@@ -79,7 +79,7 @@ def _checkercore_one_request(self, rq, opts):
 
     self._checkercore_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
 
-def _checker_parse_staging_prjs(self, opts):
+def _checkercore_parse_staging_prjs(self, opts):
     self.packages_staged = dict()
 
     for letter in range(ord('A'), ord('J')):
@@ -92,6 +92,32 @@ def _checker_parse_staging_prjs(self, opts):
             m = re.match(r" *([\w-]+)\((\d+)\)", rq)
             if m is None: continue
             self.packages_staged[m.group(1)] = (chr(letter), m.group(2))
+
+def _checkercore_receive_sources(self, prj, sources, opts):
+    url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info' } )
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for si in root.findall('sourceinfo'):
+        sources[si.get('package')] = (si.get('srcmd5'), si.get('vrev'))
+    return sources
+
+def _checkercore_freeze_prjlink(self, prj, opts):
+    url = makeurl(opts.apiurl, ['source', prj, '_meta'])
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    sources = dict()
+    for link in root.findall('link'):
+        sources = self._checkercore_receive_sources(link.get('project'), sources, opts)
+    
+    flink = ET.Element('frozenlinks')
+    root = ET.SubElement(flink, 'frozenlink')
+    for package in sorted(sources.keys()):
+        si = sources[package]
+        ET.SubElement(root, 'package', { 'name': package, 'srcmd5': si[0], 'vrev': si[1] } )
+    url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
+    f = http_PUT(url, data=ET.tostring(flink))
+    root = ET.parse(f).getroot()
+    print ET.tostring(root)
 
 def do_check_core(self, subcmd, opts, *args):
     """${cmd_name}: check_core review of submit requests.
@@ -114,12 +140,15 @@ def do_check_core(self, subcmd, opts, *args):
 
     tmphome = None
 
-    self._checker_parse_staging_prjs(opts)
+    self._checkercore_parse_staging_prjs(opts)
     self.rings = self._checkercore_get_rings(opts)
 
     self.letter_to_accept = None
     if args[0] == 'accept':
         self.letter_to_accept = args[1]
+    elif args[0] == 'freeze':
+        self._checkercore_freeze_prjlink(args[1], opts)
+        return # don't
 
     # xpath query, using the -m, -r, -s options
     where = "@by_group='factory-staging'+and+@state='new'"
