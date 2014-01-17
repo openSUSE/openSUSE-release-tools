@@ -131,7 +131,7 @@ sub check_depinfo_ring($$) {
 }
 
 check_depinfo_ring('openSUSE:Factory:Build', 'openSUSE:Factory:Core');
-check_depinfo_ring('openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops');
+#check_depinfo_ring('openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops');
 #check_depinfo_ring('openSUSE:Factory:MainDesktops', 'openSUSE:Factory:DVD');
 
 my $fact = fetch_prj('openSUSE:Factory');

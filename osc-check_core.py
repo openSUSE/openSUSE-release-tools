@@ -93,12 +93,15 @@ def _checkercore_parse_staging_prjs(self, opts):
             if m is None: continue
             self.packages_staged[m.group(1)] = (chr(letter), m.group(2))
 
-def _checkercore_receive_sources(self, prj, sources, opts):
+def _checkercore_receive_sources(self, prj, sources, flink, opts):
     url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info' } )
     f = http_GET(url)
     root = ET.parse(f).getroot()
+
     for si in root.findall('sourceinfo'):
-        sources[si.get('package')] = (si.get('srcmd5'), si.get('vrev'))
+        package = si.get('package')
+        ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev') })
+        sources[package] = 1
     return sources
 
 def _checkercore_freeze_prjlink(self, prj, opts):
@@ -106,14 +109,14 @@ def _checkercore_freeze_prjlink(self, prj, opts):
     f = http_GET(url)
     root = ET.parse(f).getroot()
     sources = dict()
-    for link in root.findall('link'):
-        sources = self._checkercore_receive_sources(link.get('project'), sources, opts)
-    
     flink = ET.Element('frozenlinks')
-    root = ET.SubElement(flink, 'frozenlink')
-    for package in sorted(sources.keys()):
-        si = sources[package]
-        ET.SubElement(root, 'package', { 'name': package, 'srcmd5': si[0], 'vrev': si[1] } )
+    links = root.findall('link')
+    links.reverse()
+    for link in links:
+        prj = link.get('project')
+        fl = ET.SubElement(flink, 'frozenlink', { 'project': prj } )
+        sources = self._checkercore_receive_sources(prj, sources, fl, opts)
+    
     url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
     f = http_PUT(url, data=ET.tostring(flink))
     root = ET.parse(f).getroot()
