@@ -667,10 +667,11 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
         binaries = ET.parse(http_GET(url)).getroot()
         for bin_ in binaries.findall('binary'):
             fn = bin_.attrib['filename']
+            mt = bin_.attrib['mtime']
             result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', fn)
             if not result: 
                 if fn == 'rpmlint.log':
-                    files.append((fn, '', ''))
+                    files.append((fn, '', '', mt))
                 continue
             pname = result.group(1)
             if pname.endswith('-debuginfo') or pname.endswith('-debuginfo-32bit'):
@@ -679,7 +680,7 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
                 continue
             if result.group(4) == 'src':
                 continue
-            files.append((fn, pname, result.group(4)))
+            files.append((fn, pname, result.group(4), mt))
     except urllib2.HTTPError, e:
         pass
         # if not ignore:
@@ -687,11 +688,13 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
     return files
 
 
-def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target):
+def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target, mtime):
     if os.path.exists(target):
-        return
+        # we need to check the mtime too as the file might get updated
+        cur = os.path.getmtime(target)
+        if mtime > cur:
+            return
     get_binary_file(apiurl, prj, repo, arch, file, package = package, target_filename = target)
-
 
 def _get_verifymd5(self, p, rev):
     try:
@@ -726,21 +729,21 @@ def _check_repo_download(self, p, opts):
         # we can assume x86_64 is there
         todownload = []
         for fn in self._check_repo_repo_list(p.sproject, repo, 'x86_64', p.spackage, opts):
-            todownload.append(('x86_64', fn[0]))
+            todownload.append(('x86_64', fn[0], fn[3]))
 
         # now fetch -32bit packs
         for fn in self._check_repo_repo_list(p.sproject, repo, 'i586', p.spackage, opts):
             if fn[2] == 'x86_64':
-                todownload.append(('i586', fn[0]))
+                todownload.append(('i586', fn[0], fn[3]))
 
         p.downloads[repo] = []
-        for arch, fn in todownload:
+        for arch, fn, mt in todownload:
             repodir = os.path.join(opts.downloads, p.spackage, repo)
             if not os.path.exists(repodir):
               os.makedirs(repodir)
             t = os.path.join(repodir, fn)
             self._check_repo_get_binary(opts.apiurl, p.sproject, repo, 
-                                        arch, p.spackage, fn, t)
+                                        arch, p.spackage, fn, t, mt)
             p.downloads[repo].append(t)
             if fn.endswith('.rpm'):
                 pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t], 
