@@ -13,7 +13,7 @@ my $baseurl = "https://build.opensuse.org";
 
 my %ringed;
 my %toignore;
-for my $i (qw(kernel-syms kernel-xen glibc.i686 openSUSE-release kernel-desktop kernel-default kernel-pae Test-DVD-x86_64 kiwi-image-livecd-gnome.x86_64 kiwi-image-livecd-kde.x86_64 package-lists-kde.x86_64 package-lists-gnome.x86_64)) {
+for my $i (qw(kernel-syms kernel-xen glibc.i686 openSUSE-release kernel-desktop kernel-default kernel-pae Test-DVD-x86_64 kiwi-image-livecd-gnome.x86_64 kiwi-image-livecd-kde.x86_64 package-lists-kde.x86_64 package-lists-gnome.x86_64 dbus-1-x11 graphviz-plugins poppler-qt)) {
     $toignore{$i} = 1;
 }
 
