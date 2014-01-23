@@ -667,7 +667,7 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
         binaries = ET.parse(http_GET(url)).getroot()
         for bin_ in binaries.findall('binary'):
             fn = bin_.attrib['filename']
-            mt = bin_.attrib['mtime']
+            mt = int(bin_.attrib['mtime'])
             result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', fn)
             if not result: 
                 if fn == 'rpmlint.log':
