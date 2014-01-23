@@ -692,7 +692,7 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
     if os.path.exists(target):
         # we need to check the mtime too as the file might get updated
         cur = os.path.getmtime(target)
-        if mtime > cur:
+        if cur > mtime:
             return
     get_binary_file(apiurl, prj, repo, arch, file, package = package, target_filename = target)
 
