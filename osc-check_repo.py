@@ -1013,6 +1013,10 @@ def _check_repo_group(self, id_, reqs, opts):
             dirstolink.append((p, r, p.downloads[r]))
         reposets.append(dirstolink)
 
+    if len(reposets) == 0:
+      print 'NO REPOS'
+      return
+
     for dirstolink in reposets:
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
