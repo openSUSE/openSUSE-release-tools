@@ -113,9 +113,9 @@ def _checkercore_freeze_prjlink(self, prj, opts):
     links = root.findall('link')
     links.reverse()
     for link in links:
-        prj = link.get('project')
-        fl = ET.SubElement(flink, 'frozenlink', { 'project': prj } )
-        sources = self._checkercore_receive_sources(prj, sources, fl, opts)
+        lprj = link.get('project')
+        fl = ET.SubElement(flink, 'frozenlink', { 'project': lprj } )
+        sources = self._checkercore_receive_sources(lprj, sources, fl, opts)
     
     url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
     f = http_PUT(url, data=ET.tostring(flink))
