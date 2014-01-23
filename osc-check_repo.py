@@ -1037,9 +1037,10 @@ def _check_repo_group(self, id_, reqs, opts):
         #ret = os.waitpid(p.pid, 0)[1]
         output, _ = p.communicate()
         ret = p.returncode
-	if not ret: # skip the others
+	if ret == 0: # skip the others
           for p, repo, downloads in dirstolink: 	
 		p.goodrepo = repo
+	  break
     os.unlink(params_file.name)
     
     updated = dict()
