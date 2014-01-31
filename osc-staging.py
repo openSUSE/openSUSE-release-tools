@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # (C) 2013 mhrusecky@suse.cz, openSUSE.org
 # (C) 2013 tchvatal@suse.cz, openSUSE.org
@@ -18,24 +18,24 @@ def _print_version(self):
 
 # Get last build results (optionally only for specified repo/arch)
 # Works even when rebuild is triggered
-def _get_build_res(apiurl, prj, repo=None, arch=None):
+def _get_build_res(opts, prj, repo=None, arch=None):
     query = {}
     query['lastbuild'] = 1
     if repo is not None:
         query['repository'] = repo
     if arch is not None:
         query['arch'] = arch
-    u = makeurl(apiurl, ['build', prj, '_result'], query=query)
+    u = makeurl(opts.apiurl, ['build', prj, '_result'], query=query)
     f = http_GET(u)
     return f.readlines()
 
-def _get_changed(apiurl, project, everything):
+def _get_changed(opts, project, everything):
     ret = []
     # Check for local changes
-    for pkg in meta_get_packagelist(apiurl, project):
+    for pkg in meta_get_packagelist(opts.apiurl, project):
         if len(ret) != 0 and not everything:
             break
-        f = http_GET(makeurl(apiurl, ['source', project, pkg]))
+        f = http_GET(makeurl(opts.apiurl, ['source', project, pkg]))
         linkinfo = ET.parse(f).getroot().find('linkinfo')
         if linkinfo is None:
             ret.append({'pkg': pkg, 'code': 'NOT_LINK', 'msg': 'Not a source link'})
@@ -46,7 +46,7 @@ def _get_changed(apiurl, project, everything):
         t = linkinfo.get('project')
         p = linkinfo.get('package')
         r = linkinfo.get('revision')
-        if len(server_diff(apiurl, t, p, r, project, pkg, None, True)) > 0:
+        if len(server_diff(opts.apiurl, t, p, r, project, pkg, None, True)) > 0:
             ret.append({'pkg': pkg, 'code': 'MODIFIED', 'msg': 'Has local modifications', 'pprj': t, 'ppkg': p})
             continue
     return ret
@@ -61,10 +61,9 @@ def _staging_check(self, project, check_everything, opts):
     :param everything: do not stop on first verification failure
     :param opts: pointer to options
     """
-    apiurl = self.get_api_url()
 
     ret = 0
-    chng = _get_changed(apiurl, project, check_everything)
+    chng = _get_changed(opts.apiurl, project, check_everything)
     if len(chng) > 0:
         for pair in chng:
             print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
@@ -78,11 +77,11 @@ def _staging_check(self, project, check_everything, opts):
     if ret == 0 or check_everything:
         print "Getting build status, this may take a while"
         # Get staging project results
-        f = _get_build_res(apiurl, project)
+        f = _get_build_res(opts.apiurl, project)
         root = ET.fromstring(''.join(f))
 
         # Get parent project
-        m_url = make_meta_url("prj", project, apiurl)
+        m_url = make_meta_url("prj", project, opts.apiurl)
         m_data = http_GET(m_url).readlines()
         m_root = ET.fromstring(''.join(m_data))
 
@@ -103,7 +102,7 @@ def _staging_check(self, project, check_everything, opts):
                 print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
                 ret |= 4
                 continue
-            f = _get_build_res(apiurl, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
+            f = _get_build_res(opts.apiurl, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
             p_root = ET.fromstring(''.join(f))
 
             # Find corresponding set of results in parent project
@@ -150,13 +149,12 @@ def _staging_create(self, trg, opts):
     :param opts: pointer to options
     """
 
-    apiurl = self.get_api_url()
     req = None
 
     # We are dealing with sr
     if re.match('^\d+$', trg):
         # read info from sr
-        req = get_request(apiurl, trg)
+        req = get_request(opts.apiurl, trg)
         act = req.get_actions("submit")[0]
 
         trg_prj = act.tgt_project
@@ -189,7 +187,7 @@ def _staging_create(self, trg, opts):
 
     # test if staging project exists
     found = 1
-    url = make_meta_url('prj', stg_prj, apiurl)
+    url = make_meta_url('prj', stg_prj, opts.apiurl)
     try:
        data = http_GET(url).readlines()
     except HTTPError as e:
@@ -205,7 +203,7 @@ def _staging_create(self, trg, opts):
             exit(1)
  
     # parse metadata from parent project
-    trg_meta_url = make_meta_url("prj", trg_prj, apiurl)
+    trg_meta_url = make_meta_url("prj", trg_prj, opts.apiurl)
     data = http_GET(trg_meta_url).readlines()
 
     dis_repo = []
@@ -232,13 +230,13 @@ def _staging_create(self, trg, opts):
                 repos.append(re.sub(r'.*name="([^"]+)".*', r'\1', line).strip())
    
     # add maintainers of source project
-    trg_meta_url = make_meta_url("prj", src_prj, apiurl)
+    trg_meta_url = make_meta_url("prj", src_prj, opts.apiurl)
     data = http_GET(trg_meta_url).readlines()
     perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) is not None)), data))
     
     # add maintainers of source package
     if src_pkg is not None:
-        trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), apiurl)
+        trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), opts.apiurl)
         data = http_GET(trg_meta_url).readlines()
         perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) is not None)), data))
 
@@ -267,7 +265,7 @@ def _staging_create(self, trg, opts):
 
     # creation of new staging project
     print('Creating staging project "%s"...'%(stg_prj))
-    url = make_meta_url('prj',stg_prj,apiurl,True,False)
+    url = make_meta_url('prj',stg_prj,opts.apiurl,True,False)
     f = metafile(url, new_xml, False)
     http_PUT(f.url, file=f.filename)
 
@@ -285,8 +283,7 @@ def _staging_remove(self, project, opts):
     :param project: staging project to delete
     :param opts: pointer to options
     """
-    apiurl = self.get_api_url()
-    chng = _get_changed(apiurl, project, True)
+    chng = _get_changed(opts, project, True)
     if len(chng) > 0:
         print('Staging project "%s" is not clean:'%(project))
         print('')
@@ -298,18 +295,16 @@ def _staging_remove(self, project, opts):
         if not re.search("^\s*[Yy]", answer):
             print('Aborting...')
             exit(1)
-    delete_project(apiurl, project, force=True, msg=None)
+    delete_project(opts.apiurl, project, force=True, msg=None)
     print("Deleted.")
     return
 
 def _staging_submit_devel(self, project, opts):
     """
     Generate new review requests for devel-projects based on our staging changes.
-    :param apiurl: pointer to obs api url link
     :param project: staging project to submit into devel projects
     """
-    apiurl = self.get_api_url()
-    chng = _get_changed(apiurl, project, True)
+    chng = _get_changed(opts, project, True)
     msg = "Fixes from staging project %s" % project
     if opts.message is not None:
         msg = opts.message
@@ -325,7 +320,7 @@ def _staging_submit_devel(self, project, opts):
                 action_xml += '   <state name="new"/> <description>%s</description>' % msg
                 action_xml += '</request>'
 
-                u = makeurl(apiurl, ['request'], query='cmd=create&addrevision=1')
+                u = makeurl(opts.apiurl, ['request'], query='cmd=create&addrevision=1')
                 f = http_POST(u, data=action_xml)
 
                 root = ET.parse(f).getroot()
@@ -334,6 +329,115 @@ def _staging_submit_devel(self, project, opts):
         print("No changes to submit")
     return
 
+def _staging_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
+    """ taken from osc/osc/core.py, improved:
+        - verbose option added,
+        - empty by_user=& removed.
+        - numeric id can be int().
+    """
+    query = {'cmd': 'changereviewstate', 'newstate': newstate }
+    if by_group:  query['by_group'] = by_group
+    if by_user:   query['by_user'] = by_user
+    if supersed: query['superseded_by'] = supersed
+#    if message: query['comment'] = message
+    u = makeurl(opts.apiurl, ['request', str(id)], query=query)
+    f = http_POST(u, data=message)
+    root = ET.parse(f).getroot()
+    return root.attrib['code']
+
+def _staging_get_rings(self, opts):
+    ret = dict()
+    for prj in ['openSUSE:Factory:Build', 'openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops', 'openSUSE:Factory:DVD']:
+        u = makeurl(opts.apiurl, ['source', prj])
+        f = http_GET(u)
+        for entry in ET.parse(f).getroot().findall('entry'):
+            ret[entry.attrib['name']] = prj
+    return ret
+
+def _staging_one_request(self, rq, opts):
+    if (opts.verbose):
+        ET.dump(rq)
+        print(opts)
+    id = int(rq.get('id'))
+    act_id = 0
+    approved_actions = 0
+    actions = rq.findall('action')
+    act = actions[0]
+        
+    tprj = act.find('target').get('project')
+    tpkg = act.find('target').get('package')
+
+    e = []
+    if not tpkg:
+        e.append('no target/package in request %d, action %d; ' % (id, act_id))
+    if not tprj:
+        e.append('no target/project in request %d, action %d; ' % (id, act_id))
+    # it is no error, if the target package dies not exist
+
+    ring = self.rings.get(tpkg, None)
+    if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
+        msg = "ok"
+    else:
+        stage_info = self.packages_staged.get(tpkg, ('', 0))
+        if stage_info[0] == self.letter_to_accept and int(stage_info[1]) == id:
+            stprj = 'openSUSE:Factory:Staging:%s' % self.letter_to_accept
+            msg = 'ok, tested in %s' % stprj
+            delete_package(opts.apiurl, stprj, tpkg, msg='done')
+        elif stage_info[1] != 0 and int(stage_info[1]) != id:
+	    print stage_info
+            print "osc rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
+	    return
+        elif stage_info[1] != 0: # keep silent about those already asigned
+            return
+        else:
+            print "Request(%d): %s -> %s" % (id, tpkg, ring)
+	    print "osc rqlink %s openSUSE:Factory:Staging:" % id
+            return
+
+    self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
+
+def _staging_parse_staging_prjs(self, opts):
+    self.packages_staged = dict()
+
+    for letter in range(ord('A'), ord('J')):
+        prj = "openSUSE:Factory:Staging:%s" % chr(letter)
+        u = makeurl(opts.apiurl, ['source', prj, '_meta'])
+        f = http_GET(u)
+        title = ET.parse(f).getroot().find('title').text
+        if title is None: continue
+        for rq in title.split(','):
+            m = re.match(r" *([\w-]+)\((\d+)\)", rq)
+            if m is None: continue
+            self.packages_staged[m.group(1)] = (chr(letter), m.group(2))
+
+def _staging_receive_sources(self, prj, sources, flink, opts):
+    url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info' } )
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+
+    for si in root.findall('sourceinfo'):
+        package = si.get('package')
+        ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev') })
+        sources[package] = 1
+    return sources
+
+def _staging_freeze_prjlink(self, prj, opts):
+    url = makeurl(opts.apiurl, ['source', prj, '_meta'])
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    sources = dict()
+    flink = ET.Element('frozenlinks')
+    links = root.findall('link')
+    links.reverse()
+    for link in links:
+        lprj = link.get('project')
+        fl = ET.SubElement(flink, 'frozenlink', { 'project': lprj } )
+        sources = self._staging_receive_sources(lprj, sources, fl, opts)
+    
+    url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
+    f = http_PUT(url, data=ET.tostring(flink))
+    root = ET.parse(f).getroot()
+    print ET.tostring(root)
 
 @cmdln.option('-e', '--everything', action='store_true', dest='everything',
               help='during check do not stop on first first issue and show them all')
@@ -357,20 +461,24 @@ def do_staging(self, subcmd, opts, *args):
         into their respective devel projects to obtain approval from maitnainers for pushing the
         changes to openSUSE:Factory
 
+    "freeze" will freeze the sources of the project's links (not affecting the packages actually in)
+    
+    "accept" will accept all requests openSUSE:Factory:Staging:<LETTER>
+
+    "list" will pick the requests not in rings
+
     Usage:
         osc staging check [--everything] REPO
         osc staging create [--parent project] SR#
         osc staging create [--parent project] PROJECT[/PACKAGE]
         osc staging remove REPO
-        osc stating submit-devel [-m message] REPO
+        osc staging submit-devel [-m message] REPO
+        osc staging freeze PROJECT
+        osc staging list
+        osc staging accept LETTER
     """
     if opts.version:
         self._print_version()
-
-    # available commands
-    cmds = ['check', 'create', 'c', 'remove', 'r', 'submit-devel', 's']
-    if not args or args[0] not in cmds:
-        raise oscerr.WrongArgs('Unknown stagings action. Choose one of the %s.'%(', '.join(cmds)))
 
     # verify the argument counts match the commands
     cmd = args[0]
@@ -380,6 +488,12 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 2
     elif cmd in ['create', 'c']:
         min_args, max_args = 1, 2
+    elif cmd in ['list']:
+        min_args, max_args = 0, 0
+    elif cmd in ['accept']:
+        min_args, max_args = 1, 1
+    elif cmd in ['freeze']:
+        min_args, max_args = 1, 1
     else:
         raise RuntimeError('Unknown command: %s'%(cmd))
     if len(args) - 1 < min_args:
@@ -388,12 +502,16 @@ def do_staging(self, subcmd, opts, *args):
         raise oscerr.WrongArgs('Too many arguments.')
 
     # init the obs access
-    apiurl = self.get_api_url()
-    
+    opts.apiurl = self.get_api_url()
+    opts.verbose = False
+
     # check for the opts
     staging_check_everything = False
     if opts.everything:
         staging_check_everything = True
+
+    self._staging_parse_staging_prjs(opts)
+    self.rings = self._staging_get_rings(opts)
 
     # call the respective command and parse args by need
     if cmd in ['push', 'p']:
@@ -411,3 +529,26 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['submit-devel', 's']:
         project = args[1]
         self._staging_submit_devel(project, opts)
+    elif cmd in ['freeze']:
+        self._staging_freeze_prjlink(args[1], opts)
+    elif cmd in ['accept', 'list']:
+        self.letter_to_accept = None
+        if cmd == 'accept':
+            self.letter_to_accept = args[1]
+
+        # xpath query, using the -m, -r, -s options
+        where = "@by_group='factory-staging'+and+@state='new'"
+
+        url = makeurl(opts.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        for rq in root.findall('request'):
+            tprj = rq.find('action/target').get('project')
+            self._staging_one_request(rq, opts)
+
+        if self.letter_to_accept:
+            url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory:Staging:%s' % self.letter_to_accept])
+            f = http_GET(url)
+            root = ET.parse(f).getroot()
+            print ET.tostring(root)
+
