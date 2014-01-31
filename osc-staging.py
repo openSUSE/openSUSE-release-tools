@@ -410,14 +410,31 @@ def _staging_parse_staging_prjs(self, opts):
             if m is None: continue
             self.packages_staged[m.group(1)] = (chr(letter), m.group(2))
 
+def _staging_check_one_source(self, flink, si, opts):
+    package = si.get('package')
+    # we have to check if its a link within the staging project
+    # in this case we need to keep the link as is, and not freezing
+    # the target. Otherwise putting kernel-source into staging prj
+    # won't get updated kernel-default (and many other cases)
+    for linked in si.findall('linked'):
+        if linked.get('project') in self.projectlinks:
+            # take the unexpanded md5 from Factory link
+            url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory', package], { 'view': 'info' })
+            #print package, linked.get('package'), linked.get('project')
+            f = http_GET(url)
+            proot = ET.parse(f).getroot()
+            ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': proot.get('lsrcmd5'), 'vrev': si.get('vrev') })
+            return package
+    ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev') })
+    return package
+
 def _staging_receive_sources(self, prj, sources, flink, opts):
     url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info' } )
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
     for si in root.findall('sourceinfo'):
-        package = si.get('package')
-        ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev') })
+        package = self._staging_check_one_source(flink, si, opts)
         sources[package] = 1
     return sources
 
@@ -429,11 +446,15 @@ def _staging_freeze_prjlink(self, prj, opts):
     flink = ET.Element('frozenlinks')
     links = root.findall('link')
     links.reverse()
+    self.projectlinks = []
     for link in links:
-        lprj = link.get('project')
+        self.projectlinks.append(link.get('project'))
+
+    for lprj in self.projectlinks:
         fl = ET.SubElement(flink, 'frozenlink', { 'project': lprj } )
         sources = self._staging_receive_sources(lprj, sources, fl, opts)
     
+    from pprint import pprint
     url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
     f = http_PUT(url, data=ET.tostring(flink))
     root = ET.parse(f).getroot()
