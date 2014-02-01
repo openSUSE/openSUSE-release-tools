@@ -26,7 +26,7 @@ sub fetch_api($) {
 }
 
 sub fetch_prj($) {
-    my $prj = shift;
+   my $prj = shift;
 
     my $packages = XMLin(fetch_api("/status/project/$prj"))->{package};
     my %ret;
@@ -34,105 +34,8 @@ sub fetch_prj($) {
       next if defined $toignore{$p} || $p =~ /AGGR/;
       $ret{$p} = $packages->{$p}->{verifymd5} || $packages->{$p}->{srcmd5};
     }
-    return \%ret;
-  }
-
-my %pkgdeps;
-my %bin2src;
-
-sub fill_arrays($$$) {
-  my $prj = shift;
-  my $repo = shift;
-  my $arch = shift;
-
-  my $dinfo = XMLin(fetch_api("/build/$prj/$repo/$arch/_builddepinfo"));
-  $dinfo = $dinfo->{'package'};
-  for my $key (keys %$dinfo) {
-      my $p = $dinfo->{$key};
-      my $source = $p->{'source'};
-      if ($key =~ m/^preinstall/) {
-	  delete $dinfo->{$key};
-	  next;
-      }
-      my $subpkgs = $p->{'subpkg'};
-      if (!ref($subpkgs)) {
-	  $subpkgs = [$subpkgs];
-      }
-      for my $s (@$subpkgs) {
-	  if (defined $bin2src{$s}) {
-	      warn "bin $s defined twice $prj $source - $bin2src{$s}\n";
-	  }
-	  $bin2src{$s} = $source;
-      }
-  }
-  return $dinfo;
-}
-
-sub check_depinfo_ring($$) {
-  my $prj = shift;
-  my $nextprj = shift;
-
-  my $dinfo = fill_arrays($prj, 'standard', 'x86_64');
-  if ($prj eq 'openSUSE:Factory:Core') {
-      $dinfo->{MYdvd} = {};
-      $dinfo->{MYdvd}->{pkgdep} = ();
-      $dinfo->{MYdvd}->{source} = 'MYdvd';
-      my $dvd = XMLin(fetch_api("/build/openSUSE:Factory:Core/images/x86_64/Test-DVD-x86_64/_buildinfo"));
-      for my $bdep (@{$dvd->{bdep}}) {
-	  push(@{$dinfo->{MYdvd}->{pkgdep}}, $bdep->{name});
-      }
-  }
-  if ($prj eq 'openSUSE:Factory:MainDesktops') {
-    $dinfo->{MYcds} = {};
-    $dinfo->{MYcds}->{pkgdep} = ();
-    $dinfo->{MYcds}->{source} = 'MYcds';
-    push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-gnome');
-    push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-kde');
-
-  }
-
-  if ($prj eq 'openSUSE:Factory:Build') {
-  my @pi;
-  for my $line (split("\n", fetch_api("/build/$prj/standard/_buildconfig"))) {
-    if ($line =~ m/^Preinstall:/ || $line =~ m/^Support:/) {
-      $line =~ s,^Preinstall:,,;
-      $line =~ s,^Support:,,;
-      for my $prein (split(/\s+/, $line)) {
-	chomp $prein;
-	next unless $prein;
-	push(@pi, $prein);
-      }
-    }
-  }
-  
-  $dinfo->{MYinstall} = {};
-  $dinfo->{MYinstall}->{source} = 'MYinstall';
-  $dinfo->{MYinstall}->{pkgdep} = \@pi;
-  }
-
-  for my $key (keys %$dinfo) {
-    my $p = $dinfo->{$key};
-    for my $s (@{$p->{'pkgdep'}}) {
-      my $b = $bin2src{$s};
-      $pkgdeps{$b} = $p->{source};
-    }
-  }
-
-  for my $key (keys %$dinfo) {
-    my $source = $dinfo->{$key}->{source};
-    next if ($key =~ m/^MY/ || $key =~ m/^texlive-specs-/ || $key =~ m/^kernel-/);
-    if (!defined $pkgdeps{$source}) {
-      print "osc rdelete -m cleanup $prj $key\n";
-      if ($nextprj) {
-	print "osc linkpac -c openSUSE:Factory $key $nextprj\n";
-      }
-    }
-  }
-}
-
-check_depinfo_ring('openSUSE:Factory:Build', 'openSUSE:Factory:Core');
-check_depinfo_ring('openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops');
-#check_depinfo_ring('openSUSE:Factory:MainDesktops', 'openSUSE:Factory:DVD');
+   return \%ret;
+ }
 
 my $fact = fetch_prj('openSUSE:Factory');
 
