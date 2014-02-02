@@ -507,6 +507,8 @@ def _staging_check_depinfo_ring(self, prj, nextprj, opts):
       for bdep in root.findall('bdep'):
           if not bdep.attrib.has_key('name'): continue
           b = bdep.attrib['name']
+          if not self.bin2src.has_key(b): continue
+          b = self.bin2src[b]
           self.pkgdeps[b] = 'MYdvd'
 
   # if ($prj eq 'openSUSE:Factory:MainDesktops') {
