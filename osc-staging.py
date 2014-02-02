@@ -527,19 +527,12 @@ def _staging_check_depinfo_ring(self, prj, nextprj, opts):
                   b = self.bin2src[prein]
                   self.pkgdeps[b] = 'MYinstall'
 
-  #print self.sources, self.pkgdeps, self.bin2src
-
   for source in self.sources:
       #   next if ($key =~ m/^MY/ || $key =~ m/^texlive-specs-/ || $key =~ m/^kernel-/);
       if not self.pkgdeps.has_key(source):
-          print "PROBLEM", source
-  #   if (!defined $pkgdeps{$source}) {
-  #     print "osc rdelete -m cleanup $prj $key\n";
-  #     if ($nextprj) {
-  #       print "osc linkpac -c openSUSE:Factory $key $nextprj\n";
-  #     }
-  #   }
- 
+          print "osc rdelete -m cleanup", prj, source
+          if nextprj:
+              print "osc linkpac -c openSUSE:Factory", source, nextprj
 
 @cmdln.option('-e', '--everything', action='store_true', dest='everything',
               help='during check do not stop on first first issue and show them all')
