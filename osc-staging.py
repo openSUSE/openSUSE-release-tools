@@ -419,7 +419,7 @@ def _staging_check_one_source(self, flink, si, opts):
     for linked in si.findall('linked'):
         if linked.get('project') in self.projectlinks:
             # take the unexpanded md5 from Factory link
-            url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory', package], { 'view': 'info' })
+            url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory', package], { 'view': 'info', 'nofilename': '1' })
             #print package, linked.get('package'), linked.get('project')
             f = http_GET(url)
             proot = ET.parse(f).getroot()
@@ -429,7 +429,7 @@ def _staging_check_one_source(self, flink, si, opts):
     return package
 
 def _staging_receive_sources(self, prj, sources, flink, opts):
-    url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info' } )
+    url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info', 'nofilename': '1' } )
     f = http_GET(url)
     root = ET.parse(f).getroot()
 
