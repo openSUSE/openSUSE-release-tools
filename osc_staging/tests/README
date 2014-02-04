@@ -1,0 +1,18 @@
+Test structure with nose:
+
+To execute tests run "nosetests" in the tests directory.
+
+Each object is containing functions for the individual tests
+so split them per area of interest.
+
+In directory fixtures there are resulting xml files obtained
+from the OBS with osc api calls.
+
+Each xml then needs to be overriden in the test so we open
+proper file where needed.
+
+TODO:
+
+convert the patched http_GET to normal function which does mapping for urls -> files
+
+figure out why relative paths for osc commands do not work when executed from unittest
