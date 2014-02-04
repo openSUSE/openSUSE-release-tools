@@ -10,7 +10,6 @@ import unittest
 import httpretty
 
 import oscs
-
 import osc
 
 class TestApiCalls(unittest.TestCase):
@@ -27,6 +26,8 @@ class TestApiCalls(unittest.TestCase):
     def _register_pretty_url_get(self, url, filename):
         """
         Register specified url with specific filename in fixtures
+        :param url: url address to "open"
+        :param filename: name of the fixtures file
         """
 
         response = open(os.path.join(self._get_fixtures_dir(), filename), 'r')
