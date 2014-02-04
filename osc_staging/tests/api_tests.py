@@ -4,19 +4,51 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or later
 
+import os
 import contextlib
-import imp
 import unittest
-import mock
+import httpretty
 
-oscs = imp.load_source('oscs', '../osc-staging.py')
+import oscs
+
+import osc
 
 class TestApiCalls(unittest.TestCase):
     """
     Tests for various api calls to ensure we return expected content
     """
 
+    def _get_fixtures_dir(self):
+        """
+        Return path for fixtures
+        """
+        return os.path.join(os.getcwd(), 'tests/fixtures')
 
+    def _register_pretty_url_get(self, url, filename):
+        """
+        Register specified url with specific filename in fixtures
+        """
+
+        response = open(os.path.join(self._get_fixtures_dir(), filename), 'r')
+        content = response.read()
+        response.close()
+
+        httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=content)
+
+    def setUp(self):
+        """
+        Initialize the configuration so the osc is happy
+        """
+
+        oscrc = os.path.join(self._get_fixtures_dir(), 'oscrc')
+        osc.core.conf.get_config(override_conffile=oscrc,
+                                 override_no_keyring=True,
+                                 override_no_gnome_keyring=True)
+        os.environ['OSC_CONFIG'] = oscrc
+
+    @httpretty.activate
     def test_list_projects(self):
         """
         List projects and their content
@@ -27,12 +59,11 @@ class TestApiCalls(unittest.TestCase):
             'openSUSE:Factory:Staging:C',
             'openSUSE:Factory:Staging:D'
         ]
-        with mock_http_GET('staging-project-list.xml'):
-            self.assertEqual(prjlist,
-                        oscs._list_staging_projects('https://api.opensuse.org'))
 
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/search/project/id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')',
+                                      'staging-project-list.xml')
 
-@contextlib.contextmanager
-def mock_http_GET(url):
-    with mock.patch('osc.core.http_GET', return_value=open('./fixtures/{0}'.format(url), 'r')):
-        yield
+        # Ensure the output is equal to what we expect
+        self.assertEqual(prjlist,
+                         oscs.list_staging_projects('http://localhost'))

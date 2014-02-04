@@ -9,8 +9,8 @@ from osc import cmdln
 from osc import conf
 from osc import commandline
 
+from osc.core import *
 import osc
-import osc.core
 
 OSC_STAGING_VERSION='0.0.1'
 
@@ -19,16 +19,16 @@ def _print_version(self):
     print '%s'%(self.OSC_STAGING_VERSION)
     quit(0)
 
-def _list_staging_projects(apiurl):
+def list_staging_projects(apiurl):
     """
     list all current running staging projects
     """
     projects = []
 
-    url = osc.core.makeurl(apiurl, ['search', 'project', 'id?match=starts-with(@name, "openSUSE:Factory:Staging:"'] )
-    projxml = osc.core.http_GET(url)
+    url = makeurl(apiurl, ['search', 'project', 'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
+    projxml = http_GET(url)
 
-    root = osc.core.ET.parse(projxml).getroot()
+    root = ET.parse(projxml).getroot()
     for val in root.findall('project'):
         projects.append(val.get('name'))
     return projects
