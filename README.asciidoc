@@ -1,0 +1,38 @@
+Factory workflow plugin
+=======================
+
+This repository contains mainly plugin which will be used in new
+https://progress.opensuse.org/workflow/factory-proposal.html[factory workflow]
+to work with staging projects. This is currently highly work in progress and
+it builds on top of various tools that we accumulated over the past. These
+legacy tools are for now included in this repository for reference as well, but
+over the time as staging plugin will be taking over their functionality, they
+will get removed.
+
+This repository might also contain temporally scripts that will implement
+functionality we need from OBS. These are going to be workarounds only for time
+being and once functionality will get properly included in OBS, these helper
+scripts will get dropped as well.
+
+Installation
+------------
+
+Clone this repository:
+
+--------------------------------------------------------------------------------
+git clone https://github.com/openSUSE/osc-plugin-factory.git
+--------------------------------------------------------------------------------
+
+Link the +osc-staging.py+ either to +~/.osc-plugins+ or +/var/lib/osc-plugins+
+
+--------------------------------------------------------------------------------
+cd osc-plugin-factory
+ln -sr ./osc-staging.py ~/.osc-plugins
+--------------------------------------------------------------------------------
+
+Now you are done and all that is left is start using plugin, see help in
+regards of what you can do
+
+--------------------------------------------------------------------------------
+osc help staging
+--------------------------------------------------------------------------------
