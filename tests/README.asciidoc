@@ -1,0 +1,35 @@
+Testing
+=======
+
+Dependencies
+------------
+
+Test suite is using +nose+ and +httpretty+ for testing. You need these tho
+python modules installed to run tests. In openSUSE, you can do it using the
+following command as a root:
+
+--------------------------------------------------------------------------------
+zypper in python-nose python-httpretty
+--------------------------------------------------------------------------------
+
+Running tests
+-------------
+
+To run the tests, you need to be in the topmost directory of your checkout and
+run the following command there:
+
+--------------------------------------------------------------------------------
+nosetests
+--------------------------------------------------------------------------------
+
+Structure
+---------
+
+Each object is containing functions for the individual tests so split them per
+area of interest.
+
+In directory fixtures there are resulting xml files obtained from the OBS with
+osc api calls.
+
+Each xml then needs to be overridden in the test so we mock the right file with
+the proper url.
