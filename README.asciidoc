@@ -36,3 +36,14 @@ regards of what you can do
 --------------------------------------------------------------------------------
 osc help staging
 --------------------------------------------------------------------------------
+
+Testing
+-------
+
+Covering all functionality with test suite is currently work in progress. In
+general new functionality should be covered by tests in order to make sure we
+don't break it in future. Before refactoring, functions has to be covered by
+tests as well to ensure we don't break them.
+
+How to work with test suite is better described in
+link:tests/README.asciidoc[README] file in link:tests[tests] directory.
