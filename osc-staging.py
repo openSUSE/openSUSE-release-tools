@@ -21,8 +21,9 @@ def _print_version(self):
 
 def list_staging_projects(apiurl):
     """
-list all current running staging projects
-"""
+    list all current running staging projects
+    """
+
     projects = []
 
     url = makeurl(apiurl, ['search', 'project', 'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
