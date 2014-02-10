@@ -21,22 +21,150 @@ def _print_version(self):
     print '%s'%(self.OSC_STAGING_VERSION)
     quit(0)
 
-def list_staging_projects(apiurl):
+class StagingApi(object):
     """
-    List all current running staging projects
-    :param apiurl: url to the OBS api
-    :return list of known staging projects
+    Class containing various api calls to work with staging projects.
     """
 
-    projects = []
+    rings = ['openSUSE:Factory:Build',
+             'openSUSE:Factory:Core',
+             'openSUSE:Factory:MainDesktops',
+             'openSUSE:Factory:DVD']
+    ring_packages = dict()
+    apiurl = ""
 
-    url = makeurl(apiurl, ['search', 'project', 'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
-    projxml = http_GET(url)
+    def __init__(self, apiurl):
+        """
+        Initialize global variables
+        """
 
-    root = ET.parse(projxml).getroot()
-    for val in root.findall('project'):
-        projects.append(val.get('name'))
-    return projects
+        self.apiurl = apiurl
+        self.ring_packages = self._generate_ring_packages()
+
+
+    def _generate_ring_packages(self):
+        """
+        Generate dictionary with names of the rings
+        :return dictionary with ring names
+        """
+
+        ret = dict()
+
+        for prj in self.rings:
+            url = makeurl(self.apiurl, ['source', prj])
+            root = http_GET(url)
+            for entry in ET.parse(root).getroot().findall('entry'):
+                ret[entry.attrib['name']] = prj
+        return ret
+
+
+    def get_staging_projects(self):
+        """
+        Get all current running staging projects
+        :return list of known staging projects
+        """
+
+        projects = []
+
+        url = makeurl(self.apiurl, ['search', 'project', 'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
+        projxml = http_GET(url)
+
+        root = ET.parse(projxml).getroot()
+        for val in root.findall('project'):
+            projects.append(val.get('name'))
+        return projects
+
+
+    def staging_change_review_state(self, id, newstate, message):
+        """
+        Change review state of the staging request
+        :param id: id of the request
+        :param newstate: state of the new request
+        :param message: message for the review
+        """
+        """ taken from osc/osc/core.py, improved:
+            - verbose option added,
+            - empty by_user=& removed.
+            - numeric id can be int().
+        """
+        query = {'cmd': 'changereviewstate',
+                 'newstate': newstate,
+                 'by_group': 'factory-staging',
+                 'comment': message}
+
+        u = makeurl(self.apiurl, ['request', str(id)], query=query)
+        f = http_POST(u, data=message)
+        root = ET.parse(f).getroot()
+        return root.attrib['code']
+
+    def consolidate_review_request(self, request):
+        """
+        Accept review of requests that are not yet in
+        any ring so we don't delay their testing.
+        :param request: request to check
+        """
+
+        # FIXME: move this to activity class from api
+        # FIXME: verify the state of the submission not just the ring
+
+        # Consolidate all data from request
+        request_id = int(request.get('id'))
+        action = request.findall('action')
+        if not action:
+            raise oscerr.WrongArgs('Request {0} has no action'.format(request_id))
+        # we care only about first action
+        action = action[0]
+
+        # Where are we targeting the package
+        target_project = action.find('target').get('project')
+        target_package = action.find('target').get('package')
+
+        # If the values are empty it is no error
+        if not target_project or not target_pacakge:
+            e.append('no target/package in request {0}, action {1}; '.format(id, action))
+
+        # Verify the package ring
+        ring = self.ring_packages.get(tpkg, None)
+        if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
+            # accept the request here
+            message = "No need for staging, not in tested ring project"
+            self.staging_change_review_state(request_id, 'accepted', message)
+
+
+    def get_open_requests(self):
+        """
+        Get all requests with open review for staging project
+        that are not yet included in any staging project
+        :return list of pending open review requests
+        """
+
+        requests = []
+
+        # xpath query, using the -m, -r, -s options
+        where = "@by_group='factory-staging'+and+@state='new'"
+
+        url = makeurl(self.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+
+        for rq in root.findall('request'):
+            requests.append(rq)
+
+        return requests
+
+    def dispatch_open_requests(self):
+        """
+        Verify all requests and dispatch them to staging projects or approve them
+        """
+
+        # get all current pending requests
+        requests = self.get_open_requests()
+        # check if we can reduce it down by accepting some
+        for rq in requests:
+            self.consolidate_review_request(rq)
+
+        # FIXME: dispatch to various staging projects automatically
+
 
 def _get_parent(apirul, project, repo = "standard"):
     """

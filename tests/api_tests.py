@@ -8,6 +8,11 @@ import os
 import contextlib
 import unittest
 import httpretty
+# mock is part of python3.3
+try:
+    import unittest.mock
+except ImportError:
+    import mock
 
 import oscs
 import osc
@@ -50,6 +55,34 @@ class TestApiCalls(unittest.TestCase):
         os.environ['OSC_CONFIG'] = oscrc
 
     @httpretty.activate
+    def test_ring_packages(self):
+        """
+        Validate the creation of the rings.
+        """
+
+        # our content in the XML files
+        ring_packages = {'AGGR-antlr': 'openSUSE:Factory:MainDesktops',
+                         'Botan': 'openSUSE:Factory:DVD',
+                         'DirectFB': 'openSUSE:Factory:Core',
+                         'zlib': 'openSUSE:Factory:Build'}
+
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Build',
+                                      'build-project.xml')
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Core',
+                                      'core-project.xml')
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:MainDesktops',
+                                      'maindesktops-project.xml')
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:DVD',
+                                      'dvd-project.xml')
+
+        # Create the api object
+        api = oscs.StagingApi('http://localhost')
+        self.assertEqual(ring_packages,
+                         api.ring_packages)
+
+
+    @httpretty.activate
     def test_list_projects(self):
         """
         List projects and their content
@@ -61,10 +94,49 @@ class TestApiCalls(unittest.TestCase):
             'openSUSE:Factory:Staging:D'
         ]
 
+
         # Initiate the pretty overrides
         self._register_pretty_url_get('http://localhost/search/project/id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')',
                                       'staging-project-list.xml')
 
-        # Ensure the output is equal to what we expect
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            api = oscs.StagingApi('http://localhost')
+
+        # Compare the results
         self.assertEqual(prjlist,
-                         oscs.list_staging_projects('http://localhost'))
+                        api.get_staging_projects())
+
+    @httpretty.activate
+    def test_open_requests(self):
+        """
+        List projects and their content
+        """
+        requests = [
+        ]
+
+
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
+                                      'open-requests.xml')
+
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            api = oscs.StagingApi('http://localhost')
+
+        # get the open requests
+        requests = api.get_open_requests()
+        count = len(requests)
+
+        # Compare the results, we only care now that we got 2 of them not the content
+        self.assertEqual(2, count)
+
+
+# Here place all mockable functions
+@contextlib.contextmanager
+def mock_generate_ring_packages():
+    with mock.patch('oscs.StagingApi._generate_ring_packages', return_value={'AGGR-antlr': 'openSUSE:Factory:MainDesktops',
+                         'Botan': 'openSUSE:Factory:DVD',
+                         'DirectFB': 'openSUSE:Factory:Core',
+                         'zlib': 'openSUSE:Factory:Build'}):
+        yield
