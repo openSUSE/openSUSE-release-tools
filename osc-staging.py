@@ -92,10 +92,8 @@ class StagingApi(object):
                  'by_group': 'factory-staging',
                  'comment': message}
 
-        u = makeurl(self.apiurl, ['request', str(id)], query=query)
-        f = http_POST(u, data=message)
-        root = ET.parse(f).getroot()
-        return root.attrib['code']
+        url = makeurl(self.apiurl, ['request', str(id)], query=query)
+        f = http_POST(url, data=message)
 
     def accept_non_ring_request(self, request):
         """
@@ -122,9 +120,10 @@ class StagingApi(object):
 
         # Verify the package ring
         ring = self.ring_packages.get(target_package, None)
+        # DVD and main desktops are ignored for now
         if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
             # accept the request here
-            message = "No need for staging, not in tested ring project"
+            message = "No need for staging, not in tested ring project."
             self.staging_change_review_state(request_id, 'accepted', message)
 
 

@@ -30,7 +30,7 @@ class TestApiCalls(unittest.TestCase):
 
     def _register_pretty_url_get(self, url, filename):
         """
-        Register specified url with specific filename in fixtures
+        Register specified get url with specific filename in fixtures
         :param url: url address to "open"
         :param filename: name of the fixtures file
         """
@@ -40,6 +40,22 @@ class TestApiCalls(unittest.TestCase):
         response.close()
 
         httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=content)
+
+
+    def _register_pretty_url_post(self, url, filename):
+        """
+        Register specified post url with specific filename in fixtures
+        :param url: url address to "open"
+        :param filename: name of the fixtures file
+        """
+
+        response = open(os.path.join(self._get_fixtures_dir(), filename), 'r')
+        content = response.read()
+        response.close()
+
+        httpretty.register_uri(httpretty.POST,
                                url,
                                body=content)
 
@@ -81,12 +97,37 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(ring_packages,
                          api.ring_packages)
 
+    @httpretty.activate
+    def test_dispatch_open_requests(self):
+        """
+        Test dispatching and closure of non-ring packages
+        """
+
+        pkglist = []
+
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
+                                      'open-requests.xml')
+
+        # There should be just one request that gets closed
+        # We don't care about the return so just reuse the above :P
+        # If there is bug in the function we get assertion about closing more issues than we should
+        self._register_pretty_url_post('http://localhost/request/220956?comment=No+need+for+staging%2C+not+in+tested+ring+project.&newstate=accepted&by_group=factory-staging&cmd=changereviewstate',
+                                      'open-requests.xml')
+
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            api = oscs.StagingApi('http://localhost')
+
+        # get the open requests
+        requests = api.dispatch_open_requests()
 
     @httpretty.activate
     def test_list_projects(self):
         """
         List projects and their content
         """
+
         prjlist = [
             'openSUSE:Factory:Staging:A',
             'openSUSE:Factory:Staging:B',
@@ -111,9 +152,8 @@ class TestApiCalls(unittest.TestCase):
         """
         List projects and their content
         """
-        requests = [
-        ]
 
+        requests = []
 
         # Initiate the pretty overrides
         self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
@@ -137,5 +177,5 @@ def mock_generate_ring_packages():
     with mock.patch('oscs.StagingApi._generate_ring_packages', return_value={'AGGR-antlr': 'openSUSE:Factory:MainDesktops',
                          'Botan': 'openSUSE:Factory:DVD',
                          'DirectFB': 'openSUSE:Factory:Core',
-                         'zlib': 'openSUSE:Factory:Build'}):
+                         'xf86-video-intel': 'openSUSE:Factory:Build'}):
         yield
