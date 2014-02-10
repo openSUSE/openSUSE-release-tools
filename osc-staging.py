@@ -162,6 +162,96 @@ class StagingApi(object):
         # FIXME: dispatch to various staging projects automatically
 
 
+    def get_prj_pseudometa(self, project):
+        """
+        Gets project data from YAML in project description
+        :param project: project to read data from
+        :return structured object with metadata
+        """
+
+        url = make_meta_url('prj', project, self.apiurl)
+        data = http_GET(url).readlines()
+        root = ET.fromstring(''.join(data))
+        description = root.find('description')
+        # If YAML parsing fails, load default
+        # FIXME: Better handling of errors
+        # * broken description
+        # * directly linked packages
+        # * removed linked packages
+        try:
+            data = yaml.load(description.text)
+        except:
+            data = yaml.load('requests: []')
+        return data
+
+
+    def set_prj_pseudometa(self, project, meta):
+        """
+        Sets project description to the YAML of the provided object
+        :param project: project to save into
+        :param meta: data to save
+        """
+
+        # Get current metadata
+        url = make_meta_url('prj', project, self.apiurl)
+        data = http_GET(url).readlines()
+        root = ET.fromstring(''.join(data))
+        # Find description
+        description = root.find('description')
+        # Replace it with yaml
+        description.text = yaml.dump(meta)
+        # Write XML back
+        url = make_meta_url('prj',project, self.apiurl, force=True)
+        f = metafile(url, ET.tostring(root))
+        http_PUT(f.url, file=f.filename)
+
+
+    def _add_rq_to_prj_pseudometa(self, project, request_id, package):
+        """
+        Records request as part of the project within metadata
+        :param project: project to record into
+        :param request_id: request id to record
+        :param package: package the request is about
+        """
+
+        data = self.get_prj_pseudometa(project)
+        append = True
+        for request in data['requests']:
+            if request['package'] == package:
+                request['id'] = request_id
+                append = False
+        if append:
+            data['requests'].append( { 'id': request_id, 'package': package} )
+        self.set_prj_pseudometa(project, data)
+        # FIXME Add sr to group request as well
+
+
+    def sr_to_prj(self, request_id, project):
+        """
+        Links sources from request to project
+        :param request_id: request to link
+        :param project: project to link into
+        """
+
+        # read info from sr
+        req = get_request(self.apiurl, request_id)
+        if not req:
+            raise oscerr.WrongArgs("Request {0} not found".format(request_id))
+        act = req.get_actions("submit")
+        if not act:
+            raise oscerr.WrongArgs("Request {0} is not a submit request".format(request_id))
+        act=act[0]
+
+        src_prj = act.src_project
+        src_rev = act.src_rev
+        src_pkg = act.src_package
+
+        # link stuff
+        self._add_rq_to_prj_pseudometa(project, request_id, src_pkg)
+        link_pac(src_prj, src_pkg, project, src_pkg, force=True, rev=src_rev)
+        # FIXME If there are links in parent project, make sure that current
+
+
 def _get_parent(apirul, project, repo = "standard"):
     """
     Finds what is the parent project of the staging project
@@ -180,85 +270,6 @@ def _get_parent(apirul, project, repo = "standard"):
         logging.error("Project '%s' has no repository named '%s'"%(project, repo))
         return None
     return p_path['project']
-
-def _pseudometa_get_prj(apiurl, project):
-    """
-    Gets project data from YAML in project description
-    :param apiurl: url to the OBS api
-    :param project: project to read data from
-    :return structured object with metadata
-    """
-
-    url = make_meta_url('prj', project, apiurl)
-    data = http_GET(url).readlines()
-    root = ET.fromstring(''.join(data))
-    description = root.find('description')
-    # If YAML parsing fails, load default
-    # FIXME: Better handling of errors
-    try:
-        data = yaml.load(description.text)
-    except:
-        data = yaml.load('requests: []')
-    return data
-
-def _pseudometa_set_prj(apiurl, project, meta):
-    """
-    Sets project description to the YAML of the provided object
-    :param apiurl: url to the OBS api
-    :param project: project to save into
-    :param meta: data to save
-    """
-
-    # Get current metadata
-    url = make_meta_url('prj', project, apiurl)
-    data = http_GET(url).readlines()
-    root = ET.fromstring(''.join(data))
-    # Find description
-    description = root.find('description')
-    # Replace it with yaml
-    description.text = yaml.dump(meta)
-    # Write XML back
-    url = make_meta_url('prj',project, apiurl, force=True)
-    f = metafile(url, ET.tostring(root))
-    http_PUT(f.url, file=f.filename)
-
-def _pseudometa_add_rq_to_prj(apiurl, project, request_id, package):
-    """
-    Records request as part of the project within metadata
-    :param apiurl: url to the OBS api
-    :param project: project to record into
-    :param request_id: request id to record
-    :param package: package the request is about
-    """
-
-    data = _pseudometa_get_prj(apiurl, project)
-    data['requests'].append( { 'id': request_id, 'name': package} )
-    _pseudometa_set_prj(apiurl, project, data)
-
-def sr_to_prj(apiurl, request_id, project):
-    """
-    Links sources from request to project
-    :param apiurl: url to the OBS api
-    :param request_id: request to link
-    :param project: project to link into
-    """
-
-    # read info from sr
-    req = get_request(apiurl, request_id)
-    if not req:
-        raise oscerr.WrongArgs("Request %s not found"%(request_id))
-    act = req.get_actions("submit")
-    if not act:
-        raise oscerr.WrongArgs("Request %s is not a submit request"%(request_id))
-    act=act[0]
-
-    src_prj = act.src_project
-    src_rev = act.src_rev
-    src_pkg = act.src_package
-
-    # link stuff
-    _pseudometa_add_rq_to_prj(apiurl, project, request_id, src_pkg)
-    link_pac(src_prj, src_pkg, project, src_pkg, True, src_rev)
 
 # Get last build results (optionally only for specified repo/arch)
 # Works even when rebuild is triggered
@@ -628,14 +639,14 @@ def _staging_one_request(self, rq, opts):
             msg = 'ok, tested in %s' % stprj
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
         elif stage_info[1] != 0 and int(stage_info[1]) != id:
-	    print stage_info
+            print stage_info
             print "osc rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
-	    return
+            return
         elif stage_info[1] != 0: # keep silent about those already asigned
             return
         else:
             print "Request(%d): %s -> %s" % (id, tpkg, ring)
-	    print "osc rqlink %s openSUSE:Factory:Staging:" % id
+            print "osc rqlink %s openSUSE:Factory:Staging:" % id
             return
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
@@ -853,6 +864,7 @@ def do_staging(self, subcmd, opts, *args):
 
     self._staging_parse_staging_prjs(opts)
     self.rings = self._staging_get_rings(opts)
+    api = StagingApi(opts.apiurl)
 
     # call the respective command and parse args by need
     if cmd in ['push', 'p']:
@@ -873,7 +885,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['freeze']:
         self._staging_freeze_prjlink(args[1], opts)
     elif cmd in ['rqlink']:
-	sr_to_prj(opts.apiurl, args[1], args[2])
+        api.sr_to_prj(args[1], args[2])
     elif cmd in ['cleanup_rings']:
         self._staging_cleanup_rings(opts)
     elif cmd in ['accept', 'list']:

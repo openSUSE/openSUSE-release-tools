@@ -123,6 +123,26 @@ class TestApiCalls(unittest.TestCase):
         requests = api.dispatch_open_requests()
 
     @httpretty.activate
+    def test_pseudometa_get_prj(self):
+        """
+        Test getting project metadata from YAML in project description
+        """
+        rq = { 'id': '123', 'package': 'test-package' }
+
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:test/_meta',
+                                      'staging-project-meta.xml')
+
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            api = oscs.StagingApi('http://localhost')
+
+        # Ensure the output is equal to what we expect
+        data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test')
+        for i in rq.keys():
+            self.assertEqual(rq[i],data['requests'][0][i])
+
+    @httpretty.activate
     def test_list_projects(self):
         """
         List projects and their content
