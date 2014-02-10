@@ -835,6 +835,8 @@ def do_staging(self, subcmd, opts, *args):
         self._print_version()
 
     # verify the argument counts match the commands
+    if len(args) == 0:
+        raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
     if cmd in ['submit-devel', 's', 'remove', 'r', 'accept', 'freeze']:
         min_args, max_args = 1, 1
@@ -847,7 +849,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['list', 'cleanup_rings']:
         min_args, max_args = 0, 0
     else:
-        raise RuntimeError('Unknown command: %s'%(cmd))
+        raise oscerr.WrongArgs('Unknown command: %s'%(cmd))
     if len(args) - 1 < min_args:
         raise oscerr.WrongArgs('Too few arguments.')
     if not max_args is None and len(args) - 1 > max_args:
