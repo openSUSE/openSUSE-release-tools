@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# (C) 2013 mhrusecky@suse.cz, openSUSE.org
-# (C) 2013 tchvatal@suse.cz, openSUSE.org
+# (C) 2014 mhrusecky@suse.cz, openSUSE.org
+# (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
 from osc import cmdln
@@ -218,7 +218,7 @@ def _staging_create(self, trg, opts):
         if re.search("^\s*[Nn]", answer):
             print('Aborting...')
             exit(1)
- 
+
     # parse metadata from parent project
     trg_meta_url = make_meta_url("prj", trg_prj, opts.apiurl)
     data = http_GET(trg_meta_url).readlines()
@@ -245,12 +245,12 @@ def _staging_create(self, trg, opts):
         # what are the repositories
         elif re.search("^\s+<repository", line):
                 repos.append(re.sub(r'.*name="([^"]+)".*', r'\1', line).strip())
-   
+
     # add maintainers of source project
     trg_meta_url = make_meta_url("prj", src_prj, opts.apiurl)
     data = http_GET(trg_meta_url).readlines()
     perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) is not None)), data))
-    
+
     # add maintainers of source package
     if src_pkg is not None:
         trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), opts.apiurl)
@@ -291,7 +291,7 @@ def _staging_create(self, trg, opts):
         print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
         link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
     print
-    
+
     return
 
 def _staging_remove(self, project, opts):
@@ -380,7 +380,7 @@ def _staging_one_request(self, rq, opts):
     approved_actions = 0
     actions = rq.findall('action')
     act = actions[0]
-        
+
     tprj = act.find('target').get('project')
     tpkg = act.find('target').get('package')
 
@@ -470,7 +470,7 @@ def _staging_freeze_prjlink(self, prj, opts):
     for lprj in self.projectlinks:
         fl = ET.SubElement(flink, 'frozenlink', { 'project': lprj } )
         sources = self._staging_receive_sources(lprj, sources, fl, opts)
-    
+
     from pprint import pprint
     url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
     f = http_PUT(url, data=ET.tostring(flink))
@@ -488,7 +488,7 @@ def _staging_fill_pkgdeps(self, prj, repo, arch, opts):
     url = makeurl(opts.apiurl, ['build', prj, repo, arch, '_builddepinfo'])
     f = http_GET(url)
     root = ET.parse(f).getroot()
-    
+
     for package in root.findall('package'):
         #print ET.tostring(package)
         source = package.find('source').text
@@ -501,7 +501,7 @@ def _staging_fill_pkgdeps(self, prj, repo, arch, opts):
             if self.bin2src.has_key(subpkg):
                 print "bin $s defined twice $prj $source - $bin2src{$s}\n"
             self.bin2src[subpkg] = source
-        
+
     for package in root.findall('package'):
         source = package.find('source').text
         for pkg in package.findall('pkgdep'):
@@ -574,7 +574,7 @@ def do_staging(self, subcmd, opts, *args):
         changes to openSUSE:Factory
 
     "freeze" will freeze the sources of the project's links (not affecting the packages actually in)
-    
+
     "accept" will accept all requests openSUSE:Factory:Staging:<LETTER>
 
     "list" will pick the requests not in rings
