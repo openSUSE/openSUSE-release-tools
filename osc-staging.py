@@ -24,6 +24,8 @@ def _print_version(self):
 def list_staging_projects(apiurl):
     """
     List all current running staging projects
+    :param apiurl: url to the OBS api
+    :return list of known staging projects
     """
 
     projects = []
@@ -39,8 +41,10 @@ def list_staging_projects(apiurl):
 def _get_parent(apirul, project, repo = "standard"):
     """
     Finds what is the parent project of the staging project
+    :param apiurl: url to the OBS api
     :param project: staging project to check
     :param repo: which repository to follow
+    :return name of the parent project
     """
 
     url = make_meta_url("prj", project, apiurl)
@@ -56,6 +60,7 @@ def _get_parent(apirul, project, repo = "standard"):
 def _pseudometa_get_prj(apiurl, project):
     """
     Gets project data from YAML in project description
+    :param apiurl: url to the OBS api
     :param project: project to read data from
     :return structured object with metadata
     """
@@ -69,12 +74,13 @@ def _pseudometa_get_prj(apiurl, project):
     try:
         data = yaml.load(description.text)
     except:
-	data = yaml.load('requests: []')
+        data = yaml.load('requests: []')
     return data
 
 def _pseudometa_set_prj(apiurl, project, meta):
     """
     Sets project description to the YAML of the provided object
+    :param apiurl: url to the OBS api
     :param project: project to save into
     :param meta: data to save
     """
@@ -95,6 +101,7 @@ def _pseudometa_set_prj(apiurl, project, meta):
 def _pseudometa_add_rq_to_prj(apiurl, project, request_id, package):
     """
     Records request as part of the project within metadata
+    :param apiurl: url to the OBS api
     :param project: project to record into
     :param request_id: request id to record
     :param package: package the request is about
@@ -107,6 +114,7 @@ def _pseudometa_add_rq_to_prj(apiurl, project, request_id, package):
 def sr_to_prj(apiurl, request_id, project):
     """
     Links sources from request to project
+    :param apiurl: url to the OBS api
     :param request_id: request to link
     :param project: project to link into
     """
