@@ -94,7 +94,6 @@ class TestApiCalls(unittest.TestCase):
             'openSUSE:Factory:Staging:D'
         ]
 
-
         # Initiate the pretty overrides
         self._register_pretty_url_get('http://localhost/search/project/id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')',
                                       'staging-project-list.xml')
