@@ -138,7 +138,7 @@ class TestApiCalls(unittest.TestCase):
             api = oscs.StagingApi('http://localhost')
 
         # Ensure the output is equal to what we expect
-        data = api.pseudometa_get_prj('openSUSE:Factory:Staging:test')
+        data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test')
         for i in rq.keys():
             self.assertEqual(rq[i],data['requests'][0][i])
 

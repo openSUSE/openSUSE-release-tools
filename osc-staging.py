@@ -162,7 +162,7 @@ class StagingApi(object):
         # FIXME: dispatch to various staging projects automatically
 
 
-    def pseudometa_get_prj(self, project):
+    def get_prj_pseudometa(self, project):
         """
         Gets project data from YAML in project description
         :param project: project to read data from
@@ -182,7 +182,7 @@ class StagingApi(object):
         return data
 
 
-    def pseudometa_set_prj(self, project, meta):
+    def set_prj_pseudometa(self, project, meta):
         """
         Sets project description to the YAML of the provided object
         :param project: project to save into
@@ -203,7 +203,7 @@ class StagingApi(object):
         http_PUT(f.url, file=f.filename)
 
 
-    def _pseudometa_add_rq_to_prj(self, project, request_id, package):
+    def _add_rq_to_prj_pseudometa(self, project, request_id, package):
         """
         Records request as part of the project within metadata
         :param project: project to record into
@@ -211,7 +211,7 @@ class StagingApi(object):
         :param package: package the request is about
         """
 
-        data = self.pseudometa_get_prj(project)
+        data = self.get_prj_pseudometa(project)
         append = True
         for request in data['requests']:
             if request['package'] == package:
@@ -219,7 +219,7 @@ class StagingApi(object):
                 append = False
         if append:
             data['requests'].append( { 'id': request_id, 'package': package} )
-        self.pseudometa_set_prj(project, data)
+        self.set_prj_pseudometa(project, data)
 
 
     def sr_to_prj(self, request_id, project):
@@ -243,7 +243,7 @@ class StagingApi(object):
         src_pkg = act.src_package
 
         # link stuff
-        self._pseudometa_add_rq_to_prj(project, request_id, src_pkg)
+        self._add_rq_to_prj_pseudometa(project, request_id, src_pkg)
         link_pac(src_prj, src_pkg, project, src_pkg, force=True, rev=src_rev)
 
 
