@@ -117,11 +117,11 @@ class StagingApi(object):
         target_package = action.find('target').get('package')
 
         # If the values are empty it is no error
-        if not target_project or not target_pacakge:
+        if not target_project or not target_package:
             logging.info('no target/package in request {0}, action {1}; '.format(id, action))
 
         # Verify the package ring
-        ring = self.ring_packages.get(tpkg, None)
+        ring = self.ring_packages.get(target_package, None)
         if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
             # accept the request here
             message = "No need for staging, not in tested ring project"
