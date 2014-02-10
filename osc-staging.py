@@ -175,6 +175,9 @@ class StagingApi(object):
         description = root.find('description')
         # If YAML parsing fails, load default
         # FIXME: Better handling of errors
+        # * broken description
+        # * directly linked packages
+        # * removed linked packages
         try:
             data = yaml.load(description.text)
         except:
@@ -220,6 +223,7 @@ class StagingApi(object):
         if append:
             data['requests'].append( { 'id': request_id, 'package': package} )
         self.set_prj_pseudometa(project, data)
+        # FIXME Add sr to group request as well
 
 
     def sr_to_prj(self, request_id, project):
@@ -232,10 +236,10 @@ class StagingApi(object):
         # read info from sr
         req = get_request(self.apiurl, request_id)
         if not req:
-            raise oscerr.WrongArgs("Request %s not found"%(request_id))
+            raise oscerr.WrongArgs("Request {0} not found".format(request_id))
         act = req.get_actions("submit")
         if not act:
-            raise oscerr.WrongArgs("Request %s is not a submit request"%(request_id))
+            raise oscerr.WrongArgs("Request {0} is not a submit request".format(request_id))
         act=act[0]
 
         src_prj = act.src_project
@@ -245,6 +249,7 @@ class StagingApi(object):
         # link stuff
         self._add_rq_to_prj_pseudometa(project, request_id, src_pkg)
         link_pac(src_prj, src_pkg, project, src_pkg, force=True, rev=src_rev)
+        # FIXME If there are links in parent project, make sure that current
 
 
 def _get_parent(apirul, project, repo = "standard"):
