@@ -97,15 +97,12 @@ class StagingApi(object):
         root = ET.parse(f).getroot()
         return root.attrib['code']
 
-    def consolidate_review_request(self, request):
+    def accept_non_ring_request(self, request):
         """
         Accept review of requests that are not yet in
         any ring so we don't delay their testing.
         :param request: request to check
         """
-
-        # FIXME: move this to activity class from api
-        # FIXME: verify the state of the submission not just the ring
 
         # Consolidate all data from request
         request_id = int(request.get('id'))
@@ -121,7 +118,7 @@ class StagingApi(object):
 
         # If the values are empty it is no error
         if not target_project or not target_pacakge:
-            e.append('no target/package in request {0}, action {1}; '.format(id, action))
+            logging.info('no target/package in request {0}, action {1}; '.format(id, action))
 
         # Verify the package ring
         ring = self.ring_packages.get(tpkg, None)
@@ -161,7 +158,7 @@ class StagingApi(object):
         requests = self.get_open_requests()
         # check if we can reduce it down by accepting some
         for rq in requests:
-            self.consolidate_review_request(rq)
+            self.accept_non_ring_request(rq)
 
         # FIXME: dispatch to various staging projects automatically
 
