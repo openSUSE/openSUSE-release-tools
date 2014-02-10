@@ -11,6 +11,8 @@ from osc import commandline
 
 from osc.core import *
 import osc
+import logging
+import yaml
 
 OSC_STAGING_VERSION='0.0.1'
 
@@ -21,7 +23,7 @@ def _print_version(self):
 
 def list_staging_projects(apiurl):
     """
-    list all current running staging projects
+    List all current running staging projects
     """
 
     projects = []
@@ -33,6 +35,102 @@ def list_staging_projects(apiurl):
     for val in root.findall('project'):
         projects.append(val.get('name'))
     return projects
+
+def _get_parent(apirul, project, repo = "standard"):
+    """
+    Finds what is the parent project of the staging project
+    :param project: staging project to check
+    :param repo: which repository to follow
+    """
+
+    url = make_meta_url("prj", project, apiurl)
+    data = http_GET(url).readlines()
+    root = ET.fromstring(''.join(data))
+
+    p_path = root.find("repository[@name='%s']/path"%(repo))
+    if not p_path:
+        logging.error("Project '%s' has no repository named '%s'"%(project, repo))
+        return None
+    return p_path['project']
+
+
+def _pseudometa_get_prj(apiurl, project):
+    """
+    Gets project data from YAML in project description
+    :param project: project to read data from
+    :return structured object with metadata
+    """
+
+    url = make_meta_url('prj', project, apiurl)
+    data = http_GET(url).readlines()
+    root = ET.fromstring(''.join(data))
+    description = root.find('description')
+    # If YAML parsing fails, load default
+    try:
+        data = yaml.load(description.text)
+    except:
+	data = yaml.load('requests: []')
+    return data
+
+
+def _pseudometa_set_prj(apiurl, project, meta):
+    """
+    Sets project description to the YAML of the provided object
+    :param project: project to save into
+    :param meta: data to save
+    """
+
+    # Get current metadata
+    url = make_meta_url('prj', project, apiurl)
+    data = http_GET(url).readlines()
+    root = ET.fromstring(''.join(data))
+    # Find description
+    description = root.find('description')
+    # Replace it with yaml
+    description.text = yaml.dump(meta)
+    # Write XML back
+    url = make_meta_url('prj',project, apiurl, True, False)
+    f = metafile(url, ET.tostring(root), False)
+    http_PUT(f.url, file=f.filename)
+
+def _pseudometa_add_rq_to_prj(apiurl, project, request_id, package):
+    """
+    Records request as part of the project within metadata
+    :param project: project to record into
+    :param request_id: request id to record
+    :param package: package the request is about
+    """
+
+    data = _pseudometa_get_prj(apiurl, project)
+    data['requests'].append( { 'id': request_id, 'name': package} )
+    _pseudometa_set_prj(apiurl, project, data)
+
+def sr_to_prj(apiurl, request_id, project):
+    """
+    Links sources from request to project
+    :param request_id: request to link
+    :param project: project to link into
+    """
+
+    # read info from sr
+    req = get_request(apiurl, request_id)
+    if not req:
+        logging.error("Request %d not found"%(request_id))
+        return
+    act = req.get_actions("submit")
+    if not act:
+        logging.error("Request %d is not a submit request"%(request_id))
+        return
+    act=act[0]
+
+    src_prj = act.src_project
+    src_rev = act.src_rev
+    src_pkg = act.src_package
+
+    # link stuff
+    _pseudometa_add_rq_to_prj(apiurl, project, request_id, src_pkg)
+    link_pac(src_prj, src_pkg, project, src_pkg, True, src_rev)
+
 
 # Get last build results (optionally only for specified repo/arch)
 # Works even when rebuild is triggered
@@ -600,6 +698,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 1
     elif cmd in ['check']:
         min_args, max_args = 1, 2
+    elif cmd in ['rqlink']:
+        min_args, max_args = 2, 2
     elif cmd in ['create', 'c']:
         min_args, max_args = 1, 2
     elif cmd in ['list', 'cleanup_rings']:
@@ -641,6 +741,8 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_submit_devel(project, opts)
     elif cmd in ['freeze']:
         self._staging_freeze_prjlink(args[1], opts)
+    elif cmd in ['rqlink']:
+	sr_to_prj(opts.apiurl, args[1], args[2])
     elif cmd in ['cleanup_rings']:
         self._staging_cleanup_rings(opts)
     elif cmd in ['accept', 'list']:
