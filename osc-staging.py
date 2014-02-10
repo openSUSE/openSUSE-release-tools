@@ -53,7 +53,6 @@ def _get_parent(apirul, project, repo = "standard"):
         return None
     return p_path['project']
 
-
 def _pseudometa_get_prj(apiurl, project):
     """
     Gets project data from YAML in project description
@@ -66,12 +65,12 @@ def _pseudometa_get_prj(apiurl, project):
     root = ET.fromstring(''.join(data))
     description = root.find('description')
     # If YAML parsing fails, load default
+    # FIXME: Better handling of errors
     try:
         data = yaml.load(description.text)
     except:
 	data = yaml.load('requests: []')
     return data
-
 
 def _pseudometa_set_prj(apiurl, project, meta):
     """
@@ -89,8 +88,8 @@ def _pseudometa_set_prj(apiurl, project, meta):
     # Replace it with yaml
     description.text = yaml.dump(meta)
     # Write XML back
-    url = make_meta_url('prj',project, apiurl, True, False)
-    f = metafile(url, ET.tostring(root), False)
+    url = make_meta_url('prj',project, apiurl, force=True)
+    f = metafile(url, ET.tostring(root))
     http_PUT(f.url, file=f.filename)
 
 def _pseudometa_add_rq_to_prj(apiurl, project, request_id, package):
@@ -115,12 +114,10 @@ def sr_to_prj(apiurl, request_id, project):
     # read info from sr
     req = get_request(apiurl, request_id)
     if not req:
-        logging.error("Request %d not found"%(request_id))
-        return
+        raise oscerr.WrongArgs("Request %s not found"%(request_id))
     act = req.get_actions("submit")
     if not act:
-        logging.error("Request %d is not a submit request"%(request_id))
-        return
+        raise oscerr.WrongArgs("Request %s is not a submit request"%(request_id))
     act=act[0]
 
     src_prj = act.src_project
@@ -130,7 +127,6 @@ def sr_to_prj(apiurl, request_id, project):
     # link stuff
     _pseudometa_add_rq_to_prj(apiurl, project, request_id, src_pkg)
     link_pac(src_prj, src_pkg, project, src_pkg, True, src_rev)
-
 
 # Get last build results (optionally only for specified repo/arch)
 # Works even when rebuild is triggered
@@ -678,6 +674,8 @@ def do_staging(self, subcmd, opts, *args):
 
     "list" will pick the requests not in rings
 
+    "rqlink" will add request to the project
+
     Usage:
         osc staging check [--everything] REPO
         osc staging create [--parent project] SR#
@@ -686,6 +684,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging submit-devel [-m message] REPO
         osc staging freeze PROJECT
         osc staging list
+        osc staging rqlink REQUEST PROJECT
         osc staging accept LETTER
         osc staging cleanup_rings
     """
