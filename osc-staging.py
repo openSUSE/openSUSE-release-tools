@@ -318,7 +318,7 @@ def _staging_check(self, project, check_everything, opts):
     """
 
     ret = 0
-    chng = _get_changed(opts.apiurl, project, check_everything)
+    chng = _get_changed(opts, project, check_everything)
     if len(chng) > 0:
         for pair in chng:
             print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
@@ -332,7 +332,7 @@ def _staging_check(self, project, check_everything, opts):
     if ret == 0 or check_everything:
         print "Getting build status, this may take a while"
         # Get staging project results
-        f = _get_build_res(opts.apiurl, project)
+        f = _get_build_res(opts, project)
         root = ET.fromstring(''.join(f))
 
         # Get parent project
@@ -357,7 +357,7 @@ def _staging_check(self, project, check_everything, opts):
                 print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
                 ret |= 4
                 continue
-            f = _get_build_res(opts.apiurl, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
+            f = _get_build_res(opts, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
             p_root = ET.fromstring(''.join(f))
 
             # Find corresponding set of results in parent project
@@ -789,14 +789,14 @@ def _staging_check_depinfo_ring(self, prj, nextprj, opts):
           if nextprj:
               print "osc linkpac -c openSUSE:Factory", source, nextprj
 
-@cmdln.option('-e', '--everything', action='store_true', dest='everything',
+
+@cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
 @cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-m', '--message', metavar='TEXT',
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-v', '--version', action='store_true',
-              dest='version',
               help='show version of the plugin')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
