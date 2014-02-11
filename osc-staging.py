@@ -26,10 +26,8 @@ class StagingApi(object):
     Class containing various api calls to work with staging projects.
     """
 
-    rings = ['openSUSE:Factory:Build',
-             'openSUSE:Factory:Core',
-             'openSUSE:Factory:MainDesktops',
-             'openSUSE:Factory:DVD']
+    rings = ['openSUSE:Factory:Rings:0-Bootstrap',
+             'openSUSE:Factory:Rings:1-MinimalX']
     ring_packages = dict()
     apiurl = ""
 
@@ -121,7 +119,7 @@ class StagingApi(object):
         # Verify the package ring
         ring = self.ring_packages.get(target_package, None)
         # DVD and main desktops are ignored for now
-        if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
+        if ring is None:
             # accept the request here
             message = "No need for staging, not in tested ring project."
             self.staging_change_review_state(request_id, 'accepted', message)
@@ -611,7 +609,7 @@ def _staging_change_review_state(self, opts, id, newstate, by_group='', by_user=
 
 def _staging_get_rings(self, opts):
     ret = dict()
-    for prj in ['openSUSE:Factory:Build', 'openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops', 'openSUSE:Factory:DVD']:
+    for prj in ['openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX']:
         u = makeurl(opts.apiurl, ['source', prj])
         f = http_GET(u)
         for entry in ET.parse(f).getroot().findall('entry'):
@@ -639,7 +637,7 @@ def _staging_one_request(self, rq, opts):
     # it is no error, if the target package dies not exist
 
     ring = self.rings.get(tpkg, None)
-    if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
+    if ring is None:
         msg = "ok"
     else:
         stage_info = self.packages_staged.get(tpkg, ('', 0))
@@ -727,8 +725,8 @@ def _staging_cleanup_rings(self, opts):
     self.bin2src = dict()
     self.pkgdeps = dict()
     self.sources = list()
-    self._staging_check_depinfo_ring('openSUSE:Factory:Build', 'openSUSE:Factory:Core', opts);
-    self._staging_check_depinfo_ring('openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops', opts);
+    self._staging_check_depinfo_ring('openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX', opts);
+    self._staging_check_depinfo_ring('openSUSE:Factory:Rings:1-MinimalX', 'openSUSE:Factory:MainDesktops', opts);
 
 def _staging_fill_pkgdeps(self, prj, repo, arch, opts):
     url = makeurl(opts.apiurl, ['build', prj, repo, arch, '_builddepinfo'])
@@ -764,7 +762,7 @@ def _staging_fill_pkgdeps(self, prj, repo, arch, opts):
 def _staging_check_depinfo_ring(self, prj, nextprj, opts):
   self._staging_fill_pkgdeps(prj, 'standard', 'x86_64', opts)
 
-  if prj == 'openSUSE:Factory:Core':
+  if prj == 'openSUSE:Factory:Rings:1-MinimalX':
       url = makeurl(opts.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'] )
       root = ET.parse(http_GET(url)).getroot()
       for bdep in root.findall('bdep'):
@@ -781,7 +779,7 @@ def _staging_check_depinfo_ring(self, prj, nextprj, opts):
   #   push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-gnome');
   #   push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-kde');
 
-  if prj == 'openSUSE:Factory:Build':
+  if prj == 'openSUSE:Factory:Rings:0-Bootstrap':
       url = makeurl(opts.apiurl, ['build', prj, 'standard', '_buildconfig'] )
       for line in http_GET(url).read().split('\n'):
           if line.startswith('Preinstall:') or line.startswith('Support:'):
