@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # (C) 2013 coolo@suse.de, openSUSE.org
 # (C) 2013 tchvatal@suse.cz, openSUSE.org
