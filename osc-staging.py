@@ -204,10 +204,7 @@ class StagingApi(object):
         new_title = []
         for request in meta['requests']:
             new_title.append(request['package'])
-        if len(new_title) == 0:
-            title.text = 'Empty staging'
-        else:
-            title.text = 'Staging for ' + ', '.join(new_title)
+        title.text = ', '.join(new_title)
         # Write XML back
         url = make_meta_url('prj',project, self.apiurl, force=True)
         f = metafile(url, ET.tostring(root))
@@ -657,13 +654,13 @@ def _staging_one_request(self, rq, opts):
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
         elif stage_info[1] != 0 and int(stage_info[1]) != id:
             print stage_info
-            print "osc rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
+            print "osc staging rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
             return
         elif stage_info[1] != 0: # keep silent about those already asigned
             return
         else:
             print "Request(%d): %s -> %s" % (id, tpkg, ring)
-            print "osc rqlink %s openSUSE:Factory:Staging:" % id
+            print "osc staging rqlink %s openSUSE:Factory:Staging:" % id
             return
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
