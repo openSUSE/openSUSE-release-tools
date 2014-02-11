@@ -26,10 +26,8 @@ class StagingApi(object):
     Class containing various api calls to work with staging projects.
     """
 
-    rings = ['openSUSE:Factory:Build',
-             'openSUSE:Factory:Core',
-             'openSUSE:Factory:MainDesktops',
-             'openSUSE:Factory:DVD']
+    rings = ['openSUSE:Factory:Rings:0-Bootstrap',
+             'openSUSE:Factory:Rings:1-MinimalX']
     ring_packages = dict()
     apiurl = ""
 
@@ -121,7 +119,7 @@ class StagingApi(object):
         # Verify the package ring
         ring = self.ring_packages.get(target_package, None)
         # DVD and main desktops are ignored for now
-        if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
+        if ring is None:
             # accept the request here
             message = "No need for staging, not in tested ring project."
             self.staging_change_review_state(request_id, 'accepted', message)
@@ -200,6 +198,13 @@ class StagingApi(object):
         description = root.find('description')
         # Replace it with yaml
         description.text = yaml.dump(meta)
+        # Find title
+        title = root.find('title')
+        # Put something nice into title as well
+        new_title = []
+        for request in meta['requests']:
+            new_title.append(request['package'])
+        title.text = ', '.join(new_title)
         # Write XML back
         url = make_meta_url('prj',project, self.apiurl, force=True)
         f = metafile(url, ET.tostring(root))
@@ -245,10 +250,19 @@ class StagingApi(object):
         src_prj = act.src_project
         src_rev = act.src_rev
         src_pkg = act.src_package
+        tar_pkg = act.tgt_package
+
+        # expand the revision to a md5
+        url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        src_rev =  root.attrib['srcmd5']
+        src_vrev = root.attrib['vrev']
+        #print "osc linkpac -r %s %s/%s %s/%s" % (src_rev, src_prj, src_pkg, project, tar_pkg)
 
         # link stuff
         self._add_rq_to_prj_pseudometa(project, request_id, src_pkg)
-        link_pac(src_prj, src_pkg, project, src_pkg, force=True, rev=src_rev)
+        link_pac(src_prj, src_pkg, project, tar_pkg, force=True, rev=src_rev, vrev=src_vrev)
         # FIXME If there are links in parent project, make sure that current
 
 
@@ -602,7 +616,7 @@ def _staging_change_review_state(self, opts, id, newstate, by_group='', by_user=
 
 def _staging_get_rings(self, opts):
     ret = dict()
-    for prj in ['openSUSE:Factory:Build', 'openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops', 'openSUSE:Factory:DVD']:
+    for prj in ['openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX']:
         u = makeurl(opts.apiurl, ['source', prj])
         f = http_GET(u)
         for entry in ET.parse(f).getroot().findall('entry'):
@@ -630,7 +644,7 @@ def _staging_one_request(self, rq, opts):
     # it is no error, if the target package dies not exist
 
     ring = self.rings.get(tpkg, None)
-    if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
+    if ring is None:
         msg = "ok"
     else:
         stage_info = self.packages_staged.get(tpkg, ('', 0))
@@ -640,13 +654,13 @@ def _staging_one_request(self, rq, opts):
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
         elif stage_info[1] != 0 and int(stage_info[1]) != id:
             print stage_info
-            print "osc rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
+            print "osc staging rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
             return
         elif stage_info[1] != 0: # keep silent about those already asigned
             return
         else:
             print "Request(%d): %s -> %s" % (id, tpkg, ring)
-            print "osc rqlink %s openSUSE:Factory:Staging:" % id
+            print "osc staging rqlink %s openSUSE:Factory:Staging:" % id
             return
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
@@ -719,8 +733,8 @@ def _staging_cleanup_rings(self, opts):
     self.bin2src = dict()
     self.pkgdeps = dict()
     self.sources = list()
-    self._staging_check_depinfo_ring('openSUSE:Factory:Build', 'openSUSE:Factory:Core', opts);
-    self._staging_check_depinfo_ring('openSUSE:Factory:Core', 'openSUSE:Factory:MainDesktops', opts);
+    self._staging_check_depinfo_ring('openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX', opts);
+    self._staging_check_depinfo_ring('openSUSE:Factory:Rings:1-MinimalX', 'openSUSE:Factory:MainDesktops', opts);
 
 def _staging_fill_pkgdeps(self, prj, repo, arch, opts):
     url = makeurl(opts.apiurl, ['build', prj, repo, arch, '_builddepinfo'])
@@ -756,7 +770,7 @@ def _staging_fill_pkgdeps(self, prj, repo, arch, opts):
 def _staging_check_depinfo_ring(self, prj, nextprj, opts):
   self._staging_fill_pkgdeps(prj, 'standard', 'x86_64', opts)
 
-  if prj == 'openSUSE:Factory:Core':
+  if prj == 'openSUSE:Factory:Rings:1-MinimalX':
       url = makeurl(opts.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'] )
       root = ET.parse(http_GET(url)).getroot()
       for bdep in root.findall('bdep'):
@@ -773,7 +787,7 @@ def _staging_check_depinfo_ring(self, prj, nextprj, opts):
   #   push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-gnome');
   #   push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-kde');
 
-  if prj == 'openSUSE:Factory:Build':
+  if prj == 'openSUSE:Factory:Rings:0-Bootstrap':
       url = makeurl(opts.apiurl, ['build', prj, 'standard', '_buildconfig'] )
       for line in http_GET(url).read().split('\n'):
           if line.startswith('Preinstall:') or line.startswith('Support:'):
