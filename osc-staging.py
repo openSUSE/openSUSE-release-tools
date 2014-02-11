@@ -245,10 +245,19 @@ class StagingApi(object):
         src_prj = act.src_project
         src_rev = act.src_rev
         src_pkg = act.src_package
+        tar_pkg = act.tgt_package
+
+        # expand the revision to a md5
+        url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        src_rev =  root.attrib['srcmd5']
+        src_vrev = root.attrib['vrev']
+        #print "osc linkpac -r %s %s/%s %s/%s" % (src_rev, src_prj, src_pkg, project, tar_pkg)
 
         # link stuff
         self._add_rq_to_prj_pseudometa(project, request_id, src_pkg)
-        link_pac(src_prj, src_pkg, project, src_pkg, force=True, rev=src_rev)
+        link_pac(src_prj, src_pkg, project, tar_pkg, force=True, rev=src_rev, vrev=src_vrev)
         # FIXME If there are links in parent project, make sure that current
 
 
