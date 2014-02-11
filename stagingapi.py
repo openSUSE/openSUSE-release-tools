@@ -9,15 +9,14 @@ import logging
 from osc.core import *
 import yaml
 
+
 class StagingApi(object):
     """
     Class containing various api calls to work with staging projects.
     """
 
-    rings = ['openSUSE:Factory:Build',
-             'openSUSE:Factory:Core',
-             'openSUSE:Factory:MainDesktops',
-             'openSUSE:Factory:DVD']
+    rings = ['openSUSE:Factory:Rings:0-Bootstrap',
+             'openSUSE:Factory:Rings:1-MinimalX']
     ring_packages = dict()
     apiurl = ""
 
@@ -109,7 +108,7 @@ class StagingApi(object):
         # Verify the package ring
         ring = self.ring_packages.get(target_package, None)
         # DVD and main desktops are ignored for now
-        if ring is None or ring == 'openSUSE:Factory:DVD' or ring == 'openSUSE:Factory:MainDesktops':
+        if ring is None:
             # accept the request here
             message = "No need for staging, not in tested ring project."
             self.staging_change_review_state(request_id, 'accepted', message)
@@ -188,6 +187,13 @@ class StagingApi(object):
         description = root.find('description')
         # Replace it with yaml
         description.text = yaml.dump(meta)
+        # Find title
+        title = root.find('title')
+        # Put something nice into title as well
+        new_title = []
+        for request in meta['requests']:
+            new_title.append(request['package'])
+        title.text = ', '.join(new_title)
         # Write XML back
         url = make_meta_url('prj',project, self.apiurl, force=True)
         f = metafile(url, ET.tostring(root))
@@ -233,8 +239,17 @@ class StagingApi(object):
         src_prj = act.src_project
         src_rev = act.src_rev
         src_pkg = act.src_package
+        tar_pkg = act.tgt_package
+
+        # expand the revision to a md5
+        url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        src_rev =  root.attrib['srcmd5']
+        src_vrev = root.attrib['vrev']
+        #print "osc linkpac -r %s %s/%s %s/%s" % (src_rev, src_prj, src_pkg, project, tar_pkg)
 
         # link stuff
-        self._add_rq_to_prj_pseudometa(project, request_id, src_pkg)
-        link_pac(src_prj, src_pkg, project, src_pkg, force=True, rev=src_rev)
+        self._add_rq_to_prj_pseudometa(project, int(request_id), src_pkg)
+        link_pac(src_prj, src_pkg, project, tar_pkg, force=True, rev=src_rev, vrev=src_vrev)
         # FIXME If there are links in parent project, make sure that current
