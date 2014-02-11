@@ -709,7 +709,6 @@ def _staging_freeze_prjlink(self, prj, opts):
         fl = ET.SubElement(flink, 'frozenlink', { 'project': lprj } )
         sources = self._staging_receive_sources(lprj, sources, fl, opts)
 
-    from pprint import pprint
     url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
     f = http_PUT(url, data=ET.tostring(flink))
     root = ET.parse(f).getroot()
@@ -859,11 +858,6 @@ def do_staging(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
     opts.verbose = False
 
-    # check for the opts
-    staging_check_everything = False
-    if opts.everything:
-        staging_check_everything = True
-
     self._staging_parse_staging_prjs(opts)
     self.rings = self._staging_get_rings(opts)
     api = StagingApi(opts.apiurl)
@@ -877,7 +871,7 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_create(sr, opts)
     elif cmd in ['check']:
         project = args[1]
-        return self._staging_check(project, staging_check_everything, opts)
+        return self._staging_check(project, opts.everything, opts)
     elif cmd in ['remove', 'r']:
         project = args[1]
         self._staging_remove(project, opts)
