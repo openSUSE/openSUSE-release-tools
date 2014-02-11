@@ -198,6 +198,16 @@ class StagingApi(object):
         description = root.find('description')
         # Replace it with yaml
         description.text = yaml.dump(meta)
+        # Find title
+        title = root.find('title')
+        # Put something nice into title as well
+        new_title = []
+        for request in meta['requests']:
+            new_title.append(request['package'])
+        if len(new_title) == 0:
+            title.text = 'Empty staging'
+        else:
+            title.text = 'Staging for ' + ', '.join(new_title)
         # Write XML back
         url = make_meta_url('prj',project, self.apiurl, force=True)
         f = metafile(url, ET.tostring(root))
