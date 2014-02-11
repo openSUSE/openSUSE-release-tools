@@ -789,14 +789,14 @@ def _staging_check_depinfo_ring(self, prj, nextprj, opts):
           if nextprj:
               print "osc linkpac -c openSUSE:Factory", source, nextprj
 
-@cmdln.option('-e', '--everything', action='store_true', dest='everything',
+
+@cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
 @cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-m', '--message', metavar='TEXT',
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-v', '--version', action='store_true',
-              dest='version',
               help='show version of the plugin')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
