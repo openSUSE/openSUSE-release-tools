@@ -261,7 +261,7 @@ class StagingApi(object):
         #print "osc linkpac -r %s %s/%s %s/%s" % (src_rev, src_prj, src_pkg, project, tar_pkg)
 
         # link stuff
-        self._add_rq_to_prj_pseudometa(project, request_id, src_pkg)
+        self._add_rq_to_prj_pseudometa(project, int(request_id), src_pkg)
         link_pac(src_prj, src_pkg, project, tar_pkg, force=True, rev=src_rev, vrev=src_vrev)
         # FIXME If there are links in parent project, make sure that current
 
@@ -649,6 +649,7 @@ def _staging_one_request(self, rq, opts):
     else:
         stage_info = self.packages_staged.get(tpkg, ('', 0))
         if stage_info[0] == self.letter_to_accept and int(stage_info[1]) == id:
+            # TODO make api for that
             stprj = 'openSUSE:Factory:Staging:%s' % self.letter_to_accept
             msg = 'ok, tested in %s' % stprj
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
@@ -660,24 +661,9 @@ def _staging_one_request(self, rq, opts):
             return
         else:
             print "Request(%d): %s -> %s" % (id, tpkg, ring)
-            print "osc staging rqlink %s openSUSE:Factory:Staging:" % id
             return
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
-
-def _staging_parse_staging_prjs(self, opts):
-    self.packages_staged = dict()
-
-    for letter in range(ord('A'), ord('J')):
-        prj = "openSUSE:Factory:Staging:%s" % chr(letter)
-        u = makeurl(opts.apiurl, ['source', prj, '_meta'])
-        f = http_GET(u)
-        title = ET.parse(f).getroot().find('title').text
-        if title is None: continue
-        for rq in title.split(','):
-            m = re.match(r" *([\w-]+)\((\d+)\)", rq)
-            if m is None: continue
-            self.packages_staged[m.group(1)] = (chr(letter), m.group(2))
 
 def _staging_check_one_source(self, flink, si, opts):
     package = si.get('package')
@@ -842,6 +828,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging freeze PROJECT
         osc staging list
         osc staging rqlink REQUEST PROJECT
+        osc staging select LETTER REQUEST...
         osc staging accept LETTER
         osc staging cleanup_rings
     """
@@ -858,6 +845,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 2
     elif cmd in ['rqlink']:
         min_args, max_args = 2, 2
+    elif cmd in ['select']:
+        min_args, max_args = 2, None
     elif cmd in ['create', 'c']:
         min_args, max_args = 1, 2
     elif cmd in ['list', 'cleanup_rings']:
@@ -878,7 +867,6 @@ def do_staging(self, subcmd, opts, *args):
     if opts.everything:
         staging_check_everything = True
 
-    self._staging_parse_staging_prjs(opts)
     self.rings = self._staging_get_rings(opts)
     api = StagingApi(opts.apiurl)
 
@@ -902,12 +890,23 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_freeze_prjlink(args[1], opts)
     elif cmd in ['rqlink']:
         api.sr_to_prj(args[1], args[2])
+    elif cmd in ['select']:
+        # TODO: have an api call for that
+        stprj = 'openSUSE:Factory:Staging:%s' % args[1]
+        for i in range(2, len(args)):
+            api.sr_to_prj(args[i], stprj)
     elif cmd in ['cleanup_rings']:
         self._staging_cleanup_rings(opts)
     elif cmd in ['accept', 'list']:
         self.letter_to_accept = None
         if cmd == 'accept':
             self.letter_to_accept = args[1]
+
+        self.packages_staged = dict()
+        for prj in api.get_staging_projects():
+            meta = api.get_prj_pseudometa(prj)
+            for req in meta['requests']:
+                self.packages_staged[req['package']] = (prj[-1], req['id'])
 
         # xpath query, using the -m, -r, -s options
         where = "@by_group='factory-staging'+and+@state='new'"
