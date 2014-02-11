@@ -318,7 +318,7 @@ def _staging_check(self, project, check_everything, opts):
     """
 
     ret = 0
-    chng = _get_changed(opts.apiurl, project, check_everything)
+    chng = _get_changed(opts, project, check_everything)
     if len(chng) > 0:
         for pair in chng:
             print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
