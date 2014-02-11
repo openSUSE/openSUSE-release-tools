@@ -332,7 +332,7 @@ def _staging_check(self, project, check_everything, opts):
     if ret == 0 or check_everything:
         print "Getting build status, this may take a while"
         # Get staging project results
-        f = _get_build_res(opts.apiurl, project)
+        f = _get_build_res(opts, project)
         root = ET.fromstring(''.join(f))
 
         # Get parent project
@@ -357,7 +357,7 @@ def _staging_check(self, project, check_everything, opts):
                 print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
                 ret |= 4
                 continue
-            f = _get_build_res(opts.apiurl, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
+            f = _get_build_res(opts, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
             p_root = ET.fromstring(''.join(f))
 
             # Find corresponding set of results in parent project
