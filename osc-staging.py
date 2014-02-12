@@ -6,12 +6,18 @@
 # Distribute under GPLv2 or GPLv3
 
 import logging
+import os.path
+import sys
 
 import osc
 from osc import cmdln
 from osc.core import *
 
-from stagingapi import StagingApi
+
+# Expand sys.path to search modules inside the pluging directory
+_plugin_dir = os.path.expanduser('~/.osc-plugins')
+sys.path.append(_plugin_dir)
+from osclib.stagingapi import StagingApi
 
 
 OSC_STAGING_VERSION='0.0.1'
