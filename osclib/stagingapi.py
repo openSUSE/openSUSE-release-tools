@@ -5,27 +5,34 @@
 # Distribute under GPLv2 or GPLv3
 
 import logging
+from xml.etree import cElementTree as ET
 
-from osc.core import *
 import yaml
 
+from osc import oscerr
+from osc.core import delete_package
+from osc.core import get_request
+from osc.core import make_meta_url
+from osc.core import makeurl
+from osc.core import metafile
+from osc.core import http_GET
+from osc.core import http_POST
+from osc.core import http_PUT
+from osc.core import link_pac
 
 class StagingApi(object):
     """
     Class containing various api calls to work with staging projects.
     """
 
-    rings = ['openSUSE:Factory:Rings:0-Bootstrap',
-             'openSUSE:Factory:Rings:1-MinimalX']
-    ring_packages = dict()
-    apiurl = ""
-
     def __init__(self, apiurl):
         """
-        Initialize global variables
+        Initialize instance variables
         """
 
         self.apiurl = apiurl
+        self.rings = ['openSUSE:Factory:Rings:0-Bootstrap',
+                      'openSUSE:Factory:Rings:1-MinimalX']
         self.ring_packages = self._generate_ring_packages()
 
 
@@ -120,7 +127,7 @@ class StagingApi(object):
                  'comment': message}
 
         url = makeurl(self.apiurl, ['request', str(id)], query=query)
-        f = http_POST(url, data=message)
+        http_POST(url, data=message)
 
     def accept_non_ring_request(self, request):
         """
