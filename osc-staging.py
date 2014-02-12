@@ -7,12 +7,24 @@
 
 import logging
 import os.path
+import re
 import sys
+from urllib2 import HTTPError
+from xml.etree import cElementTree as ET
 
-import osc
-from osc import cmdln
-from osc.core import *
-
+from osc import cmdln, oscerr
+from osc.core import delete_package
+from osc.core import delete_project
+from osc.core import get_request
+from osc.core import make_meta_url
+from osc.core import makeurl
+from osc.core import meta_get_packagelist
+from osc.core import metafile
+from osc.core import http_GET
+from osc.core import http_POST
+from osc.core import http_PUT
+from osc.core import link_pac
+from osc.core import server_diff
 
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
@@ -28,7 +40,7 @@ def _print_version(self):
     quit(0)
 
 
-def _get_parent(apirul, project, repo = "standard"):
+def _get_parent(apiurl, project, repo = "standard"):
     """
     Finds what is the parent project of the staging project
     :param apiurl: url to the OBS api
@@ -47,6 +59,7 @@ def _get_parent(apirul, project, repo = "standard"):
         return None
     return p_path['project']
 
+
 # Get last build results (optionally only for specified repo/arch)
 # Works even when rebuild is triggered
 def _get_build_res(opts, prj, repo=None, arch=None):
@@ -59,6 +72,7 @@ def _get_build_res(opts, prj, repo=None, arch=None):
     u = makeurl(opts.apiurl, ['build', prj, '_result'], query=query)
     f = http_GET(u)
     return f.readlines()
+
 
 def _get_changed(opts, project, everything):
     ret = []
@@ -172,6 +186,7 @@ def _staging_check(self, project, check_everything, opts):
     else:
         print "Staging check succeeded!"
     return ret
+
 
 def _staging_create(self, trg, opts):
     """
@@ -305,8 +320,8 @@ def _staging_create(self, trg, opts):
         print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
         link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
     print
-
     return
+
 
 def _staging_remove(self, project, opts):
     """
@@ -329,6 +344,7 @@ def _staging_remove(self, project, opts):
     delete_project(opts.apiurl, project, force=True, msg=None)
     print("Deleted.")
     return
+
 
 def _staging_submit_devel(self, project, opts):
     """
@@ -360,6 +376,7 @@ def _staging_submit_devel(self, project, opts):
         print("No changes to submit")
     return
 
+
 def _staging_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
     """ taken from osc/osc/core.py, improved:
         - verbose option added,
@@ -376,6 +393,7 @@ def _staging_change_review_state(self, opts, id, newstate, by_group='', by_user=
     root = ET.parse(f).getroot()
     return root.attrib['code']
 
+
 def _staging_get_rings(self, opts):
     ret = dict()
     for prj in ['openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX']:
@@ -385,13 +403,13 @@ def _staging_get_rings(self, opts):
             ret[entry.attrib['name']] = prj
     return ret
 
+
 def _staging_one_request(self, rq, opts):
     if (opts.verbose):
         ET.dump(rq)
         print(opts)
     id = int(rq.get('id'))
     act_id = 0
-    approved_actions = 0
     actions = rq.findall('action')
     act = actions[0]
 
@@ -427,6 +445,7 @@ def _staging_one_request(self, rq, opts):
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
 
+
 def _staging_check_one_source(self, flink, si, opts):
     package = si.get('package')
     # we have to check if its a link within the staging project
@@ -445,6 +464,7 @@ def _staging_check_one_source(self, flink, si, opts):
     ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev') })
     return package
 
+
 def _staging_receive_sources(self, prj, sources, flink, opts):
     url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info', 'nofilename': '1' } )
     f = http_GET(url)
@@ -454,6 +474,7 @@ def _staging_receive_sources(self, prj, sources, flink, opts):
         package = self._staging_check_one_source(flink, si, opts)
         sources[package] = 1
     return sources
+
 
 def _staging_freeze_prjlink(self, prj, opts):
     url = makeurl(opts.apiurl, ['source', prj, '_meta'])
