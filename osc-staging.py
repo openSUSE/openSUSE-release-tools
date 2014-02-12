@@ -476,80 +476,6 @@ def _staging_freeze_prjlink(self, prj, opts):
     root = ET.parse(f).getroot()
     print ET.tostring(root)
 
-def _staging_cleanup_rings(self, opts):
-    self.bin2src = dict()
-    self.pkgdeps = dict()
-    self.sources = list()
-    self._staging_check_depinfo_ring('openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX', opts);
-    self._staging_check_depinfo_ring('openSUSE:Factory:Rings:1-MinimalX', 'openSUSE:Factory:MainDesktops', opts);
-
-def _staging_fill_pkgdeps(self, prj, repo, arch, opts):
-    url = makeurl(opts.apiurl, ['build', prj, repo, arch, '_builddepinfo'])
-    f = http_GET(url)
-    root = ET.parse(f).getroot()
-
-    for package in root.findall('package'):
-        #print ET.tostring(package)
-        source = package.find('source').text
-        if package.attrib['name'].startswith('preinstall'):
-            continue
-        self.sources.append(source)
-
-        for subpkg in package.findall('subpkg'):
-            subpkg = subpkg.text
-            if self.bin2src.has_key(subpkg):
-                print "bin $s defined twice $prj $source - $bin2src{$s}\n"
-            self.bin2src[subpkg] = source
-
-    for package in root.findall('package'):
-        source = package.find('source').text
-        for pkg in package.findall('pkgdep'):
-            if not self.bin2src.has_key(pkg.text):
-                if pkg.text.startswith('texlive-'):
-                    for letter in range(ord('a'), ord('z') + 1):
-                        self.pkgdeps['texlive-specs-' + chr(letter)] = 'texlive-specs-' + chr(letter)
-                else:
-                    print "PKG NOT THERE", pkg.text
-                continue
-            b = self.bin2src[pkg.text]
-            self.pkgdeps[b] = source
-
-def _staging_check_depinfo_ring(self, prj, nextprj, opts):
-  self._staging_fill_pkgdeps(prj, 'standard', 'x86_64', opts)
-
-  if prj == 'openSUSE:Factory:Rings:1-MinimalX':
-      url = makeurl(opts.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'] )
-      root = ET.parse(http_GET(url)).getroot()
-      for bdep in root.findall('bdep'):
-          if not bdep.attrib.has_key('name'): continue
-          b = bdep.attrib['name']
-          if not self.bin2src.has_key(b): continue
-          b = self.bin2src[b]
-          self.pkgdeps[b] = 'MYdvd'
-
-  # if ($prj eq 'openSUSE:Factory:MainDesktops') {
-  #   $dinfo->{MYcds} = {};
-  #   $dinfo->{MYcds}->{pkgdep} = ();
-  #   $dinfo->{MYcds}->{source} = 'MYcds';
-  #   push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-gnome');
-  #   push(@{$dinfo->{MYcds}->{pkgdep}}, 'kiwi-image-livecd-kde');
-
-  if prj == 'openSUSE:Factory:Rings:0-Bootstrap':
-      url = makeurl(opts.apiurl, ['build', prj, 'standard', '_buildconfig'] )
-      for line in http_GET(url).read().split('\n'):
-          if line.startswith('Preinstall:') or line.startswith('Support:'):
-              for prein in line.split(':')[1].split():
-                  if not self.bin2src.has_key(prein): continue
-                  b = self.bin2src[prein]
-                  self.pkgdeps[b] = 'MYinstall'
-
-  for source in self.sources:
-      #   next if ($key =~ m/^MY/ || $key =~ m/^texlive-specs-/ || $key =~ m/^kernel-/);
-      if not self.pkgdeps.has_key(source):
-          print "osc rdelete -m cleanup", prj, source
-          if nextprj:
-              print "osc linkpac -c openSUSE:Factory", source, nextprj
-
 
 @cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
@@ -647,7 +573,8 @@ def do_staging(self, subcmd, opts, *args):
         for i in range(2, len(args)):
             api.sr_to_prj(args[i], stprj)
     elif cmd in ['cleanup_rings']:
-        self._staging_cleanup_rings(opts)
+        import osclib.cleanup_rings
+        osclib.cleanup_rings.CleanupRings(opts.apiurl).perform()
     elif cmd in ['accept', 'list']:
         self.letter_to_accept = None
         if cmd == 'accept':
