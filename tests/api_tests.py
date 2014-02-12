@@ -17,6 +17,7 @@ except ImportError:
 import oscs
 import osc
 
+
 class TestApiCalls(unittest.TestCase):
     """
     Tests for various api calls to ensure we return expected content
@@ -77,33 +78,27 @@ class TestApiCalls(unittest.TestCase):
         """
 
         # our content in the XML files
-        ring_packages = {'AGGR-antlr': 'openSUSE:Factory:MainDesktops',
-                         'Botan': 'openSUSE:Factory:DVD',
-                         'DirectFB': 'openSUSE:Factory:Core',
-                         'zlib': 'openSUSE:Factory:Build'}
+        ring_packages = {
+            'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX',
+        }
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Build',
-                                      'build-project.xml')
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Rings:0-Bootstrap',
+                                      'ring-0-project.xml')
         self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Core',
-                                      'core-project.xml')
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:MainDesktops',
-                                      'maindesktops-project.xml')
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:DVD',
-                                      'dvd-project.xml')
+                                      'ring-1-project.xml')
 
         # Create the api object
-        api = oscs.StagingApi('http://localhost')
-        self.assertEqual(ring_packages,
-                         api.ring_packages)
+        with mock_generate_ring_packages():
+            api = oscs.StagingApi('http://localhost')
+        self.assertEqual(ring_packages, api.ring_packages)
 
     @httpretty.activate
     def test_dispatch_open_requests(self):
         """
         Test dispatching and closure of non-ring packages
         """
-
-        pkglist = []
 
         # Initiate the pretty overrides
         self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
@@ -113,6 +108,8 @@ class TestApiCalls(unittest.TestCase):
         # We don't care about the return so just reuse the above :P
         # If there is bug in the function we get assertion about closing more issues than we should
         self._register_pretty_url_post('http://localhost/request/220956?comment=No+need+for+staging%2C+not+in+tested+ring+project.&newstate=accepted&by_group=factory-staging&cmd=changereviewstate',
+                                      'open-requests.xml')
+        self._register_pretty_url_post('http://localhost/request/221625?comment=No+need+for+staging%2C+not+in+tested+ring+project.&newstate=accepted&by_group=factory-staging&cmd=changereviewstate',
                                       'open-requests.xml')
 
         # Initiate the api with mocked rings
@@ -194,8 +191,7 @@ class TestApiCalls(unittest.TestCase):
 # Here place all mockable functions
 @contextlib.contextmanager
 def mock_generate_ring_packages():
-    with mock.patch('oscs.StagingApi._generate_ring_packages', return_value={'AGGR-antlr': 'openSUSE:Factory:MainDesktops',
-                         'Botan': 'openSUSE:Factory:DVD',
-                         'DirectFB': 'openSUSE:Factory:Core',
-                         'xf86-video-intel': 'openSUSE:Factory:Build'}):
+    with mock.patch('oscs.StagingApi._generate_ring_packages', return_value={
+            'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX'}):
         yield

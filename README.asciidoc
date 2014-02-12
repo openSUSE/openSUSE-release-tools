@@ -27,7 +27,7 @@ Link the +osc-staging.py+ either to +~/.osc-plugins+ or +/var/lib/osc-plugins+
 
 --------------------------------------------------------------------------------
 cd osc-plugin-factory
-ln -sr ./osc-staging.py ./stagingapi.py ~/.osc-plugins
+ln -sr ./osc-staging.py ./osclib ~/.osc-plugins
 --------------------------------------------------------------------------------
 
 Now you are done and all that is left is start using plugin, see help in
