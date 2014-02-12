@@ -411,7 +411,7 @@ def _staging_one_request(self, rq, opts):
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
         elif stage_info[1] != 0 and int(stage_info[1]) != id:
             print stage_info
-            print "osc staging rqlink %s openSUSE:Factory:Staging:%s" % (id, stage_info[0])
+            print "osc staging select %s %s" % (stage_info[0], id)
             return
         elif stage_info[1] != 0: # keep silent about those already asigned
             return
@@ -572,7 +572,7 @@ def do_staging(self, subcmd, opts, *args):
 
     "list" will pick the requests not in rings
 
-    "rqlink" will add request to the project
+    "select" will add requests to the project
 
     Usage:
         osc staging check [--everything] REPO
@@ -582,7 +582,6 @@ def do_staging(self, subcmd, opts, *args):
         osc staging submit-devel [-m message] REPO
         osc staging freeze PROJECT
         osc staging list
-        osc staging rqlink REQUEST PROJECT
         osc staging select LETTER REQUEST...
         osc staging accept LETTER
         osc staging cleanup_rings
@@ -598,8 +597,6 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 1
     elif cmd in ['check']:
         min_args, max_args = 1, 2
-    elif cmd in ['rqlink']:
-        min_args, max_args = 2, 2
     elif cmd in ['select']:
         min_args, max_args = 2, None
     elif cmd in ['create', 'c']:
@@ -638,8 +635,6 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_submit_devel(project, opts)
     elif cmd in ['freeze']:
         self._staging_freeze_prjlink(args[1], opts)
-    elif cmd in ['rqlink']:
-        api.sr_to_prj(args[1], args[2])
     elif cmd in ['select']:
         # TODO: have an api call for that
         stprj = 'openSUSE:Factory:Staging:%s' % args[1]
