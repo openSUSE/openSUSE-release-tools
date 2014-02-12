@@ -109,8 +109,6 @@ class TestApiCalls(unittest.TestCase):
         # If there is bug in the function we get assertion about closing more issues than we should
         self._register_pretty_url_post('http://localhost/request/220956?comment=No+need+for+staging%2C+not+in+tested+ring+project.&newstate=accepted&by_group=factory-staging&cmd=changereviewstate',
                                       'open-requests.xml')
-        self._register_pretty_url_post('http://localhost/request/221625?comment=No+need+for+staging%2C+not+in+tested+ring+project.&newstate=accepted&by_group=factory-staging&cmd=changereviewstate',
-                                      'open-requests.xml')
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
