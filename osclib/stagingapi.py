@@ -20,6 +20,7 @@ from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import link_pac
 
+
 class StagingAPI(object):
     """
     Class containing various api calls to work with staging projects.
@@ -42,7 +43,7 @@ class StagingAPI(object):
         :return dictionary with ring names
         """
 
-        ret = dict()
+        ret = {}
 
         for prj in self.rings:
             url = makeurl(self.apiurl, ['source', prj])
@@ -61,7 +62,7 @@ class StagingAPI(object):
         :return dict ( project, package, revision, md5sum )
         """
 
-        package_info = dict()
+        package_info = {}
 
         url =  makeurl(self.apiurl, ['source', project, pkgname])
         content = http_GET(url)
@@ -84,7 +85,12 @@ class StagingAPI(object):
 
         # Copy the package
         #FIXME: add the data from orginal project yaml to the destination one
-        link_pac(package_info['project'], package_info['package'], destination_project, package, force=True, rev=package_info['srcmd5'])
+        link_pac(package_info['project'],
+                 package_info['package'],
+                 destination_project,
+                 package,
+                 force=True,
+                 rev=package_info['srcmd5'])
 
         # Delete the first location
         message = 'moved to {0}'.format(destination_project)
@@ -100,19 +106,19 @@ class StagingAPI(object):
 
         projects = []
 
-        url = makeurl(self.apiurl, ['search', 'project', 'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
+        url = makeurl(self.apiurl, ['search', 'project',
+                                    'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
         projxml = http_GET(url)
-
         root = ET.parse(projxml).getroot()
         for val in root.findall('project'):
             projects.append(val.get('name'))
         return projects
 
 
-    def staging_change_review_state(self, id, newstate, message):
+    def staging_change_review_state(self, request_id, newstate, message):
         """
         Change review state of the staging request
-        :param id: id of the request
+        :param request_id: id of the request
         :param newstate: state of the new request
         :param message: message for the review
         """
@@ -121,18 +127,21 @@ class StagingAPI(object):
             - empty by_user=& removed.
             - numeric id can be int().
         """
-        query = {'cmd': 'changereviewstate',
-                 'newstate': newstate,
-                 'by_group': 'factory-staging',
-                 'comment': message}
+        query = {
+            'cmd': 'changereviewstate',
+            'newstate': newstate,
+            'by_group': 'factory-staging',
+            'comment': message
+        }
 
-        url = makeurl(self.apiurl, ['request', str(id)], query=query)
+        url = makeurl(self.apiurl, ['request', str(request_id)], query=query)
         http_POST(url, data=message)
+
 
     def accept_non_ring_request(self, request):
         """
-        Accept review of requests that are not yet in
-        any ring so we don't delay their testing.
+        Accept review of requests that are not yet in any ring so we
+        don't delay their testing.
         :param request: request to check
         """
 
@@ -150,12 +159,11 @@ class StagingAPI(object):
 
         # If the values are empty it is no error
         if not target_project or not target_package:
-            logging.info('no target/package in request {0}, action {1}; '.format(id, action))
+            logging.info('no target/package in request {0}, action {1}; '.format(request_id, action))
 
         # Verify the package ring
         ring = self.ring_packages.get(target_package, None)
-        # DVD and main desktops are ignored for now
-        if ring is None:
+        if not ring:
             # accept the request here
             message = "No need for staging, not in tested ring project."
             self.staging_change_review_state(request_id, 'accepted', message)
@@ -181,6 +189,7 @@ class StagingAPI(object):
             requests.append(rq)
 
         return requests
+
 
     def dispatch_open_requests(self):
         """
