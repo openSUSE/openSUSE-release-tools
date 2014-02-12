@@ -287,7 +287,7 @@ class StagingApi(object):
         f = http_GET(url)
         root = ET.parse(f).getroot()
         src_rev =  root.attrib['srcmd5']
-        src_vrev = root.attrib['vrev']
+        src_vrev = root.attrib.get('vrev', None)
         #print "osc linkpac -r %s %s/%s %s/%s" % (src_rev, src_prj, src_pkg, project, tar_pkg)
 
         # link stuff
