@@ -45,6 +45,46 @@ class StagingApi(object):
         return ret
 
 
+    def get_package_information(self, project, pkgname):
+        """
+        Get the revision packagename and source project to copy from
+        based on content provided
+        :param project: the project we are having the package in
+        :param pkgname: name of the package we want to identify
+        :return dict ( project, package, revision, md5sum )
+        """
+
+        package_info = dict()
+
+        url =  makeurl(self.apiurl, ['source', project, pkgname])
+        content = http_GET(url)
+        root = ET.parse(content).getroot().find('linkinfo')
+        package_info['srcmd5'] =  root.attrib['srcmd5']
+        package_info['rev'] = root.attrib['rev']
+        package_info['project'] = root.attrib['project']
+        package_info['package'] = root.attrib['package']
+
+        return package_info
+
+
+    def move_between_project(self, source_project, package, destination_project):
+        """
+        Move selected package from one staging to another
+        """
+
+        # Get the relevant information from source
+        package_info = self.get_package_information('source_project', 'package')
+
+        # Copy the package
+        #FIXME: add the data from orginal project yaml to the destination one
+        link_pac(package_info['project'], package_info['package'], destination_project, package, force=True, rev=package_info['srcmd5'])
+
+        # Delete the first location
+        message = 'moved to {0}'.format(destination_project)
+        delete_package(self.apiurl, source_project, package, msg=message)
+        #FIXME: delete the data from YAML
+
+
     def get_staging_projects(self):
         """
         Get all current running staging projects

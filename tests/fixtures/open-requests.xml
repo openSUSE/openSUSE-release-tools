@@ -172,8 +172,8 @@
 </request>
   <request id="221625">
   <action type="submit">
-    <source project="X11:XOrg" package="xf86-video-intel" rev="110"/>
-    <target project="openSUSE:Factory" package="xf86-video-intel"/>
+    <source project="X11:XOrg" package="elem-ring-0" rev="110"/>
+    <target project="openSUSE:Factory" package="elem-ring-0"/>
   </action>
   <state name="review" who="factory-auto" when="2014-02-10T12:03:29">
     <comment>Check Staging Project</comment>
