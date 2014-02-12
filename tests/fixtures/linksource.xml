@@ -1,0 +1,5 @@
+<directory name="wine" rev="1" vrev="1" srcmd5="751efeae52d6c99de48164088a33d855">
+  <linkinfo project="devel:wine" package="wine" rev="7b98ac01b8071d63a402fa99dc79331c" srcmd5="7b98ac01b8071d63a402fa99dc79331c" xsrcmd5="78c237aa1fb4b6433ae02a0d570c877c" lsrcmd5="751efeae52d6c99de48164088a33d855" />
+  <serviceinfo code="succeeded" xsrcmd5="c5c6d23e354b6c1e487012b999b53aa4" />
+  <entry name="_link" md5="3da63c4cdf2edef135a6cff376140c71" size="511" mtime="1392128501" />
+</directory>

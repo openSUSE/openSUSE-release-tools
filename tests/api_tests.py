@@ -165,7 +165,7 @@ class TestApiCalls(unittest.TestCase):
     @httpretty.activate
     def test_open_requests(self):
         """
-        List projects and their content
+        Test searching for open requests
         """
 
         requests = []
@@ -184,6 +184,29 @@ class TestApiCalls(unittest.TestCase):
 
         # Compare the results, we only care now that we got 2 of them not the content
         self.assertEqual(2, count)
+
+    @httpretty.activate
+    def test_get_package_information(self):
+        """
+        Test if we get proper project, name and revision from the staging informations
+        """
+
+        package_info = {'project': 'devel:wine',
+                        'rev': '7b98ac01b8071d63a402fa99dc79331c',
+                        'srcmd5': '7b98ac01b8071d63a402fa99dc79331c',
+                        'package': 'wine'}
+
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:B/wine',
+                                      'linksource.xml')
+
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            api = oscs.StagingApi('http://localhost')
+
+        # Compare the results, we only care now that we got 2 of them not the content
+        self.assertEqual(package_info,
+                         api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
 
 
 # Here place all mockable functions
