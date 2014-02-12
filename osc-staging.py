@@ -17,7 +17,7 @@ from osc.core import *
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
-from osclib.stagingapi import StagingApi
+from osclib.stagingapi import StagingAPI
 
 
 OSC_STAGING_VERSION='0.0.1'
@@ -406,7 +406,7 @@ def do_staging(self, subcmd, opts, *args):
     opts.verbose = False
 
     self.rings = self._staging_get_rings(opts)
-    api = StagingApi(opts.apiurl)
+    api = StagingAPI(opts.apiurl)
 
     # call the respective command and parse args by need
     if cmd in ['push', 'p']:

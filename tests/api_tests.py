@@ -91,7 +91,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Create the api object
         with mock_generate_ring_packages():
-            api = oscs.StagingApi('http://localhost')
+            api = oscs.StagingAPI('http://localhost')
         self.assertEqual(ring_packages, api.ring_packages)
 
     @httpretty.activate
@@ -112,7 +112,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingApi('http://localhost')
+            api = oscs.StagingAPI('http://localhost')
 
         # get the open requests
         requests = api.dispatch_open_requests()
@@ -132,7 +132,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingApi('http://localhost')
+            api = oscs.StagingAPI('http://localhost')
 
         # Ensure the output is equal to what we expect
         data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test1')
@@ -161,7 +161,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingApi('http://localhost')
+            api = oscs.StagingAPI('http://localhost')
 
         # Compare the results
         self.assertEqual(prjlist,
@@ -181,7 +181,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingApi('http://localhost')
+            api = oscs.StagingAPI('http://localhost')
 
         # get the open requests
         requests = api.get_open_requests()
@@ -207,7 +207,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingApi('http://localhost')
+            api = oscs.StagingAPI('http://localhost')
 
         # Compare the results, we only care now that we got 2 of them not the content
         self.assertEqual(package_info,
@@ -217,7 +217,7 @@ class TestApiCalls(unittest.TestCase):
 # Here place all mockable functions
 @contextlib.contextmanager
 def mock_generate_ring_packages():
-    with mock.patch('oscs.StagingApi._generate_ring_packages', return_value={
+    with mock.patch('oscs.StagingAPI._generate_ring_packages', return_value={
             'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX'}):
         yield

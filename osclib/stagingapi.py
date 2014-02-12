@@ -20,7 +20,7 @@ from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import link_pac
 
-class StagingApi(object):
+class StagingAPI(object):
     """
     Class containing various api calls to work with staging projects.
     """
