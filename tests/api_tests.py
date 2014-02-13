@@ -231,6 +231,12 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(httpretty.last_request().body, '<package name="wine"><title/><description/></package>')
         self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
 
+        api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
+        self.assertEqual(httpretty.last_request().method, 'PUT')
+        self.assertEqual(httpretty.last_request().body, '<package name="wine"><title /><description /><build><disable /></build></package>')
+        self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
+
+
 # Here place all mockable functions
 @contextlib.contextmanager
 def mock_generate_ring_packages():

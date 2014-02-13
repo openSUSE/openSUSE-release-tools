@@ -307,7 +307,7 @@ class StagingAPI(object):
             root = ET.fromstring(dst_meta)
             elm = ET.SubElement(root, 'build')
             ET.SubElement(elm, 'disable')
-            dst_meta = ET.tostring(root, encoding=ET_ENCODING)
+            dst_meta = ET.tostring(root)
 
         url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
         http_PUT(url, data=dst_meta)
