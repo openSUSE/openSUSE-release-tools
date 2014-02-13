@@ -295,6 +295,23 @@ class StagingAPI(object):
         # FIXME Add sr to group request as well
 
 
+    def create_package_container(self, project, package, disable_build = False):
+        """
+        Creates a package container without any fields in project/package
+        :param project: project to create it
+        :param package: package name
+        :param disable_build: should the package be created with build flag disabled
+        """
+        dst_meta = '<package name="%s"><title/><description/></package>' % package
+        if disable_build:
+            root = ET.fromstring(dst_meta)
+            elm = ET.SubElement(root, 'build')
+            ET.SubElement(elm, 'disable')
+            dst_meta = ET.tostring(root, encoding=ET_ENCODING)
+
+        url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
+        http_PUT(url, data=dst_meta)
+
     def sr_to_prj(self, request_id, project):
         """
         Links sources from request to project
@@ -316,15 +333,17 @@ class StagingAPI(object):
         src_pkg = act.src_package
         tar_pkg = act.tgt_package
 
+        self.create_package_container(project, tar_pkg)
+        self._add_rq_to_prj_pseudometa(project, int(request_id), src_pkg)
+
         # expand the revision to a md5
         url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
         f = http_GET(url)
         root = ET.parse(f).getroot()
         src_rev =  root.attrib['srcmd5']
         src_vrev = root.attrib['vrev']
-        #print "osc linkpac -r %s %s/%s %s/%s" % (src_rev, src_prj, src_pkg, project, tar_pkg)
 
-        # link stuff
-        self._add_rq_to_prj_pseudometa(project, int(request_id), src_pkg)
-        link_pac(src_prj, src_pkg, project, tar_pkg, force=True, rev=src_rev, vrev=src_vrev)
-        # FIXME If there are links in parent project, make sure that current
+        # link stuff - not using linkpac because linkpac copies meta from source
+        root = ET.Element('link', package=src_pkg, project=src_prj, rev=src_rev, vrev=src_vrev)
+        url = makeurl(self.apiurl, ['source', project, tar_pkg, '_link'])
+        http_PUT(url, data=ET.tostring(root))
