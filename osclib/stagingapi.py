@@ -250,7 +250,8 @@ class StagingAPI(object):
         new_title = []
         for request in meta['requests']:
             new_title.append(request['package'])
-        title.text = ', '.join(new_title)
+        nt = ', '.join(sorted(new_title))
+        title.text = nt[:240]
         # Write XML back
         url = make_meta_url('prj',project, self.apiurl, force=True)
         f = metafile(url, ET.tostring(root))
