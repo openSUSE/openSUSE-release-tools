@@ -262,6 +262,24 @@ class StagingApi(object):
         # FIXME Add sr to group request as well
 
 
+    def _remove_rq_from_prj_pseudometa(self, project, package):
+        """
+        Delete request from the project pseudometa
+        :param project: project to remove from
+        :param package: package we want to remove from meta
+        """
+
+        data = self.get_prj_pseudometa(project)
+        newdata = dict()
+        newdata['requests'] = list()
+
+        for request in data['requests']:
+            if not request['package'] == package:
+                newdata['requests'].append( { 'id': request['id'], 'package': request['package']} )
+        self.set_prj_pseudometa(project, newdata)
+        # FIXME Add sr to group request as well
+
+
     def sr_to_prj(self, request_id, project):
         """
         Links sources from request to project
