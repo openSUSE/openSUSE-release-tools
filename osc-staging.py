@@ -173,141 +173,6 @@ def _staging_check(self, project, check_everything, opts):
         print "Staging check succeeded!"
     return ret
 
-def _staging_create(self, trg, opts):
-    """
-    Creates new staging project based on the submit request.
-    :param trg: submit request to create staging project for or parent project/package
-    :param opts: pointer to options
-    """
-
-    req = None
-
-    # We are dealing with sr
-    if re.match('^\d+$', trg):
-        # read info from sr
-        req = get_request(opts.apiurl, trg)
-        act = req.get_actions("submit")[0]
-
-        trg_prj = act.tgt_project
-        trg_pkg = act.tgt_package
-        src_prj = act.src_project
-        src_pkg = act.src_package
-
-    # We are dealing with project
-    else:
-        data = re.split('/', trg)
-        o_stg_prj = data[0]
-        trg_prj = re.sub(':Staging:.*','',data[0])
-        src_prj = re.sub(':Staging:.*','',data[0])
-        if len(data)>1:
-            trg_pkg = data[1]
-            src_pkg = data[1]
-        else:
-            trg_pkg = None
-            src_pkg = None
-
-    # Set staging name and maybe parent
-    if trg_pkg is not None:
-        stg_prj = trg_prj + ":Staging:" + trg_pkg
-
-    if re.search(':Staging:',trg):
-        stg_prj = o_stg_prj
-
-    if opts.parent:
-        trg_prj = opts.parent
-
-    # test if staging project exists
-    found = 1
-    url = make_meta_url('prj', stg_prj, opts.apiurl)
-    try:
-       data = http_GET(url).readlines()
-    except HTTPError as e:
-       if e.code == 404:
-            found = 0
-       else:
-            raise e
-    if found == 1:
-        print('Staging project "%s" already exists, overwrite? (Y/n)'%(stg_prj))
-        answer = sys.stdin.readline()
-        if re.search("^\s*[Nn]", answer):
-            print('Aborting...')
-            exit(1)
-
-    # parse metadata from parent project
-    trg_meta_url = make_meta_url("prj", trg_prj, opts.apiurl)
-    data = http_GET(trg_meta_url).readlines()
-
-    dis_repo = []
-    en_repo = []
-    repos = []
-    perm =''
-    in_build = 0
-    for line in data:
-        # what repositories are disabled
-        if in_build == 1:
-            if re.search("^\s+</build>", line):
-                in_build = 0
-            elif re.search("^\s+<disable", line):
-                dis_repo.append(re.sub(r'.*repository="([^"]+)".*', r'\1', line).strip())
-            elif re.search("^\s+<enable", line):
-                en_repo.append(re.sub(r'.*repository="([^"]+)".*', r'\1', line).strip())
-        elif re.search("^\s+<build>", line):
-            in_build=1
-        # what are the rights
-        elif re.search("^\s+(<person|<group)", line):
-                perm += line
-        # what are the repositories
-        elif re.search("^\s+<repository", line):
-                repos.append(re.sub(r'.*name="([^"]+)".*', r'\1', line).strip())
-
-    # add maintainers of source project
-    trg_meta_url = make_meta_url("prj", src_prj, opts.apiurl)
-    data = http_GET(trg_meta_url).readlines()
-    perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) is not None)), data))
-
-    # add maintainers of source package
-    if src_pkg is not None:
-        trg_meta_url = make_meta_url("pkg", (src_prj, src_pkg), opts.apiurl)
-        data = http_GET(trg_meta_url).readlines()
-        perm += "".join(filter((lambda x: (re.search("^\s+(<person|<group)", x) is not None)), data))
-
-    # create xml for new project
-    new_xml  = '<project name="%s">\n'%(stg_prj)
-    if req is not None:
-        new_xml += '  <title>Staging project for package %s (sr#%s)</title>\n'%(trg_pkg, req.reqid)
-    else:
-        new_xml += '  <title>Staging project "%s"</title>\n'%(trg)
-    new_xml += '  <description></description>\n'
-    new_xml += '  <link project="%s"/>\n'%(trg_prj)
-    if req is not None:
-        new_xml += '  <person userid="%s" role="maintainer"/>\n'%(req.get_creator())
-    new_xml += perm
-    new_xml += '  <build><enable/></build>\n'
-    new_xml += '  <debuginfo><enable/></debuginfo>\n'
-    new_xml += '  <publish><disable/></publish>\n'
-    for repo in repos:
-        if repo not in dis_repo:
-            new_xml += '  <repository name="%s" rebuild="direct" linkedbuild="localdep">\n'%(repo)
-            new_xml += '    <path project="%s" repository="%s"/>\n'%(trg_prj,repo)
-            new_xml += '    <arch>i586</arch>\n'
-            new_xml += '    <arch>x86_64</arch>\n'
-            new_xml += '  </repository>\n'
-    new_xml += '</project>\n'
-
-    # creation of new staging project
-    print('Creating staging project "%s"...'%(stg_prj))
-    url = make_meta_url('prj',stg_prj,opts.apiurl,True,False)
-    f = metafile(url, new_xml, False)
-    http_PUT(f.url, file=f.filename)
-
-    # link package there
-    if src_pkg is not None and trg_pkg is not None:
-        print('Linking package %s/%s -> %s/%s...'%(src_pkg,src_prj,stg_prj,trg_pkg))
-        link_pac(src_prj, src_pkg, stg_prj, trg_pkg, True)
-    print
-
-    return
-
 def _staging_remove(self, project, opts):
     """
     Remove staging project.
@@ -490,8 +355,6 @@ def do_staging(self, subcmd, opts, *args):
 
     "check" will check if all packages are links without changes
 
-    "create" (or "c") will create staging repo from specified submit request
-
     "remove" (or "r") will delete the staging project into submit requests for openSUSE:Factory
 
     "submit-devel" (or "s") will create review requests for changed packages in staging project
@@ -508,8 +371,6 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging check [--everything] REPO
-        osc staging create [--parent project] SR#
-        osc staging create [--parent project] PROJECT[/PACKAGE]
         osc staging remove REPO
         osc staging submit-devel [-m message] REPO
         osc staging freeze PROJECT
@@ -531,8 +392,6 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 2
     elif cmd in ['select']:
         min_args, max_args = 2, None
-    elif cmd in ['create', 'c']:
-        min_args, max_args = 1, 2
     elif cmd in ['list', 'cleanup_rings']:
         min_args, max_args = 0, 0
     else:
@@ -553,9 +412,6 @@ def do_staging(self, subcmd, opts, *args):
     if cmd in ['push', 'p']:
         project = args[1]
         self._staging_push(project, opts)
-    elif cmd in ['create', 'c']:
-        sr = args[1]
-        self._staging_create(sr, opts)
     elif cmd in ['check']:
         project = args[1]
         return self._staging_check(project, opts.everything, opts)
