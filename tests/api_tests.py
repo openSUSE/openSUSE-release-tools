@@ -125,17 +125,22 @@ class TestApiCalls(unittest.TestCase):
         rq = { 'id': '123', 'package': 'test-package' }
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:test/_meta',
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:test1/_meta',
                                       'staging-project-meta.xml')
+        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:test2/_meta',
+                                      'staging-project-broken-meta.xml')
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
             api = oscs.StagingApi('http://localhost')
 
         # Ensure the output is equal to what we expect
-        data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test')
+        data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test1')
         for i in rq.keys():
             self.assertEqual(rq[i],data['requests'][0][i])
+
+        data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test2')
+        self.assertEqual(len(data['requests']),0)
 
     @httpretty.activate
     def test_list_projects(self):

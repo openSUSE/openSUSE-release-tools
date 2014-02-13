@@ -207,6 +207,7 @@ class StagingApi(object):
         # * removed linked packages
         try:
             data = yaml.load(description.text)
+            data['requests']
         except:
             data = yaml.load('requests: []')
         return data
