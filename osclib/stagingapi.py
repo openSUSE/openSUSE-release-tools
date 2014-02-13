@@ -285,10 +285,10 @@ class StagingAPI(object):
         """
 
         data = self.get_prj_pseudometa(project)
-        newdata = dict()
-        newdata['requests'] = list()
+        requests = data['requests']
+        data['requests'] = list()
 
-        for request in data['requests']:
+        for request in requests:
             if not request['package'] == package:
                 newdata['requests'].append( { 'id': request['id'], 'package': request['package']} )
         self.set_prj_pseudometa(project, newdata)
