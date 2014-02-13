@@ -447,7 +447,7 @@ def do_staging(self, subcmd, opts, *args):
         # TODO: have an api call for that
         stprj = 'openSUSE:Factory:Staging:%s' % args[1]
         for i in range(2, len(args)):
-            api.sr_to_prj(args[i], stprj)
+            api.rq_to_prj(args[i], stprj)
     elif cmd in ['cleanup_rings']:
         import osclib.cleanup_rings
         osclib.cleanup_rings.CleanupRings(opts.apiurl).perform()

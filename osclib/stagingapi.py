@@ -312,21 +312,56 @@ class StagingAPI(object):
         url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
         http_PUT(url, data=dst_meta)
 
-    def sr_to_prj(self, request_id, project):
+    def rq_to_prj(self, request_id, project):
         """
-        Links sources from request to project
+        Links request to project - delete or submit
         :param request_id: request to link
         :param project: project to link into
         """
-
         # read info from sr
+        tar_pkg = None
+
         req = get_request(self.apiurl, request_id)
         if not req:
             raise oscerr.WrongArgs("Request {0} not found".format(request_id))
+
         act = req.get_actions("submit")
-        if not act:
-            raise oscerr.WrongArgs("Request {0} is not a submit request".format(request_id))
-        act=act[0]
+        if act:
+            tar_pkg = self.sr_to_prj(act[0], project)
+
+        act = req.get_actions("delete")
+        if act:
+            tar_pkg = self.delete_to_prj(act[0], project)
+
+        if not tar_pkg:
+            raise oscerr.WrongArgs("Request {0} is not a submit or delete request".format(request_id))
+
+        # register the package name
+        self._add_rq_to_prj_pseudometa(project, int(request_id), tar_pkg)
+
+    def delete_to_prj(self, act, project):
+        """
+        Hides Package in project
+        :param act: action for delete request
+        :param project: project to hide in
+        """
+
+        tar_pkg = act.tgt_package
+
+        # create build disabled package
+        self.create_package_container(project, tar_pkg, disable_build=True)
+        # now trigger wipebinaries to emulate a delete
+        url =  makeurl(self.apiurl, ['build', project], { 'cmd': 'wipe', 'package': tar_pkg  } )
+        http_POST(url)
+
+        return tar_pkg
+
+    def sr_to_prj(self, act, project):
+        """
+        Links sources from request to project
+        :param act: action for submit request
+        :param project: project to link into
+        """
 
         src_prj = act.src_project
         src_rev = act.src_rev
@@ -334,7 +369,6 @@ class StagingAPI(object):
         tar_pkg = act.tgt_package
 
         self.create_package_container(project, tar_pkg)
-        self._add_rq_to_prj_pseudometa(project, int(request_id), src_pkg)
 
         # expand the revision to a md5
         url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
@@ -347,3 +381,4 @@ class StagingAPI(object):
         root = ET.Element('link', package=src_pkg, project=src_prj, rev=src_rev, vrev=src_vrev)
         url = makeurl(self.apiurl, ['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
+        return tar_pkg
