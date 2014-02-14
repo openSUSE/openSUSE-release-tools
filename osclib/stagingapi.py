@@ -78,25 +78,24 @@ class StagingAPI(object):
     def move_between_project(self, source_project, package, destination_project):
         """
         Move selected package from one staging to another
+        :param source_project: Source project
+        :param package: Source package
+        :param destination_project: Destination project
         """
 
-        # Get the relevant information from source
-        package_info = self.get_package_information('source_project', 'package')
+        # Get the relevant information about source
+        meta = get_prj_pseudometa(source_project)
+        req_id = -1
+        for req in meta['requests']:
+            if req['package'] == package:
+                req_id = req['id']
+        if req_id == -1:
+            raise oscerr.WrongArgs("Couldn't find request for package {0} in project {1}".format(package,source_project))
 
         # Copy the package
-        #FIXME: add the data from orginal project yaml to the destination one
-        link_pac(package_info['project'],
-                 package_info['package'],
-                 destination_project,
-                 package,
-                 force=True,
-                 rev=package_info['srcmd5'])
-
-        # Delete the first location
-        message = 'moved to {0}'.format(destination_project)
-        delete_package(self.apiurl, source_project, package, msg=message)
-        #FIXME: delete the data from YAML
-
+        sr_to_prj(req_id, destination_project)
+        # Delete the old one
+        rm_from_prj(package, source_project, 'Moved to {0}'.format(destination_project))
 
     def get_staging_projects(self):
         """
@@ -289,6 +288,16 @@ class StagingAPI(object):
         self.set_prj_pseudometa(project, newdata)
         # FIXME Add sr to group request as well
 
+    def rm_from_prj(self, package, project, msg = None):
+        """
+        Delete request from the project
+        :param project: project to remove from
+        :param package: package we want to remove
+        :param msg: message for the log
+        """
+
+        _remove_rq_from_prj_pseudometa(project, package)
+        delete_package(self.apiurl, project, package, force=True, msg=msg)
 
     def create_package_container(self, project, package, disable_build = False):
         """
@@ -306,6 +315,52 @@ class StagingAPI(object):
 
         url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
         http_PUT(url, data=dst_meta)
+
+    def check_project_status(self, project):
+        """
+        Checks whether everything is built in project
+        :param project: project to check
+        """
+        # Get build results
+        query = {}
+        query['lastbuild'] = 1
+        u = makeurl(self.apiurl, ['build', project, '_result'], query=query)
+        f = http_GET(u)
+        root = ET.fromstring(''.join(f.readlines()))
+
+        # Check them
+        broken = []
+        working = []
+        # Iterate through repositories
+        for results in root.findall('result'):
+            if results.get("state") not in [ "published", "unpublished" ]:
+                working.append({"path": "{0}/{1}".format(results.get("repository"), results.get("arch")), "state": results.get("state")})
+            # Iterate through packages
+            for node in results:
+                result = node.get("code")
+                # Skip not built (yet)
+                if result in [ "blocked", "building", "disabled" "excluded", "finished", "unknown", "unpublished", "published" ]:
+                    continue
+                # Find broken
+                if result in [ "broken", "failed", "unresolvable" ]:
+                    broken.append({"pkg": node.get("package"), "state" : result, "path" : "{0}/{1}".format(results.get("repository"),results.get("arch"))})
+
+        # Print the results
+        if len(working) == 0 and len(broken) == 0:
+            print "Everything is green!"
+        else:
+            if len(working) != 0:
+                print "Following repositories are still building:"
+                for i in working:
+                    print "    {0}: {1}".format(i['path'], i['state'])
+                print
+            if len(broken) != 0:
+                print "Following packages are broken:"
+                for i in broken:
+                    print "    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state'])
+                print
+            print "Found errors in staging project {0}!".format(project)
+
 
     def rq_to_prj(self, request_id, project):
         """

@@ -236,6 +236,44 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(httpretty.last_request().body, '<package name="wine"><title /><description /><build><disable /></build></package>')
         self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
 
+    @httpretty.activate
+    def test_check_project_status_green(self):
+        """
+        Test checking project status
+        """
+
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/build/green/_result?lastbuild=1',
+                                      'build-results-green.xml')
+
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            api = oscs.StagingAPI('http://localhost')
+
+        # Check print output
+        api.check_project_status("green")
+        self.assertEqual(sys.stdout.getvalue().strip(), "Everything is green!")
+
+    @httpretty.activate
+    def test_check_project_status_red(self):
+        """
+        Test checking project status
+        """
+
+        # Initiate the pretty overrides
+        self._register_pretty_url_get('http://localhost/build/red/_result?lastbuild=1',
+                                      'build-results-red.xml')
+
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            api = oscs.StagingAPI('http://localhost')
+
+        # Check print output
+        api.check_project_status("red")
+        with open(self._get_fixtures_dir()+"/check_project_status_red.txt", "r") as f:
+            data = f.read().strip()
+        self.assertEqual(sys.stdout.getvalue().strip(), data)
+
 
 # Here place all mockable functions
 @contextlib.contextmanager
