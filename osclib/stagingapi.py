@@ -93,7 +93,7 @@ class StagingAPI(object):
             raise oscerr.WrongArgs("Couldn't find request for package {0} in project {1}".format(package,source_project))
 
         # Copy the package
-        sr_to_prj(req_id, destination_project)
+        rq_to_prj(req_id, destination_project)
         # Delete the old one
         rm_from_prj(package, source_project, 'Moved to {0}'.format(destination_project))
 
@@ -377,7 +377,7 @@ class StagingAPI(object):
 
         act = req.get_actions("submit")
         if act:
-            tar_pkg = self.sr_to_prj(act[0], project)
+            tar_pkg = self.submit_to_prj(act[0], project)
 
         act = req.get_actions("delete")
         if act:
@@ -406,7 +406,7 @@ class StagingAPI(object):
 
         return tar_pkg
 
-    def sr_to_prj(self, act, project):
+    def submit_to_prj(self, act, project):
         """
         Links sources from request to project
         :param act: action for submit request
