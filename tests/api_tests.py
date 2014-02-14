@@ -5,6 +5,7 @@
 # Distribute under GPLv2 or later
 
 import os
+import sys
 import contextlib
 import unittest
 import httpretty
@@ -212,6 +213,28 @@ class TestApiCalls(unittest.TestCase):
         # Compare the results, we only care now that we got 2 of them not the content
         self.assertEqual(package_info,
                          api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
+
+    @httpretty.activate
+    def test_create_package_container(self):
+        """
+        Test if the uploaded _meta is correct
+        """
+
+        with mock_generate_ring_packages():
+            api = oscs.StagingAPI('http://localhost')
+
+        httpretty.register_uri(
+            httpretty.PUT, "http://localhost/source/openSUSE:Factory:Staging:B/wine/_meta")
+
+        api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
+        self.assertEqual(httpretty.last_request().method, 'PUT')
+        self.assertEqual(httpretty.last_request().body, '<package name="wine"><title/><description/></package>')
+        self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
+
+        api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
+        self.assertEqual(httpretty.last_request().method, 'PUT')
+        self.assertEqual(httpretty.last_request().body, '<package name="wine"><title /><description /><build><disable /></build></package>')
+        self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
 
 
 # Here place all mockable functions
