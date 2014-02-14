@@ -1,0 +1,40 @@
+<resultlist state="c7856c90c70c53fae88aacec964b80c0">
+  <result project="green" repository="standard" arch="x86_64" code="building" state="building">
+    <status package="glibc" code="unknown" />
+    <status package="kiwi-image-livecd-gnome.i586" code="unknown" />
+    <status package="kiwi-image-livecd-gnome.x86_64" code="succeeded" />
+    <status package="kiwi-image-livecd-kde.i586" code="unknown" />
+    <status package="kiwi-image-livecd-kde.x86_64" code="succeeded" />
+    <status package="kiwi-image-livecd-x11" code="succeeded" />
+    <status package="openSUSE-images" code="succeeded" />
+    <status package="openSUSE-release" code="unknown" />
+    <status package="package-lists-gnome.i586" code="unknown" />
+    <status package="package-lists-gnome.x86_64" code="succeeded" />
+    <status package="package-lists-images.i586" code="unknown" />
+    <status package="package-lists-images.x86_64" code="succeeded" />
+    <status package="package-lists-kde.i586" code="unknown" />
+    <status package="package-lists-kde.x86_64" code="succeeded" />
+    <status package="package-lists-x11.i586" code="unknown" />
+    <status package="package-lists-x11.x86_64" code="succeeded" />
+    <status package="promo-dvd-parts" code="succeeded" />
+  </result>
+  <result project="green" repository="standard" arch="i586" code="unpublished" state="unpublished">
+    <status package="glibc" code="broken" />
+    <status package="kiwi-image-livecd-gnome.i586" code="succeeded" />
+    <status package="kiwi-image-livecd-gnome.x86_64" code="unknown" />
+    <status package="kiwi-image-livecd-kde.i586" code="succeeded" />
+    <status package="kiwi-image-livecd-kde.x86_64" code="unknown" />
+    <status package="kiwi-image-livecd-x11" code="succeeded" />
+    <status package="openSUSE-images" code="failed" />
+    <status package="openSUSE-release" code="unknown" />
+    <status package="package-lists-gnome.i586" code="succeeded" />
+    <status package="package-lists-gnome.x86_64" code="unknown" />
+    <status package="package-lists-images.i586" code="succeeded" />
+    <status package="package-lists-images.x86_64" code="unknown" />
+    <status package="package-lists-kde.i586" code="succeeded" />
+    <status package="package-lists-kde.x86_64" code="unknown" />
+    <status package="package-lists-x11.i586" code="succeeded" />
+    <status package="package-lists-x11.x86_64" code="unknown" />
+    <status package="promo-dvd-parts" code="succeeded" />
+  </result>
+</resultlist>
