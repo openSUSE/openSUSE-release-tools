@@ -434,7 +434,7 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_push(project, opts)
     elif cmd in ['check']:
         project = args[1]
-        return self._staging_check(project, opts.everything, opts)
+        return api.check_project_status(project)
     elif cmd in ['remove', 'r']:
         project = args[1]
         self._staging_remove(project, opts)
