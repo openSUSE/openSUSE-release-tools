@@ -316,6 +316,52 @@ class StagingAPI(object):
         url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
         http_PUT(url, data=dst_meta)
 
+    def check_project_status(self, project):
+        """
+        Checks whether everything is built in project
+        :param project: project to check
+        """
+        # Get build results
+        query = {}
+        query['lastbuild'] = 1
+        u = makeurl(self.apiurl, ['build', project, '_result'], query=query)
+        f = http_GET(u)
+        root = ET.fromstring(''.join(f.readlines()))
+
+        # Check them
+        broken = []
+        working = []
+        # Iterate through repositories
+        for results in root.findall('result'):
+            if results.get("state") not in [ "published", "unpublished" ]:
+                working.append({"path": "{0}/{1}".format(results.get("repository"), results.get("arch")), "state": results.get("state")})
+            # Iterate through packages
+            for node in results:
+                result = node.get("code")
+                # Skip not built (yet)
+                if result in [ "blocked", "building", "disabled" "excluded", "finished", "unknown", "unpublished", "published" ]:
+                    continue
+                # Find broken
+                if result in [ "broken", "failed", "unresolvable" ]:
+                    broken.append({"pkg": node.get("package"), "state" : result, "path" : "{0}/{1}".format(results.get("repository"),results.get("arch"))})
+
+        # Print the results
+        if len(working) == 0 and len(broken) == 0:
+            print "Everything is green!"
+        else:
+            if len(working) != 0:
+                print "Following repositories are still building:"
+                for i in working:
+                    print "    {0}: {1}".format(i['path'], i['state'])
+                print
+            if len(broken) != 0:
+                print "Following packages are broken:"
+                for i in broken:
+                    print "    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state'])
+                print
+            print "Found errors in staging project {0}!".format(project)
+
+
     def rq_to_prj(self, request_id, project):
         """
         Links request to project - delete or submit
