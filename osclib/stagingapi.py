@@ -84,7 +84,7 @@ class StagingAPI(object):
         """
 
         # Get the relevant information about source
-        meta = get_prj_pseudometa(source_project)
+        meta = self.get_prj_pseudometa(source_project)
         req_id = -1
         for req in meta['requests']:
             if req['package'] == package:
@@ -93,9 +93,9 @@ class StagingAPI(object):
             raise oscerr.WrongArgs("Couldn't find request for package {0} in project {1}".format(package,source_project))
 
         # Copy the package
-        rq_to_prj(req_id, destination_project)
+        self.rq_to_prj(req_id, destination_project)
         # Delete the old one
-        rm_from_prj(package, source_project, 'Moved to {0}'.format(destination_project))
+        self.rm_from_prj(package, source_project, 'Moved to {0}'.format(destination_project))
 
     def get_staging_projects(self):
         """
@@ -285,7 +285,7 @@ class StagingAPI(object):
 
         data = self.get_prj_pseudometa(project)
         data['requests'] = filter(lambda x: x['package'] != package, data['requests'])
-        self.set_prj_pseudometa(project, newdata)
+        self.set_prj_pseudometa(project, data)
         # FIXME Add sr to group request as well
 
     def rm_from_prj(self, package, project, msg = None):
@@ -296,7 +296,7 @@ class StagingAPI(object):
         :param msg: message for the log
         """
 
-        _remove_rq_from_prj_pseudometa(project, package)
+        self._remove_rq_from_prj_pseudometa(project, package)
         delete_package(self.apiurl, project, package, force=True, msg=msg)
 
     def create_package_container(self, project, package, disable_build = False):
@@ -371,7 +371,7 @@ class StagingAPI(object):
         # read info from sr
         tar_pkg = None
 
-        req = get_request(self.apiurl, request_id)
+        req = get_request(self.apiurl, str(request_id))
         if not req:
             raise oscerr.WrongArgs("Request {0} not found".format(request_id))
 

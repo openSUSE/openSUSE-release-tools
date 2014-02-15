@@ -358,6 +358,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 2
     elif cmd in ['select']:
         min_args, max_args = 2, None
+    elif cmd in ['move']:
+        min_args, max_args = 3, None
     elif cmd in ['list', 'cleanup_rings']:
         min_args, max_args = 0, 0
     else:
@@ -395,6 +397,12 @@ def do_staging(self, subcmd, opts, *args):
         stprj = 'openSUSE:Factory:Staging:%s' % args[1]
         for i in range(2, len(args)):
             api.rq_to_prj(args[i], stprj)
+    elif cmd in ['move']:
+        # TODO: have an api call for that
+        sprj = 'openSUSE:Factory:Staging:%s' % args[1]
+        tprj = 'openSUSE:Factory:Staging:%s' % args[2]
+        for i in range(3, len(args)):
+            api.move_between_project(sprj, args[i], tprj)
     elif cmd in ['cleanup_rings']:
         import osclib.cleanup_rings
         osclib.cleanup_rings.CleanupRings(opts.apiurl).perform()
