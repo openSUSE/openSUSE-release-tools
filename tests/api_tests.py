@@ -9,6 +9,9 @@ import sys
 import contextlib
 import unittest
 import httpretty
+import difflib
+import subprocess
+import tempfile
 # mock is part of python3.3
 try:
     import unittest.mock
@@ -30,6 +33,15 @@ class TestApiCalls(unittest.TestCase):
         """
         return os.path.join(os.getcwd(), 'tests/fixtures')
 
+    def _get_fixture_path(self, filename):
+        return os.path.join(self._get_fixtures_dir(), filename)
+
+    def _get_fixture_content(self, filename):
+        response = open(self._get_fixture_path(filename), 'r')
+        content = response.read()
+        response.close()
+        return content
+
     def _register_pretty_url_get(self, url, filename):
         """
         Register specified get url with specific filename in fixtures
@@ -37,9 +49,7 @@ class TestApiCalls(unittest.TestCase):
         :param filename: name of the fixtures file
         """
 
-        response = open(os.path.join(self._get_fixtures_dir(), filename), 'r')
-        content = response.read()
-        response.close()
+        content = self._get_fixture_content(filename)
 
         httpretty.register_uri(httpretty.GET,
                                url,
@@ -274,6 +284,22 @@ class TestApiCalls(unittest.TestCase):
             data = f.read().strip()
         self.assertEqual(sys.stdout.getvalue().strip(), data)
 
+    def test_bootstrap_copy(self):
+        import osclib.freeze_command
+        fc = osclib.freeze_command.FreezeCommand('http://localhost')
+
+        fp = self._get_fixture_path('staging-meta-for-bootstrap-copy.xml')
+        fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True)
+
+        f = tempfile.NamedTemporaryFile(delete=False)
+        f.write(fc.prj_meta_for_bootstrap_copy('openSUSE:Factory:Staging:A'))
+        f.close()
+
+        output = subprocess.check_output('/usr/bin/xmllint --format %s' % f.name, shell=True)
+
+        for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
+            print line
+        self.assertEqual(output, fixture)
 
 # Here place all mockable functions
 @contextlib.contextmanager

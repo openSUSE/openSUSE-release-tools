@@ -1,0 +1,29 @@
+<project name="openSUSE:Factory:Staging:A">
+  <title></title>
+  <description></description>
+  <link project="openSUSE:Factory:Rings:1-MinimalX"/>
+  <build>
+    <disable repository="bootstrap_copy"/>
+    <disable/>
+  </build>
+  <publish>
+    <disable/>
+  </publish>
+  <debuginfo>
+    <enable/>
+  </debuginfo>
+  <repository name="bootstrap_copy">
+     <path project="openSUSE:Factory" repository="ports"/>
+       <arch>i586</arch>
+       <arch>x86_64</arch>
+  </repository>
+  <repository linkedbuild="all" name="standard" rebuild="direct">
+    <path project="openSUSE:Factory:Staging:A" repository="bootstrap_copy"/>
+    <arch>i586</arch>
+    <arch>x86_64</arch>
+  </repository>
+  <repository linkedbuild="all" name="images" rebuild="direct">
+    <path project="openSUSE:Factory:Staging:A" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+</project>

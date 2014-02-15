@@ -267,7 +267,6 @@ def _staging_get_rings(self, opts):
             ret[entry.attrib['name']] = prj
     return ret
 
-
 def _staging_one_request(self, rq, opts):
     if (opts.verbose):
         ET.dump(rq)
@@ -308,59 +307,6 @@ def _staging_one_request(self, rq, opts):
             return
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
-
-
-def _staging_check_one_source(self, flink, si, opts):
-    package = si.get('package')
-    # we have to check if its a link within the staging project
-    # in this case we need to keep the link as is, and not freezing
-    # the target. Otherwise putting kernel-source into staging prj
-    # won't get updated kernel-default (and many other cases)
-    for linked in si.findall('linked'):
-        if linked.get('project') in self.projectlinks:
-            # take the unexpanded md5 from Factory link
-            url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory', package], { 'view': 'info', 'nofilename': '1' })
-            #print package, linked.get('package'), linked.get('project')
-            f = http_GET(url)
-            proot = ET.parse(f).getroot()
-            ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': proot.get('lsrcmd5'), 'vrev': si.get('vrev') })
-            return package
-    ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev') })
-    return package
-
-
-def _staging_receive_sources(self, prj, sources, flink, opts):
-    url = makeurl(opts.apiurl, ['source', prj], { 'view': 'info', 'nofilename': '1' } )
-    f = http_GET(url)
-    root = ET.parse(f).getroot()
-
-    for si in root.findall('sourceinfo'):
-        package = self._staging_check_one_source(flink, si, opts)
-        sources[package] = 1
-    return sources
-
-
-def _staging_freeze_prjlink(self, prj, opts):
-    url = makeurl(opts.apiurl, ['source', prj, '_meta'])
-    f = http_GET(url)
-    root = ET.parse(f).getroot()
-    sources = dict()
-    flink = ET.Element('frozenlinks')
-    links = root.findall('link')
-    links.reverse()
-    self.projectlinks = []
-    for link in links:
-        self.projectlinks.append(link.get('project'))
-
-    for lprj in self.projectlinks:
-        fl = ET.SubElement(flink, 'frozenlink', { 'project': lprj } )
-        sources = self._staging_receive_sources(lprj, sources, fl, opts)
-
-    url = makeurl(opts.apiurl, ['source', prj, '_project', '_frozenlinks'], { 'meta': '1' } )
-    f = http_PUT(url, data=ET.tostring(flink))
-    root = ET.parse(f).getroot()
-    print ET.tostring(root)
-
 
 @cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
@@ -442,7 +388,8 @@ def do_staging(self, subcmd, opts, *args):
         project = args[1]
         self._staging_submit_devel(project, opts)
     elif cmd in ['freeze']:
-        self._staging_freeze_prjlink(args[1], opts)
+        import osclib.freeze_command
+        osclib.freeze_command.FreezeCommand(opts.apiurl).perform(args[1])
     elif cmd in ['select']:
         # TODO: have an api call for that
         stprj = 'openSUSE:Factory:Staging:%s' % args[1]
