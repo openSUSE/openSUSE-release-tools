@@ -86,6 +86,13 @@ class StagingAPI(object):
 
         # Get the relevant information about source
         meta = self.get_prj_pseudometa(source_project)
+        found = False
+        for req in meta['requests']:
+            if int(req['id']) == int(req_id):
+                found = True
+                break
+        if not found:
+            return None
 
         # Copy the package
         self.rq_to_prj(req_id, destination_project)
@@ -398,7 +405,7 @@ class StagingAPI(object):
         working = []
         # Iterate through repositories
         for results in root.findall('result'):
-            if results.get("state") not in [ "published", "unpublished" ]:
+            if results.get("state") not in [ "published", "unpublished" ] or results.get('dirty') == 'true':
                 working.append({"path": "{0}/{1}".format(results.get("repository"), results.get("arch")), "state": results.get("state")})
             # Iterate through packages
             for node in results:
@@ -425,7 +432,7 @@ class StagingAPI(object):
             print("Following packages are broken:")
             for i in broken:
                 print("    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state']))
-            print()
+
         print("Found errors in staging project {0}!".format(project))
         
     def rq_to_prj(self, request_id, project):
