@@ -301,7 +301,7 @@ class StagingAPI(object):
 
         self._remove_rq_from_prj_pseudometa(project, package)
         delete_package(self.apiurl, project, package, force=True, msg=msg)
-        set_review(self, request_id, project, state=review)
+        self.set_review(self, request_id, project, state=review)
 
     def create_package_container(self, project, package, disable_build = False):
         """
@@ -465,7 +465,7 @@ class StagingAPI(object):
         self._add_rq_to_prj_pseudometa(project, int(request_id), tar_pkg)
 
         # add review
-        add_review(request_id, project)
+        self.add_review(request_id, project)
 
     def delete_to_prj(self, act, project):
         """
@@ -542,7 +542,7 @@ class StagingAPI(object):
                 return
         query = { 'cmd': 'addreview' }
         query['by_project'] = project
-        url = makeurl(self.apiurl, ['request', request_id], query)
+        url = makeurl(self.apiurl, ['request', str(request_id)], query)
         http_POST(url, data='Being evaluated by staging project "{0}"'.format(project))
 
     def set_review(self, request_id, project, state='accepted'):
@@ -559,4 +559,4 @@ class StagingAPI(object):
             if i.by_project == project and i.state == 'new':
                 cont = True
         if cont:
-            change_review_state(self.apiurl, request_id, state, by_project=project, message='Reviewed by staging project "{0}" with result: "{1}"'.format(project, state) )
+            change_review_state(self.apiurl, request_id, state, by_project=project, message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )

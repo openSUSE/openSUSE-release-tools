@@ -47,10 +47,9 @@ class RequestFinder:
         for x in root.findall('request'):
             # TODO: check the package matches - OBS is case insensitive
             self.srids.add(int(x.get('id')))
+            if ret:
+                raise oscerr.WrongArgs('There are multiple requests for package "{}": {}'.format(package, ', '.join(map(str, self.srids))))
             ret = True
-
-        if len(self.srids) > 1:
-            raise oscerr.WrongArgs('There are multiple requests for package "{0}": {1}'.format(package, ', '.join(map(str, res))))
 
         return ret
         
@@ -84,7 +83,6 @@ class RequestFinder:
         :param apiurl: OBS url
         """
 
-        print("Searching for SR#s based on the arguments...")
         self.srids = set()
         for p in pkgs:
             if self.find_request_package(p, apiurl):
