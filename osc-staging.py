@@ -9,21 +9,16 @@ import logging
 import os.path
 import re
 import sys
-from urllib2 import HTTPError
 from xml.etree import cElementTree as ET
 
 from osc import cmdln, oscerr
 from osc.core import delete_package
 from osc.core import delete_project
-from osc.core import get_request
 from osc.core import make_meta_url
 from osc.core import makeurl
 from osc.core import meta_get_packagelist
-from osc.core import metafile
 from osc.core import http_GET
 from osc.core import http_POST
-from osc.core import http_PUT
-from osc.core import link_pac
 from osc.core import server_diff
 
 # Expand sys.path to search modules inside the pluging directory
@@ -186,6 +181,7 @@ def _staging_check(self, project, check_everything, opts):
     else:
         print "Staging check succeeded!"
     return ret
+
 
 def _staging_remove(self, project, opts):
     """
@@ -432,4 +428,3 @@ def do_staging(self, subcmd, opts, *args):
             f = http_GET(url)
             root = ET.parse(f).getroot()
             print ET.tostring(root)
-
