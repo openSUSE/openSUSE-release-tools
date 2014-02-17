@@ -9,10 +9,22 @@ class CleanupRings:
         self.pkgdeps = dict()
         self.sources = list()
         self.apiurl = apiurl
+        self.links = dict()
 
     def perform(self):
         self.check_depinfo_ring('openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX')
         self.check_depinfo_ring('openSUSE:Factory:Rings:1-MinimalX', 'openSUSE:Factory:MainDesktops')
+
+    def find_inner_ring_links(self, prj):
+        url = makeurl(self.apiurl, ['source', prj], { 'view': 'info', 'nofilename': '1' })
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        for si in root.findall('sourceinfo'):
+            linked = si.find('linked')
+            if not linked is None and linked.get('project') != 'openSUSE:Factory':
+                if not linked.get('project').startswith('openSUSE:Factory:Rings:'):
+                    print ET.tostring(si)
+                self.links[linked.get('package')] = si.get('package')
 
     def fill_pkgdeps(self, prj, repo, arch):
         url = makeurl(self.apiurl, ['build', prj, repo, arch, '_builddepinfo'])
@@ -20,7 +32,6 @@ class CleanupRings:
         root = ET.parse(f).getroot()
 
         for package in root.findall('package'):
-            #print ET.tostring(package)
             source = package.find('source').text
             if package.attrib['name'].startswith('preinstall'):
                 continue
@@ -59,6 +70,7 @@ class CleanupRings:
                     print "Package %s/%s/%s is %s" % (repo.get('project'), repo.get('repository'), package.get('package'), code)
                     return False
 
+        self.find_inner_ring_links(prj)
         self.fill_pkgdeps(prj, 'standard', 'x86_64')
 
         if prj == 'openSUSE:Factory:Rings:1-MinimalX':
@@ -87,9 +99,11 @@ class CleanupRings:
                         b = self.bin2src[prein]
                         self.pkgdeps[b] = 'MYinstall'
 
+        #print self.sources, self.bin2src, self.pkgdeps
+
         for source in self.sources:
             #   next if ($key =~ m/^MY/ || $key =~ m/^texlive-specs-/ || $key =~ m/^kernel-/);
-            if not self.pkgdeps.has_key(source):
+            if not self.pkgdeps.has_key(source) and not self.links.has_key(source):
                 print "osc rdelete -m cleanup", prj, source
                 if nextprj:
                     print "osc linkpac -c openSUSE:Factory", source, nextprj
