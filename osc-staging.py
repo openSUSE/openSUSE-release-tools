@@ -25,7 +25,7 @@ from osc.core import server_diff
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
 from osclib.stagingapi import StagingAPI
-
+from osclib.request_finder import RequestFinder
 
 OSC_STAGING_VERSION='0.0.1'
 
@@ -248,10 +248,7 @@ def do_staging(self, subcmd, opts, *args):
     api = StagingAPI(opts.apiurl)
 
     # call the respective command and parse args by need
-    if cmd in ['push', 'p']:
-        project = args[1]
-        self._staging_push(project, opts)
-    elif cmd in ['check']:
+    if cmd in ['check']:
         return api.check_project_status(api.prj_from_letter(args[1]))
     elif cmd in ['remove', 'r']:
         project = args[1]
@@ -264,8 +261,8 @@ def do_staging(self, subcmd, opts, *args):
         osclib.freeze_command.FreezeCommand(opts.apiurl).perform(api.prj_from_letter(args[1]))
     elif cmd in ['select']:
         stprj = api.prj_from_letter(args[1])
-        for i in range(2, len(args)):
-            api.rq_to_prj(args[i], stprj)
+        for rq in RequestFinder.find_sr(args[2:], opts.apiurl):
+            api.rq_to_prj(rq, stprj)
     elif cmd in ['move']:
         sprj = api.prj_from_letter(args[1])
         tprj = api.prj_from_letter(args[2])
