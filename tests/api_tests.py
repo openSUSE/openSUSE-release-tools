@@ -253,7 +253,7 @@ class TestApiCalls(unittest.TestCase):
         """
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/build/green/_result?lastbuild=1',
+        self._register_pretty_url_get('http://localhost/build/green/_result',
                                       'build-results-green.xml')
 
         # Initiate the api with mocked rings
@@ -261,8 +261,7 @@ class TestApiCalls(unittest.TestCase):
             api = oscs.StagingAPI('http://localhost')
 
         # Check print output
-        api.check_project_status("green")
-        self.assertEqual(sys.stdout.getvalue().strip(), "Everything is green!")
+        self.assertEqual(api.gather_build_status("green"), None)
 
     @httpretty.activate
     def test_check_project_status_red(self):
@@ -271,7 +270,7 @@ class TestApiCalls(unittest.TestCase):
         """
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/build/red/_result?lastbuild=1',
+        self._register_pretty_url_get('http://localhost/build/red/_result',
                                       'build-results-red.xml')
 
         # Initiate the api with mocked rings
@@ -279,10 +278,9 @@ class TestApiCalls(unittest.TestCase):
             api = oscs.StagingAPI('http://localhost')
 
         # Check print output
-        api.check_project_status("red")
-        with open(self._get_fixtures_dir()+"/check_project_status_red.txt", "r") as f:
-            data = f.read().strip()
-        self.assertEqual(sys.stdout.getvalue().strip(), data)
+        self.assertEqual(api.gather_build_status('red'), ['red', [{'path': 'standard/x86_64', 'state': 'building'}],
+                                                          [{'path': 'standard/i586', 'pkg': 'glibc', 'state': 'broken'},
+                                                           {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
     def test_bootstrap_copy(self):
         import osclib.freeze_command
@@ -304,7 +302,7 @@ class TestApiCalls(unittest.TestCase):
 # Here place all mockable functions
 @contextlib.contextmanager
 def mock_generate_ring_packages():
-    with mock.patch('oscs.StagingAPI._generate_ring_packages', return_value={
-            'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
-            'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX'}):
+    with  mock.patch('oscs.StagingAPI._generate_ring_packages', return_value={
+        'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
+        'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX'}):
         yield

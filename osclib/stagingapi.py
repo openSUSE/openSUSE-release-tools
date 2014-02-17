@@ -8,6 +8,7 @@ import logging
 from xml.etree import cElementTree as ET
 
 import yaml
+import string
 
 from osc import oscerr
 from osc.core import delete_package
@@ -212,8 +213,8 @@ class StagingAPI(object):
         """
 
         url = make_meta_url('prj', project, self.apiurl)
-        data = http_GET(url).readlines()
-        root = ET.fromstring(''.join(data))
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
         description = root.find('description')
         # If YAML parsing fails, load default
         # FIXME: Better handling of errors
@@ -237,8 +238,8 @@ class StagingAPI(object):
 
         # Get current metadata
         url = make_meta_url('prj', project, self.apiurl)
-        data = http_GET(url).readlines()
-        root = ET.fromstring(''.join(data))
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
         # Find description
         description = root.find('description')
         # Replace it with yaml
@@ -316,17 +317,87 @@ class StagingAPI(object):
         url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
         http_PUT(url, data=dst_meta)
 
+    def check_one_request(self, request, project):
+        """
+        Check if a staging request is ready to be approved. Reviews for the project
+        are ignored, other open reviews will block the acceptance
+        :param project: staging project
+        :param request_id: request id to check
+        """
+        
+        f = http_GET(makeurl(self.apiurl, ['request', str(request)]))
+        root = ET.parse(f).getroot()
+
+        # relevant info for printing
+        package = str(root.find('action').find('target').attrib['package'])
+
+        state = root.find('state').get('name')
+        if state in ['declined', 'superseded', 'revoked']:
+            return '{0}: {1}'.format(package, state)
+
+        # instead of just printing the state of the whole request find out who is
+        # remaining on the review and print it out, otherwise print out that it is
+        # ready for approval and waiting on others from GR to be accepted
+        review_state = root.findall('review')
+        failing_groups = []
+        for i in review_state:
+            if i.attrib['state'] == 'accepted':
+                continue
+            if i.get('by_project', None) == project:
+                continue
+            for attrib in ['by_group', 'by_user', 'by_project', 'by_package']:
+                value = i.get(attrib, None)
+                if value:
+                    failing_groups.append(value)
+
+        if not failing_groups:
+            return None
+        else:
+            state = 'missing reviews: ' + ', '.join(failing_groups)
+            return '{0}: {1}'.format(package, state)
+
     def check_project_status(self, project):
+        """
+        Checks a staging project for acceptance. Checks all open requests for open reviews
+        and build status
+        :param project: project to check
+        """
+        # all requests with open review
+        requests = self.list_requests_in_prj(project)
+        
+        # all tracked requests - some of them might be declined, so we don't see them above
+        meta = self.get_prj_pseudometa(project)
+        for req in meta['requests']:
+            req = req['id']
+            if req not in requests:
+                requests.append(req)
+
+        if len(requests) == 0:
+            print 'Nothing to be seen here - Continue'
+            return True
+        all = True
+        for request in requests:
+            ret = self.check_one_request(request, project)
+            if ret:
+                print(ret)
+                all = False
+
+        buildstatus = self.gather_build_status(project)
+        if buildstatus:
+            all = False
+            self.print_build_status_details(buildstatus)
+        elif all:
+            print "Everything green"
+
+    def gather_build_status(self, project):
         """
         Checks whether everything is built in project
         :param project: project to check
         """
         # Get build results
-        query = {}
-        query['lastbuild'] = 1
-        u = makeurl(self.apiurl, ['build', project, '_result'], query=query)
+        u = makeurl(self.apiurl, ['build', project, '_result'])
         f = http_GET(u)
-        root = ET.fromstring(''.join(f.readlines()))
+        root = ET.parse(f).getroot()
 
         # Check them
         broken = []
@@ -337,31 +408,32 @@ class StagingAPI(object):
                 working.append({"path": "{0}/{1}".format(results.get("repository"), results.get("arch")), "state": results.get("state")})
             # Iterate through packages
             for node in results:
-                result = node.get("code")
-                # Skip not built (yet)
-                if result in [ "blocked", "building", "disabled" "excluded", "finished", "unknown", "unpublished", "published" ]:
-                    continue
                 # Find broken
+                result = node.get("code")
                 if result in [ "broken", "failed", "unresolvable" ]:
                     broken.append({"pkg": node.get("package"), "state" : result, "path" : "{0}/{1}".format(results.get("repository"),results.get("arch"))})
 
         # Print the results
         if len(working) == 0 and len(broken) == 0:
-            print "Everything is green!"
+            return None
         else:
-            if len(working) != 0:
-                print "Following repositories are still building:"
-                for i in working:
-                    print "    {0}: {1}".format(i['path'], i['state'])
-                print
-            if len(broken) != 0:
-                print "Following packages are broken:"
-                for i in broken:
-                    print "    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state'])
-                print
-            print "Found errors in staging project {0}!".format(project)
+            return [project, working, broken]
 
+    def print_build_status_details(self, details):
+        project, working, broken = details
 
+        if len(working) != 0:
+            print "Following repositories are still building:"
+            for i in working:
+                print "    {0}: {1}".format(i['path'], i['state'])
+            print
+        if len(broken) != 0:
+            print "Following packages are broken:"
+            for i in broken:
+                print "    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state'])
+            print
+        print "Found errors in staging project {0}!".format(project)
+        
     def rq_to_prj(self, request_id, project):
         """
         Links request to project - delete or submit
@@ -432,3 +504,20 @@ class StagingAPI(object):
         url = makeurl(self.apiurl, ['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
         return tar_pkg
+
+    def prj_from_letter(self, letter):
+        if string.find(letter, ':') >= 0: # not a letter
+            return letter
+        return 'openSUSE:Factory:Staging:%s' % letter
+
+    def list_requests_in_prj(self, project):
+        where = "@by_project='%s'+and+@state='new'" % project
+
+        url = makeurl(self.apiurl, ['search','request', 'id'], "match=state/@name='review'+and+review["+where+"]")
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        list = []
+        for rq in root.findall('request'):
+            list.append(int(rq.get('id')))
+
+        return list
