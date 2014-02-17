@@ -11,6 +11,7 @@ import yaml
 import string
 
 from osc import oscerr
+from osc.core import change_review_state
 from osc.core import delete_package
 from osc.core import get_request
 from osc.core import make_meta_url
@@ -290,7 +291,7 @@ class StagingAPI(object):
         self.set_prj_pseudometa(project, data)
         # FIXME Add sr to group request as well
 
-    def rm_from_prj(self, package, project, msg = None):
+    def rm_from_prj(self, package, project, msg = None, review='accepted'):
         """
         Delete request from the project
         :param project: project to remove from
@@ -300,6 +301,7 @@ class StagingAPI(object):
 
         self._remove_rq_from_prj_pseudometa(project, package)
         delete_package(self.apiurl, project, package, force=True, msg=msg)
+        set_review(self, request_id, project, state=review)
 
     def create_package_container(self, project, package, disable_build = False):
         """
@@ -462,6 +464,9 @@ class StagingAPI(object):
         # register the package name
         self._add_rq_to_prj_pseudometa(project, int(request_id), tar_pkg)
 
+        # add review
+        add_review(request_id, project)
+
     def delete_to_prj(self, act, project):
         """
         Hides Package in project
@@ -522,3 +527,36 @@ class StagingAPI(object):
             list.append(int(rq.get('id')))
 
         return list
+
+    def add_review(self, request_id, project):
+        """
+        Adds review by project to the request
+        :param request_id: request to add review to
+        :param project: project to assign review to
+        """
+        req = get_request(self.apiurl, str(request_id))
+        if not req:
+            raise oscerr.WrongArgs("Request {0} not found".format(request_id))
+        for i in req.reviews:
+            if i.by_project == project and i.state == 'new':
+                return
+        query = { 'cmd': 'addreview' }
+        query['by_project'] = project
+        url = makeurl(self.apiurl, ['request', request_id], query)
+        http_POST(url, data='Being evaluated by staging project "{0}"'.format(project))
+
+    def set_review(self, request_id, project, state='accepted'):
+        """
+        Sets review for request done by project
+        :param request_id: request to change review for
+        :param project: project to do the review
+        """
+        req = get_request(self.apiurl, str(request_id))
+        if not req:
+            raise oscerr.WrongArgs("Request {0} not found".format(request_id))
+        cont = False
+        for i in req.reviews:
+            if i.by_project == project and i.state == 'new':
+                cont = True
+        if cont:
+            change_review_state(self.apiurl, request_id, state, by_project=project, message='Reviewed by staging project "{0}" with result: "{1}"'.format(project, state) )
