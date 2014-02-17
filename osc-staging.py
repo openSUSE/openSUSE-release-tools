@@ -226,7 +226,7 @@ def do_staging(self, subcmd, opts, *args):
     if cmd in ['submit-devel', 's', 'remove', 'r', 'accept', 'freeze']:
         min_args, max_args = 1, 1
     elif cmd in ['check']:
-        min_args, max_args = 1, 2
+        min_args, max_args = 0, 2
     elif cmd in ['select']:
         min_args, max_args = 2, None
     elif cmd in ['move']:
@@ -249,7 +249,13 @@ def do_staging(self, subcmd, opts, *args):
 
     # call the respective command and parse args by need
     if cmd in ['check']:
-        return api.check_project_status(api.prj_from_letter(args[1]))
+        if len(args) > 1:
+            return api.check_project_status(api.prj_from_letter(args[1]))
+        for prj in api.get_staging_projects():
+            print("Checking {}".format(prj))
+            api.check_project_status(prj)
+            print("")
+        return True
     elif cmd in ['remove', 'r']:
         project = args[1]
         self._staging_remove(project, opts)

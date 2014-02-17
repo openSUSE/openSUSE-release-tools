@@ -8,6 +8,7 @@ import logging
 from xml.etree import cElementTree as ET
 
 import yaml
+import re
 import string
 
 from osc import oscerr
@@ -363,6 +364,7 @@ class StagingAPI(object):
         and build status
         :param project: project to check
         """
+
         # all requests with open review
         requests = self.list_requests_in_prj(project)
         
@@ -387,8 +389,58 @@ class StagingAPI(object):
         if buildstatus:
             all = False
             self.print_build_status_details(buildstatus)
+            return
+            
+        ret = self.find_openqa_state(project)
+        if ret:
+            print ret
+            all = False
         elif all:
             print("Everything green")
+            
+    def find_openqa_state(self, project):
+        """
+        Checks the openqa state of the project
+        :param project: project to check
+        """
+        u = makeurl(self.apiurl, ['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
+        f = http_GET(u)
+        root = ET.parse(f).getroot()
+
+        filename = None
+        for binary in root.findall('binary'):
+            filename = binary.get('filename', '')
+            if filename.endswith('.iso'):
+                break
+
+        if not filename:
+            return 'No ISO built in {}'.format(u)
+
+        # don't look here - we will replace that once we have OBS<->openQA sync
+        baseurl = 'http://opensuseqa.suse.de/openqa/testresults/openSUSE-Factory-staging'
+        url = baseurl + "_" + project.split(':')[-1].lower() + "-x86_64-Build"
+        result = re.match('Test-([\d\.]+)-Build(\d+)\.(\d+)-Media.iso', filename )
+        url += result.group(1)
+        bn = int(result.group(2)) * 100 + int(result.group(3))
+        url += ".{}".format(bn)
+        url += "-minimalx/results.json"
+
+        try:
+            f = http_GET(url)
+        except HTTPError:
+            return 'No openQA result (yet) for {}'.format(url)
+
+        import json
+        openqa = json.load(f)
+        if openqa['overall'] != 'ok':
+            return "Openqa's overall status is {}".format(openqa['overall'])
+
+        for module in openqa['testmodules']:
+            # zypper_in fails at the moment - urgent fix needed
+            if module['result'] != 'ok' and module['name'] != 'zypper_in':
+                return "{} test failed".format(module['name'])
+
+        return None
 
     def gather_build_status(self, project):
         """
