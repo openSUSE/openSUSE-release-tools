@@ -117,13 +117,13 @@ class StagingAPI(object):
             projects.append(val.get('name'))
         return projects
 
-
-    def staging_change_review_state(self, request_id, newstate, message):
+    def change_review_state(self, request_id, newstate, message='', by_group=None, by_user=None, by_project=None ):
         """
         Change review state of the staging request
         :param request_id: id of the request
         :param newstate: state of the new request
         :param message: message for the review
+        :param by_group, by_user, by_project: review type
         """
         """ taken from osc/osc/core.py, improved:
             - verbose option added,
@@ -132,14 +132,16 @@ class StagingAPI(object):
         """
         query = {
             'cmd': 'changereviewstate',
-            'newstate': newstate,
-            'by_group': 'factory-staging',
-            'comment': message
+            'newstate': newstate
         }
+        if by_group:  query['by_group'] = by_group
+        if by_user:   query['by_user'] = by_user
+        if by_project:  query['by_project'] = by_project
 
         url = makeurl(self.apiurl, ['request', str(request_id)], query=query)
-        http_POST(url, data=message)
-
+        f = http_POST(url, data=message)
+        root = ET.parse(f).getroot()
+        return root.attrib.get('code', '500')
 
     def accept_non_ring_request(self, request):
         """
@@ -169,7 +171,7 @@ class StagingAPI(object):
         if not ring:
             # accept the request here
             message = "No need for staging, not in tested ring project."
-            self.staging_change_review_state(request_id, 'accepted', message)
+            self.change_review_state(request_id, 'accepted', message=message, by_group='factory-staging')
 
 
     def get_open_requests(self):
@@ -518,6 +520,10 @@ class StagingAPI(object):
 
         # add review
         self.add_review(request_id, project)
+
+        # now remove the staging checker
+        self.change_review_state(request_id, 'accepted', by_group='factory-staging', message="Picked {}".format(project))
+
 
     def delete_to_prj(self, act, project):
         """
