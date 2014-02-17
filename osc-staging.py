@@ -31,7 +31,7 @@ OSC_STAGING_VERSION='0.0.1'
 
 def _print_version(self):
     """ Print version information about this extension. """
-    print '%s'%(self.OSC_STAGING_VERSION)
+    print('%s'%(self.OSC_STAGING_VERSION))
     quit(0)
 
 
@@ -93,7 +93,7 @@ def _staging_submit_devel(self, project, opts):
     if len(chng) > 0:
         for pair in chng:
             if pair['code'] != 'MODIFIED':
-                print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
+                print('Error: Package "%s": %s'%(pair['pkg'],pair['msg']))
             else:
                 print('Sending changes back %s/%s -> %s/%s'%(project,pair['pkg'],pair['pprj'],pair['ppkg']))
                 action_xml  = '<request>';
@@ -168,13 +168,13 @@ def _staging_one_request(self, rq, opts):
             msg = 'ok, tested in %s' % stprj
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
         elif stage_info[1] != 0 and int(stage_info[1]) != id:
-            print stage_info
-            print "osc staging select %s %s" % (stage_info[0], id)
+            print(stage_info)
+            print("osc staging select %s %s" % (stage_info[0], id))
             return
         elif stage_info[1] != 0: # keep silent about those already asigned
             return
         else:
-            print "Request(%d): %s -> %s" % (id, tpkg, ring)
+            print("Request(%d): %s -> %s" % (id, tpkg, ring))
             return
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
@@ -299,4 +299,4 @@ def do_staging(self, subcmd, opts, *args):
             url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory:Staging:%s' % self.letter_to_accept])
             f = http_GET(url)
             root = ET.parse(f).getroot()
-            print ET.tostring(root)
+            print(ET.tostring(root))

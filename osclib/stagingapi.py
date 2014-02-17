@@ -373,7 +373,7 @@ class StagingAPI(object):
                 requests.append(req)
 
         if len(requests) == 0:
-            print 'Nothing to be seen here - Continue'
+            print('Nothing to be seen here - Continue')
             return True
         all = True
         for request in requests:
@@ -387,7 +387,7 @@ class StagingAPI(object):
             all = False
             self.print_build_status_details(buildstatus)
         elif all:
-            print "Everything green"
+            print("Everything green")
 
     def gather_build_status(self, project):
         """
@@ -423,16 +423,16 @@ class StagingAPI(object):
         project, working, broken = details
 
         if len(working) != 0:
-            print "Following repositories are still building:"
+            print("Following repositories are still building:")
             for i in working:
-                print "    {0}: {1}".format(i['path'], i['state'])
+                print("    {0}: {1}".format(i['path'], i['state']))
             print
         if len(broken) != 0:
-            print "Following packages are broken:"
+            print("Following packages are broken:")
             for i in broken:
-                print "    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state'])
-            print
-        print "Found errors in staging project {0}!".format(project)
+                print("    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state']))
+            print()
+        print("Found errors in staging project {0}!".format(project))
         
     def rq_to_prj(self, request_id, project):
         """

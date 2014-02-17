@@ -88,11 +88,11 @@ class FreezeCommand:
         for result in root.findall('result'):
             if result.get('repository') == 'bootstrap_copy':
                 if not result.get('code') in ['published', 'unpublished']:
-                    print ET.tostring(result)
+                    print(ET.tostring(result))
                     return False
 
                 if result.find('status').get('code') != code:
-                    print ET.tostring(result)
+                    print(ET.tostring(result))
                     return False
         return True
 
@@ -106,11 +106,11 @@ class FreezeCommand:
            and not 'openSUSE:Factory:Rings:0-Bootstrap' in self.projectlinks:
             self.set_bootstrap_copy()
             self.create_bootstrap_aggregate()
-            print "waiting for scheduler to disable..."
+            print("waiting for scheduler to disable...")
             while not self.verify_bootstrap_copy_code('disabled'):
                 time.sleep(1)
             self.build_switch_bootstrap_copy('enable')
-            print "waiting for scheduler to copy..."
+            print("waiting for scheduler to copy...")
             while not self.verify_bootstrap_copy_code('succeeded'):
                 time.sleep(1)
             self.build_switch_bootstrap_copy('disable')
@@ -182,7 +182,7 @@ class FreezeCommand:
             if linked.get('project') in self.projectlinks:
                 # take the unexpanded md5 from Factory link
                 url = makeurl(self.apiurl, ['source', 'openSUSE:Factory', package], { 'view': 'info', 'nofilename': '1' })
-                #print package, linked.get('package'), linked.get('project')
+                #print(package, linked.get('package'), linked.get('project'))
                 f = http_GET(url)
                 proot = ET.parse(f).getroot()
                 ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': proot.get('lsrcmd5'), 'vrev': si.get('vrev') })

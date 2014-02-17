@@ -296,7 +296,7 @@ class TestApiCalls(unittest.TestCase):
         output = subprocess.check_output('/usr/bin/xmllint --format %s' % f.name, shell=True)
 
         for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
-            print line
+            print(line)
         self.assertEqual(output, fixture)
 
 # Here place all mockable functions
