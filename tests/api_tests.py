@@ -247,6 +247,48 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
 
     @httpretty.activate
+    def test_adding_review(self):
+        """
+        Test whether adding review behaves correctly
+        """
+
+        with mock_generate_ring_packages():
+            api = oscs.StagingAPI('http://localhost')
+
+        self._register_pretty_url_get('http://localhost/request/123',
+                                      'request_in_review.xml')
+        httpretty.register_uri(
+            httpretty.POST, "http://localhost/request/123")
+
+        api.add_review('123', 'openSUSE:Factory:Staging:A')
+        self.assertEqual(httpretty.last_request().method, 'POST')
+        self.assertEqual(httpretty.last_request().body, 'Being evaluated by staging project "openSUSE:Factory:Staging:A"')
+        self.assertEqual(httpretty.last_request().path, '/request/123?cmd=addreview&by_project=openSUSE%3AFactory%3AStaging%3AA')
+        api.add_review('123', 'openSUSE:Factory:Staging:B')
+        self.assertEqual(httpretty.last_request().method, 'GET')
+
+    @httpretty.activate
+    def test_accepting_review(self):
+        """
+        Test whether accepting review behaves correctly
+        """
+
+        with mock_generate_ring_packages():
+            api = oscs.StagingAPI('http://localhost')
+
+        self._register_pretty_url_get('http://localhost/request/123',
+                                      'request_in_review.xml')
+        httpretty.register_uri(
+            httpretty.POST, "http://localhost/request/123", body=self._get_fixture_content('request_in_review.xml'))
+
+        api.set_review('123', 'openSUSE:Factory:Staging:B')
+        self.assertEqual(httpretty.last_request().method, 'POST')
+        self.assertEqual(httpretty.last_request().body, 'Reviewed by staging project "openSUSE:Factory:Staging:B" with result: "accepted"')
+        self.assertEqual(httpretty.last_request().path, '/request/123?newstate=accepted&cmd=changereviewstate&by_project=openSUSE%3AFactory%3AStaging%3AB')
+        api.set_review('123', 'openSUSE:Factory:Staging:A')
+        self.assertEqual(httpretty.last_request().method, 'GET')
+
+    @httpretty.activate
     def test_check_project_status_green(self):
         """
         Test checking project status
