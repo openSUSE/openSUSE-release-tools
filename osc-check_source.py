@@ -53,6 +53,15 @@ def _checker_prepare_dir(self, dir):
     shutil.rmtree(".osc")
     os.chdir(olddir)
 
+def _checker_forward_to_staging(self, opts, id):
+    query = { 'cmd': 'addreview', 'by_group':'factory-staging' }
+    url = makeurl(opts.apiurl, ['request', str(id)], query)
+    try:
+        r = http_POST(url, data="Pick Staging Project")
+    except urllib2.HTTPError, err:
+        pass # there is no good mean to undo
+    return 0
+
 def _checker_accept_request(self, opts, id, msg):
     code = 100
     query = { 'cmd': 'addreview', 'by_group':'opensuse-review-team' }
@@ -73,13 +82,7 @@ def _checker_accept_request(self, opts, id, msg):
         r = http_POST(url, data="Please review build success")
     except urllib2.HTTPError, err:
         pass # there is no good mean to undo
-    query = { 'cmd': 'addreview', 'by_group':'factory-staging' }
-    url = makeurl(opts.apiurl, ['request', str(id)], query)
-    try:
-        r = http_POST(url, data="Check Staging Project")
-    except urllib2.HTTPError, err:
-        pass # there is no good mean to undo
-    return 0
+    self._checker_forward_to_staging(opts, id)
 
 def _checker_one_request(self, rq, cmd, opts):
     if (opts.verbose):
@@ -125,12 +128,7 @@ def _checker_one_request(self, rq, cmd, opts):
                 prj,  pkg,
                 tprj, tpkg))
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
-            #self._devel_projects['X11:QtDesktop/'] = 'rabbitmq'
-	    #self._devel_projects['devel:languages:erlang/'] = 'ruby19'
-            #self._devel_projects['devel:languages:nodejs/'] = 'nodejs'
 	    self._devel_projects['mozilla:addons/'] = 'x2go'
-	    self._devel_projects['X11:MATE:Factory/'] = 'mate'
-	    self._devel_projects['network:wicked:factory/'] = 'wicked'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
@@ -196,6 +194,7 @@ def _checker_one_request(self, rq, cmd, opts):
                continue
 
         else:
+            self._checker_forward_to_staging(opts, id)
             self._checker_change_review_state(opts, id, 'accepted',
                                               by_group='factory-auto',
                                               message="Unchecked request type %s" % _type)
@@ -254,7 +253,6 @@ def do_check_source(self, subcmd, opts, *args):
             ids[a] = 1
 
     if (not len(ids)):
-        # xpath query, using the -m, -r, -s options
         where = "@by_group='factory-auto'+and+@state='new'"
 
         url = makeurl(opts.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
