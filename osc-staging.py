@@ -31,42 +31,8 @@ OSC_STAGING_VERSION='0.0.1'
 
 def _print_version(self):
     """ Print version information about this extension. """
-    print '%s'%(self.OSC_STAGING_VERSION)
+    print('%s'%(self.OSC_STAGING_VERSION))
     quit(0)
-
-
-def _get_parent(apiurl, project, repo = "standard"):
-    """
-    Finds what is the parent project of the staging project
-    :param apiurl: url to the OBS api
-    :param project: staging project to check
-    :param repo: which repository to follow
-    :return name of the parent project
-    """
-
-    url = make_meta_url("prj", project, apiurl)
-    data = http_GET(url).readlines()
-    root = ET.fromstring(''.join(data))
-
-    p_path = root.find("repository[@name='%s']/path"%(repo))
-    if not p_path:
-        logging.error("Project '%s' has no repository named '%s'"%(project, repo))
-        return None
-    return p_path['project']
-
-
-# Get last build results (optionally only for specified repo/arch)
-# Works even when rebuild is triggered
-def _get_build_res(opts, prj, repo=None, arch=None):
-    query = {}
-    query['lastbuild'] = 1
-    if repo is not None:
-        query['repository'] = repo
-    if arch is not None:
-        query['arch'] = arch
-    u = makeurl(opts.apiurl, ['build', prj, '_result'], query=query)
-    f = http_GET(u)
-    return f.readlines()
 
 
 def _get_changed(opts, project, everything):
@@ -89,97 +55,6 @@ def _get_changed(opts, project, everything):
         if len(server_diff(opts.apiurl, t, p, r, project, pkg, None, True)) > 0:
             ret.append({'pkg': pkg, 'code': 'MODIFIED', 'msg': 'Has local modifications', 'pprj': t, 'ppkg': p})
             continue
-    return ret
-
-
-# Checks the state of staging repo (local modifications, regressions, ...)
-def _staging_check(self, project, check_everything, opts):
-    """
-    Checks whether project does not contain local changes
-    and whether it contains only links
-    :param project: staging project to check
-    :param everything: do not stop on first verification failure
-    :param opts: pointer to options
-    """
-
-    ret = 0
-    chng = _get_changed(opts, project, check_everything)
-    if len(chng) > 0:
-        for pair in chng:
-            print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
-        print >>sys.stderr, "Error: Check for local changes failed"
-        ret = 1
-    else:
-        print "Check for local changes passed"
-
-    # Check for regressions
-    root = None
-    if ret == 0 or check_everything:
-        print "Getting build status, this may take a while"
-        # Get staging project results
-        f = _get_build_res(opts, project)
-        root = ET.fromstring(''.join(f))
-
-        # Get parent project
-        m_url = make_meta_url("prj", project, opts.apiurl)
-        m_data = http_GET(m_url).readlines()
-        m_root = ET.fromstring(''.join(m_data))
-
-        print "Comparing build statuses, this may take a while"
-
-    # Iterate through all repos/archs
-    if root is not None and root.find('result') is not None:
-        for results in root.findall('result'):
-            if ret != 0 and not check_everything:
-                break
-            if results.get("state") not in [ "published", "unpublished" ]:
-                print >>sys.stderr, "Warning: Building not finished yet for %s/%s (%s)!"%(results.get("repository"),results.get("arch"),results.get("state"))
-                ret |= 2
-
-            # Get parent project results for this repo/arch
-            p_project = m_root.find("repository[@name='%s']/path"%(results.get("repository")))
-            if p_project == None:
-                print >>sys.stderr, "Error: Can't get path for '%s'!"%results.get("repository")
-                ret |= 4
-                continue
-            f = _get_build_res(opts, p_project.get("project"), repo=results.get("repository"), arch=results.get("arch"))
-            p_root = ET.fromstring(''.join(f))
-
-            # Find corresponding set of results in parent project
-            p_results = p_root.find("result[@repository='%s'][@arch='%s']"%(results.get("repository"),results.get("arch")))
-            if p_results == None:
-                print >>sys.stderr, "Error: Inconsistent setup!"
-                ret |= 4
-            else:
-                # Iterate through packages
-                for node in results:
-                    if ret != 0 and not check_everything:
-                        break
-                    result = node.get("code")
-                    # Skip not rebuilt
-                    if result in [ "blocked", "building", "disabled" "excluded", "finished", "unknown", "unpublished", "published" ]:
-                        continue
-                    # Get status of package in parent project
-                    p_node = p_results.find("status[@package='%s']"%(node.get("package")))
-                    if p_node == None:
-                        p_result = None
-                    else:
-                        p_result = p_node.get("code")
-                    # Skip packages not built in parent project
-                    if p_result in [ None, "disabled", "excluded", "unknown", "unresolvable" ]:
-                        continue
-                    # Find regressions
-                    if result in [ "broken", "failed", "unresolvable" ] and p_result not in [ "blocked", "broken", "failed" ]:
-                        print >>sys.stderr, "Error: Regression (%s -> %s) in package '%s' in %s/%s!"%(p_result, result, node.get("package"),results.get("repository"),results.get("arch"))
-                        ret |= 8
-                    # Find fixed builds
-                    if result in [ "succeeded" ] and result != p_result:
-                        print "Package '%s' fixed (%s -> %s) in staging for %s/%s."%(node.get("package"), p_result, result, results.get("repository"),results.get("arch"))
-
-    if ret != 0:
-        print "Staging check failed!"
-    else:
-        print "Staging check succeeded!"
     return ret
 
 
@@ -218,7 +93,7 @@ def _staging_submit_devel(self, project, opts):
     if len(chng) > 0:
         for pair in chng:
             if pair['code'] != 'MODIFIED':
-                print >>sys.stderr, 'Error: Package "%s": %s'%(pair['pkg'],pair['msg'])
+                print('Error: Package "%s": %s'%(pair['pkg'],pair['msg']))
             else:
                 print('Sending changes back %s/%s -> %s/%s'%(project,pair['pkg'],pair['pprj'],pair['ppkg']))
                 action_xml  = '<request>';
@@ -293,13 +168,13 @@ def _staging_one_request(self, rq, opts):
             msg = 'ok, tested in %s' % stprj
             delete_package(opts.apiurl, stprj, tpkg, msg='done')
         elif stage_info[1] != 0 and int(stage_info[1]) != id:
-            print stage_info
-            print "osc staging select %s %s" % (stage_info[0], id)
+            print(stage_info)
+            print("osc staging select %s %s" % (stage_info[0], id))
             return
         elif stage_info[1] != 0: # keep silent about those already asigned
             return
         else:
-            print "Request(%d): %s -> %s" % (id, tpkg, ring)
+            print("Request(%d): %s -> %s" % (id, tpkg, ring))
             return
 
     self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
@@ -377,8 +252,7 @@ def do_staging(self, subcmd, opts, *args):
         project = args[1]
         self._staging_push(project, opts)
     elif cmd in ['check']:
-        project = args[1]
-        return api.check_project_status(project)
+        return api.check_project_status(api.prj_from_letter(args[1]))
     elif cmd in ['remove', 'r']:
         project = args[1]
         self._staging_remove(project, opts)
@@ -387,16 +261,14 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_submit_devel(project, opts)
     elif cmd in ['freeze']:
         import osclib.freeze_command
-        osclib.freeze_command.FreezeCommand(opts.apiurl).perform(args[1])
+        osclib.freeze_command.FreezeCommand(opts.apiurl).perform(api.prj_from_letter(args[1]))
     elif cmd in ['select']:
-        # TODO: have an api call for that
-        stprj = 'openSUSE:Factory:Staging:%s' % args[1]
+        stprj = api.prj_from_letter(args[1])
         for i in range(2, len(args)):
             api.rq_to_prj(args[i], stprj)
     elif cmd in ['move']:
-        # TODO: have an api call for that
-        sprj = 'openSUSE:Factory:Staging:%s' % args[1]
-        tprj = 'openSUSE:Factory:Staging:%s' % args[2]
+        sprj = api.prj_from_letter(args[1])
+        tprj = api.prj_from_letter(args[2])
         for i in range(3, len(args)):
             api.move_between_project(sprj, args[i], tprj)
     elif cmd in ['cleanup_rings']:
@@ -427,4 +299,4 @@ def do_staging(self, subcmd, opts, *args):
             url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory:Staging:%s' % self.letter_to_accept])
             f = http_GET(url)
             root = ET.parse(f).getroot()
-            print ET.tostring(root)
+            print(ET.tostring(root))

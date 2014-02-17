@@ -341,56 +341,6 @@ def _group_list_requests(self, grid, opts):
     print('   ID    |  Author  |      Date     | Open items |  Name ')
 
     if grid:
-        # if we have assigned id we need to ensure it is actually grouped id
-        if not self._group_verify_type(grid, opts):
-            raise oscerr.WrongArgs('Request {0} is not a proper grouping request'.format(grid))
-        self._print_group_header(grid, opts)
-        print('\nContains following requests:')
-
-        # search up for all request ids in group
-        url = url = makeurl(opts.apiurl, ['request', str(grid)])
-        f = http_GET(url)
-        root = ET.parse(f).getroot().find('action')
-        res = self._extract('id', int, 'grouped', root)
-
-        # print their context out to make nice table
-        for x in res:
-            url = url = makeurl(opts.apiurl, ['request', str(x)])
-            f = http_GET(url)
-            root = ET.parse(f).getroot()
-
-            # relevant info for printing
-            package = str(root.find('action').find('target').attrib['package'])
-            if root.find('action').attrib['type'] == "delete" or root.find('action').attrib['type'] == 'change_devel':
-                project = "openSUSE:Factory"
-                revision = "0"
-            else:
-                project = str(root.find('action').find('source').attrib['project'])
-                revision = str(root.find('action').find('source').attrib['rev'])
-            date = str(root.find('state').attrib['when'])
-
-            # instead of just printing the state of the whole request find out who is
-            # remaining on the review and print it out, otherwise print out that it is
-            # ready for approval and waiting on others from GR to be accepted
-            review_state = root.findall('review')
-            failing_groups = []
-            for i in review_state:
-                if i.attrib['state'] == 'accepted':
-                    continue
-                try:
-                    failing_groups.append(i.attrib['by_group'])
-                except KeyError:
-                    try:
-                        failing_groups.append(i.attrib['by_user'])
-                    except KeyError:
-                        failing_groups.append(i.attrib['by_package'])
-
-            if not failing_groups:
-                state = 'approvable'
-            else:
-                state = 'missing reviews: ' + ', '.join(failing_groups)
-
-            print('{0} | {1}/{2}:{3} | {4} | {5}'.format(x, project, package, revision, date, state))
         return
 
     # search up the GR#s
