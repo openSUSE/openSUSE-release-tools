@@ -266,8 +266,8 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['move']:
         sprj = api.prj_from_letter(args[1])
         tprj = api.prj_from_letter(args[2])
-        for i in range(3, len(args)):
-            api.move_between_project(sprj, args[i], tprj)
+        for rq in RequestFinder.find_sr(args[3:], opts.apiurl):
+            api.move_between_project(sprj, rq, tprj)
     elif cmd in ['cleanup_rings']:
         import osclib.cleanup_rings
         osclib.cleanup_rings.CleanupRings(opts.apiurl).perform()
