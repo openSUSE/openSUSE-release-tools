@@ -76,22 +76,16 @@ class StagingAPI(object):
         return package_info
 
 
-    def move_between_project(self, source_project, package, destination_project):
+    def move_between_project(self, source_project, req_id, destination_project):
         """
         Move selected package from one staging to another
         :param source_project: Source project
-        :param package: Source package
+        :param request: request to move
         :param destination_project: Destination project
         """
 
         # Get the relevant information about source
         meta = self.get_prj_pseudometa(source_project)
-        req_id = -1
-        for req in meta['requests']:
-            if req['package'] == package:
-                req_id = req['id']
-        if req_id == -1:
-            raise oscerr.WrongArgs("Couldn't find request for package {0} in project {1}".format(package,source_project))
 
         # Copy the package
         self.rq_to_prj(req_id, destination_project)
