@@ -1055,20 +1055,25 @@ def do_check_repo(self, subcmd, opts, *args):
     """
 
     opts.mode = ''
-    opts.groups = {}
+
     opts.verbose = False
 
     opts.apiurl = self.get_api_url()
+    api = StagingAPI(opts.apiurl)
 
     opts.grouped = {}
-
-    api = StagingAPI(opts.apiurl)
     for prj in api.get_staging_projects():
         meta = api.get_prj_pseudometa(prj)
         for req in meta['requests']:
             opts.grouped[req['id']] = prj
         for req in api.list_requests_in_prj(prj):
             opts.grouped[req] = prj
+
+    opts.groups = {}
+    for req, prj in opts.grouped.items():
+        group = opts.groups.get(prj, [])
+        group.append(req)
+        opts.groups[prj] = group
 
     opts.downloads = os.path.expanduser('~/co/downloads')
 
@@ -1105,5 +1110,6 @@ def do_check_repo(self, subcmd, opts, *args):
         a.append(p)
         groups[p.group] = a
 
+    print groups
     for id_, reqs in groups.items():
         self._check_repo_group(id_, reqs, opts)
