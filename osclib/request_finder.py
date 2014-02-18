@@ -17,7 +17,7 @@ class RequestFinder:
         url = makeurl(apiurl, ['request', str(request)])
         try:
             f = http_GET(url)
-        except HTTPError:
+        except urllib2.HTTPError:
             return None
 
         root = ET.parse(f).getroot()

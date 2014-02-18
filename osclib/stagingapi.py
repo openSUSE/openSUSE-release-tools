@@ -388,6 +388,7 @@ class StagingAPI(object):
             if ret:
                 print(ret)
                 all = False
+                break # TODO: offer a details option
 
         buildstatus = self.gather_build_status(project)
         if buildstatus:
@@ -431,13 +432,14 @@ class StagingAPI(object):
 
         try:
             f = http_GET(url)
-        except HTTPError:
+	except urllib2.HTTPError:
             return 'No openQA result (yet) for {}'.format(url)
 
         import json
         openqa = json.load(f)
-        if openqa['overall'] != 'ok':
-            return "Openqa's overall status is {}".format(openqa['overall'])
+	overall = openqa.get('overall', 'inprogress')
+        if overall != 'ok':
+            return "Openqa's overall status is {}".format(overall)
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
@@ -461,13 +463,15 @@ class StagingAPI(object):
         working = []
         # Iterate through repositories
         for results in root.findall('result'):
+            building = False
             if results.get("state") not in [ "published", "unpublished" ] or results.get('dirty') == 'true':
                 working.append({"path": "{0}/{1}".format(results.get("repository"), results.get("arch")), "state": results.get("state")})
+                building = True
             # Iterate through packages
             for node in results:
                 # Find broken
                 result = node.get("code")
-                if result in [ "broken", "failed", "unresolvable" ]:
+                if result in [ "broken", "failed"] or (result == 'unresolvable' and not building):
                     broken.append({"pkg": node.get("package"), "state" : result, "path" : "{0}/{1}".format(results.get("repository"),results.get("arch"))})
 
         # Print the results
@@ -480,17 +484,16 @@ class StagingAPI(object):
         project, working, broken = details
 
         if len(working) != 0:
-            print("Following repositories are still building:")
+            print("At least following repositories is still building:")
             for i in working:
                 print("    {0}: {1}".format(i['path'], i['state']))
+                break # TODO offer details option
             print
         if len(broken) != 0:
             print("Following packages are broken:")
             for i in broken:
                 print("    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state']))
 
-        print("Found errors in staging project {0}!".format(project))
-        
     def rq_to_prj(self, request_id, project):
         """
         Links request to project - delete or submit
