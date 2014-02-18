@@ -1105,7 +1105,9 @@ def do_check_repo(self, subcmd, opts, *args):
 
     groups = {}
     for p in packs:
-        if not p.group: continue
+        if not p.group: # a group on its own
+           groups[p.request] = [p]
+           continue
         a = groups.get(p.group, [])
         a.append(p)
         groups[p.group] = a
