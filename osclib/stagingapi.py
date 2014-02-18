@@ -598,10 +598,12 @@ class StagingAPI(object):
         f = http_GET(url)
         root = ET.parse(f).getroot()
         src_rev =  root.attrib['srcmd5']
-        src_vrev = root.attrib['vrev']
+        src_vrev = root.attrib.get('vrev')
 
         # link stuff - not using linkpac because linkpac copies meta from source
-        root = ET.Element('link', package=src_pkg, project=src_prj, rev=src_rev, vrev=src_vrev)
+        root = ET.Element('link', package=src_pkg, project=src_prj, rev=src_rev)
+        if src_vrev:
+            root.attrib['vrev'] = src_vrev
         url = makeurl(self.apiurl, ['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
         return tar_pkg
