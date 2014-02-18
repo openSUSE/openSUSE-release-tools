@@ -100,7 +100,7 @@ class StagingAPI(object):
         # Copy the package
         self.rq_to_prj(req_id, destination_project)
         # Delete the old one
-        self.rm_from_prj(package, source_project, 'Moved to {0}'.format(destination_project))
+        self.rm_from_prj(source_project, request_id=req_id, msg='Moved to {}'.format(destination_project))
 
     def get_staging_projects(self):
         """
@@ -283,7 +283,31 @@ class StagingAPI(object):
         self.set_prj_pseudometa(project, data)
         # FIXME Add sr to group request as well
 
-    def _remove_rq_from_prj_pseudometa(self, project, package):
+    def get_request_id_for_package(self, project, package):
+        """
+        Query the request id from meta
+        :param project: project to remove from
+        :param package: package we want to query for
+        """
+        data = self.get_prj_pseudometa(project)
+        for x in data['requests']:
+            if x['package'] == package:
+                return int(x['id'])
+        return None
+
+    def get_package_for_request_id(self, project, request_id):
+        """
+        Query the request id from meta
+        :param project: project to remove from
+        :param package: package we want to query for
+        """
+        data = self.get_prj_pseudometa(project)
+        for x in data['requests']:
+            if x['id'] == request_id:
+                return x['package']
+        return None
+
+    def _remove_package_from_prj_pseudometa(self, project, package):
         """
         Delete request from the project pseudometa
         :param project: project to remove from
@@ -295,17 +319,26 @@ class StagingAPI(object):
         self.set_prj_pseudometa(project, data)
         # FIXME Add sr to group request as well
 
-    def rm_from_prj(self, package, project, msg = None, review='accepted'):
+    def rm_from_prj(self, project, package=None, request_id=None, msg = None, review='accepted'):
         """
         Delete request from the project
         :param project: project to remove from
-        :param package: package we want to remove
+        :param request_id: request we want to remove
         :param msg: message for the log
         """
+        
+        if package:
+            request_id = self.get_request_id_for_package(project, package)
+            if not request_id: # already gone?
+                return
+        else:
+            package = self.get_package_for_request_id(project, request_id)
+            if not package: # already gone?
+                return
 
-        self._remove_rq_from_prj_pseudometa(project, package)
+        self._remove_package_from_prj_pseudometa(project, package)
         delete_package(self.apiurl, project, package, force=True, msg=msg)
-        self.set_review(self, request_id, project, state=review)
+        self.set_review(request_id, project, state=review)
 
     def create_package_container(self, project, package, disable_build = False):
         """
@@ -621,4 +654,4 @@ class StagingAPI(object):
             if i.by_project == project and i.state == 'new':
                 cont = True
         if cont:
-            change_review_state(self.apiurl, request_id, state, by_project=project, message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
+            change_review_state(self.apiurl, str(request_id), state, by_project=project, message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )

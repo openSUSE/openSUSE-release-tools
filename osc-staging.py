@@ -185,6 +185,7 @@ def do_staging(self, subcmd, opts, *args):
     "list" will pick the requests not in rings
 
     "select" will add requests to the project
+    "unselect" will remove them project - pushing them back to the backlog
 
     Usage:
         osc staging check [--everything] REPO
@@ -193,6 +194,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging freeze PROJECT
         osc staging list
         osc staging select LETTER REQUEST...
+        osc staging unselect LETTER REQUEST...
         osc staging accept LETTER
         osc staging cleanup_rings
     """
@@ -207,7 +209,7 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 1
     elif cmd in ['check']:
         min_args, max_args = 0, 2
-    elif cmd in ['select']:
+    elif cmd in ['select', 'unselect']:
         min_args, max_args = 2, None
     elif cmd in ['move']:
         min_args, max_args = 3, None
@@ -245,10 +247,13 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['freeze']:
         import osclib.freeze_command
         osclib.freeze_command.FreezeCommand(opts.apiurl).perform(api.prj_from_letter(args[1]))
-    elif cmd in ['select']:
+    elif cmd in ['select', 'unselect']:
         stprj = api.prj_from_letter(args[1])
         for rq in RequestFinder.find_sr(args[2:], opts.apiurl):
-            api.rq_to_prj(rq, stprj)
+            if cmd == 'select':
+                api.rq_to_prj(rq, stprj)
+            else:
+                api.rm_from_prj(stprj, request_id=rq)
     elif cmd in ['move']:
         sprj = api.prj_from_letter(args[1])
         tprj = api.prj_from_letter(args[2])
