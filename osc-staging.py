@@ -112,23 +112,6 @@ def _staging_submit_devel(self, project, opts):
     return
 
 
-def _staging_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
-    """ taken from osc/osc/core.py, improved:
-        - verbose option added,
-        - empty by_user=& removed.
-        - numeric id can be int().
-    """
-    query = {'cmd': 'changereviewstate', 'newstate': newstate }
-    if by_group:  query['by_group'] = by_group
-    if by_user:   query['by_user'] = by_user
-    if supersed: query['superseded_by'] = supersed
-#    if message: query['comment'] = message
-    u = makeurl(opts.apiurl, ['request', str(id)], query=query)
-    f = http_POST(u, data=message)
-    root = ET.parse(f).getroot()
-    return root.attrib['code']
-
-
 def _staging_get_rings(self, opts):
     ret = dict()
     for prj in ['openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX']:
@@ -138,10 +121,7 @@ def _staging_get_rings(self, opts):
             ret[entry.attrib['name']] = prj
     return ret
 
-def _staging_one_request(self, rq, opts):
-    if (opts.verbose):
-        ET.dump(rq)
-        print(opts)
+def _staging_one_request(self, rq, api):
     id = int(rq.get('id'))
     act_id = 0
     actions = rq.findall('action')
@@ -166,7 +146,7 @@ def _staging_one_request(self, rq, opts):
             # TODO make api for that
             stprj = 'openSUSE:Factory:Staging:%s' % self.letter_to_accept
             msg = 'ok, tested in %s' % stprj
-            delete_package(opts.apiurl, stprj, tpkg, msg='done')
+            delete_package(api.apiurl, stprj, tpkg, msg='done')
         elif stage_info[1] != 0 and int(stage_info[1]) != id:
             print(stage_info)
             print("osc staging select %s %s" % (stage_info[0], id))
@@ -177,7 +157,7 @@ def _staging_one_request(self, rq, opts):
             print("Request(%d): %s -> %s" % (id, tpkg, ring))
             return
 
-    self._staging_change_review_state(opts, id, 'accepted', by_group='factory-staging', message=msg)
+    api.change_review_state(id, 'accepted', by_group='factory-staging', message=msg)
 
 @cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
@@ -296,7 +276,7 @@ def do_staging(self, subcmd, opts, *args):
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
             tprj = rq.find('action/target').get('project')
-            self._staging_one_request(rq, opts)
+            self._staging_one_request(rq, api)
 
         if self.letter_to_accept:
             url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory:Staging:%s' % self.letter_to_accept])
