@@ -10,6 +10,7 @@ from xml.etree import cElementTree as ET
 import yaml
 import re
 import string
+import urllib2
 
 from osc import oscerr
 from osc.core import change_review_state
@@ -443,7 +444,7 @@ class StagingAPI(object):
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
-            if module['result'] != 'ok' and module['name'] != 'zypper_in':
+            if module['result'] != 'ok' and module['name'] != 'yast2_i':
                 return "{} test failed".format(module['name'])
 
         return None
