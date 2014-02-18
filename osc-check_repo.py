@@ -16,6 +16,8 @@ import shelve
 import shutil
 import subprocess
 import tempfile
+import sys
+
 from urllib import quote_plus
 import urllib2
 from xml.etree import cElementTree as ET
@@ -30,6 +32,10 @@ from osc.core import http_POST
 from osc.core import makeurl
 from osc.core import Request
 
+# Expand sys.path to search modules inside the pluging directory
+_plugin_dir = os.path.expanduser('~/.osc-plugins')
+sys.path.append(_plugin_dir)
+from osclib.stagingapi import StagingAPI
 
 #
 # XXX - Ugly Hack. Because the way that osc import plugings we need to
@@ -404,22 +410,6 @@ def _check_repo_find_submit_request(self, opts, project, package):
     return None
 
         
-def _check_repo_fetch_group(self, opts, group):
-    if group in opts.groups:
-        return
-    url = makeurl(opts.apiurl, ['request', str(group)])
-    root = ET.parse(http_GET(url)).getroot()
-
-    # Every opts.groups[group_id] will contains the list of ids that
-    # conform the group
-    groups = [int(req.attrib['id']) for req in root.find('action').findall('grouped')]
-    opts.groups[group] = groups
-
-    # opts.grouped[id] will point to the group_id which belongs to
-    grouped = dict((id_, group) for id_ in groups)
-    opts.grouped.update(grouped)
-
-
 def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
     xml = build(opts.apiurl, prj, repo, arch, pkg)
     if xml:
@@ -468,33 +458,13 @@ def _check_repo_one_request(self, rq, opts):
     subm_id = 'SUBMIT(%d):' % id_
     print '%s %s/%s -> %s/%s' % (subm_id, prj, pkg, tprj, tpkg)
 
-    group = id_
-    try:
-        if id_ in opts.grouped:
-            group = opts.grouped[id_]
-        else:
-            # Search in which group this id_ is included. The result
-            # in an XML document pointing to a single submit request
-            # ID if this id_ is actually part of a group
-            url = makeurl(opts.apiurl, ['search', 'request', 'id?match=action/grouped/@id=%s' % id_])
-            root = ET.parse(http_GET(url)).getroot()
-            reqs = root.findall('request')
-            if reqs:
-                group = int(reqs[0].attrib['id'])
-                # Recover the full group description, with more SRIDs
-                # and populate opts.group and opts.grouped
-                self._check_repo_fetch_group(opts, group)
-    except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
-        return []
-
     packs = []
     p = CheckRepoPackage()
     p.spackage = pkg
     p.sproject = prj
     p.tpackage = tpkg
     p.tproject = tprj
-    p.group = group
+    p.group = opts.grouped.get(id_, None)
     p.request = id_
 
     # Get source information about the SR:
@@ -1086,10 +1056,19 @@ def do_check_repo(self, subcmd, opts, *args):
 
     opts.mode = ''
     opts.groups = {}
-    opts.grouped = {}
     opts.verbose = False
 
     opts.apiurl = self.get_api_url()
+
+    opts.grouped = {}
+
+    api = StagingAPI(opts.apiurl)
+    for prj in api.get_staging_projects():
+        meta = api.get_prj_pseudometa(prj)
+        for req in meta['requests']:
+            opts.grouped[req['id']] = prj
+        for req in api.list_requests_in_prj(prj):
+            opts.grouped[req] = prj
 
     opts.downloads = os.path.expanduser('~/co/downloads')
 
@@ -1121,6 +1100,7 @@ def do_check_repo(self, subcmd, opts, *args):
 
     groups = {}
     for p in packs:
+        if not p.group: continue
         a = groups.get(p.group, [])
         a.append(p)
         groups[p.group] = a
