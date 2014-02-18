@@ -4,6 +4,8 @@ import osc
 from osc import cmdln
 from osc.core import *
 
+import urllib2
+
 class RequestFinder:
 
     @classmethod
