@@ -18,14 +18,68 @@ try:
 except ImportError:
     import mock
 
+from string import Template
 import oscs
 import osc
+import operator
+import re
+import pprint
 
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    string_types = str,
+else:
+    string_types = basestring,
 
 class TestApiCalls(unittest.TestCase):
     """
     Tests for various api calls to ensure we return expected content
     """
+    responses = { 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
+
+    def _clear_responses(self):
+        """
+        Reset predefined responses
+        """
+        self.responses = { 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
+
+    def _pretty_callback(self, request, uri, headers):
+        """
+        Custom callback for HTTPretty.
+
+        It mocks requests and replaces calls with either xml, content of file,
+        function call or first item in array of those.
+
+        :param request: request as provided to callback function by HTTPretty
+        :param uri: uri as provided to callback function by HTTPretty
+        :param headers: headers as provided to callback function by HTTPretty
+        """
+        path = re.match( r'.*localhost([^?]*)(\?.*)?',uri).group(1)
+        reply = None
+        if self.responses['ALL'].has_key(path):
+            reply = self.responses['ALL'][path]
+        if self.responses[request.method].has_key(path):
+            reply = self.responses[request.method][path]
+        if reply:
+            if isinstance(reply, list):
+                reply = reply.pop(0)
+            if isinstance(reply, string_types):
+                return (200, headers, reply)
+            else:
+                return (200, headers, reply(self.responses, request, uri))
+        else:
+            if len(path) == 0:
+                path = uri
+            raise BaseException("No response for {0} on {1} provided".format(request.method,path))
+
+    def _register_pretty(self):
+        """
+        Register custom callback for HTTPretty
+        """
+        httpretty.register_uri(httpretty.GET,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
+        httpretty.register_uri(httpretty.PUT,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
+        httpretty.register_uri(httpretty.POST,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
 
     def _get_fixtures_dir(self):
         """
@@ -247,46 +301,49 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
 
     @httpretty.activate
-    def test_adding_review(self):
+    def test_review_handling(self):
         """
-        Test whether adding review behaves correctly
+        Test whether accepting/creating reviews behaves correctly
         """
 
         with mock_generate_ring_packages():
             api = oscs.StagingAPI('http://localhost')
 
-        self._register_pretty_url_get('http://localhost/request/123',
-                                      'request_in_review.xml')
-        httpretty.register_uri(
-            httpretty.POST, "http://localhost/request/123")
+        tmpl = Template(self._get_fixture_content('request_review.xml'))
 
+        self._clear_responses()
+        self.responses['GET']['/request/123'] =  tmpl.substitute(request='new', review='accepted', review_project="openSUSE:Factory")
+
+        def review_change(responses, request, uri):
+            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'addreview']:
+                responses['GET']['/request/123']  = tmpl.substitute(request='review', review='new', review_project=request.querystring[u'by_project'][0])
+            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
+                responses['GET']['/request/123']  = tmpl.substitute(request='new', review=request.querystring[u'newstate'][0], review_project=request.querystring[u'by_project'][0])
+            return responses['GET']['/request/123']
+
+        self.responses['ALL']['/request/123'] = review_change
+
+        self._register_pretty()
+
+        # Add review
         api.add_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
-        self.assertEqual(httpretty.last_request().body, 'Being evaluated by staging project "openSUSE:Factory:Staging:A"')
-        self.assertEqual(httpretty.last_request().path, '/request/123?cmd=addreview&by_project=openSUSE%3AFactory%3AStaging%3AA')
-        api.add_review('123', 'openSUSE:Factory:Staging:B')
+        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
+        # Try to readd, should do anything
+        api.add_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
-
-    @httpretty.activate
-    def test_accepting_review(self):
-        """
-        Test whether accepting review behaves correctly
-        """
-
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
-
-        self._register_pretty_url_get('http://localhost/request/123',
-                                      'request_in_review.xml')
-        httpretty.register_uri(
-            httpretty.POST, "http://localhost/request/123", body=self._get_fixture_content('request_in_review.xml'))
-
-        api.set_review('123', 'openSUSE:Factory:Staging:B')
+        # Accept review
+        api.set_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
-        self.assertEqual(httpretty.last_request().body, 'Reviewed by staging project "openSUSE:Factory:Staging:B" with result: "accepted"')
-        self.assertEqual(httpretty.last_request().path, '/request/123?newstate=accepted&cmd=changereviewstate&by_project=openSUSE%3AFactory%3AStaging%3AB')
+        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'changereviewstate'])
+        # Try to accept it again should do anything
         api.set_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
+        # But we should be able to reopen it
+        api.add_review('123', 'openSUSE:Factory:Staging:A')
+        self.assertEqual(httpretty.last_request().method, 'POST')
+        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
+
 
     @httpretty.activate
     def test_check_project_status_green(self):
