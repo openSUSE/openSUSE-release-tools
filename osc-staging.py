@@ -112,53 +112,6 @@ def _staging_submit_devel(self, project, opts):
     return
 
 
-def _staging_get_rings(self, opts):
-    ret = dict()
-    for prj in ['openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX']:
-        u = makeurl(opts.apiurl, ['source', prj])
-        f = http_GET(u)
-        for entry in ET.parse(f).getroot().findall('entry'):
-            ret[entry.attrib['name']] = prj
-    return ret
-
-def _staging_one_request(self, rq, api):
-    id = int(rq.get('id'))
-    act_id = 0
-    actions = rq.findall('action')
-    act = actions[0]
-
-    tprj = act.find('target').get('project')
-    tpkg = act.find('target').get('package')
-
-    e = []
-    if not tpkg:
-        e.append('no target/package in request %d, action %d; ' % (id, act_id))
-    if not tprj:
-        e.append('no target/project in request %d, action %d; ' % (id, act_id))
-    # it is no error, if the target package dies not exist
-
-    ring = self.rings.get(tpkg, None)
-    if ring is None:
-        msg = "ok"
-    else:
-        stage_info = self.packages_staged.get(tpkg, ('', 0))
-        if stage_info[0] == self.letter_to_accept and int(stage_info[1]) == id:
-            # TODO make api for that
-            stprj = 'openSUSE:Factory:Staging:%s' % self.letter_to_accept
-            msg = 'ok, tested in %s' % stprj
-            delete_package(api.apiurl, stprj, tpkg, msg='done')
-        elif stage_info[1] != 0 and int(stage_info[1]) != id:
-            print(stage_info)
-            print("osc staging select %s %s" % (stage_info[0], id))
-            return
-        elif stage_info[1] != 0: # keep silent about those already asigned
-            return
-        else:
-            print("Request(%d): %s -> %s" % (id, tpkg, ring))
-            return
-
-    api.change_review_state(id, 'accepted', by_group='factory-staging', message=msg)
-
 @cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
 @cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
@@ -226,7 +179,6 @@ def do_staging(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
     opts.verbose = False
 
-    self.rings = self._staging_get_rings(opts)
     api = StagingAPI(opts.apiurl)
 
     # call the respective command and parse args by need
@@ -262,29 +214,6 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['cleanup_rings']:
         import osclib.cleanup_rings
         osclib.cleanup_rings.CleanupRings(opts.apiurl).perform()
-    elif cmd in ['accept', 'list']:
-        self.letter_to_accept = None
-        if cmd == 'accept':
-            self.letter_to_accept = args[1]
-
-        self.packages_staged = dict()
-        for prj in api.get_staging_projects():
-            meta = api.get_prj_pseudometa(prj)
-            for req in meta['requests']:
-                self.packages_staged[req['package']] = (prj[-1], req['id'])
-
-        # xpath query, using the -m, -r, -s options
-        where = "@by_group='factory-staging'+and+@state='new'"
-
-        url = makeurl(opts.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
-        for rq in root.findall('request'):
-            tprj = rq.find('action/target').get('project')
-            self._staging_one_request(rq, api)
-
-        if self.letter_to_accept:
-            url = makeurl(opts.apiurl, ['source', 'openSUSE:Factory:Staging:%s' % self.letter_to_accept])
-            f = http_GET(url)
-            root = ET.parse(f).getroot()
-            print(ET.tostring(root))
+    elif cmd in ['list']:
+        import osclib.list_command
+        osclib.list_command.ListCommand(api).perform()
