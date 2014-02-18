@@ -430,13 +430,14 @@ class StagingAPI(object):
 
         try:
             f = http_GET(url)
-        except HTTPError:
+	except urllib2.HTTPError:
             return 'No openQA result (yet) for {}'.format(url)
 
         import json
         openqa = json.load(f)
-        if openqa['overall'] != 'ok':
-            return "Openqa's overall status is {}".format(openqa['overall'])
+	overall = openqa.get('overall', 'inprogress')
+        if overall != 'ok':
+            return "Openqa's overall status is {}".format(overall)
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
