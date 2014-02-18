@@ -128,7 +128,8 @@ def _checker_one_request(self, rq, cmd, opts):
                 prj,  pkg,
                 tprj, tpkg))
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
-	    self._devel_projects['mozilla:addons/'] = 'x2go'
+            # white list
+	    self._devel_projects['KDE:Frameworks5/'] = 'x2go'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
