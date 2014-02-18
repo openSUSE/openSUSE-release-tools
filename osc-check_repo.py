@@ -331,7 +331,7 @@ def build(apiurl, project, repo, arch, package):
         url = makeurl(apiurl, ['build', project, repo, arch, package])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
+        print('ERROR in URL %s [%s]' % (url, e))
     return root
 
 
@@ -347,7 +347,7 @@ def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
                            rev)])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
+        print('ERROR in URL %s [%s]' % (url, e))
     return root
 
 
@@ -355,11 +355,11 @@ def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
 def builddepinfo(apiurl, project, repository, arch):
     root = None
     try:
-        print 'Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch)
+        print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
         url = makeurl(apiurl, ['/build/%s/%s/%s/_builddepinfo' % (project, repository, arch),])
         root = http_GET(url).read()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
+        print('ERROR in URL %s [%s]' % (url, e))
     return root
 
 
@@ -386,7 +386,7 @@ def _check_repo_change_review_state(self, opts, id_, newstate, message='', super
         root = ET.parse(f).getroot()
         code = root.attrib['code']
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
+        print('ERROR in URL %s [%s]' % (url, e))
     return code
 
 
@@ -401,7 +401,7 @@ def _check_repo_find_submit_request(self, opts, project, package):
         f = http_GET(url)
         collection = ET.parse(f).getroot()
     except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
+        print('ERROR in URL %s [%s]' % (url, e))
         return None
     for root in collection.findall('request'):
         r = Request()
@@ -437,7 +437,7 @@ def _check_repo_one_request(self, rq, opts):
     if len(actions) > 1:
        msg = 'only one action per request is supported - create a group instead: '\
              'https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow'
-       print 'DECLINED', msg
+       print('DECLINED', msg)
        self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
        return []
  
@@ -723,7 +723,7 @@ def _check_repo_download(self, p, opts):
 
                 if not self._checker_compare_disturl(disturl, p):
                     p.error = '[%s] %s does not match revision %s' % (p, disturl, p.rev)
-                    return [], []
+                    return set()
 
     toignore = set()
     for fn in self._check_repo_repo_list(p.tproject, 'standard', 'x86_64', p.tpackage, opts, ignore=True):
@@ -1055,20 +1055,25 @@ def do_check_repo(self, subcmd, opts, *args):
     """
 
     opts.mode = ''
-    opts.groups = {}
+
     opts.verbose = False
 
     opts.apiurl = self.get_api_url()
+    api = StagingAPI(opts.apiurl)
 
     opts.grouped = {}
-
-    api = StagingAPI(opts.apiurl)
     for prj in api.get_staging_projects():
         meta = api.get_prj_pseudometa(prj)
         for req in meta['requests']:
             opts.grouped[req['id']] = prj
         for req in api.list_requests_in_prj(prj):
             opts.grouped[req] = prj
+
+    opts.groups = {}
+    for req, prj in opts.grouped.items():
+        group = opts.groups.get(prj, [])
+        group.append(req)
+        opts.groups[prj] = group
 
     opts.downloads = os.path.expanduser('~/co/downloads')
 
