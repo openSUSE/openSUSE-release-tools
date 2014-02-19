@@ -133,7 +133,7 @@ def do_staging(self, subcmd, opts, *args):
 
     "freeze" will freeze the sources of the project's links (not affecting the packages actually in)
 
-    "accept" will accept all requests openSUSE:Factory:Staging:<LETTER>
+    "accept" will accept all requests in openSUSE:Factory:Staging:<LETTER> (into Factory)
 
     "list" will pick the requests not in rings
 
@@ -199,6 +199,9 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['freeze']:
         import osclib.freeze_command
         osclib.freeze_command.FreezeCommand(opts.apiurl).perform(api.prj_from_letter(args[1]))
+    elif cmd in ['accept']:
+        import osclib.accept_command
+        osclib.accept_command.AcceptCommand(api).perform(api.prj_from_letter(args[1]))
     elif cmd in ['select', 'unselect']:
         stprj = api.prj_from_letter(args[1])
         for rq in RequestFinder.find_sr(args[2:], opts.apiurl):

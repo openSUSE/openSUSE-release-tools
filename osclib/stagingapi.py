@@ -415,7 +415,7 @@ class StagingAPI(object):
 
         if len(requests) == 0:
             print('Nothing to be seen here - Continue')
-            return True
+            return False
         all = True
         for request in requests:
             ret = self.check_one_request(request, project)
@@ -428,15 +428,17 @@ class StagingAPI(object):
         if buildstatus:
             all = False
             self.print_build_status_details(buildstatus)
-            return
+            return False
             
         ret = self.find_openqa_state(project)
         if ret:
             print ret
             all = False
+            return False
         elif all:
             print("Everything green")
-            
+            return True
+
     def find_openqa_state(self, project):
         """
         Checks the openqa state of the project
@@ -477,7 +479,7 @@ class StagingAPI(object):
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
-            if module['result'] != 'ok' and module['name'] != 'yast2_i':
+            if module['result'] != 'ok' and module['name'] not in ['yast2_bootloader', 'sshd']:
                 return "{} test failed".format(module['name'])
 
         return None
@@ -660,3 +662,19 @@ class StagingAPI(object):
                 cont = True
         if cont:
             change_review_state(self.apiurl, str(request_id), state, by_project=project, message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
+
+    def build_switch_prj(self, prj, state):
+        url = makeurl(self.apiurl, ['source', prj, '_meta'])
+        prjmeta = ET.parse(http_GET(url)).getroot()
+
+        foundone = False
+        for f in prjmeta.find('build'):
+            if not f.get('repository', None) and not f.get('arch', None):
+                f.tag = state
+                foundone = True
+
+        # need to add a global one
+        if not foundone:
+            ET.SubElement(prjmeta.find('build'), state)
+
+        http_PUT(url, data=ET.tostring(prjmeta))
