@@ -591,7 +591,10 @@ class StagingAPI(object):
         src_pkg = act.src_package
         tar_pkg = act.tgt_package
 
-        self.create_package_container(project, tar_pkg)
+        disable_build = False
+        if not self.ring_packages.get(tar_pkg):
+            disable_build = True
+        self.create_package_container(project, tar_pkg, disable_build=disable_build)
 
         # expand the revision to a md5
         url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
