@@ -37,7 +37,7 @@ class ListCommand:
         if stage_info[1] != 0 and int(stage_info[1]) != id:
             reqs = self.supersedes.get(stage_info[0], [])
             reqs.append(str(id))
-	    self.supersedes[stage_info[0]] = reqs
+            self.supersedes[stage_info[0]] = reqs
             return
 
         ring = self.api.ring_packages.get(tpkg)
