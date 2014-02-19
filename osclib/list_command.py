@@ -18,8 +18,11 @@ class ListCommand:
         url = makeurl(self.api.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
+        self.supersedes = dict()
         for rq in root.findall('request'):
             self.one_request(rq)
+        for letter, reqs in self.supersedes.items():
+            print("osc staging select {} {}".format(letter, ' '.join(reqs)))
 
     def one_request(self, rq):
         id = int(rq.get('id'))
@@ -32,8 +35,9 @@ class ListCommand:
 
         stage_info = self.packages_staged.get(tpkg, ('', 0))
         if stage_info[1] != 0 and int(stage_info[1]) != id:
-            print(stage_info)
-            print("osc staging select %s %s" % (stage_info[0], id))
+            reqs = self.supersedes.get(stage_info[0], [])
+            reqs.append(str(id))
+	    self.supersedes[stage_info[0]] = reqs
             return
 
         ring = self.api.ring_packages.get(tpkg)
