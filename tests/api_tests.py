@@ -326,11 +326,11 @@ class TestApiCalls(unittest.TestCase):
         self._register_pretty()
 
         # Add review
-        api.add_review('123', 'openSUSE:Factory:Staging:A')
+        api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
         # Try to readd, should do anything
-        api.add_review('123', 'openSUSE:Factory:Staging:A')
+        api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
         # Accept review
         api.set_review('123', 'openSUSE:Factory:Staging:A')
@@ -340,7 +340,7 @@ class TestApiCalls(unittest.TestCase):
         api.set_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
         # But we should be able to reopen it
-        api.add_review('123', 'openSUSE:Factory:Staging:A')
+        api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
 

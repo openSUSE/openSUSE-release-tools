@@ -630,7 +630,7 @@ class StagingAPI(object):
 
         return list
 
-    def add_review(self, request_id, project):
+    def add_review(self, request_id, by_project=None, by_group=None):
         """
         Adds review by project to the request
         :param request_id: request to add review to
@@ -640,12 +640,23 @@ class StagingAPI(object):
         if not req:
             raise oscerr.WrongArgs("Request {0} not found".format(request_id))
         for i in req.reviews:
-            if i.by_project == project and i.state == 'new':
+            if by_project and i.by_project == by_project and i.state == 'new':
                 return
+            if by_group and i.by_group == by_group and i.state == 'new':
+                return
+
         query = { 'cmd': 'addreview' }
-        query['by_project'] = project
+        msg = None
+        if by_project:
+            query['by_project'] = by_project
+            msg='Being evaluated by staging project "{0}"'.format(by_project)
+        if by_group:
+            query['by_group'] = by_group
+            msg='Being evaluated by group "{0}"'.format(by_group)
+        if not msg:
+            raise oscerr.WrongArgs("We need a group or a project")
         url = makeurl(self.apiurl, ['request', str(request_id)], query)
-        http_POST(url, data='Being evaluated by staging project "{0}"'.format(project))
+        http_POST(url, data=msg)
 
     def set_review(self, request_id, project, state='accepted'):
         """

@@ -209,6 +209,8 @@ def do_staging(self, subcmd, opts, *args):
                 api.rq_to_prj(rq, stprj)
             else:
                 api.rm_from_prj(stprj, request_id=rq)
+                api.add_review(request_id, by_group='factory-staging',
+                               msg='Please recheck')
     elif cmd in ['move']:
         sprj = api.prj_from_letter(args[1])
         tprj = api.prj_from_letter(args[2])
