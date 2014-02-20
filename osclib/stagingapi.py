@@ -468,12 +468,12 @@ class StagingAPI(object):
 
         try:
             f = http_GET(url)
-	except urllib2.HTTPError:
+        except urllib2.HTTPError:
             return 'No openQA result (yet) for {}'.format(url)
 
         import json
         openqa = json.load(f)
-	overall = openqa.get('overall', 'inprogress')
+        overall = openqa.get('overall', 'inprogress')
         if overall != 'ok':
             return "Openqa's overall status is {}".format(overall)
 
