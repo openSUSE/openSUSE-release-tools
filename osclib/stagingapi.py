@@ -432,7 +432,7 @@ class StagingAPI(object):
             
         ret = self.find_openqa_state(project)
         if ret:
-            print ret
+            print(ret)
             all = False
             return False
         elif all:
