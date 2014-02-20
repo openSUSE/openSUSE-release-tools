@@ -479,7 +479,7 @@ class StagingAPI(object):
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
-            if module['result'] != 'ok' and module['name'] not in ['yast2_bootloader', 'sshd']:
+            if module['result'] != 'ok' and module['name'] not in []:
                 return "{} test failed".format(module['name'])
 
         return None
