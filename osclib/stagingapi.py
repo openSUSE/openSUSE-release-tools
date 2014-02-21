@@ -396,7 +396,7 @@ class StagingAPI(object):
             state = 'missing reviews: ' + ', '.join(failing_groups)
             return '{0}: {1}'.format(package, state)
 
-    def check_project_status(self, project):
+    def check_project_status(self, project, verbose=False):
         """
         Checks a staging project for acceptance. Checks all open requests for open reviews
         and build status
@@ -422,7 +422,8 @@ class StagingAPI(object):
             if ret:
                 print(ret)
                 all = False
-                break # TODO: offer a details option
+                if not verbose:
+                    break
 
         buildstatus = self.gather_build_status(project)
         if buildstatus:
@@ -516,14 +517,15 @@ class StagingAPI(object):
         else:
             return [project, working, broken]
 
-    def print_build_status_details(self, details):
+    def print_build_status_details(self, details, verbose=False):
         project, working, broken = details
 
         if len(working) != 0:
             print("At least following repositories is still building:")
             for i in working:
                 print("    {0}: {1}".format(i['path'], i['state']))
-                break # TODO offer details option
+                if not verbose:
+                    break
             print
         if len(broken) != 0:
             print("Following packages are broken:")

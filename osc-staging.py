@@ -184,7 +184,7 @@ def do_staging(self, subcmd, opts, *args):
     # call the respective command and parse args by need
     if cmd in ['check']:
         if len(args) > 1:
-            return api.check_project_status(api.prj_from_letter(args[1]))
+            return api.check_project_status(api.prj_from_letter(args[1]), verbose=True)
         for prj in api.get_staging_projects():
             print("Checking {}".format(prj))
             api.check_project_status(prj)
