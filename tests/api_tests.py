@@ -169,11 +169,13 @@ class TestApiCalls(unittest.TestCase):
         self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
                                       'open-requests.xml')
 
+        self._register_pretty_url_get('http://localhost/request/220956', '220956-open.xml')
+
         # There should be just one request that gets closed
         # We don't care about the return so just reuse the above :P
         # If there is bug in the function we get assertion about closing more issues than we should
         self._register_pretty_url_post('http://localhost/request/220956?comment=No+need+for+staging%2C+not+in+tested+ring+project.&newstate=accepted&by_group=factory-staging&cmd=changereviewstate',
-                                      'open-requests.xml')
+                                       'open-requests.xml')
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
@@ -397,6 +399,7 @@ class TestApiCalls(unittest.TestCase):
         for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
             print(line)
         self.assertEqual(output, fixture)
+
 
 # Here place all mockable functions
 @contextlib.contextmanager
