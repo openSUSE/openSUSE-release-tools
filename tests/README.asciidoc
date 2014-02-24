@@ -36,8 +36,14 @@ Writing tests
 
 There are few nice building stones available to implement test.
 
-+responses+ dictionary
-~~~~~~~~~~~~~~~~~~~~~~
+OBS class
+~~~~~~~~~
+
++OBS+ class provides simulation of OBS including keeping internal states. It
+supports only limited number of command, but that can be extended.
+
+Extending OBS class via +responses+ dictionary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It contains dictionaries for 'GET', 'PUT', 'POST' and 'ALL'. All of them
 correspond to the method used by program. 'ALL' is just a shortcut that covers
@@ -47,8 +53,8 @@ Dictionaries associated with each method contains as a key relative URL to the
 top of the server and as data one of the following:
 
 * path to the file in fixtures directory with XML to return
-* XML itself starting with +<?xml+
-* function taking three arguments - 'requst', 'uri' and 'headers'
+* XML itself starting with +<+
+* function taking three arguments - 'request', 'uri' and 'headers'
 * list which is combination of any of the above
 
 If handling of +responses+ dictionary is enabled, URL is find in dictionary and
@@ -57,76 +63,102 @@ returned directly. In case of function, function gets called and is expected to
 return string that will be passed back. If there is array, first item is used
 as described above and removed from the array.
 
-+register_pretty+ function
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This function should be called before you start running any functions you want
-to test. It registers handler for 'localhost' requests to be
-+_pretty_callback+. This handler in short does interpretation of +responses+
-dictionary as described in previous section and if no handler is found, it
-raises exception providing URL that program tried to access together with
-method used.
+To add new possible actions, define private method of OBS class that will
+regiter handlers in this dictionary and add this method to be called by
++_clear_responses+ method.
 
 example
-~~~~~~~
+^^^^^^^
 
-First get template for XML using pythons string Template class. XML has some
-values replaced with +${variable}+ and we will assign those later.
+First we create a template for our response. We will be using pythons string
+Template class therefore XML has some values replaced with +${variable}+ and we
+will assign those later.
 
 .Template
 [source,xml]
 --------------------------------------------------------------------------------
-<?xml version="1.0"?>
-<request id="123">
+<request id="${id}">
   <action type="submit">
-    <source project="home:Admin" package="puppet" rev="59f0f46262d7b57b9cdc720c06d5e317"/>
-    <target project="openSUSE:Factory" package="puppet"/>
+    <source project="home:Admin" package="${package}" rev="59f0f46262d7b57b9cdc720c06d5e317"/>
+    <target project="openSUSE:Factory" package="${package}"/>
   </action>
   <state name="${request}" who="Admin" when="2014-02-17T12:38:52">
-    <comment>Passed staging project "openSUSE:Factory:Staging:test"</comment>
+    <comment>...</comment>
   </state>
-  <review state="${review}" when="2014-02-17T12:34:10" who="Admin" by_project="${review_project}">
-    <comment>Passed staging project "openSUSE:Factory:Staging:test"</comment>
+  <review state="${review}" when="2014-02-17T12:34:10" who="${who}" by_${by}="${by_who}">
+    <comment>...</comment>
   </review>
   <description>test</description>
 </request>
 --------------------------------------------------------------------------------
 
-[source,python]
---------------------------------------------------------------------------------
-# Getting template in test
-tmpl = Template(self._get_fixture_content('request_review.xml'))
---------------------------------------------------------------------------------
-
-Now prepare some default starting values
-[source,python]
---------------------------------------------------------------------------------
-# clear responses dictionary(just in case)
-self._clear_responses()
-# set default response
-self.responses['GET']['/request/123'] =  tmpl.substitute(request='new', review='accepted', review_project="openSUSE:Factory")
-# register everything
-self._register_pretty()
---------------------------------------------------------------------------------
-
-Now the interesting part. Let's define a function, that would interpret 'POST'
-method, extract data from command and will actually change the response next
-'GET' method will give. We can change the responses dictionary anytime, so we
-can use this to keep state once we get a command to do something.
+We can also define helpful local data structure representing actual state of OBS
 
 [source,python]
 --------------------------------------------------------------------------------
-# Create function making transitions between states
-def review_change(responses, request, uri):
-   if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'addreview']:
-       responses['GET']['/request/123']  = tmpl.substitute(request='review', review='new', review_project=request.querystring[u'by_project'][0])
-   if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
-       responses['GET']['/request/123']  = tmpl.substitute(request='new', review=request.querystring[u'newstate'][0], review_project=request.querystring[u'by_project'][0])
-   return responses['GET']['/request/123']
-
-# Register it
-self.responses['ALL']['/request/123'] = review_change
+# Initial request data
+requests_data = { '123': { 'request': 'new', 'review': 'accepted',
+                           'who': 'Admin', 'by': 'group', 'id': '123',
+                           'by_who': 'opensuse-review-team',
+                           'package': 'gcc' },
+                  '321': { 'request': 'review', 'review': 'new',
+                           'who': 'Admin', 'by': 'group', 'id': '321',
+                           'by_who': 'factory-staging',
+                           'package': 'puppet' }
+                }
 --------------------------------------------------------------------------------
+
+And the most important part is implementing OBS behaviour.
+
+[source,python]
+--------------------------------------------------------------------------------
+def _request_review(self):
+    """
+    Register requests methods
+    """
+
+    # Load template
+    tmpl = Template(self._get_fixture_content('request_review.xml'))
+
+    # What happens when we try to change the review
+    def review_change(responses, request, uri):
+        rq_id = re.match( r'.*/([0-9]+)',uri).group(1)
+        args = self.requests_data[rq_id]
+        # Adding review
+        if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'addreview']:
+            self.requests_data[rq_id]['request'] = 'review'
+            self.requests_data[rq_id]['review'] = 'new'
+        # Changing review
+        if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
+            self.requests_data[rq_id]['request'] = 'new'
+            self.requests_data[rq_id]['review'] = request.querystring[u'newstate'][0]
+        # Project review
+        if request.querystring.has_key(u'by_project'):
+            self.requests_data[rq_id]['by'] = 'project'
+            self.requests_data[rq_id]['by_who'] = request.querystring[u'by_project'][0]
+        # Group review
+        if request.querystring.has_key(u'by_group'):
+            self.requests_data[rq_id]['by'] = 'group'
+            self.requests_data[rq_id]['by_who'] = request.querystring[u'by_group'][0]
+        responses['GET']['/request/' + rq_id] = tmpl.substitute(self.requests_data[rq_id])
+        return responses['GET']['/request/' + rq_id]
+
+    # Register methods for all requests
+    for rq in self.requests_data:
+        # Static response for gets (just filling template from local data)
+        self.responses['GET']['/request/' + rq] = tmpl.substitute(self.requests_data[rq])
+        # Interpret other requests
+        self.responses['POST']['/request/' + rq] = review_change
+--------------------------------------------------------------------------------
+
+Method +_request_review+ will be called from +_clear_responses+ method and it
+will fill responses for 'GET' requests from local data strusture we defined
+before. It will also register +review_change+ function to handle 'POST'
+requests.
+
+Function +review_change+ will modify our local data structure to make sure we
+remeber the state for next time, replaces the results of 'GET' requests and
+returns whatever 'GET' should be returning now.
 
 So whenever somebody sends 'addreview' command, XML that 'GET' on request
 provides will be changed to reflect newly added review. And whenever somebody
@@ -134,26 +166,33 @@ sends 'changereviewstate', review will be closed with appropriate state.
 
 So we have a simple testing framework with multiple states that reacts to the
 API calls from functions we are testing following the behaviour we specified.
-So tests itself can be simple.
+So tests itself can be pretty simple and depend on multiple function calls.
+
+Registering +OBS+ class
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To take advantage of simulated OBS, you have to register it inside your test
+and use it's api.  To do so, just call +register_obs+ method at the beginning
+of the test. If you are using staging plugin API, you should use +OBS.api+
+object that is providing it for you convenience.
+
+If you run request that wasn't implemented yet, exception will be raised
+providing URL that program tried to access together with method used.
+
+Simple tests given all behaviour you are expecting is already implemented can
+be done for example like this:
 
 [source,python]
 --------------------------------------------------------------------------------
-# Add first review, there is none at beginning
-api.add_review('123', 'openSUSE:Factory:Staging:A')
-self.assertEqual(httpretty.last_request().method, 'POST')
-self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
-# Try to add it again, should do anything
-api.add_review('123', 'openSUSE:Factory:Staging:A')
-self.assertEqual(httpretty.last_request().method, 'GET')
-# Accept review
-api.set_review('123', 'openSUSE:Factory:Staging:A')
+# Register OBS
+self.obs.register_obs()
+# Get rid of open requests
+self.obs.api.dispatch_open_requests()
+# Check that we tried to close it
 self.assertEqual(httpretty.last_request().method, 'POST')
 self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'changereviewstate'])
-# Try to accept it again should do anything
-api.set_review('123', 'openSUSE:Factory:Staging:A')
+# Try it again
+self.obs.api.dispatch_open_requests()
+# This time there should be nothing to close
 self.assertEqual(httpretty.last_request().method, 'GET')
-# But we should be able to create a new one
-api.add_review('123', 'openSUSE:Factory:Staging:A')
-self.assertEqual(httpretty.last_request().method, 'POST')
-self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
 --------------------------------------------------------------------------------

@@ -145,7 +145,9 @@ class OBS:
 
         # Register methods for all requests
         for rq in self.requests_data:
+            # Static response for gets (just filling template from local data)
             self.responses['GET']['/request/' + rq] = tmpl.substitute(self.requests_data[rq])
+            # Interpret other requests
             self.responses['ALL']['/request/' + rq] = review_change
 
     def _request_search(self):
