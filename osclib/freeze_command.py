@@ -5,11 +5,11 @@ import time
 
 class FreezeCommand:
 
-    def __init__(self, apiurl):
-        self.apiurl = apiurl
+    def __init__(self, api):
+        self.api = api
 
     def set_links(self):
-        url = makeurl(self.apiurl, ['source', self.prj, '_meta'])
+        url = self.api.makeurl(['source', self.prj, '_meta'])
         f = http_GET(url)
         root = ET.parse(f).getroot()
         sources = dict()
@@ -21,16 +21,23 @@ class FreezeCommand:
             self.projectlinks.append(link.get('project'))
 
     def set_bootstrap_copy(self):
-        url = makeurl(self.apiurl, ['source', self.prj, '_meta'])
-        meta = self.prj_meta_for_bootstrap_copy(self.prj)
-        http_PUT(url, data=meta)
+        url = self.api.makeurl(['source', self.prj, '_meta'])
+
+        f = http_GET(url)
+        oldmeta = ET.parse(f).getroot()
+
+        meta = ET.fromstring(self.prj_meta_for_bootstrap_copy(self.prj))
+        meta.find('title').text = oldmeta.find('title').text
+        meta.find('description').text = oldmeta.find('description').text
+        
+        http_PUT(url, data=ET.tostring(meta))
 
     def create_bootstrap_aggregate(self):
         self.create_bootstrap_aggregate_meta()
         self.create_bootstrap_aggregate_file()
 
     def bootstrap_packages(self):
-        url = makeurl(self.apiurl, ['source', 'openSUSE:Factory:Rings:0-Bootstrap'])
+        url = self.api.makeurl(['source', 'openSUSE:Factory:Rings:0-Bootstrap'])
         f = http_GET(url)
         root = ET.parse(f).getroot()
         l = list()
@@ -42,7 +49,7 @@ class FreezeCommand:
         return l
 
     def create_bootstrap_aggregate_file(self):
-        url = makeurl(self.apiurl, ['source', self.prj, 'bootstrap-copy', '_aggregate'])
+        url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_aggregate'])
         
         root = ET.Element('aggregatelist')
         a = ET.SubElement(root, 'aggregate', { 'project': "openSUSE:Factory:Rings:0-Bootstrap" } )
@@ -58,7 +65,7 @@ class FreezeCommand:
         http_PUT(url, data=ET.tostring(root))
 
     def create_bootstrap_aggregate_meta(self):
-        url = makeurl(self.apiurl, ['source', self.prj, 'bootstrap-copy', '_meta'])
+        url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_meta'])
         
         root = ET.Element('package', { 'project': self.prj, 'name': 'bootstrap-copy' })
         ET.SubElement(root, 'title')
@@ -72,7 +79,7 @@ class FreezeCommand:
         http_PUT(url, data=ET.tostring(root))
 
     def build_switch_bootstrap_copy(self, state):
-        url = makeurl(self.apiurl, ['source', self.prj, 'bootstrap-copy', '_meta'])
+        url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_meta'])
         pkgmeta = ET.parse(http_GET(url)).getroot()
 
         for f in pkgmeta.find('build'):
@@ -82,17 +89,15 @@ class FreezeCommand:
         http_PUT(url, data=ET.tostring(pkgmeta))
 
     def verify_bootstrap_copy_code(self, code):
-        url = makeurl(self.apiurl, ['build', self.prj, '_result'], { 'package': 'bootstrap-copy' })
+        url = self.api.makeurl(['build', self.prj, '_result'], { 'package': 'bootstrap-copy' })
         
         root = ET.parse(http_GET(url)).getroot()
         for result in root.findall('result'):
             if result.get('repository') == 'bootstrap_copy':
                 if not result.get('code') in ['published', 'unpublished']:
-                    print(ET.tostring(result))
                     return False
 
                 if result.find('status').get('code') != code:
-                    print(ET.tostring(result))
                     return False
         return True
 
@@ -159,11 +164,11 @@ class FreezeCommand:
             fl = ET.SubElement(flink, 'frozenlink', { 'project': lprj } )
             sources = self.receive_sources(lprj, sources, fl)
 
-        url = makeurl(self.apiurl, ['source', self.prj, '_project', '_frozenlinks'], { 'meta': '1' } )
+        url = self.api.makeurl(['source', self.prj, '_project', '_frozenlinks'], { 'meta': '1' } )
         http_PUT(url, data=ET.tostring(flink))
 
     def receive_sources(self, prj, sources, flink):
-        url = makeurl(self.apiurl, ['source', prj], { 'view': 'info', 'nofilename': '1' } )
+        url = self.api.makeurl(['source', prj], { 'view': 'info', 'nofilename': '1' } )
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
@@ -181,12 +186,14 @@ class FreezeCommand:
         for linked in si.findall('linked'):
             if linked.get('project') in self.projectlinks:
                 # take the unexpanded md5 from Factory link
-                url = makeurl(self.apiurl, ['source', 'openSUSE:Factory', package], { 'view': 'info', 'nofilename': '1' })
+                url = self.api.makeurl(['source', 'openSUSE:Factory', package], { 'view': 'info', 'nofilename': '1' })
                 #print(package, linked.get('package'), linked.get('project'))
                 f = http_GET(url)
                 proot = ET.parse(f).getroot()
                 ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': proot.get('lsrcmd5'), 'vrev': si.get('vrev') })
                 return package
+        if package in ['rpmlint-mini-AGGR']:
+            return package # we should not freeze aggregates
         ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev') })
         return package
 

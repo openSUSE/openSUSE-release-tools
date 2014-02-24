@@ -41,6 +41,13 @@ class StagingAPI(object):
         self.ring_packages = self._generate_ring_packages()
 
 
+    def makeurl(self, l, query=[]):
+        """
+        Wrapper around osc's makeurl passing our apiurl
+        :return url made for l and query
+        """
+        return makeurl(self.apiurl, l, query)
+
     def _generate_ring_packages(self):
         """
         Generate dictionary with names of the rings
@@ -50,7 +57,7 @@ class StagingAPI(object):
         ret = {}
 
         for prj in self.rings:
-            url = makeurl(self.apiurl, ['source', prj])
+            url = self.makeurl( ['source', prj])
             root = http_GET(url)
             for entry in ET.parse(root).getroot().findall('entry'):
                 ret[entry.attrib['name']] = prj
@@ -68,7 +75,7 @@ class StagingAPI(object):
 
         package_info = {}
 
-        url =  makeurl(self.apiurl, ['source', project, pkgname])
+        url =  self.makeurl( ['source', project, pkgname])
         content = http_GET(url)
         root = ET.parse(content).getroot().find('linkinfo')
         package_info['srcmd5'] =  root.attrib['srcmd5']
@@ -110,7 +117,7 @@ class StagingAPI(object):
 
         projects = []
 
-        url = makeurl(self.apiurl, ['search', 'project',
+        url = self.makeurl( ['search', 'project',
                                     'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
         projxml = http_GET(url)
         root = ET.parse(projxml).getroot()
@@ -139,7 +146,7 @@ class StagingAPI(object):
         if by_user:   query['by_user'] = by_user
         if by_project:  query['by_project'] = by_project
 
-        url = makeurl(self.apiurl, ['request', str(request_id)], query=query)
+        url = self.makeurl( ['request', str(request_id)], query=query)
         f = http_POST(url, data=message)
         root = ET.parse(f).getroot()
         return root.attrib.get('code', '500')
@@ -187,7 +194,7 @@ class StagingAPI(object):
         # xpath query, using the -m, -r, -s options
         where = "@by_group='factory-staging'+and+@state='new'"
 
-        url = makeurl(self.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
+        url = self.makeurl( ['search','request'], "match=state/@name='review'+and+review["+where+"]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
@@ -354,7 +361,7 @@ class StagingAPI(object):
             ET.SubElement(elm, 'disable')
             dst_meta = ET.tostring(root)
 
-        url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
+        url = self.makeurl( ['source', project, package, '_meta'] )
         http_PUT(url, data=dst_meta)
 
     def check_one_request(self, request, project):
@@ -365,7 +372,7 @@ class StagingAPI(object):
         :param request_id: request id to check
         """
         
-        f = http_GET(makeurl(self.apiurl, ['request', str(request)]))
+        f = http_GET(self.makeurl( ['request', str(request)]))
         root = ET.parse(f).getroot()
 
         # relevant info for printing
@@ -445,7 +452,7 @@ class StagingAPI(object):
         Checks the openqa state of the project
         :param project: project to check
         """
-        u = makeurl(self.apiurl, ['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
+        u = self.makeurl( ['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
 
@@ -491,7 +498,7 @@ class StagingAPI(object):
         :param project: project to check
         """
         # Get build results
-        u = makeurl(self.apiurl, ['build', project, '_result'])
+        u = self.makeurl( ['build', project, '_result'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
 
@@ -578,7 +585,7 @@ class StagingAPI(object):
         # create build disabled package
         self.create_package_container(project, tar_pkg, disable_build=True)
         # now trigger wipebinaries to emulate a delete
-        url =  makeurl(self.apiurl, ['build', project], { 'cmd': 'wipe', 'package': tar_pkg  } )
+        url =  self.makeurl( ['build', project], { 'cmd': 'wipe', 'package': tar_pkg  } )
         http_POST(url)
 
         return tar_pkg
@@ -601,7 +608,7 @@ class StagingAPI(object):
         self.create_package_container(project, tar_pkg, disable_build=disable_build)
 
         # expand the revision to a md5
-        url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
+        url =  self.makeurl( ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
         f = http_GET(url)
         root = ET.parse(f).getroot()
         src_rev =  root.attrib['srcmd5']
@@ -611,7 +618,7 @@ class StagingAPI(object):
         root = ET.Element('link', package=src_pkg, project=src_prj, rev=src_rev)
         if src_vrev:
             root.attrib['vrev'] = src_vrev
-        url = makeurl(self.apiurl, ['source', project, tar_pkg, '_link'])
+        url = self.makeurl( ['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
         return tar_pkg
 
@@ -623,7 +630,7 @@ class StagingAPI(object):
     def list_requests_in_prj(self, project):
         where = "@by_project='%s'+and+@state='new'" % project
 
-        url = makeurl(self.apiurl, ['search','request', 'id'], "match=state/@name='review'+and+review["+where+"]")
+        url = self.makeurl( ['search','request', 'id'], "match=state/@name='review'+and+review["+where+"]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
         list = []
@@ -659,7 +666,7 @@ class StagingAPI(object):
         if len(query) == 0:
             raise oscerr.WrongArgs("We need a group or a project")
         query['cmd'] = 'addreview'
-        url = makeurl(self.apiurl, ['request', str(request_id)], query)
+        url = self.makeurl( ['request', str(request_id)], query)
         http_POST(url, data=msg)
 
     def set_review(self, request_id, project, state='accepted'):
@@ -679,7 +686,7 @@ class StagingAPI(object):
             change_review_state(self.apiurl, str(request_id), state, by_project=project, message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
 
     def build_switch_prj(self, prj, state):
-        url = makeurl(self.apiurl, ['source', prj, '_meta'])
+        url = self.makeurl( ['source', prj, '_meta'])
         prjmeta = ET.parse(http_GET(url)).getroot()
 
         foundone = False

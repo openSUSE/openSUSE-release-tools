@@ -198,7 +198,8 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_submit_devel(project, opts)
     elif cmd in ['freeze']:
         import osclib.freeze_command
-        osclib.freeze_command.FreezeCommand(opts.apiurl).perform(api.prj_from_letter(args[1]))
+        for prj in args[1:]:
+            osclib.freeze_command.FreezeCommand(api).perform(api.prj_from_letter(prj))
     elif cmd in ['accept']:
         import osclib.accept_command
         osclib.accept_command.AcceptCommand(api).perform(api.prj_from_letter(args[1]))
