@@ -133,23 +133,26 @@ class StagingAPI(object):
         :param message: message for the review
         :param by_group, by_user, by_project: review type
         """
-        """ taken from osc/osc/core.py, improved:
-            - verbose option added,
-            - empty by_user=& removed.
-            - numeric id can be int().
-        """
-        query = {
-            'cmd': 'changereviewstate',
-            'newstate': newstate
-        }
-        if by_group:  query['by_group'] = by_group
-        if by_user:   query['by_user'] = by_user
-        if by_project:  query['by_project'] = by_project
 
-        url = self.makeurl( ['request', str(request_id)], query=query)
-        f = http_POST(url, data=message)
-        root = ET.parse(f).getroot()
-        return root.attrib.get('code', '500')
+        req = get_request(self.apiurl, str(request_id))
+        if not req:
+            raise oscerr.WrongArgs("Request {0} not found".format(request_id))
+
+        for review in req.reviews:
+
+            if review.by_group == by_group and \
+               review.by_user == by_user and \
+               review.by_project == by_project and \
+               review.state == 'new':
+
+                # call osc's function
+                return change_review_state(self.apiurl, str(request_id), newstate,
+                                           by_group=by_group,
+                                           by_user=by_user,
+                                           by_project=by_project)
+
+        return False
+
 
     def accept_non_ring_request(self, request):
         """
@@ -683,7 +686,8 @@ class StagingAPI(object):
             if i.by_project == project and i.state == 'new':
                 cont = True
         if cont:
-            change_review_state(self.apiurl, str(request_id), state, by_project=project, message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
+            self.change_review_state(request_id, state, by_project=project, 
+                                     message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
 
     def build_switch_prj(self, prj, state):
         url = self.makeurl( ['source', prj, '_meta'])
