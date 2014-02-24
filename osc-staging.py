@@ -184,7 +184,7 @@ def do_staging(self, subcmd, opts, *args):
     # call the respective command and parse args by need
     if cmd in ['check']:
         if len(args) > 1:
-            return api.check_project_status(api.prj_from_letter(args[1]))
+            return api.check_project_status(api.prj_from_letter(args[1]), verbose=True)
         for prj in api.get_staging_projects():
             print("Checking {}".format(prj))
             api.check_project_status(prj)
@@ -198,7 +198,8 @@ def do_staging(self, subcmd, opts, *args):
         self._staging_submit_devel(project, opts)
     elif cmd in ['freeze']:
         import osclib.freeze_command
-        osclib.freeze_command.FreezeCommand(opts.apiurl).perform(api.prj_from_letter(args[1]))
+        for prj in args[1:]:
+            osclib.freeze_command.FreezeCommand(api).perform(api.prj_from_letter(prj))
     elif cmd in ['accept']:
         import osclib.accept_command
         osclib.accept_command.AcceptCommand(api).perform(api.prj_from_letter(args[1]))
@@ -209,6 +210,8 @@ def do_staging(self, subcmd, opts, *args):
                 api.rq_to_prj(rq, stprj)
             else:
                 api.rm_from_prj(stprj, request_id=rq)
+                api.add_review(rq, by_group='factory-staging',
+                               msg='Please recheck')
     elif cmd in ['move']:
         sprj = api.prj_from_letter(args[1])
         tprj = api.prj_from_letter(args[2])

@@ -43,16 +43,46 @@ class OBS:
         Initialize the configuration and create basic OBS instance
         """
 
+        # Make osc happy about config file
+        oscrc = os.path.join(self._get_fixtures_dir(), 'oscrc')
+        osc.core.conf.get_config(override_conffile=oscrc,
+                                 override_no_keyring=True,
+                                 override_no_gnome_keyring=True)
+        os.environ['OSC_CONFIG'] = oscrc
+
+        # (Re)set configuration
         self.reset_config()
 
     def reset_config(self):
+        """
+        Resets whole OBS class
+        """
+        # Initialize states
+        self._set_init_data()
+        # Setup callbacks
         self._clear_responses()
 
+    def _set_init_data(self):
+        """
+        Resets states
+        """
+        # Initial request data
+        self.requests_data = { '123': { 'request': 'new', 'review': 'accepted',
+                                        'who': 'Admin', 'by': 'group', 'id': '123',
+                                        'by_who': 'opensuse-review-team',
+                                        'package': 'gcc' },
+                               '321': { 'request': 'review', 'review': 'new',
+                                        'who': 'Admin', 'by': 'group', 'id': '321',
+                                        'by_who': 'factory-staging',
+                                        'package': 'puppet' }
+                             }
+ 
     def _clear_responses(self):
         """
-        Reset predefined responses
+        Resets predefined responses
         """
         self.responses = { 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
+
         # Add methods to manipulate reviews
         self._request_review()
         # Add methods to search requests
@@ -100,17 +130,6 @@ class OBS:
             if len(path) == 0:
                 path = uri
             raise BaseException("No response for {0} on {1} provided".format(request.method,path))
-
-    # Initial request data
-    requests_data = { '123': { 'request': 'new', 'review': 'accepted',
-                               'who': 'Admin', 'by': 'group', 'id': '123',
-                               'by_who': 'opensuse-review-team',
-                               'package': 'gcc' },
-                      '321': { 'request': 'review', 'review': 'new',
-                               'who': 'Admin', 'by': 'group', 'id': '321',
-                               'by_who': 'factory-staging',
-                               'package': 'puppet' }
-                    }
 
     def _request_review(self):
         """
@@ -211,8 +230,6 @@ class TestApiCalls(unittest.TestCase):
     Tests for various api calls to ensure we return expected content
     """
 
-    obs = OBS()
-
     def _get_fixtures_dir(self):
         """
         Return path for fixtures
@@ -259,14 +276,10 @@ class TestApiCalls(unittest.TestCase):
 
     def setUp(self):
         """
-        Initialize the configuration so the osc is happy
+        Initialize the configuration
         """
 
-        oscrc = os.path.join(self._get_fixtures_dir(), 'oscrc')
-        osc.core.conf.get_config(override_conffile=oscrc,
-                                 override_no_keyring=True,
-                                 override_no_gnome_keyring=True)
-        os.environ['OSC_CONFIG'] = oscrc
+        self.obs = OBS()
 
     @httpretty.activate
     def test_ring_packages(self):
@@ -367,20 +380,13 @@ class TestApiCalls(unittest.TestCase):
 
         requests = []
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
-                                      'open-requests.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+        self.obs.register_obs()
 
         # get the open requests
-        requests = api.get_open_requests()
-        count = len(requests)
+        requests = self.obs.api.get_open_requests()
 
-        # Compare the results, we only care now that we got 2 of them not the content
-        self.assertEqual(2, count)
+        # Compare the results, we only care now that we got 1 of them not the content
+        self.assertEqual(1, len(requests))
 
     @httpretty.activate
     def test_get_package_information(self):
@@ -437,11 +443,11 @@ class TestApiCalls(unittest.TestCase):
         self.obs.register_obs()
 
         # Add review
-        self.obs.api.add_review('123', 'openSUSE:Factory:Staging:A')
+        self.obs.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
         # Try to readd, should do anything
-        self.obs.api.add_review('123', 'openSUSE:Factory:Staging:A')
+        self.obs.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
         # Accept review
         self.obs.api.set_review('123', 'openSUSE:Factory:Staging:A')
@@ -451,7 +457,7 @@ class TestApiCalls(unittest.TestCase):
         self.obs.api.set_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
         # But we should be able to reopen it
-        self.obs.api.add_review('123', 'openSUSE:Factory:Staging:A')
+        self.obs.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
 
@@ -508,6 +514,7 @@ class TestApiCalls(unittest.TestCase):
         for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
             print(line)
         self.assertEqual(output, fixture)
+
 
 # Here place all mockable functions
 @contextlib.contextmanager

@@ -41,6 +41,13 @@ class StagingAPI(object):
         self.ring_packages = self._generate_ring_packages()
 
 
+    def makeurl(self, l, query=[]):
+        """
+        Wrapper around osc's makeurl passing our apiurl
+        :return url made for l and query
+        """
+        return makeurl(self.apiurl, l, query)
+
     def _generate_ring_packages(self):
         """
         Generate dictionary with names of the rings
@@ -50,7 +57,7 @@ class StagingAPI(object):
         ret = {}
 
         for prj in self.rings:
-            url = makeurl(self.apiurl, ['source', prj])
+            url = self.makeurl( ['source', prj])
             root = http_GET(url)
             for entry in ET.parse(root).getroot().findall('entry'):
                 ret[entry.attrib['name']] = prj
@@ -68,7 +75,7 @@ class StagingAPI(object):
 
         package_info = {}
 
-        url =  makeurl(self.apiurl, ['source', project, pkgname])
+        url =  self.makeurl( ['source', project, pkgname])
         content = http_GET(url)
         root = ET.parse(content).getroot().find('linkinfo')
         package_info['srcmd5'] =  root.attrib['srcmd5']
@@ -110,7 +117,7 @@ class StagingAPI(object):
 
         projects = []
 
-        url = makeurl(self.apiurl, ['search', 'project',
+        url = self.makeurl( ['search', 'project',
                                     'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
         projxml = http_GET(url)
         root = ET.parse(projxml).getroot()
@@ -126,23 +133,26 @@ class StagingAPI(object):
         :param message: message for the review
         :param by_group, by_user, by_project: review type
         """
-        """ taken from osc/osc/core.py, improved:
-            - verbose option added,
-            - empty by_user=& removed.
-            - numeric id can be int().
-        """
-        query = {
-            'cmd': 'changereviewstate',
-            'newstate': newstate
-        }
-        if by_group:  query['by_group'] = by_group
-        if by_user:   query['by_user'] = by_user
-        if by_project:  query['by_project'] = by_project
 
-        url = makeurl(self.apiurl, ['request', str(request_id)], query=query)
-        f = http_POST(url, data=message)
-        root = ET.parse(f).getroot()
-        return root.attrib.get('code', '500')
+        req = get_request(self.apiurl, str(request_id))
+        if not req:
+            raise oscerr.WrongArgs("Request {0} not found".format(request_id))
+
+        for review in req.reviews:
+
+            if review.by_group == by_group and \
+               review.by_user == by_user and \
+               review.by_project == by_project and \
+               review.state == 'new':
+
+                # call osc's function
+                return change_review_state(self.apiurl, str(request_id), newstate,
+                                           by_group=by_group,
+                                           by_user=by_user,
+                                           by_project=by_project)
+
+        return False
+
 
     def accept_non_ring_request(self, request):
         """
@@ -187,7 +197,7 @@ class StagingAPI(object):
         # xpath query, using the -m, -r, -s options
         where = "@by_group='factory-staging'+and+@state='new'"
 
-        url = makeurl(self.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
+        url = self.makeurl( ['search','request'], "match=state/@name='review'+and+review["+where+"]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
@@ -354,7 +364,7 @@ class StagingAPI(object):
             ET.SubElement(elm, 'disable')
             dst_meta = ET.tostring(root)
 
-        url = makeurl(self.apiurl, ['source', project, package, '_meta'] )
+        url = self.makeurl( ['source', project, package, '_meta'] )
         http_PUT(url, data=dst_meta)
 
     def check_one_request(self, request, project):
@@ -365,7 +375,7 @@ class StagingAPI(object):
         :param request_id: request id to check
         """
         
-        f = http_GET(makeurl(self.apiurl, ['request', str(request)]))
+        f = http_GET(self.makeurl( ['request', str(request)]))
         root = ET.parse(f).getroot()
 
         # relevant info for printing
@@ -396,7 +406,7 @@ class StagingAPI(object):
             state = 'missing reviews: ' + ', '.join(failing_groups)
             return '{0}: {1}'.format(package, state)
 
-    def check_project_status(self, project):
+    def check_project_status(self, project, verbose=False):
         """
         Checks a staging project for acceptance. Checks all open requests for open reviews
         and build status
@@ -422,7 +432,8 @@ class StagingAPI(object):
             if ret:
                 print(ret)
                 all = False
-                break # TODO: offer a details option
+                if not verbose:
+                    break
 
         buildstatus = self.gather_build_status(project)
         if buildstatus:
@@ -432,7 +443,7 @@ class StagingAPI(object):
             
         ret = self.find_openqa_state(project)
         if ret:
-            print ret
+            print(ret)
             all = False
             return False
         elif all:
@@ -444,7 +455,7 @@ class StagingAPI(object):
         Checks the openqa state of the project
         :param project: project to check
         """
-        u = makeurl(self.apiurl, ['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
+        u = self.makeurl( ['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
 
@@ -468,18 +479,18 @@ class StagingAPI(object):
 
         try:
             f = http_GET(url)
-	except urllib2.HTTPError:
+        except urllib2.HTTPError:
             return 'No openQA result (yet) for {}'.format(url)
 
         import json
         openqa = json.load(f)
-	overall = openqa.get('overall', 'inprogress')
+        overall = openqa.get('overall', 'inprogress')
         if overall != 'ok':
             return "Openqa's overall status is {}".format(overall)
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
-            if module['result'] != 'ok' and module['name'] not in ['yast2_bootloader', 'sshd']:
+            if module['result'] != 'ok' and module['name'] not in []:
                 return "{} test failed".format(module['name'])
 
         return None
@@ -490,7 +501,7 @@ class StagingAPI(object):
         :param project: project to check
         """
         # Get build results
-        u = makeurl(self.apiurl, ['build', project, '_result'])
+        u = self.makeurl( ['build', project, '_result'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
 
@@ -516,14 +527,15 @@ class StagingAPI(object):
         else:
             return [project, working, broken]
 
-    def print_build_status_details(self, details):
+    def print_build_status_details(self, details, verbose=False):
         project, working, broken = details
 
         if len(working) != 0:
             print("At least following repositories is still building:")
             for i in working:
                 print("    {0}: {1}".format(i['path'], i['state']))
-                break # TODO offer details option
+                if not verbose:
+                    break
             print
         if len(broken) != 0:
             print("Following packages are broken:")
@@ -576,7 +588,7 @@ class StagingAPI(object):
         # create build disabled package
         self.create_package_container(project, tar_pkg, disable_build=True)
         # now trigger wipebinaries to emulate a delete
-        url =  makeurl(self.apiurl, ['build', project], { 'cmd': 'wipe', 'package': tar_pkg  } )
+        url =  self.makeurl( ['build', project], { 'cmd': 'wipe', 'package': tar_pkg  } )
         http_POST(url)
 
         return tar_pkg
@@ -599,7 +611,7 @@ class StagingAPI(object):
         self.create_package_container(project, tar_pkg, disable_build=disable_build)
 
         # expand the revision to a md5
-        url =  makeurl(self.apiurl, ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
+        url =  self.makeurl( ['source', src_prj, src_pkg], { 'rev': src_rev, 'expand': 1 })
         f = http_GET(url)
         root = ET.parse(f).getroot()
         src_rev =  root.attrib['srcmd5']
@@ -609,7 +621,7 @@ class StagingAPI(object):
         root = ET.Element('link', package=src_pkg, project=src_prj, rev=src_rev)
         if src_vrev:
             root.attrib['vrev'] = src_vrev
-        url = makeurl(self.apiurl, ['source', project, tar_pkg, '_link'])
+        url = self.makeurl( ['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
         return tar_pkg
 
@@ -621,7 +633,7 @@ class StagingAPI(object):
     def list_requests_in_prj(self, project):
         where = "@by_project='%s'+and+@state='new'" % project
 
-        url = makeurl(self.apiurl, ['search','request', 'id'], "match=state/@name='review'+and+review["+where+"]")
+        url = self.makeurl( ['search','request', 'id'], "match=state/@name='review'+and+review["+where+"]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
         list = []
@@ -630,7 +642,7 @@ class StagingAPI(object):
 
         return list
 
-    def add_review(self, request_id, project):
+    def add_review(self, request_id, by_project=None, by_group=None, msg=None):
         """
         Adds review by project to the request
         :param request_id: request to add review to
@@ -640,12 +652,25 @@ class StagingAPI(object):
         if not req:
             raise oscerr.WrongArgs("Request {0} not found".format(request_id))
         for i in req.reviews:
-            if i.by_project == project and i.state == 'new':
+            if by_project and i.by_project == by_project and i.state == 'new':
                 return
-        query = { 'cmd': 'addreview' }
-        query['by_project'] = project
-        url = makeurl(self.apiurl, ['request', str(request_id)], query)
-        http_POST(url, data='Being evaluated by staging project "{0}"'.format(project))
+            if by_group and i.by_group == by_group and i.state == 'new':
+                return
+
+        query = {}
+        if by_project:
+            query['by_project'] = by_project
+            if not msg:
+                msg = 'Being evaluated by staging project "{0}"'.format(by_project)
+        if by_group:
+            query['by_group'] = by_group
+            if not msg:
+                msg = 'Being evaluated by group "{0}"'.format(by_group)
+        if len(query) == 0:
+            raise oscerr.WrongArgs("We need a group or a project")
+        query['cmd'] = 'addreview'
+        url = self.makeurl( ['request', str(request_id)], query)
+        http_POST(url, data=msg)
 
     def set_review(self, request_id, project, state='accepted'):
         """
@@ -661,10 +686,11 @@ class StagingAPI(object):
             if i.by_project == project and i.state == 'new':
                 cont = True
         if cont:
-            change_review_state(self.apiurl, str(request_id), state, by_project=project, message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
+            self.change_review_state(request_id, state, by_project=project, 
+                                     message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
 
     def build_switch_prj(self, prj, state):
-        url = makeurl(self.apiurl, ['source', prj, '_meta'])
+        url = self.makeurl( ['source', prj, '_meta'])
         prjmeta = ET.parse(http_GET(url)).getroot()
 
         foundone = False
