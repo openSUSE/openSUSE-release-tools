@@ -43,7 +43,6 @@ class OBS:
     """
     Class trying to simulate a simple OBS
     """
-    responses = { }
 
     def __init__(self):
         """
@@ -83,9 +82,9 @@ class OBS:
                                         'by_who': 'factory-staging',
                                         'package': 'puppet' }
                              }
-        self.project_data = { 'A': { 'project': 'openSUSE:Factory:Staging:A',
-                                     'title': '', 'description': '' }
-                            }
+        self.st_project_data = { 'A': { 'project': 'openSUSE:Factory:Staging:A',
+                                        'title': '', 'description': '' }
+                               }
  
     def _clear_responses(self):
         """
@@ -95,8 +94,8 @@ class OBS:
 
         # Add methods to manipulate reviews
         self._request_review()
-        # Add methods to search requests
-        self._request_search()
+        # Add methods to search requests and projects
+        self._search()
         # Add methods to work with project metadata
         self._project_meta()
 
@@ -133,7 +132,7 @@ class OBS:
                     return (200, headers, reply)
                 # It's fixture
                 else:
-                    return (200, headers, _get_fixture_content(reply))
+                    return (200, headers, self._get_fixture_content(reply))
             # All is left is callback function
             else:
                 return (200, headers, reply(self.responses, request, uri))
@@ -153,9 +152,9 @@ class OBS:
             return self.responses['GET'][path]
 
         # Register methods for all requests
-        for pr in self.project_data:
+        for pr in self.st_project_data:
             # Static response for gets (just filling template from local data)
-            self.responses['GET']['/source/openSUSE:Factory:Staging:' + pr + '/_meta'] = tmpl.substitute(self.project_data[pr])
+            self.responses['GET']['/source/openSUSE:Factory:Staging:' + pr + '/_meta'] = tmpl.substitute(self.st_project_data[pr])
             # Interpret other requests
             self.responses['ALL']['/source/openSUSE:Factory:Staging:' + pr + '/_meta'] = project_meta_change
 
@@ -197,7 +196,7 @@ class OBS:
             # Interpret other requests
             self.responses['ALL']['/request/' + rq] = review_change
 
-    def _request_search(self):
+    def _search(self):
         """
         Allows searching for requests
         """
@@ -218,7 +217,20 @@ class OBS:
                 return ret_str
             # We are searching for something else, we don't know the answer
             raise BaseException("No search results defined for " + pprint.pformat(request.querystring))
+
+        def id_project_search(responses, request, uri):
+            # Searching for project
+            if request.querystring.has_key(u'match') and request.querystring[u'match'][0] == u"starts-with(@name,\'openSUSE:Factory:Staging:\')":
+                ret_str = '<collection matches="' + str(len(self.st_project_data)) + '">\n'
+                # Itereate through all requests
+                for prj in self.st_project_data:
+                    ret_str += '   <project name="openSUSE:Factory:Staging:' + prj + '"/>\n'
+                ret_str += '</collection>'
+                return ret_str
+            # We are searching for something else, we don't know the answer
+            raise BaseException("No search results defined for " + pprint.pformat(request.querystring))
         self.responses['GET']['/search/request'] = request_search
+        self.responses['GET']['/search/project/id'] = id_project_search
 
     def register_obs(self):
         """

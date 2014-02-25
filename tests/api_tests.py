@@ -118,6 +118,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Register OBS
         self.obs.register_obs()
+
         # Get rid of open requests
         self.obs.api.dispatch_open_requests()
         # Check that we tried to close it
@@ -156,24 +157,15 @@ class TestApiCalls(unittest.TestCase):
         List projects and their content
         """
 
-        prjlist = [
-            'openSUSE:Factory:Staging:A',
-            'openSUSE:Factory:Staging:B',
-            'openSUSE:Factory:Staging:C',
-            'openSUSE:Factory:Staging:D'
-        ]
+        self.obs.register_obs()
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/search/project/id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')',
-                                      'staging-project-list.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+        # Prepare expected results
+        data = []
+        for prj in self.obs.st_project_data:
+            data.append('openSUSE:Factory:Staging:' + prj)
 
         # Compare the results
-        self.assertEqual(prjlist,
-                        api.get_staging_projects())
+        self.assertEqual(data, self.obs.api.get_staging_projects())
 
     @httpretty.activate
     def test_open_requests(self):
