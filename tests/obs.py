@@ -80,11 +80,20 @@ class OBS:
                                '321': { 'request': 'review', 'review': 'new',
                                         'who': 'Admin', 'by': 'group', 'id': '321',
                                         'by_who': 'factory-staging',
-                                        'package': 'puppet' }
+                                        'package': 'puppet' },
+                               '333': { 'request': 'review', 'review': 'new',
+                                        'who': 'Admin', 'by': 'project', 'id': '333',
+                                        'by_who': 'openSUSE:Factory:Staging:B',
+                                        'package': 'wine' }
                              }
         self.st_project_data = { 'A': { 'project': 'openSUSE:Factory:Staging:A',
+                                        'title': '', 'description': '' },
+                                 'B': { 'project': 'openSUSE:Factory:Staging:B',
                                         'title': '', 'description': '' }
                                }
+        self.links_data = { 'wine': { 'prj': 'openSUSE:Factory:Staging:B',
+                                      'pkg': 'wine', 'devprj': 'devel:wine' }
+                                    }
  
     def _clear_responses(self):
         """
@@ -98,6 +107,8 @@ class OBS:
         self._search()
         # Add methods to work with project metadata
         self._project_meta()
+        # Add linked packages
+        self._link_sources()
 
     def _pretty_callback(self, request, uri, headers):
         """
@@ -195,6 +206,14 @@ class OBS:
             self.responses['GET']['/request/' + rq] = tmpl.substitute(self.requests_data[rq])
             # Interpret other requests
             self.responses['ALL']['/request/' + rq] = review_change
+
+    def _link_sources(self):
+        # Load template
+        tmpl = Template(self._get_fixture_content('linksource.xml'))
+
+        # Register methods for requests
+        for link in self.links_data:
+            self.responses['GET']['/source/' + self.links_data[link]['prj'] + '/' + link] = tmpl.substitute(self.links_data[link])
 
     def _search(self):
         """
