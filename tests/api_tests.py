@@ -21,7 +21,6 @@ except ImportError:
 from string import Template
 import oscs
 import osc
-import operator
 import re
 import pprint
 
@@ -32,11 +31,11 @@ if PY3:
 else:
     string_types = basestring,
 
+
 class OBS:
     """
     Class trying to simulate a simple OBS
     """
-    responses = { }
 
     def __init__(self):
         """
@@ -126,7 +125,7 @@ class OBS:
                     return (200, headers, reply)
                 # It's fixture
                 else:
-                    return (200, headers, _get_fixture_content(reply))
+                    return (200, headers, self._get_fixture_content(reply))
             # All is left is callback function
             else:
                 return (200, headers, reply(self.responses, request, uri))
@@ -245,6 +244,7 @@ class OBS:
         content = response.read()
         response.close()
         return content
+
 
 class TestApiCalls(unittest.TestCase):
     """
