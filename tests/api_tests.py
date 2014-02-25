@@ -100,14 +100,14 @@ class TestApiCalls(unittest.TestCase):
         }
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Rings:0-Bootstrap',
+        self._register_pretty_url_get('https://localhost/source/openSUSE:Factory:Rings:0-Bootstrap',
                                       'ring-0-project.xml')
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Core',
+        self._register_pretty_url_get('https://localhost/source/openSUSE:Factory:Core',
                                       'ring-1-project.xml')
 
         # Create the api object
         with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+            api = oscs.StagingAPI('https://localhost')
         self.assertEqual(ring_packages, api.ring_packages)
 
     @httpretty.activate
@@ -118,6 +118,7 @@ class TestApiCalls(unittest.TestCase):
 
         # Register OBS
         self.obs.register_obs()
+
         # Get rid of open requests
         self.obs.api.dispatch_open_requests()
         # Check that we tried to close it
@@ -156,24 +157,15 @@ class TestApiCalls(unittest.TestCase):
         List projects and their content
         """
 
-        prjlist = [
-            'openSUSE:Factory:Staging:A',
-            'openSUSE:Factory:Staging:B',
-            'openSUSE:Factory:Staging:C',
-            'openSUSE:Factory:Staging:D'
-        ]
+        self.obs.register_obs()
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/search/project/id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')',
-                                      'staging-project-list.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+        # Prepare expected results
+        data = []
+        for prj in self.obs.st_project_data:
+            data.append('openSUSE:Factory:Staging:' + prj)
 
         # Compare the results
-        self.assertEqual(prjlist,
-                        api.get_staging_projects())
+        self.assertEqual(data, self.obs.api.get_staging_projects())
 
     @httpretty.activate
     def test_open_requests(self):
@@ -203,12 +195,12 @@ class TestApiCalls(unittest.TestCase):
                         'package': 'wine'}
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:B/wine',
+        self._register_pretty_url_get('https://localhost/source/openSUSE:Factory:Staging:B/wine',
                                       'linksource.xml')
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+            api = oscs.StagingAPI('https://localhost')
 
         # Compare the results, we only care now that we got 2 of them not the content
         self.assertEqual(package_info,
@@ -221,10 +213,10 @@ class TestApiCalls(unittest.TestCase):
         """
 
         with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+            api = oscs.StagingAPI('https://localhost')
 
         httpretty.register_uri(
-            httpretty.PUT, "http://localhost/source/openSUSE:Factory:Staging:B/wine/_meta")
+            httpretty.PUT, "https://localhost/source/openSUSE:Factory:Staging:B/wine/_meta")
 
         api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
         self.assertEqual(httpretty.last_request().method, 'PUT')
@@ -272,12 +264,12 @@ class TestApiCalls(unittest.TestCase):
         """
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/build/green/_result',
+        self._register_pretty_url_get('https://localhost/build/green/_result',
                                       'build-results-green.xml')
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+            api = oscs.StagingAPI('https://localhost')
 
         # Check print output
         self.assertEqual(api.gather_build_status("green"), None)
@@ -289,12 +281,12 @@ class TestApiCalls(unittest.TestCase):
         """
 
         # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/build/red/_result',
+        self._register_pretty_url_get('https://localhost/build/red/_result',
                                       'build-results-red.xml')
 
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+            api = oscs.StagingAPI('https://localhost')
 
         # Check print output
         self.assertEqual(api.gather_build_status('red'), ['red', [{'path': 'standard/x86_64', 'state': 'building'}],
@@ -303,7 +295,7 @@ class TestApiCalls(unittest.TestCase):
 
     def test_bootstrap_copy(self):
         import osclib.freeze_command
-        fc = osclib.freeze_command.FreezeCommand('http://localhost')
+        fc = osclib.freeze_command.FreezeCommand('https://localhost')
 
         fp = self._get_fixture_path('staging-meta-for-bootstrap-copy.xml')
         fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True)
