@@ -336,7 +336,7 @@ class StagingAPI(object):
         :param request_id: request we want to remove
         :param msg: message for the log
         """
-        
+
         if package:
             request_id = self.get_request_id_for_package(project, package)
             if not request_id: # already gone?
@@ -374,7 +374,7 @@ class StagingAPI(object):
         :param project: staging project
         :param request_id: request id to check
         """
-        
+
         f = http_GET(self.makeurl( ['request', str(request)]))
         root = ET.parse(f).getroot()
 
@@ -415,7 +415,7 @@ class StagingAPI(object):
 
         # all requests with open review
         requests = self.list_requests_in_prj(project)
-        
+
         # all tracked requests - some of them might be declined, so we don't see them above
         meta = self.get_prj_pseudometa(project)
         for req in meta['requests']:
@@ -440,7 +440,7 @@ class StagingAPI(object):
             all = False
             self.print_build_status_details(buildstatus)
             return False
-            
+
         ret = self.find_openqa_state(project)
         if ret:
             print(ret)
@@ -478,7 +478,7 @@ class StagingAPI(object):
         url += "-minimalx/results.json"
 
         try:
-            f = http_GET(url)
+            f = urllib2.urlopen(url)
         except urllib2.HTTPError:
             return 'No openQA result (yet) for {}'.format(url)
 
@@ -686,7 +686,7 @@ class StagingAPI(object):
             if i.by_project == project and i.state == 'new':
                 cont = True
         if cont:
-            self.change_review_state(request_id, state, by_project=project, 
+            self.change_review_state(request_id, state, by_project=project,
                                      message='Reviewed by staging project "{}" with result: "{}"'.format(project, state) )
 
     def build_switch_prj(self, prj, state):
