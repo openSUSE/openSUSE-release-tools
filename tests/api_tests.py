@@ -32,17 +32,61 @@ if PY3:
 else:
     string_types = basestring,
 
-class TestApiCalls(unittest.TestCase):
+class OBS:
     """
-    Tests for various api calls to ensure we return expected content
+    Class trying to simulate a simple OBS
     """
-    responses = { 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
+    responses = { }
 
+    def __init__(self):
+        """
+        Initialize the configuration and create basic OBS instance
+        """
+
+        # Make osc happy about config file
+        oscrc = os.path.join(self._get_fixtures_dir(), 'oscrc')
+        osc.core.conf.get_config(override_conffile=oscrc,
+                                 override_no_keyring=True,
+                                 override_no_gnome_keyring=True)
+        os.environ['OSC_CONFIG'] = oscrc
+
+        # (Re)set configuration
+        self.reset_config()
+
+    def reset_config(self):
+        """
+        Resets whole OBS class
+        """
+        # Initialize states
+        self._set_init_data()
+        # Setup callbacks
+        self._clear_responses()
+
+    def _set_init_data(self):
+        """
+        Resets states
+        """
+        # Initial request data
+        self.requests_data = { '123': { 'request': 'new', 'review': 'accepted',
+                                        'who': 'Admin', 'by': 'group', 'id': '123',
+                                        'by_who': 'opensuse-review-team',
+                                        'package': 'gcc' },
+                               '321': { 'request': 'review', 'review': 'new',
+                                        'who': 'Admin', 'by': 'group', 'id': '321',
+                                        'by_who': 'factory-staging',
+                                        'package': 'puppet' }
+                             }
+ 
     def _clear_responses(self):
         """
-        Reset predefined responses
+        Resets predefined responses
         """
         self.responses = { 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
+
+        # Add methods to manipulate reviews
+        self._request_review()
+        # Add methods to search requests
+        self._request_search()
 
     def _pretty_callback(self, request, uri, headers):
         """
@@ -55,31 +99,136 @@ class TestApiCalls(unittest.TestCase):
         :param uri: uri as provided to callback function by HTTPretty
         :param headers: headers as provided to callback function by HTTPretty
         """
+
+        # Get path
         path = re.match( r'.*localhost([^?]*)(\?.*)?',uri).group(1)
         reply = None
+        # Try to find a fallback
         if self.responses['ALL'].has_key(path):
             reply = self.responses['ALL'][path]
+        # Try to find a specific method
         if self.responses[request.method].has_key(path):
             reply = self.responses[request.method][path]
+        # We have something to reply with
         if reply:
+            # It's a list, so take the first
             if isinstance(reply, list):
                 reply = reply.pop(0)
+            # It's string
             if isinstance(reply, string_types):
-                return (200, headers, reply)
+                # It's XML
+                if reply.startswith('<'):
+                    return (200, headers, reply)
+                # It's fixture
+                else:
+                    return (200, headers, _get_fixture_content(reply))
+            # All is left is callback function
             else:
                 return (200, headers, reply(self.responses, request, uri))
+        # No possible response found
         else:
             if len(path) == 0:
                 path = uri
             raise BaseException("No response for {0} on {1} provided".format(request.method,path))
 
-    def _register_pretty(self):
+    def _request_review(self):
+        """
+        Register requests methods
+        """
+
+        # Load template
+        tmpl = Template(self._get_fixture_content('request_review.xml'))
+
+        # What happens when we try to change the review
+        def review_change(responses, request, uri):
+            rq_id = re.match( r'.*/([0-9]+)',uri).group(1)
+            args = self.requests_data[rq_id]
+            # Adding review
+            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'addreview']:
+                self.requests_data[rq_id]['request'] = 'review'
+                self.requests_data[rq_id]['review']  = 'new'
+            # Changing review
+            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
+                self.requests_data[rq_id]['request'] = 'new'
+                self.requests_data[rq_id]['review']  = request.querystring[u'newstate'][0]
+            # Project review
+            if request.querystring.has_key(u'by_project'):
+                self.requests_data[rq_id]['by']      = 'project'
+                self.requests_data[rq_id]['by_who']  = request.querystring[u'by_project'][0]
+            # Group review
+            if request.querystring.has_key(u'by_group'):
+                self.requests_data[rq_id]['by']      = 'group'
+                self.requests_data[rq_id]['by_who']  = request.querystring[u'by_group'][0]
+            responses['GET']['/request/' + rq_id]  = tmpl.substitute(self.requests_data[rq_id])
+            return responses['GET']['/request/' + rq_id]
+
+        # Register methods for all requests
+        for rq in self.requests_data:
+            # Static response for gets (just filling template from local data)
+            self.responses['GET']['/request/' + rq] = tmpl.substitute(self.requests_data[rq])
+            # Interpret other requests
+            self.responses['ALL']['/request/' + rq] = review_change
+
+    def _request_search(self):
+        """
+        Allows searching for requests
+        """
+        def request_search(responses, request, uri):
+            # Searching for requests that has open review for staging group
+            if request.querystring.has_key(u'match') and request.querystring[u'match'][0] == u"state/@name='review' and review[@by_group='factory-staging' and @state='new']":
+                rqs = []
+                # Itereate through all requests
+                for rq in self.requests_data:
+                    # Find the ones matching the condition
+                    if self.requests_data[rq]['request'] == 'review' and self.requests_data[rq]['review'] == 'new' and self.requests_data[rq]['by'] == 'group' and self.requests_data[rq]['by_who'] == 'factory-staging':
+                        rqs.append(rq)
+                # Create response
+                ret_str  = '<collection matches="' + str(len(rqs)) + '">'
+                for rq in rqs:
+                    ret_str += responses['GET']['/request/' + rq]
+                ret_str += '</collection>'
+                return ret_str
+            # We are searching for something else, we don't know the answer
+            raise BaseException("No search results defined for " + pprint.pformat(request.querystring))
+        self.responses['GET']['/search/request'] = request_search
+
+    def register_obs(self):
         """
         Register custom callback for HTTPretty
         """
         httpretty.register_uri(httpretty.GET,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
         httpretty.register_uri(httpretty.PUT,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
         httpretty.register_uri(httpretty.POST,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
+        self.reset_config()
+        # Initiate the api with mocked rings
+        with mock_generate_ring_packages():
+            self.api = oscs.StagingAPI('http://localhost')
+
+    def _get_fixtures_dir(self):
+        """
+        Return path for fixtures
+        """
+        return os.path.join(os.getcwd(), 'tests/fixtures')
+
+    def _get_fixture_path(self, filename):
+        """
+        Return path for fixture
+        """
+        return os.path.join(self._get_fixtures_dir(), filename)
+
+    def _get_fixture_content(self, filename):
+        """
+        Return content of fixture
+        """
+        response = open(self._get_fixture_path(filename), 'r')
+        content = response.read()
+        response.close()
+        return content
+
+class TestApiCalls(unittest.TestCase):
+    """
+    Tests for various api calls to ensure we return expected content
+    """
 
     def _get_fixtures_dir(self):
         """
@@ -127,14 +276,10 @@ class TestApiCalls(unittest.TestCase):
 
     def setUp(self):
         """
-        Initialize the configuration so the osc is happy
+        Initialize the configuration
         """
 
-        oscrc = os.path.join(self._get_fixtures_dir(), 'oscrc')
-        osc.core.conf.get_config(override_conffile=oscrc,
-                                 override_no_keyring=True,
-                                 override_no_gnome_keyring=True)
-        os.environ['OSC_CONFIG'] = oscrc
+        self.obs = OBS()
 
     @httpretty.activate
     def test_ring_packages(self):
@@ -165,24 +310,17 @@ class TestApiCalls(unittest.TestCase):
         Test dispatching and closure of non-ring packages
         """
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
-                                      'open-requests.xml')
-
-        self._register_pretty_url_get('http://localhost/request/220956', '220956-open.xml')
-
-        # There should be just one request that gets closed
-        # We don't care about the return so just reuse the above :P
-        # If there is bug in the function we get assertion about closing more issues than we should
-        self._register_pretty_url_post('http://localhost/request/220956?comment=No+need+for+staging%2C+not+in+tested+ring+project.&newstate=accepted&by_group=factory-staging&cmd=changereviewstate',
-                                       'open-requests.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
-
-        # get the open requests
-        requests = api.dispatch_open_requests()
+        # Register OBS
+        self.obs.register_obs()
+        # Get rid of open requests
+        self.obs.api.dispatch_open_requests()
+        # Check that we tried to close it
+        self.assertEqual(httpretty.last_request().method, 'POST')
+        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'changereviewstate'])
+        # Try it again
+        self.obs.api.dispatch_open_requests()
+        # This time there should be nothing to close
+        self.assertEqual(httpretty.last_request().method, 'GET')
 
     @httpretty.activate
     def test_pseudometa_get_prj(self):
@@ -242,20 +380,13 @@ class TestApiCalls(unittest.TestCase):
 
         requests = []
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/search/request?match=state/@name=\'review\'+and+review[@by_group=\'factory-staging\'+and+@state=\'new\']',
-                                      'open-requests.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
+        self.obs.register_obs()
 
         # get the open requests
-        requests = api.get_open_requests()
-        count = len(requests)
+        requests = self.obs.api.get_open_requests()
 
-        # Compare the results, we only care now that we got 2 of them not the content
-        self.assertEqual(2, count)
+        # Compare the results, we only care now that we got 1 of them not the content
+        self.assertEqual(1, len(requests))
 
     @httpretty.activate
     def test_get_package_information(self):
@@ -308,41 +439,25 @@ class TestApiCalls(unittest.TestCase):
         Test whether accepting/creating reviews behaves correctly
         """
 
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
-
-        tmpl = Template(self._get_fixture_content('request_review.xml'))
-
-        self._clear_responses()
-        self.responses['GET']['/request/123'] =  tmpl.substitute(request='new', review='accepted', review_project="openSUSE:Factory")
-
-        def review_change(responses, request, uri):
-            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'addreview']:
-                responses['GET']['/request/123']  = tmpl.substitute(request='review', review='new', review_project=request.querystring[u'by_project'][0])
-            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
-                responses['GET']['/request/123']  = tmpl.substitute(request='new', review=request.querystring[u'newstate'][0], review_project=request.querystring[u'by_project'][0])
-            return responses['GET']['/request/123']
-
-        self.responses['ALL']['/request/123'] = review_change
-
-        self._register_pretty()
+        # Register OBS
+        self.obs.register_obs()
 
         # Add review
-        api.add_review('123', by_project='openSUSE:Factory:Staging:A')
+        self.obs.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
         # Try to readd, should do anything
-        api.add_review('123', by_project='openSUSE:Factory:Staging:A')
+        self.obs.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
         # Accept review
-        api.set_review('123', 'openSUSE:Factory:Staging:A')
+        self.obs.api.set_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'changereviewstate'])
         # Try to accept it again should do anything
-        api.set_review('123', 'openSUSE:Factory:Staging:A')
+        self.obs.api.set_review('123', 'openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'GET')
         # But we should be able to reopen it
-        api.add_review('123', by_project='openSUSE:Factory:Staging:A')
+        self.obs.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
 

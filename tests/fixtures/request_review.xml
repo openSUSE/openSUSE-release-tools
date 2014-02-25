@@ -1,14 +1,13 @@
-<?xml version="1.0"?>
-<request id="123">
+<request id="${id}">
   <action type="submit">
-    <source project="home:Admin" package="puppet" rev="59f0f46262d7b57b9cdc720c06d5e317"/>
-    <target project="openSUSE:Factory" package="puppet"/>
+    <source project="home:Admin" package="${package}" rev="59f0f46262d7b57b9cdc720c06d5e317"/>
+    <target project="openSUSE:Factory" package="${package}"/>
   </action>
   <state name="${request}" who="Admin" when="2014-02-17T12:38:52">
-    <comment>Passed staging project "openSUSE:Factory:Staging:test"</comment>
+    <comment>...</comment>
   </state>
-  <review state="${review}" when="2014-02-17T12:34:10" who="Admin" by_project="${review_project}">
-    <comment>Passed staging project "openSUSE:Factory:Staging:test"</comment>
+  <review state="${review}" when="2014-02-17T12:34:10" who="${who}" by_${by}="${by_who}">
+    <comment>...</comment>
   </review>
   <description>test</description>
 </request>
