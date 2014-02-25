@@ -1,8 +1,6 @@
-<project name="openSUSE:Factory:Staging:test">
-  <title>Staging project "openSUSE:Factory:Staging:test"</title>
-  <description>requests:
-- {id: '123', package: test-package}
-</description>
+<project name="${project}">
+  <title>${title}</title>
+  <description>${description}</description>
   <link project="openSUSE:Factory"/>
   <person userid="Admin" role="maintainer"/>
   <build>
