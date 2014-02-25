@@ -242,7 +242,7 @@ class OBS:
         self.reset_config()
         # Initiate the api with mocked rings
         with mock_generate_ring_packages():
-            self.api = oscs.StagingAPI('http://localhost')
+            self.api = oscs.StagingAPI('https://localhost')
 
     def _get_fixtures_dir(self):
         """
