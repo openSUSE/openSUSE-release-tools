@@ -6,20 +6,20 @@
 # Distribute under GPLv2 or GPLv3
 
 import logging
+import os
 import os.path
 import re
 import sys
 from xml.etree import cElementTree as ET
 
 from osc import cmdln, oscerr
-from osc.core import delete_package
 from osc.core import delete_project
-from osc.core import make_meta_url
 from osc.core import makeurl
 from osc.core import meta_get_packagelist
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import server_diff
+from osc.core import store_read_project
 
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
@@ -118,6 +118,8 @@ def _staging_submit_devel(self, project, opts):
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-m', '--message', metavar='TEXT',
               help='manually specify different parent project during creation of staging')
+@cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
+              help='manually specify different source project during request moving')
 @cmdln.option('-v', '--version', action='store_true',
               help='show version of the plugin')
 def do_staging(self, subcmd, opts, *args):
@@ -140,6 +142,8 @@ def do_staging(self, subcmd, opts, *args):
     "select" will add requests to the project
     "unselect" will remove them project - pushing them back to the backlog
 
+    "move" will move a list of REQUESTs from the current project to PROJECT
+
     Usage:
         osc staging check [--everything] REPO
         osc staging remove REPO
@@ -148,6 +152,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging list
         osc staging select LETTER REQUEST...
         osc staging unselect LETTER REQUEST...
+        osc staging move [--from PROJECT] PROJECT REQUEST...
         osc staging accept LETTER
         osc staging cleanup_rings
     """
@@ -165,7 +170,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['select', 'unselect']:
         min_args, max_args = 2, None
     elif cmd in ['move']:
-        min_args, max_args = 3, None
+        min_args, max_args = 2, None
     elif cmd in ['list', 'cleanup_rings']:
         min_args, max_args = 0, 0
     else:
@@ -213,9 +218,10 @@ def do_staging(self, subcmd, opts, *args):
                 api.add_review(rq, by_group='factory-staging',
                                msg='Please recheck')
     elif cmd in ['move']:
-        sprj = api.prj_from_letter(args[1])
-        tprj = api.prj_from_letter(args[2])
-        for rq in RequestFinder.find_sr(args[3:], opts.apiurl):
+        cprj = store_read_project(os.getcwd())
+        sprj = api.prj_from_letter(opts.from_) if opts.from_ else cprj
+        tprj = api.prj_from_letter(args[1])
+        for rq in RequestFinder.find_sr(args[2:], opts.apiurl):
             api.move_between_project(sprj, rq, tprj)
     elif cmd in ['cleanup_rings']:
         import osclib.cleanup_rings
