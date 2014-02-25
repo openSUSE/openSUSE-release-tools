@@ -21,6 +21,15 @@ except ImportError:
 import oscs
 import osc
 from obs import OBS
+import re
+import pprint
+
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    string_types = str,
+else:
+    string_types = basestring,
 
 class TestApiCalls(unittest.TestCase):
     """
