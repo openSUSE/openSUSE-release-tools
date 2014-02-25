@@ -76,6 +76,9 @@ class OBS:
                                         'by_who': 'factory-staging',
                                         'package': 'puppet' }
                              }
+        self.project_data = { 'A': { 'project': 'openSUSE:Factory:Staging:A',
+                                     'title': '', 'description': '' }
+                            }
  
     def _clear_responses(self):
         """
@@ -87,6 +90,8 @@ class OBS:
         self._request_review()
         # Add methods to search requests
         self._request_search()
+        # Add methods to work with project metadata
+        self._project_meta()
 
     def _pretty_callback(self, request, uri, headers):
         """
@@ -130,6 +135,22 @@ class OBS:
             if len(path) == 0:
                 path = uri
             raise BaseException("No response for {0} on {1} provided".format(request.method,path))
+
+    def _project_meta(self):
+        # Load template
+        tmpl = Template(self._get_fixture_content('staging-project-meta.xml'))
+
+        def project_meta_change(responses, request, uri):
+            path = re.match( r'.*localhost([^?]*)(\?.*)?',uri).group(1)
+            self.responses['GET'][path] = request.body
+            return self.responses['GET'][path]
+
+        # Register methods for all requests
+        for pr in self.project_data:
+            # Static response for gets (just filling template from local data)
+            self.responses['GET']['/source/openSUSE:Factory:Staging:' + pr + '/_meta'] = tmpl.substitute(self.project_data[pr])
+            # Interpret other requests
+            self.responses['ALL']['/source/openSUSE:Factory:Staging:' + pr + '/_meta'] = project_meta_change
 
     def _request_review(self):
         """
@@ -327,25 +348,22 @@ class TestApiCalls(unittest.TestCase):
         """
         Test getting project metadata from YAML in project description
         """
+
+        # Register OBS
+        self.obs.register_obs()
+
+        # Try to get data from project that has no metadata
+        data = self.obs.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
+        # Should be empty, but contain structure to work with
+        self.assertEqual(data, {'requests': []})
+        # Add some sample data
         rq = { 'id': '123', 'package': 'test-package' }
-
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:test1/_meta',
-                                      'staging-project-meta.xml')
-        self._register_pretty_url_get('http://localhost/source/openSUSE:Factory:Staging:test2/_meta',
-                                      'staging-project-broken-meta.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('http://localhost')
-
-        # Ensure the output is equal to what we expect
-        data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test1')
-        for i in rq.keys():
-            self.assertEqual(rq[i],data['requests'][0][i])
-
-        data = api.get_prj_pseudometa('openSUSE:Factory:Staging:test2')
-        self.assertEqual(len(data['requests']),0)
+        data['requests'].append(rq)
+        # Save them and read them back
+        self.obs.api.set_prj_pseudometa('openSUSE:Factory:Staging:A',data)
+        test_data = self.obs.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
+        # Verify that we got back the same data
+        self.assertEqual(data,test_data)
 
     @httpretty.activate
     def test_list_projects(self):
