@@ -194,17 +194,11 @@ class TestApiCalls(unittest.TestCase):
                         'srcmd5': '7b98ac01b8071d63a402fa99dc79331c',
                         'package': 'wine'}
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('https://localhost/source/openSUSE:Factory:Staging:B/wine',
-                                      'linksource.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('https://localhost')
+        self.obs.register_obs()
 
         # Compare the results, we only care now that we got 2 of them not the content
         self.assertEqual(package_info,
-                         api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
+                         self.obs.api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
 
     @httpretty.activate
     def test_create_package_container(self):
