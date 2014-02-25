@@ -5,7 +5,6 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
-import logging
 import os
 import os.path
 import re
