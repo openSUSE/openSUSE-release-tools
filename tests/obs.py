@@ -119,6 +119,8 @@ class OBS:
         self._link_sources()
         # Add packages
         self._pkg_sources()
+        # Workaround
+        self._ugly_hack()
 
     def _pretty_callback(self, request, uri, headers, exception=True):
         """
@@ -167,6 +169,21 @@ class OBS:
                 raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method,path))
             else:
                 return None
+
+    def _ugly_hack(self):
+        """
+        Static fixtures we don't have a way of generating yet
+
+        Whole point of this setup is to cleanup all tests and be able to move
+        everything to new test-suite.
+        """
+        # Build results verification, maybe not worth of dynamic processing
+        self.responses['GET']['/build/red/_result']   = 'build-results-red.xml'
+        self.responses['GET']['/build/green/_result'] = 'build-results-green.xml'
+
+        # Testing of rings
+        self.responses['GET']['/source/openSUSE:Factory:Rings:0-Bootstrap'] = 'ring-0-project.xml'
+        self.responses['GET']['/source/openSUSE:Factory:Core'] = 'ring-1-project.xml'
 
     def _project_meta(self):
         # Load template
