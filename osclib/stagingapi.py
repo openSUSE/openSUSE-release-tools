@@ -22,7 +22,6 @@ from osc.core import metafile
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
-from osc.core import link_pac
 
 
 class StagingAPI(object):
