@@ -23,6 +23,7 @@ import oscs
 import osc
 import re
 import pprint
+import posixpath
 
 PY3 = sys.version_info[0] == 3
 
@@ -112,7 +113,7 @@ class OBS:
         # Add linked packages
         self._link_sources()
 
-    def _pretty_callback(self, request, uri, headers):
+    def _pretty_callback(self, request, uri, headers, exception=True):
         """
         Custom callback for HTTPretty.
 
@@ -153,7 +154,12 @@ class OBS:
         else:
             if len(path) == 0:
                 path = uri
-            raise BaseException("No response for {0} on {1} provided".format(request.method,path))
+            if len(path) > 1:
+                ret = self._pretty_callback(request, 'https://localhost' + posixpath.dirname(path), headers, False)
+            if exception:
+                raise BaseException("No response for {0} on {1} provided".format(request.method,path))
+            else:
+                return None
 
     def _project_meta(self):
         # Load template
