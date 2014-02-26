@@ -100,7 +100,7 @@ class OBS:
         """
         Resets predefined responses
         """
-        self.responses = { 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
+        self.responses = { 'DELETE': {}, 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
 
         # Add methods to manipulate reviews
         self._request_review()
@@ -256,6 +256,7 @@ class OBS:
         """
         Register custom callback for HTTPretty
         """
+        httpretty.register_uri(httpretty.DELETE,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
         httpretty.register_uri(httpretty.GET,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
         httpretty.register_uri(httpretty.PUT,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
         httpretty.register_uri(httpretty.POST,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
