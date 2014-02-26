@@ -8,7 +8,7 @@ install:
   - pip install -r requirements.txt
 # command to run tests, e.g. python setup.py test
 script:
-  - nosetests  --with-coverage --cover-package=oscs,osclib  --cover-inclusive
+  - nosetests --with-coverage --cover-package=oscs,osclib --cover-inclusive
 after_sucess:
   - coveralls
 matrix:

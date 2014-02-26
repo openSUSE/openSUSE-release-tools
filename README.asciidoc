@@ -3,6 +3,8 @@ Factory workflow plugin
 
 image:https://travis-ci.org/openSUSE/osc-plugin-factory.png?branch=master["Build Status", link="https://travis-ci.org/openSUSE/osc-plugin-factory"]
 
+image:https://coveralls.io/repos/aplanas/osc-plugin-factory/badge.png?branch=master["Coverage Status", link="https://coveralls.io/r/aplanas/osc-plugin-factory"]
+
 This repository contains mainly plugin which will be used in new
 https://progress.opensuse.org/workflow/factory-proposal.html[factory workflow]
 to work with staging projects. This is currently highly work in progress and
