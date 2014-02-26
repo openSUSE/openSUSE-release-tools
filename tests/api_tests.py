@@ -201,6 +201,17 @@ class TestApiCalls(unittest.TestCase):
                          self.obs.api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
 
     @httpretty.activate
+    def test_get_request_id_for_package(self):
+        """
+        Test whether we can get correct id for sr in staging project
+        """
+
+        self.obs.register_obs()
+
+        # Compare the results, we only care now that we got 2 of them not the content
+        self.assertEqual(333,self.obs.api.get_request_id_for_package('openSUSE:Factory:Staging:B', 'wine'))
+
+    @httpretty.activate
     def test_create_package_container(self):
         """
         Test if the uploaded _meta is correct
