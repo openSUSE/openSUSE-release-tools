@@ -119,6 +119,8 @@ class OBS:
         self._link_sources()
         # Add packages
         self._pkg_sources()
+        # Add fake build results
+        self._build_results()
 
     def _pretty_callback(self, request, uri, headers, exception=True):
         """
@@ -167,6 +169,10 @@ class OBS:
                 raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method,path))
             else:
                 return None
+
+    def _build_results(self):
+        self.responses['GET']['/build/red/_result']   = 'build-results-red.xml'
+        self.responses['GET']['/build/green/_result'] = 'build-results-green.xml'
 
     def _project_meta(self):
         # Load template

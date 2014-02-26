@@ -285,23 +285,24 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
 
+    def test_prj_from_letter(self):
+        # Register OBS
+        self.obs.register_obs()
+
+        # Verify it works
+        self.assertEqual(self.obs.api.prj_from_letter('openSUSE:Factory'), 'openSUSE:Factory')
+        self.assertEqual(self.obs.api.prj_from_letter('A'), 'openSUSE:Factory:Staging:A')
 
     @httpretty.activate
     def test_check_project_status_green(self):
         """
         Test checking project status
         """
-
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('https://localhost/build/green/_result',
-                                      'build-results-green.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('https://localhost')
+        # Register OBS
+        self.obs.register_obs()
 
         # Check print output
-        self.assertEqual(api.gather_build_status("green"), None)
+        self.assertEqual(self.obs.api.gather_build_status("green"), None)
 
     @httpretty.activate
     def test_check_project_status_red(self):
@@ -309,18 +310,14 @@ class TestApiCalls(unittest.TestCase):
         Test checking project status
         """
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('https://localhost/build/red/_result',
-                                      'build-results-red.xml')
-
-        # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('https://localhost')
+        # Register OBS
+        self.obs.register_obs()
 
         # Check print output
-        self.assertEqual(api.gather_build_status('red'), ['red', [{'path': 'standard/x86_64', 'state': 'building'}],
-                                                          [{'path': 'standard/i586', 'pkg': 'glibc', 'state': 'broken'},
-                                                           {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
+        self.assertEqual(self.obs.api.gather_build_status('red'),
+                        ['red', [{'path': 'standard/x86_64', 'state': 'building'}],
+                                [{'path': 'standard/i586', 'pkg': 'glibc', 'state': 'broken'},
+                                 {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
     def test_bootstrap_copy(self):
         import osclib.freeze_command
