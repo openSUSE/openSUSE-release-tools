@@ -190,9 +190,22 @@ def do_staging(self, subcmd, opts, *args):
         if len(args) > 1:
             return api.check_project_status(api.prj_from_letter(args[1]), verbose=True)
         for prj in api.get_staging_projects():
-            print("Checking {}".format(prj))
-            api.check_project_status(prj)
-            print("")
+            state = api.check_project_status(prj)
+
+            # If the state is green we do nothing
+            if not state:
+                print('Skipping empty staging project: {0}'.format(prj))
+                print('')
+                continue
+
+            print('Checking staging project: {0}'.format(prj))
+            if type(state) is list:
+                print(' -- Project still neeeds attention')
+                for i in state:
+                    print(i)
+            else:
+                print(' ++ Acceptable staging project')
+            print('')
         return True
     elif cmd in ['remove', 'r']:
         project = args[1]

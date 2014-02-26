@@ -411,7 +411,11 @@ class StagingAPI(object):
         Checks a staging project for acceptance. Checks all open requests for open reviews
         and build status
         :param project: project to check
+        :return true (ok)/false (empty prj) or list of strings with informations)
         """
+
+        # Report
+        report = list()
 
         # all requests with open review
         requests = self.list_requests_in_prj(project)
@@ -423,37 +427,43 @@ class StagingAPI(object):
             if req not in requests:
                 requests.append(req)
 
+        # If we find no requests in staging then it is empty so we ignore it
         if len(requests) == 0:
-            print('Nothing to be seen here - Continue')
             return False
-        all = True
+
+        # Check if the requests are acceptable and bail out on
+        # first failure unless verbose as it is slow
         for request in requests:
             ret = self.check_one_request(request, project)
             if ret:
-                print(ret)
-                all = False
+                report.append(ret)
                 if not verbose:
                     break
 
+        # Check the buildstatus
         buildstatus = self.gather_build_status(project)
         if buildstatus:
-            all = False
-            self.print_build_status_details(buildstatus)
-            return False
+            # here no append as we are adding list to list
+            report += self.generate_build_status_details(buildstatus, verbose)
 
+        # Check the openqa state
         ret = self.find_openqa_state(project)
         if ret:
-            print(ret)
-            all = False
-            return False
-        elif all:
-            print("Everything green")
+            report.append(ret)
+
+
+        if report:
+            return report
+        else:
+            # The only case we are green
             return True
+
 
     def find_openqa_state(self, project):
         """
         Checks the openqa state of the project
         :param project: project to check
+        :return None or list with issue informations
         """
         u = self.makeurl( ['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
         f = http_GET(u)
@@ -527,20 +537,28 @@ class StagingAPI(object):
         else:
             return [project, working, broken]
 
-    def print_build_status_details(self, details, verbose=False):
+    def generate_build_status_details(self, details, verbose=False):
+        """
+        Generate list of strings for the buildstatus detail report.
+        :param details: buildstatus informations about project
+        :return list of strings for printing
+        """
+
+        retval = list()
         project, working, broken = details
 
         if len(working) != 0:
-            print("At least following repositories is still building:")
+            retval.append('At least following repositories is still building:')
             for i in working:
-                print("    {0}: {1}".format(i['path'], i['state']))
+                retval.append('    {0}: {1}'.format(i['path'], i['state']))
                 if not verbose:
                     break
-            print
         if len(broken) != 0:
-            print("Following packages are broken:")
+            retval.append('Following packages are broken:')
             for i in broken:
-                print("    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state']))
+                retval.append("    {0} ({1}): {2}".format(i['pkg'], i['path'], i['state']))
+
+        return retval
 
     def rq_to_prj(self, request_id, project):
         """
