@@ -3,3 +3,4 @@
 *.html
 .*.swp
 .coverage
+.coveralls.yml
