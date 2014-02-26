@@ -36,34 +36,6 @@ class TestApiCalls(unittest.TestCase):
     Tests for various api calls to ensure we return expected content
     """
 
-    def _get_fixtures_dir(self):
-        """
-        Return path for fixtures
-        """
-        return os.path.join(os.getcwd(), 'tests/fixtures')
-
-    def _get_fixture_path(self, filename):
-        return os.path.join(self._get_fixtures_dir(), filename)
-
-    def _get_fixture_content(self, filename):
-        response = open(self._get_fixture_path(filename), 'r')
-        content = response.read()
-        response.close()
-        return content
-
-    def _register_pretty_url_get(self, url, filename):
-        """
-        Register specified get url with specific filename in fixtures
-        :param url: url address to "open"
-        :param filename: name of the fixtures file
-        """
-
-        content = self._get_fixture_content(filename)
-
-        httpretty.register_uri(httpretty.GET,
-                               url,
-                               body=content)
-
     def setUp(self):
         """
         Initialize the configuration
@@ -83,16 +55,9 @@ class TestApiCalls(unittest.TestCase):
             'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX',
         }
 
-        # Initiate the pretty overrides
-        self._register_pretty_url_get('https://localhost/source/openSUSE:Factory:Rings:0-Bootstrap',
-                                      'ring-0-project.xml')
-        self._register_pretty_url_get('https://localhost/source/openSUSE:Factory:Core',
-                                      'ring-1-project.xml')
-
-        # Create the api object
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('https://localhost')
-        self.assertEqual(ring_packages, api.ring_packages)
+        # Register OBS
+        self.obs.register_obs()
+        self.assertEqual(ring_packages, self.obs.api.ring_packages)
 
     @httpretty.activate
     def test_dispatch_open_requests(self):
@@ -241,18 +206,14 @@ class TestApiCalls(unittest.TestCase):
         Test if the uploaded _meta is correct
         """
 
-        with mock_generate_ring_packages():
-            api = oscs.StagingAPI('https://localhost')
+        self.obs.register_obs()
 
-        httpretty.register_uri(
-            httpretty.PUT, "https://localhost/source/openSUSE:Factory:Staging:B/wine/_meta")
-
-        api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
+        self.obs.api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
         self.assertEqual(httpretty.last_request().method, 'PUT')
         self.assertEqual(httpretty.last_request().body, '<package name="wine"><title/><description/></package>')
         self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
 
-        api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
+        self.obs.api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
         self.assertEqual(httpretty.last_request().method, 'PUT')
         self.assertEqual(httpretty.last_request().body, '<package name="wine"><title /><description /><build><disable /></build></package>')
         self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
@@ -319,28 +280,3 @@ class TestApiCalls(unittest.TestCase):
                                 [{'path': 'standard/i586', 'pkg': 'glibc', 'state': 'broken'},
                                  {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
-    def test_bootstrap_copy(self):
-        import osclib.freeze_command
-        fc = osclib.freeze_command.FreezeCommand('https://localhost')
-
-        fp = self._get_fixture_path('staging-meta-for-bootstrap-copy.xml')
-        fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True)
-
-        f = tempfile.NamedTemporaryFile(delete=False)
-        f.write(fc.prj_meta_for_bootstrap_copy('openSUSE:Factory:Staging:A'))
-        f.close()
-
-        output = subprocess.check_output('/usr/bin/xmllint --format %s' % f.name, shell=True)
-
-        for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
-            print(line)
-        self.assertEqual(output, fixture)
-
-
-# Here place all mockable functions
-@contextlib.contextmanager
-def mock_generate_ring_packages():
-    with  mock.patch('oscs.StagingAPI._generate_ring_packages', return_value={
-        'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
-        'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX'}):
-        yield
