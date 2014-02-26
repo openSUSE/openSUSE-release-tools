@@ -64,22 +64,6 @@ class TestApiCalls(unittest.TestCase):
                                url,
                                body=content)
 
-
-    def _register_pretty_url_post(self, url, filename):
-        """
-        Register specified post url with specific filename in fixtures
-        :param url: url address to "open"
-        :param filename: name of the fixtures file
-        """
-
-        response = open(os.path.join(self._get_fixtures_dir(), filename), 'r')
-        content = response.read()
-        response.close()
-
-        httpretty.register_uri(httpretty.POST,
-                               url,
-                               body=content)
-
     def setUp(self):
         """
         Initialize the configuration
