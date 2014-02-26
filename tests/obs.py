@@ -12,6 +12,7 @@ import httpretty
 import difflib
 import subprocess
 import tempfile
+import xml.etree.ElementTree as ET
 # mock is part of python3.3
 try:
     import unittest.mock
@@ -23,6 +24,7 @@ import oscs
 import osc
 import re
 import pprint
+import posixpath
 
 PY3 = sys.version_info[0] == 3
 
@@ -96,6 +98,10 @@ class OBS:
                                     { 'prj': 'openSUSE:Factory:Staging:B',
                                       'pkg': 'wine', 'devprj': 'devel:wine' }
                                     }
+        self.pkg_data = { 'home:Admin/gcc':
+                                    { 'rev': '1', 'vrev': '1', 'name': 'gcc',
+                                      'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb' }
+                                    }
  
     def _clear_responses(self):
         """
@@ -111,8 +117,10 @@ class OBS:
         self._project_meta()
         # Add linked packages
         self._link_sources()
+        # Add packages
+        self._pkg_sources()
 
-    def _pretty_callback(self, request, uri, headers):
+    def _pretty_callback(self, request, uri, headers, exception=True):
         """
         Custom callback for HTTPretty.
 
@@ -153,7 +161,12 @@ class OBS:
         else:
             if len(path) == 0:
                 path = uri
-            raise BaseException("No response for {0} on {1} provided".format(request.method,path))
+            if len(path) > 1:
+                ret = self._pretty_callback(request, 'https://localhost' + posixpath.dirname(path), headers, False)
+            if exception:
+                raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method,path))
+            else:
+                return None
 
     def _project_meta(self):
         # Load template
@@ -209,6 +222,18 @@ class OBS:
             # Interpret other requests
             self.responses['ALL']['/request/' + rq] = review_change
 
+    def _pkg_sources(self):
+        def pkg_source(responses, request, uri):
+            key = str(re.match( r'.*/source/([^?]+)(\?.*)?',uri).group(1))
+            return '<directory name="{0}" rev="{1}" vrev="{2}" srcmd5="{3}"/>'.format(
+                        self.pkg_data[key]['name'],
+                        self.pkg_data[key]['rev'],
+                        self.pkg_data[key]['vrev'],
+                        self.pkg_data[key]['srcmd5']
+                   )
+        for pkg in self.pkg_data:
+            self.responses['GET']['/source/' + pkg] = pkg_source
+
     def _link_sources(self):
         # Load template
         tmpl = Template(self._get_fixture_content('linksource.xml'))
@@ -219,10 +244,30 @@ class OBS:
             del self.links_data[str(key)]
             return "Ok"
 
+        def create_empty(responses, request, uri):
+            key = re.match( r'.*/source/(.+)/_meta',uri).group(1)
+            self.links_data[str(key)] = {}
+            return "Ok"
+
+        def create_link(responses, request, uri):
+            key = re.match( r'.*/source/(.+)/_link',uri).group(1)
+            match = re.match( r'(.+)/(.+)', key)
+            xml = ET.fromstring(str(request.body))
+            self.links_data[str(key)] = { 'prj': match.group(1), 'pkg': match.group(2),
+                                          'devprj': xml.get('project')
+                                        }
+            return "Ok"
+
         # Register methods for requests
         for link in self.links_data:
             self.responses['GET']['/source/' + link] = tmpl.substitute(self.links_data[link])
             self.responses['DELETE']['/source/' + link] = delete_link
+
+        # Register method for package creation
+        for pr in self.st_project_data:
+            for rq in self.requests_data:
+                self.responses['PUT']['/source/openSUSE:Factory:Staging:' + pr + '/' + self.requests_data[rq]['package'] + '/_meta'] = create_empty
+                self.responses['PUT']['/source/openSUSE:Factory:Staging:' + pr + '/' + self.requests_data[rq]['package'] + '/_link'] = create_link
 
     def _search(self):
         """
