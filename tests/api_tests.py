@@ -201,6 +201,41 @@ class TestApiCalls(unittest.TestCase):
                          self.obs.api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
 
     @httpretty.activate
+    def test_request_id_package_mapping(self):
+        """
+        Test whether we can get correct id for sr in staging project
+        """
+
+        self.obs.register_obs()
+
+        prj = 'openSUSE:Factory:Staging:B'
+        # Get rq
+        num = self.obs.api.get_request_id_for_package(prj, 'wine')
+        self.assertEqual(333,num)
+        # Get package name
+        self.assertEqual('wine',self.obs.api.get_package_for_request_id(prj, num))
+
+    @httpretty.activate
+    def test_rm_from_prj(self):
+        self.obs.register_obs()
+
+        prj = 'openSUSE:Factory:Staging:B'
+
+        # Verify package is there
+        self.assertEqual(self.obs.links_data.has_key(prj + '/wine'),True)
+        # Get rq number
+        num = self.obs.api.get_request_id_for_package(prj, 'wine')
+        # Delete the package
+        self.obs.api.rm_from_prj(prj, package='wine');
+        # Verify package is not there
+        self.assertEqual(self.obs.links_data.has_key(prj + '/wine'),False)
+        # RQ number is gone
+        self.assertEqual(None, self.obs.api.get_request_id_for_package(prj, 'wine'))
+        # Verify that review is closed
+        self.assertEqual('accepted', self.obs.requests_data[str(num)]['review'])
+        self.assertEqual('new', self.obs.requests_data[str(num)]['request'])
+
+    @httpretty.activate
     def test_create_package_container(self):
         """
         Test if the uploaded _meta is correct
