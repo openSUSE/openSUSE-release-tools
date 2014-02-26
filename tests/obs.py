@@ -89,7 +89,8 @@ class OBS:
         self.st_project_data = { 'A': { 'project': 'openSUSE:Factory:Staging:A',
                                         'title': '', 'description': '' },
                                  'B': { 'project': 'openSUSE:Factory:Staging:B',
-                                        'title': '', 'description': '' }
+                                        'title': 'wine',
+                                        'description': 'requests:\n- {id: 333, package: wine}' }
                                }
         self.links_data = { 'wine': { 'prj': 'openSUSE:Factory:Staging:B',
                                       'pkg': 'wine', 'devprj': 'devel:wine' }
