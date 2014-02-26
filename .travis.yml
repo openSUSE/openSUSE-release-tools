@@ -9,7 +9,7 @@ install:
 # command to run tests, e.g. python setup.py test
 script:
   - nosetests --with-coverage --cover-package=oscs,osclib --cover-inclusive
-after_sucess:
+after_success:
   - coveralls
 matrix:
   allow_failures:
