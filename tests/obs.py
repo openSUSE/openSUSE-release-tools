@@ -92,7 +92,8 @@ class OBS:
                                         'title': 'wine',
                                         'description': 'requests:\n- {id: 333, package: wine}' }
                                }
-        self.links_data = { 'wine': { 'prj': 'openSUSE:Factory:Staging:B',
+        self.links_data = { 'openSUSE:Factory:Staging:B/wine':
+                                    { 'prj': 'openSUSE:Factory:Staging:B',
                                       'pkg': 'wine', 'devprj': 'devel:wine' }
                                     }
  
@@ -189,15 +190,15 @@ class OBS:
             # Changing review
             if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
                 self.requests_data[rq_id]['request'] = 'new'
-                self.requests_data[rq_id]['review']  = request.querystring[u'newstate'][0]
+                self.requests_data[rq_id]['review']  = str(request.querystring[u'newstate'][0])
             # Project review
             if request.querystring.has_key(u'by_project'):
                 self.requests_data[rq_id]['by']      = 'project'
-                self.requests_data[rq_id]['by_who']  = request.querystring[u'by_project'][0]
+                self.requests_data[rq_id]['by_who']  = str(request.querystring[u'by_project'][0])
             # Group review
             if request.querystring.has_key(u'by_group'):
                 self.requests_data[rq_id]['by']      = 'group'
-                self.requests_data[rq_id]['by_who']  = request.querystring[u'by_group'][0]
+                self.requests_data[rq_id]['by_who']  = str(request.querystring[u'by_group'][0])
             responses['GET']['/request/' + rq_id]  = tmpl.substitute(self.requests_data[rq_id])
             return responses['GET']['/request/' + rq_id]
 
@@ -212,9 +213,16 @@ class OBS:
         # Load template
         tmpl = Template(self._get_fixture_content('linksource.xml'))
 
+        def delete_link(responses, request, uri):
+            key = re.match( r'.*/source/([^?]+)(\?.*)?',uri).group(1)
+            del self.responses['GET']['/source/' + str(key)]
+            del self.links_data[str(key)]
+            return "Ok"
+
         # Register methods for requests
         for link in self.links_data:
-            self.responses['GET']['/source/' + self.links_data[link]['prj'] + '/' + link] = tmpl.substitute(self.links_data[link])
+            self.responses['GET']['/source/' + link] = tmpl.substitute(self.links_data[link])
+            self.responses['DELETE']['/source/' + link] = delete_link
 
     def _search(self):
         """
