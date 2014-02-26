@@ -194,11 +194,15 @@ class TestApiCalls(unittest.TestCase):
         rq = '123'
         pkg = self.obs.requests_data[rq]['package']
 
-        # Add rq to the project
-        self.obs.api.rq_to_prj(rq, prj);
-        # Verify that review is there
-        self.assertEqual('new', self.obs.requests_data[str(rq)]['review'])
-        self.assertEqual('review', self.obs.requests_data[str(rq)]['request'])
+        # Running it twice shouldn't change anything
+        for i in [1,2]:
+            # Add rq to the project
+            self.obs.api.rq_to_prj(rq, prj);
+            # Verify that review is there
+            self.assertEqual('new', self.obs.requests_data[str(rq)]['review'])
+            self.assertEqual('review', self.obs.requests_data[str(rq)]['request'])
+            self.assertEqual(self.obs.api.get_prj_pseudometa('openSUSE:Factory:Staging:A'),
+                             {'requests': [{'id': 123, 'package': 'gcc'}]})
 
     @httpretty.activate
     def test_create_package_container(self):
