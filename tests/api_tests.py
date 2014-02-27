@@ -165,6 +165,23 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual('wine',self.obs.api.get_package_for_request_id(prj, num))
 
     @httpretty.activate
+    def test_check_one_request(self):
+        self.obs.register_obs()
+
+        prj = 'openSUSE:Factory:Staging:B'
+        pkg = 'wine'
+
+        # Verify package is there
+        self.assertEqual(self.obs.links_data.has_key(prj + '/' + pkg),True)
+        # Get rq number
+        num = self.obs.api.get_request_id_for_package(prj, pkg)
+        # Check the results
+        self.assertEqual(self.obs.api.check_one_request(num,prj), None)
+        # Pretend to be reviewed by other project
+        self.assertEqual(self.obs.api.check_one_request(num,'xyz'),
+                         'wine: missing reviews: openSUSE:Factory:Staging:B')
+
+    @httpretty.activate
     def test_rm_from_prj(self):
         self.obs.register_obs()
 
