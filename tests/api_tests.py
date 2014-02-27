@@ -186,6 +186,19 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual('accepted', self.obs.requests_data[str(num)]['review'])
         self.assertEqual('new', self.obs.requests_data[str(num)]['request'])
 
+        # Try the same with request number
+        self.obs.reset_config()
+        # Delete the package
+        self.obs.api.rm_from_prj(prj, request_id=num);
+        # Verify package is not there
+        self.assertEqual(self.obs.links_data.has_key(prj + '/' + pkg),False)
+        # RQ is gone
+        self.assertEqual(None, self.obs.api.get_request_id_for_package(prj, pkg))
+        self.assertEqual(None, self.obs.api.get_package_for_request_id(prj, num))
+        # Verify that review is closed
+        self.assertEqual('accepted', self.obs.requests_data[str(num)]['review'])
+        self.assertEqual('new', self.obs.requests_data[str(num)]['request'])
+
     @httpretty.activate
     def test_add_sr(self):
         self.obs.register_obs()
