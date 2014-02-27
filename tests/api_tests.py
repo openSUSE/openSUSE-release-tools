@@ -250,6 +250,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(httpretty.last_request().method, 'POST')
         self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
 
+    @httpretty.activate
     def test_prj_from_letter(self):
         # Register OBS
         self.obs.register_obs()
