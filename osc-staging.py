@@ -187,8 +187,27 @@ def do_staging(self, subcmd, opts, *args):
 
     # call the respective command and parse args by need
     if cmd in ['check']:
+        # FIXME: de-duplicate and use function when cleaning up this file
         if len(args) > 1:
-            return api.check_project_status(api.prj_from_letter(args[1]), verbose=True)
+            prj = api.prj_from_letter(args[1])
+            state =  api.check_project_status(prj, True)
+
+            # If the state is green we do nothing
+            if not state:
+                print('Skipping empty staging project: {0}'.format(prj))
+                print('')
+                return True
+
+            print('Checking staging project: {0}'.format(prj))
+            if type(state) is list:
+                print(' -- Project still neeeds attention')
+                for i in state:
+                    print(i)
+            else:
+                print(' ++ Acceptable staging project')
+
+            return True
+
         for prj in api.get_staging_projects():
             state = api.check_project_status(prj)
 
