@@ -102,7 +102,7 @@ class OBS:
                                     { 'rev': '1', 'vrev': '1', 'name': 'gcc',
                                       'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb' }
                                     }
- 
+
     def _clear_responses(self):
         """
         Resets predefined responses
@@ -183,7 +183,7 @@ class OBS:
 
         # Testing of rings
         self.responses['GET']['/source/openSUSE:Factory:Rings:0-Bootstrap'] = 'ring-0-project.xml'
-        self.responses['GET']['/source/openSUSE:Factory:Core'] = 'ring-1-project.xml'
+        self.responses['GET']['/source/openSUSE:Factory:Rings:1-MinimalX'] = 'ring-1-project.xml'
 
     def _project_meta(self):
         # Load template
@@ -332,8 +332,7 @@ class OBS:
         httpretty.register_uri(httpretty.POST,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
         self.reset_config()
         # Initiate the api with mocked rings
-        with mock_generate_ring_packages():
-            self.api = oscs.StagingAPI('https://localhost')
+        self.api = oscs.StagingAPI('https://localhost')
 
     def _get_fixtures_dir(self):
         """
