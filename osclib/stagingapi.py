@@ -545,6 +545,8 @@ class StagingAPI(object):
         """
 
         retval = list()
+        if not isinstance(details, list):
+            return retval
         project, working, broken = details
 
         if len(working) != 0:

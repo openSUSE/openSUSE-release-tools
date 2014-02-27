@@ -186,6 +186,19 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual('accepted', self.obs.requests_data[str(num)]['review'])
         self.assertEqual('new', self.obs.requests_data[str(num)]['request'])
 
+        # Try the same with request number
+        self.obs.reset_config()
+        # Delete the package
+        self.obs.api.rm_from_prj(prj, request_id=num);
+        # Verify package is not there
+        self.assertEqual(self.obs.links_data.has_key(prj + '/' + pkg),False)
+        # RQ is gone
+        self.assertEqual(None, self.obs.api.get_request_id_for_package(prj, pkg))
+        self.assertEqual(None, self.obs.api.get_package_for_request_id(prj, num))
+        # Verify that review is closed
+        self.assertEqual('accepted', self.obs.requests_data[str(num)]['review'])
+        self.assertEqual('new', self.obs.requests_data[str(num)]['request'])
+
     @httpretty.activate
     def test_add_sr(self):
         self.obs.register_obs()
@@ -203,6 +216,30 @@ class TestApiCalls(unittest.TestCase):
             self.assertEqual('review', self.obs.requests_data[str(rq)]['request'])
             self.assertEqual(self.obs.api.get_prj_pseudometa('openSUSE:Factory:Staging:A'),
                              {'requests': [{'id': 123, 'package': 'gcc'}]})
+
+    @httpretty.activate
+    def test_generate_build_status_details(self):
+        """
+        Check whether generate_build_status_details works
+        """
+
+        self.obs.register_obs()
+        details_green = self.obs.api.gather_build_status('green')
+        details_red = self.obs.api.gather_build_status('red')
+        red = ['red', [{'path': 'standard/x86_64', 'state': 'building'}],
+                      [{'path': 'standard/i586', 'state': 'broken', 'pkg': 'glibc'},
+                       {'path': 'standard/i586', 'state': 'failed', 'pkg': 'openSUSE-images'}]]
+        red_result = ['At least following repositories is still building:',
+                      '    standard/x86_64: building',
+                      'Following packages are broken:',
+                      '    glibc (standard/i586): broken',
+                      '    openSUSE-images (standard/i586): failed'
+                     ]
+        self.assertEqual(details_red, red)
+        self.assertEqual(self.obs.api.generate_build_status_details(details_red), red_result)
+        self.assertEqual(self.obs.api.generate_build_status_details(details_red,True), red_result)
+        self.assertEqual(details_green, None)
+        self.assertEqual(self.obs.api.generate_build_status_details(details_green), [])
 
     @httpretty.activate
     def test_create_package_container(self):
