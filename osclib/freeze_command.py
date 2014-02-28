@@ -1,7 +1,9 @@
-import osc
-from osc import cmdln
-from osc.core import *
 import time
+from xml.etree import cElementTree as ET
+
+from osc.core import http_GET
+from osc.core import http_PUT
+
 
 class FreezeCommand:
 
@@ -12,8 +14,8 @@ class FreezeCommand:
         url = self.api.makeurl(['source', self.prj, '_meta'])
         f = http_GET(url)
         root = ET.parse(f).getroot()
-        sources = dict()
-        flink = ET.Element('frozenlinks')
+        # sources = dict()
+        # flink = ET.Element('frozenlinks')
         links = root.findall('link')
         links.reverse()
         self.projectlinks = []

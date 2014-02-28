@@ -1,10 +1,10 @@
-# a helper class
-
-import osc
-from osc import cmdln
-from osc.core import *
-
 import urllib2
+from xml.etree import cElementTree as ET
+
+from osc import oscerr
+from osc.core import makeurl
+from osc.core import http_GET
+
 
 class RequestFinder:
 
