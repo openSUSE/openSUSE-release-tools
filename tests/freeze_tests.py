@@ -5,24 +5,11 @@
 # Distribute under GPLv2 or later
 
 import os
-import sys
-import contextlib
 import unittest
-import httpretty
 import difflib
 import subprocess
 import tempfile
-# mock is part of python3.3
-try:
-    import unittest.mock
-except ImportError:
-    import mock
 
-import oscs
-import osc
-from obs import OBS
-import re
-import pprint
 
 class TestFreeze(unittest.TestCase):
     def _get_fixture_path(self, filename):
@@ -53,4 +40,3 @@ class TestFreeze(unittest.TestCase):
         for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
             print(line)
         self.assertEqual(output, fixture)
-

@@ -1,6 +1,5 @@
-import osc
-from osc import cmdln
-from osc.core import *
+from osc.core import change_request_state
+
 
 class AcceptCommand:
     def __init__(self, api):
