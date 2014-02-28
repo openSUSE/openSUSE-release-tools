@@ -14,8 +14,6 @@ class FreezeCommand:
         url = self.api.makeurl(['source', self.prj, '_meta'])
         f = http_GET(url)
         root = ET.parse(f).getroot()
-        # sources = dict()
-        # flink = ET.Element('frozenlinks')
         links = root.findall('link')
         links.reverse()
         self.projectlinks = []

@@ -28,7 +28,6 @@ class ListCommand:
 
     def one_request(self, rq):
         id = int(rq.get('id'))
-        # act_id = 0
         actions = rq.findall('action')
         act = actions[0]
 
