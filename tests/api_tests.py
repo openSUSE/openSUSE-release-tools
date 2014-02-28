@@ -4,25 +4,12 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or later
 
-import os
 import sys
-import contextlib
 import unittest
 import httpretty
-import difflib
-import subprocess
-import tempfile
-# mock is part of python3.3
-try:
-    import unittest.mock
-except ImportError:
-    import mock
 
-import oscs
-import osc
 from obs import OBS
-import re
-import pprint
+
 
 PY3 = sys.version_info[0] == 3
 
@@ -30,6 +17,7 @@ if PY3:
     string_types = str,
 else:
     string_types = basestring,
+
 
 class TestApiCalls(unittest.TestCase):
     """
