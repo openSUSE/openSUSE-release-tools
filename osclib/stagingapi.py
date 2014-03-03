@@ -10,6 +10,7 @@ from xml.etree import cElementTree as ET
 import yaml
 import re
 import urllib2
+import time
 
 from osc import oscerr
 from osc.core import change_review_state
@@ -451,6 +452,20 @@ class StagingAPI(object):
         else:
             # The only case we are green
             return True
+
+    def days_since_last_freeze(self, project):
+        """
+        Checks the last update for the frozen links
+        :param project: project to check
+        :return age in days(float) of the last update
+        """
+        u = self.makeurl(['source', project, '_project'], { 'meta': '1' })
+        f = http_GET(u)
+        root = ET.parse(f).getroot()
+        for entry in root.findall('entry'):
+            if entry.get('name') == '_frozenlinks':
+                return (time.time() - float(entry.get('mtime')))/3600/24
+        return 100000 # quite some!
 
     def find_openqa_state(self, project):
         """
