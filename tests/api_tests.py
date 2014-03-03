@@ -7,6 +7,7 @@
 import sys
 import unittest
 import httpretty
+import mock
 
 from obs import OBS
 
