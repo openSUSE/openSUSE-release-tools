@@ -179,6 +179,7 @@ class OBS:
         """
         # Build results verification, maybe not worth of dynamic processing
         self.responses['GET']['/build/red/_result']   = 'build-results-red.xml'
+        self.responses['GET']['/build/openSUSE:Factory:Staging:B/_result']   = 'build-results-red.xml'
         self.responses['GET']['/build/green/_result'] = 'build-results-green.xml'
 
         # Testing of rings
@@ -305,6 +306,22 @@ class OBS:
                     ret_str += responses['GET']['/request/' + rq]
                 ret_str += '</collection>'
                 return ret_str
+            # Searching for requests that has open review for staging project
+            if request.querystring.has_key(u'match') and re.match( r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0]):
+                prj_match = re.match( r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0])
+                prj = str(prj_match.group(1))
+                rqs = []
+                # Itereate through all requests
+                for rq in self.requests_data:
+                    # Find the ones matching the condition
+                    if self.requests_data[rq]['request'] == 'review' and self.requests_data[rq]['review'] == 'new' and self.requests_data[rq]['by'] == 'project' and self.requests_data[rq]['by_who'] == prj:
+                        rqs.append(rq)
+                # Create response
+                ret_str  = '<collection matches="' + str(len(rqs)) + '">\n'
+                for rq in rqs:
+                    ret_str += '  <request id="' + rq + '"/>\n'
+                ret_str += '</collection>'
+                return ret_str
             # We are searching for something else, we don't know the answer
             raise BaseException("No search results defined for " + pprint.pformat(request.querystring))
 
@@ -320,6 +337,7 @@ class OBS:
             # We are searching for something else, we don't know the answer
             raise BaseException("No search results defined for " + pprint.pformat(request.querystring))
         self.responses['GET']['/search/request'] = request_search
+        self.responses['GET']['/search/request/id'] = request_search
         self.responses['GET']['/search/project/id'] = id_project_search
 
     def register_obs(self):

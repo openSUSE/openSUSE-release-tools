@@ -182,6 +182,16 @@ class TestApiCalls(unittest.TestCase):
                          'wine: missing reviews: openSUSE:Factory:Staging:B')
 
     @httpretty.activate
+    def test_check_project_status(self):
+        self.obs.register_obs()
+
+        prj = 'openSUSE:Factory:Staging:B'
+
+        # Check the results
+        with mock.patch('oscs.StagingAPI.find_openqa_state', return_value="Nothing"):
+            self.assertEqual(self.obs.api.check_project_status(prj), ['At least following repositories is still building:', '    standard/x86_64: building', 'Following packages are broken:', '    glibc (standard/i586): broken', '    openSUSE-images (standard/i586): failed', 'Nothing'])
+
+    @httpretty.activate
     def test_rm_from_prj(self):
         self.obs.register_obs()
 
