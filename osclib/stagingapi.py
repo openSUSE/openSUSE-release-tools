@@ -82,7 +82,8 @@ class StagingAPI(object):
         package_info['package'] = root.attrib['package']
         return package_info
 
-    def move_between_project(self, source_project, req_id, destination_project):
+    def move_between_project(self, source_project, req_id,
+                             destination_project):
         """
         Move selected package from one staging to another
         :param source_project: Source project
@@ -114,16 +115,16 @@ class StagingAPI(object):
 
         projects = []
 
-        url = self.makeurl(['search', 'project',
-                            'id?match=starts-with(@name,\'openSUSE:Factory:Staging:\')'])
+        query = "id?match=starts-with(@name,'openSUSE:Factory:Staging:')"
+        url = self.makeurl(['search', 'project', query])
         projxml = http_GET(url)
         root = ET.parse(projxml).getroot()
         for val in root.findall('project'):
             projects.append(val.get('name'))
         return projects
 
-    def change_review_state(self, request_id, newstate, message=None, by_group=None,
-                            by_user=None, by_project=None):
+    def change_review_state(self, request_id, newstate, message=None,
+                            by_group=None, by_user=None, by_project=None):
         """
         Change review state of the staging request
         :param request_id: id of the request
@@ -145,7 +146,8 @@ class StagingAPI(object):
                review.state == 'new':
 
                 # call osc's function
-                return change_review_state(self.apiurl, str(request_id), newstate,
+                return change_review_state(self.apiurl, str(request_id),
+                                           newstate,
                                            by_group=by_group,
                                            by_user=by_user,
                                            by_project=by_project)
@@ -163,7 +165,8 @@ class StagingAPI(object):
         request_id = int(request.get('id'))
         action = request.findall('action')
         if not action:
-            raise oscerr.WrongArgs('Request {} has no action'.format(request_id))
+            msg = 'Request {} has no action'.format(request_id)
+            raise oscerr.WrongArgs(msg)
         # we care only about first action
         action = action[0]
 
@@ -173,14 +176,17 @@ class StagingAPI(object):
 
         # If the values are empty it is no error
         if not target_project or not target_package:
-            logging.info('no target/package in request {}, action {}; '.format(request_id, action))
+            msg = 'no target/package in request {}, action {}; '
+            msg = msg.format(request_id, action)
+            logging.info(msg)
 
         # Verify the package ring
         ring = self.ring_packages.get(target_package, None)
         if not ring:
             # accept the request here
-            message = "No need for staging, not in tested ring project."
-            self.change_review_state(request_id, 'accepted', message=message, by_group='factory-staging')
+            message = 'No need for staging, not in tested ring project.'
+            self.change_review_state(request_id, 'accepted', message=message,
+                                     by_group='factory-staging')
 
     def get_open_requests(self):
         """
@@ -194,7 +200,8 @@ class StagingAPI(object):
         # xpath query, using the -m, -r, -s options
         where = "@by_group='factory-staging'+and+@state='new'"
 
-        url = self.makeurl(['search', 'request'], "match=state/@name='review'+and+review[%s]" % where)
+        query = "match=state/@name='review'+and+review[{}]".format(where)
+        url = self.makeurl(['search', 'request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
@@ -204,7 +211,9 @@ class StagingAPI(object):
 
     def dispatch_open_requests(self):
         """
-        Verify all requests and dispatch them to staging projects or approve them
+        Verify all requests and dispatch them to staging projects or
+        approve them
+
         """
 
         # get all current pending requests
@@ -320,7 +329,8 @@ class StagingAPI(object):
         self.set_prj_pseudometa(project, data)
         # FIXME Add sr to group request as well
 
-    def rm_from_prj(self, project, package=None, request_id=None, msg=None, review='accepted'):
+    def rm_from_prj(self, project, package=None, request_id=None,
+                    msg=None, review='accepted'):
         """
         Delete request from the project
         :param project: project to remove from
@@ -346,9 +356,11 @@ class StagingAPI(object):
         Creates a package container without any fields in project/package
         :param project: project to create it
         :param package: package name
-        :param disable_build: should the package be created with build flag disabled
+        :param disable_build: should the package be created with build
+                              flag disabled
         """
-        dst_meta = '<package name="%s"><title/><description/></package>' % package
+        dst_meta = '<package name="{}"><title/><description/></package>'
+        dst_meta = dst_meta.format(package)
         if disable_build:
             root = ET.fromstring(dst_meta)
             elm = ET.SubElement(root, 'build')
@@ -360,10 +372,12 @@ class StagingAPI(object):
 
     def check_one_request(self, request, project):
         """
-        Check if a staging request is ready to be approved. Reviews for the project
-        are ignored, other open reviews will block the acceptance
+        Check if a staging request is ready to be approved. Reviews for
+        the project are ignored, other open reviews will block the
+        acceptance
         :param project: staging project
         :param request_id: request id to check
+
         """
 
         f = http_GET(self.makeurl(['request', str(request)]))
@@ -376,9 +390,10 @@ class StagingAPI(object):
         if state in ['declined', 'superseded', 'revoked']:
             return '{}: {}'.format(package, state)
 
-        # instead of just printing the state of the whole request find out who is
-        # remaining on the review and print it out, otherwise print out that it is
-        # ready for approval and waiting on others from GR to be accepted
+        # instead of just printing the state of the whole request find
+        # out who is remaining on the review and print it out,
+        # otherwise print out that it is ready for approval and
+        # waiting on others from GR to be accepted
         review_state = root.findall('review')
         failing_groups = []
         for i in review_state:
@@ -399,10 +414,11 @@ class StagingAPI(object):
 
     def check_project_status(self, project, verbose=False):
         """
-        Checks a staging project for acceptance. Checks all open requests for open reviews
-        and build status
+        Checks a staging project for acceptance. Checks all open
+        requests for open reviews and build status
         :param project: project to check
-        :return true (ok)/false (empty prj) or list of strings with informations)
+        :return true (ok)/false (empty prj) or list of strings with
+                informations)
         """
 
         # Report
@@ -412,7 +428,8 @@ class StagingAPI(object):
         requests = self.list_requests_in_prj(project)
         open_requests = set(requests)
 
-        # all tracked requests - some of them might be declined, so we don't see them above
+        # all tracked requests - some of them might be declined, so we
+        # don't see them above
         meta = self.get_prj_pseudometa(project)
         for req in meta['requests']:
             req = req['id']
@@ -489,7 +506,8 @@ class StagingAPI(object):
         # don't look here - we will replace that once we have OBS<->openQA sync
         baseurl = 'http://opensuseqa.suse.de/openqa/testresults/openSUSE-Factory-staging'
         url = baseurl + '_' + project.split(':')[-1].lower() + '-x86_64-Build'
-        result = re.match('Test-([\d\.]+)-Build(\d+)\.(\d+)-Media.iso', filename)
+        result = re.match('Test-([\d\.]+)-Build(\d+)\.(\d+)-Media.iso',
+                          filename)
         url += result.group(1)
         bn = int(result.group(2)) * 100 + int(result.group(3))
         url += '.{}'.format(bn)
@@ -531,7 +549,8 @@ class StagingAPI(object):
             building = False
             if results.get('state') not in ('published', 'unpublished') or results.get('dirty') == 'true':
                 working.append({
-                    'path': '{}/{}'.format(results.get('repository'), results.get('arch')),
+                    'path': '{}/{}'.format(results.get('repository'),
+                                           results.get('arch')),
                     'state': results.get('state')
                 })
                 building = True
@@ -543,7 +562,8 @@ class StagingAPI(object):
                     broken.append({
                         'pkg': node.get('package'),
                         'state': result,
-                        'path': '{}/{}'.format(results.get('repository'), results.get('arch'))
+                        'path': '{}/{}'.format(results.get('repository'),
+                                               results.get('arch'))
                     })
 
         # Print the results
@@ -573,7 +593,8 @@ class StagingAPI(object):
         if len(broken) != 0:
             retval.append('Following packages are broken:')
             for i in broken:
-                retval.append('    {} ({}): {}'.format(i['pkg'], i['path'], i['state']))
+                retval.append('    {} ({}): {}'.format(i['pkg'], i['path'],
+                                                       i['state']))
 
         return retval
 
@@ -599,7 +620,9 @@ class StagingAPI(object):
             tar_pkg = self.delete_to_prj(act[0], project)
 
         if not tar_pkg:
-            raise oscerr.WrongArgs('Request {} is not a submit or delete request'.format(request_id))
+            msg = 'Request {} is not a submit or delete request'
+            msg = msg.format(request_id)
+            raise oscerr.WrongArgs(msg)
 
         # register the package name
         self._add_rq_to_prj_pseudometa(project, int(request_id), tar_pkg)
@@ -624,7 +647,8 @@ class StagingAPI(object):
         # create build disabled package
         self.create_package_container(project, tar_pkg, disable_build=True)
         # now trigger wipebinaries to emulate a delete
-        url = self.makeurl(['build', project], {'cmd': 'wipe', 'package': tar_pkg})
+        url = self.makeurl(['build', project],
+                           {'cmd': 'wipe', 'package': tar_pkg})
         http_POST(url)
 
         return tar_pkg
@@ -644,17 +668,21 @@ class StagingAPI(object):
         disable_build = False
         if not self.ring_packages.get(tar_pkg):
             disable_build = True
-        self.create_package_container(project, tar_pkg, disable_build=disable_build)
+        self.create_package_container(project, tar_pkg,
+                                      disable_build=disable_build)
 
         # expand the revision to a md5
-        url = self.makeurl(['source', src_prj, src_pkg], {'rev': src_rev, 'expand': 1})
+        url = self.makeurl(['source', src_prj, src_pkg],
+                           {'rev': src_rev, 'expand': 1})
         f = http_GET(url)
         root = ET.parse(f).getroot()
         src_rev = root.attrib['srcmd5']
         src_vrev = root.attrib.get('vrev')
 
-        # link stuff - not using linkpac because linkpac copies meta from source
-        root = ET.Element('link', package=src_pkg, project=src_prj, rev=src_rev)
+        # link stuff - not using linkpac because linkpac copies meta
+        # from source
+        root = ET.Element('link', package=src_pkg, project=src_prj,
+                          rev=src_rev)
         if src_vrev:
             root.attrib['vrev'] = src_vrev
         url = self.makeurl(['source', project, tar_pkg, '_link'])
@@ -698,7 +726,8 @@ class StagingAPI(object):
         if by_project:
             query['by_project'] = by_project
             if not msg:
-                msg = 'Being evaluated by staging project "{}"'.format(by_project)
+                msg = 'Being evaluated by staging project "{}"'
+                msg = msg.format(by_project)
         if by_group:
             query['by_group'] = by_group
             if not msg:
@@ -723,7 +752,8 @@ class StagingAPI(object):
             if i.by_project == project and i.state == 'new':
                 cont = True
         if cont:
-            msg = 'Reviewed by staging project "{}" with result: "{}"'.format(project, state)
+            msg = 'Reviewed by staging project "{}" with result: "{}"'
+            msg = msg.format(project, state)
             self.change_review_state(request_id, state, by_project=project,
                                      message=msg)
 
