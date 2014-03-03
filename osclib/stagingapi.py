@@ -742,3 +742,20 @@ class StagingAPI(object):
             ET.SubElement(prjmeta.find('build'), state)
 
         http_PUT(url, data=ET.tostring(prjmeta))
+
+    def prj_frozen_enough(self, project):
+        """
+        Check if we can and should refreeze the prj"
+        :param project the project to check
+        :returns True if we can select into it
+        """
+
+        data = self.get_prj_pseudometa(project)
+        if data['requests']:
+            return True # already has content
+
+        # young enough
+        if self.days_since_last_freeze(project) < 6.5:
+            return True
+
+        return False

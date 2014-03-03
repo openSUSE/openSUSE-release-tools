@@ -241,6 +241,9 @@ def do_staging(self, subcmd, opts, *args):
         osclib.accept_command.AcceptCommand(api).perform(api.prj_from_letter(args[1]))
     elif cmd in ['select', 'unselect']:
         stprj = api.prj_from_letter(args[1])
+        if not api.prj_frozen_enough(stprj):
+            print "Freeze the prj first"
+            return False
         for rq in RequestFinder.find_sr(args[2:], opts.apiurl):
             if cmd == 'select':
                 api.rq_to_prj(rq, stprj)
@@ -248,6 +251,8 @@ def do_staging(self, subcmd, opts, *args):
                 api.rm_from_prj(stprj, request_id=rq)
                 api.add_review(rq, by_group='factory-staging',
                                msg='Please recheck')
+        api.build_switch_prj(stprj, 'enable')
+
     elif cmd in ['move']:
         cprj = store_read_project(os.getcwd())
         sprj = api.prj_from_letter(opts.from_) if opts.from_ else cprj
