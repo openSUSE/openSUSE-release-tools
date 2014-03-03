@@ -327,3 +327,19 @@ class TestApiCalls(unittest.TestCase):
                                 [{'path': 'standard/i586', 'pkg': 'glibc', 'state': 'broken'},
                                  {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
+    @httpretty.activate
+    def test_check_project_status_red(self):
+        """
+        Test checking project status
+        """
+
+        # Register OBS
+        self.obs.register_obs()
+
+        # Testing frozen mtime
+        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = 'project-a-metalist.xml'
+        self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:A') > 8)
+
+        # U == unfrozen
+        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:U/_project'] = 'project-u-metalist.xml'
+        self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:U') > 1000)

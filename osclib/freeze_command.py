@@ -9,6 +9,7 @@ class FreezeCommand:
 
     def __init__(self, api):
         self.api = api
+        self.projectlinks = []
 
     def set_links(self):
         url = self.api.makeurl(['source', self.prj, '_meta'])
@@ -16,7 +17,6 @@ class FreezeCommand:
         root = ET.parse(f).getroot()
         links = root.findall('link')
         links.reverse()
-        self.projectlinks = []
         for link in links:
             self.projectlinks.append(link.get('project'))
 
@@ -107,24 +107,24 @@ class FreezeCommand:
 
         self.freeze_prjlinks()
 
-        if 'openSUSE:Factory:Rings:1-MinimalX' in self.projectlinks \
-           and not 'openSUSE:Factory:Rings:0-Bootstrap' in self.projectlinks:
-            self.set_bootstrap_copy()
-            self.create_bootstrap_aggregate()
-            print("waiting for scheduler to disable...")
-            while not self.verify_bootstrap_copy_code('disabled'):
-                time.sleep(1)
-            self.build_switch_bootstrap_copy('enable')
-            print("waiting for scheduler to copy...")
-            while not self.verify_bootstrap_copy_code('succeeded'):
-                time.sleep(1)
-            self.build_switch_bootstrap_copy('disable')
+        self.set_bootstrap_copy()
+        self.create_bootstrap_aggregate()
+        print("waiting for scheduler to disable...")
+        while not self.verify_bootstrap_copy_code('disabled'):
+            time.sleep(1)
+        self.build_switch_bootstrap_copy('enable')
+        print("waiting for scheduler to copy...")
+        while not self.verify_bootstrap_copy_code('succeeded'):
+            time.sleep(1)
+        self.build_switch_bootstrap_copy('disable')
 
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', { 'name': prj })
         ET.SubElement(root, 'title')
         ET.SubElement(root, 'description')
-        ET.SubElement(root, 'link', { 'project': 'openSUSE:Factory:Rings:1-MinimalX' })
+        links = self.projectlinks or ['openSUSE:Factory:Rings:1-MinimalX']
+        for lprj in links:
+            ET.SubElement(root, 'link', { 'project': lprj })
         f = ET.SubElement(root, 'build')
         # this one stays
         ET.SubElement(f, 'disable', { 'repository': 'bootstrap_copy' })
