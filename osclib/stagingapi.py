@@ -409,13 +409,18 @@ class StagingAPI(object):
 
         # all requests with open review
         requests = self.list_requests_in_prj(project)
+        open_requests = set(requests)
 
         # all tracked requests - some of them might be declined, so we don't see them above
         meta = self.get_prj_pseudometa(project)
         for req in meta['requests']:
             req = req['id']
+            if req in open_requests:
+                open_requests.remove(req)
             if req not in requests:
                 requests.append(req)
+        if len(open_requests) != 0:
+            return ['Request(s) {} are not tracked but are open for the prj'.format(','.join(open_requests))]
 
         # If we find no requests in staging then it is empty so we ignore it
         if len(requests) == 0:
