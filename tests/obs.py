@@ -119,6 +119,8 @@ class OBS:
         self._link_sources()
         # Add packages
         self._pkg_sources()
+        # Build results
+        self._build_results()
         # Workaround
         self._ugly_hack()
 
@@ -179,12 +181,38 @@ class OBS:
         """
         # Build results verification, maybe not worth of dynamic processing
         self.responses['GET']['/build/red/_result']   = 'build-results-red.xml'
-        self.responses['GET']['/build/openSUSE:Factory:Staging:B/_result']   = 'build-results-red.xml'
         self.responses['GET']['/build/green/_result'] = 'build-results-green.xml'
 
         # Testing of rings
         self.responses['GET']['/source/openSUSE:Factory:Rings:0-Bootstrap'] = 'ring-0-project.xml'
         self.responses['GET']['/source/openSUSE:Factory:Rings:1-MinimalX'] = 'ring-1-project.xml'
+
+    def _build_results(self):
+        """
+        Mimic build results, B is broken, A works
+        """
+
+        def build_results(responses, request, uri):
+            ret_str='<resultlist state="c7856c90c70c53fae88aacec964b80c0">\n'
+            prj = re.match( r'.*/([^/]*)/_result',uri).group(1)
+            if prj in [ "openSUSE:Factory:Staging:B" ]:
+                states = ['failed', 'broken', 'building']
+            else:
+                states = ['excluded', 'succeeded']
+            for st in states:
+                if st in [ 'building' ]:
+                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj,st,st)
+                else:
+                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj,st,"published")
+                for dt in self.links_data:
+                    if self.links_data[dt]['prj'] == prj:
+                        ret_str += '    <status package="{0}" code="{1}" />\n'.format(self.links_data[dt]['pkg'], st)
+                ret_str += '  </result>\n'
+            ret_str += '</resultlist>\n'
+            return ret_str
+
+        self.responses['GET']['/build/openSUSE:Factory:Staging:A/_result'] = build_results
+        self.responses['GET']['/build/openSUSE:Factory:Staging:B/_result'] = build_results
 
     def _project_meta(self):
         # Load template
