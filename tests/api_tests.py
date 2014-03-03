@@ -4,25 +4,12 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or later
 
-import os
 import sys
-import contextlib
 import unittest
 import httpretty
-import difflib
-import subprocess
-import tempfile
-# mock is part of python3.3
-try:
-    import unittest.mock
-except ImportError:
-    import mock
 
-import oscs
-import osc
 from obs import OBS
-import re
-import pprint
+
 
 PY3 = sys.version_info[0] == 3
 
@@ -30,6 +17,7 @@ if PY3:
     string_types = str,
 else:
     string_types = basestring,
+
 
 class TestApiCalls(unittest.TestCase):
     """
@@ -354,3 +342,19 @@ class TestApiCalls(unittest.TestCase):
                                 [{'path': 'standard/i586', 'pkg': 'glibc', 'state': 'broken'},
                                  {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
+    @httpretty.activate
+    def test_check_project_status_red(self):
+        """
+        Test checking project status
+        """
+
+        # Register OBS
+        self.obs.register_obs()
+
+        # Testing frozen mtime
+        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = 'project-a-metalist.xml'
+        self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:A') > 8)
+
+        # U == unfrozen
+        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:U/_project'] = 'project-u-metalist.xml'
+        self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:U') > 1000)

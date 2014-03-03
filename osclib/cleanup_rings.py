@@ -1,6 +1,8 @@
-import osc
-from osc import cmdln
-from osc.core import *
+from xml.etree import cElementTree as ET
+
+from osc.core import makeurl
+from osc.core import http_GET
+
 
 class CleanupRings:
 

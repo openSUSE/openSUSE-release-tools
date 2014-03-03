@@ -7,15 +7,11 @@
 import os
 import sys
 import contextlib
-import unittest
 import httpretty
-import difflib
-import subprocess
-import tempfile
 import xml.etree.ElementTree as ET
 # mock is part of python3.3
 try:
-    import unittest.mock
+    import unittest.mock as mock
 except ImportError:
     import mock
 
@@ -25,6 +21,7 @@ import osc
 import re
 import pprint
 import posixpath
+
 
 PY3 = sys.version_info[0] == 3
 
@@ -40,6 +37,7 @@ def mock_generate_ring_packages():
         'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
         'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX'}):
         yield
+
 
 class OBS:
     """

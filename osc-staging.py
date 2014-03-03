@@ -18,7 +18,6 @@ from osc.core import meta_get_packagelist
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import server_diff
-from osc.core import store_read_project
 
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
@@ -26,11 +25,12 @@ sys.path.append(_plugin_dir)
 from osclib.stagingapi import StagingAPI
 from osclib.request_finder import RequestFinder
 
-OSC_STAGING_VERSION='0.0.1'
+OSC_STAGING_VERSION = '0.0.1'
+
 
 def _print_version(self):
     """ Print version information about this extension. """
-    print('%s'%(self.OSC_STAGING_VERSION))
+    print(self.OSC_STAGING_VERSION)
     quit(0)
 
 
@@ -43,16 +43,24 @@ def _get_changed(opts, project, everything):
         f = http_GET(makeurl(opts.apiurl, ['source', project, pkg]))
         linkinfo = ET.parse(f).getroot().find('linkinfo')
         if linkinfo is None:
-            ret.append({'pkg': pkg, 'code': 'NOT_LINK', 'msg': 'Not a source link'})
+            ret.append({'pkg': pkg, 'code': 'NOT_LINK',
+                        'msg': 'Not a source link'})
             continue
         if linkinfo.get('error'):
-            ret.append({'pkg': pkg, 'code': 'BROKEN', 'msg': 'Broken source link'})
+            ret.append({'pkg': pkg, 'code': 'BROKEN',
+                        'msg': 'Broken source link'})
             continue
         t = linkinfo.get('project')
         p = linkinfo.get('package')
         r = linkinfo.get('revision')
-        if len(server_diff(opts.apiurl, t, p, r, project, pkg, None, True)) > 0:
-            ret.append({'pkg': pkg, 'code': 'MODIFIED', 'msg': 'Has local modifications', 'pprj': t, 'ppkg': p})
+        if server_diff(opts.apiurl, t, p, r, project, pkg, None, True):
+            ret.append({
+                'pkg': pkg,
+                'code': 'MODIFIED',
+                'msg': 'Has local modifications',
+                'pprj': t,
+                'ppkg': p
+            })
             continue
     return ret
 
@@ -65,10 +73,10 @@ def _staging_remove(self, project, opts):
     """
     chng = _get_changed(opts, project, True)
     if len(chng) > 0:
-        print('Staging project "%s" is not clean:'%(project))
+        print('Staging project "%s" is not clean:' % project)
         print('')
         for pair in chng:
-            print(' * %s : %s'%(pair['pkg'],pair['msg']))
+            print(' * %s : %s' % (pair['pkg'], pair['msg']))
         print('')
         print('Really delete? (N/y)')
         answer = sys.stdin.readline()
@@ -82,7 +90,8 @@ def _staging_remove(self, project, opts):
 
 def _staging_submit_devel(self, project, opts):
     """
-    Generate new review requests for devel-projects based on our staging changes.
+    Generate new review requests for devel-projects based on our
+    staging changes.
     :param project: staging project to submit into devel projects
     """
     chng = _get_changed(opts, project, True)
@@ -92,22 +101,23 @@ def _staging_submit_devel(self, project, opts):
     if len(chng) > 0:
         for pair in chng:
             if pair['code'] != 'MODIFIED':
-                print('Error: Package "%s": %s'%(pair['pkg'],pair['msg']))
+                print('Error: Package "%s": %s' % (pair['pkg'], pair['msg']))
             else:
-                print('Sending changes back %s/%s -> %s/%s'%(project,pair['pkg'],pair['pprj'],pair['ppkg']))
-                action_xml  = '<request>';
+                print('Sending changes back %s/%s -> %s/%s' % (project, pair['pkg'], pair['pprj'], pair['ppkg']))
+                action_xml = '<request>'
                 action_xml += '   <action type="submit"> <source project="%s" package="%s" /> <target project="%s" package="%s" />' % (project, pair['pkg'], pair['pprj'], pair['ppkg'])
                 action_xml += '   </action>'
                 action_xml += '   <state name="new"/> <description>%s</description>' % msg
                 action_xml += '</request>'
 
-                u = makeurl(opts.apiurl, ['request'], query='cmd=create&addrevision=1')
+                u = makeurl(opts.apiurl, ['request'],
+                            query='cmd=create&addrevision=1')
                 f = http_POST(u, data=action_xml)
 
                 root = ET.parse(f).getroot()
                 print("Created request %s" % (root.get('id')))
     else:
-        print("No changes to submit")
+        print('No changes to submit')
     return
 
 
@@ -117,6 +127,8 @@ def _staging_submit_devel(self, project, opts):
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-m', '--message', metavar='TEXT',
               help='manually specify different parent project during creation of staging')
+@cmdln.option('-n', '--move', action='store_true',
+              help='force the selection to become a move')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='manually specify different source project during request moving')
 @cmdln.option('-v', '--version', action='store_true',
@@ -126,22 +138,24 @@ def do_staging(self, subcmd, opts, *args):
 
     "check" will check if all packages are links without changes
 
-    "remove" (or "r") will delete the staging project into submit requests for openSUSE:Factory
+    "remove" (or "r") will delete the staging project into submit
+        requests for openSUSE:Factory
 
-    "submit-devel" (or "s") will create review requests for changed packages in staging project
-        into their respective devel projects to obtain approval from maitnainers for pushing the
+    "submit-devel" (or "s") will create review requests for changed
+        packages in staging project into their respective devel
+        projects to obtain approval from maitnainers for pushing the
         changes to openSUSE:Factory
 
-    "freeze" will freeze the sources of the project's links (not affecting the packages actually in)
+    "freeze" will freeze the sources of the project's links (not
+        affecting the packages actually in)
 
-    "accept" will accept all requests in openSUSE:Factory:Staging:<LETTER> (into Factory)
+    "accept" will accept all requests in
+        openSUSE:Factory:Staging:<LETTER> (into Factory)
 
     "list" will pick the requests not in rings
 
     "select" will add requests to the project
     "unselect" will remove them project - pushing them back to the backlog
-
-    "move" will move a list of REQUESTs from the current project to PROJECT
 
     Usage:
         osc staging check [--everything] REPO
@@ -149,9 +163,8 @@ def do_staging(self, subcmd, opts, *args):
         osc staging submit-devel [-m message] REPO
         osc staging freeze PROJECT
         osc staging list
-        osc staging select LETTER REQUEST...
+        osc staging select [--move [-from PROJECT]] LETTER REQUEST...
         osc staging unselect LETTER REQUEST...
-        osc staging move [--from PROJECT] PROJECT REQUEST...
         osc staging accept LETTER
         osc staging cleanup_rings
     """
@@ -164,16 +177,14 @@ def do_staging(self, subcmd, opts, *args):
     cmd = args[0]
     if cmd in ['submit-devel', 's', 'remove', 'r', 'accept', 'freeze']:
         min_args, max_args = 1, 1
-    elif cmd in ['check']:
+    elif cmd == 'check':
         min_args, max_args = 0, 2
     elif cmd in ['select', 'unselect']:
-        min_args, max_args = 2, None
-    elif cmd in ['move']:
         min_args, max_args = 2, None
     elif cmd in ['list', 'cleanup_rings']:
         min_args, max_args = 0, 0
     else:
-        raise oscerr.WrongArgs('Unknown command: %s'%(cmd))
+        raise oscerr.WrongArgs('Unknown command: %s' % cmd)
     if len(args) - 1 < min_args:
         raise oscerr.WrongArgs('Too few arguments.')
     if not max_args is None and len(args) - 1 > max_args:
@@ -190,15 +201,15 @@ def do_staging(self, subcmd, opts, *args):
         # FIXME: de-duplicate and use function when cleaning up this file
         if len(args) > 1:
             prj = api.prj_from_letter(args[1])
-            state =  api.check_project_status(prj, True)
+            state = api.check_project_status(prj, True)
 
             # If the state is green we do nothing
             if not state:
-                print('Skipping empty staging project: {0}'.format(prj))
+                print('Skipping empty staging project: {}'.format(prj))
                 print('')
                 return True
 
-            print('Checking staging project: {0}'.format(prj))
+            print('Checking staging project: {}'.format(prj))
             if type(state) is list:
                 print(' -- Project still neeeds attention')
                 for i in state:
@@ -213,11 +224,11 @@ def do_staging(self, subcmd, opts, *args):
 
             # If the state is green we do nothing
             if not state:
-                print('Skipping empty staging project: {0}'.format(prj))
+                print('Skipping empty staging project: {}'.format(prj))
                 print('')
                 continue
 
-            print('Checking staging project: {0}'.format(prj))
+            print('Checking staging project: {}'.format(prj))
             if type(state) is list:
                 print(' -- Project still neeeds attention')
                 for i in state:
@@ -235,25 +246,41 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['freeze']:
         import osclib.freeze_command
         for prj in args[1:]:
-            osclib.freeze_command.FreezeCommand(api).perform(api.prj_from_letter(prj))
+            osclib.freeze_command.FreezeCommand(api).perform(api. prj_from_letter(prj))
     elif cmd in ['accept']:
         import osclib.accept_command
-        osclib.accept_command.AcceptCommand(api).perform(api.prj_from_letter(args[1]))
+        osclib.accept_command.AcceptCommand(api).perform(api. prj_from_letter(args[1]))
     elif cmd in ['select', 'unselect']:
-        stprj = api.prj_from_letter(args[1])
-        for rq in RequestFinder.find_sr(args[2:], opts.apiurl):
-            if cmd == 'select':
-                api.rq_to_prj(rq, stprj)
-            else:
-                api.rm_from_prj(stprj, request_id=rq)
+        tprj = api.prj_from_letter(args[1])
+        if not api.prj_frozen_enough(tprj):
+            print('Freeze the prj first')
+            return False
+        for rq, rq_prj in RequestFinder.find_sr(args[2:], opts.apiurl).items():
+            if cmd == 'select' and 'staging' not in rq_prj:
+                # Normal 'select' command
+                api.rq_to_prj(rq, tprj)
+            elif cmd == 'select' and 'staging' in rq_prj and opts.move:
+                # 'select' command becomes a 'move'
+                fprj = None
+                if opts.from_:
+                    fprj = api.prj_from_letter(opts.from_)
+                else:
+                    fprj = rq_prj['staging']
+                print('Moving "{}" from "{}" to "{}"'.format(rq, fprj, tprj))
+                api.move_between_project(fprj, rq, tprj)
+            elif cmd == 'select' and 'staging' in rq_prj and not opts.move:
+                # Previously selected, but not explicit move
+                msg = 'Request "{}" is actually in "{}".\n'
+                msg = msg.format(rq, rq_prj['staging'])
+                msg += 'Use --move (-n) modifier to move the request from "{}" to "{}"'
+                msg = msg.format(rq_prj['staging'], tprj)
+                print(msg)
+            elif cmd == 'unselect':
+                api.rm_from_prj(tprj, request_id=rq)
                 api.add_review(rq, by_group='factory-staging',
                                msg='Please recheck')
-    elif cmd in ['move']:
-        cprj = store_read_project(os.getcwd())
-        sprj = api.prj_from_letter(opts.from_) if opts.from_ else cprj
-        tprj = api.prj_from_letter(args[1])
-        for rq in RequestFinder.find_sr(args[2:], opts.apiurl):
-            api.move_between_project(sprj, rq, tprj)
+            else:
+                raise oscerr.WrongArgs('Arguments for select are not correct.')
     elif cmd in ['cleanup_rings']:
         import osclib.cleanup_rings
         osclib.cleanup_rings.CleanupRings(opts.apiurl).perform()

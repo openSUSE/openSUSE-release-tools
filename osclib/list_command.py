@@ -1,6 +1,8 @@
-import osc
-from osc import cmdln
-from osc.core import *
+from xml.etree import cElementTree as ET
+
+from osc.core import makeurl
+from osc.core import http_GET
+
 
 class ListCommand:
     def __init__(self, api):
@@ -26,11 +28,10 @@ class ListCommand:
 
     def one_request(self, rq):
         id = int(rq.get('id'))
-        act_id = 0
         actions = rq.findall('action')
         act = actions[0]
 
-        tprj = act.find('target').get('project')
+        # tprj = act.find('target').get('project')
         tpkg = act.find('target').get('package')
 
         stage_info = self.packages_staged.get(tpkg, ('', 0))
