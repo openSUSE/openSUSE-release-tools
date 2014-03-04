@@ -181,13 +181,13 @@ def do_staging(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
-    if cmd in ['submit-devel', 's', 'remove', 'r', 'accept', 'freeze']:
+    if cmd in ('submit-devel', 's', 'remove', 'r', 'accept', 'freeze'):
         min_args, max_args = 1, 1
     elif cmd == 'check':
         min_args, max_args = 0, 2
-    elif cmd in ['select', 'unselect']:
+    elif cmd in ('select', 'unselect'):
         min_args, max_args = 2, None
-    elif cmd in ['list', 'cleanup_rings']:
+    elif cmd in ('list', 'cleanup_rings'):
         min_args, max_args = 0, 0
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
@@ -243,10 +243,10 @@ def do_staging(self, subcmd, opts, *args):
                 print(' ++ Acceptable staging project')
             print('')
         return True
-    elif cmd in ['remove', 'r']:
+    elif cmd in ('remove', 'r'):
         project = args[1]
         self._staging_remove(project, opts)
-    elif cmd in ['submit-devel', 's']:
+    elif cmd in ('submit-devel', 's'):
         project = args[1]
         self._staging_submit_devel(project, opts)
     elif cmd == 'freeze':
@@ -256,7 +256,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'accept':
         return AcceptCommand(api).perform(api. prj_from_letter(args[1]))
     elif cmd == 'unselect':
-        tprj = api.prj_from_letter(args[1]) # see issue 1784
+        tprj = api.prj_from_letter(args[1])  # see issue 1784
         for rq, rq_prj in RequestFinder.find_sr(args[2:], opts.apiurl).items():
             api.rm_from_prj(tprj, request_id=rq)
             api.add_review(rq, by_group='factory-staging',
@@ -264,7 +264,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'select':
         tprj = api. prj_from_letter(args[1])
         return SelectCommand(api).perform(tprj, args[2:])
-    elif cmd in ['cleanup_rings']:
+    elif cmd == 'cleanup_rings':
         return CleanupRings(opts.apiurl).perform()
-    elif cmd in ['list']:
+    elif cmd == 'list':
         return ListCommand(api).perform()
