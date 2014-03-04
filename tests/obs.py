@@ -30,15 +30,6 @@ if PY3:
 else:
     string_types = basestring,
 
-# Here place all mockable functions
-@contextlib.contextmanager
-def mock_generate_ring_packages():
-    with  mock.patch('oscs.StagingAPI._generate_ring_packages', return_value={
-        'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
-        'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX'}):
-        yield
-
-
 class OBS:
     """
     Class trying to simulate a simple OBS
@@ -166,7 +157,7 @@ class OBS:
             if len(path) > 1:
                 ret = self._pretty_callback(request, 'https://localhost' + posixpath.dirname(path), headers, False)
             if exception:
-                raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method,uri))
+                raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method, uri))
             else:
                 return None
 
