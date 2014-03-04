@@ -751,23 +751,6 @@ def _get_builddepinfo(self, opts, prj, repo, arch, pkg):
     return package[0] if package else None
 
 
-def _get_base_build_bin(self, opts):
-    """Get Base:build pagacke list"""
-    binaries = {}
-    for arch in ('x86_64', 'i586'):
-        url = makeurl(opts.apiurl, ['/build/openSUSE:Factory:Build/standard/%s/_repository' % arch])
-        root = ET.parse(http_GET(url)).getroot()
-        binaries[arch] = set([e.attrib['filename'][:-4] for e in root.findall('binary')])
-    return binaries
-
-
-def _get_base_build_src(self, opts):
-    """Get Base:build pagacke list"""
-    url = makeurl(opts.apiurl, ['/source/openSUSE:Factory:Build'])
-    root = ET.parse(http_GET(url)).getroot()
-    return set([e.attrib['name'] for e in root.findall('entry')])
-
-
 # Store packages prevoiusly ignored. Don't pollute the screen.
 global _ignore_packages
 _ignore_packages = set()
