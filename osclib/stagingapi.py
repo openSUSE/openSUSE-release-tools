@@ -221,7 +221,6 @@ class StagingAPI(object):
         # check if we can reduce it down by accepting some
         for rq in requests:
             self.accept_non_ring_request(rq)
-        # FIXME: dispatch to various staging projects automatically
 
     def get_prj_pseudometa(self, project):
         """
@@ -291,7 +290,6 @@ class StagingAPI(object):
         if append:
             data['requests'].append({'id': request_id, 'package': package})
         self.set_prj_pseudometa(project, data)
-        # FIXME Add sr to group request as well
 
     def get_request_id_for_package(self, project, package):
         """
@@ -327,7 +325,6 @@ class StagingAPI(object):
         data = self.get_prj_pseudometa(project)
         data['requests'] = filter(lambda x: x['package'] != package, data['requests'])
         self.set_prj_pseudometa(project, data)
-        # FIXME Add sr to group request as well
 
     def rm_from_prj(self, project, package=None, request_id=None,
                     msg=None, review='accepted'):
@@ -412,6 +409,22 @@ class StagingAPI(object):
             state = 'missing reviews: ' + ', '.join(failing_groups)
             return '{}: {}'.format(package, state)
 
+    def check_ring_packages(self, project, requests):
+        """
+        Checks if packages from requests are in some ring or not
+        :param project: project to check
+        :param requests: list of requests to verify
+        :return True (has ring packages) / False (has no ring packages)
+        """
+
+        for request in requests:
+            pkg = self.get_package_for_request_id(project, request)
+            if pkg in self.ring_packages:
+                return True
+
+        return False
+
+
     def check_project_status(self, project, verbose=False):
         """
         Checks a staging project for acceptance. Checks all open
@@ -437,11 +450,11 @@ class StagingAPI(object):
                 open_requests.remove(req)
             if req not in requests:
                 requests.append(req)
-        if len(open_requests) != 0:
+        if open_requests:
             return ['Request(s) {} are not tracked but are open for the prj'.format(','.join(open_requests))]
 
         # If we find no requests in staging then it is empty so we ignore it
-        if len(requests) == 0:
+        if not requests:
             return False
 
         # Check if the requests are acceptable and bail out on
@@ -453,16 +466,17 @@ class StagingAPI(object):
                 if not verbose:
                     break
 
-        # Check the buildstatus
-        buildstatus = self.gather_build_status(project)
-        if buildstatus:
-            # here no append as we are adding list to list
-            report += self.generate_build_status_details(buildstatus, verbose)
-
-        # Check the openqa state
-        ret = self.find_openqa_state(project)
-        if ret:
-            report.append(ret)
+        # Check the build/openQA only if we have some ring packages
+        if self.check_ring_packages(project, requests):
+            # Check the buildstatus
+            buildstatus = self.gather_build_status(project)
+            if buildstatus:
+                # here no append as we are adding list to list
+                report += self.generate_build_status_details(buildstatus, verbose)
+            # Check the openqa state
+            ret = self.find_openqa_state(project)
+            if ret:
+                report.append(ret)
 
         if report:
             return report
@@ -567,7 +581,7 @@ class StagingAPI(object):
                     })
 
         # Print the results
-        if len(working) == 0 and len(broken) == 0:
+        if not working and not broken:
             return None
         else:
             return [project, working, broken]
@@ -584,13 +598,13 @@ class StagingAPI(object):
             return retval
         project, working, broken = details
 
-        if len(working) != 0:
+        if working:
             retval.append('At least following repositories is still building:')
             for i in working:
                 retval.append('    {}: {}'.format(i['path'], i['state']))
                 if not verbose:
                     break
-        if len(broken) != 0:
+        if broken:
             retval.append('Following packages are broken:')
             for i in broken:
                 retval.append('    {} ({}): {}'.format(i['pkg'], i['path'],
@@ -732,7 +746,7 @@ class StagingAPI(object):
             query['by_group'] = by_group
             if not msg:
                 msg = 'Being evaluated by group "{}"'.format(by_group)
-        if len(query) == 0:
+        if not query:
             raise oscerr.WrongArgs('We need a group or a project')
         query['cmd'] = 'addreview'
         url = self.makeurl(['request', str(request_id)], query)

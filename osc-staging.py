@@ -127,6 +127,8 @@ def _staging_submit_devel(self, project, opts):
     return
 
 
+@cmdln.option('-c', '--commit', action='store_true',
+              help='accept the request completely and commit the changes to the openSUSE:Factory')
 @cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
 @cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
@@ -171,7 +173,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging list
         osc staging select [--move [-from PROJECT]] LETTER REQUEST...
         osc staging unselect LETTER REQUEST...
-        osc staging accept LETTER
+        osc staging accept [--commit] LETTER
         osc staging cleanup_rings
     """
     if opts.version:
@@ -254,7 +256,7 @@ def do_staging(self, subcmd, opts, *args):
         for prj in args[1:]:
             osclib.freeze_command.FreezeCommand(api).perform(api. prj_from_letter(prj))
     elif cmd == 'accept':
-        return AcceptCommand(api).perform(api. prj_from_letter(args[1]))
+        return AcceptCommand(api).perform(api. prj_from_letter(args[1]), opts.commit)
     elif cmd == 'unselect':
         tprj = api.prj_from_letter(args[1])  # see issue 1784
         for rq, rq_prj in RequestFinder.find_sr(args[2:], opts.apiurl).items():
