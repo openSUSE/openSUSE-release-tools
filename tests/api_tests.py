@@ -356,12 +356,25 @@ class TestApiCalls(unittest.TestCase):
         self.obs.register_obs()
 
         # Testing frozen mtime
-        tmpl = Template(self.obs._get_fixture_content('project-a-metalist.xml'))
-        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': 1393152777 })
-
         self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:A') > 8)
+        self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:B') < 1)
 
         # U == unfrozen
-        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:U/_project'] = 'project-u-metalist.xml'
         self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:U') > 1000)
+
+    @httpretty.activate
+    def test_frozen_enough(self):
+        """
+        Test frozen enough
+        """
+
+        # Register OBS
+        self.obs.register_obs()
+
+        # Testing frozen mtime
+        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:B'), True)
+        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
+
+        # U == unfrozen
+        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:U'), False)
 
