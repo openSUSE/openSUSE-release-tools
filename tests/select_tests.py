@@ -48,6 +48,7 @@ class TestSelect(unittest.TestCase):
         tmpl = Template(self.obs._get_fixture_content('project-a-metalist.xml'))
         self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': 1393152777})
         self.assertEqual(False, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash']))
+        self.assertEqual(sys.stdout.getvalue(), "Freeze the prj first\n")
 
         # make sure  the project is frozen recently for other tests
         self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': str(int(time.time()) - 1000) })
