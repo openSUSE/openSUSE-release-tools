@@ -145,6 +145,12 @@ class OBS:
             reply = self.responses[request.method][path]
         # We have something to reply with
         if reply:
+            # It's a dict, therefore there is return code as well
+            if isinstance(reply, dict):
+                ret_code = reply['status']
+                reply = reply['reply']
+            else:
+                ret_code = 200
             # It's a list, so take the first
             if isinstance(reply, list):
                 reply = reply.pop(0)
@@ -152,13 +158,13 @@ class OBS:
             if isinstance(reply, string_types):
                 # It's XML
                 if reply.startswith('<'):
-                    return (200, headers, reply)
+                    return (ret_code, headers, reply)
                 # It's fixture
                 else:
-                    return (200, headers, self._get_fixture_content(reply))
+                    return (ret_code, headers, self._get_fixture_content(reply))
             # All is left is callback function
             else:
-                return (200, headers, reply(self.responses, request, uri))
+                return (ret_code, headers, reply(self.responses, request, uri))
         # No possible response found
         else:
             if len(path) == 0:

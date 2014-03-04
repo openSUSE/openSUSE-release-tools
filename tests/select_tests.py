@@ -55,8 +55,7 @@ class TestSelect(unittest.TestCase):
 
         # search for requests
         self.obs.responses['GET']['/request'] = '<collection matches="0"/>'
-        # TODO: it's actually 404 - but OBS class can't handle that ;(
-        self.obs.responses['GET']['/request/bash'] = '<collection matches="0"/>'
+        self.obs.responses['GET']['/request/bash'] = {'status': 404, 'reply': '<collection matches="0"/>' }
 
         with self.assertRaises(oscerr.WrongArgs) as cm:
             SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash'])
