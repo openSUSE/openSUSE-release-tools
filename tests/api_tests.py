@@ -346,9 +346,9 @@ class TestApiCalls(unittest.TestCase):
                                  {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
     @httpretty.activate
-    def test_check_project_status_red(self):
+    def test_frozen_mtime(self):
         """
-        Test checking project status
+        Test frozen mtime
         """
 
         # Register OBS
@@ -364,31 +364,3 @@ class TestApiCalls(unittest.TestCase):
         self.obs.responses['GET']['/source/openSUSE:Factory:Staging:U/_project'] = 'project-u-metalist.xml'
         self.assertTrue(self.obs.api.days_since_last_freeze('openSUSE:Factory:Staging:U') > 1000)
 
-    @httpretty.activate
-    def test_select(self):
-        """
-        Test checking project status
-        """
-
-        from osclib.select_command import SelectCommand
-
-        # Register OBS
-        self.obs.register_obs()
-
-        # old frozen
-        tmpl = Template(self.obs._get_fixture_content('project-a-metalist.xml'))
-        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': 1393152777})
-        self.assertEqual(False, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash']))
-
-        # make sure  the project is frozen recently for other tests
-        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': str(int(time.time()) - 1000) })
-
-        # search for requests
-        self.obs.responses['GET']['/request'] = '<collection matches="0"/>'
-        # TODO: it's actually 404 - but OBS class can't handle that ;(
-        self.obs.responses['GET']['/request/bash'] = '<collection matches="0"/>'
-
-        with self.assertRaises(oscerr.WrongArgs) as cm:
-            SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash'])
-
-        self.assertEqual(str(cm.exception), "No SR# found for: bash")
