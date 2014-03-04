@@ -346,9 +346,9 @@ class TestApiCalls(unittest.TestCase):
                                  {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
     @httpretty.activate
-    def test_check_project_status_red(self):
+    def test_frozen_mtime(self):
         """
-        Test checking project status
+        Test frozen mtime
         """
 
         # Register OBS
