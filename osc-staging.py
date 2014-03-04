@@ -25,6 +25,12 @@ sys.path.append(_plugin_dir)
 from osclib.stagingapi import StagingAPI
 from osclib.request_finder import RequestFinder
 
+from osclib.select_command import SelectCommand
+from osclib.accept_command import AcceptCommand
+from osclib.cleanup_rings import CleanupRings
+from osclib.list_command import ListCommand
+
+
 OSC_STAGING_VERSION = '0.0.1'
 
 
@@ -127,7 +133,7 @@ def _staging_submit_devel(self, project, opts):
               help='manually specify different parent project during creation of staging')
 @cmdln.option('-m', '--message', metavar='TEXT',
               help='manually specify different parent project during creation of staging')
-@cmdln.option('-n', '--move', action='store_true',
+@cmdln.option('--move', action='store_true',
               help='force the selection to become a move')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='manually specify different source project during request moving')
@@ -243,47 +249,22 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd in ['submit-devel', 's']:
         project = args[1]
         self._staging_submit_devel(project, opts)
-    elif cmd in ['freeze']:
+    elif cmd == 'freeze':
         import osclib.freeze_command
         for prj in args[1:]:
             osclib.freeze_command.FreezeCommand(api).perform(api. prj_from_letter(prj))
-    elif cmd in ['accept']:
-        import osclib.accept_command
-        osclib.accept_command.AcceptCommand(api).perform(api. prj_from_letter(args[1]))
-    elif cmd in ['select', 'unselect']:
-        tprj = api.prj_from_letter(args[1])
-        if not api.prj_frozen_enough(tprj):
-            print('Freeze the prj first')
-            return False
+    elif cmd == 'accept':
+        return AcceptCommand(api).perform(api. prj_from_letter(args[1]))
+    elif cmd == 'unselect':
+        tprj = api.prj_from_letter(args[1]) # see issue 1784
         for rq, rq_prj in RequestFinder.find_sr(args[2:], opts.apiurl).items():
-            if cmd == 'select' and 'staging' not in rq_prj:
-                # Normal 'select' command
-                api.rq_to_prj(rq, tprj)
-            elif cmd == 'select' and 'staging' in rq_prj and opts.move:
-                # 'select' command becomes a 'move'
-                fprj = None
-                if opts.from_:
-                    fprj = api.prj_from_letter(opts.from_)
-                else:
-                    fprj = rq_prj['staging']
-                print('Moving "{}" from "{}" to "{}"'.format(rq, fprj, tprj))
-                api.move_between_project(fprj, rq, tprj)
-            elif cmd == 'select' and 'staging' in rq_prj and not opts.move:
-                # Previously selected, but not explicit move
-                msg = 'Request "{}" is actually in "{}".\n'
-                msg = msg.format(rq, rq_prj['staging'])
-                msg += 'Use --move (-n) modifier to move the request from "{}" to "{}"'
-                msg = msg.format(rq_prj['staging'], tprj)
-                print(msg)
-            elif cmd == 'unselect':
-                api.rm_from_prj(tprj, request_id=rq)
-                api.add_review(rq, by_group='factory-staging',
-                               msg='Please recheck')
-            else:
-                raise oscerr.WrongArgs('Arguments for select are not correct.')
+            api.rm_from_prj(tprj, request_id=rq)
+            api.add_review(rq, by_group='factory-staging',
+                           msg='Please recheck')
+    elif cmd == 'select':
+        tprj = api. prj_from_letter(args[1])
+        return SelectCommand(api).perform(tprj, args[2:])
     elif cmd in ['cleanup_rings']:
-        import osclib.cleanup_rings
-        osclib.cleanup_rings.CleanupRings(opts.apiurl).perform()
+        return CleanupRings(opts.apiurl).perform()
     elif cmd in ['list']:
-        import osclib.list_command
-        osclib.list_command.ListCommand(api).perform()
+        return ListCommand(api).perform()
