@@ -166,7 +166,7 @@ class OBS:
             if len(path) > 1:
                 ret = self._pretty_callback(request, 'https://localhost' + posixpath.dirname(path), headers, False)
             if exception:
-                raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method,path))
+                raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method,uri))
             else:
                 return None
 
