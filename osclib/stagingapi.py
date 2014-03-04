@@ -581,7 +581,7 @@ class StagingAPI(object):
                     })
 
         # Print the results
-        if len(working) == 0 and len(broken) == 0:
+        if not working and not broken:
             return None
         else:
             return [project, working, broken]
@@ -598,13 +598,13 @@ class StagingAPI(object):
             return retval
         project, working, broken = details
 
-        if len(working) != 0:
+        if working:
             retval.append('At least following repositories is still building:')
             for i in working:
                 retval.append('    {}: {}'.format(i['path'], i['state']))
                 if not verbose:
                     break
-        if len(broken) != 0:
+        if broken:
             retval.append('Following packages are broken:')
             for i in broken:
                 retval.append('    {} ({}): {}'.format(i['pkg'], i['path'],
@@ -746,7 +746,7 @@ class StagingAPI(object):
             query['by_group'] = by_group
             if not msg:
                 msg = 'Being evaluated by group "{}"'.format(by_group)
-        if len(query) == 0:
+        if not query:
             raise oscerr.WrongArgs('We need a group or a project')
         query['cmd'] = 'addreview'
         url = self.makeurl(['request', str(request_id)], query)
