@@ -12,14 +12,18 @@ import time
 from string import Template
 from obs import OBS
 from osc import oscerr
+from cStringIO import StringIO
+from osclib.select_command import SelectCommand
 
 class TestSelect(unittest.TestCase):
+
     def setUp(self):
         """
         Initialize the configuration
         """
 
         self.obs = OBS()
+        self.metatmpl = Template(self.obs._get_fixture_content('project-a-metalist.xml'))        
 
     def _get_fixture_path(self, filename):
         """
@@ -34,24 +38,18 @@ class TestSelect(unittest.TestCase):
         return os.path.join(os.getcwd(), 'tests/fixtures')
 
     @httpretty.activate
-    def test_select(self):
-        """
-        Test checking project status
-        """
-
-        from osclib.select_command import SelectCommand
-
-        # Register OBS
+    def test_old_frozen(self):
         self.obs.register_obs()
-
-        # old frozen
-        tmpl = Template(self.obs._get_fixture_content('project-a-metalist.xml'))
-        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': 1393152777})
+        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = self.metatmpl.substitute({'mtime': 1393152777})
         self.assertEqual(False, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash']))
         self.assertEqual(sys.stdout.getvalue(), "Freeze the prj first\n")
 
-        # make sure  the project is frozen recently for other tests
-        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': str(int(time.time()) - 1000) })
+    @httpretty.activate
+    def test_no_matches(self):
+        self.obs.register_obs()
+
+        # make sure the project is frozen recently for other tests
+        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = self.metatmpl.substitute({'mtime': str(int(time.time()) - 1000) })
 
         # search for requests
         self.obs.responses['GET']['/request'] = '<collection matches="0"/>'
@@ -61,3 +59,13 @@ class TestSelect(unittest.TestCase):
             SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash'])
 
         self.assertEqual(str(cm.exception), "No SR# found for: bash")
+
+    @httpretty.activate
+    def test_selected(self):
+        self.obs.register_obs()
+        # make sure the project is frozen recently for other tests
+        self.obs.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = self.metatmpl.substitute({'mtime': str(int(time.time()) - 1000) })
+
+        self.obs.responses['GET']['/request'] = '<collection matches="1"><request id="123"></request></collection>'
+        ret = SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash'])
+        self.assertEqual(True, ret)

@@ -634,6 +634,7 @@ class StagingAPI(object):
         self.change_review_state(request_id, 'accepted',
                                  by_group='factory-staging',
                                  message='Picked {}'.format(project))
+        return True
 
     def delete_to_prj(self, act, project):
         """
