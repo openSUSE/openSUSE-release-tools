@@ -874,26 +874,6 @@ def _check_repo_group(self, id_, reqs, opts):
             p.updated = True
         toignore.update(i)
 
-    # # Get all the Base:build packages (source and binary)
-    # base_build_bin = self._get_base_build_bin(opts)
-    # base_build_src = self._get_base_build_src(opts)
-    # for p in reqs:
-    #     # Be sure that if the package is in Base:build, all the
-    #     # dependecies are also in Base:build
-    #     if p.spackage in base_build_src:
-    #         # TODO - Check all the arch for this package
-    #         for arch in ('x86_64', 'i586'):
-    #             build_deps = set(self._get_buildinfo(opts, p.sproject, p.goodrepo, arch, p.spackage))
-    #             outliers = build_deps - base_build_bin[arch]
-    #             if outliers:
-    #                 if not p.updated:
-    #                     msg = 'This package is a Base:build and one of the dependencies is outside Base:build (%s)' % (', '.join(outliers))
-    #                     print 'DECLINED', msg
-    #                     self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
-    #                     p.updated = True
-    #                 else:
-    #                     print 'OUTLIERS (%s)' % arch, outliers
-
     # Detect cycles - We create the full graph from _builddepinfo.
     for arch in ('x86_64',):
         factory_graph = self._get_builddepinfo_graph(opts, arch=arch)
