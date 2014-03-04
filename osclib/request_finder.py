@@ -121,10 +121,12 @@ class RequestFinder:
 
         return ret
 
-    def find(self, pkgs):
+    def find(self, pkgs, include_project=True):
         """
         Search for all various mutations and return list of SR#s
         :param pkgs: mesh of argumets to search for
+        :param include_project: if True, include the search or request
+           inside a project
 
         This function is only called for its side effect.
         """
@@ -147,3 +149,15 @@ class RequestFinder:
         finder = cls(apiurl)
         finder.find(pkgs)
         return finder.srs
+
+    @classmethod
+    def find_single_sr(cls, pkg, apiurl):
+        """
+        Search for all various mutations and return a single SR#s.
+        :param pkg: a single SR|package to search
+        :param apiurl: OBS url
+        """
+        finder = cls(apiurl)
+        finder.find([pkg], include_project=False)
+        assert len(finder.srs) <= 1, 'Found more that one submit request'
+        return finder.srs.items()[0]

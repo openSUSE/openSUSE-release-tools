@@ -187,8 +187,10 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, 1
     elif cmd == 'check':
         min_args, max_args = 0, 2
-    elif cmd in ('select', 'unselect'):
+    elif cmd == 'select':
         min_args, max_args = 2, None
+    elif cmd == 'unselect':
+        min_args, max_args = 1, None
     elif cmd in ('list', 'cleanup_rings'):
         min_args, max_args = 0, 0
     else:
@@ -258,13 +260,17 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'accept':
         return AcceptCommand(api).perform(api. prj_from_letter(args[1]), opts.commit)
     elif cmd == 'unselect':
-        tprj = api.prj_from_letter(args[1])  # see issue 1784
-        for rq, rq_prj in RequestFinder.find_sr(args[2:], opts.apiurl).items():
-            api.rm_from_prj(tprj, request_id=rq)
-            api.add_review(rq, by_group='factory-staging',
-                           msg='Please recheck')
+        for rq_or_pkg in args[1:]:
+            rq, rq_prj = RequestFinder.find_single_sr(rq_or_pkg, opts.apiurl)
+            if 'staging' in rq_prj:
+                print('Unselecting "{}" from "{}"'.format(rq_or_pkg, rq_prj['staging']))
+                api.rm_from_prj(rq_prj['staging'], request_id=rq)
+                api.add_review(rq, by_group='factory-staging',
+                               msg='Please recheck')
+            else:
+                print('Can\'t unselect "{}" because is not in any staging project'.format(rq_or_pkg))
     elif cmd == 'select':
-        tprj = api. prj_from_letter(args[1])
+        tprj = api.prj_from_letter(args[1])
         return SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
     elif cmd == 'cleanup_rings':
         return CleanupRings(opts.apiurl).perform()
