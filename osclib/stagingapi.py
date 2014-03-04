@@ -221,7 +221,6 @@ class StagingAPI(object):
         # check if we can reduce it down by accepting some
         for rq in requests:
             self.accept_non_ring_request(rq)
-        # FIXME: dispatch to various staging projects automatically
 
     def get_prj_pseudometa(self, project):
         """
@@ -291,7 +290,6 @@ class StagingAPI(object):
         if append:
             data['requests'].append({'id': request_id, 'package': package})
         self.set_prj_pseudometa(project, data)
-        # FIXME Add sr to group request as well
 
     def get_request_id_for_package(self, project, package):
         """
