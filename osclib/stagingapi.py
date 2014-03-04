@@ -310,6 +310,7 @@ class StagingAPI(object):
         :param package: package we want to query for
         """
         data = self.get_prj_pseudometa(project)
+        request_id = int(request_id)
         for x in data['requests']:
             if x['id'] == request_id:
                 return x['package']
