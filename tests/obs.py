@@ -117,6 +117,8 @@ class OBS:
         self._link_sources()
         # Add packages
         self._pkg_sources()
+        # Build results
+        self._build_results()
         # Workaround
         self._ugly_hack()
 
@@ -182,6 +184,33 @@ class OBS:
         # Testing of rings
         self.responses['GET']['/source/openSUSE:Factory:Rings:0-Bootstrap'] = 'ring-0-project.xml'
         self.responses['GET']['/source/openSUSE:Factory:Rings:1-MinimalX'] = 'ring-1-project.xml'
+
+    def _build_results(self):
+        """
+        Mimic build results, B is broken, A works
+        """
+
+        def build_results(responses, request, uri):
+            ret_str='<resultlist state="c7856c90c70c53fae88aacec964b80c0">\n'
+            prj = re.match( r'.*/([^/]*)/_result',uri).group(1)
+            if prj in [ "openSUSE:Factory:Staging:B" ]:
+                states = ['failed', 'broken', 'building']
+            else:
+                states = ['excluded', 'succeeded']
+            for st in states:
+                if st in [ 'building' ]:
+                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj,st,st)
+                else:
+                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj,st,"published")
+                for dt in self.links_data:
+                    if self.links_data[dt]['prj'] == prj:
+                        ret_str += '    <status package="{0}" code="{1}" />\n'.format(self.links_data[dt]['pkg'], st)
+                ret_str += '  </result>\n'
+            ret_str += '</resultlist>\n'
+            return ret_str
+
+        self.responses['GET']['/build/openSUSE:Factory:Staging:A/_result'] = build_results
+        self.responses['GET']['/build/openSUSE:Factory:Staging:B/_result'] = build_results
 
     def _project_meta(self):
         # Load template
@@ -303,6 +332,22 @@ class OBS:
                     ret_str += responses['GET']['/request/' + rq]
                 ret_str += '</collection>'
                 return ret_str
+            # Searching for requests that has open review for staging project
+            if request.querystring.has_key(u'match') and re.match( r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0]):
+                prj_match = re.match( r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0])
+                prj = str(prj_match.group(1))
+                rqs = []
+                # Itereate through all requests
+                for rq in self.requests_data:
+                    # Find the ones matching the condition
+                    if self.requests_data[rq]['request'] == 'review' and self.requests_data[rq]['review'] == 'new' and self.requests_data[rq]['by'] == 'project' and self.requests_data[rq]['by_who'] == prj:
+                        rqs.append(rq)
+                # Create response
+                ret_str  = '<collection matches="' + str(len(rqs)) + '">\n'
+                for rq in rqs:
+                    ret_str += '  <request id="' + rq + '"/>\n'
+                ret_str += '</collection>'
+                return ret_str
             # We are searching for something else, we don't know the answer
             raise BaseException("No search results defined for " + pprint.pformat(request.querystring))
 
@@ -318,6 +363,7 @@ class OBS:
             # We are searching for something else, we don't know the answer
             raise BaseException("No search results defined for " + pprint.pformat(request.querystring))
         self.responses['GET']['/search/request'] = request_search
+        self.responses['GET']['/search/request/id'] = request_search
         self.responses['GET']['/search/project/id'] = id_project_search
 
     def register_obs(self):

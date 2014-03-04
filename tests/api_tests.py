@@ -7,6 +7,7 @@
 import sys
 import unittest
 import httpretty
+import mock
 
 from obs import OBS
 
@@ -168,6 +169,21 @@ class TestApiCalls(unittest.TestCase):
         # Pretend to be reviewed by other project
         self.assertEqual(self.obs.api.check_one_request(num,'xyz'),
                          'wine: missing reviews: openSUSE:Factory:Staging:B')
+
+    @httpretty.activate
+    def test_check_project_status(self):
+        self.obs.register_obs()
+
+        # Check the results
+        with mock.patch('oscs.StagingAPI.find_openqa_state', return_value="Nothing"):
+            broken_results =  ['At least following repositories is still building:',
+                               '    building/x86_64: building',
+                               'Following packages are broken:',
+                               '    wine (failed/x86_64): failed',
+                               '    wine (broken/x86_64): broken',
+                               'Nothing']
+            self.assertEqual(self.obs.api.check_project_status('openSUSE:Factory:Staging:B'), broken_results)
+            self.assertEqual(self.obs.api.check_project_status('openSUSE:Factory:Staging:A'), False)
 
     @httpretty.activate
     def test_rm_from_prj(self):
