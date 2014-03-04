@@ -44,7 +44,7 @@ class TestApiCalls(unittest.TestCase):
         ring_packages = {
             'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX',
-	    'wine': 'openSUSE:Factory:Rings:1-MinimalX',
+            'wine': 'openSUSE:Factory:Rings:1-MinimalX',
         }
 
         # Register OBS
