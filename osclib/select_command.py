@@ -10,7 +10,7 @@ class SelectCommand(object):
     def select_request(self, rq, rq_prj, move, from_):
         if 'staging' not in rq_prj:
             # Normal 'select' command
-            self.api.rq_to_prj(rq, self.tprj)
+            return self.api.rq_to_prj(rq, self.tprj)
         elif 'staging' in rq_prj and move:
             # 'select' command becomes a 'move'
             fprj = None
@@ -19,7 +19,7 @@ class SelectCommand(object):
             else:
                 fprj = rq_prj['staging']
             print('Moving "{}" from "{}" to "{}"'.format(rq, fprj, self.tprj))
-            self.api.move_between_project(fprj, rq, self.tprj)
+            return self.api.move_between_project(fprj, rq, self.tprj)
         elif 'staging' in rq_prj and not move:
             # Previously selected, but not explicit move
             msg = 'Request {} is actually in "{}".\n'
@@ -27,6 +27,7 @@ class SelectCommand(object):
             msg += 'Use --move modifier to move the request from "{}" to "{}"'
             msg = msg.format(rq_prj['staging'], self.tprj)
             print(msg)
+            return False
         else:
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
@@ -37,4 +38,10 @@ class SelectCommand(object):
         self.tprj = tprj
 
         for rq, rq_prj in RequestFinder.find_sr(requests, self.api.apiurl).items():
-            self.select_request(rq, rq_prj, move, from_)
+            if not self.select_request(rq, rq_prj, move, from_):
+                return False
+
+        # now make sure we enable the prj
+        self.api.build_switch_prj(tprj, 'enable')
+        return True
+
