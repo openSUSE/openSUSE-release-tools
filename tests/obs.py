@@ -9,6 +9,7 @@ import sys
 import contextlib
 import httpretty
 import xml.etree.ElementTree as ET
+import time
 # mock is part of python3.3
 try:
     import unittest.mock as mock
@@ -79,6 +80,8 @@ class OBS:
                              }
         self.st_project_data = { 'A': { 'project': 'openSUSE:Factory:Staging:A',
                                         'title': '', 'description': '' },
+                                 'U': { 'project': 'openSUSE:Factory:Staging:U',
+                                        'title': 'Unfrozen', 'description': '' },
                                  'B': { 'project': 'openSUSE:Factory:Staging:B',
                                         'title': 'wine',
                                         'description': 'requests:\n- {id: 333, package: wine}' }
@@ -181,6 +184,12 @@ class OBS:
         # Testing of rings
         self.responses['GET']['/source/openSUSE:Factory:Rings:0-Bootstrap'] = 'ring-0-project.xml'
         self.responses['GET']['/source/openSUSE:Factory:Rings:1-MinimalX'] = 'ring-1-project.xml'
+
+        # Testing of frozen packages
+        tmpl = Template(self._get_fixture_content('project-f-metalist.xml'))
+        self.responses['GET']['/source/openSUSE:Factory:Staging:B/_project'] = tmpl.substitute({'mtime': str(int(time.time()) - 100)})
+        self.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': str(int(time.time()) - 3600*24*356)})
+        self.responses['GET']['/source/openSUSE:Factory:Staging:U/_project'] = 'project-u-metalist.xml'
 
     def _build_results(self):
         """

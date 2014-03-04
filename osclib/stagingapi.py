@@ -335,14 +335,12 @@ class StagingAPI(object):
         :param msg: message for the log
         """
 
-        if package:
+        if not request_id:
             request_id = self.get_request_id_for_package(project, package)
-            if not request_id:  # already gone?
-                return
-        else:
+        if not package:
             package = self.get_package_for_request_id(project, request_id)
-            if not package:  # already gone?
-                return
+        if not package or not request_id:
+            return
 
         self._remove_package_from_prj_pseudometa(project, package)
         delete_package(self.apiurl, project, package, force=True, msg=msg)
