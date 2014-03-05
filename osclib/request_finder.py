@@ -100,10 +100,10 @@ class RequestFinder:
                 self.srs[int(request)]['staging'] = review
 
             if ret:
-                msg = 'There are multiple requests for package "{}": {}'
-                msg = msg.format(package, ', '.join(map(str, self.srs.keys())))
+                msg = 'There are multiple requests for package "{}": {} and {}'
+                msg = msg.format(package, ret, request)
                 raise oscerr.WrongArgs(msg)
-            ret = True
+            ret = request
 
         return ret
 
