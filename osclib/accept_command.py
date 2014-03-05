@@ -5,12 +5,11 @@ class AcceptCommand:
     def __init__(self, api):
         self.api = api
 
-    def perform(self, project, commit):
+    def perform(self, project):
         """
         Accept the staging LETTER for review and submit to factory
         Then disable the build to disabled
         :param project: staging project we are working with
-        :param commit: switch wether to commit the pkgs to factory right away or not
         """
         status = self.api.check_project_status(project)
 
@@ -26,10 +25,6 @@ class AcceptCommand:
             requests.append(req['id'])
 
         for req in requests:
-            # If we are not doing direct commit print out commands needed to accept it
-            if commit:
-                change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to factory')
-            else:
-                print('osc rq accept -m "Accept to factory" {}'.format(req))
+            change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to factory')
 
         self.api.build_switch_prj(project, 'disable')
