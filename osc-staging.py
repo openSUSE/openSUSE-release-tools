@@ -163,7 +163,7 @@ def do_staging(self, subcmd, opts, *args):
     "list" will pick the requests not in rings
 
     "select" will add requests to the project
-    "unselect" will remove them project - pushing them back to the backlog
+    "unselect" will remove from the project - pushing them back to the backlog
 
     Usage:
         osc staging check [--everything] REPO
@@ -172,7 +172,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging freeze PROJECT
         osc staging list
         osc staging select [--move [-from PROJECT]] LETTER REQUEST...
-        osc staging unselect LETTER REQUEST...
+        osc staging unselect REQUEST...
         osc staging accept [--commit] LETTER
         osc staging cleanup_rings
     """
@@ -263,8 +263,7 @@ def do_staging(self, subcmd, opts, *args):
         for rq, rq_prj in RequestFinder.find_staged_sr(args[1:], opts.apiurl, api).items():
             print('Unselecting "{}" from "{}"'.format(rq, rq_prj['staging']))
             api.rm_from_prj(rq_prj['staging'], request_id=rq)
-            api.add_review(rq, by_group='factory-staging',
-                           msg='Please recheck')
+            api.add_review(rq, by_group='factory-staging', msg='Please recheck')
     elif cmd == 'select':
         tprj = api.prj_from_letter(args[1])
         return SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
