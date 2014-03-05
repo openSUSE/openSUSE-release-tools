@@ -44,4 +44,3 @@ class SelectCommand(object):
         # now make sure we enable the prj
         self.api.build_switch_prj(tprj, 'enable')
         return True
-
