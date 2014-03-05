@@ -32,6 +32,18 @@ class RequestFinder:
         self.stagingapi = stagingapi
         self.srs = {}
 
+    def _filter_review_by_project(self, element, state):
+        reviews = [r.get('by_project')
+                   for r in element.findall('review')
+                   if r.get('by_project') and r.get('state') == state]
+        return reviews
+
+    def _new_review_by_project(self, request, element):
+        reviews = self._filter_review_by_project(element, 'new')
+        assert len(reviews) <= 1, 'Request "{}" have more than one review by project "{}"'.format(request,
+                                                                                                  reviews)
+        return reviews[0] if reviews else None
+
     def find_request_id(self, request):
         """
         Look up the request by ID to verify if it is correct
@@ -57,10 +69,9 @@ class RequestFinder:
             raise oscerr.WrongArgs(msg)
         self.srs[int(request)] = {'project': project}
 
-        for review in root.findall('review'):
-            if review.get('by_project'):
-                self.srs[int(request)]['staging'] = review.get('by_project')
-                break
+        review = self._new_review_by_project(request, root)
+        if review:
+            self.srs[int(request)]['staging'] = review
 
         return True
 
@@ -83,10 +94,11 @@ class RequestFinder:
             # TODO: check the package matches - OBS is case insensitive
             request = int(sr.get('id'))
             self.srs[request] = {'project': 'openSUSE:Factory'}
-            for review in sr.findall('review'):
-                if review.get('by_project'):
-                    self.srs[request]['staging'] = review.get('by_project')
-                    break
+
+            review = self._new_review_by_project(request, sr)
+            if review:
+                self.srs[int(request)]['staging'] = review
+
             if ret:
                 msg = 'There are multiple requests for package "{}": {}'
                 msg = msg.format(package, ', '.join(map(str, self.srs.keys())))
@@ -114,10 +126,9 @@ class RequestFinder:
                 if src is not None and src.get('project') == source_project:
                     request = int(sr.attrib['id'])
                     self.srs[request] = {'project': 'openSUSE:Factory'}
-                    for review in sr.findall('review'):
-                        if review.get('by_project'):
-                            self.srs[request]['staging'] = review.get('by_project')
-                            break
+                    review = self._new_review_by_project(request, sr)
+                    if review:
+                        self.srs[int(request)]['staging'] = review
                     ret = True
 
         return ret
