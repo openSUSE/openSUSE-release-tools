@@ -12,7 +12,7 @@ STG_PREFIX = 'openSUSE:Factory:Staging:'
 
 class RequestFinder:
 
-    def __init__(self, apiurl):
+    def __init__(self, apiurl, stagingapi):
         # Store the list of submit request together with the source project
         #
         # Example:
@@ -29,6 +29,7 @@ class RequestFinder:
         #     }
         #
         self.apiurl = apiurl
+        self.stagingapi = stagingapi
         self.srs = {}
 
     def find_request_id(self, request):
@@ -137,13 +138,53 @@ class RequestFinder:
                 continue
             raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
+    def find_via_stagingapi(self, pkgs):
+        """
+        Search for all various mutations and return list of SR#s. Use
+        and instance of StagingAPI to direct the search, this makes
+        sure that the SR# are inside a staging project.
+        :param pkgs: mesh of argumets to search for
+
+        This function is only called for its side effect.
+        """
+        def _is_int(x):
+            return isinstance(x, int) or x.isdigit()
+
+        for p in pkgs:
+            found = False
+            for staging in self.stagingapi.get_staging_projects():
+                if _is_int(p) and self.stagingapi.get_package_for_request_id(staging, p):
+                    self.srs[int(p)] = {'staging': staging}
+                    found = True
+                    continue
+                else:
+                    rq = self.stagingapi.get_request_id_for_package(staging, p)
+                    if rq:
+                        self.srs[rq] = {'staging': staging}
+                        found = True
+                        continue
+            if not found:
+                raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
+
     @classmethod
-    def find_sr(cls, pkgs, apiurl):
+    def find_sr(cls, pkgs, apiurl, stagingapi=None):
         """
         Search for all various mutations and return list of SR#s
         :param pkgs: mesh of argumets to search for
         :param apiurl: OBS url
         """
-        finder = cls(apiurl)
+        finder = cls(apiurl, stagingapi)
         finder.find(pkgs)
+        return finder.srs
+
+    @classmethod
+    def find_staged_sr(cls, pkgs, apiurl, stagingapi):
+        """
+        Search for all various mutations and return a single SR#s.
+        :param pkgs: mesh of argumets to search for (SR#|package name)
+        :param apiurl: OBS url
+        :param stagingapi: StagingAPI instance
+        """
+        finder = cls(apiurl, stagingapi)
+        finder.find_via_stagingapi(pkgs)
         return finder.srs
