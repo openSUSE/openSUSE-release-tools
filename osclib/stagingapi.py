@@ -423,7 +423,6 @@ class StagingAPI(object):
 
         return False
 
-
     def check_project_status(self, project, verbose=False):
         """
         Checks a staging project for acceptance. Checks all open
@@ -489,13 +488,13 @@ class StagingAPI(object):
         :param project: project to check
         :return age in days(float) of the last update
         """
-        u = self.makeurl(['source', project, '_project'], { 'meta': '1' })
+        u = self.makeurl(['source', project, '_project'], {'meta': '1'})
         f = http_GET(u)
         root = ET.parse(f).getroot()
         for entry in root.findall('entry'):
             if entry.get('name') == '_frozenlinks':
                 return (time.time() - float(entry.get('mtime')))/3600/24
-        return 100000 # quite some!
+        return 100000  # quite some!
 
     def find_openqa_state(self, project):
         """
@@ -796,7 +795,7 @@ class StagingAPI(object):
 
         data = self.get_prj_pseudometa(project)
         if data['requests']:
-            return True # already has content
+            return True  # already has content
 
         # young enough
         if self.days_since_last_freeze(project) < 6.5:
