@@ -130,7 +130,7 @@ class TestApiCalls(unittest.TestCase):
         Test if we get proper project, name and revision from the staging informations
         """
 
-        package_info = {'project': 'devel:wine',
+        package_info = {'project': 'home:Admin',
                         'rev': '7b98ac01b8071d63a402fa99dc79331c',
                         'srcmd5': '7b98ac01b8071d63a402fa99dc79331c',
                         'package': 'wine'}
@@ -378,3 +378,13 @@ class TestApiCalls(unittest.TestCase):
         # U == unfrozen
         self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:U'), False)
 
+    @httpretty.activate
+    def test_move(self):
+
+        # Register OBS
+        self.obs.register_obs()
+
+        init_data = self.obs.api.get_package_information('openSUSE:Factory:Staging:B', 'wine')
+        self.obs.api.move_between_project('openSUSE:Factory:Staging:B', 333, 'openSUSE:Factory:Staging:A')
+        test_data = self.obs.api.get_package_information('openSUSE:Factory:Staging:A', 'wine')
+        self.assertEqual(init_data, test_data)
