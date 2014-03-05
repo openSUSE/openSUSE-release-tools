@@ -26,6 +26,8 @@ class SelectCommand(object):
         package = self._package(request)
 
         for staging in self.api.get_staging_projects():
+            if staging == self.tprj: # requests for the same project are fine
+                continue
             for rq in self.api.get_prj_pseudometa(staging)['requests']:
                 if rq['id'] != request and rq['package'] == package:
                     return (rq['id'], package, staging)
@@ -50,13 +52,13 @@ class SelectCommand(object):
             return self.api.move_between_project(fprj, rq, self.tprj)
         elif 'staging' in rq_prj and not move:
             # Previously selected, but not explicit move
-            msg = 'Request {} is actually in "{}".\n'
+            msg = 'Request {} is already tracked in "{}".'
             msg = msg.format(rq, rq_prj['staging'])
             if rq_prj['staging'] != self.tprj:
-                msg += 'Use --move modifier to move the request from "{}" to "{}"'
+                msg += '\nUse --move modifier to move the request from "{}" to "{}"'
                 msg = msg.format(rq_prj['staging'], self.tprj)
             print(msg)
-            return False
+            return True
         else:
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
