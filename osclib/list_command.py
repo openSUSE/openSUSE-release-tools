@@ -26,25 +26,29 @@ class ListCommand:
         for letter, reqs in self.supersedes.items():
             print("osc staging select {} {}".format(letter, ' '.join(reqs)))
 
-    def one_request(self, rq):
-        id = int(rq.get('id'))
-        actions = rq.findall('action')
+    def one_request(self, request):
+        rq_id = int(request.get('id'))
+        actions = request.findall('action')
         act = actions[0]
 
-        # tprj = act.find('target').get('project')
         tpkg = act.find('target').get('package')
 
-        stage_info = self.packages_staged.get(tpkg, ('', 0))
-        if stage_info[1] != 0 and int(stage_info[1]) != id:
-            reqs = self.supersedes.get(stage_info[0], [])
-            reqs.append(str(id))
-            self.supersedes[stage_info[0]] = reqs
+        # Replace superseded
+        stage_info = self.packages_staged.get(tpkg, {'prj': '', 'rq_id': 0})
+        if stage_info['rq_id'] != 0 and int(stage_info['rq_id']) != rq_id:
+            # Remove the old request
+            self.api.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'],
+                                 review='declined', msg='Replaced by newer request')
+            # Add the new one that should be replacing it
+            self.api.rq_to_prj(rq_id, stage_info['prj'])
+            # Update local data structure
+            self.packages_staged[tpkg]['rq_id'] = rq_id
             return
 
         ring = self.api.ring_packages.get(tpkg)
         if ring:
             print("Request(%d): %s -> %s" % (id, tpkg, ring))
             return
-            
+
         # no ring, no group -> ok
         self.api.change_review_state(id, 'accepted', by_group='factory-staging', message='ok')

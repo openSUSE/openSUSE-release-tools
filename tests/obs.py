@@ -88,10 +88,13 @@ class OBS:
                                }
         self.links_data = { 'openSUSE:Factory:Staging:B/wine':
                                     { 'prj': 'openSUSE:Factory:Staging:B',
-                                      'pkg': 'wine', 'devprj': 'devel:wine' }
+                                      'pkg': 'wine', 'devprj': 'home:Admin' }
                                     }
         self.pkg_data = { 'home:Admin/gcc':
                                     { 'rev': '1', 'vrev': '1', 'name': 'gcc',
+                                      'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb' },
+                          'home:Admin/wine':
+                                    { 'rev': '1', 'vrev': '1', 'name': 'wine',
                                       'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb' }
                                     }
 
@@ -300,12 +303,15 @@ class OBS:
             return "Ok"
 
         def create_link(responses, request, uri):
+            tmpl = Template(self._get_fixture_content('linksource.xml'))
             key = re.match( r'.*/source/(.+)/_link',uri).group(1)
             match = re.match( r'(.+)/(.+)', key)
             xml = ET.fromstring(str(request.body))
             self.links_data[str(key)] = { 'prj': match.group(1), 'pkg': match.group(2),
                                           'devprj': xml.get('project')
                                         }
+            self.responses['GET']['/source/' + key] = tmpl.substitute(self.links_data[key])
+            self.responses['DELETE']['/source/' + key] = delete_link
             return "Ok"
 
         # Register methods for requests
