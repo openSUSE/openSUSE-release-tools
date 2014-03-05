@@ -54,8 +54,8 @@ class ListCommand:
 
         ring = self.api.ring_packages.get(tpkg)
         if ring:
-            print("Request(%d): %s -> %s" % (id, tpkg, ring))
+            print("Request(%d): %s -> %s" % (rq_id, tpkg, ring))
             return
 
         # no ring, no group -> ok
-        self.api.change_review_state(id, 'accepted', by_group='factory-staging', message='ok')
+        self.api.change_review_state(rq_id, 'accepted', by_group='factory-staging', message='ok')
