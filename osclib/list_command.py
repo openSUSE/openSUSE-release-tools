@@ -9,6 +9,9 @@ class ListCommand:
         self.api = api
 
     def perform(self):
+        """
+        Perform the list command
+        """
         self.packages_staged = dict()
         for prj in self.api.get_staging_projects():
             meta = self.api.get_prj_pseudometa(prj)
@@ -27,6 +30,10 @@ class ListCommand:
             print("osc staging select {} {}".format(letter, ' '.join(reqs)))
 
     def one_request(self, request):
+        """
+        Process one request potentially to be listed
+        :param request: request to process
+        """
         rq_id = int(request.get('id'))
         actions = request.findall('action')
         act = actions[0]
