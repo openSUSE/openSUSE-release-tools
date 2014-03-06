@@ -73,5 +73,6 @@ class SelectCommand(object):
                 return False
 
         # now make sure we enable the prj
+        # FIXME: we should build-enable ONLY if we have some ring package
         self.api.build_switch_prj(tprj, 'enable')
         return True
