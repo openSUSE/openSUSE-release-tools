@@ -27,7 +27,7 @@ class SelectCommand(object):
         package = self._package(request)
 
         for staging in self.api.get_staging_projects():
-            if staging == self.tprj: # requests for the same project are fine
+            if staging == self.tprj:  # requests for the same project are fine
                 continue
             for rq in self.api.get_prj_pseudometa(staging)['requests']:
                 if rq['id'] != request and rq['package'] == package:
@@ -47,8 +47,14 @@ class SelectCommand(object):
             else:
                 # supersede = (new_rq, package, project)
                 fprj = rq_prj['staging'] if not supersede else supersede[2]
+
             if supersede:
                 print('"{} ({}) is superseded by {}'.format(rq, supersede[1], supersede[0]))
+
+            if fprj == self.tprj:
+                print('"{}" is currently in "{}"'.format(rq, self.tprj))
+                return False
+
             print('Moving "{}" from "{}" to "{}"'.format(rq, fprj, self.tprj))
             return self.api.move_between_project(fprj, rq, self.tprj)
         elif 'staging' in rq_prj and not move:
