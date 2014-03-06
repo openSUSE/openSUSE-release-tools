@@ -345,7 +345,7 @@ class StagingAPI(object):
 
         self._remove_package_from_prj_pseudometa(project, package)
         delete_package(self.apiurl, project, package, force=True, msg=msg)
-        self.set_review(request_id, project, state=review)
+        self.set_review(request_id, project, state=review, msg=msg)
 
     def create_package_container(self, project, package, disable_build=False):
         """
@@ -751,7 +751,7 @@ class StagingAPI(object):
         url = self.makeurl(['request', str(request_id)], query)
         http_POST(url, data=msg)
 
-    def set_review(self, request_id, project, state='accepted'):
+    def set_review(self, request_id, project, state='accepted', msg=None):
         """
         Sets review for request done by project
         :param request_id: request to change review for
@@ -760,15 +760,20 @@ class StagingAPI(object):
         req = get_request(self.apiurl, str(request_id))
         if not req:
             raise oscerr.WrongArgs('Request {} not found'.format(request_id))
+        # don't try to change reviews if the request is dead
+        if not req.state.name in ['new', 'review']:
+            return
         cont = False
         for i in req.reviews:
             if i.by_project == project and i.state == 'new':
                 cont = True
-        if cont:
+        if not cont:
+            return
+        if not msg:
             msg = 'Reviewed by staging project "{}" with result: "{}"'
             msg = msg.format(project, state)
-            self.change_review_state(request_id, state, by_project=project,
-                                     message=msg)
+        self.change_review_state(request_id, state, by_project=project,
+                                 message=msg)
 
     def build_switch_prj(self, prj, state):
         url = self.makeurl(['source', prj, '_meta'])
