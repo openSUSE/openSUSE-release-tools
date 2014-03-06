@@ -16,18 +16,15 @@ class ListCommand:
         for prj in self.api.get_staging_projects():
             meta = self.api.get_prj_pseudometa(prj)
             for req in meta['requests']:
-                self.packages_staged[req['package']] = (prj[-1], req['id'])
+                self.packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id'] }
 
         where = "@by_group='factory-staging'+and+@state='new'"
 
         url = makeurl(self.api.apiurl, ['search','request'], "match=state/@name='review'+and+review["+where+"]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
-        self.supersedes = dict()
         for rq in root.findall('request'):
             self.one_request(rq)
-        for letter, reqs in self.supersedes.items():
-            print("osc staging select {} {}".format(letter, ' '.join(reqs)))
 
     def one_request(self, request):
         """
