@@ -3,6 +3,8 @@
 #
 # (C) 2014 mhrusecky@suse.cz, openSUSE.org
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
+# (C) 2014 aplanas@suse.de, openSUSE.org
+# (C) 2014 coolo@suse.de, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
 import os
@@ -39,94 +41,6 @@ def _print_version(self):
     print(self.OSC_STAGING_VERSION)
     quit(0)
 
-
-def _get_changed(opts, project, everything):
-    ret = []
-    # Check for local changes
-    for pkg in meta_get_packagelist(opts.apiurl, project):
-        if len(ret) != 0 and not everything:
-            break
-        f = http_GET(makeurl(opts.apiurl, ['source', project, pkg]))
-        linkinfo = ET.parse(f).getroot().find('linkinfo')
-        if linkinfo is None:
-            ret.append({'pkg': pkg, 'code': 'NOT_LINK',
-                        'msg': 'Not a source link'})
-            continue
-        if linkinfo.get('error'):
-            ret.append({'pkg': pkg, 'code': 'BROKEN',
-                        'msg': 'Broken source link'})
-            continue
-        t = linkinfo.get('project')
-        p = linkinfo.get('package')
-        r = linkinfo.get('revision')
-        if server_diff(opts.apiurl, t, p, r, project, pkg, None, True):
-            ret.append({
-                'pkg': pkg,
-                'code': 'MODIFIED',
-                'msg': 'Has local modifications',
-                'pprj': t,
-                'ppkg': p
-            })
-            continue
-    return ret
-
-
-def _staging_remove(self, project, opts):
-    """
-    Remove staging project.
-    :param project: staging project to delete
-    :param opts: pointer to options
-    """
-    chng = _get_changed(opts, project, True)
-    if len(chng) > 0:
-        print('Staging project "%s" is not clean:' % project)
-        print('')
-        for pair in chng:
-            print(' * %s : %s' % (pair['pkg'], pair['msg']))
-        print('')
-        print('Really delete? (N/y)')
-        answer = sys.stdin.readline()
-        if not re.search("^\s*[Yy]", answer):
-            print('Aborting...')
-            exit(1)
-    delete_project(opts.apiurl, project, force=True, msg=None)
-    print("Deleted.")
-    return
-
-
-def _staging_submit_devel(self, project, opts):
-    """
-    Generate new review requests for devel-projects based on our
-    staging changes.
-    :param project: staging project to submit into devel projects
-    """
-    chng = _get_changed(opts, project, True)
-    msg = "Fixes from staging project %s" % project
-    if opts.message is not None:
-        msg = opts.message
-    if len(chng) > 0:
-        for pair in chng:
-            if pair['code'] != 'MODIFIED':
-                print('Error: Package "%s": %s' % (pair['pkg'], pair['msg']))
-            else:
-                print('Sending changes back %s/%s -> %s/%s' % (project, pair['pkg'], pair['pprj'], pair['ppkg']))
-                action_xml = '<request>'
-                action_xml += '   <action type="submit"> <source project="%s" package="%s" /> <target project="%s" package="%s" />' % (project, pair['pkg'], pair['pprj'], pair['ppkg'])
-                action_xml += '   </action>'
-                action_xml += '   <state name="new"/> <description>%s</description>' % msg
-                action_xml += '</request>'
-
-                u = makeurl(opts.apiurl, ['request'],
-                            query='cmd=create&addrevision=1')
-                f = http_POST(u, data=action_xml)
-
-                root = ET.parse(f).getroot()
-                print("Created request %s" % (root.get('id')))
-    else:
-        print('No changes to submit')
-    return
-
-
 @cmdln.option('-e', '--everything', action='store_true',
               help='during check do not stop on first first issue and show them all')
 @cmdln.option('-p', '--parent', metavar='TARGETPROJECT',
@@ -144,14 +58,6 @@ def do_staging(self, subcmd, opts, *args):
 
     "check" will check if all packages are links without changes
 
-    "remove" (or "r") will delete the staging project into submit
-        requests for openSUSE:Factory
-
-    "submit-devel" (or "s") will create review requests for changed
-        packages in staging project into their respective devel
-        projects to obtain approval from maitnainers for pushing the
-        changes to openSUSE:Factory
-
     "freeze" will freeze the sources of the project's links (not
         affecting the packages actually in)
 
@@ -165,8 +71,6 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging check [--everything] REPO
-        osc staging remove REPO
-        osc staging submit-devel [-m message] REPO
         osc staging freeze PROJECT
         osc staging list
         osc staging select [--move [-from PROJECT]] LETTER REQUEST...
@@ -245,12 +149,6 @@ def do_staging(self, subcmd, opts, *args):
                 print(' ++ Acceptable staging project')
             print('')
         return True
-    elif cmd in ('remove', 'r'):
-        project = args[1]
-        self._staging_remove(project, opts)
-    elif cmd in ('submit-devel', 's'):
-        project = args[1]
-        self._staging_submit_devel(project, opts)
     elif cmd == 'freeze':
         import osclib.freeze_command
         for prj in args[1:]:
