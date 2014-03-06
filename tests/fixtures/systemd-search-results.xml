@@ -1,0 +1,72 @@
+<collection matches="1">
+  <request id="123">
+  <action type="submit">
+    <source project="Base:System" package="systemd" rev="536"/>
+    <target project="openSUSE:Factory" package="systemd"/>
+  </action>
+  <state name="review" who="coolo" when="2014-03-05T15:37:34">
+    <comment>Being evaluated by staging project "openSUSE:Factory:Staging:D"</comment>
+  </state>
+  <review state="accepted" when="2014-03-04T10:58:36" who="factory-auto" by_group="factory-auto">
+    <comment>Check script succeeded</comment>
+  </review>
+  <review state="accepted" when="2014-03-04T11:03:42" who="dimstar" by_group="opensuse-review-team">
+    <comment>ok</comment>
+  </review>
+  <review state="accepted" when="2014-03-04T11:03:43" who="factory-repo-checker" by_user="factory-repo-checker">
+    <comment>Builds for repo openSUSE_Factory</comment>
+  </review>
+  <review state="accepted" when="2014-03-04T11:03:43" who="scarabeus_iv" by_group="factory-staging">
+    <comment/>
+  </review>
+  <review state="accepted" when="2014-03-04T11:27:50" who="coolo" by_project="openSUSE:Factory:Staging:B">
+    <comment/>
+  </review>
+  <review state="new" by_project="openSUSE:Factory:Staging:D">
+    <comment>Being evaluated by staging project "openSUSE:Factory:Staging:D"</comment>
+  </review>
+  <history name="review" who="WernerFink" when="2014-03-04T10:58:36"/>
+  <history name="review" who="factory-auto" when="2014-03-04T11:03:42">
+    <comment>Please review sources</comment>
+  </history>
+  <history name="review" who="factory-auto" when="2014-03-04T11:03:43">
+    <comment>Please review build success</comment>
+  </history>
+  <history name="review" who="factory-auto" when="2014-03-04T11:03:43">
+    <comment>Pick Staging Project</comment>
+  </history>
+  <history name="review" who="scarabeus_iv" when="2014-03-04T11:27:50">
+    <comment>Being evaluated by staging project "openSUSE:Factory:Staging:B"</comment>
+  </history>
+  <description>- Make patch 1006-udev-always-rename-network.patch work again
+  and add it again. 
+
+- address missing owner functionality in systemd-tmpfiles (fate#314974)
+  1022-systemd-tmpfiles-ownerkeep.patch
+
+- Generate the bash completion files on the fly for th ecase of
+  not having the package bash-completion around 
+
+- Update to Release v210 
+  + systemd will now relabel /dev after loading the SMACK policy
+    according to SMACK rules.
+  + A new unit file option AppArmoreProfile= has been added to
+    set the AppArmor profile for the processes of a unit.
+  + A new condition check ConditionArchitecture= has been added
+    to conditionalize units based on the system architecture, as
+    reported by uname()'s "machine" field.
+  + systemd-networkd now supports matching on the system
+    virtualization, architecture, kernel command line, host name
+    and machine ID.
+  + logind is now a lot more aggressive when suspending the
+    machine due to a closed laptop lid.
+  + logind will now watch SW_DOCK switches and inhibit reaction
+    to the lid switch if it is pressed.
+  + nspawn will now make use of the devices cgroup controller by
+    default, and only permit creation of and access to the usual
+    API device nodes like /dev/null or /dev/random, as well as
+    access to (but not creation of) the pty devices.
+  + systemd will now understand the usual M, K, G, T suffixes
+    according to SI conventions (i.e. to the base 1000) when</description>
+</request>
+</collection>

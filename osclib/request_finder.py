@@ -93,17 +93,24 @@ class RequestFinder:
         for sr in root.findall('request'):
             # TODO: check the package matches - OBS is case insensitive
             request = int(sr.get('id'))
-            self.srs[request] = {'project': 'openSUSE:Factory'}
+            state = sr.find('state').get('name')
+
+            self.srs[request] = {'project': 'openSUSE:Factory', 'state': state }
 
             review = self._new_review_by_project(request, sr)
             if review:
                 self.srs[int(request)]['staging'] = review
 
             if ret:
-                msg = 'There are multiple requests for package "{}": {}'
-                msg = msg.format(package, ', '.join(map(str, self.srs.keys())))
-                raise oscerr.WrongArgs(msg)
-            ret = True
+                if self.srs[ret]['state'] == 'declined':
+                    # ignore previous requests if they are declined
+                    # if they are the last one, it's fine to return them
+                    del self.srs[ret]
+                else:
+                    msg = 'There are multiple requests for package "{}": {} and {}'
+                    msg = msg.format(package, ret, request)
+                    raise oscerr.WrongArgs(msg)
+            ret = request
 
         return ret
 
