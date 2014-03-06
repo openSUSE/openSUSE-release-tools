@@ -1,7 +1,7 @@
 from osc.core import change_request_state
 
 
-class AcceptCommand:
+class AcceptCommand(object):
     def __init__(self, api):
         self.api = api
 

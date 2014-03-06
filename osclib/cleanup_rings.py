@@ -4,8 +4,7 @@ from osc.core import makeurl
 from osc.core import http_GET
 
 
-class CleanupRings:
-
+class CleanupRings(object):
     def __init__(self, apiurl):
         self.bin2src = dict()
         self.pkgdeps = dict()
@@ -25,7 +24,7 @@ class CleanupRings:
             linked = si.find('linked')
             if not linked is None and linked.get('project') != 'openSUSE:Factory':
                 if not linked.get('project').startswith('openSUSE:Factory:Rings:'):
-                    print ET.tostring(si)
+                    print(ET.tostring(si))
                 self.links[linked.get('package')] = si.get('package')
 
     def fill_pkgdeps(self, prj, repo, arch):
@@ -42,7 +41,7 @@ class CleanupRings:
             for subpkg in package.findall('subpkg'):
                 subpkg = subpkg.text
                 if self.bin2src.has_key(subpkg):
-                    print "bin $s defined twice $prj $source - $bin2src{$s}\n"
+                    print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, source)
                 self.bin2src[subpkg] = source
 
         for package in root.findall('package'):
@@ -53,7 +52,7 @@ class CleanupRings:
                         for letter in range(ord('a'), ord('z') + 1):
                             self.pkgdeps['texlive-specs-' + chr(letter)] = 'texlive-specs-' + chr(letter)
                     else:
-                        print "PKG NOT THERE", pkg.text
+                        print('Package {} not found in place'.format(pkg.text))
                     continue
                 b = self.bin2src[pkg.text]
                 self.pkgdeps[b] = source
@@ -64,12 +63,12 @@ class CleanupRings:
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
             if not repostate in ['unpublished', 'published']:
-                print "Repo %s/%s is in state %s" % (repo.get('project'), repo.get('repository'), repostate)
+                print('Repo {}/{} is in state {}'.format(repo.get('project'), repo.get('repository'), repostate)
                 return False
             for package in repo.findall('status'):
                 code = package.get('code')
                 if not code in ['succeeded', 'excluded']:
-                    print "Package %s/%s/%s is %s" % (repo.get('project'), repo.get('repository'), package.get('package'), code)
+                    print('Package {}/{}/{} is {}'.format(repo.get('project'), repo.get('repository'), package.get('package'), code)
                     return False
 
         self.find_inner_ring_links(prj)
@@ -79,9 +78,11 @@ class CleanupRings:
             url = makeurl(self.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'] )
             root = ET.parse(http_GET(url)).getroot()
             for bdep in root.findall('bdep'):
-                if not bdep.attrib.has_key('name'): continue
+                if not bdep.attrib.has_key('name'):
+                    continue
                 b = bdep.attrib['name']
-                if not self.bin2src.has_key(b): continue
+                if not self.bin2src.has_key(b):
+                    continue
                 b = self.bin2src[b]
                 self.pkgdeps[b] = 'MYdvd'
 
@@ -101,11 +102,8 @@ class CleanupRings:
                         b = self.bin2src[prein]
                         self.pkgdeps[b] = 'MYinstall'
 
-        #print self.sources, self.bin2src, self.pkgdeps
-
         for source in self.sources:
-            #   next if ($key =~ m/^MY/ || $key =~ m/^texlive-specs-/ || $key =~ m/^kernel-/);
             if not self.pkgdeps.has_key(source) and not self.links.has_key(source):
-                print "osc rdelete -m cleanup", prj, source
+                print('osc rdelete -m cleanup {} {}'.format(prj, source)
                 if nextprj:
-                    print "osc linkpac -c openSUSE:Factory", source, nextprj
+                    print('osc linkpac -c openSUSE:Factory').format(source, nextprj)
