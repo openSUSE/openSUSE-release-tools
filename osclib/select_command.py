@@ -26,7 +26,7 @@ class SelectCommand(object):
         package = self._package(request)
 
         for staging in self.api.get_staging_projects():
-            if staging == self.tprj: # requests for the same project are fine
+            if staging == self.tprj:  # requests for the same project are fine
                 continue
             for rq in self.api.get_prj_pseudometa(staging)['requests']:
                 if rq['id'] != request and rq['package'] == package:

@@ -103,7 +103,7 @@ class RequestFinder:
             request = int(sr.get('id'))
             state = sr.find('state').get('name')
 
-            self.srs[request] = {'project': 'openSUSE:Factory', 'state': state }
+            self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
             review = self._new_review_by_project(request, sr)
             if review:
