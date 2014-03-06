@@ -41,7 +41,7 @@ class CleanupRings(object):
             for subpkg in package.findall('subpkg'):
                 subpkg = subpkg.text
                 if self.bin2src.has_key(subpkg):
-                    print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, source)
+                    print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, source))
                 self.bin2src[subpkg] = source
 
         for package in root.findall('package'):
@@ -63,12 +63,12 @@ class CleanupRings(object):
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
             if not repostate in ['unpublished', 'published']:
-                print('Repo {}/{} is in state {}'.format(repo.get('project'), repo.get('repository'), repostate)
+                print('Repo {}/{} is in state {}'.format(repo.get('project'), repo.get('repository'), repostate))
                 return False
             for package in repo.findall('status'):
                 code = package.get('code')
                 if not code in ['succeeded', 'excluded']:
-                    print('Package {}/{}/{} is {}'.format(repo.get('project'), repo.get('repository'), package.get('package'), code)
+                    print('Package {}/{}/{} is {}'.format(repo.get('project'), repo.get('repository'), package.get('package'), code))
                     return False
 
         self.find_inner_ring_links(prj)
@@ -104,6 +104,6 @@ class CleanupRings(object):
 
         for source in self.sources:
             if not self.pkgdeps.has_key(source) and not self.links.has_key(source):
-                print('osc rdelete -m cleanup {} {}'.format(prj, source)
+                print('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
                     print('osc linkpac -c openSUSE:Factory').format(source, nextprj)
