@@ -46,8 +46,14 @@ class SelectCommand(object):
             else:
                 # supersede = (new_rq, package, project)
                 fprj = rq_prj['staging'] if not supersede else supersede[2]
+
             if supersede:
                 print('"{} ({}) is superseded by {}'.format(rq, supersede[1], supersede[0]))
+
+            if fprj == self.tprj:
+                print('"{}" is currently in "{}"'.format(rq, self.tprj))
+                return False
+
             print('Moving "{}" from "{}" to "{}"'.format(rq, fprj, self.tprj))
             return self.api.move_between_project(fprj, rq, self.tprj)
         elif 'staging' in rq_prj and not move:
