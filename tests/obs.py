@@ -6,15 +6,9 @@
 
 import os
 import sys
-import contextlib
 import httpretty
 import xml.etree.ElementTree as ET
 import time
-# mock is part of python3.3
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
 from string import Template
 import oscs
@@ -31,7 +25,8 @@ if PY3:
 else:
     string_types = basestring,
 
-class OBS:
+
+class OBS(object):
     """
     Class trying to simulate a simple OBS
     """
@@ -64,45 +59,40 @@ class OBS:
         """
         Resets states
         """
+        # XXX TODO Write fixtures in an external file, or recreate
+        # this data from other fixtures
         # Initial request data
-        self.requests_data = { '123': { 'request': 'new', 'review': 'accepted',
-                                        'who': 'Admin', 'by': 'group', 'id': '123',
-                                        'by_who': 'opensuse-review-team',
-                                        'package': 'gcc' },
-                               '321': { 'request': 'review', 'review': 'new',
-                                        'who': 'Admin', 'by': 'group', 'id': '321',
-                                        'by_who': 'factory-staging',
-                                        'package': 'puppet' },
-                               '333': { 'request': 'review', 'review': 'new',
-                                        'who': 'Admin', 'by': 'project', 'id': '333',
-                                        'by_who': 'openSUSE:Factory:Staging:B',
-                                        'package': 'wine' }
-                             }
-        self.st_project_data = { 'A': { 'project': 'openSUSE:Factory:Staging:A',
-                                        'title': '', 'description': '' },
-                                 'U': { 'project': 'openSUSE:Factory:Staging:U',
-                                        'title': 'Unfrozen', 'description': '' },
-                                 'B': { 'project': 'openSUSE:Factory:Staging:B',
-                                        'title': 'wine',
-                                        'description': 'requests:\n- {id: 333, package: wine}' }
-                               }
-        self.links_data = { 'openSUSE:Factory:Staging:B/wine':
-                                    { 'prj': 'openSUSE:Factory:Staging:B',
-                                      'pkg': 'wine', 'devprj': 'home:Admin' }
-                                    }
-        self.pkg_data = { 'home:Admin/gcc':
-                                    { 'rev': '1', 'vrev': '1', 'name': 'gcc',
-                                      'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb' },
-                          'home:Admin/wine':
-                                    { 'rev': '1', 'vrev': '1', 'name': 'wine',
-                                      'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb' }
-                                    }
+        self.requests_data = {
+            '123': {'request': 'new', 'review': 'accepted', 'who': 'Admin', 'by': 'group',
+                    'id': '123', 'by_who': 'opensuse-review-team', 'package': 'gcc'},
+            '321': {'request': 'review', 'review': 'new', 'who': 'Admin', 'by': 'group',
+                    'id': '321', 'by_who': 'factory-staging', 'package': 'puppet'},
+            '333': {'request': 'review', 'review': 'new', 'who': 'Admin', 'by': 'project',
+                    'id': '333', 'by_who': 'openSUSE:Factory:Staging:B', 'package': 'wine'}
+        }
+        self.st_project_data = {
+            'A': {'project': 'openSUSE:Factory:Staging:A', 'title': '', 'description': ''},
+            'U': {'project': 'openSUSE:Factory:Staging:U', 'title': 'Unfrozen', 'description': ''},
+            'B': {'project': 'openSUSE:Factory:Staging:B', 'title': 'wine',
+                  'description': 'requests:\n- {id: 333, package: wine}'}
+        }
+        self.links_data = {
+            'openSUSE:Factory:Staging:B/wine': {
+                'prj': 'openSUSE:Factory:Staging:B', 'pkg': 'wine', 'devprj': 'home:Admin'
+            }
+        }
+        self.pkg_data = {
+            'home:Admin/gcc': {'rev': '1', 'vrev': '1', 'name': 'gcc',
+                               'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb'},
+            'home:Admin/wine': {'rev': '1', 'vrev': '1', 'name': 'wine',
+                                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb'}
+        }
 
     def _clear_responses(self):
         """
         Resets predefined responses
         """
-        self.responses = { 'DELETE': {}, 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {} }
+        self.responses = {'DELETE': {}, 'GET': {}, 'PUT': {}, 'POST': {}, 'ALL': {}}
 
         # Add methods to manipulate reviews
         self._request_review()
@@ -132,13 +122,13 @@ class OBS:
         """
 
         # Get path
-        path = re.match( r'.*localhost([^?]*)(\?.*)?',uri).group(1)
+        path = re.match(r'.*localhost([^?]*)(\?.*)?', uri).group(1)
         reply = None
         # Try to find a fallback
-        if self.responses['ALL'].has_key(path):
+        if path in self.responses['ALL']:
             reply = self.responses['ALL'][path]
         # Try to find a specific method
-        if self.responses[request.method].has_key(path):
+        if path in self.responses[request.method]:
             reply = self.responses[request.method][path]
         # We have something to reply with
         if reply:
@@ -167,9 +157,10 @@ class OBS:
             if len(path) == 0:
                 path = uri
             if len(path) > 1:
+                # XXX Warning. This ret is not returned
                 ret = self._pretty_callback(request, 'https://localhost' + posixpath.dirname(path), headers, False)
             if exception:
-                raise BaseException("No tests/obs.pyresponse for {0} on {1} provided".format(request.method, uri))
+                raise BaseException("No tests/obs.pyresponse for {} on {} provided".format(request.method, uri))
             else:
                 return None
 
@@ -181,7 +172,7 @@ class OBS:
         everything to new test-suite.
         """
         # Build results verification, maybe not worth of dynamic processing
-        self.responses['GET']['/build/red/_result']   = 'build-results-red.xml'
+        self.responses['GET']['/build/red/_result'] = 'build-results-red.xml'
         self.responses['GET']['/build/green/_result'] = 'build-results-green.xml'
 
         # Testing of rings
@@ -190,8 +181,8 @@ class OBS:
 
         # Testing of frozen packages
         tmpl = Template(self._get_fixture_content('project-f-metalist.xml'))
-        self.responses['GET']['/source/openSUSE:Factory:Staging:B/_project'] = tmpl.substitute({'mtime': str(int(time.time()) - 100)})
-        self.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': str(int(time.time()) - 3600*24*356)})
+        self.responses['GET']['/source/openSUSE:Factory:Staging:B/_project'] = tmpl.substitute({'mtime': int(time.time()) - 100})
+        self.responses['GET']['/source/openSUSE:Factory:Staging:A/_project'] = tmpl.substitute({'mtime': int(time.time()) - 3600*24*356})
         self.responses['GET']['/source/openSUSE:Factory:Staging:U/_project'] = 'project-u-metalist.xml'
 
     def _build_results(self):
@@ -200,20 +191,20 @@ class OBS:
         """
 
         def build_results(responses, request, uri):
-            ret_str='<resultlist state="c7856c90c70c53fae88aacec964b80c0">\n'
-            prj = re.match( r'.*/([^/]*)/_result',uri).group(1)
-            if prj in [ "openSUSE:Factory:Staging:B" ]:
+            ret_str = '<resultlist state="c7856c90c70c53fae88aacec964b80c0">\n'
+            prj = re.match(r'.*/([^/]*)/_result', uri).group(1)
+            if prj == 'openSUSE:Factory:Staging:B':
                 states = ['failed', 'broken', 'building']
             else:
                 states = ['excluded', 'succeeded']
             for st in states:
-                if st in [ 'building' ]:
-                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj,st,st)
+                if st == 'building':
+                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj, st, st)
                 else:
-                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj,st,"published")
+                    ret_str += '  <result project="{0}" repository="{1}" arch="x86_64" code="{2}" state="{2}">\n'.format(prj, st, "published")
                 for dt in self.links_data:
                     if self.links_data[dt]['prj'] == prj:
-                        ret_str += '    <status package="{0}" code="{1}" />\n'.format(self.links_data[dt]['pkg'], st)
+                        ret_str += '    <status package="{}" code="{}" />\n'.format(self.links_data[dt]['pkg'], st)
                 ret_str += '  </result>\n'
             ret_str += '</resultlist>\n'
             return ret_str
@@ -226,7 +217,7 @@ class OBS:
         tmpl = Template(self._get_fixture_content('staging-project-meta.xml'))
 
         def project_meta_change(responses, request, uri):
-            path = re.match( r'.*localhost([^?]*)(\?.*)?',uri).group(1)
+            path = re.match(r'.*localhost([^?]*)(\?.*)?', uri).group(1)
             self.responses['GET'][path] = request.body
             return self.responses['GET'][path]
 
@@ -238,34 +229,32 @@ class OBS:
             self.responses['ALL']['/source/openSUSE:Factory:Staging:' + pr + '/_meta'] = project_meta_change
 
     def _request_review(self):
-        """
-        Register requests methods
-        """
+        """Register requests methods."""
 
         # Load template
         tmpl = Template(self._get_fixture_content('request_review.xml'))
 
         # What happens when we try to change the review
         def review_change(responses, request, uri):
-            rq_id = re.match( r'.*/([0-9]+)',uri).group(1)
+            rq_id = re.match(r'.*/([0-9]+)', uri).group(1)
             args = self.requests_data[rq_id]
             # Adding review
-            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'addreview']:
+            if 'cmd' in request.querystring and 'addreview' in request.querystring['cmd']:
                 self.requests_data[rq_id]['request'] = 'review'
-                self.requests_data[rq_id]['review']  = 'new'
+                self.requests_data[rq_id]['review'] = 'new'
             # Changing review
-            if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
+            if 'cmd' in request.querystring and 'changereviewstate' in request.querystring[u'cmd']:
                 self.requests_data[rq_id]['request'] = 'new'
-                self.requests_data[rq_id]['review']  = str(request.querystring[u'newstate'][0])
+                self.requests_data[rq_id]['review'] = str(request.querystring[u'newstate'][0])
             # Project review
-            if request.querystring.has_key(u'by_project'):
-                self.requests_data[rq_id]['by']      = 'project'
-                self.requests_data[rq_id]['by_who']  = str(request.querystring[u'by_project'][0])
+            if 'by_project' in request.querystring:
+                self.requests_data[rq_id]['by'] = 'project'
+                self.requests_data[rq_id]['by_who'] = str(request.querystring[u'by_project'][0])
             # Group review
-            if request.querystring.has_key(u'by_group'):
-                self.requests_data[rq_id]['by']      = 'group'
-                self.requests_data[rq_id]['by_who']  = str(request.querystring[u'by_group'][0])
-            responses['GET']['/request/' + rq_id]  = tmpl.substitute(self.requests_data[rq_id])
+            if 'by_group' in request.querystring:
+                self.requests_data[rq_id]['by'] = 'group'
+                self.requests_data[rq_id]['by_who'] = str(request.querystring[u'by_group'][0])
+            responses['GET']['/request/' + rq_id] = tmpl.substitute(self.requests_data[rq_id])
             return responses['GET']['/request/' + rq_id]
 
         # Register methods for all requests
@@ -277,13 +266,13 @@ class OBS:
 
     def _pkg_sources(self):
         def pkg_source(responses, request, uri):
-            key = str(re.match( r'.*/source/([^?]+)(\?.*)?',uri).group(1))
-            return '<directory name="{0}" rev="{1}" vrev="{2}" srcmd5="{3}"/>'.format(
-                        self.pkg_data[key]['name'],
-                        self.pkg_data[key]['rev'],
-                        self.pkg_data[key]['vrev'],
-                        self.pkg_data[key]['srcmd5']
-                   )
+            key = re.match(r'.*/source/([^?]+)(\?.*)?', uri).group(1)
+            return '<directory name="{}" rev="{}" vrev="{}" srcmd5="{}"/>'.format(
+                self.pkg_data[key]['name'],
+                self.pkg_data[key]['rev'],
+                self.pkg_data[key]['vrev'],
+                self.pkg_data[key]['srcmd5']
+            )
         for pkg in self.pkg_data:
             self.responses['GET']['/source/' + pkg] = pkg_source
 
@@ -292,24 +281,26 @@ class OBS:
         tmpl = Template(self._get_fixture_content('linksource.xml'))
 
         def delete_link(responses, request, uri):
-            key = re.match( r'.*/source/([^?]+)(\?.*)?',uri).group(1)
+            key = re.match(r'.*/source/([^?]+)(\?.*)?', uri).group(1)
             del self.responses['GET']['/source/' + str(key)]
             del self.links_data[str(key)]
             return "Ok"
 
         def create_empty(responses, request, uri):
-            key = re.match( r'.*/source/(.+)/_meta',uri).group(1)
+            key = re.match(r'.*/source/(.+)/_meta', uri).group(1)
             self.links_data[str(key)] = {}
             return "Ok"
 
         def create_link(responses, request, uri):
             tmpl = Template(self._get_fixture_content('linksource.xml'))
-            key = re.match( r'.*/source/(.+)/_link',uri).group(1)
-            match = re.match( r'(.+)/(.+)', key)
+            key = re.match(r'.*/source/(.+)/_link', uri).group(1)
+            match = re.match(r'(.+)/(.+)', key)
             xml = ET.fromstring(str(request.body))
-            self.links_data[str(key)] = { 'prj': match.group(1), 'pkg': match.group(2),
-                                          'devprj': xml.get('project')
-                                        }
+            self.links_data[str(key)] = {
+                'prj': match.group(1),
+                'pkg': match.group(2),
+                'devprj': xml.get('project')
+            }
             self.responses['GET']['/source/' + key] = tmpl.substitute(self.links_data[key])
             self.responses['DELETE']['/source/' + key] = delete_link
             return "Ok"
@@ -331,7 +322,7 @@ class OBS:
         """
         def request_search(responses, request, uri):
             # Searching for requests that has open review for staging group
-            if request.querystring.has_key(u'match') and request.querystring[u'match'][0] == u"state/@name='review' and review[@by_group='factory-staging' and @state='new']":
+            if 'match' in request.querystring and request.querystring['match'][0] == u"state/@name='review' and review[@by_group='factory-staging' and @state='new']":
                 rqs = []
                 # Itereate through all requests
                 for rq in self.requests_data:
@@ -339,14 +330,14 @@ class OBS:
                     if self.requests_data[rq]['request'] == 'review' and self.requests_data[rq]['review'] == 'new' and self.requests_data[rq]['by'] == 'group' and self.requests_data[rq]['by_who'] == 'factory-staging':
                         rqs.append(rq)
                 # Create response
-                ret_str  = '<collection matches="' + str(len(rqs)) + '">'
+                ret_str = '<collection matches="' + str(len(rqs)) + '">'
                 for rq in rqs:
                     ret_str += responses['GET']['/request/' + rq]
                 ret_str += '</collection>'
                 return ret_str
             # Searching for requests that has open review for staging project
-            if request.querystring.has_key(u'match') and re.match( r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0]):
-                prj_match = re.match( r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0])
+            if 'match' in request.querystring and re.match(r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0]):
+                prj_match = re.match(r"state/@name='review' and review\[@by_project='([^']+)' and @state='new'\]", request.querystring[u'match'][0])
                 prj = str(prj_match.group(1))
                 rqs = []
                 # Itereate through all requests
@@ -355,7 +346,7 @@ class OBS:
                     if self.requests_data[rq]['request'] == 'review' and self.requests_data[rq]['review'] == 'new' and self.requests_data[rq]['by'] == 'project' and self.requests_data[rq]['by_who'] == prj:
                         rqs.append(rq)
                 # Create response
-                ret_str  = '<collection matches="' + str(len(rqs)) + '">\n'
+                ret_str = '<collection matches="' + str(len(rqs)) + '">\n'
                 for rq in rqs:
                     ret_str += '  <request id="' + rq + '"/>\n'
                 ret_str += '</collection>'
@@ -365,7 +356,7 @@ class OBS:
 
         def id_project_search(responses, request, uri):
             # Searching for project
-            if request.querystring.has_key(u'match') and request.querystring[u'match'][0] == u"starts-with(@name,\'openSUSE:Factory:Staging:\')":
+            if 'match' in request.querystring and request.querystring['match'][0] == u"starts-with(@name,\'openSUSE:Factory:Staging:\')":
                 ret_str = '<collection matches="' + str(len(self.st_project_data)) + '">\n'
                 # Itereate through all requests
                 for prj in self.st_project_data:
@@ -382,10 +373,10 @@ class OBS:
         """
         Register custom callback for HTTPretty
         """
-        httpretty.register_uri(httpretty.DELETE,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
-        httpretty.register_uri(httpretty.GET,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
-        httpretty.register_uri(httpretty.PUT,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
-        httpretty.register_uri(httpretty.POST,re.compile(r'/.*localhost.*/'),body=self._pretty_callback)
+        httpretty.register_uri(httpretty.DELETE, re.compile(r'/.*localhost.*/'), body=self._pretty_callback)
+        httpretty.register_uri(httpretty.GET, re.compile(r'/.*localhost.*/'), body=self._pretty_callback)
+        httpretty.register_uri(httpretty.PUT, re.compile(r'/.*localhost.*/'), body=self._pretty_callback)
+        httpretty.register_uri(httpretty.POST, re.compile(r'/.*localhost.*/'), body=self._pretty_callback)
         self.reset_config()
         # Initiate the api with mocked rings
         self.api = oscs.StagingAPI('https://localhost')
@@ -410,4 +401,3 @@ class OBS:
         content = response.read()
         response.close()
         return content
-
