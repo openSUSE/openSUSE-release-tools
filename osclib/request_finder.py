@@ -33,15 +33,23 @@ class RequestFinder:
         self.srs = {}
 
     def _filter_review_by_project(self, element, state):
+        """
+        Takes a XML that contains a list of reviews and take the ones
+        that in state 'state'.
+        """
         reviews = [r.get('by_project')
                    for r in element.findall('review')
                    if r.get('by_project') and r.get('state') == state]
         return reviews
 
     def _new_review_by_project(self, request, element):
+        """
+        Takes a XML that contains a list of reviews and return True if
+        'request' is in the list with state as 'new'.
+        """
         reviews = self._filter_review_by_project(element, 'new')
-        assert len(reviews) <= 1, 'Request "{}" have more than one review by project "{}"'.format(request,
-                                                                                                  reviews)
+        assert len(reviews) <= 1, 'Request "{}" have multiple review by project in new state "{}"'.format(request,
+                                                                                                          reviews)
         return reviews[0] if reviews else None
 
     def find_request_id(self, request):
