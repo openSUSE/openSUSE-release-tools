@@ -38,6 +38,7 @@ class StagingAPI(object):
         self.rings = ['openSUSE:Factory:Rings:0-Bootstrap',
                       'openSUSE:Factory:Rings:1-MinimalX']
         self.ring_packages = self._generate_ring_packages()
+        self.packages_staged = self._get_staged_requests()
 
     def makeurl(self, l, query=None):
         """
@@ -61,6 +62,20 @@ class StagingAPI(object):
             for entry in ET.parse(root).getroot().findall('entry'):
                 ret[entry.attrib['name']] = prj
         return ret
+
+    def _get_staged_requests(self):
+        """
+        Get all requests that are already staged
+        :return dict of staged requests with their project and srid
+        """
+
+        packages_staged = dict()
+        for prj in self.get_staging_projects():
+            meta = self.get_prj_pseudometa(prj)
+            for req in meta['requests']:
+                packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id'] }
+
+        return packages_staged
 
     def get_package_information(self, project, pkgname):
         """
@@ -184,9 +199,44 @@ class StagingAPI(object):
         ring = self.ring_packages.get(target_package, None)
         if not ring:
             # accept the request here
-            message = 'No need for staging, not in tested ring project.'
+            message = 'No need for staging, not in tested ring projects.'
             self.change_review_state(request_id, 'accepted', message=message,
                                      by_group='factory-staging')
+
+    def update_superseded_request(self, request):
+        """
+        Replace superseded requests that are already in some
+        staging prj
+        :param request: request we are checking if it is fine
+        """
+
+        # Consolidate all data from request
+        request_id = int(request.get('id'))
+        action = request.findall('action')
+        if not action:
+            msg = 'Request {} has no action'.format(request_id)
+            raise oscerr.WrongArgs(msg)
+        # we care only about first action
+        action = action[0]
+
+        # Where are we targeting the package
+        target_project = action.find('target').get('project')
+        target_package = action.find('target').get('package')
+
+        # If the values are empty it is no error
+        if not target_project or not target_package:
+            msg = 'no target/package in request {}, action {}; '
+            msg = msg.format(request_id, action)
+            logging.info(msg)
+
+        # If the package is currently tracked then we do the replacement
+        stage_info = self.packages_staged.get(target_package, {'prj': '', 'rq_id': 0})
+        if stage_info['rq_id'] != 0 and int(stage_info['rq_id']) != request_id:
+            # Remove the old request
+            self.api.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'],
+                                 review='declined', msg='Replaced by newer request')
+            # Add the new one that should be replacing it
+            self.api.rq_to_prj(request_id, stage_info['prj'])
 
     def get_open_requests(self):
         """
@@ -221,6 +271,7 @@ class StagingAPI(object):
         # check if we can reduce it down by accepting some
         for rq in requests:
             self.accept_non_ring_request(rq)
+            self.update_superseded_request(rq)
 
     def get_prj_pseudometa(self, project):
         """
@@ -294,7 +345,7 @@ class StagingAPI(object):
     def get_request_id_for_package(self, project, package):
         """
         Query the request id from meta
-        :param project: project to remove from
+        :param project: project the package is in
         :param package: package we want to query for
         """
         data = self.get_prj_pseudometa(project)
@@ -306,7 +357,7 @@ class StagingAPI(object):
     def get_package_for_request_id(self, project, request_id):
         """
         Query the request id from meta
-        :param project: project to remove from
+        :param project: project the package is in
         :param package: package we want to query for
         """
         data = self.get_prj_pseudometa(project)
@@ -434,6 +485,10 @@ class StagingAPI(object):
 
         # Report
         report = list()
+
+        # First ensure we dispatched the open requests so we do not
+        # pass projects with update/superseded requests
+        self.dispatch_open_requests()
 
         # all requests with open review
         requests = self.list_requests_in_prj(project)
