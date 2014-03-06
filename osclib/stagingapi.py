@@ -486,6 +486,10 @@ class StagingAPI(object):
         # Report
         report = list()
 
+        # First ensure we dispatched the open requests so we do not
+        # pass projects with update/superseded requests
+        self.dispatch_open_requests()
+
         # all requests with open review
         requests = self.list_requests_in_prj(project)
         open_requests = set(requests)
