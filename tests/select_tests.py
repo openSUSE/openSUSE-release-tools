@@ -47,5 +47,5 @@ class TestSelect(unittest.TestCase):
         # make sure the project is frozen recently for other tests
 
         self.obs.responses['GET']['/request'] = 'systemd-search-results.xml'
-        ret = SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:B', ['bash'])
+        ret = SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:B', ['systemd'])
         self.assertEqual(True, ret)
