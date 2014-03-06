@@ -46,6 +46,6 @@ class TestSelect(unittest.TestCase):
         self.obs.register_obs()
         # make sure the project is frozen recently for other tests
 
-        self.obs.responses['GET']['/request'] = '<collection matches="1"><request id="123"></request></collection>'
+        self.obs.responses['GET']['/request'] = 'systemd-search-results.xml'
         ret = SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:B', ['bash'])
         self.assertEqual(True, ret)
