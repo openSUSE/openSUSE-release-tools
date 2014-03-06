@@ -99,7 +99,11 @@ class RequestFinder:
 
         ret = None
         for sr in root.findall('request'):
-            # TODO: check the package matches - OBS is case insensitive
+            # Check the package matches - OBS is case insensitive
+            rq_package = sr.find('action').find('target').get('package')
+            if package.lower() != rq_package.lower():
+                continue
+
             request = int(sr.get('id'))
             state = sr.find('state').get('name')
 
