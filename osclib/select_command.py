@@ -4,6 +4,7 @@ from osc import oscerr
 from osc.core import http_GET
 
 from osclib.request_finder import RequestFinder
+from osclib.freeze_command import FreezeCommand
 
 
 class SelectCommand(object):
@@ -64,7 +65,7 @@ class SelectCommand(object):
 
     def perform(self, tprj, requests, move=False, from_=None):
         if not self.api.prj_frozen_enough(tprj):
-            print('Freeze the prj first')
+            FreezeCommand(self.api).perform(tprj)
             return False
         self.tprj = tprj
 
