@@ -504,7 +504,7 @@ class StagingAPI(object):
             if req not in requests:
                 requests.append(req)
         if open_requests:
-            return ['Request(s) {} are not tracked but are open for the prj'.format(','.join(open_requests))]
+            return ['Request(s) {} are not tracked but are open for the prj'.format(','.join(str(v) for v in open_requests))]
 
         # If we find no requests in staging then it is empty so we ignore it
         if not requests:
