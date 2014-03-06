@@ -39,7 +39,7 @@ class SelectCommand(object):
                     return (rq['id'], package, staging)
 
     def select_request(self, request, request_project, move, from_):
-        supersede = self._is_supersede(requests)
+        supersede = self._is_supersede(request)
 
         if 'staging' not in request_project and not supersede:
             # Normal 'select' command
@@ -95,6 +95,8 @@ class SelectCommand(object):
         meta = self.api.get_prj_pseudometa(target_project)
         staged_requests = list()
         for request in meta['requests']:
-            staged_requests += request
+            staged_requests.append(request['id'])
         if self.api.check_ring_packages(target_project, staged_requests):
             self.api.build_switch_prj(self.target_project, 'enable')
+	
+	return True
