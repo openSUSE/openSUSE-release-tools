@@ -233,10 +233,10 @@ class StagingAPI(object):
         stage_info = self.packages_staged.get(target_package, {'prj': '', 'rq_id': 0})
         if stage_info['rq_id'] != 0 and int(stage_info['rq_id']) != request_id:
             # Remove the old request
-            self.api.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'],
+            self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'],
                                  review='declined', msg='Replaced by newer request')
             # Add the new one that should be replacing it
-            self.api.rq_to_prj(request_id, stage_info['prj'])
+            self.rq_to_prj(request_id, stage_info['prj'])
 
     def get_open_requests(self):
         """
