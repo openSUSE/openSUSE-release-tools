@@ -82,6 +82,7 @@ class SelectCommand(object):
         :param move: wether to move the requests or not
         :param from_: location where from move the requests
         """
+
         # If the project is not frozen enough yet freeze it
         if not self.api.prj_frozen_enough(target_project):
             FreezeCommand(self.api).perform(target_project)
@@ -98,5 +99,5 @@ class SelectCommand(object):
             staged_requests.append(request['id'])
         if self.api.check_ring_packages(target_project, staged_requests):
             self.api.build_switch_prj(self.target_project, 'enable')
-	
+
 	return True
