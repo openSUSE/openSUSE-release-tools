@@ -110,7 +110,7 @@ class RequestFinder:
 
             self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
-            review = self._is_new_review_by_project(request, sr)
+            review = self._new_review_by_project(request, sr)
             if review:
                 self.srs[int(request)]['staging'] = review
 
