@@ -109,7 +109,7 @@ class RequestFinder:
 
             self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
-            review = self._new_review_by_project(request, sr)
+            review = self._is_new_review_by_project(request, sr)
             if review:
                 self.srs[int(request)]['staging'] = review
 
@@ -149,7 +149,7 @@ class RequestFinder:
                 if src is not None and src.get('project') == source_project:
                     request = int(sr.attrib['id'])
                     self.srs[request] = {'project': 'openSUSE:Factory'}
-                    review = self._new_review_by_project(request, sr)
+                    review = self._is_new_review_by_project(request, sr)
                     if review:
                         self.srs[int(request)]['staging'] = review
                     ret = True
