@@ -258,7 +258,7 @@ class OBS(object):
                 # Itereate through all requests
                 for rq in self.requests_data:
                     # Find the ones matching the condition
-                    if self.requests_data[rq]['request'] in ['review', 'new', 'declined'] and self.requests_data[rq]['package'] == self.requests_data[rq]['package']:
+                    if self.requests_data[rq]['request'] in ['review', 'new', 'declined'] and self.requests_data[rq]['package'] in request.querystring['package']:
                         rqs.append(rq)
                 # Create response
                 ret_str = '<collection matches="' + str(len(rqs)) + '">'
