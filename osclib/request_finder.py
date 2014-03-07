@@ -13,21 +13,20 @@ STG_PREFIX = 'openSUSE:Factory:Staging:'
 class RequestFinder:
 
     def __init__(self, apiurl, stagingapi):
-        # Store the list of submit request together with the source project
-        #
-        # Example:
-        #
-        #     {
-        #         212454: {
-        #             'project': 'openSUSE:Factory',
-        #         },
-        #
-        #         223870: {
-        #             'project': 'openSUSE:Factory',
-        #             'staging': 'openSUSE:Factory:Staging:A',
-        #         }
-        #     }
-        #
+        """
+        Store the list of submit request together with the source project
+
+        Example:
+             {
+                 212454: {
+                     'project': 'openSUSE:Factory',
+                 },
+                 223870: {
+                     'project': 'openSUSE:Factory',
+                     'staging': 'openSUSE:Factory:Staging:A',
+                 }
+             }
+        """
         self.apiurl = apiurl
         self.stagingapi = stagingapi
         self.srs = {}
@@ -36,30 +35,33 @@ class RequestFinder:
         """
         Takes a XML that contains a list of reviews and take the ones
         that in state 'state'.
+        :param element: xml list with reviews
+        :param state: state we filter for
         """
         reviews = [r.get('by_project')
                    for r in element.findall('review')
                    if r.get('by_project') and r.get('state') == state]
         return reviews
 
-    def _is_new_review_by_project(self, request, element):
+    def _new_review_by_project(self, request_id, element):
         """
         Takes a XML that contains a list of reviews and return True if
         'request' is in the list with state as 'new'.
+        :param request_id: request id
+        :param element: XML with list of reviews
         """
         reviews = self._filter_review_by_project(element, 'new')
-        assert len(reviews) <= 1, 'Request "{}" have multiple review by project in new state "{}"'.format(request,
+        assert len(reviews) <= 1, 'Request "{}" have multiple review by project in new state "{}"'.format(request_id,
                                                                                                           reviews)
         return reviews[0] if reviews else None
 
-    def find_request_id(self, request):
+    def find_request_id(self, request_id):
         """
         Look up the request by ID to verify if it is correct
-        :param request: ID of the added request
-        :param apiurl: OBS url
+        :param request_id: ID of the added request
         """
 
-        url = makeurl(self.apiurl, ['request', str(request)])
+        url = makeurl(self.apiurl, ['request', str(request_id)])
         try:
             f = http_GET(url)
         except urllib2.HTTPError:
@@ -67,19 +69,19 @@ class RequestFinder:
 
         root = ET.parse(f).getroot()
 
-        if root.get('id', None) != request:
+        if root.get('id', None) != request_id:
             return None
 
         project = root.find('action').find('target').get('project')
         if project != FACTORY and not project.startswith(STG_PREFIX):
             msg = 'Request {} is not for openSUSE:Factory, but for {}'
-            msg = msg.format(request, project)
+            msg = msg.format(request_id, project)
             raise oscerr.WrongArgs(msg)
-        self.srs[int(request)] = {'project': project}
+        self.srs[int(request_id)] = {'project': project}
 
-        review = self._is_new_review_by_project(request, root)
+        review = self._new_review_by_project(request_id, root)
         if review:
-            self.srs[int(request)]['staging'] = review
+            self.srs[int(request_id)]['staging'] = review
 
         return True
 
@@ -87,7 +89,6 @@ class RequestFinder:
         """
         Look up the package by its name and return the SR#
         :param package: name of the package
-        :param apiurl: OBS url
         """
 
         query = 'states=new,review,declined&project=openSUSE:Factory&view=collection&package={}'
@@ -109,7 +110,7 @@ class RequestFinder:
 
             self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
-            review = self._is_new_review_by_project(request, sr)
+            review = self._new_review_by_project(request, sr)
             if review:
                 self.srs[int(request)]['staging'] = review
 
@@ -134,7 +135,6 @@ class RequestFinder:
         """
         Look up the source project by its name and return the SR#(s)
         :param source_project: name of the source project
-        :param apiurl: OBS url
         """
 
         query = 'states=new,review&project=openSUSE:Factory&view=collection'
@@ -166,7 +166,7 @@ class RequestFinder:
         for p in pkgs:
             if self.find_request_package(p):
                 continue
-            if self.find_request_id(p):
+            if isinstance(p, int) and self.find_request_id(p):
                 continue
             if self.find_request_project(p):
                 continue

@@ -845,14 +845,19 @@ class StagingAPI(object):
         self.change_review_state(request_id, state, by_project=project,
                                  message=msg)
 
-    def build_switch_prj(self, prj, state):
-        url = self.makeurl(['source', prj, '_meta'])
+    def build_switch_prj(self, project, state):
+        """
+        Switch build state of project to desired state
+        :param project: project to switch state for
+        :param state: desired state for build
+        """
+        url = self.makeurl(['source', project, '_meta'])
         prjmeta = ET.parse(http_GET(url)).getroot()
 
         foundone = False
-        for f in prjmeta.find('build'):
-            if not f.get('repository', None) and not f.get('arch', None):
-                f.tag = state
+        for build in prjmeta.find('build'):
+            if not build.get('repository', None) and not build.get('arch', None):
+                build.tag = state
                 foundone = True
 
         # need to add a global one

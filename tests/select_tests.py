@@ -25,17 +25,15 @@ class TestSelect(unittest.TestCase):
     @httpretty.activate
     def test_old_frozen(self):
         self.obs.register_obs()
-        self.assertEqual(False, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['bash']))
-        self.assertEqual(sys.stdout.getvalue(), "Freeze the prj first\n")
+        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
+        self.assertEqual(True, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
+        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), True)
 
     @httpretty.activate
     def test_no_matches(self):
         self.obs.register_obs()
 
         # search for requests
-        self.obs.responses['GET']['/request'] = '<collection matches="0"/>'
-        self.obs.responses['GET']['/request/bash'] = {'status': 404, 'reply': '<collection matches="0"/>' }
-
         with self.assertRaises(oscerr.WrongArgs) as cm:
             SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:B', ['bash'])
 

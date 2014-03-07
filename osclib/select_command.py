@@ -4,6 +4,7 @@ from osc import oscerr
 from osc.core import http_GET
 
 from osclib.request_finder import RequestFinder
+from osclib.freeze_command import FreezeCommand
 
 
 class SelectCommand(object):
@@ -12,7 +13,10 @@ class SelectCommand(object):
         self.api = api
 
     def _package(self, request):
-        """Get the package name from the submit request XML."""
+        """
+        Get the package name from the submit request XML.
+        :param request: request we check for
+        """
         f = http_GET(self.api.makeurl(['request', str(request)]))
         root = ET.parse(f).getroot()
         package = str(root.find('action').find('target').attrib['package'])
@@ -22,63 +26,78 @@ class SelectCommand(object):
         """
         Check if the request supersede a different request from a
         staging project.
+        :param request: request we check for
         """
         package = self._package(request)
 
         for staging in self.api.get_staging_projects():
-            if staging == self.tprj:  # requests for the same project are fine
+            # requests for the same project are fine
+            if staging == self.target_project:
                 continue
             for rq in self.api.get_prj_pseudometa(staging)['requests']:
                 if rq['id'] != request and rq['package'] == package:
                     return (rq['id'], package, staging)
 
-    def select_request(self, rq, rq_prj, move, from_):
-        supersede = self._is_supersede(rq)
+    def select_request(self, request, request_project, move, from_):
+        supersede = self._is_supersede(request)
 
-        if 'staging' not in rq_prj and not supersede:
+        if 'staging' not in request_project and not supersede:
             # Normal 'select' command
-            return self.api.rq_to_prj(rq, self.tprj)
-        elif 'staging' in rq_prj and (move or supersede):
+            return self.api.rq_to_prj(request, self.target_project)
+        elif 'staging' in request_project and (move or supersede):
             # 'select' command becomes a 'move'
             fprj = None
             if from_:
                 fprj = self.api.prj_from_letter(from_)
             else:
                 # supersede = (new_rq, package, project)
-                fprj = rq_prj['staging'] if not supersede else supersede[2]
+                fprj = request_project['staging'] if not supersede else supersede[2]
 
             if supersede:
-                print('"{} ({}) is superseded by {}'.format(rq, supersede[1], supersede[0]))
+                print('"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0]))
 
-            if fprj == self.tprj:
-                print('"{}" is currently in "{}"'.format(rq, self.tprj))
+            if fprj == self.target_project:
+                print('"{}" is currently in "{}"'.format(request, self.target_project))
                 return False
 
-            print('Moving "{}" from "{}" to "{}"'.format(rq, fprj, self.tprj))
-            return self.api.move_between_project(fprj, rq, self.tprj)
-        elif 'staging' in rq_prj and not move:
+            print('Moving "{}" from "{}" to "{}"'.format(request, fprj, self.target_project))
+            return self.api.move_between_project(fprj, request, self.target_project)
+        elif 'staging' in request_project and not move:
             # Previously selected, but not explicit move
             msg = 'Request {} is already tracked in "{}".'
-            msg = msg.format(rq, rq_prj['staging'])
-            if rq_prj['staging'] != self.tprj:
+            msg = msg.format(request, request_project['staging'])
+            if request_project['staging'] != self.target_project:
                 msg += '\nUse --move modifier to move the request from "{}" to "{}"'
-                msg = msg.format(rq_prj['staging'], self.tprj)
+                msg = msg.format(request_project['staging'], self.target_project)
             print(msg)
             return True
         else:
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
-    def perform(self, tprj, requests, move=False, from_=None):
-        if not self.api.prj_frozen_enough(tprj):
-            print('Freeze the prj first')
-            return False
-        self.tprj = tprj
+    def perform(self, target_project, requests, move=False, from_=None):
+        """
+        Select package and move it accordingly by arguments
+        :param target_project: project we want to target
+        :param requests: requests we are working with
+        :param move: wether to move the requests or not
+        :param from_: location where from move the requests
+        """
 
-        for rq, rq_prj in RequestFinder.find_sr(requests, self.api.apiurl).items():
-            if not self.select_request(rq, rq_prj, move, from_):
+        # If the project is not frozen enough yet freeze it
+        if not self.api.prj_frozen_enough(target_project):
+            FreezeCommand(self.api).perform(target_project)
+        self.target_project = target_project
+
+        for request, request_project in RequestFinder.find_sr(requests, self.api.apiurl).items():
+            if not self.select_request(request, request_project, move, from_):
                 return False
 
-        # now make sure we enable the prj
-        # FIXME: we should build-enable ONLY if we have some ring package
-        self.api.build_switch_prj(tprj, 'enable')
-        return True
+        # now make sure we enable the prj if the prj contains any ringed package
+        meta = self.api.get_prj_pseudometa(target_project)
+        staged_requests = list()
+        for request in meta['requests']:
+            staged_requests.append(request['id'])
+        if self.api.check_ring_packages(target_project, staged_requests):
+            self.api.build_switch_prj(self.target_project, 'enable')
+
+	return True

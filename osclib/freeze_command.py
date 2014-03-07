@@ -5,7 +5,7 @@ from osc.core import http_GET
 from osc.core import http_PUT
 
 
-class FreezeCommand:
+class FreezeCommand(object):
 
     def __init__(self, api):
         self.api = api
@@ -29,7 +29,7 @@ class FreezeCommand:
         meta = ET.fromstring(self.prj_meta_for_bootstrap_copy(self.prj))
         meta.find('title').text = oldmeta.find('title').text
         meta.find('description').text = oldmeta.find('description').text
-        
+
         http_PUT(url, data=ET.tostring(meta))
 
     def create_bootstrap_aggregate(self):
@@ -50,7 +50,7 @@ class FreezeCommand:
 
     def create_bootstrap_aggregate_file(self):
         url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_aggregate'])
-        
+
         root = ET.Element('aggregatelist')
         a = ET.SubElement(root, 'aggregate', { 'project': "openSUSE:Factory:Rings:0-Bootstrap" } )
 
@@ -66,7 +66,7 @@ class FreezeCommand:
 
     def create_bootstrap_aggregate_meta(self):
         url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_meta'])
-        
+
         root = ET.Element('package', { 'project': self.prj, 'name': 'bootstrap-copy' })
         ET.SubElement(root, 'title')
         ET.SubElement(root, 'description')
@@ -75,7 +75,7 @@ class FreezeCommand:
         ET.SubElement(f, 'disable', { 'repository': 'bootstrap_copy' })
         # this one is the global toggle
         ET.SubElement(f, 'disable')
-        
+
         http_PUT(url, data=ET.tostring(root))
 
     def build_switch_bootstrap_copy(self, state):
@@ -90,7 +90,7 @@ class FreezeCommand:
 
     def verify_bootstrap_copy_code(self, code):
         url = self.api.makeurl(['build', self.prj, '_result'], { 'package': 'bootstrap-copy' })
-        
+
         root = ET.parse(http_GET(url)).getroot()
         for result in root.findall('result'):
             if result.get('repository') == 'bootstrap_copy':
