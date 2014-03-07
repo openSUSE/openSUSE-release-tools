@@ -258,7 +258,7 @@ class OBS(object):
                 # Itereate through all requests
                 for rq in self.requests_data:
                     # Find the ones matching the condition
-                    if self.requests_data[rq]['request'] in ['review', 'new', 'declined'] and self.requests_data[rq]['package'] in request.querystring['package']:
+                    if self.requests_data[rq]['request'] in ['review', 'new', 'declined'] and ( (not 'package' in request.querystring) or self.requests_data[rq]['package'] in request.querystring['package']):
                         rqs.append(rq)
                 # Create response
                 ret_str = '<collection matches="' + str(len(rqs)) + '">'
@@ -266,6 +266,7 @@ class OBS(object):
                     ret_str += responses['GET']['/request/' + rq]
                 ret_str += '</collection>'
                 return ret_str
+            raise BaseException('No request search defined for ' + uri)
         self.responses['GET']['/request'] = find_request
 
     def _project_meta(self):
