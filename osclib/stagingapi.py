@@ -73,7 +73,7 @@ class StagingAPI(object):
         for prj in self.get_staging_projects():
             meta = self.get_prj_pseudometa(prj)
             for req in meta['requests']:
-                packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id'] }
+                packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id']}
 
         return packages_staged
 
@@ -320,7 +320,8 @@ class StagingAPI(object):
         root = ET.parse(f).getroot()
         # Find description
         description = root.find('description')
-        # Replace it with yaml
+        # Order the requests and replace it with yaml
+        meta['requests'] = sorted(meta['requests'], key=lambda x: x['id'])
         description.text = yaml.dump(meta)
         # Find title
         title = root.find('title')
