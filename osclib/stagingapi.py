@@ -73,7 +73,7 @@ class StagingAPI(object):
         for prj in self.get_staging_projects():
             meta = self.get_prj_pseudometa(prj)
             for req in meta['requests']:
-                packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id'] }
+                packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id']}
 
         return packages_staged
 
@@ -203,13 +203,12 @@ class StagingAPI(object):
             self.change_review_state(request_id, 'accepted', message=message,
                                      by_group='factory-staging')
 
-    def update_superseded_request(self, request):
+    def supseded_request(self, request):
         """
-        Replace superseded requests that are already in some
-        staging prj
-        :param request: request we are checking if it is fine
+        Returns a staging info for a request or None
+        :param request - a Request instance
+        :return dict with 'prj' and 'rq_id' of the old request
         """
-
         # Consolidate all data from request
         request_id = int(request.get('id'))
         action = request.findall('action')
@@ -232,6 +231,18 @@ class StagingAPI(object):
         # If the package is currently tracked then we do the replacement
         stage_info = self.packages_staged.get(target_package, {'prj': '', 'rq_id': 0})
         if stage_info['rq_id'] != 0 and int(stage_info['rq_id']) != request_id:
+            return stage_info
+        return None
+
+    def update_superseded_request(self, request):
+        """
+        Replace superseded requests that are already in some
+        staging prj
+        :param request: request we are checking if it is fine
+        """
+
+        stage_info = self.supseded_request(request)
+        if stage_info:
             # Remove the old request
             self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'],
                                  review='declined', msg='Replaced by newer request')
@@ -309,7 +320,8 @@ class StagingAPI(object):
         root = ET.parse(f).getroot()
         # Find description
         description = root.find('description')
-        # Replace it with yaml
+        # Order the requests and replace it with yaml
+        meta['requests'] = sorted(meta['requests'], key=lambda x: x['id'])
         description.text = yaml.dump(meta)
         # Find title
         title = root.find('title')
@@ -488,7 +500,10 @@ class StagingAPI(object):
 
         # First ensure we dispatched the open requests so we do not
         # pass projects with update/superseded requests
-        self.dispatch_open_requests()
+        for request in self.get_open_requests():
+            stage_info = self.supseded_request(request)
+            if stage_info and stage_info['prj'] == project:
+                return ['Request {} is superseded'.format(stage_info['rq_id'])]
 
         # all requests with open review
         requests = self.list_requests_in_prj(project)
@@ -504,7 +519,7 @@ class StagingAPI(object):
             if req not in requests:
                 requests.append(req)
         if open_requests:
-            return ['Request(s) {} are not tracked but are open for the prj'.format(','.join(str(v) for v in open_requests))]
+            return ['Request(s) {} are not tracked but are open for the prj'.format(','.join(map(str, open_requests)))]
 
         # If we find no requests in staging then it is empty so we ignore it
         if not requests:
