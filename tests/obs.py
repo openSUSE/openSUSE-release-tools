@@ -252,6 +252,21 @@ class OBS(object):
             return "<result>Ok</result>"
         for pr in self.st_project_data:
             self.responses['PUT']['/source/openSUSE:Factory:Staging:' + pr + '/_project/_frozenlinks'] = project_freeze
+        def find_request(responses, request, uri):
+            if 'view' in request.querystring and request.querystring['view'][0] == u"collection":
+                rqs = []
+                # Itereate through all requests
+                for rq in self.requests_data:
+                    # Find the ones matching the condition
+                    if self.requests_data[rq]['request'] in ['review', 'new', 'declined'] and self.requests_data[rq]['package'] == self.requests_data[rq]['package']:
+                        rqs.append(rq)
+                # Create response
+                ret_str = '<collection matches="' + str(len(rqs)) + '">'
+                for rq in rqs:
+                    ret_str += responses['GET']['/request/' + rq]
+                ret_str += '</collection>'
+                return ret_str
+        self.responses['GET']['/request'] = find_request
 
     def _project_meta(self):
         # Load template
