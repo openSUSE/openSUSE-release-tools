@@ -10,6 +10,7 @@ import difflib
 import subprocess
 import tempfile
 
+from osclib.freeze_command import FreezeCommand
 
 class TestFreeze(unittest.TestCase):
     def _get_fixture_path(self, filename):
@@ -25,8 +26,8 @@ class TestFreeze(unittest.TestCase):
         return os.path.join(os.getcwd(), 'tests/fixtures')
 
     def test_bootstrap_copy(self):
-        import osclib.freeze_command
-        fc = osclib.freeze_command.FreezeCommand('https://localhost')
+
+        fc = FreezeCommand('https://localhost')
 
         fp = self._get_fixture_path('staging-meta-for-bootstrap-copy.xml')
         fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True)

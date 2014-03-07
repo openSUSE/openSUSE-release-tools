@@ -25,8 +25,9 @@ class TestSelect(unittest.TestCase):
     @httpretty.activate
     def test_old_frozen(self):
         self.obs.register_obs()
-        self.assertEqual(False, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
-        self.assertEqual(sys.stdout.getvalue(), "Freeze the prj first\n")
+        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
+        self.assertEqual(True, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
+        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), True)
 
     @httpretty.activate
     def test_no_matches(self):
