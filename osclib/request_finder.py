@@ -42,7 +42,7 @@ class RequestFinder:
                    if r.get('by_project') and r.get('state') == state]
         return reviews
 
-    def _new_review_by_project(self, request, element):
+    def _is_new_review_by_project(self, request, element):
         """
         Takes a XML that contains a list of reviews and return True if
         'request' is in the list with state as 'new'.
@@ -77,7 +77,7 @@ class RequestFinder:
             raise oscerr.WrongArgs(msg)
         self.srs[int(request)] = {'project': project}
 
-        review = self._new_review_by_project(request, root)
+        review = self._is_new_review_by_project(request, root)
         if review:
             self.srs[int(request)]['staging'] = review
 
@@ -97,7 +97,7 @@ class RequestFinder:
 
         root = ET.parse(f).getroot()
 
-        ret = None
+        last_rq = None
         for sr in root.findall('request'):
             # Check the package matches - OBS is case insensitive
             rq_package = sr.find('action').find('target').get('package')
@@ -113,18 +113,22 @@ class RequestFinder:
             if review:
                 self.srs[int(request)]['staging'] = review
 
-            if ret:
-                if self.srs[ret]['state'] == 'declined':
+            if last_rq:
+                if self.srs[last_rq]['state'] == 'declined':
                     # ignore previous requests if they are declined
                     # if they are the last one, it's fine to return them
-                    del self.srs[ret]
+                    del self.srs[last_rq]
                 else:
                     msg = 'There are multiple requests for package "{}": {} and {}'
-                    msg = msg.format(package, ret, request)
+                    msg = msg.format(package, last_rq, request)
                     raise oscerr.WrongArgs(msg)
-            ret = request
 
-        return ret
+            # Invariant of the loop: request is the max request ID searched so far
+            assert last_rq < request, 'Request ID do not increase monotonically'
+
+            last_rq = request
+
+        return last_rq
 
     def find_request_project(self, source_project):
         """
