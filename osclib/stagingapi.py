@@ -242,6 +242,8 @@ class StagingAPI(object):
         """
 
         stage_info = self.supseded_request(request)
+        request_id = int(request.get('id'))
+
         if stage_info:
             # Remove the old request
             self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'],
