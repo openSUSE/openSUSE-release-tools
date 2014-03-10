@@ -191,7 +191,7 @@ class RequestFinder:
         for p in pkgs:
             found = False
             for staging in self.stagingapi.get_staging_projects():
-                if _is_int(p) and self.stagingapi.get_package_for_request_id(staging, p):
+                if self._is_int(p) and self.stagingapi.get_package_for_request_id(staging, p):
                     self.srs[int(p)] = {'staging': staging}
                     found = True
                     continue
