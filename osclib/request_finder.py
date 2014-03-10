@@ -31,6 +31,9 @@ class RequestFinder:
         self.stagingapi = stagingapi
         self.srs = {}
 
+    def _is_int(self, x):
+        return isinstance(x, int) or x.isdigit()
+
     def _filter_review_by_project(self, element, state):
         """
         Takes a XML that contains a list of reviews and take the ones
@@ -61,6 +64,9 @@ class RequestFinder:
         :param request_id: ID of the added request
         """
 
+        if not self._is_int(request_id):
+            return False
+
         url = makeurl(self.apiurl, ['request', str(request_id)])
         try:
             f = http_GET(url)
@@ -69,7 +75,7 @@ class RequestFinder:
 
         root = ET.parse(f).getroot()
 
-        if root.get('id', None) != request_id:
+        if root.get('id', None) != str(request_id):
             return None
 
         project = root.find('action').find('target').get('project')
@@ -166,7 +172,7 @@ class RequestFinder:
         for p in pkgs:
             if self.find_request_package(p):
                 continue
-            if isinstance(p, int) and self.find_request_id(p):
+            if self.find_request_id(p):
                 continue
             if self.find_request_project(p):
                 continue
@@ -181,8 +187,6 @@ class RequestFinder:
 
         This function is only called for its side effect.
         """
-        def _is_int(x):
-            return isinstance(x, int) or x.isdigit()
 
         for p in pkgs:
             found = False

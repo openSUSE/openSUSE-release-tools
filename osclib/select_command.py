@@ -101,4 +101,4 @@ class SelectCommand(object):
         if self.api.check_ring_packages(target_project, staged_requests):
             self.api.build_switch_prj(self.target_project, 'enable')
 
-	return True
+        return True
