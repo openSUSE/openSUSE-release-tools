@@ -13,7 +13,8 @@ STG_PREFIX = 'openSUSE:Factory:Staging:'
 def _is_int(x):
     return isinstance(x, int) or x.isdigit()
 
-class RequestFinder:
+
+class RequestFinder(object):
 
     def __init__(self, apiurl, stagingapi):
         """
