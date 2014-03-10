@@ -43,7 +43,7 @@ class RequestFinder:
                    if r.get('by_project') and r.get('state') == state]
         return reviews
 
-    def _new_review_by_project(self, request_id, element):
+    def _is_new_review_by_project(self, request_id, element):
         """
         Takes a XML that contains a list of reviews and return True if
         'request' is in the list with state as 'new'.
@@ -79,7 +79,7 @@ class RequestFinder:
             raise oscerr.WrongArgs(msg)
         self.srs[int(request_id)] = {'project': project}
 
-        review = self._new_review_by_project(request_id, root)
+        review = self._is_new_review_by_project(request_id, root)
         if review:
             self.srs[int(request_id)]['staging'] = review
 
@@ -110,7 +110,7 @@ class RequestFinder:
 
             self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
-            review = self._new_review_by_project(request, sr)
+            review = self._is_new_review_by_project(request, sr)
             if review:
                 self.srs[int(request)]['staging'] = review
 
