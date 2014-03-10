@@ -172,7 +172,7 @@ class RequestFinder:
         for p in pkgs:
             if self.find_request_package(p):
                 continue
-            if self.find_request_id(int(p)):
+            if self.find_request_id(p):
                 continue
             if self.find_request_project(p):
                 continue
