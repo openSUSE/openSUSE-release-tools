@@ -47,10 +47,11 @@ class RequestFinder(object):
                    if r.get('by_project') and r.get('state') == state]
         return reviews
 
-    def _is_new_review_by_project(self, request_id, element):
+    def _new_review_by_project(self, request_id, element):
         """
-        Takes a XML that contains a list of reviews and return True if
-        'request' is in the list with state as 'new'.
+        Takes a XML that contains a list of reviews and return the
+        staging project currantly assigned for review that is in 'new'
+        state. Makes sure that there is a most one.
         :param request_id: request id
         :param element: XML with list of reviews
         """
@@ -86,7 +87,7 @@ class RequestFinder(object):
             raise oscerr.WrongArgs(msg)
         self.srs[int(request_id)] = {'project': project}
 
-        review = self._is_new_review_by_project(request_id, root)
+        review = self._new_review_by_project(request_id, root)
         if review:
             self.srs[int(request_id)]['staging'] = review
 
@@ -117,7 +118,7 @@ class RequestFinder(object):
 
             self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
-            review = self._is_new_review_by_project(request, sr)
+            review = self._new_review_by_project(request, sr)
             if review:
                 self.srs[int(request)]['staging'] = review
 
@@ -156,7 +157,7 @@ class RequestFinder(object):
                 if src is not None and src.get('project') == source_project:
                     request = int(sr.attrib['id'])
                     self.srs[request] = {'project': 'openSUSE:Factory'}
-                    review = self._is_new_review_by_project(request, sr)
+                    review = self._new_review_by_project(request, sr)
                     if review:
                         self.srs[int(request)]['staging'] = review
                     ret = True
