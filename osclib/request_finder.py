@@ -10,6 +10,9 @@ FACTORY = 'openSUSE:Factory'
 STG_PREFIX = 'openSUSE:Factory:Staging:'
 
 
+def _is_int(x):
+    return isinstance(x, int) or x.isdigit()
+
 class RequestFinder:
 
     def __init__(self, apiurl, stagingapi):
@@ -30,9 +33,6 @@ class RequestFinder:
         self.apiurl = apiurl
         self.stagingapi = stagingapi
         self.srs = {}
-
-    def _is_int(self, x):
-        return isinstance(x, int) or x.isdigit()
 
     def _filter_review_by_project(self, element, state):
         """
@@ -64,7 +64,7 @@ class RequestFinder:
         :param request_id: ID of the added request
         """
 
-        if not self._is_int(request_id):
+        if not _is_int(request_id):
             return False
 
         url = makeurl(self.apiurl, ['request', str(request_id)])
@@ -191,7 +191,7 @@ class RequestFinder:
         for p in pkgs:
             found = False
             for staging in self.stagingapi.get_staging_projects():
-                if self._is_int(p) and self.stagingapi.get_package_for_request_id(staging, p):
+                if _is_int(p) and self.stagingapi.get_package_for_request_id(staging, p):
                     self.srs[int(p)] = {'staging': staging}
                     found = True
                     continue
