@@ -22,24 +22,36 @@ class SelectCommand(object):
         package = str(root.find('action').find('target').attrib['package'])
         return package
 
-    def _is_supersede(self, request):
+    def _supersede(self, request):
         """
         Check if the request supersede a different request from a
         staging project.
+
+        SRA supersede SRB when (1) SRA ID > SRB ID and (2) the changes
+        in SRB are in SRA. The second condition is difficult to
+        assure, but the way that we implement RequestFinder can
+        address some corner cases that make the first condition
+        enough.
+
         :param request: request we check for
         """
         package = self._package(request)
 
+        candidates = []   # Store candidates to be supersede by 'request'
         for staging in self.api.get_staging_projects():
             # requests for the same project are fine
             if staging == self.target_project:
                 continue
             for rq in self.api.get_prj_pseudometa(staging)['requests']:
-                if rq['id'] != request and rq['package'] == package:
-                    return (rq['id'], package, staging)
+                if int(rq['id']) < int(request) and rq['package'] == package:
+                    candidates.append((rq['id'], package, staging))
+
+        assert len(candidates) <= 1, 'There are more thant one candidate to supersede {} ({}): {}'.format(request, package, candidates)
+
+        return candidates[0] if candidates else None
 
     def select_request(self, request, request_project, move, from_):
-        supersede = self._is_supersede(request)
+        supersede = self._supersede(request)
 
         if 'staging' not in request_project and not supersede:
             # Normal 'select' command

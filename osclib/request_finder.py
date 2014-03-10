@@ -156,7 +156,8 @@ class RequestFinder(object):
                 src = act.find('source')
                 if src is not None and src.get('project') == source_project:
                     request = int(sr.attrib['id'])
-                    self.srs[request] = {'project': 'openSUSE:Factory'}
+                    state = sr.find('state').get('name')
+                    self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
                     review = self._new_review_by_project(request, sr)
                     if review:
                         self.srs[int(request)]['staging'] = review
