@@ -10,7 +10,11 @@ FACTORY = 'openSUSE:Factory'
 STG_PREFIX = 'openSUSE:Factory:Staging:'
 
 
-class RequestFinder:
+def _is_int(x):
+    return isinstance(x, int) or x.isdigit()
+
+
+class RequestFinder(object):
 
     def __init__(self, apiurl, stagingapi):
         """
@@ -31,9 +35,6 @@ class RequestFinder:
         self.stagingapi = stagingapi
         self.srs = {}
 
-    def _is_int(self, x):
-        return isinstance(x, int) or x.isdigit()
-
     def _filter_review_by_project(self, element, state):
         """
         Takes a XML that contains a list of reviews and take the ones
@@ -46,10 +47,11 @@ class RequestFinder:
                    if r.get('by_project') and r.get('state') == state]
         return reviews
 
-    def _is_new_review_by_project(self, request_id, element):
+    def _new_review_by_project(self, request_id, element):
         """
-        Takes a XML that contains a list of reviews and return True if
-        'request' is in the list with state as 'new'.
+        Takes a XML that contains a list of reviews and return the
+        staging project currantly assigned for review that is in 'new'
+        state. Makes sure that there is a most one.
         :param request_id: request id
         :param element: XML with list of reviews
         """
@@ -64,7 +66,7 @@ class RequestFinder:
         :param request_id: ID of the added request
         """
 
-        if not self._is_int(request_id):
+        if not _is_int(request_id):
             return False
 
         url = makeurl(self.apiurl, ['request', str(request_id)])
@@ -85,7 +87,7 @@ class RequestFinder:
             raise oscerr.WrongArgs(msg)
         self.srs[int(request_id)] = {'project': project}
 
-        review = self._is_new_review_by_project(request_id, root)
+        review = self._new_review_by_project(request_id, root)
         if review:
             self.srs[int(request_id)]['staging'] = review
 
@@ -116,7 +118,7 @@ class RequestFinder:
 
             self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
-            review = self._is_new_review_by_project(request, sr)
+            review = self._new_review_by_project(request, sr)
             if review:
                 self.srs[int(request)]['staging'] = review
 
@@ -154,8 +156,9 @@ class RequestFinder:
                 src = act.find('source')
                 if src is not None and src.get('project') == source_project:
                     request = int(sr.attrib['id'])
-                    self.srs[request] = {'project': 'openSUSE:Factory'}
-                    review = self._is_new_review_by_project(request, sr)
+                    state = sr.find('state').get('name')
+                    self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
+                    review = self._new_review_by_project(request, sr)
                     if review:
                         self.srs[int(request)]['staging'] = review
                     ret = True
