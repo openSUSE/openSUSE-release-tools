@@ -121,6 +121,7 @@ class StagingAPI(object):
         # Delete the old one
         self.rm_from_prj(source_project, request_id=req_id,
                          msg='Moved to {}'.format(destination_project))
+        return True
 
     def get_staging_projects(self):
         """
