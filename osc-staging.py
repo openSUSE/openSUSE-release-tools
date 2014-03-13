@@ -9,17 +9,9 @@
 
 import os
 import os.path
-import re
 import sys
-from xml.etree import cElementTree as ET
 
 from osc import cmdln, oscerr
-from osc.core import delete_project
-from osc.core import makeurl
-from osc.core import meta_get_packagelist
-from osc.core import http_GET
-from osc.core import http_POST
-from osc.core import server_diff
 
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
@@ -36,10 +28,12 @@ from osclib.check_command import CheckCommand
 
 OSC_STAGING_VERSION = '0.0.1'
 
+
 def _print_version(self):
     """ Print version information about this extension. """
     print(self.OSC_STAGING_VERSION)
     quit(0)
+
 
 @cmdln.option('--move', action='store_true',
               help='force the selection to become a move')
