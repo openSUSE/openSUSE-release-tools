@@ -106,4 +106,4 @@ class CleanupRings(object):
             if not self.pkgdeps.has_key(source) and not self.links.has_key(source):
                 print('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
-                    print('osc linkpac -c openSUSE:Factory').format(source, nextprj)
+                    print('osc linkpac openSUSE:Factory {} {}').format(source, nextprj)
