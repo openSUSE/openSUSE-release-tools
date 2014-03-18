@@ -582,7 +582,7 @@ class StagingAPI(object):
                 break
             
         if not filename:
-            return 'No ISO built in {}'.format(u)
+            return None
 
         try:
             f = urllib2.urlopen("http://opensuseqa.suse.de/api/v1/jobs")
