@@ -1078,11 +1078,16 @@ def do_check_repo(self, subcmd, opts, *args):
         for id_ in ids:
             packs.extend(self._check_repo_fetch_request(id_, opts))
 
+    # Order the packs before grouping
+    packs = sorted(packs, key=lambda p: p.request, reverse=True)
+
     groups = {}
     for p in packs:
         a = groups.get(p.group, [])
         a.append(p)
         groups[p.group] = a
 
-    for id_, reqs in groups.items():
+    # Sort the groups, from high to low. This put first the stating
+    # projects also
+    for id_, reqs in sorted(groups.items(), reverse=True):
         self._check_repo_group(id_, reqs, opts)
