@@ -867,8 +867,14 @@ def _check_repo_group(self, id_, reqs, opts):
         subpkgs = current_graph.subpkgs
 
         # Recover all packages at once, ignoring some packages that
-        # can't be found in x86_64 architecture
-        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepos[0], arch, p.spackage) for p in packs]
+        # can't be found in x86_64 architecture.
+        #
+        # The first filter is to remove some packages that do not have
+        # `goodrepos`. Thouse packages are usually marks as 'p.update
+        # = True' (meaning that they are declined or there is a new
+        # updated review.
+        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepos[0], arch, p.spackage)
+                        for p in packs if not p.updated]
         all_packages = [pkg for pkg in all_packages if pkg]
 
         subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
