@@ -11,6 +11,7 @@ import yaml
 import re
 import urllib2
 import time
+import json
 
 from osc import oscerr
 from osc.core import change_review_state
@@ -569,12 +570,7 @@ class StagingAPI(object):
                 return (time.time() - float(entry.get('mtime')))/3600/24
         return 100000  # quite some!
 
-    def find_openqa_state(self, project):
-        """
-        Checks the openqa state of the project
-        :param project: project to check
-        :return None or list with issue informations
-        """
+    def find_openqa_id(self, project):
         u = self.makeurl(['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
@@ -584,26 +580,50 @@ class StagingAPI(object):
             filename = binary.get('filename', '')
             if filename.endswith('.iso'):
                 break
-
+            
         if not filename:
             return 'No ISO built in {}'.format(u)
 
-        # don't look here - we will replace that once we have OBS<->openQA sync
-        baseurl = 'http://opensuseqa.suse.de/openqa/testresults/openSUSE-Factory-staging'
-        url = baseurl + '_' + project.split(':')[-1].lower() + '-x86_64-Build'
+        try:
+            f = urllib2.urlopen("http://opensuseqa.suse.de/api/v1/jobs")
+        except urllib2.HTTPError:
+            return None
+
+        jobs = json.load(f)['jobs']
+
+        jobname = 'opensuse-Factory-staging'
+        jobname += '_' + project.split(':')[-1].lower() + '-x86_64-Build'
         result = re.match('Test-([\d\.]+)-Build(\d+)\.(\d+)-Media.iso',
                           filename)
-        url += result.group(1)
+        jobname += result.group(1)
         bn = int(result.group(2)) * 100 + int(result.group(3))
-        url += '.{}'.format(bn)
-        url += "-minimalx/results.json"
+        jobname += '.{}'.format(bn)
+        jobname += "-minimalx"
+        
+        job_id = None
+        for job in jobs:
+            if job['name'] == jobname and job['result'] != 'incomplete':
+		job_id = job['id']
+	return job_id
 
+    def find_openqa_state(self, project):
+        """
+        Checks the openqa state of the project
+        :param project: project to check
+        :return None or list with issue informations
+        """
+
+        job = self.find_openqa_id(project)
+        if not job:
+		return 'No openQA result yet'
+		return
+
+        url = "http://opensuseqa.suse.de/tests/{}/file/results.json".format(job)
         try:
             f = urllib2.urlopen(url)
         except urllib2.HTTPError:
-            return 'No openQA result (yet) for {}'.format(url)
+            return "Can't open {}".format(url)
 
-        import json
         openqa = json.load(f)
         overall = openqa.get('overall', 'inprogress')
         if overall != 'ok':
