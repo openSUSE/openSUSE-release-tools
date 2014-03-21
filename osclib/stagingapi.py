@@ -124,6 +124,16 @@ class StagingAPI(object):
                          msg='Moved to {}'.format(destination_project))
         return True
 
+        # Build disable the old project if empty
+        meta = self.get_prj_pseudometa(source_project)
+        staged_requests = list()
+        for request in meta['requests']:
+            staged_requests.append(request['id'])
+        if not self.check_ring_packages(source_project, staged_requests):
+            self.build_switch_prj(source_project, 'disable')
+
+        return True
+
     def get_staging_projects(self):
         """
         Get all current running staging projects
@@ -140,7 +150,7 @@ class StagingAPI(object):
             projects.append(val.get('name'))
         return projects
 
-    def change_review_state(self, request_id, newstate, message=None,
+    def do_change_review_state(self, request_id, newstate, message=None,
                             by_group=None, by_user=None, by_project=None):
         """
         Change review state of the staging request
@@ -165,6 +175,7 @@ class StagingAPI(object):
                 # call osc's function
                 return change_review_state(self.apiurl, str(request_id),
                                            newstate,
+                                           message=message,
                                            by_group=by_group,
                                            by_user=by_user,
                                            by_project=by_project)
@@ -202,7 +213,7 @@ class StagingAPI(object):
         if not ring:
             # accept the request here
             message = 'No need for staging, not in tested ring projects.'
-            self.change_review_state(request_id, 'accepted', message=message,
+            self.do_change_review_state(request_id, 'accepted', message=message,
                                      by_group='factory-staging')
 
     def supseded_request(self, request):
@@ -248,8 +259,10 @@ class StagingAPI(object):
 
         if stage_info:
             # Remove the old request
-            self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'],
-                                 review='declined', msg='Replaced by newer request')
+            self.rm_from_prj(stage_info['prj'],
+                             request_id=stage_info['rq_id'],
+                             msg='Replaced by newer request',
+                             review='declined')
             # Add the new one that should be replacing it
             self.rq_to_prj(request_id, stage_info['prj'])
 
@@ -401,6 +414,7 @@ class StagingAPI(object):
         :param project: project to remove from
         :param request_id: request we want to remove
         :param msg: message for the log
+        :param review: review state for the review, defautl accepted
         """
 
         if not request_id:
@@ -737,7 +751,7 @@ class StagingAPI(object):
         self.add_review(request_id, project)
 
         # now remove the staging checker
-        self.change_review_state(request_id, 'accepted',
+        self.do_change_review_state(request_id, 'accepted',
                                  by_group='factory-staging',
                                  message='Picked {}'.format(project))
         return True
@@ -866,7 +880,7 @@ class StagingAPI(object):
         if not msg:
             msg = 'Reviewed by staging project "{}" with result: "{}"'
             msg = msg.format(project, state)
-        self.change_review_state(request_id, state, by_project=project,
+        self.do_change_review_state(request_id, state, by_project=project,
                                  message=msg)
 
     def build_switch_prj(self, project, state):
