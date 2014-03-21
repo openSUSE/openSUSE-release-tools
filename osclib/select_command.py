@@ -111,6 +111,8 @@ class SelectCommand(object):
         for request in meta['requests']:
             staged_requests.append(request['id'])
         if self.api.check_ring_packages(target_project, staged_requests):
-            self.api.build_switch_prj(self.target_project, 'enable')
+            self.api.build_switch_prj(target_project, 'enable')
+        else:
+            self.api.build_switch_prj(target_project, 'disable')
 
         return True
