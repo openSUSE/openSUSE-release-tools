@@ -867,8 +867,14 @@ def _check_repo_group(self, id_, reqs, opts):
         subpkgs = current_graph.subpkgs
 
         # Recover all packages at once, ignoring some packages that
-        # can't be found in x86_64 architecture
-        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepos[0], arch, p.spackage) for p in packs]
+        # can't be found in x86_64 architecture.
+        #
+        # The first filter is to remove some packages that do not have
+        # `goodrepos`. Thouse packages are usually marks as 'p.update
+        # = True' (meaning that they are declined or there is a new
+        # updated review.
+        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepos[0], arch, p.spackage)
+                        for p in packs if not p.updated]
         all_packages = [pkg for pkg in all_packages if pkg]
 
         subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
@@ -1072,11 +1078,16 @@ def do_check_repo(self, subcmd, opts, *args):
         for id_ in ids:
             packs.extend(self._check_repo_fetch_request(id_, opts))
 
+    # Order the packs before grouping
+    packs = sorted(packs, key=lambda p: p.request, reverse=True)
+
     groups = {}
     for p in packs:
         a = groups.get(p.group, [])
         a.append(p)
         groups[p.group] = a
 
-    for id_, reqs in groups.items():
+    # Sort the groups, from high to low. This put first the stating
+    # projects also
+    for id_, reqs in sorted(groups.items(), reverse=True):
         self._check_repo_group(id_, reqs, opts)
