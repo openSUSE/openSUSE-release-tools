@@ -600,11 +600,12 @@ class StagingAPI(object):
         jobname += '.{}'.format(bn)
         jobname += "-minimalx"
         
-        job_id = None
+        bestjob = None
         for job in jobs:
             if job['name'] == jobname and job['result'] != 'incomplete':
-		job_id = job['id']
-	return job_id
+                if not bestjob or bestjob['result'] != 'passed':
+                    bestjob = job
+	return bestjob['id'] if bestjob else None
 
     def find_openqa_state(self, project):
         """
