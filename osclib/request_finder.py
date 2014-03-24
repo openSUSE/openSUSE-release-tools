@@ -100,7 +100,7 @@ class RequestFinder(object):
         """
 
         query = 'states=new,review,declined&project=openSUSE:Factory&view=collection&package={}'
-        query = query.format(package)
+        query = query.format(urllib2.quote(package))
         url = makeurl(self.apiurl, ['request'], query)
         f = http_GET(url)
 
