@@ -106,13 +106,6 @@ class SelectCommand(object):
                 return False
 
         # now make sure we enable the prj if the prj contains any ringed package
-        meta = self.api.get_prj_pseudometa(target_project)
-        staged_requests = list()
-        for request in meta['requests']:
-            staged_requests.append(request['id'])
-        if self.api.check_ring_packages(target_project, staged_requests):
-            self.api.build_switch_prj(target_project, 'enable')
-        else:
-            self.api.build_switch_prj(target_project, 'disable')
+        self.api.build_switch_staging_project(target_project)
 
         return True
