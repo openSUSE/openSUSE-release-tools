@@ -594,7 +594,7 @@ class StagingAPI(object):
             filename = binary.get('filename', '')
             if filename.endswith('.iso'):
                 break
-            
+
         if not filename:
             return None
 
@@ -613,7 +613,7 @@ class StagingAPI(object):
         bn = int(result.group(2)) * 100 + int(result.group(3))
         jobname += '.{}'.format(bn)
         jobname += "-minimalx"
-        
+
         bestjob = None
         for job in jobs:
             if job['name'] == jobname and job['result'] != 'incomplete':
@@ -842,6 +842,10 @@ class StagingAPI(object):
                 return
             if by_group and i.by_group == by_group and i.state == 'new':
                 return
+
+        # don't try to change reviews if the request is dead
+        if not req.state.name in ['new', 'review']:
+            return
 
         query = {}
         if by_project:

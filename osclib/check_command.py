@@ -18,7 +18,7 @@ class CheckCommand(object):
 
         # If the project is empty just skip it
         if not state:
-            return
+            return None
 
         print('Checking staging project: {}'.format(project))
         if type(state) is list:
@@ -27,6 +27,8 @@ class CheckCommand(object):
                 print(issue)
         else:
             print(' ++ Acceptable staging project')
+
+        return True
 
     def perform(self, project):
         """
@@ -37,8 +39,8 @@ class CheckCommand(object):
             self._check_one_project(project, True)
         else:
             for project in self.api.get_staging_projects():
-                self._check_one_project(project, False)
-		# newline to split multiple prjs at once
-		print('')
+                if self._check_one_project(project, False):
+                    # newline to split multiple prjs at once
+                    print('')
 
         return True
