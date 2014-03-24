@@ -122,15 +122,9 @@ class StagingAPI(object):
         # Delete the old one
         self.rm_from_prj(source_project, request_id=req_id,
                          msg='Moved to {}'.format(destination_project))
-        return True
 
         # Build disable the old project if empty
-        meta = self.get_prj_pseudometa(source_project)
-        staged_requests = list()
-        for request in meta['requests']:
-            staged_requests.append(request['id'])
-        if not self.check_ring_packages(source_project, staged_requests):
-            self.build_switch_prj(source_project, 'disable')
+        self.build_switch_staging_project(source_project)
 
         return True
 
@@ -924,3 +918,18 @@ class StagingAPI(object):
             return True
 
         return False
+
+    def build_switch_staging_project(self, target_project):
+        """
+        Verify what packages are in project and switch the build
+        accordingly.
+        :param target_project: project we validate and switch
+        """
+        meta = self.get_prj_pseudometa(target_project)
+        staged_requests = list()
+        for request in meta['requests']:
+            staged_requests.append(request['id'])
+        if self.check_ring_packages(target_project, staged_requests):
+            self.build_switch_prj(target_project, 'enable')
+        else:
+            self.build_switch_prj(target_project, 'disable')

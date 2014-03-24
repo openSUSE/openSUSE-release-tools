@@ -18,7 +18,7 @@ class CheckCommand(object):
 
         # If the project is empty just skip it
         if not state:
-            return None
+            return False
 
         print('Checking staging project: {}'.format(project))
         if type(state) is list:
