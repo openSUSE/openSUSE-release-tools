@@ -111,10 +111,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'accept':
         return AcceptCommand(api).perform(api. prj_from_letter(args[1]))
     elif cmd == 'unselect':
-        for rq, rq_prj in RequestFinder.find_staged_sr(args[1:], opts.apiurl, api).items():
-            print('Unselecting "{}" from "{}"'.format(rq, rq_prj['staging']))
-            api.rm_from_prj(rq_prj['staging'], request_id=rq)
-            api.add_review(rq, by_group='factory-staging', msg='Please recheck')
+        return UnselectCommand(api).perform(args[1:])
     elif cmd == 'select':
         tprj = api.prj_from_letter(args[1])
         return SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
