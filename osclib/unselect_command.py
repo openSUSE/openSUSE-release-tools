@@ -14,7 +14,7 @@ class UnselectCommand(object):
         Remove request from staging project
         :param packages: packages/requests to delete from staging projects
         """
-        for request, request_project in RequestFinder.find_staged_sr(packages, opts.apiurl, api).items():
+        for request, request_project in RequestFinder.find_staged_sr(packages, self.api).items():
             staging_project = request_project['staging']
             print('Unselecting "{}" from "{}"'.format(request, staging_project))
             self.api.rm_from_prj(staging_project, request_id=request)
