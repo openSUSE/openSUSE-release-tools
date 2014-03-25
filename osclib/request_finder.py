@@ -219,13 +219,12 @@ class RequestFinder(object):
         return finder.srs
 
     @classmethod
-    def find_staged_sr(cls, pkgs, apiurl, stagingapi):
+    def find_staged_sr(cls, pkgs, stagingapi):
         """
         Search for all various mutations and return a single SR#s.
         :param pkgs: mesh of argumets to search for (SR#|package name)
-        :param apiurl: OBS url
         :param stagingapi: StagingAPI instance
         """
-        finder = cls(apiurl, stagingapi)
+        finder = cls(stagingapi.apiurl, stagingapi)
         finder.find_via_stagingapi(pkgs)
         return finder.srs
