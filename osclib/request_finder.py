@@ -56,6 +56,10 @@ class RequestFinder(object):
         :param element: XML with list of reviews
         """
         reviews = self._filter_review_by_project(element, 'new')
+        # First filter out reviews to contain only STAGING ones
+        # NOTE: this is hardcoded path to projects so usage elsewhere
+        #       will need adjustements
+        reviews = [prj for prj in reviews if prj.startswith('openSUSE:Factory:Staging:')]
         assert len(reviews) <= 1, 'Request "{}" have multiple review by project in new state "{}"'.format(request_id,
                                                                                                           reviews)
         return reviews[0] if reviews else None
