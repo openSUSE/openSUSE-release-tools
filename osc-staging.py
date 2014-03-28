@@ -92,7 +92,7 @@ def do_staging(self, subcmd, opts, *args):
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
     if len(args) - 1 < min_args:
         raise oscerr.WrongArgs('Too few arguments.')
-    if not max_args is None and len(args) - 1 > max_args:
+    if max_args is not None and len(args) - 1 > max_args:
         raise oscerr.WrongArgs('Too many arguments.')
 
     # init the obs access
