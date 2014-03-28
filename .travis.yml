@@ -6,7 +6,8 @@ python:
 install:
   - pip install python-coveralls
   - pip install -r requirements.txt
-  - mkdir -p /var/cache/repo-checker
+  - sudo mkdir -p /var/cache/repo-checker
+  - sudo chown $USER /var/cache/repo-checker
 # command to run tests, e.g. python setup.py test
 script:
   - nosetests --with-coverage --cover-package=oscs,osclib --cover-inclusive
