@@ -56,10 +56,6 @@ class RequestFinder(object):
         :param element: XML with list of reviews
         """
         reviews = self._filter_review_by_project(element, 'new')
-        # First filter out reviews to contain only STAGING ones
-        # NOTE: this is hardcoded path to projects so usage elsewhere
-        #       will need adjustements
-        reviews = [prj for prj in reviews if prj.startswith('openSUSE:Factory:Staging:')]
         assert len(reviews) <= 1, 'Request "{}" have multiple review by project in new state "{}"'.format(request_id,
                                                                                                           reviews)
         return reviews[0] if reviews else None
@@ -92,7 +88,7 @@ class RequestFinder(object):
         self.srs[int(request_id)] = {'project': project}
 
         review = self._new_review_by_project(request_id, root)
-        if review:
+        if review and review.startswith(STG_PREFIX):
             self.srs[int(request_id)]['staging'] = review
 
         return True
@@ -123,7 +119,7 @@ class RequestFinder(object):
             self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
 
             review = self._new_review_by_project(request, sr)
-            if review:
+            if review and review.startswith(STG_PREFIX):
                 self.srs[int(request)]['staging'] = review
 
             if last_rq:
@@ -163,7 +159,7 @@ class RequestFinder(object):
                     state = sr.find('state').get('name')
                     self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
                     review = self._new_review_by_project(request, sr)
-                    if review:
+                    if review and review.startswith(STG_PREFIX):
                         self.srs[int(request)]['staging'] = review
                     ret = True
 

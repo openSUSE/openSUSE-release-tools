@@ -4,7 +4,7 @@ from osc import oscerr
 from osc.core import http_GET
 
 from osclib.request_finder import RequestFinder
-from osclib.freeze_command import FreezeCommand
+# from osclib.freeze_command import FreezeCommand
 
 
 class SelectCommand(object):
@@ -98,7 +98,7 @@ class SelectCommand(object):
         # If the project is not frozen enough yet freeze it
         if not self.api.prj_frozen_enough(target_project):
             print('Freeze the prj first')
-            #FreezeCommand(self.api).perform(target_project)
+            # FreezeCommand(self.api).perform(target_project)
         self.target_project = target_project
 
         for request, request_project in RequestFinder.find_sr(requests, self.api.apiurl).items():
