@@ -202,6 +202,7 @@ class Package_(object):
     def __repr__(self):
         return 'PKG: %s\nSRC: %s\nDEPS: %s\n SUBS: %s' % (self.pkg, self.src, self.deps, self.subs)
 
+TMPDIR = '/var/cache/repo-checker'  # Where the cache files are stored
 
 def memoize(ttl=None):
     """Decorator function to implement a persistent cache.
@@ -260,7 +261,6 @@ def memoize(ttl=None):
     """
 
     # Configuration variables
-    TMPDIR = '~/.cr-cache'  # Where the cache files are stored
     SLOTS = 4096            # Number of slots in the cache file
     NCLEAN = 1024           # Number of slots to remove when limit reached
     TIMEOUT = 60*60*2       # Time to live for every cache slot (seconds)
@@ -970,9 +970,8 @@ def _check_repo_group(self, id_, reqs, opts):
                     os.mkdir(dir)
                 os.symlink(d, os.path.join(dir, os.path.basename(d)))
 
-        repochecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
-        repochecker = os.path.join(repochecker, 'repo-checker.pl')
-        civs = "LC_ALL=C perl %s '%s' -f %s 2>&1" % (repochecker, destdir, params_file.name)
+        repochecker = os.path.join(self.repocheckerdir, 'repo-checker.pl')
+        civs = "LC_ALL=C perl %s '%s' -r %s -f %s 2>&1" % (repochecker, destdir, self.repodir, params_file.name)
         #print civs
         #continue
         #exit(1)
@@ -1086,6 +1085,15 @@ def do_check_repo(self, subcmd, opts, *args):
         a = groups.get(p.group, [])
         a.append(p)
         groups[p.group] = a
+
+    self.repocheckerdir = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
+    self.repodir = "%s/repo-%s-%s" % (TMPDIR, 'openSUSE:Factory', 'standard')
+    if not os.path.exists(self.repodir):
+        os.mkdir(self.repodir)
+    civs = "LC_ALL=C perl %s/bs_mirrorfull --nodebug https://build.opensuse.org/build/%s/%s/x86_64 %s" % (self.repocheckerdir, 
+                                                                                                          'openSUSE:Factory', 
+                                                                                                          'standard', self.repodir)
+    os.system(civs)
 
     # Sort the groups, from high to low. This put first the stating
     # projects also
