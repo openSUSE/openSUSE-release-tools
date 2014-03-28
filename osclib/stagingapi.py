@@ -593,7 +593,7 @@ class StagingAPI(object):
             return None
 
         try:
-            f = urllib2.urlopen("http://opensuseqa.suse.de/api/v1/jobs")
+            f = urllib2.urlopen("https://openqa.opensuse.org/api/v1/jobs")
         except urllib2.HTTPError:
             return None
 
@@ -627,7 +627,7 @@ class StagingAPI(object):
 		return 'No openQA result yet'
 		return
 
-        url = "http://opensuseqa.suse.de/tests/{}/file/results.json".format(job)
+        url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job)
         try:
             f = urllib2.urlopen(url)
         except urllib2.HTTPError:
