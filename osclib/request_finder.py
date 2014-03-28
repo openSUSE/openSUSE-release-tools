@@ -92,7 +92,7 @@ class RequestFinder(object):
         self.srs[int(request_id)] = {'project': project}
 
         review = self._new_review_by_project(request_id, root)
-        if review:
+        if review and review.startswith(STG_PREFIX):
             self.srs[int(request_id)]['staging'] = review
 
         return True
