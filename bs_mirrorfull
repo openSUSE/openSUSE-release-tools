@@ -1,0 +1,75 @@
+#!/usr/bin/perl -w
+
+use lib 'bs_copy';
+use BSUtil;
+use BSRPC ':https';
+use BSXML;
+use BSHTTP;
+
+use strict;
+
+my $nodebug;
+
+while (@ARGV) {
+  if ($ARGV[0] eq '--nodebug') {
+    $nodebug = 1;
+  } elsif ($ARGV[0] eq '--') {
+    shift @ARGV;
+    last;
+  } elsif ($ARGV[0] =~ /^-/) {
+    die("unknown option $ARGV[0]\n");
+  } else {
+    last;
+  }
+  shift @ARGV;
+}
+
+die("uasge: bs_mirrorfull url dir\n") unless @ARGV == 2;
+my ($url, $dir) = @ARGV;
+$url =~ s/\/$//;
+
+print "receiving tree state\n";
+my $bvl = BSRPC::rpc("$url/_repository", $BSXML::binaryversionlist, "view=binaryversions", "nometa=1");
+my @localbins = grep {/^[0-9a-f]{32}-.+\.rpm$/} ls($dir);
+my %localbins = map {$_ => 1} @localbins;
+my %remotebins;
+for my $bv (@{$bvl->{'binary'} || []}) {
+  next unless $bv->{'name'} =~ /\.rpm$/;
+  next if $nodebug && $bv->{'name'} =~ /-debug(?:info|source|info-32bit)\.rpm$/;
+  $remotebins{"$bv->{'hdrmd5'}-$bv->{'name'}"} = $bv;
+}
+my @todelete = grep {!$remotebins{$_}} sort keys %localbins;
+my @todownload = grep {!$localbins{$_}} sort keys %remotebins;
+if (@todelete) {
+  print "deleting ".@todelete." old packages\n";
+  for my $bin (@todelete) {
+    unlink("$dir/$bin") || die("unlink: $!\n");
+  }
+}
+if (@todownload) {
+  print "downloading ".@todownload." new packages\n";
+  my $todo = @todownload;
+  my $did = 0;
+  while (@todownload) {
+    my @fetch = splice(@todownload, 0, 50);
+    my @args;
+    for (@fetch) {
+      die unless /^[0-9a-f]{32}-(.+)\.rpm$/;
+      push @args, "binary=$1";
+    }
+    my $param = {
+      'uri' => "$url/_repository",
+      'directory' => $dir,
+      'map' => sub {
+        my ($param, $name) = @_;
+        return undef unless $name =~ /^(.+)-([0-9a-f]{32})$/;
+        return "$2-$1.rpm";
+      },
+      'receiver' => \&BSHTTP::cpio_receiver,
+    };
+    BSRPC::rpc($param, undef, 'view=cpioheaders', @args);
+    $did += @fetch;
+    print "$did/$todo\n";
+  }
+}
+print "done, we now have ".(keys %remotebins)." packages.\n";

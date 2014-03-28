@@ -15,18 +15,24 @@ use Fcntl;
 use strict;
 
 my $ret = 0;
-my $dir = $ARGV[0];
+my $dir = shift @ARGV;
 my %toignore;
-if ($ARGV[1] eq "-f") {
-  open(TOIGNORE, $ARGV[2]) || die "can't open $ARGV[2]";
-  while ( <TOIGNORE> ) {
-    chomp;
-    $toignore{$_} = 1;
-  }
-  close(TOIGNORE);
-} else {
-  foreach my $name (split(/,/, $ARGV[1])) {
-    $toignore{$name} = 1;
+my $repodir;
+while (@ARGV) {
+  my $switch = shift @ARGV;
+  if ($switch eq "-f") {
+    my $toignore = shift @ARGV;
+    open(TOIGNORE, $toignore) || die "can't open $toignore";
+    while ( <TOIGNORE> ) {
+      chomp;
+      $toignore{$_} = 1;
+    }
+    close(TOIGNORE);
+  } elsif ($switch eq "-r") {
+    $repodir = shift @ARGV;
+  } else {
+    print "read the source luke: $switch ? \n";
+    exit(1);
   }
 }
 
@@ -52,7 +58,7 @@ for my $pdir (glob("$dir/*")) {
 my %targets;
 my %cache;
 
-foreach my $file (glob("~/cache/*")) {
+foreach my $file (glob("$repodir/.cache/*")) {
   if ($file =~ m,/(\d+)\.(\d+)-([^/]*)$,) {
     $cache{"$1.$2"} = $3;
   }
@@ -80,7 +86,7 @@ sub write_package($$)
       if (defined $toignore{$name}) {
 	return;
       }
-      open(C, $ENV{'HOME'} . "/cache/$mtime.$ino-$name") || die "no cache for $package";
+      open(C, "$repodir/.cache/$mtime.$ino-$name") || die "no cache for $package";
       while ( <C> ) {
 	print PACKAGES $_;
       }
@@ -171,7 +177,8 @@ sub write_package($$)
   $out .= "-Obs:\n";
 
   if ($ignore == 1) {
-    open(C, '>', $ENV{'HOME'} . "/cache/$mtime.$ino-$name") || die "no writeable cache for $package";
+    mkdir("$repodir/.cache");
+    open(C, '>', "$repodir/.cache/$mtime.$ino-$name") || die "no writeable cache for $package";
     print C $out;
     close(C);
   }
@@ -179,7 +186,7 @@ sub write_package($$)
   print PACKAGES $out;
 }
 
-my @rpms = glob("~/factory-repo/*.rpm");
+my @rpms = glob("$repodir/*.rpm");
 my $pfile = $ENV{'HOME'} . "/packages";
 open(PACKAGES, ">", $pfile) || die 'can not open';
 print PACKAGES "=Ver: 2.0\n";
