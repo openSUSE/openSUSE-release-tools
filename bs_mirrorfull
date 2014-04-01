@@ -1,5 +1,11 @@
 #!/usr/bin/perl -w
 
+BEGIN {
+  my ($wd) = $0 =~ m-(.*)/- ;
+  $wd ||= '.';
+  unshift @INC, "$wd/bs_copy";
+}
+
 use lib 'bs_copy';
 use BSUtil;
 use BSRPC ':https';
