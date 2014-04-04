@@ -594,11 +594,8 @@ class StagingAPI(object):
 
         jobname = 'openSUSE-Factory-staging'
         jobname += '_' + project.split(':')[-1].lower() + '-x86_64-Build'
-        result = re.match('Test-([\d\.]+)-Build(\d+)\.(\d+)-Media.iso',
-                          filename)
+        result = re.match('Test-Build([^-]+)-Media.iso', filename)
         jobname += result.group(1)
-        bn = int(result.group(2)) * 100 + int(result.group(3))
-        jobname += '.{}'.format(bn)
 
         try:
             url = "https://openqa.opensuse.org/api/v1/jobs?iso={}-Media.iso".format(jobname)
