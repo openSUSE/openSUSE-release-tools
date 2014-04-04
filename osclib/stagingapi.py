@@ -592,25 +592,25 @@ class StagingAPI(object):
         if not filename:
             return None
 
-        try:
-            f = urllib2.urlopen("https://openqa.opensuse.org/api/v1/jobs")
-        except urllib2.HTTPError:
-            return None
-
-        jobs = json.load(f)['jobs']
-
-        jobname = 'opensuse-Factory-staging'
+        jobname = 'openSUSE-Factory-staging'
         jobname += '_' + project.split(':')[-1].lower() + '-x86_64-Build'
         result = re.match('Test-([\d\.]+)-Build(\d+)\.(\d+)-Media.iso',
                           filename)
         jobname += result.group(1)
         bn = int(result.group(2)) * 100 + int(result.group(3))
         jobname += '.{}'.format(bn)
-        jobname += "-minimalx"
+
+        try:
+            url = "https://openqa.opensuse.org/api/v1/jobs?iso={}-Media.iso".format(jobname)
+            f = urllib2.urlopen(url)
+        except urllib2.HTTPError:
+            return None
+
+        jobs = json.load(f)['jobs']
 
         bestjob = None
         for job in jobs:
-            if job['name'] == jobname and job['result'] != 'incomplete':
+            if job['result'] != 'incomplete':
                 if not bestjob or bestjob['result'] != 'passed':
                     bestjob = job
 	return bestjob['id'] if bestjob else None
