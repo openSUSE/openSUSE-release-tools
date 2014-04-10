@@ -648,7 +648,7 @@ class StagingAPI(object):
         :param project: project to check
         """
         # Get build results
-        u = self.makeurl(['build', project, '_result'])
+        u = self.makeurl(['build', project, '_result?code=failed&code=broken&code=unresolvable'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
 
