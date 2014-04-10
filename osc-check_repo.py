@@ -1087,7 +1087,7 @@ def do_check_repo(self, subcmd, opts, *args):
         groups[p.group] = a
 
     self.repocheckerdir = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
-    self.repodir = "%s/repo-%s-%s" % (TMPDIR, 'openSUSE:Factory', 'standard')
+    self.repodir = "%s/repo-%s-%s-x86_64" % (TMPDIR, 'openSUSE:Factory', 'standard')
     if not os.path.exists(self.repodir):
         os.mkdir(self.repodir)
     civs = "LC_ALL=C perl %s/bs_mirrorfull --nodebug https://build.opensuse.org/build/%s/%s/x86_64 %s" % (self.repocheckerdir, 
