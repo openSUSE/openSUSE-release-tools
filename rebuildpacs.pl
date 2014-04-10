@@ -6,10 +6,12 @@ use URI::Escape;
 use File::Basename;
 use File::Temp qw/tempdir/;
 
+my $script_dir;
+
 BEGIN {
-  my ($wd) = $0 =~ m-(.*)/- ;
-  $wd ||= '.';
-  unshift @INC, $wd;
+  ($script_dir) = $0 =~ m-(.*)/- ;
+  $script_dir ||= '.';
+  unshift @INC, $script_dir;
 }
 
 require CreatePackageDescr;
@@ -46,7 +48,7 @@ mkdir($repodir);
 my $pfile = tempdir() . "/packages";    # the filename is important ;(
 
 system(
-"./bs_mirrorfull --nodebug https://build.opensuse.org/build/$project/$repo/$arch/ $repodir"
+"$script_dir/bs_mirrorfull --nodebug https://build.opensuse.org/build/$project/$repo/$arch/ $repodir"
 );
 
 my @rpms = glob("$repodir/*.rpm");
