@@ -34,7 +34,7 @@ die("uasge: bs_mirrorfull url dir\n") unless @ARGV == 2;
 my ($url, $dir) = @ARGV;
 $url =~ s/\/$//;
 
-print "receiving tree state\n";
+#print "receiving tree state\n";
 my $bvl = BSRPC::rpc("$url/_repository", $BSXML::binaryversionlist, "view=binaryversions", "nometa=1");
 my @localbins = grep {/^[0-9a-f]{32}-.+\.rpm$/} ls($dir);
 my %localbins = map {$_ => 1} @localbins;
@@ -75,7 +75,7 @@ if (@todownload) {
     };
     BSRPC::rpc($param, undef, 'view=cpioheaders', @args);
     $did += @fetch;
-    print "$did/$todo\n";
+    #print "$did/$todo\n";
   }
 }
-print "done, we now have ".(keys %remotebins)." packages.\n";
+#print "done, we now have ".(keys %remotebins)." packages.\n";
