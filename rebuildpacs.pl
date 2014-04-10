@@ -6,6 +6,12 @@ use URI::Escape;
 use File::Basename;
 use File::Temp qw/tempdir/;
 
+BEGIN {
+  my ($wd) = $0 =~ m-(.*)/- ;
+  $wd ||= '.';
+  unshift @INC, $wd;
+}
+
 require CreatePackageDescr;
 
 my $repodir;
