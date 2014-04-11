@@ -5,13 +5,14 @@ use XML::Simple;
 use URI::Escape;
 use File::Basename;
 use File::Temp qw/tempdir/;
+use Digest::MD5 qw(md5_hex);
 
 my $script_dir;
 
 BEGIN {
-  ($script_dir) = $0 =~ m-(.*)/- ;
-  $script_dir ||= '.';
-  unshift @INC, $script_dir;
+    ($script_dir) = $0 =~ m-(.*)/-;
+    $script_dir ||= '.';
+    unshift @INC, $script_dir;
 }
 
 require CreatePackageDescr;
@@ -43,13 +44,123 @@ my $project = $ARGV[0] || "openSUSE:Factory";
 my $repo    = $ARGV[1] || "standard";
 my $arch    = $ARGV[2] || "x86_64";
 
+my %leafed;
+
+sub read_plain_index($) {
+  my $file = shift;
+
+  my %ret;
+
+  open(FILE, $file) || return \%ret;
+  while ( <FILE> ) {
+    if (m/^(.*):(.*)/) {
+      $ret{$1} = $2;
+    }
+  }
+  close(FILE);
+  return \%ret;
+}
+
+sub write_plain_index($$) {
+  my $file = shift;
+  my $hash = shift;
+
+  open(FILE, ">$file") || die "can't write to $file";
+  for my $key (sort keys %{$hash}) {
+    print FILE "$key:" . $hash->{$key} . "\n";
+  }
+  close(FILE);
+}
+
+# defines packages that need to be triggered too
+my %parents = (
+    "rpmlint"           => [qw(rpmlint-mini)],
+    "branding-openSUSE" => [
+        qw(glib2-branding-openSUSE
+          kiwi-config-openSUSE
+          xfce4-branding-openSUSE
+          kdebase4-openSUSE kde-branding-openSUSE
+          bundle-lang-kde installation-images-openSUSE)
+      ],
+    "kdebase4-openSUSE" => [qw(bundle-lang-kde)],
+  );
+
+sub check_leaf_package($$) {
+    my $package = shift;
+    my $rebuildhash = shift;
+
+    my @lines = ();
+    open( OSC, "osc api /build/$project/$repo/$arch/$package/_buildinfo?internal=1|" );
+    while (<OSC>) {
+        chomp;
+        if (m/<subpack>(.*)</) {
+            $leafed{$1} = $package;
+        }
+        if (m/bdep name="([^"]*)"/) {
+            my $parent = $leafed{$1};
+            if ( $parent && $parent ne "rpmlint-mini" ) {
+	      # I dislike grep
+	      unless (grep { $_ eq $package } @{$parents{$parent}}) {
+		print "ADD $package to PARENT $parent!!\n";
+	      }
+	      next;
+            }
+        }
+        else {
+            next;
+        }
+        next if (m/notmeta="1"/);
+        push( @lines, $_ );
+    }
+    close(OSC);
+    my $ctx = Digest::MD5->new;
+    for my $line ( sort @lines ) {
+      $ctx->add($line);
+    }
+    my $rebuilds = read_plain_index("buildinfos");
+    my $newmd5 = $ctx->hexdigest;
+    if ($rebuilds->{"$project/$repo/$arch/$package"} ne $newmd5) {
+
+      $rebuildhash->{$package} = 1;
+      for my $child (@{$parents{$package}}) {
+	$rebuildhash->{$child} = 1;
+      }
+      $rebuilds->{"$project/$repo/$arch/$package"} = $newmd5;
+      write_plain_index("buildinfos", $rebuilds);
+    }
+}
+
+my %torebuild;
+check_leaf_package("rpmlint", \%torebuild);
+check_leaf_package("rpmlint-mini", \%torebuild);
+
+check_leaf_package("branding-openSUSE", \%torebuild);
+check_leaf_package("glib2-branding-openSUSE", \%torebuild);
+check_leaf_package("PackageKit-branding-openSUSE", \%torebuild);
+check_leaf_package("kiwi-config-openSUSE", \%torebuild);
+check_leaf_package("xfce4-branding-openSUSE", \%torebuild);
+check_leaf_package("kdebase4-openSUSE", \%torebuild);
+check_leaf_package("kde-branding-openSUSE", \%torebuild);
+
+check_leaf_package("bundle-lang-common", \%torebuild);
+check_leaf_package("bundle-lang-kde", \%torebuild);
+check_leaf_package("bundle-lang-gnome", \%torebuild);
+check_leaf_package("installation-images-openSUSE", \%torebuild);
+if (%torebuild) {
+  my $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
+  for my $package (sort keys %torebuild) {
+    $api .= "&package=" . uri_escape( $package );
+  }
+  system("osc api -X POST '$api'");
+}
+
 $repodir = "/var/cache/repo-checker/repo-openSUSE:Factory-$repo-$arch";
 mkdir($repodir);
 my $pfile = tempdir() . "/packages";    # the filename is important ;(
 
 system(
-"$script_dir/bs_mirrorfull --nodebug https://build.opensuse.org/build/$project/$repo/$arch/ $repodir"
-);
+    "$script_dir/bs_mirrorfull --nodebug https://build.opensuse.org/build/$project/$repo/$arch/ $repodir"
+  );
 
 my @rpms = glob("$repodir/*.rpm");
 
