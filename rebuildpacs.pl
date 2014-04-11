@@ -91,6 +91,8 @@ while (<INSTALLCHECK>) {
 
 }
 close(INSTALLCHECK);
+unlink($pfile);
+rmdir(dirname($pfile));
 
 my %nproblems;
 for my $package ( sort keys %problems ) {

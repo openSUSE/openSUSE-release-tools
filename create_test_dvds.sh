@@ -35,7 +35,7 @@ function regenerate_pl() {
     done
     sed -n -e '/END-PACKAGELIST/,$p' $tdir/PRODUCT-x86_64.kiwi >> $p
     xmllint --format $p -o $tdir/PRODUCT-x86_64.kiwi
-    rm $p
+    rm $p $out
     pushd $tdir > /dev/null
     if ! cmp -s .osc/PRODUCT-x86_64.kiwi PRODUCT-x86_64.kiwi; then
       osc ci -m "auto update"
