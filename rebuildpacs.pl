@@ -154,7 +154,7 @@ if (%torebuild) {
   system("osc api -X POST '$api'");
 }
 
-$repodir = "/var/cache/repo-checker/repo-openSUSE:Factory-$repo-$arch";
+$repodir = "/var/cache/repo-checker/repo-$project-$repo-$arch";
 mkdir($repodir);
 my $pfile = tempdir() . "/packages";    # the filename is important ;(
 
