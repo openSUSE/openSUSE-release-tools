@@ -34,7 +34,8 @@ sub package_snippet($) {
     my %qq = Build::Rpm::rpmq(
         $package,
         qw{NAME VERSION RELEASE ARCH OLDFILENAMES DIRNAMES BASENAMES DIRINDEXES 1030 1037 1039 1040
-          1047 1112 1113 1049 1048 1050 1090 1114 1115 1054 1053 1055 1036
+          1047 1112 1113 1049 1048 1050 1090 1114 1115 1054 1053 1055 1036 5046 5047 5048 5049 5050 5051
+          5052 5053 5054 5055 5056 5057 1156 1158 1157 1159 1161 1160
           }
     );
 
@@ -44,6 +45,14 @@ sub package_snippet($) {
     Build::Rpm::add_flagsvers( \%qq, 1047, 1112, 1113 );    # provides
     Build::Rpm::add_flagsvers( \%qq, 1090, 1114, 1115 );    # obsoletes
     Build::Rpm::add_flagsvers( \%qq, 1054, 1053, 1055 );    # conflicts
+
+   Build::Rpm::add_flagsvers(\%qq, 1156, 1158, 1157) if $qq{1156}; # oldsuggests
+   Build::Rpm::add_flagsvers(\%qq, 1159, 1161, 1160) if $qq{1159}; # oldenhances
+
+   Build::Rpm::add_flagsvers(\%qq, 5046, 5048, 5047) if $qq{5046}; # recommends
+   Build::Rpm::add_flagsvers(\%qq, 5049, 5051, 5050) if $qq{5049}; # suggests
+   Build::Rpm::add_flagsvers(\%qq, 5052, 5054, 5053) if $qq{5052}; # supplements
+   Build::Rpm::add_flagsvers(\%qq, 5055, 5057, 5056) if $qq{5055}; # enhances
 
     $out .= sprintf( "=Pkg: %s %s %s %s\n",
         $name, $qq{'VERSION'}[0], $qq{'RELEASE'}[0], $qq{'ARCH'}[0] );
@@ -111,11 +120,36 @@ sub package_snippet($) {
         $out .= "$prv\n";
     }
     $out .= "-Req:\n";
+
     $out .= "+Obs:\n";
     foreach my $prv ( @{ $qq{1090} || [] } ) {
         $out .= "$prv\n";
     }
     $out .= "-Obs:\n";
+
+    $out .= "+Rec:\n";
+    foreach my $prv ( @{ $qq{5046} || [] } ) {
+        $out .= "$prv\n";
+    }
+    $out .= "-Rec:\n";
+
+    $out .= "+Sup:\n";
+    foreach my $prv ( @{ $qq{5052} || [] } ) {
+        $out .= "$prv\n";
+    }
+    $out .= "-Sup:\n";
+
+    $out .= "+Enh:\n";
+    foreach my $prv ( @{ $qq{5055} || [] } ) {
+        $out .= "$prv\n";
+    }
+    $out .= "-Enh:\n";
+
+    $out .= "+Sug:\n";
+    foreach my $prv ( @{ $qq{5049} || [] } ) {
+        $out .= "$prv\n";
+    }
+    $out .= "-Sug:\n";
 
     mkdir($cachedir);
     open( C, '>', $cachefile ) || die "can't write $cachefile";
