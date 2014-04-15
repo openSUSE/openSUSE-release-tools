@@ -592,13 +592,13 @@ class StagingAPI(object):
         if not filename:
             return None
 
-        jobname = 'openSUSE-Factory-staging'
-        jobname += '_' + project.split(':')[-1].lower() + '-x86_64-Build'
+        jobname = 'openSUSE-Factory-Staging-DVD-x86_64-Build'
+        jobname += project.split(':')[-1] + "."
         result = re.match('Test-Build([^-]+)-Media.iso', filename)
-        jobname += result.group(1)
+        jobname += result.group(1) + "-Media.iso"
 
         try:
-            url = "https://openqa.opensuse.org/api/v1/jobs?iso={}-Media.iso".format(jobname)
+            url = "https://openqa.opensuse.org/api/v1/jobs?iso={}".format(jobname)
             f = urllib2.urlopen(url)
         except urllib2.HTTPError:
             return None
