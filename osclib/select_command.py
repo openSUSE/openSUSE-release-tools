@@ -55,6 +55,7 @@ class SelectCommand(object):
 
         if 'staging' not in request_project and not supersede:
             # Normal 'select' command
+            print('Adding request "{}" to project "{}"'.format(request, self.target_project)
             return self.api.rq_to_prj(request, self.target_project)
         elif 'staging' in request_project and (move or supersede):
             # 'select' command becomes a 'move'
