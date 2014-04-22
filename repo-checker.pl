@@ -77,7 +77,11 @@ sub write_package($$) {
     my $out = CreatePackageDescr::package_snippet($package);
 
     my $name = basename($package);
-    $name =~ s,^[^-]*-(.*)\.rpm,$1,;
+    if ($name =~ m/^[a-z0-9]{32}-/) { # repo cache
+       $name =~ s,^[^-]*-(.*)\.rpm,$1,;
+    } else {
+       $name =~ s,^(.*)-[^-]*-[^-]*.rpm,$1,;
+    }
 
     if ( $ignore == 1 && defined $toignore{$name} ) {
         return;
@@ -104,16 +108,17 @@ foreach my $package (@rpms) {
 
 close(PACKAGES);
 
-#print "calling installcheck\n";
-#print Dumper(%targets);
+#print STDERR "calling installcheck\n";
+#print STDERR Dumper(\%targets);
 open( INSTALL, "/usr/bin/installcheck x86_64 $pfile 2>&1|" )
   || die 'exec installcheck';
 while (<INSTALL>) {
     chomp;
+#    print STDERR "$_\n";
     next if (m/unknown line:.*Flx/);
     if ( $_ =~ m/can't install (.*)-([^-]*)-[^-\.]/ ) {
 
-        #	print "CI $1\n";
+#        print STDERR "CI $1 " . $targets{$1} . "\n";
         if ( defined $targets{$1} ) {
             print "$_\n";
             while (<INSTALL>) {
@@ -127,18 +132,18 @@ while (<INSTALL>) {
 }
 close(INSTALL);
 
-#print "checking file conflicts\n";
+#print STDERR "checking file conflicts\n";
 my $cmd = sprintf( "perl %s/findfileconflicts $pfile", dirname($0) );
 open( INSTALL, "$cmd |" ) || die 'exec fileconflicts';
 my $inc = 0;
 while (<INSTALL>) {
     chomp;
 
-    #print STDERR "$_\n";
+#    print STDERR "$_\n";
     if ( $_ =~ m/found conflict of (.*)-[^-]*-[^-]* with (.*)-[^-]*-[^-]*:/ ) {
         $inc = 0;
 
-        #print STDERR "F $1 $2\n";
+#        print STDERR "F $1 $2 -$targets{$1}-$targets{$2}-\n";
         if ( defined $targets{$1} || defined $targets{$2} ) {
             $inc = 1;
             $ret = 1;
@@ -150,4 +155,5 @@ while (<INSTALL>) {
 }
 close(INSTALL);
 
+#print STDERR "RET $ret\n";
 exit($ret);
