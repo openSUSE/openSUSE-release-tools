@@ -545,7 +545,7 @@ def _check_repo_buildsuccess(self, p, opts):
 
     if not tocheckrepos:
         msg = 'Missing i586 and x86_64 in the repo list'
-        print 'UPDATED', msg
+        print msg
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         # Next line not needed, but for documentation
         p.updated = True
@@ -612,7 +612,7 @@ def _check_repo_buildsuccess(self, p, opts):
         return False
     if foundbuilding:
         msg = '%s is still building for repository %s' % (p.spackage, foundbuilding)
-        print 'UPDATED', msg
+        print msg
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         # Next line not needed, but for documentation
         p.updated = True
@@ -620,7 +620,7 @@ def _check_repo_buildsuccess(self, p, opts):
     if foundfailed:
         msg = '%s failed to build in repository %s - not accepting' % (p.spackage, foundfailed)
         # failures might be temporary, so don't autoreject but wait for a human to check
-        print 'UPDATED', msg
+        print msg
         self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
         # Next line not needed, but for documentation
         p.updated = True
@@ -832,7 +832,7 @@ def _check_repo_group(self, id_, reqs, opts):
         i = self._check_repo_download(p, opts)
         if p.error:
             if not p.updated:
-                print 'UPDATED', p.error
+                print p.error
                 self._check_repo_change_review_state(opts, p.request, 'new', message=p.error)
                 p.updated = True
             else:
@@ -926,7 +926,7 @@ def _check_repo_group(self, id_, reqs, opts):
             msg = 'Please make sure to wait before these depencencies are in %s: %s' % (p.tproject, ', '.join(smissing))
             if not p.updated:
                 self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
-                print 'UPDATED', msg
+                print msg
                 p.updated = True
             else:
                 print msg
@@ -971,14 +971,15 @@ def _check_repo_group(self, id_, reqs, opts):
                 os.symlink(d, os.path.join(dir, os.path.basename(d)))
 
         repochecker = os.path.join(self.repocheckerdir, 'repo-checker.pl')
-        civs = "LC_ALL=C perl %s '%s' -r %s -f %s 2>&1" % (repochecker, destdir, self.repodir, params_file.name)
+        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repodir, params_file.name)
         #print civs
         #continue
         #exit(1)
-        p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
+        p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         #ret = os.waitpid(p.pid, 0)[1]
-        output, _ = p.communicate()
+        stdoutdata, stderrdata = p.communicate()
         ret = p.returncode
+	#print ret, stdoutdata, stderrdata
         if not ret:  # skip the others
             for p, repo, downloads in dirstolink:
                 p.goodrepo = repo
@@ -988,13 +989,13 @@ def _check_repo_group(self, id_, reqs, opts):
     updated = {}
 
     if ret:
-        print output, set(map(lambda x: x.request, reqs))
+        #print stdoutdata, set(map(lambda x: x.request, reqs))
 
         for p in reqs:
             if updated.get(p.request, False) or p.updated:
                 continue
-            print 'UPDATED', output
-            self._check_repo_change_review_state(opts, p.request, 'new', message=output)
+            print stdoutdata
+            self._check_repo_change_review_state(opts, p.request, 'new', message=stdoutdata)
             p.updated = True
             updated[p.request] = 1
         return
