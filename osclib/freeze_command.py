@@ -88,16 +88,13 @@ class FreezeCommand(object):
                 pass
         http_PUT(url, data=ET.tostring(pkgmeta))
 
-    def verify_bootstrap_copy_code(self, code):
+    def verify_bootstrap_copy_codes(self, codes):
         url = self.api.makeurl(['build', self.prj, '_result'], { 'package': 'bootstrap-copy' })
 
         root = ET.parse(http_GET(url)).getroot()
         for result in root.findall('result'):
             if result.get('repository') == 'bootstrap_copy':
-                if not result.get('code') in ['published', 'unpublished']:
-                    return False
-
-                if result.find('status').get('code') != code:
+                if not result.find('status').get('code') in codes:
                     return False
         return True
 
@@ -110,11 +107,11 @@ class FreezeCommand(object):
         self.set_bootstrap_copy()
         self.create_bootstrap_aggregate()
         print("waiting for scheduler to disable...")
-        while not self.verify_bootstrap_copy_code('disabled'):
+        while not self.verify_bootstrap_copy_codes(['disabled']):
             time.sleep(1)
         self.build_switch_bootstrap_copy('enable')
         print("waiting for scheduler to copy...")
-        while not self.verify_bootstrap_copy_code('succeeded'):
+        while not self.verify_bootstrap_copy_codes(['finished', 'succeeded']):
             time.sleep(1)
         self.build_switch_bootstrap_copy('disable')
 
