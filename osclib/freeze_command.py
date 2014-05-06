@@ -17,6 +17,7 @@ class FreezeCommand(object):
         root = ET.parse(f).getroot()
         links = root.findall('link')
         links.reverse()
+        self.projectlinks = []
         for link in links:
             self.projectlinks.append(link.get('project'))
 
@@ -114,6 +115,12 @@ class FreezeCommand(object):
         while not self.verify_bootstrap_copy_codes(['finished', 'succeeded']):
             time.sleep(1)
         self.build_switch_bootstrap_copy('disable')
+
+        # now try to freeze sub project - much easier
+        if self.api.project_exists(prj + ":DVD"):
+             self.prj = prj + ":DVD"
+             self.set_links()
+             self.freeze_prjlinks()
 
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', { 'name': prj })

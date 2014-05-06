@@ -934,3 +934,15 @@ class StagingAPI(object):
             self.build_switch_prj(target_project, 'enable')
         else:
             self.build_switch_prj(target_project, 'disable')
+    
+    def project_exists(self, project):
+        """
+        Return true if the given project exists
+        :param project: project name to check
+        """
+        url = self.makeurl(['source', project])
+        try:
+            root = http_GET(url)
+        except urllib2.HTTPError:
+            return False
+        return True
