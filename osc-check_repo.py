@@ -57,6 +57,7 @@ global memoize
 global build
 global last_build_success
 global builddepinfo
+global jobhistory
 
 
 class Graph(dict):
@@ -364,6 +365,34 @@ def builddepinfo(apiurl, project, repository, arch):
     return root
 
 
+def old_md5(apiurl, project, package):
+    """Recollect old MD5 for a package."""
+    # XXX TODO - instead of fixing the limit, use endtime to makes
+    # sure that we have the correct time frame.
+    limit = 20
+    query = {
+        'project': project,
+        # 'code': 'succeeded',
+        'limit': limit,
+    }
+    repository = 'openSUSE_Factory'
+    md5_set = set()
+    for arch in ('i586', 'x86_64'):
+        if md5_set:
+            break
+
+        url = makeurl(apiurl,
+                      ['/build/%s/%s/%s/_jobhistory' % (project, repository, arch)],
+                      query=query)
+        try:
+            root = ET.parse(http_GET(url)).getroot()
+            md5_set = set(e.get('srcmd5') for e in root.findall('jobhist'))
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+
+    return md5_set
+
+
 def _check_repo_change_review_state(self, opts, id_, newstate, message='', supersed=None):
     """Taken from osc/osc/core.py, improved:
        - verbose option added,
@@ -504,8 +533,12 @@ def _check_repo_one_request(self, rq, opts):
             print 'DECLINED', msg
             self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             p.updated = True
+
         if lmd5 != p.rev and not p.updated:
-            msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
+            if lmd5 not in old_md5(opts.apiurl, lprj, spec):
+                msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
+            else:
+                msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
             print 'DECLINED', msg
             self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             p.updated = True
