@@ -57,6 +57,7 @@ global memoize
 global build
 global last_build_success
 global builddepinfo
+global jobhistory
 
 
 class Graph(dict):
@@ -203,6 +204,7 @@ class Package_(object):
         return 'PKG: %s\nSRC: %s\nDEPS: %s\n SUBS: %s' % (self.pkg, self.src, self.deps, self.subs)
 
 TMPDIR = '/var/cache/repo-checker'  # Where the cache files are stored
+
 
 def memoize(ttl=None):
     """Decorator function to implement a persistent cache.
@@ -363,6 +365,34 @@ def builddepinfo(apiurl, project, repository, arch):
     return root
 
 
+def old_md5(apiurl, project, package):
+    """Recollect old MD5 for a package."""
+    # XXX TODO - instead of fixing the limit, use endtime to makes
+    # sure that we have the correct time frame.
+    limit = 20
+    query = {
+        'project': project,
+        # 'code': 'succeeded',
+        'limit': limit,
+    }
+    repository = 'openSUSE_Factory'
+    md5_set = set()
+    for arch in ('i586', 'x86_64'):
+        if md5_set:
+            break
+
+        url = makeurl(apiurl,
+                      ['/build/%s/%s/%s/_jobhistory' % (project, repository, arch)],
+                      query=query)
+        try:
+            root = ET.parse(http_GET(url)).getroot()
+            md5_set = set(e.get('srcmd5') for e in root.findall('jobhist'))
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+
+    return md5_set
+
+
 def _check_repo_change_review_state(self, opts, id_, newstate, message='', supersed=None):
     """Taken from osc/osc/core.py, improved:
        - verbose option added,
@@ -478,7 +508,8 @@ def _check_repo_one_request(self, rq, opts):
     p.rev = root.attrib['srcmd5']
 
     # Recover the .spec files
-    specs = [e.attrib['name'][:-5] for e in root.findall('entry') if e.attrib['name'].endswith('.spec')]
+    specs = [en.attrib['name'][:-5] for en in root.findall('entry')
+             if en.attrib['name'].endswith('.spec')]
 
     # source checker validated it exists
     specs.remove(tpkg)
@@ -502,8 +533,12 @@ def _check_repo_one_request(self, rq, opts):
             print 'DECLINED', msg
             self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             p.updated = True
+
         if lmd5 != p.rev and not p.updated:
-            msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
+            if lmd5 not in old_md5(opts.apiurl, lprj, spec):
+                msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
+            else:
+                msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
             print 'DECLINED', msg
             self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             p.updated = True
@@ -650,7 +685,7 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
             if result.group(4) == 'src':
                 continue
             files.append((fn, pname, result.group(4), mt))
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError:
         pass
         # if not ignore:
         #     print 'ERROR in URL %s [%s]' % (url, e)
@@ -791,7 +826,7 @@ def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='
 
     for p in packages:
         # Calculate the missing deps
-        deps = [d for d in p.deps if not 'branding' in d]
+        deps = [d for d in p.deps if 'branding' not in d]
         missing = [d for d in deps if not d.startswith(_IGNORE_PREFIX) and d not in subpkgs]
         if missing:
             if p.pkg not in _ignore_packages:
@@ -914,7 +949,7 @@ def _check_repo_group(self, id_, reqs, opts):
                     alreadyin = True
             if alreadyin:
                 continue
-            #print package, packs, downloads, toignore
+            # print package, packs, downloads, toignore
             request = self._check_repo_find_submit_request(opts, p.tproject, package)
             if request:
                 greqs = opts.groups.get(p.group, [])
@@ -972,14 +1007,14 @@ def _check_repo_group(self, id_, reqs, opts):
 
         repochecker = os.path.join(self.repocheckerdir, 'repo-checker.pl')
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repodir, params_file.name)
-        #print civs
-        #continue
-        #exit(1)
+        # print civs
+        # continue
+        # exit(1)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        #ret = os.waitpid(p.pid, 0)[1]
+        # ret = os.waitpid(p.pid, 0)[1]
         stdoutdata, stderrdata = p.communicate()
         ret = p.returncode
-	#print ret, stdoutdata, stderrdata
+        # print ret, stdoutdata, stderrdata
         if not ret:  # skip the others
             for p, repo, downloads in dirstolink:
                 p.goodrepo = repo
@@ -989,7 +1024,7 @@ def _check_repo_group(self, id_, reqs, opts):
     updated = {}
 
     if ret:
-        #print stdoutdata, set(map(lambda x: x.request, reqs))
+        # print stdoutdata, set(map(lambda x: x.request, reqs))
 
         for p in reqs:
             if updated.get(p.request, False) or p.updated:
@@ -1091,9 +1126,10 @@ def do_check_repo(self, subcmd, opts, *args):
     self.repodir = "%s/repo-%s-%s-x86_64" % (TMPDIR, 'openSUSE:Factory', 'standard')
     if not os.path.exists(self.repodir):
         os.mkdir(self.repodir)
-    civs = "LC_ALL=C perl %s/bs_mirrorfull --nodebug https://build.opensuse.org/build/%s/%s/x86_64 %s" % (self.repocheckerdir, 
-                                                                                                          'openSUSE:Factory', 
-                                                                                                          'standard', self.repodir)
+    civs = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug https://build.opensuse.org/build/%s/%s/x86_64 %s' % (
+        self.repocheckerdir,
+        'openSUSE:Factory',
+        'standard', self.repodir)
     os.system(civs)
 
     # Sort the groups, from high to low. This put first the stating
