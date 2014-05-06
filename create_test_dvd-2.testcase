@@ -1,0 +1,38 @@
+# common part
+repo bootstrap 0 solv staging_f_bc.solv
+repo standard 0 solv staging_f_standard.solv
+repo test_dvd 0 solv test_dvd.solv
+
+system x86_64 rpm
+namespace namespace:language(en_US) @SYSTEM
+
+job install provides pattern() = apparmor
+job install provides pattern() = base
+job install provides pattern() = enhanced_base
+job install provides pattern() = gnome
+job install provides pattern() = gnome_internet
+job install provides pattern() = gnome_multimedia
+job install provides pattern() = gnome_utilities
+job install provides pattern() = imaging
+job install provides pattern() = kde
+job install provides pattern() = kde4_basis
+job install provides pattern() = kde4_multimedia
+job install provides pattern() = kde4_utilities
+job install provides pattern() = laptop
+job install provides pattern() = lxde
+job install provides pattern() = multimedia
+job install provides pattern() = office
+job install provides pattern() = xfce
+job install provides pattern() = minimal_base
+
+job install provides pattern() = rest_core_dvd
+
+job install name aaa_base-extras
+job install name branding-openSUSE
+job install name openSUSE-release-livecd-x11
+job install name sudo
+job install name xdelta
+
+job lock name gtk2-branding-upstream
+job lock name readline-doc
+job lock name libgcc_s1-32bit

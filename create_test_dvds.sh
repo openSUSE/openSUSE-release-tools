@@ -12,14 +12,16 @@ SCRIPTDIR=`dirname "$0"`
 
 function regenerate_pl() {
     prj=$1
+    shift;
 
+    suffix=$1
     shift;
     
     : > tc
     for i in "$@"; do
 	echo "repo $i 0 solv $i.solv" >> tc
     done
-    cat $SCRIPTDIR/create_test_dvds.testcase >> tc
+    cat $SCRIPTDIR/create_test_dvd-$suffix.testcase >> tc
 
     out=$(mktemp)
     testsolv -r tc | sed -e 's,^install \(.*\)-[^-]*-[^-]*\.[^-\.]*@.*,\1,' > $out
@@ -54,13 +56,29 @@ function sync_prj() {
 sync_prj openSUSE:Factory:Rings:0-Bootstrap/standard/ bootstrap
 sync_prj openSUSE:Factory:Rings:1-MinimalX/standard minimalx
 
-regenerate_pl openSUSE:Factory:Rings:1-MinimalX bootstrap minimalx
+regenerate_pl openSUSE:Factory:Rings:1-MinimalX 1 bootstrap minimalx
 
 sync_prj openSUSE:Factory:Staging:A/standard staging_A
-regenerate_pl "openSUSE:Factory:Staging:A" staging_A
+regenerate_pl "openSUSE:Factory:Staging:A" 1 staging_A
 
 for l in B C D E F G H I J; do
   sync_prj openSUSE:Factory:Staging:$l/bootstrap_copy "staging_$l-bc"
   sync_prj openSUSE:Factory:Staging:$l/standard staging_$l
-  regenerate_pl "openSUSE:Factory:Staging:$l" "staging_$l-bc" staging_$l
+  regenerate_pl "openSUSE:Factory:Staging:$l" 1 "staging_$l-bc" staging_$l
+done
+
+projects=$(osc api /search/project/id?match='starts-with(@name,"openSUSE:Factory:Staging")' | grep :DVD | cut -d\" -f2)
+for prj in openSUSE:Factory:Rings:2-TestDVD $projects; do  
+  perl ./rebuildpacs.pl $prj standard x86_64
+done
+
+sync_prj openSUSE:Factory:Rings:2-TestDVD/standard testdvd
+regenerate_pl openSUSE:Factory:Rings:2-TestDVD 2 bootstrap minimalx testdvd
+
+sync_prj openSUSE:Factory:Staging:A:DVD/standard staging_A-dvd
+regenerate_pl "openSUSE:Factory:Staging:A" 2 staging_A staging_A-dvd
+
+for l in B C D E F G H I J; do
+  sync_prj openSUSE:Factory:Staging:$l:DVD/standard "staging_$l-dvd"
+  regenerate_pl "openSUSE:Factory:Staging:$l" 2 "staging_$l-bc" staging_$l "staging_$l-dvd"
 done
