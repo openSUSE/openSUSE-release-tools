@@ -37,7 +37,8 @@ class StagingAPI(object):
 
         self.apiurl = apiurl
         self.rings = ['openSUSE:Factory:Rings:0-Bootstrap',
-                      'openSUSE:Factory:Rings:1-MinimalX']
+                      'openSUSE:Factory:Rings:1-MinimalX',
+                      'openSUSE:Factory:Rings:2-TestDVD']
         self.ring_packages = self._generate_ring_packages()
         self.packages_staged = self._get_staged_requests()
 
@@ -61,7 +62,10 @@ class StagingAPI(object):
             url = self.makeurl(['source', prj])
             root = http_GET(url)
             for entry in ET.parse(root).getroot().findall('entry'):
-                ret[entry.attrib['name']] = prj
+                pkg = entry.attrib['name']
+                if ret.has_key(pkg) and pkg != 'Test-DVD-x86_64':
+                    raise BaseException("{} is defined in two projects".format(pkg))
+                ret[pkg] = prj
         return ret
 
     def _get_staged_requests(self):
@@ -208,7 +212,7 @@ class StagingAPI(object):
             # accept the request here
             message = 'No need for staging, not in tested ring projects.'
             self.do_change_review_state(request_id, 'accepted', message=message,
-                                     by_group='factory-staging')
+                                        by_group='factory-staging')
 
     def supseded_request(self, request):
         """
