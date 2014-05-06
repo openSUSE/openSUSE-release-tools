@@ -14,7 +14,8 @@ class CleanupRings(object):
 
     def perform(self):
         self.check_depinfo_ring('openSUSE:Factory:Rings:0-Bootstrap', 'openSUSE:Factory:Rings:1-MinimalX')
-        self.check_depinfo_ring('openSUSE:Factory:Rings:1-MinimalX', 'openSUSE:Factory:MainDesktops')
+        self.check_depinfo_ring('openSUSE:Factory:Rings:1-MinimalX', 'openSUSE:Factory:Rings:2-TestDVD')
+        self.check_depinfo_ring('openSUSE:Factory:Rings:2-TestDVD', None)
 
     def find_inner_ring_links(self, prj):
         url = makeurl(self.apiurl, ['source', prj], { 'view': 'info', 'nofilename': '1' })
@@ -67,7 +68,7 @@ class CleanupRings(object):
                 return False
             for package in repo.findall('status'):
                 code = package.get('code')
-                if not code in ['succeeded', 'excluded']:
+                if not code in ['succeeded', 'excluded', 'disabled']:
                     print('Package {}/{}/{} is {}'.format(repo.get('project'), repo.get('repository'), package.get('package'), code))
                     return False
 
@@ -85,6 +86,18 @@ class CleanupRings(object):
                     continue
                 b = self.bin2src[b]
                 self.pkgdeps[b] = 'MYdvd'
+
+        if prj == 'openSUSE:Factory:Rings:2-TestDVD':
+            url = makeurl(self.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'] )
+            root = ET.parse(http_GET(url)).getroot()
+            for bdep in root.findall('bdep'):
+                if not bdep.attrib.has_key('name'):
+                    continue
+                b = bdep.attrib['name']
+                if not self.bin2src.has_key(b):
+                    continue
+                b = self.bin2src[b]
+                self.pkgdeps[b] = 'MYdvd2'
 
         # if ($prj eq 'openSUSE:Factory:MainDesktops') {
         #   $dinfo->{MYcds} = {};
