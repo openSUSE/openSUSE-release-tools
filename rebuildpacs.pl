@@ -17,15 +17,14 @@ BEGIN {
 
 require CreatePackageDescr;
 
-my $repodir;
+my @repodirs;
 
 sub find_source_container($) {
     my $pkg = shift;
 
-    my @rpms = glob("$repodir/*-$pkg.rpm");
-
-    for my $rpm (@rpms) {
-
+    for my $repodir (@repodirs) {
+      my @rpms = glob("$repodir/*-$pkg.rpm");
+      for my $rpm (@rpms) {
         # 1123 == Disturl
         my %qq = Build::Rpm::rpmq( $rpm, qw{NAME 1123} );
         next if ( $qq{NAME}[0] ne $pkg );
@@ -33,6 +32,7 @@ sub find_source_container($) {
         $distfile =~ s,^[^-]*-,,;
 
         return $distfile;
+      }
     }
 }
 
@@ -84,10 +84,18 @@ my %parents = (
       ],
     "kdebase4-openSUSE" => [qw(bundle-lang-kde)],
   );
+# for subsets (staging projects) we need to remember which are ignored
+my %ignored;
 
 sub check_leaf_package($$) {
+
     my $package = shift;
     my $rebuildhash = shift;
+
+    if (system("osc api /source/$project/$package/_meta > /dev/null 2>&1 ")) {
+	$ignored{$package} = 1;
+	return;
+    }
 
     my @lines = ();
     open( OSC, "osc api /build/$project/$repo/$arch/$package/_buildinfo?internal=1|" );
@@ -149,20 +157,71 @@ check_leaf_package("installation-images-openSUSE", \%torebuild);
 if (%torebuild) {
   my $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
   for my $package (sort keys %torebuild) {
+    next if (defined $ignored{$package});
     $api .= "&package=" . uri_escape( $package );
   }
   system("osc api -X POST '$api'");
 }
 
-$repodir = "/var/cache/repo-checker/repo-$project-$repo-$arch";
-mkdir($repodir);
 my $pfile = tempdir() . "/packages";    # the filename is important ;(
 
-system(
+sub mirror_repo($$$) {
+
+  my $project = shift;
+  my $repo = shift;
+  my $arch = shift;
+
+  my $repodir = "/var/cache/repo-checker/repo-$project-$repo-$arch";
+  mkdir($repodir);
+
+  system(
     "$script_dir/bs_mirrorfull --nodebug https://build.opensuse.org/build/$project/$repo/$arch/ $repodir"
   );
+  return $repodir;
+}
 
-my @rpms = glob("$repodir/*.rpm");
+sub find_package_in_project($) {
+  my $project = shift;
+
+  open(OSC, "osc api /source/$project |");
+  my $xml = XMLin(join('', <OSC>), ForceArray => 1);
+  close(OSC);
+  my @packs = keys %{$xml->{entry}};
+  return shift @packs;
+}
+
+
+# find a random package
+
+
+sub get_paths($$$) {
+  my $project = shift;
+  my $repo = shift;
+  my $arch = shift;
+
+  my $package = find_package_in_project($project);
+
+  open(OSC, "osc api /build/$project/$repo/$arch/$package/_buildinfo|");
+  my $xml = XMLin(join('', <OSC>), ForceArray => 1);
+  close(OSC);
+
+  return $xml->{path};
+}
+
+my $paths = get_paths($project, $repo, $arch);
+my @rpms;
+
+for my $path (@$paths) {
+
+  # openSUSE:Factory/ports is in the paths, but not a repo
+  if (system("osc api /build/$path->{'project'}/$path->{'repository'}/$arch > /dev/null 2>&1 ")) {
+    next;
+  }
+
+  my $repodir = mirror_repo($path->{'project'}, $path->{'repository'}, $arch);
+  push(@repodirs, $repodir);
+  push(@rpms, glob("$repodir/*.rpm"));
+}
 
 open( PACKAGES, ">", $pfile ) || die "can not open $pfile";
 print PACKAGES "=Ver: 2.0\n";
@@ -198,6 +257,8 @@ while (<INSTALLCHECK>) {
     s,(needed by [^ ]*)\-[^-]*\-[^-]*\.($arch|noarch)$,$1,;
 
     s,^\s*,,;
+    # patterns are too spammy and rebuilding doesn't help
+    next if (grep { $_ eq $cproblem } qw(patterns-openSUSE));
     $problems{$cproblem}->{$_} = 1;
 
 }
@@ -227,11 +288,8 @@ close(PROBLEMS);
 
 exit(0) if ( !%problems );
 
-# check for succeeded packages
+# check for succeeded packages - we can't filter as we don't know if the problems are all in the top project ;(
 my $api = "/build/$project/_result?repository=$repo&arch=$arch&code=succeeded";
-for my $problem ( sort keys %problems ) {
-    $api .= "&package=" . uri_escape($problem);
-}
 
 open( RESULT, "osc api '$api'|" );
 @result = <RESULT>;
@@ -239,11 +297,13 @@ my $results = XMLin( join( '', @result ), ForceArray => ['status'] );
 close(RESULT);
 
 my @packages = @{ $results->{result}->{status} };
-exit(0) if ( !@packages );
+my $rebuildit = 0;
 
 open( PROBLEMS, ">>problems" );
 $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
 for my $package (@packages) {
+    next unless (defined $problems{$package});
+    $rebuildit = 1;
     print "rebuild ", $package->{package}, ": ",
       $problems{ $package->{package} }, "\n";
     $api .= "&package=" . uri_escape( $package->{package} );
@@ -252,6 +312,9 @@ for my $package (@packages) {
       . $problems{ $package->{package} }, "\n";
 }
 
-system("osc api -X POST '$api'");
+if ($rebuildit) {
+  print "API '$api'\n";
+  #system("osc api -X POST '$api'");
+}
 close(PROBLEMS);
 
