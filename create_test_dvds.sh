@@ -69,7 +69,7 @@ done
 
 projects=$(osc api /search/project/id?match='starts-with(@name,"openSUSE:Factory:Staging")' | grep :DVD | cut -d\" -f2)
 for prj in openSUSE:Factory:Rings:2-TestDVD $projects; do  
-  perl ./rebuildpacs.pl $prj standard x86_64
+  perl $SCRIPTDIR/rebuildpacs.pl $prj standard x86_64
 done
 
 sync_prj openSUSE:Factory:Rings:2-TestDVD/standard testdvd
@@ -78,7 +78,7 @@ regenerate_pl openSUSE:Factory:Rings:2-TestDVD 2 bootstrap minimalx testdvd
 sync_prj openSUSE:Factory:Staging:A:DVD/standard staging_A-dvd
 regenerate_pl "openSUSE:Factory:Staging:A" 2 staging_A staging_A-dvd
 
-for l in B C D E F G H I J; do
+for l in B C D E F G H I; do
   sync_prj openSUSE:Factory:Staging:$l:DVD/standard "staging_$l-dvd"
-  regenerate_pl "openSUSE:Factory:Staging:$l" 2 "staging_$l-bc" staging_$l "staging_$l-dvd"
+  regenerate_pl "openSUSE:Factory:Staging:$l:DVD" 2 "staging_$l-bc" staging_$l "staging_$l-dvd"
 done

@@ -1,8 +1,4 @@
 # common part
-repo bootstrap 0 solv staging_f_bc.solv
-repo standard 0 solv staging_f_standard.solv
-repo test_dvd 0 solv test_dvd.solv
-
 system x86_64 rpm
 namespace namespace:language(en_US) @SYSTEM
 
