@@ -76,7 +76,7 @@ sync_prj openSUSE:Factory:Rings:2-TestDVD/standard testdvd
 regenerate_pl openSUSE:Factory:Rings:2-TestDVD 2 bootstrap minimalx testdvd
 
 sync_prj openSUSE:Factory:Staging:A:DVD/standard staging_A-dvd
-regenerate_pl "openSUSE:Factory:Staging:A" 2 staging_A staging_A-dvd
+regenerate_pl "openSUSE:Factory:Staging:A:DVD" 2 staging_A staging_A-dvd
 
 for l in B C D E F G H I; do
   sync_prj openSUSE:Factory:Staging:$l:DVD/standard "staging_$l-dvd"
