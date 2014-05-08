@@ -615,15 +615,15 @@ class StagingAPI(object):
         if not filename:
             return None
 
-        jobtemplate = 'Staging'
+        jobtemplate = '-Staging'
         if project.endswith(':DVD'):
-            jobtemplate = 'Staging2'
+            jobtemplate = '-Staging2'
             project = project[:-4]
-        jobname = 'openSUSE-Factory-{}-DVD-x86_64-Build'.format(jobtemplate)
 
-        jobname += project.split(':')[-1] + "."
+        jobname = 'openSUSE-Staging:'
+        jobname += project.split(':')[-1] + jobtemplate
         result = re.match('Test-Build([^-]+)-Media.iso', filename)
-        jobname += result.group(1) + "-Media.iso"
+        jobname += '-DVD-x86_64-Build' + result.group(1) + "-Media.iso"
 
         try:
             url = "https://openqa.opensuse.org/api/v1/jobs?iso={}".format(jobname)
