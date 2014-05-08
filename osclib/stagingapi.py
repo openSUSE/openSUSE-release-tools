@@ -577,10 +577,10 @@ class StagingAPI(object):
         if buildstatus:
             report += self.generate_build_status_details(buildstatus, verbose)
             
-            # Check the openqa state
-            ret = self.find_openqa_state(project)
-            if ret:
-                report.append(ret)
+        # Check the openqa state
+        ret = self.find_openqa_state(project)
+        if ret:
+            report.append(ret)
 
         if report:
             return report
@@ -635,7 +635,7 @@ class StagingAPI(object):
 
         bestjobs = {}
         for job in jobs:
-            if job['result'] != 'incomplete':
+            if job['result'] != 'incomplete' and not job['clone_id']:
                 if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
                     bestjobs[job['name']] = job
 
