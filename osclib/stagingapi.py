@@ -993,9 +993,12 @@ class StagingAPI(object):
         Return true if the given project exists
         :param project: project name to check
         """
-        url = self.makeurl(['source', project])
+        url = self.makeurl(['source', project, '_meta'])
         try:
             root = http_GET(url)
+            # ugly work around for the test suite
+            if root.read().startswith('<result>Not found'):
+                return False
         except urllib2.HTTPError:
             return False
         return True
