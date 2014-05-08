@@ -302,19 +302,20 @@ my $rebuildit = 0;
 open( PROBLEMS, ">>problems" );
 $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
 for my $package (@packages) {
+    $package = $package->{package};
     next unless (defined $problems{$package});
     $rebuildit = 1;
-    print "rebuild ", $package->{package}, ": ",
-      $problems{ $package->{package} }, "\n";
-    $api .= "&package=" . uri_escape( $package->{package} );
+    print "rebuild ", $package, ": ",
+      $problems{ $package }, "\n";
+    $api .= "&package=" . uri_escape( $package );
     print PROBLEMS "$project/$repo/$arch/"
-      . $package->{package} . ": "
-      . $problems{ $package->{package} }, "\n";
+      . $package . ": "
+      . $problems{ $package }, "\n";
 }
 
 if ($rebuildit) {
   print "API '$api'\n";
-  #system("osc api -X POST '$api'");
+  system("osc api -X POST '$api'");
 }
 close(PROBLEMS);
 
