@@ -12,6 +12,7 @@ import re
 import urllib2
 import time
 import json
+import pprint
 
 from osc import oscerr
 from osc.core import change_review_state
@@ -564,9 +565,26 @@ class StagingAPI(object):
 
         if report:
             return report
-        else:
+        elif not self.project_exists(project + ":DVD"):
             # The only case we are green
             return True
+
+        # now check the same for the subprj
+        project = project + ":DVD"
+        buildstatus = self.gather_build_status(project)
+
+        if buildstatus:
+            report += self.generate_build_status_details(buildstatus, verbose)
+            
+            # Check the openqa state
+            ret = self.find_openqa_state(project)
+            if ret:
+                report.append(ret)
+
+        if report:
+            return report
+        
+        return True
 
     def days_since_last_freeze(self, project):
         """
@@ -582,7 +600,7 @@ class StagingAPI(object):
                 return (time.time() - float(entry.get('mtime')))/3600/24
         return 100000  # quite some!
 
-    def find_openqa_id(self, project):
+    def find_openqa_ids(self, project):
         u = self.makeurl(['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
@@ -596,7 +614,12 @@ class StagingAPI(object):
         if not filename:
             return None
 
-        jobname = 'openSUSE-Factory-Staging-DVD-x86_64-Build'
+        jobtemplate = 'Staging'
+        if project.endswith(':DVD'):
+            jobtemplate = 'Staging2'
+            project = project[:-4]
+        jobname = 'openSUSE-Factory-{}-DVD-x86_64-Build'.format(jobtemplate)
+
         jobname += project.split(':')[-1] + "."
         result = re.match('Test-Build([^-]+)-Media.iso', filename)
         jobname += result.group(1) + "-Media.iso"
@@ -609,12 +632,16 @@ class StagingAPI(object):
 
         jobs = json.load(f)['jobs']
 
-        bestjob = None
+        bestjobs = {}
         for job in jobs:
             if job['result'] != 'incomplete':
-                if not bestjob or bestjob['result'] != 'passed':
-                    bestjob = job
-	return bestjob['id'] if bestjob else None
+                if not bestjobs.has_key(job['name']) or bestjobs[job['name']]['result'] != 'passed':
+                    bestjobs[job['name']] = job
+
+        lambda_for_the_poor = []
+        for job in bestjobs.values():
+            lambda_for_the_poor.append(job['id'])
+        return lambda_for_the_poor if lambda_for_the_poor else None
 
     def find_openqa_state(self, project):
         """
@@ -623,26 +650,28 @@ class StagingAPI(object):
         :return None or list with issue informations
         """
 
-        job = self.find_openqa_id(project)
-        if not job:
-		return 'No openQA result yet'
-		return
+        jobs = self.find_openqa_ids(project)
 
-        url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job)
-        try:
-            f = urllib2.urlopen(url)
-        except urllib2.HTTPError:
-            return "Can't open {}".format(url)
+        if not jobs:
+            return 'No openQA result yet'
+            return
 
-        openqa = json.load(f)
-        overall = openqa.get('overall', 'inprogress')
-        if overall != 'ok':
-            return "Openqa's overall status is {}".format(overall)
+        for job in jobs:
+            url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job)
+            try:
+                f = urllib2.urlopen(url)
+            except urllib2.HTTPError:
+                return "Can't open {}".format(url)
 
-        for module in openqa['testmodules']:
-            # zypper_in fails at the moment - urgent fix needed
-            if module['result'] != 'ok' and module['name'] not in []:
-                return "{} test failed".format(module['name'])
+            openqa = json.load(f)
+            overall = openqa.get('overall', 'inprogress')
+            if overall != 'ok':
+                return "Openqa's overall status is {} for {}".format(overall, job)
+
+            for module in openqa['testmodules']:
+                # zypper_in fails at the moment - urgent fix needed
+                if module['result'] != 'ok' and module['name'] not in []:
+                    return "{} test failed: {}".format(module['name'], job)
 
         return None
 
