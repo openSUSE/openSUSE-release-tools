@@ -779,6 +779,20 @@ class StagingAPI(object):
                                  message='Picked {}'.format(project))
         return True
 
+    def map_ring_package_to_subject(self, project, pkg):
+        """
+        Returns the subproject (if any) to use for the pkg depending on the ring
+        the package is in
+        :param project the staging prj
+        :param pkg the package to add
+        """
+        # it's actually a pretty stupid algorithm, but it might become more complex later
+
+        if self.ring_packages.get(pkg) == 'openSUSE:Factory:Rings:2-TestDVD':
+            return project + ":DVD"
+
+        return project
+
     def delete_to_prj(self, act, project):
         """
         Hides Package in project
@@ -787,6 +801,7 @@ class StagingAPI(object):
         """
 
         tar_pkg = act.tgt_package
+        project = self.map_ring_package_to_subject(project, tar_pkg)
 
         # create build disabled package
         self.create_package_container(project, tar_pkg, disable_build=True)
@@ -812,8 +827,15 @@ class StagingAPI(object):
         disable_build = False
         if not self.ring_packages.get(tar_pkg):
             disable_build = True
+        else:
+            project = self.map_ring_package_to_subject(project, tar_pkg)
+
         self.create_package_container(project, tar_pkg,
                                       disable_build=disable_build)
+
+        # if it's disabled anyway, it doesn't make a difference if we link or not
+        if disable_build:
+            return tar_pkg
 
         # expand the revision to a md5
         url = self.makeurl(['source', src_prj, src_pkg],
