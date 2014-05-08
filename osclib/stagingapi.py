@@ -12,6 +12,7 @@ import re
 import urllib2
 import time
 import json
+import pprint
 
 from osc import oscerr
 from osc.core import change_review_state
@@ -37,7 +38,8 @@ class StagingAPI(object):
 
         self.apiurl = apiurl
         self.rings = ['openSUSE:Factory:Rings:0-Bootstrap',
-                      'openSUSE:Factory:Rings:1-MinimalX']
+                      'openSUSE:Factory:Rings:1-MinimalX',
+                      'openSUSE:Factory:Rings:2-TestDVD']
         self.ring_packages = self._generate_ring_packages()
         self.packages_staged = self._get_staged_requests()
 
@@ -61,7 +63,10 @@ class StagingAPI(object):
             url = self.makeurl(['source', prj])
             root = http_GET(url)
             for entry in ET.parse(root).getroot().findall('entry'):
-                ret[entry.attrib['name']] = prj
+                pkg = entry.attrib['name']
+                if pkg in ret and pkg != 'Test-DVD-x86_64':
+                    raise BaseException("{} is defined in two projects".format(pkg))
+                ret[pkg] = prj
         return ret
 
     def _get_staged_requests(self):
@@ -208,7 +213,7 @@ class StagingAPI(object):
             # accept the request here
             message = 'No need for staging, not in tested ring projects.'
             self.do_change_review_state(request_id, 'accepted', message=message,
-                                     by_group='factory-staging')
+                                        by_group='factory-staging')
 
     def supseded_request(self, request):
         """
@@ -560,9 +565,26 @@ class StagingAPI(object):
 
         if report:
             return report
-        else:
+        elif not self.project_exists(project + ":DVD"):
             # The only case we are green
             return True
+
+        # now check the same for the subprj
+        project = project + ":DVD"
+        buildstatus = self.gather_build_status(project)
+
+        if buildstatus:
+            report += self.generate_build_status_details(buildstatus, verbose)
+            
+            # Check the openqa state
+            ret = self.find_openqa_state(project)
+            if ret:
+                report.append(ret)
+
+        if report:
+            return report
+        
+        return True
 
     def days_since_last_freeze(self, project):
         """
@@ -578,7 +600,7 @@ class StagingAPI(object):
                 return (time.time() - float(entry.get('mtime')))/3600/24
         return 100000  # quite some!
 
-    def find_openqa_id(self, project):
+    def find_openqa_ids(self, project):
         u = self.makeurl(['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
@@ -592,7 +614,12 @@ class StagingAPI(object):
         if not filename:
             return None
 
-        jobname = 'openSUSE-Factory-Staging-DVD-x86_64-Build'
+        jobtemplate = 'Staging'
+        if project.endswith(':DVD'):
+            jobtemplate = 'Staging2'
+            project = project[:-4]
+        jobname = 'openSUSE-Factory-{}-DVD-x86_64-Build'.format(jobtemplate)
+
         jobname += project.split(':')[-1] + "."
         result = re.match('Test-Build([^-]+)-Media.iso', filename)
         jobname += result.group(1) + "-Media.iso"
@@ -605,12 +632,16 @@ class StagingAPI(object):
 
         jobs = json.load(f)['jobs']
 
-        bestjob = None
+        bestjobs = {}
         for job in jobs:
             if job['result'] != 'incomplete':
-                if not bestjob or bestjob['result'] != 'passed':
-                    bestjob = job
-	return bestjob['id'] if bestjob else None
+                if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
+                    bestjobs[job['name']] = job
+
+        lambda_for_the_poor = []
+        for job in bestjobs.values():
+            lambda_for_the_poor.append(job['id'])
+        return lambda_for_the_poor if lambda_for_the_poor else None
 
     def find_openqa_state(self, project):
         """
@@ -619,26 +650,27 @@ class StagingAPI(object):
         :return None or list with issue informations
         """
 
-        job = self.find_openqa_id(project)
-        if not job:
-		return 'No openQA result yet'
-		return
+        jobs = self.find_openqa_ids(project)
 
-        url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job)
-        try:
-            f = urllib2.urlopen(url)
-        except urllib2.HTTPError:
-            return "Can't open {}".format(url)
+        if not jobs:
+            return 'No openQA result yet'
 
-        openqa = json.load(f)
-        overall = openqa.get('overall', 'inprogress')
-        if overall != 'ok':
-            return "Openqa's overall status is {}".format(overall)
+        for job in jobs:
+            url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job)
+            try:
+                f = urllib2.urlopen(url)
+            except urllib2.HTTPError:
+                return "Can't open {}".format(url)
 
-        for module in openqa['testmodules']:
-            # zypper_in fails at the moment - urgent fix needed
-            if module['result'] != 'ok' and module['name'] not in []:
-                return "{} test failed".format(module['name'])
+            openqa = json.load(f)
+            overall = openqa.get('overall', 'inprogress')
+            if overall != 'ok':
+                return "Openqa's overall status is {} for {}".format(overall, job)
+
+            for module in openqa['testmodules']:
+                # zypper_in fails at the moment - urgent fix needed
+                if module['result'] != 'ok' and module['name'] not in []:
+                    return "{} test failed: {}".format(module['name'], job)
 
         return None
 
@@ -747,6 +779,20 @@ class StagingAPI(object):
                                  message='Picked {}'.format(project))
         return True
 
+    def map_ring_package_to_subject(self, project, pkg):
+        """
+        Returns the subproject (if any) to use for the pkg depending on the ring
+        the package is in
+        :param project the staging prj
+        :param pkg the package to add
+        """
+        # it's actually a pretty stupid algorithm, but it might become more complex later
+
+        if self.ring_packages.get(pkg) == 'openSUSE:Factory:Rings:2-TestDVD':
+            return project + ":DVD"
+
+        return project
+
     def delete_to_prj(self, act, project):
         """
         Hides Package in project
@@ -755,6 +801,7 @@ class StagingAPI(object):
         """
 
         tar_pkg = act.tgt_package
+        project = self.map_ring_package_to_subject(project, tar_pkg)
 
         # create build disabled package
         self.create_package_container(project, tar_pkg, disable_build=True)
@@ -780,8 +827,15 @@ class StagingAPI(object):
         disable_build = False
         if not self.ring_packages.get(tar_pkg):
             disable_build = True
+        else:
+            project = self.map_ring_package_to_subject(project, tar_pkg)
+
         self.create_package_container(project, tar_pkg,
                                       disable_build=disable_build)
+
+        # if it's disabled anyway, it doesn't make a difference if we link or not
+        if disable_build:
+            return tar_pkg
 
         # expand the revision to a md5
         url = self.makeurl(['source', src_prj, src_pkg],
@@ -926,7 +980,25 @@ class StagingAPI(object):
         staged_requests = list()
         for request in meta['requests']:
             staged_requests.append(request['id'])
+        target_flag = 'disable'
         if self.check_ring_packages(target_project, staged_requests):
-            self.build_switch_prj(target_project, 'enable')
-        else:
-            self.build_switch_prj(target_project, 'disable')
+            target_flag = 'enable'
+        self.build_switch_prj(target_project, target_flag)
+
+        if self.project_exists(target_project + ":DVD"):
+            self.build_switch_prj(target_project + ":DVD", target_flag)
+    
+    def project_exists(self, project):
+        """
+        Return true if the given project exists
+        :param project: project name to check
+        """
+        url = self.makeurl(['source', project, '_meta'])
+        try:
+            root = http_GET(url)
+            # ugly work around for the test suite
+            if root.read().startswith('<result>Not found'):
+                return False
+        except urllib2.HTTPError:
+            return False
+        return True
