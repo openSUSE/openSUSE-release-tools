@@ -958,10 +958,13 @@ class StagingAPI(object):
         staged_requests = list()
         for request in meta['requests']:
             staged_requests.append(request['id'])
+        target_flag = 'disable'
         if self.check_ring_packages(target_project, staged_requests):
-            self.build_switch_prj(target_project, 'enable')
-        else:
-            self.build_switch_prj(target_project, 'disable')
+            target_flag = 'enable'
+        self.build_switch_prj(target_project, target_flag)
+
+        if self.project_exists(target_project + ":DVD"):
+            self.build_switch_prj(target_project + ":DVD", target_flag)
     
     def project_exists(self, project):
         """
