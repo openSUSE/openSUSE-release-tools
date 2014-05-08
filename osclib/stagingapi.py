@@ -64,7 +64,7 @@ class StagingAPI(object):
             root = http_GET(url)
             for entry in ET.parse(root).getroot().findall('entry'):
                 pkg = entry.attrib['name']
-                if ret.has_key(pkg) and pkg != 'Test-DVD-x86_64':
+                if pkg in ret and pkg != 'Test-DVD-x86_64':
                     raise BaseException("{} is defined in two projects".format(pkg))
                 ret[pkg] = prj
         return ret
@@ -635,7 +635,7 @@ class StagingAPI(object):
         bestjobs = {}
         for job in jobs:
             if job['result'] != 'incomplete':
-                if not bestjobs.has_key(job['name']) or bestjobs[job['name']]['result'] != 'passed':
+                if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
                     bestjobs[job['name']] = job
 
         lambda_for_the_poor = []
@@ -654,7 +654,6 @@ class StagingAPI(object):
 
         if not jobs:
             return 'No openQA result yet'
-            return
 
         for job in jobs:
             url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job)

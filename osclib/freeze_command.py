@@ -17,9 +17,7 @@ class FreezeCommand(object):
         root = ET.parse(f).getroot()
         links = root.findall('link')
         links.reverse()
-        self.projectlinks = []
-        for link in links:
-            self.projectlinks.append(link.get('project'))
+        self.projectlinks = [link.get('project') for link in links]
 
     def set_bootstrap_copy(self):
         url = self.api.makeurl(['source', self.prj, '_meta'])
