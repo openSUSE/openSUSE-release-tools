@@ -424,7 +424,8 @@ class StagingAPI(object):
             return
 
         self._remove_package_from_prj_pseudometa(project, package)
-        delete_package(self.apiurl, project, package, force=True, msg=msg)
+        subprj = self.map_ring_package_to_subject(project, package)
+        delete_package(self.apiurl, subprj, package, force=True, msg=msg)
         self.set_review(request_id, project, state=review, msg=msg)
 
     def create_package_container(self, project, package, disable_build=False):
