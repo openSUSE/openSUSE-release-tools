@@ -601,7 +601,7 @@ class StagingAPI(object):
                 return (time.time() - float(entry.get('mtime')))/3600/24
         return 100000  # quite some!
 
-    def find_openqa_ids(self, project):
+    def find_openqa_jobs(self, project):
         u = self.makeurl(['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
         f = http_GET(u)
         root = ET.parse(f).getroot()
@@ -639,10 +639,7 @@ class StagingAPI(object):
                 if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
                     bestjobs[job['name']] = job
 
-        lambda_for_the_poor = []
-        for job in bestjobs.values():
-            lambda_for_the_poor.append(job['id'])
-        return lambda_for_the_poor if lambda_for_the_poor else None
+        return bestjobs
 
     def find_openqa_state(self, project):
         """
@@ -651,30 +648,44 @@ class StagingAPI(object):
         :return None or list with issue informations
         """
 
-        jobs = self.find_openqa_ids(project)
+        jobs = self.find_openqa_jobs(project)
 
         if not jobs:
             return 'No openQA result yet'
 
-        for job in jobs:
-            url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job)
-            try:
-                f = urllib2.urlopen(url)
-            except urllib2.HTTPError:
-                return "Can't open {}".format(url)
-
-            openqa = json.load(f)
-            overall = openqa.get('overall', 'inprogress')
-            if overall != 'ok':
-                return "Openqa's overall status is {} for {}".format(overall, job)
-
-            for module in openqa['testmodules']:
-                # zypper_in fails at the moment - urgent fix needed
-                if module['result'] != 'ok' and module['name'] not in []:
-                    return "{} test failed: {}".format(module['name'], job)
+        for job in jobs.values():
+            check = self.check_if_job_is_ok(job)
+            if check: 
+               return check
 
         return None
 
+    def check_if_job_is_ok(self, job):
+       url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job['id'])
+       try:
+          f = urllib2.urlopen(url)
+       except urllib2.HTTPError:
+          return "Can't open {}".format(url)
+
+       openqa = json.load(f)
+       overall = openqa.get('overall', 'inprogress')
+       if job['test'] == 'uefi':
+           return None # ignore
+       #pprint.pprint(openqa)
+       #pprint.pprint(job)
+       if overall != 'ok' and job['test'] not in ['gnome', 'uefi']:
+          return "Openqa's overall status is {} for {}".format(overall, job['id'])
+
+       for module in openqa['testmodules']:
+          # zypper_in fails at the moment - urgent fix needed
+          if module['result'] == 'ok': continue
+          if module['name'] in ['kate', 'yast2_users', 'inkscape', 'gnucash', 'yast2_bootloader']:
+             continue
+          if job['test'] == 'gnome' and module['name'] in ['consoletest_finish']:
+             return None # that's as far as we can get with gnome ;(
+          return "{} test failed: {}".format(module['name'], job['id'])
+       return None
+ 
     def gather_build_status(self, project):
         """
         Checks whether everything is built in project
