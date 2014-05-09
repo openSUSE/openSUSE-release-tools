@@ -424,7 +424,8 @@ class StagingAPI(object):
             return
 
         self._remove_package_from_prj_pseudometa(project, package)
-        delete_package(self.apiurl, project, package, force=True, msg=msg)
+        subprj = self.map_ring_package_to_subject(project, package)
+        delete_package(self.apiurl, subprj, package, force=True, msg=msg)
         self.set_review(request_id, project, state=review, msg=msg)
 
     def create_package_container(self, project, package, disable_build=False):
@@ -576,10 +577,10 @@ class StagingAPI(object):
         if buildstatus:
             report += self.generate_build_status_details(buildstatus, verbose)
             
-            # Check the openqa state
-            ret = self.find_openqa_state(project)
-            if ret:
-                report.append(ret)
+        # Check the openqa state
+        ret = self.find_openqa_state(project)
+        if ret:
+            report.append(ret)
 
         if report:
             return report
@@ -614,15 +615,15 @@ class StagingAPI(object):
         if not filename:
             return None
 
-        jobtemplate = 'Staging'
+        jobtemplate = '-Staging'
         if project.endswith(':DVD'):
-            jobtemplate = 'Staging2'
+            jobtemplate = '-Staging2'
             project = project[:-4]
-        jobname = 'openSUSE-Factory-{}-DVD-x86_64-Build'.format(jobtemplate)
 
-        jobname += project.split(':')[-1] + "."
+        jobname = 'openSUSE-Staging:'
+        jobname += project.split(':')[-1] + jobtemplate
         result = re.match('Test-Build([^-]+)-Media.iso', filename)
-        jobname += result.group(1) + "-Media.iso"
+        jobname += '-DVD-x86_64-Build' + result.group(1) + "-Media.iso"
 
         try:
             url = "https://openqa.opensuse.org/api/v1/jobs?iso={}".format(jobname)
@@ -634,7 +635,7 @@ class StagingAPI(object):
 
         bestjobs = {}
         for job in jobs:
-            if job['result'] != 'incomplete':
+            if job['result'] != 'incomplete' and not job['clone_id']:
                 if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
                     bestjobs[job['name']] = job
 
