@@ -673,16 +673,14 @@ class StagingAPI(object):
            return None # ignore
        #pprint.pprint(openqa)
        #pprint.pprint(job)
-       if overall != 'ok' and job['test'] not in ['gnome', 'uefi']:
+       if overall != 'ok':
           return "Openqa's overall status is {} for {}".format(overall, job['id'])
 
        for module in openqa['testmodules']:
           # zypper_in fails at the moment - urgent fix needed
           if module['result'] == 'ok': continue
-          if module['name'] in ['kate', 'yast2_users', 'inkscape', 'gnucash', 'yast2_bootloader']:
+          if module['name'] in ['inkscape', 'gnucash']:
              continue
-          if job['test'] == 'gnome' and module['name'] in ['consoletest_finish']:
-             return None # that's as far as we can get with gnome ;(
           return "{} test failed: {}".format(module['name'], job['id'])
        return None
  
