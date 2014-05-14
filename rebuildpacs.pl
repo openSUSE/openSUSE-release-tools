@@ -266,22 +266,25 @@ close(INSTALLCHECK);
 unlink($pfile);
 rmdir(dirname($pfile));
 
-my %nproblems;
 for my $package ( sort keys %problems ) {
     $problems{$package} = join( ', ', sort( keys %{ $problems{$package} } ) );
 }
+
+my @other_problems;
+my %oproblems;
 
 open( PROBLEMS, "problems" );
 while (<PROBLEMS>) {
     chomp;
     if (m,^$project/$repo/$arch/([^:]*):\s*(.*)$,) {
-        my $package  = $1;
+        my $package = $1;
         my $oproblem = $2;
-        my $nproblem = $problems{$package};
-        if ( $oproblem && $nproblem && $oproblem eq $nproblem )
-        {    # one more rebuild won't help
-            delete $problems{$package};
-        }
+        # remember old problems for current project/repo
+        $oproblems{$package} = $oproblem;
+    }
+    else {
+        # keep all lines for other projects/repos as they are
+        push @other_problems, $_;
     }
 }
 close(PROBLEMS);
@@ -299,23 +302,35 @@ close(RESULT);
 my @packages = @{ $results->{result}->{status} };
 my $rebuildit = 0;
 
-open( PROBLEMS, ">>problems" );
 $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
 for my $package (@packages) {
     $package = $package->{package};
-    next unless (defined $problems{$package});
+
+    my $oproblem = $oproblems{$package} || '';
+    if (!$problems{$package} || $problems{$package} eq $oproblem) {
+	# rebuild won't help
+	next;
+    }
     $rebuildit = 1;
     print "rebuild ", $package, ": ",
       $problems{ $package }, "\n";
     $api .= "&package=" . uri_escape( $package );
+}
+
+open( PROBLEMS, ">problems" );
+# write all lines for other projects/repos as they are
+foreach (@other_problems) {
+    print PROBLEMS $_, "\n";
+}
+for my $package (keys %problems) {
     print PROBLEMS "$project/$repo/$arch/"
       . $package . ": "
       . $problems{ $package }, "\n";
 }
+close(PROBLEMS);
 
 if ($rebuildit) {
   print "API '$api'\n";
   system("osc api -X POST '$api'");
 }
-close(PROBLEMS);
 
