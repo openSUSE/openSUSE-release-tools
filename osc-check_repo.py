@@ -365,7 +365,19 @@ def builddepinfo(apiurl, project, repository, arch):
     return root
 
 
-def old_md5(apiurl, project, package, repository='standard'):
+def get_project_repos(apiurl, project):
+    """Read the repositories of the project from _meta."""
+    repos = []
+    url = makeurl(apiurl, ['source', project, '_meta'])
+    try:
+        root = ET.parse(http_GET(url)).getroot()
+        repos = [element.get('name') for element in root.findall('repository')]
+    except urllib2.HTTPError, e:
+        print('ERROR in URL %s [%s]' % (url, e))
+    return repos
+
+
+def old_md5(apiurl, project, package):
     """Recollect old MD5 for a package."""
     # XXX TODO - instead of fixing the limit, use endtime to makes
     # sure that we have the correct time frame.
@@ -375,6 +387,14 @@ def old_md5(apiurl, project, package, repository='standard'):
         # 'code': 'succeeded',
         'limit': limit,
     }
+
+    repositories = set(get_project_repos(apiurl, project))
+    for repository in ('standard', 'openSUSE_Factory', None):
+        if repository in repositories:
+            break
+    if not repository:
+        raise ValueError('ERROR: %s is not in standard or openSUSE_Factory repository' % project)
+
     md5_set = set()
     for arch in ('i586', 'x86_64'):
         if md5_set:
@@ -535,7 +555,7 @@ def _check_repo_one_request(self, rq, opts):
             p.updated = True
 
         if lmd5 != p.rev and not p.updated:
-            if lmd5 not in old_md5(opts.apiurl, lprj, spec, 'standard'):
+            if lmd5 not in old_md5(opts.apiurl, lprj, spec):
                 msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
             else:
                 msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
