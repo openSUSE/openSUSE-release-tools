@@ -58,8 +58,14 @@ sync_prj openSUSE:Factory:Rings:1-MinimalX/standard minimalx
 
 regenerate_pl openSUSE:Factory:Rings:1-MinimalX 1 bootstrap minimalx
 
+sync_prj openSUSE:Factory:Rings:2-TestDVD/standard testdvd
+regenerate_pl openSUSE:Factory:Rings:2-TestDVD 2 bootstrap minimalx testdvd
+
 sync_prj openSUSE:Factory:Staging:A/standard staging_A
 regenerate_pl "openSUSE:Factory:Staging:A" 1 staging_A
+
+sync_prj openSUSE:Factory:Staging:A:DVD/standard staging_A-dvd
+regenerate_pl "openSUSE:Factory:Staging:A:DVD" 2 staging_A staging_A-dvd
 
 for l in B C D E F G H I J; do
   sync_prj openSUSE:Factory:Staging:$l/bootstrap_copy "staging_$l-bc"
@@ -68,15 +74,9 @@ for l in B C D E F G H I J; do
 done
 
 projects=$(osc api /search/project/id?match='starts-with(@name,"openSUSE:Factory:Staging")' | grep :DVD | cut -d\" -f2)
-for prj in openSUSE:Factory:Rings:2-TestDVD $projects; do  
+for prj in openSUSE:Factory:Rings:2-TestDVD $projects; do
   perl $SCRIPTDIR/rebuildpacs.pl $prj standard x86_64
 done
-
-sync_prj openSUSE:Factory:Rings:2-TestDVD/standard testdvd
-regenerate_pl openSUSE:Factory:Rings:2-TestDVD 2 bootstrap minimalx testdvd
-
-sync_prj openSUSE:Factory:Staging:A:DVD/standard staging_A-dvd
-regenerate_pl "openSUSE:Factory:Staging:A:DVD" 2 staging_A staging_A-dvd
 
 for l in B C D E F G H I; do
   sync_prj openSUSE:Factory:Staging:$l:DVD/standard "staging_$l-dvd"

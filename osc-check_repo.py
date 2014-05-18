@@ -737,9 +737,9 @@ def _check_repo_download(self, p, opts):
             todownload.append(('x86_64', fn[0], fn[3]))
 
         # now fetch -32bit packs
-        for fn in self._check_repo_repo_list(p.sproject, repo, 'i586', p.spackage, opts):
-            if fn[2] == 'x86_64':
-                todownload.append(('i586', fn[0], fn[3]))
+        #for fn in self._check_repo_repo_list(p.sproject, repo, 'i586', p.spackage, opts):
+        #    if fn[2] == 'x86_64':
+        #        todownload.append(('i586', fn[0], fn[3]))
 
         p.downloads[repo] = []
         for arch, fn, mt in todownload:

@@ -32,3 +32,9 @@ job install name xdelta
 job lock name gtk2-branding-upstream
 job lock name readline-doc
 job lock name libgcc_s1-32bit
+
+job lock name openvpn
+job lock name systemtap
+job lock name esound-daemon
+job lock name gettext-runtime-mini
+

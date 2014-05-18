@@ -679,7 +679,7 @@ class StagingAPI(object):
        for module in openqa['testmodules']:
           # zypper_in fails at the moment - urgent fix needed
           if module['result'] == 'ok': continue
-          if module['name'] in ['inkscape', 'gnucash', 'kate', 'thunderbird']:
+          if module['name'] in []:
              continue
           return "{} test failed: {}".format(module['name'], job['id'])
        return None

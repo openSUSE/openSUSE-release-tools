@@ -29,3 +29,4 @@ job lock name readline-doc
 job lock name SuSEfirewall2
 job lock name vim-data
 job lock name libgcc_s1-32bit
+job lock name gettext-runtime-mini
