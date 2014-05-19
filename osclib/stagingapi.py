@@ -667,7 +667,11 @@ class StagingAPI(object):
        except urllib2.HTTPError:
           return "Can't open {}".format(url)
 
-       openqa = json.load(f)
+       try:
+         openqa = json.load(f)
+       except ValueError:
+         return "Can't decode {}".format(url)
+
        overall = openqa.get('overall', 'inprogress')
        if job['test'] == 'uefi':
            return None # ignore
