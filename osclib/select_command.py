@@ -133,18 +133,18 @@ class SelectCommand(object):
             lines = []
 
             if SELECT in self.pending_comments[user]:
-                lines.append('Packages tracked now in %s:' % self.target_project)
+                lines.append('Packages tracked now in %s:\n' % self.target_project)
                 for package, request in self.pending_comments[user][SELECT]:
-                    lines.append('   - %s (%s)' % (package, request))
+                    lines.append('* %s (%s)' % (package, request))
 
             if MOVE in self.pending_comments[user]:
                 if lines:
                     lines.append('\n')
 
-                lines.append('Packages moved to %s:' % self.target_project)
+                lines.append('Packages moved to %s:\n' % self.target_project)
                 for from_project, package, request in self.pending_comments[user][MOVE]:
-                    lines.append('   - %s (%s) from %s' % (package, request, from_project))
-            lines.append('CC [at]%s' % user)
+                    lines.append('*  %s (%s) from %s' % (package, request, from_project))
+            lines.append('\nCC [at]%s' % user)
 
             msg = '\n'.join(lines)
             self.comment.add_comment(project_name=self.target_project, comment=msg)
