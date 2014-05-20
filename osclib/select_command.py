@@ -63,7 +63,7 @@ class SelectCommand(object):
 
             # Write a comment in the project.
             user = get_request(self.api.apiurl, str(request)).get_creator()
-            self.comment.add_comment(project_name=request_project,
+            self.comment.add_comment(project_name=self.target_project,
                                      comment='@%s: %s' % (user, msg))
 
             return self.api.rq_to_prj(request, self.target_project)
@@ -90,8 +90,10 @@ class SelectCommand(object):
             msgs.append(msg)
             print(msg)
 
-            # Write a comment in the project.
+            # Write a comment in both projects.
             user = get_request(self.api.apiurl, str(request)).get_creator()
+            # self.comment.add_comment(project_name=fprj,
+            #                          comment='@%s: %s' % (user, '\n'.join(msgs)))
             self.comment.add_comment(project_name=self.target_project,
                                      comment='@%s: %s' % (user, '\n'.join(msgs)))
 
