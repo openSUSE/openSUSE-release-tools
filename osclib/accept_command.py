@@ -31,7 +31,7 @@ class AcceptCommand(object):
 
             # Write a comment in the project.
             user = get_request(self.api.apiurl, str(req['id'])).get_creator()
-            self.comment.add_comment(project_name=project, comment='#%s: %s' % (user, msg))
+            self.comment.add_comment(project_name=project, comment='[at]%s: %s' % (user, msg))
 
             requests.append(req['id'])
 

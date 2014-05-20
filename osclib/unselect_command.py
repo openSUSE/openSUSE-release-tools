@@ -27,6 +27,6 @@ class UnselectCommand(object):
             self.api.add_review(request, by_group='factory-staging', msg='Please recheck')
 
             # Write a comment in the project.
-            user = get_request(self.api.apiurl, str(request)).get_creator()
-            self.comment.add_comment(project_name=staging_project,
-                                     comment='#%s:  %s' % (user, msg))
+            # user = get_request(self.api.apiurl, str(request)).get_creator()
+            # self.comment.add_comment(project_name=staging_project,
+            #                          comment='[at]%s:  %s' % (user, msg))
