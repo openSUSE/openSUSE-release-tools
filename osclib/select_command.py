@@ -1,8 +1,10 @@
 from xml.etree import cElementTree as ET
 
 from osc import oscerr
+from osc.core import get_request
 from osc.core import http_GET
 
+from osclib.comments import CommentAPI
 from osclib.request_finder import RequestFinder
 # from osclib.freeze_command import FreezeCommand
 
@@ -11,6 +13,7 @@ class SelectCommand(object):
 
     def __init__(self, api):
         self.api = api
+        self.comment = CommentAPI(self.api.apiurl)
 
     def _package(self, request):
         """
@@ -55,7 +58,14 @@ class SelectCommand(object):
 
         if 'staging' not in request_project and not supersede:
             # Normal 'select' command
-            print('Adding request "{}" to project "{}"'.format(request, self.target_project))
+            msg = 'Adding request "{}" to project "{}"'.format(request, self.target_project)
+            print(msg)
+
+            # Write a comment in the project.
+            user = get_request(self.api.apiurl, str(request)).get_creator()
+            self.comment.add_comment(project_name=self.target_project,
+                                     comment='#%s: %s' % (user, msg))
+
             return self.api.rq_to_prj(request, self.target_project)
         elif 'staging' in request_project and (move or supersede):
             # 'select' command becomes a 'move'
@@ -66,14 +76,27 @@ class SelectCommand(object):
                 # supersede = (new_rq, package, project)
                 fprj = request_project['staging'] if not supersede else supersede[2]
 
+            msgs = []
             if supersede:
-                print('"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0]))
+                msg = '"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0])
+                msgs.append(msg)
+                print(msg)
 
             if fprj == self.target_project:
                 print('"{}" is currently in "{}"'.format(request, self.target_project))
                 return False
 
-            print('Moving "{}" from "{}" to "{}"'.format(request, fprj, self.target_project))
+            msg = 'Moving "{}" from "{}" to "{}"'.format(request, fprj, self.target_project)
+            msgs.append(msg)
+            print(msg)
+
+            # Write a comment in both projects.
+            user = get_request(self.api.apiurl, str(request)).get_creator()
+            # self.comment.add_comment(project_name=fprj,
+            #                          comment='#%s: %s' % (user, '\n'.join(msgs)))
+            self.comment.add_comment(project_name=self.target_project,
+                                     comment='#%s: %s' % (user, '\n'.join(msgs)))
+
             return self.api.move_between_project(fprj, request, self.target_project)
         elif 'staging' in request_project and not move:
             # Previously selected, but not explicit move

@@ -121,6 +121,8 @@ class OBS(object):
         self._factory_list()
         # Project freeze
         self._project_freeze()
+        # Comments
+        self._comments()
         # Workaround
         self._ugly_hack()
 
@@ -453,6 +455,13 @@ class OBS(object):
         self.responses['GET']['/search/request'] = request_search
         self.responses['GET']['/search/request/id'] = request_search
         self.responses['GET']['/search/project/id'] = id_project_search
+
+    def _comments(self):
+        def comment(responses, request, uri):
+            return '<result>Ok</result>'
+
+        for st in self.st_project_data:
+            self.responses['POST']['/comments/project/openSUSE:Factory:Staging:%s' % st] = comment
 
     def register_obs(self):
         """
