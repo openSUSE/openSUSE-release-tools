@@ -1,3 +1,4 @@
+from collections import defaultdict
 from xml.etree import cElementTree as ET
 
 from osc import oscerr
@@ -9,11 +10,17 @@ from osclib.request_finder import RequestFinder
 # from osclib.freeze_command import FreezeCommand
 
 
+SELECT = 'select'
+# SUPERSEDE = 'supersede'
+MOVE = 'move'
+
+
 class SelectCommand(object):
 
     def __init__(self, api):
         self.api = api
         self.comment = CommentAPI(self.api.apiurl)
+        self.pending_comments = defaultdict(lambda: defaultdict(list))
 
     def _package(self, request):
         """
@@ -60,11 +67,10 @@ class SelectCommand(object):
             # Normal 'select' command
             print('Adding request "{}" to project "{}"'.format(request, self.target_project))
 
-            # Write a comment in the project.
+            # Add a new pending comment.
             user = get_request(self.api.apiurl, str(request)).get_creator()
             package = self._package(request)
-            msg = "Tracking '%s' in %s now\nCC [at]%s" % (package, self.target_project, user)
-            self.comment.add_comment(project_name=self.target_project, comment=msg)
+            self.pending_comments[user][SELECT].append((package, request))
 
             return self.api.rq_to_prj(request, self.target_project)
         elif 'staging' in request_project and (move or supersede):
@@ -76,26 +82,19 @@ class SelectCommand(object):
                 # supersede = (new_rq, package, project)
                 fprj = request_project['staging'] if not supersede else supersede[2]
 
-            msgs = []
             if supersede:
-                msg = '"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0])
-                msgs.append(msg)
-                print(msg)
+                print('"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0]))
 
             if fprj == self.target_project:
                 print('"{}" is currently in "{}"'.format(request, self.target_project))
                 return False
 
-            msg = 'Moving "{}" from "{}" to "{}"'.format(request, fprj, self.target_project)
-            msgs.append(msg)
-            print(msg)
+            print('Moving "{}" from "{}" to "{}"'.format(request, fprj, self.target_project))
 
-            # Write a comment in both projects.
+            # Add a new pending comment.
             user = get_request(self.api.apiurl, str(request)).get_creator()
-            # self.comment.add_comment(project_name=fprj,
-            #                          comment='[at]%s: %s' % (user, '\n'.join(msgs)))
-            self.comment.add_comment(project_name=self.target_project,
-                                     comment='[at]%s: %s' % (user, '\n'.join(msgs)))
+            package = self._package(request)
+            self.pending_comments[user][MOVE].append((fprj, package, request))
 
             return self.api.move_between_project(fprj, request, self.target_project)
         elif 'staging' in request_project and not move:
@@ -128,6 +127,27 @@ class SelectCommand(object):
         for request, request_project in RequestFinder.find_sr(requests, self.api.apiurl).items():
             if not self.select_request(request, request_project, move, from_):
                 return False
+
+        # Publish pending comments grouped by user and operation.
+        for user in self.pending_comments:
+            lines = []
+
+            if SELECT in self.pending_comments[user]:
+                lines.append('Packages tracked now in %s:\n' % self.target_project)
+                for package, request in self.pending_comments[user][SELECT]:
+                    lines.append('* %s (%s)' % (package, request))
+
+            if MOVE in self.pending_comments[user]:
+                if lines:
+                    lines.append('\n')
+
+                lines.append('Packages moved to %s:\n' % self.target_project)
+                for from_project, package, request in self.pending_comments[user][MOVE]:
+                    lines.append('*  %s (%s) from %s' % (package, request, from_project))
+            lines.append('\nCC [at]%s' % user)
+
+            msg = '\n'.join(lines)
+            self.comment.add_comment(project_name=self.target_project, comment=msg)
 
         # now make sure we enable the prj if the prj contains any ringed package
         self.api.build_switch_staging_project(target_project)
