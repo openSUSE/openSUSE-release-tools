@@ -26,6 +26,7 @@ from osclib.cleanup_rings import CleanupRings
 from osclib.list_command import ListCommand
 from osclib.freeze_command import FreezeCommand
 from osclib.check_command import CheckCommand
+from osclib.comments import CommentAPI
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -108,15 +109,15 @@ def do_staging(self, subcmd, opts, *args):
         CheckCommand(api).perform(project)
     elif cmd == 'freeze':
         for prj in args[1:]:
-            FreezeCommand(api).perform(api. prj_from_letter(prj))
+            FreezeCommand(api).perform(api.prj_from_letter(prj))
     elif cmd == 'accept':
-        return AcceptCommand(api).perform(api. prj_from_letter(args[1]))
+        AcceptCommand(api).perform(api.prj_from_letter(args[1]))
     elif cmd == 'unselect':
-        return UnselectCommand(api).perform(args[1:])
+        UnselectCommand(api).perform(args[1:])
     elif cmd == 'select':
         tprj = api.prj_from_letter(args[1])
-        return SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
+        SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
     elif cmd == 'cleanup_rings':
-        return CleanupRings(opts.apiurl).perform()
+        CleanupRings(opts.apiurl).perform()
     elif cmd == 'list':
-        return ListCommand(api).perform()
+        ListCommand(api).perform()
