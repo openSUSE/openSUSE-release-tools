@@ -365,30 +365,56 @@ def builddepinfo(apiurl, project, repository, arch):
     return root
 
 
-def old_md5(apiurl, project, package):
+def get_project_repos(apiurl, src_project, tgt_project, src_package, rev):
+    """Read the repositories of the project from _meta."""
+    # XXX TODO - Shitty logic here. A better proposal is refactorize
+    # _check_repo_buildsuccess.
+    repos = []
+    url = makeurl(apiurl,
+                  ['build', src_project,
+                   '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s' % (
+                       quote_plus(src_package),
+                       quote_plus(tgt_project),
+                       rev)])
+    try:
+        root = ET.parse(http_GET(url)).getroot()
+        for element in root.findall('repository'):
+            archs = [(e.get('arch'), e.get('result')) for e in element.findall('arch')]
+            repos.append((element.get('name'), archs))
+    except urllib2.HTTPError, e:
+        print('ERROR in URL %s [%s]' % (url, e))
+    return repos
+
+
+def old_md5(apiurl, src_project, tgt_project, src_package, rev):
     """Recollect old MD5 for a package."""
     # XXX TODO - instead of fixing the limit, use endtime to makes
     # sure that we have the correct time frame.
     limit = 20
     query = {
-        'project': project,
+        'project': src_project,
         # 'code': 'succeeded',
         'limit': limit,
     }
-    repository = 'openSUSE_Factory'
-    md5_set = set()
-    for arch in ('i586', 'x86_64'):
-        if md5_set:
-            break
 
-        url = makeurl(apiurl,
-                      ['/build/%s/%s/%s/_jobhistory' % (project, repository, arch)],
-                      query=query)
-        try:
-            root = ET.parse(http_GET(url)).getroot()
-            md5_set = set(e.get('srcmd5') for e in root.findall('jobhist'))
-        except urllib2.HTTPError, e:
-            print('ERROR in URL %s [%s]' % (url, e))
+    repositories = get_project_repos(apiurl, src_project, tgt_project,
+                                     src_package, rev)
+
+    md5_set = set()
+    for repository, archs in repositories:
+        for arch, status in archs:
+            if md5_set:
+                break
+            if status != 'succeeded':
+                continue
+        
+            url = makeurl(apiurl, ['build', src_project, repository, arch, '_jobhistory'],
+                          query=query)
+            try:
+                root = ET.parse(http_GET(url)).getroot()
+                md5_set = set(e.get('srcmd5') for e in root.findall('jobhist'))
+            except urllib2.HTTPError, e:
+                print('ERROR in URL %s [%s]' % (url, e))
 
     return md5_set
 
@@ -535,7 +561,7 @@ def _check_repo_one_request(self, rq, opts):
             p.updated = True
 
         if lmd5 != p.rev and not p.updated:
-            if lmd5 not in old_md5(opts.apiurl, lprj, spec):
+            if lmd5 not in old_md5(opts.apiurl, lpkg, p.tpackage, spec, p.rev):
                 msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
             else:
                 msg = '%s is no longer the submitted version, please resubmit HEAD' % spec

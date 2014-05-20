@@ -4,15 +4,14 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
+import json
 import logging
-from xml.etree import cElementTree as ET
-
-import yaml
 import re
 import urllib2
 import time
-import json
-import pprint
+from xml.etree import cElementTree as ET
+
+import yaml
 
 from osc import oscerr
 from osc.core import change_review_state
