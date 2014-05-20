@@ -58,13 +58,13 @@ class SelectCommand(object):
 
         if 'staging' not in request_project and not supersede:
             # Normal 'select' command
-            msg = 'Adding request "{}" to project "{}"'.format(request, self.target_project)
-            print(msg)
+            print('Adding request "{}" to project "{}"'.format(request, self.target_project))
 
             # Write a comment in the project.
             user = get_request(self.api.apiurl, str(request)).get_creator()
-            self.comment.add_comment(project_name=self.target_project,
-                                     comment='\#%s: %s' % (user, msg))
+            package = self._package(request)
+            msg = "Tracking '%s' in %s now\nCC [at]%s" % (package, self.target_project, user)
+            self.comment.add_comment(project_name=self.target_project, comment=msg)
 
             return self.api.rq_to_prj(request, self.target_project)
         elif 'staging' in request_project and (move or supersede):
@@ -93,9 +93,9 @@ class SelectCommand(object):
             # Write a comment in both projects.
             user = get_request(self.api.apiurl, str(request)).get_creator()
             # self.comment.add_comment(project_name=fprj,
-            #                          comment='\#%s: %s' % (user, '\n'.join(msgs)))
+            #                          comment='[at]%s: %s' % (user, '\n'.join(msgs)))
             self.comment.add_comment(project_name=self.target_project,
-                                     comment='\#%s: %s' % (user, '\n'.join(msgs)))
+                                     comment='[at]%s: %s' % (user, '\n'.join(msgs)))
 
             return self.api.move_between_project(fprj, request, self.target_project)
         elif 'staging' in request_project and not move:
