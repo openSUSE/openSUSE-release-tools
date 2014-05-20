@@ -64,7 +64,7 @@ class SelectCommand(object):
             # Write a comment in the project.
             user = get_request(self.api.apiurl, str(request)).get_creator()
             self.comment.add_comment(project_name=self.target_project,
-                                     comment='#%s: %s' % (user, msg))
+                                     comment='\#%s: %s' % (user, msg))
 
             return self.api.rq_to_prj(request, self.target_project)
         elif 'staging' in request_project and (move or supersede):
@@ -93,9 +93,9 @@ class SelectCommand(object):
             # Write a comment in both projects.
             user = get_request(self.api.apiurl, str(request)).get_creator()
             # self.comment.add_comment(project_name=fprj,
-            #                          comment='#%s: %s' % (user, '\n'.join(msgs)))
+            #                          comment='\#%s: %s' % (user, '\n'.join(msgs)))
             self.comment.add_comment(project_name=self.target_project,
-                                     comment='#%s: %s' % (user, '\n'.join(msgs)))
+                                     comment='\#%s: %s' % (user, '\n'.join(msgs)))
 
             return self.api.move_between_project(fprj, request, self.target_project)
         elif 'staging' in request_project and not move:
