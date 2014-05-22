@@ -566,8 +566,8 @@ def _check_repo_one_request(self, rq, opts):
                 msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
             else:
                 msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
-            print 'DECLINED', msg
-            self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
+            print '[DECLINED] CHECK MANUALLY', msg
+            # self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             p.updated = True
 
         sp = CheckRepoPackage()
