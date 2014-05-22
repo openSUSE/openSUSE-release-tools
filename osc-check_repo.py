@@ -400,22 +400,31 @@ def old_md5(apiurl, src_project, tgt_project, src_package, rev):
     repositories = get_project_repos(apiurl, src_project, tgt_project,
                                      src_package, rev)
 
-    md5_set = set()
+    srcmd5_list = []
     for repository, archs in repositories:
         for arch, status in archs:
-            if md5_set:
+            if srcmd5_list:
                 break
             if status not in ('succeeded', 'outdated'):
                 continue
         
             url = makeurl(apiurl, ['build', src_project, repository, arch, '_jobhistory'],
                           query=query)
-            print url
             try:
                 root = ET.parse(http_GET(url)).getroot()
-                md5_set = set(e.get('srcmd5') for e in root.findall('jobhist'))
+                srcmd5_list = [e.get('srcmd5') for e in root.findall('jobhist')]
             except urllib2.HTTPError, e:
                 print('ERROR in URL %s [%s]' % (url, e))
+
+    md5_set = set()
+    for srcmd5 in srcmd5_list:
+        query = {
+            'expand': 1,
+            'rev': srcmd5,
+        }
+        url = makeurl(apiurl, ['source', src_project, src_package], query=query)
+        root = ET.parse(http_GET(url)).getroot()
+        md5_set.add(root.find('linkinfo').get('srcmd5'))
 
     return md5_set
 
