@@ -392,7 +392,7 @@ def old_md5(apiurl, src_project, tgt_project, src_package, rev):
     # sure that we have the correct time frame.
     limit = 20
     query = {
-        'project': src_project,
+        'package': src_package,
         # 'code': 'succeeded',
         'limit': limit,
     }
@@ -405,11 +405,12 @@ def old_md5(apiurl, src_project, tgt_project, src_package, rev):
         for arch, status in archs:
             if md5_set:
                 break
-            if status != 'succeeded':
+            if status not in ('succeeded', 'outdated'):
                 continue
         
             url = makeurl(apiurl, ['build', src_project, repository, arch, '_jobhistory'],
                           query=query)
+            print url
             try:
                 root = ET.parse(http_GET(url)).getroot()
                 md5_set = set(e.get('srcmd5') for e in root.findall('jobhist'))
@@ -561,7 +562,7 @@ def _check_repo_one_request(self, rq, opts):
             p.updated = True
 
         if lmd5 != p.rev and not p.updated:
-            if lmd5 not in old_md5(opts.apiurl, lpkg, p.tpackage, spec, p.rev):
+            if lmd5 not in old_md5(opts.apiurl, lprj, p.tproject, spec, p.rev):
                 msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
             else:
                 msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
