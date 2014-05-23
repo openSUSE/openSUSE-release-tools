@@ -38,6 +38,9 @@ sys.path.append(_plugin_dir)
 from osclib.graph import Graph
 from osclib.stagingapi import StagingAPI
 
+# Directory where download binary packages.
+DOWNLOADS = os.path.expanduser('~/co/downloads')
+
 #
 # XXX - Ugly Hack. Because the way that osc import plugings we need to
 # declare some functions and objects used in the decorator as global
@@ -659,7 +662,7 @@ def _check_repo_download(self, p, opts):
 
         p.downloads[repo] = []
         for arch, fn, mt in todownload:
-            repodir = os.path.join(opts.downloads, p.spackage, repo)
+            repodir = os.path.join(DOWNLOADS, p.spackage, repo)
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
@@ -1000,8 +1003,6 @@ def do_check_repo(self, subcmd, opts, *args):
         group = opts.groups.get(prj, [])
         group.append(req)
         opts.groups[prj] = group
-
-    opts.downloads = os.path.expanduser('~/co/downloads')
 
     if opts.skip:
         if not len(args):
