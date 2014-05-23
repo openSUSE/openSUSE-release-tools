@@ -57,12 +57,9 @@ class CommentAPI(object):
             'who': comment_element.get('who'),
             'when': datetime.strptime(comment_element.get('when'), '%Y-%m-%d %H:%M:%S %Z'),
             'id': comment_element.get('id'),
+            'parent': comment_element.get('parent', None),
             'comment': comment_element.text,
         }
-        try:
-            comment['parent'] = comment_element['parent']
-        except:
-            pass
         return comment
 
     def get_comments(self, request_id=None, project_name=None,
@@ -76,7 +73,10 @@ class CommentAPI(object):
         """
         url = self._prepare_url(request_id, project_name, package_name)
         root = root = ET.parse(http_GET(url)).getroot()
-        comments = [self._comment_as_dict(c) for c in root.findall('comment')]
+        comments = {}
+        for c in root.findall('comment'):
+           c = self._comment_as_dict(c)
+           comments[c['id']] = c
         return comments
 
     def add_comment(self, request_id=None, project_name=None,
@@ -99,8 +99,26 @@ class CommentAPI(object):
         """Remove a comment object.
         :param comment_id: Id of the comment object.
         """
-        url = makeurl(self.apiurl, ['comments', comment_id])
+        url = makeurl(self.apiurl, ['comment', comment_id])
         return http_DELETE(url)
+
+    def delete_children(self, comments):
+        """Removes the comments that have no childs
+        
+        :param comments dict of id->comment dict
+        :return same hash without the deleted comments 
+        """
+        parents = []
+        for comment in comments.values():
+            if comment['parent']:
+                parents.append(comment['parent'])
+        
+        for id_ in comments:
+            if id_ not in parents:
+                self.delete(id_)
+                del comments[id_]
+
+        return comments
 
     def delete_from(self, request_id=None, project_name=None,
                     package_name=None):
@@ -111,9 +129,9 @@ class CommentAPI(object):
         :return: Number of comments removed.
         """
         comments = self.get_comments(request_id, project_name, package_name)
-        for comment in comments:
-            self.delete(comment['id'])
-        return len(comments)
+        while comments:
+            comments = self.delete_children(comments)
+        return True
 
     def delete_from_where_user(self, user, request_id=None, project_name=None,
                                  package_name=None):
