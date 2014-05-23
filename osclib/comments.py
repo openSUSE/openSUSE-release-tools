@@ -104,19 +104,21 @@ class CommentAPI(object):
 
     def delete_children(self, comments):
         """Removes the comments that have no childs
-	
-	:param comments dict of id->comment dict
-	:return same hash without the deleted comments 
-	"""
+        
+        :param comments dict of id->comment dict
+        :return same hash without the deleted comments 
+        """
         parents = []
         for comment in comments.values():
             if comment['parent']:
-		parents.append(comment['parent'])
-	for id in comments.keys():
-	    if id not in parents:
-		self.delete(id)
-	        del comments[id]
-	return comments
+                parents.append(comment['parent'])
+        
+        for id_ in comments:
+            if id_ not in parents:
+                self.delete(id_)
+                del comments[id_]
+
+        return comments
 
     def delete_from(self, request_id=None, project_name=None,
                     package_name=None):
