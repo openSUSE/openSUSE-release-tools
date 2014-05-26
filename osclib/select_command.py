@@ -135,7 +135,7 @@ class SelectCommand(object):
             if SELECT in self.pending_comments[user]:
                 lines.append('Packages tracked now in %s:\n' % self.target_project)
                 for package, request in self.pending_comments[user][SELECT]:
-                    lines.append('* %s (%s)' % (package, request))
+                    lines.append('* %s [%s](%s)' % (package, request, '/request/show/' + str(request)))
 
             if MOVE in self.pending_comments[user]:
                 if lines:
