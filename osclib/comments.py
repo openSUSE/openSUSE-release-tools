@@ -113,7 +113,7 @@ class CommentAPI(object):
             if comment['parent']:
                 parents.append(comment['parent'])
         
-        for id_ in comments:
+        for id_ in comments.keys():
             if id_ not in parents:
                 self.delete(id_)
                 del comments[id_]
