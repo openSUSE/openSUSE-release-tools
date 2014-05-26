@@ -143,7 +143,7 @@ class SelectCommand(object):
 
                 lines.append('Packages moved to %s:\n' % self.target_project)
                 for from_project, package, request in self.pending_comments[user][MOVE]:
-                    lines.append('*  %s (%s) from %s' % (package, request, from_project))
+                    lines.append('*  %s [%s](%s) from %s' % (package, request, '/request/show/' + str(request),  from_project))
             lines.append('\nCC [at]%s' % user)
 
             msg = '\n'.join(lines)
