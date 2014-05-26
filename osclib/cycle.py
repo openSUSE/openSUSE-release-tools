@@ -228,7 +228,7 @@ class CycleDetector(object):
         return frozenset(frozenset(e.text for e in cycle.findall('package'))
                          for cycle in root.findall('cycle'))
 
-    def cycles(self, packs, project='openSUSE:Factory', repository='standard', arch='x86_64'):
+    def cycles(self, packages, project='openSUSE:Factory', repository='standard', arch='x86_64'):
         """Detect cycles in a specific repository."""
 
         # Detect cycles - We create the full graph from _builddepinfo.
@@ -248,7 +248,7 @@ class CycleDetector(object):
         # = True' (meaning that they are declined or there is a new
         # updated review).
         all_packages = [self._get_builddepinfo(p.sproject, p.goodrepos[0], arch, p.spackage)
-                        for p in packs if not p.updated]
+                        for p in packages if not p.updated]
         all_packages = [pkg for pkg in all_packages if pkg]
 
         subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
@@ -269,11 +269,6 @@ class CycleDetector(object):
 
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
-                print
-                print 'New cycle detected:', sorted(cycle)
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
-                print 'New edges:', sorted(current_edges - factory_edges)
-                # Mark all packages as updated, to avoid to be accepted
-                for p in reqs:
-                    p.updated = True
+                yield sorted(current_edges - factory_edges)

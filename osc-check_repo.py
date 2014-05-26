@@ -567,7 +567,13 @@ def _check_repo_group(self, id_, reqs, opts):
     # Detect cycles into the current Factory graph after we update the
     # links with the current list of request.
     cycle_detector = CycleDetector(opts.apiurl)
-    cycle_detector.cycles(packs)
+    for (cycle, new_edges) in cycle_detector.cycles(packages=packs):
+        print
+        print 'New cycle detected:', sorted(cycle)
+        print 'New edges:', new_edges
+        # Mark all packages as updated, to avoid to be accepted
+        for p in reqs:
+            p.updated = True
 
     for p in reqs:
         smissing = []
