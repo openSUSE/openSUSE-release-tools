@@ -21,7 +21,7 @@ sys.path.append(_plugin_dir)
 from osclib.stagingapi import StagingAPI
 from osclib.comments import CommentAPI
 
-def get_current_snapshot(self):
+def tt_get_current_snapshot(self):
     """Return the current snapshot in Factory:ToTest"""
     
     # for now we hardcode all kind of things 
@@ -35,7 +35,7 @@ def get_current_snapshot(self):
     
     return None
 
-def find_openqa_results(self, snapshot):
+def tt_find_openqa_results(self, snapshot):
     """ Return the openqa jobs of a given snapshot 
     and filter out the cloned jobs
     """
@@ -54,12 +54,12 @@ class QAResult: # no python 3.4
     Failed = 2
     Passed = 3
 
-def overall_result(self, snapshot):
+def tt_overall_result(self, snapshot):
     """ Analyze the openQA jobs of a given snapshot
     Returns a QAResult
     """
 
-    jobs = self.find_openqa_results(snapshot)
+    jobs = self.tt_find_openqa_results(snapshot)
 
     known_failures = [
         'opensuse-FTT-DVD-i586-Build-dual_windows8@32bit',
@@ -113,6 +113,76 @@ def overall_result(self, snapshot):
         print "Some are now passing", known_failures
     return QAResult.Passed
 
+def tt_all_repos_done(self, project):
+    """
+    Check the build result of the project and only return True if all 
+    repos of that project are either published or unpublished
+    """
+    url = makeurl(self.api.apiurl, ['build', project, '_result'], {'code': 'failed' })
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for repo in root.findall('result'):
+        if repo.get('dirty', '') == 'true':
+            print repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'
+            return False
+        if repo.get('code') not in ['published', 'unpublished']:
+            print repo.get('project'), repo.get('repository'), repo.get('arch'), repo.get('code')
+            return False
+    return True
+
+def tt_package_succeeded(self, project, package, repository=None, arch=None):
+    """
+    Checks one package in a project and returns True if it's succeeded
+    """
+    query = {'package': package }
+    if repository:
+        query['repository'] = repository
+    if arch:
+        query['arch'] = arch
+
+    url = makeurl(self.api.apiurl, ['build', project, '_result'], query)
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for repo in root.findall('result'):
+        status = repo.find('status')
+        if status.get('code') != 'succeeded':
+            print project, package, repository, arch, status.get('code')
+            return False
+    return True
+    
+def tt_factory_snapshottable(self):
+    """
+    Check various conditions required for factory to be snapshotable
+    """
+
+    if not self.tt_all_repos_done('openSUSE:Factory'):
+        return False
+
+    for product in ['_product:openSUSE-ftp-ftp-i586_x86_64', 
+                    '_product:openSUSE-dvd5-dvd-i586',
+                    '_product:openSUSE-dvd5-dvd-x86_64',
+                    '_product:openSUSE-cd-mini-i586',
+                    '_product:openSUSE-cd-mini-x86_64']:
+        if not self.tt_package_succeeded('openSUSE:Factory', product, repository='images', arch='local'):
+            return False
+
+    if not self.tt_all_repos_done('openSUSE:Factory:Live'):
+        return False
+
+    for product in ['kiwi-image-livecd-kde.i586',
+                    'kiwi-image-livecd-gnome.i586',
+                    'kiwi-image-livecd-x11']:
+        if not self.tt_package_succeeded('openSUSE:Factory:Live', product, repository='standard', arch='i586'):
+            return False
+
+    for product in ['kiwi-image-livecd-kde.x86_64',
+                    'kiwi-image-livecd-gnome.x86_64',
+                    'kiwi-image-livecd-x11']:
+        if not self.tt_package_succeeded('openSUSE:Factory:Live', product, repository='standard', arch='x86_64'):
+            return False
+
+    return True
+
 def do_totest(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -129,5 +199,7 @@ def do_totest(self, subcmd, opts, *args):
     opts.verbose = False
     self.api = StagingAPI(opts.apiurl)
 
-    snapshot = self.get_current_snapshot()
-    print self.overall_result(snapshot)
+    #snapshot = self.tt_get_current_snapshot()
+    #print self.tt_overall_result(snapshot)
+
+    print self.tt_factory_snapshottable()
