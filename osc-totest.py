@@ -201,5 +201,6 @@ def do_totest(self, subcmd, opts, *args):
 
     #snapshot = self.tt_get_current_snapshot()
     #print self.tt_overall_result(snapshot)
+    #print self.tt_factory_snapshottable()
 
-    print self.tt_factory_snapshottable()
+  
