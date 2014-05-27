@@ -945,26 +945,39 @@ class StagingAPI(object):
         self.do_change_review_state(request_id, state, by_project=project,
                                  message=msg)
 
+    def switch_flag_in_prj(self, project, flag='build', state='disable', repository=None, arch=None):
+        url = self.makeurl(['source', project, '_meta'])
+        prjmeta = ET.parse(http_GET(url)).getroot()
+
+        flagxml = prjmeta.find(flag)
+        if not flagxml: # appending is fine
+            flagxml = ET.SubElement(prjmeta, flag)
+
+        foundone = False
+        for build in flagxml:
+            if build.get('repository', None) == repository and build.get('arch', None) == arch:
+                build.tag = state
+                foundone = True
+
+        # need to add a global one
+        if not foundone:
+            query = {}
+            if arch:
+                query['arch'] = arch
+            if repository:
+                query['repository'] = repository
+            ET.SubElement(flagxml, state, query)
+
+        print ET.tostring(prjmeta)
+        http_PUT(url, data=ET.tostring(prjmeta))
+
     def build_switch_prj(self, project, state):
         """
         Switch build state of project to desired state
         :param project: project to switch state for
         :param state: desired state for build
         """
-        url = self.makeurl(['source', project, '_meta'])
-        prjmeta = ET.parse(http_GET(url)).getroot()
-
-        foundone = False
-        for build in prjmeta.find('build'):
-            if not build.get('repository', None) and not build.get('arch', None):
-                build.tag = state
-                foundone = True
-
-        # need to add a global one
-        if not foundone:
-            ET.SubElement(prjmeta.find('build'), state)
-
-        http_PUT(url, data=ET.tostring(prjmeta))
+        self.switch_flag_in_prj(project, flag='build', state=state, repository=None, arch=None)
 
     def prj_frozen_enough(self, project):
         """
