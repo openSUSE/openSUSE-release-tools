@@ -130,15 +130,29 @@ def tt_all_repos_done(self, project):
             return False
     return True
 
-def tt_package_succeeded(self, project, package, repository=None, arch=None):
+def tt_maxsize_for_package(self, package):
+    if re.match(r'.*-mini-.*', package ):
+        return 737280000 # a CD needs to match
+
+    if re.match(r'.*-dvd5-.*', package ):
+        return 4700372992 # a DVD needs to match
+
+    if re.match(r'.*-image-livecd-x11.*', package ):
+        return 681574400 # not a full CD
+
+    if re.match(r'.*-image-livecd.*', package ):
+        return 999999999  # a GB stick
+
+    if package == '_product:openSUSE-ftp-ftp-i586_x86_64':
+        return None
+    
+    raise Exception('No maxsize for {}'.format(package))
+
+def tt_package_ok(self, project, package, repository, arch):
     """
     Checks one package in a project and returns True if it's succeeded
     """
-    query = {'package': package }
-    if repository:
-        query['repository'] = repository
-    if arch:
-        query['arch'] = arch
+    query = {'package': package, 'repository': repository, 'arch': arch }
 
     url = makeurl(self.api.apiurl, ['build', project, '_result'], query)
     f = http_GET(url)
@@ -148,6 +162,22 @@ def tt_package_succeeded(self, project, package, repository=None, arch=None):
         if status.get('code') != 'succeeded':
             print project, package, repository, arch, status.get('code')
             return False
+
+    maxsize = self.tt_maxsize_for_package(package)
+    if not maxsize:
+        return True
+
+    url = makeurl(self.api.apiurl, ['build', project, repository, arch, package])
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for binary in root.findall('binary'):
+        if not binary.get('filename', '').endswith('.iso'):
+            continue
+        isosize=int(binary.get('size', 0))
+        if isosize > maxsize:
+            print project, package, repository, arch, 'too large by {} bytes'.format(isosize-maxsize)
+            return False
+
     return True
     
 def tt_factory_snapshottable(self):
@@ -163,7 +193,7 @@ def tt_factory_snapshottable(self):
                     '_product:openSUSE-dvd5-dvd-x86_64',
                     '_product:openSUSE-cd-mini-i586',
                     '_product:openSUSE-cd-mini-x86_64']:
-        if not self.tt_package_succeeded('openSUSE:Factory', product, repository='images', arch='local'):
+        if not self.tt_package_ok('openSUSE:Factory', product, 'images', 'local'):
             return False
 
     if not self.tt_all_repos_done('openSUSE:Factory:Live'):
@@ -172,13 +202,13 @@ def tt_factory_snapshottable(self):
     for product in ['kiwi-image-livecd-kde.i586',
                     'kiwi-image-livecd-gnome.i586',
                     'kiwi-image-livecd-x11']:
-        if not self.tt_package_succeeded('openSUSE:Factory:Live', product, repository='standard', arch='i586'):
+        if not self.tt_package_ok('openSUSE:Factory:Live', product, 'standard', 'i586'):
             return False
 
     for product in ['kiwi-image-livecd-kde.x86_64',
                     'kiwi-image-livecd-gnome.x86_64',
                     'kiwi-image-livecd-x11']:
-        if not self.tt_package_succeeded('openSUSE:Factory:Live', product, repository='standard', arch='x86_64'):
+        if not self.tt_package_ok('openSUSE:Factory:Live', product, 'standard', 'x86_64'):
             return False
 
     return True
@@ -201,6 +231,5 @@ def do_totest(self, subcmd, opts, *args):
 
     #snapshot = self.tt_get_current_snapshot()
     #print self.tt_overall_result(snapshot)
-    #print self.tt_factory_snapshottable()
+    self.tt_factory_snapshottable()
 
-  
