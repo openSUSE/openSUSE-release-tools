@@ -968,7 +968,6 @@ class StagingAPI(object):
                 query['repository'] = repository
             ET.SubElement(flagxml, state, query)
 
-        print ET.tostring(prjmeta)
         http_PUT(url, data=ET.tostring(prjmeta))
 
     def build_switch_prj(self, project, state):
