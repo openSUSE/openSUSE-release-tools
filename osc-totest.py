@@ -95,6 +95,9 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit'
     ]
 
+    if len(jobs) < 80: # not yet scheduled
+        return QAResult.InProgress
+
     for job in jobs:
         #print json.dumps(job, sort_keys=True, indent=4)
         if job['result'] == 'failed':
