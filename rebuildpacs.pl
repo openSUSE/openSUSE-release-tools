@@ -332,7 +332,7 @@ foreach (@other_problems) {
 for my $package (keys %oproblems) {
     print PROBLEMS "$project/$repo/$arch/"
       . $package . ": "
-      . $problems{ $package }, "\n";
+      . $oproblems{ $package }, "\n";
 }
 close(PROBLEMS);
 
