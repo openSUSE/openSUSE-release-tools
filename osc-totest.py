@@ -213,6 +213,32 @@ def tt_factory_snapshottable(self):
 
     return True
 
+def tt_release_package(self, project, package, set_release=None):
+    query = { 'cmd': 'release' }
+    
+    if set_release:
+        query["setrelease"] = set_release
+    
+    baseurl = ['source', project, package]
+
+    url = makeurl(apiurl, baseurl, query=query)
+    http_POST(url)
+    
+def tt_update_totest(self, snapshot):
+    self.tt_release_package('openSUSE:Factory', '_product:openSUSE-ftp-ftp-i586_x86_64')
+    for cd in ['kiwi-image-livecd-kde.i586',
+               'kiwi-image-livecd-kde.x86_64',
+               'kiwi-image-livecd-gnome.i586',
+               'kiwi-image-livecd-gnome.x86_64',
+               'kiwi-image-livecd-x11']:
+        self.tt_release_package('openSUSE:Factory:Live', cd, set_release='Snapshot{}'.format(snapshot))
+        
+    for cd in ['_product:openSUSE-dvd5-dvd-i586',
+               '_product:openSUSE-dvd5-dvd-x86_64',
+               '_product:openSUSE-cd-mini-i586',
+               '_product:openSUSE-cd-mini-x86_64']:
+        self.tt_release_package('openSUSE:Factory', cd, set_release='Snapshot{}'.format(snapshot))
+
 def do_totest(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
