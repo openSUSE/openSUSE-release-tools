@@ -12,6 +12,8 @@ import os.path
 import sys
 import json
 
+from datetime import date
+
 from osc import cmdln, oscerr
 
 # Expand sys.path to search modules inside the pluging directory
@@ -221,10 +223,12 @@ def tt_release_package(self, project, package, set_release=None):
     
     baseurl = ['source', project, package]
 
-    url = makeurl(apiurl, baseurl, query=query)
+    url = makeurl(self.api.apiurl, baseurl, query=query)
     http_POST(url)
     
 def tt_update_totest(self, snapshot):
+    self.api.switch_flag_in_prj('openSUSE:Factory:ToTest', flag='publish', state='disable')
+
     self.tt_release_package('openSUSE:Factory', '_product:openSUSE-ftp-ftp-i586_x86_64')
     for cd in ['kiwi-image-livecd-kde.i586',
                'kiwi-image-livecd-kde.x86_64',
@@ -238,6 +242,23 @@ def tt_update_totest(self, snapshot):
                '_product:openSUSE-cd-mini-i586',
                '_product:openSUSE-cd-mini-x86_64']:
         self.tt_release_package('openSUSE:Factory', cd, set_release='Snapshot{}'.format(snapshot))
+
+def tt_publish_factory_totest(self):
+    self.api.switch_flag_in_prj('openSUSE:Factory:ToTest', flag='publish', state='enable')
+
+def tt_totest_is_publishing(self):
+    """Find out if the publishing flag is set in totest's _meta"""
+    
+    url = makeurl(self.api.apiurl, ['source', 'openSUSE:Factory:ToTest', '_meta'])
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for flag in root.find('publish'):
+        if flag.get('repository', None) or flag.get('arch', None):
+            continue
+        if flag.tag == 'enable':
+            return True
+
+    return False
 
 def do_totest(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
@@ -255,7 +276,24 @@ def do_totest(self, subcmd, opts, *args):
     opts.verbose = False
     self.api = StagingAPI(opts.apiurl)
 
-    #snapshot = self.tt_get_current_snapshot()
-    #print self.tt_overall_result(snapshot)
-    self.tt_factory_snapshottable()
+    current_snapshot = self.tt_get_current_snapshot()
+    new_snapshot = date.today().strftime("%Y%m%d")
 
+    current_result = self.tt_overall_result(current_snapshot)
+    can_release = current_result != QAResult.InProgress and self.tt_factory_snapshottable()
+    
+    # not overwriting
+    if new_snapshot == current_snapshot:
+        can_release = False
+    can_publish = current_result == QAResult.Passed
+
+    # already published
+    if self.tt_totest_is_publishing():
+        can_publish = False
+
+    if can_publish:
+        self.tt_publish_factory_totest()
+        can_release = False # we have to wait
+
+    if can_release:
+        self.tt_update_totest(new_snapshot)
