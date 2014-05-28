@@ -306,8 +306,14 @@ $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
 for my $package (@packages) {
     $package = $package->{package};
 
+    if (!$problems{$package}) {
+      # it can go
+      delete $oproblems{$package};
+      next;
+    }
+
     my $oproblem = $oproblems{$package} || '';
-    if (!$problems{$package} || $problems{$package} eq $oproblem) {
+    if ($problems{$package} eq $oproblem) {
 	# rebuild won't help
 	next;
     }
@@ -315,6 +321,7 @@ for my $package (@packages) {
     print "rebuild ", $package, ": ",
       $problems{ $package }, "\n";
     $api .= "&package=" . uri_escape( $package );
+    $oproblems{$package} = $problems{$package};
 }
 
 open( PROBLEMS, ">problems" );
@@ -322,7 +329,7 @@ open( PROBLEMS, ">problems" );
 foreach (@other_problems) {
     print PROBLEMS $_, "\n";
 }
-for my $package (keys %problems) {
+for my $package (keys %oproblems) {
     print PROBLEMS "$project/$repo/$arch/"
       . $package . ": "
       . $problems{ $package }, "\n";
