@@ -66,13 +66,10 @@ def tt_overall_result(self, snapshot):
     known_failures = [
         'opensuse-FTT-DVD-i586-Build-dual_windows8@32bit',
         'opensuse-FTT-DVD-i586-Build-minimalx+btrfs+nosephome@32bit',
-        'opensuse-FTT-DVD-i586-Build-textmode@32bit',
-        'opensuse-FTT-DVD-i586-Build-update_123@32bit',
         'opensuse-FTT-DVD-i586-Build-update_13.1-kde@32bit',
         'opensuse-FTT-DVD-x86_64-Build-doc@64bit',
         'opensuse-FTT-DVD-x86_64-Build-dual_windows8@64bit',
         'opensuse-FTT-DVD-x86_64-Build-minimalx+btrfs+nosephome@64bit',
-        'opensuse-FTT-DVD-x86_64-Build-textmode@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_13.1-gnome@64bit',
         'opensuse-FTT-GNOME-Live-i686-Build-gnome-live@32bit',
@@ -82,17 +79,17 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@64bit',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',
         'opensuse-FTT-NET-i586-Build-dual_windows8@32bit',
-        'opensuse-FTT-NET-i586-Build-textmode@32bit',
         'opensuse-FTT-NET-i586-Build-update_121@32bit',
         'opensuse-FTT-NET-i586-Build-update_122@32bit',
         'opensuse-FTT-NET-i586-Build-update_123@32bit',
         'opensuse-FTT-NET-x86_64-Build-dual_windows8@64bit',
-        'opensuse-FTT-NET-x86_64-Build-textmode@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_121@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_122@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_123@64bit',
         'opensuse-FTT-Rescue-CD-i686-Build-rescue@32bit',
-        'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit'
+        'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
+        'opensuse-FTT-DVD-x86_64-Build-uefi@64bit',
+	'opensuse-FTT-NET-x86_64-Build-uefi@64bit'
     ]
 
     if len(jobs) < 80: # not yet scheduled
@@ -105,7 +102,7 @@ def tt_overall_result(self, snapshot):
             if jobname in known_failures:
                 known_failures.remove(jobname)
                 continue
-            print json.dumps(job, sort_keys=True, indent=4), known_failures
+            print json.dumps(job, sort_keys=True, indent=4), jobname
             return QAResult.Failed
         elif job['result'] == 'passed':
             continue
@@ -230,6 +227,7 @@ def tt_release_package(self, project, package, set_release=None):
     http_POST(url)
     
 def tt_update_totest(self, snapshot):
+    print "Updating snapshot {}".format(snapshot)
     self.api.switch_flag_in_prj('openSUSE:Factory:ToTest', flag='publish', state='disable')
 
     self.tt_release_package('openSUSE:Factory', '_product:openSUSE-ftp-ftp-i586_x86_64')
@@ -247,6 +245,7 @@ def tt_update_totest(self, snapshot):
         self.tt_release_package('openSUSE:Factory', cd, set_release='Snapshot{}'.format(snapshot))
 
 def tt_publish_factory_totest(self):
+    print "Publish ToTest"
     self.api.switch_flag_in_prj('openSUSE:Factory:ToTest', flag='publish', state='enable')
 
 def tt_totest_is_publishing(self):
@@ -262,6 +261,20 @@ def tt_totest_is_publishing(self):
             return True
 
     return False
+
+def tt_build_of_ftp_tree(self, project):
+    """Determine the build id of the FTP tree product in the given project"""
+    
+    url = makeurl(self.api.apiurl, ['build', project, 'images', 'local', '_product:openSUSE-ftp-ftp-i586_x86_64'])
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for binary in root.findall('binary'):
+        binary = binary.get('filename', '')
+        result = re.match(r'.*Build(.*)-Media1.report', binary)
+        if result:
+            return result.group(1)
+    print ET.tostring(root)
+    raise Exception('No media1.report found')
 
 def do_totest(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
@@ -283,10 +296,16 @@ def do_totest(self, subcmd, opts, *args):
     new_snapshot = date.today().strftime("%Y%m%d")
 
     current_result = self.tt_overall_result(current_snapshot)
+    print "current_snapshot", current_result
+    if current_result == QAResult.Failed:
+       sys.exit(1)
     can_release = current_result != QAResult.InProgress and self.tt_factory_snapshottable()
     
     # not overwriting
     if new_snapshot == current_snapshot:
+        can_release = False
+    elif self.tt_build_of_ftp_tree('openSUSE:Factory') == self.tt_build_of_ftp_tree('openSUSE:Factory:ToTest'):
+        # there was no change in factory since the last release, so drop it
         can_release = False
     can_publish = current_result == QAResult.Passed
 
