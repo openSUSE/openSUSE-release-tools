@@ -115,7 +115,7 @@ def tt_overall_result(self, snapshot):
         print "Some are now passing", known_failures
     return QAResult.Passed
 
-def tt_all_repos_done(self, project):
+def tt_all_repos_done(self, project, codes=['published', 'unpublished']):
     """
     Check the build result of the project and only return True if all 
     repos of that project are either published or unpublished
@@ -127,7 +127,7 @@ def tt_all_repos_done(self, project):
         if repo.get('dirty', '') == 'true':
             print repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'
             return False
-        if repo.get('code') not in ['published', 'unpublished']:
+        if repo.get('code') not in codes:
             print repo.get('project'), repo.get('repository'), repo.get('arch'), repo.get('code')
             return False
     return True
@@ -307,6 +307,10 @@ def do_totest(self, subcmd, opts, *args):
     elif self.tt_build_of_ftp_tree('openSUSE:Factory') == self.tt_build_of_ftp_tree('openSUSE:Factory:ToTest'):
         # there was no change in factory since the last release, so drop it
         can_release = False
+    elif not self.tt_all_repos_done('openSUSE:Factory:ToTest'):
+        # the repos have to be done, otherwise we better not touch them with a new release
+        can_release = False
+
     can_publish = current_result == QAResult.Passed
 
     # already published
