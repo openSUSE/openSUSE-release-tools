@@ -89,7 +89,7 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-Rescue-CD-i686-Build-rescue@32bit',
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
         'opensuse-FTT-DVD-x86_64-Build-uefi@64bit',
-	'opensuse-FTT-NET-x86_64-Build-uefi@64bit'
+        'opensuse-FTT-NET-x86_64-Build-uefi@64bit'
     ]
 
     if len(jobs) < 80: # not yet scheduled
@@ -298,7 +298,7 @@ def do_totest(self, subcmd, opts, *args):
     current_result = self.tt_overall_result(current_snapshot)
     print "current_snapshot", current_result
     if current_result == QAResult.Failed:
-       sys.exit(1)
+        sys.exit(1)
     can_release = current_result != QAResult.InProgress and self.tt_factory_snapshottable()
     
     # not overwriting
