@@ -80,7 +80,7 @@ def do_staging(self, subcmd, opts, *args):
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
     if cmd in ('accept', 'freeze'):
-        min_args, max_args = 1, 1
+        min_args, max_args = 1, None
     elif cmd == 'check':
         min_args, max_args = 0, 2
     elif cmd == 'select':
@@ -111,7 +111,10 @@ def do_staging(self, subcmd, opts, *args):
         for prj in args[1:]:
             FreezeCommand(api).perform(api.prj_from_letter(prj))
     elif cmd == 'accept':
-        AcceptCommand(api).perform(api.prj_from_letter(args[1]))
+        cmd = AcceptCommand(api)
+        for prj in args[1:]:
+            cmd.perform(api.prj_from_letter(prj))
+        cmd.accept_other_new()
     elif cmd == 'unselect':
         UnselectCommand(api).perform(args[1:])
     elif cmd == 'select':
