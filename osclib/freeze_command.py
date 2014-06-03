@@ -1,10 +1,6 @@
 import time
 from xml.etree import cElementTree as ET
 
-from osc.core import http_GET
-from osc.core import http_PUT
-
-
 class FreezeCommand(object):
 
     def __init__(self, api):
@@ -13,7 +9,7 @@ class FreezeCommand(object):
 
     def set_links(self):
         url = self.api.makeurl(['source', self.prj, '_meta'])
-        f = http_GET(url)
+        f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         links = root.findall('link')
         links.reverse()
@@ -22,14 +18,14 @@ class FreezeCommand(object):
     def set_bootstrap_copy(self):
         url = self.api.makeurl(['source', self.prj, '_meta'])
 
-        f = http_GET(url)
+        f = self.api.retried_GET(url)
         oldmeta = ET.parse(f).getroot()
 
         meta = ET.fromstring(self.prj_meta_for_bootstrap_copy(self.prj))
         meta.find('title').text = oldmeta.find('title').text
         meta.find('description').text = oldmeta.find('description').text
 
-        http_PUT(url, data=ET.tostring(meta))
+        self.api.retried_PUT(url, ET.tostring(meta))
 
     def create_bootstrap_aggregate(self):
         self.create_bootstrap_aggregate_meta()
@@ -37,7 +33,7 @@ class FreezeCommand(object):
 
     def bootstrap_packages(self):
         url = self.api.makeurl(['source', 'openSUSE:Factory:Rings:0-Bootstrap'])
-        f = http_GET(url)
+        f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         l = list()
         for e in root.findall('entry'):
@@ -61,7 +57,7 @@ class FreezeCommand(object):
         ET.SubElement(a, 'repository', { 'target': 'standard', 'source': 'nothing' } )
         ET.SubElement(a, 'repository', { 'target': 'images', 'source': 'nothing' } )
 
-        http_PUT(url, data=ET.tostring(root))
+        self.api.retried_PUT(url, ET.tostring(root))
 
     def create_bootstrap_aggregate_meta(self):
         url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_meta'])
@@ -75,22 +71,22 @@ class FreezeCommand(object):
         # this one is the global toggle
         ET.SubElement(f, 'disable')
 
-        http_PUT(url, data=ET.tostring(root))
+        self.api.retried_PUT(url, ET.tostring(root))
 
     def build_switch_bootstrap_copy(self, state):
         url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_meta'])
-        pkgmeta = ET.parse(http_GET(url)).getroot()
+        pkgmeta = ET.parse(self.api.retried_GET(url)).getroot()
 
         for f in pkgmeta.find('build'):
             if f.get('repository', None) == 'bootstrap_copy':
                 f.tag = state
                 pass
-        http_PUT(url, data=ET.tostring(pkgmeta))
+        self.api.retried_PUT(url, ET.tostring(pkgmeta))
 
     def verify_bootstrap_copy_codes(self, codes):
         url = self.api.makeurl(['build', self.prj, '_result'], { 'package': 'bootstrap-copy' })
 
-        root = ET.parse(http_GET(url)).getroot()
+        root = ET.parse(self.api.retried_GET(url)).getroot()
         for result in root.findall('result'):
             if result.get('repository') == 'bootstrap_copy':
                 if not result.find('status').get('code') in codes:
@@ -167,11 +163,11 @@ class FreezeCommand(object):
             sources = self.receive_sources(lprj, sources, fl)
 
         url = self.api.makeurl(['source', self.prj, '_project', '_frozenlinks'], { 'meta': '1' } )
-        http_PUT(url, data=ET.tostring(flink))
+        self.api.retried_PUT(url, ET.tostring(flink))
 
     def receive_sources(self, prj, sources, flink):
         url = self.api.makeurl(['source', prj], { 'view': 'info', 'nofilename': '1' } )
-        f = http_GET(url)
+        f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
 
         for si in root.findall('sourceinfo'):
@@ -190,7 +186,7 @@ class FreezeCommand(object):
                 # take the unexpanded md5 from Factory link
                 url = self.api.makeurl(['source', 'openSUSE:Factory', package], { 'view': 'info', 'nofilename': '1' })
                 #print(package, linked.get('package'), linked.get('project'))
-                f = http_GET(url)
+                f = self.api.retried_GET(url)
                 proot = ET.parse(f).getroot()
                 ET.SubElement(flink, 'package', { 'name': package, 'srcmd5': proot.get('lsrcmd5'), 'vrev': si.get('vrev') })
                 return package

@@ -27,8 +27,8 @@ def tt_get_current_snapshot(self):
     """Return the current snapshot in Factory:ToTest"""
     
     # for now we hardcode all kind of things 
-    url = makeurl(self.api.apiurl, ['build', 'openSUSE:Factory:ToTest', 'images', 'local', '_product:openSUSE-cd-mini-i586'])
-    f = http_GET(url)
+    url = self.api.makeurl(['build', 'openSUSE:Factory:ToTest', 'images', 'local', '_product:openSUSE-cd-mini-i586'])
+    f = self.api.retried_GET(url)
     root = ET.parse(f).getroot()
     for binary in root.findall('binary'):
         result = re.match(r'openSUSE-Factory-NET-i586-Snapshot(.*)-Media.iso', binary.get('filename'))
@@ -43,7 +43,7 @@ def tt_find_openqa_results(self, snapshot):
     """
 
     url = "https://openqa.opensuse.org/api/v1/jobs?version=FTT&build={}&distro=openSUSE".format(snapshot)
-    f = http_GET(url)
+    f = self.api.retried_GET(url)
     jobs = []
     for job in json.load(f)['jobs']:
         if job['clone_id']: continue
@@ -55,6 +55,14 @@ class QAResult: # no python 3.4
     InProgress = 1
     Failed = 2
     Passed = 3
+
+def tt_result2str(result):
+    if result == QAResult.InProgress:
+        return 'inprogress'
+    elif result == QAResult.Failed:
+        return 'failed'
+    else:
+        return 'passed'
 
 def tt_overall_result(self, snapshot):
     """ Analyze the openQA jobs of a given snapshot
@@ -120,8 +128,8 @@ def tt_all_repos_done(self, project, codes=['published', 'unpublished']):
     Check the build result of the project and only return True if all 
     repos of that project are either published or unpublished
     """
-    url = makeurl(self.api.apiurl, ['build', project, '_result'], {'code': 'failed' })
-    f = http_GET(url)
+    url = self.api.makeurl(['build', project, '_result'], {'code': 'failed' })
+    f = self.api.retried_GET(url)
     root = ET.parse(f).getroot()
     for repo in root.findall('result'):
         if repo.get('dirty', '') == 'true':
@@ -156,8 +164,8 @@ def tt_package_ok(self, project, package, repository, arch):
     """
     query = {'package': package, 'repository': repository, 'arch': arch }
 
-    url = makeurl(self.api.apiurl, ['build', project, '_result'], query)
-    f = http_GET(url)
+    url = self.api.makeurl(['build', project, '_result'], query)
+    f = self.api.retried_GET(url)
     root = ET.parse(f).getroot()
     for repo in root.findall('result'):
         status = repo.find('status')
@@ -169,8 +177,8 @@ def tt_package_ok(self, project, package, repository, arch):
     if not maxsize:
         return True
 
-    url = makeurl(self.api.apiurl, ['build', project, repository, arch, package])
-    f = http_GET(url)
+    url = self.api.makeurl(['build', project, repository, arch, package])
+    f = self.api.retried_GET(url)
     root = ET.parse(f).getroot()
     for binary in root.findall('binary'):
         if not binary.get('filename', '').endswith('.iso'):
@@ -223,8 +231,8 @@ def tt_release_package(self, project, package, set_release=None):
     
     baseurl = ['source', project, package]
 
-    url = makeurl(self.api.apiurl, baseurl, query=query)
-    http_POST(url)
+    url = self.api.makeurl(baseurl, query=query)
+    self.api.retried_POST(url)
     
 def tt_update_totest(self, snapshot):
     print "Updating snapshot {}".format(snapshot)
@@ -251,8 +259,8 @@ def tt_publish_factory_totest(self):
 def tt_totest_is_publishing(self):
     """Find out if the publishing flag is set in totest's _meta"""
     
-    url = makeurl(self.api.apiurl, ['source', 'openSUSE:Factory:ToTest', '_meta'])
-    f = http_GET(url)
+    url = self.api.makeurl(['source', 'openSUSE:Factory:ToTest', '_meta'])
+    f = self.api.retried_GET(url)
     root = ET.parse(f).getroot()
     for flag in root.find('publish'):
         if flag.get('repository', None) or flag.get('arch', None):
@@ -265,8 +273,8 @@ def tt_totest_is_publishing(self):
 def tt_build_of_ftp_tree(self, project):
     """Determine the build id of the FTP tree product in the given project"""
     
-    url = makeurl(self.api.apiurl, ['build', project, 'images', 'local', '_product:openSUSE-ftp-ftp-i586_x86_64'])
-    f = http_GET(url)
+    url = self.api.makeurl(['build', project, 'images', 'local', '_product:openSUSE-ftp-ftp-i586_x86_64'])
+    f = self.api.retried_GET(url)
     root = ET.parse(f).getroot()
     for binary in root.findall('binary'):
         binary = binary.get('filename', '')
@@ -296,7 +304,7 @@ def do_totest(self, subcmd, opts, *args):
     new_snapshot = date.today().strftime("%Y%m%d")
 
     current_result = self.tt_overall_result(current_snapshot)
-    print "current_snapshot", current_result
+    print "current_snapshot", current_snapshot, tt_result2str(current_result)
     if current_result == QAResult.Failed:
         sys.exit(1)
     can_release = current_result != QAResult.InProgress and self.tt_factory_snapshottable()
