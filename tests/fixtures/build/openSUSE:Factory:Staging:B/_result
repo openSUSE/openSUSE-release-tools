@@ -1,0 +1,11 @@
+<resultlist state="c7856c90c70c53fae88aacec964b80c0">
+  <result project="openSUSE:Factory:Staging:B" repository="failed" arch="x86_64" code="published" state="published">
+    <status package="wine" code="failed" />
+  </result>
+  <result project="openSUSE:Factory:Staging:B" repository="broken" arch="x86_64" code="published" state="published">
+    <status package="wine" code="broken" />
+  </result>
+  <result project="openSUSE:Factory:Staging:B" repository="building" arch="x86_64" code="building" state="building">
+    <status package="wine" code="building" />
+  </result>
+</resultlist>
