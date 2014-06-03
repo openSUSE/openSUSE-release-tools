@@ -63,8 +63,6 @@ def _checker_forward_to_staging(self, opts, id):
     return 0
 
 def _checker_accept_request(self, opts, id, msg):
-    print "accept"
-    return False
     code = 100
     query = { 'cmd': 'addreview', 'by_group':'opensuse-review-team' }
     url = makeurl(opts.apiurl, ['request', str(id)], query)
@@ -175,8 +173,6 @@ def _checker_one_request(self, rq, cmd, opts):
             sourcechecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_source.py')))
             sourcechecker = os.path.join(sourcechecker, 'source-checker.pl')
             civs = "LC_ALL=C perl %s _old %s 2>&1" % (sourcechecker, tpkg)
-            print civs
-            exit(0)
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
