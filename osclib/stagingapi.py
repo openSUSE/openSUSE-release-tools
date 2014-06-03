@@ -56,7 +56,7 @@ class StagingAPI(object):
         except urllib2.HTTPError, e:
             if e.code / 100 == 5:
                 print "retrying {}".format(url)
-                return retried_GET(url)
+                return self.retried_GET(url)
             raise e
 
     def retried_POST(self, url):
@@ -65,7 +65,7 @@ class StagingAPI(object):
         except urllib2.HTTPError, e:
             if e.code / 100 == 5:
                 print "retrying {}".format(url)
-                return retried_POST(url)
+                return self.retried_POST(url)
             raise e
 
     def retried_PUT(self, url, data):
@@ -74,7 +74,7 @@ class StagingAPI(object):
         except urllib2.HTTPError, e:
             if e.code / 100 == 5:
                 print "retrying {}".format(url)
-                return retried_PUT(url, data)
+                return self.retried_PUT(url, data)
             raise e
 
     def _generate_ring_packages(self):
