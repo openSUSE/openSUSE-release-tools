@@ -72,11 +72,9 @@ def tt_overall_result(self, snapshot):
     jobs = self.tt_find_openqa_results(snapshot)
 
     known_failures = [
-        'opensuse-FTT-DVD-i586-Build-dual_windows8@32bit',
         'opensuse-FTT-DVD-i586-Build-minimalx+btrfs+nosephome@32bit',
         'opensuse-FTT-DVD-i586-Build-update_13.1-kde@32bit',
         'opensuse-FTT-DVD-x86_64-Build-doc@64bit',
-        'opensuse-FTT-DVD-x86_64-Build-dual_windows8@64bit',
         'opensuse-FTT-DVD-x86_64-Build-minimalx+btrfs+nosephome@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_13.1-gnome@64bit',
@@ -86,11 +84,6 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-KDE-Live-i686-Build-kde-live@32bit',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@64bit',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',
-        'opensuse-FTT-NET-i586-Build-dual_windows8@32bit',
-        'opensuse-FTT-NET-i586-Build-update_121@32bit',
-        'opensuse-FTT-NET-i586-Build-update_122@32bit',
-        'opensuse-FTT-NET-i586-Build-update_123@32bit',
-        'opensuse-FTT-NET-x86_64-Build-dual_windows8@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_121@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_122@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_123@64bit',
@@ -103,14 +96,17 @@ def tt_overall_result(self, snapshot):
     if len(jobs) < 80: # not yet scheduled
         return QAResult.InProgress
 
+    number_of_fails = 0
     for job in jobs:
         #print json.dumps(job, sort_keys=True, indent=4)
-        if job['result'] == 'failed':
+        if job['result'] == 'failed' or job['result'] == 'incomplete' :
             jobname = job['name'] + "@" + job['machine']
             if jobname in known_failures:
                 known_failures.remove(jobname)
                 continue
+            number_of_fails += 1
             print json.dumps(job, sort_keys=True, indent=4), jobname
+            if number_of_fails < 3: continue
             return QAResult.Failed
         elif job['result'] == 'passed':
             continue
