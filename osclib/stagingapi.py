@@ -50,6 +50,33 @@ class StagingAPI(object):
         query = [] if not query else query
         return makeurl(self.apiurl, l, query)
 
+    def retried_GET(self, url):
+        try:
+            return http_GET(url)
+        except urllib2.HTTPError, e:
+            if e.code / 100 == 5:
+                print "retrying {}".format(url)
+                return retried_GET(url)
+            raise e
+
+    def retried_POST(self, url):
+        try:
+            return http_POST(url)
+        except urllib2.HTTPError, e:
+            if e.code / 100 == 5:
+                print "retrying {}".format(url)
+                return retried_POST(url)
+            raise e
+
+    def retried_PUT(self, url, data):
+        try:
+            return http_PUT(url, data=data)
+        except urllib2.HTTPError, e:
+            if e.code / 100 == 5:
+                print "retrying {}".format(url)
+                return retried_PUT(url, data)
+            raise e
+
     def _generate_ring_packages(self):
         """
         Generate dictionary with names of the rings
