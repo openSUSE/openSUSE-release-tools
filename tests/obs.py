@@ -210,6 +210,16 @@ class OBS(object):
             },
         }
 
+        self.comments = {
+            'openSUSE:Factory:Staging:A': [
+                {'who': 'Admin', 'when': '2014-06-01 17:56:28 UTC', 'id': '1',
+                  'body': 'Just a comment'
+                }
+            ],
+            'openSUSE:Factory:Staging:U': [],
+            'openSUSE:Factory:Staging:B': []
+        }
+
     #
     #  /request/
     #
@@ -552,11 +562,39 @@ class OBS(object):
     #  /comments/
     #
 
+    @GET(re.compile(r'/comments/project/.*'))
+    def get_comment(self, request, uri, headers):
+        """Get comments for a project."""
+        prj = re.search(r'comments/project/([^/]*)', uri).group(1)
+        comments = self.comments[prj]
+        if not comments:
+            return (200, headers, '<comments project="%s"/>' % prj)
+        else:
+            ret_str = '<comments project="%s">' % prj
+            for c in comments:
+                ret_str += '<comment who="%s" when="%s" id="%s">' % (c['who'], c['when'], c['id'])
+                ret_str += c['body'].replace('<', '&lt;').replace('>', '&gt;')
+                ret_str += '</comment>'
+            ret_str += '</comments>'
+            return (200, headers, ret_str)
+
     @POST(re.compile(r'/comments/project/.*'))
-    def comment(self, request, uri, headers):
-        """Manage comments into projects."""
+    def post_comment(self, request, uri, headers):
+        """Add comment to a project."""
+        prj = re.search(r'comments/project/([^/]*)', uri).group(1)
+        comment = {'who': 'Admin', 'when': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
+                    'id': str(sum(len(c) for c in self.comments.values()) + 1), 'body': request.body }
+        self.comments[prj].append(comment)
         response = (200, headers, '<result>Ok</result>')
         return response
+
+    @DELETE(re.compile(r'/comment/\d+'))
+    def delete_comment(self, request, uri, headers):
+        """Delete a comments."""
+        comment_id = re.search(r'comment/(\d+)', uri).group(1)
+        for prj in self.comments:
+            self.comments[prj] = [c for c in self.comments[prj] if c['id'] != comment_id]
+        return (200, headers, '<result>Ok</result>')
 
     #
     #  Static fixtures

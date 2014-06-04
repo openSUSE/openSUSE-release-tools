@@ -24,6 +24,7 @@ from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
 
+from osclib.comments import CommentAPI
 
 class StagingAPI(object):
     """
@@ -390,10 +391,14 @@ class StagingAPI(object):
         append = True
         for request in data['requests']:
             if request['package'] == package:
-                request['id'] = request_id
+                # Only update if needed (to save calls to get_request)
+                if request['id'] != request_id or not request.get('author'):
+                    request['id'] = request_id
+                    request['author'] = get_request(self.apiurl, str(request_id)).get_creator()
                 append = False
         if append:
-            data['requests'].append({'id': request_id, 'package': package})
+            author = get_request(self.apiurl, str(request_id)).get_creator()
+            data['requests'].append({'id': request_id, 'package': package, 'author': author })
         self.set_prj_pseudometa(project, data)
 
     def get_request_id_for_package(self, project, package):
@@ -1054,3 +1059,43 @@ class StagingAPI(object):
         except urllib2.HTTPError:
             return False
         return True
+
+    def update_status_comments(self, project, command):
+        """
+        Refresh the status comments, used for notification purposes, based on
+        the current list of requests. To ensure that all involved users
+        (and nobody else) get notified, old status comments are deleted and
+        a new one is created.
+        :param project: project name
+        :param command: name of the command to include in the message
+        """
+
+        # TODO: we need to discuss the best way to keep track of status
+        # comments. Right now they are marked with an initial markdown
+        # comment. Maybe a cleaner approach would be to store something
+        # like 'last_status_comment_id' in the pseudometa. But the current
+        # OBS API for adding comments doesn't return the id of the created
+        # comment.
+
+        comment_api = CommentAPI(self.apiurl)
+
+        comments = comment_api.get_comments(project_name=project)
+        for comment in comments.values():
+            # TODO: update the comment removing the user mentions instead of
+            # deleting the whole comment. But there is currently not call in
+            # OBS API to update a comment
+            if comment['comment'].startswith('<!--- osc staging'):
+                comment_api.delete(comment['id'])
+                break # There can be only one! (if we keep deleting them)
+
+        meta = self.get_prj_pseudometa(project)
+        lines = ['<!--- osc staging %s --->' % command]
+        lines.append('The list of requests tracked in %s has changed:\n' % project)
+        for req in meta['requests']:
+            author = req.get('autor', None)
+            if not author:
+                # Old style metadata
+                author = get_request(self.apiurl, str(req['id'])).get_creator()
+            lines.append('Request req#%s for package %s submitted by [AT]%s' % (req['id'], req['package'], author))
+        msg = '\n'.join(lines)
+        comment_api.add_comment(project_name=project, comment=msg)

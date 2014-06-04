@@ -227,7 +227,7 @@ class TestApiCalls(unittest.TestCase):
             self.assertEqual('new', self.obs.requests[rq]['review'])
             self.assertEqual('review', self.obs.requests[rq]['request'])
             self.assertEqual(self.api.get_prj_pseudometa('openSUSE:Factory:Staging:A'),
-                             {'requests': [{'id': 123, 'package': 'gcc'}]})
+                             {'requests': [{'id': 123, 'package': 'gcc', 'author': 'Admin'}]})
 
     def test_generate_build_status_details(self):
         """Check whether generate_build_status_details works."""
