@@ -53,38 +53,46 @@ def _checker_prepare_dir(self, dir):
     shutil.rmtree(".osc")
     os.chdir(olddir)
 
-def _checker_forward_to_staging(self, opts, id):
-    query = { 'cmd': 'addreview', 'by_group':'factory-staging' }
-    url = makeurl(opts.apiurl, ['request', str(id)], query)
-    try:
-        r = http_POST(url, data="Pick Staging Project")
-    except urllib2.HTTPError, err:
-        pass # there is no good mean to undo
-    return 0
+def _checker_add_review(self, opts, id, by_group=None, by_user=None, msg=None):
+    query = { 'cmd': 'addreview' }
+    if by_group:
+        query['by_group'] = by_group
+    elif by_user:
+        query['by_user'] = by_user
+    else:
+        raise Exception('we need either by_group or by_user')
 
-def _checker_accept_request(self, opts, id, msg):
-    code = 100
-    query = { 'cmd': 'addreview', 'by_group':'opensuse-review-team' }
     url = makeurl(opts.apiurl, ['request', str(id)], query)
-    if opts.verbose: print(url)
     try:
-        r = http_POST(url, data="Please review sources")
+        r = http_POST(url, data=msg)
     except urllib2.HTTPError, err:
         return 1
+
     code = ET.parse(r).getroot().attrib['code']
-    if code == 100 or code == 'ok':
-         self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
-         print("accepted " + msg)
-    # now gets risky
-    query = { 'cmd': 'addreview', 'by_user':'factory-repo-checker' }
-    url = makeurl(opts.apiurl, ['request', str(id)], query)
-    try:
-        r = http_POST(url, data="Please review build success")
-    except urllib2.HTTPError, err:
-        pass # there is no good mean to undo
+    if code != 'ok':
+        raise Exception(r)
+    return 0
+
+def _checker_forward_to_staging(self, opts, id):
+    return self._checker_add_review(opts, id, by_group='factory-staging', msg="Pick Staging Project")
+
+def _checker_add_review_team(self, opts, id):
+    return self._checker_add_review(opts, id, by_group='opensuse-review-team', msg="Please review sources")
+
+def _checker_accept_request(self, opts, id, msg, diff=10000):
+    if diff > 10:
+        self._checker_add_review_team(opts, id)
+    else:
+        self._checker_add_review(opts, id, by_user='coolo', msg='Does it look ok?')
+        
+    self._checker_add_review(opts, id, by_user='factory-repo-checker', msg='Please review build success')
+
     self._checker_forward_to_staging(opts, id)
 
-def _checker_one_request(self, rq, cmd, opts):
+    self._checker_change_review_state(opts, id, 'accepted', by_group='factory-auto', message=msg)
+    print("accepted " + msg)
+
+def _checker_one_request(self, rq, opts):
     if (opts.verbose):
         ET.dump(rq)
         print(opts)
@@ -93,7 +101,7 @@ def _checker_one_request(self, rq, cmd, opts):
     approved_actions = 0
     actions = rq.findall('action')
     if len(actions) > 1:
-       msg = "2 actions in one SR is not supported - https://github.com/coolo/factory-auto/fork_select"
+       msg = "2 actions in one SR is not supported - https://github.com/openSUSE/osc-plugin-factory/fork_select"
        self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
        print("declined " + msg)
        return
@@ -176,6 +184,7 @@ def _checker_one_request(self, rq, cmd, opts):
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
+
             output = '  '.join(checked).translate(None, '\033')
             os.chdir("/tmp")
             
@@ -188,10 +197,14 @@ def _checker_one_request(self, rq, cmd, opts):
 
 	    shutil.rmtree(dir)
             msg="Check script succeeded"
+            if checked[-1].startswith('DIFFCOUNT'):
+                # this is a major break through in perl<->python communication!
+                diff = int(checked.pop().split(' ')[1])
+                                
             if len(checked):
                 msg = msg + "\n\nOutput of check script (non-fatal):\n" + output
                 
-            if self._checker_accept_request(opts, id, msg):
+            if self._checker_accept_request(opts, id, msg, diff=diff):
                continue
 
         else:
@@ -213,7 +226,7 @@ def _checker_check_devel_package(self, opts, project, package):
                 self._devel_projects["%s/%s" % (project, name)] = "%s/%s" % (dprj, d.attrib['package'])
                 # for new packages to check
                 self._devel_projects[dprj + "/"] = 1
-            elif not name.startswith("_product"):
+            elif not name.startswith("_product") and not name.startswith('preinstallimage') and not name == 'Test-DVD-x86_64':
                 print("NO DEVEL IN", name)
             # mark we tried
             self._devel_projects[project] = 1
@@ -232,9 +245,6 @@ def do_check_source(self, subcmd, opts, *args):
     ${cmd_option_list}
     """
 
-    if len(args) == 0:
-        raise oscerr.WrongArgs("Please give a subcommand to 'osc checker' or try 'osc help checker'")
-
     self._devel_projects = {}
     opts.verbose = False
 
@@ -244,7 +254,7 @@ def do_check_source(self, subcmd, opts, *args):
 
     tmphome = None
 
-    if args[0] == 'skip':
+    if len(args) and args[0] == 'skip':
         for id in args[1:]:
            self._checker_accept_request(opts, id, "skip review")
         return
@@ -261,7 +271,7 @@ def do_check_source(self, subcmd, opts, *args):
         root = ET.parse(f).getroot()
         for rq in root.findall('request'):
             tprj = rq.find('action/target').get('project')
-            self._checker_one_request(rq, args[0], opts)
+            self._checker_one_request(rq, opts)
     else:
         # we have a list, use them.
         for id in ids.keys():
@@ -269,7 +279,7 @@ def do_check_source(self, subcmd, opts, *args):
             f = http_GET(url)
             xml = ET.parse(f)
             root = xml.getroot()
-            self._checker_one_request(root, args[0], opts)
+            self._checker_one_request(root, opts)
 
 #Local Variables:
 #mode: python

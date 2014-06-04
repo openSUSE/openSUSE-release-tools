@@ -109,7 +109,7 @@ my %patches = ();
 
 foreach my $test (glob("/usr/lib/obs/service/source_validators/*")) {
     next if (!-f "$test");
-    my $checkivsd = `/bin/bash $test --verbose --batchmode $dir $old < /dev/null 2>&1`;
+    my $checkivsd = `/bin/bash $test --batchmode $dir $old < /dev/null 2>&1`;
     if ($?) {
         print "Source validator failed. Try \"osc service localrun source_validator\"\n";
         print $checkivsd;
@@ -189,8 +189,7 @@ if (-d "$old") {
         }
         close(OSPEC);
         close(NSPEC);
-        #system("diff -u $spec $spec.new");
-        #exit(0);
+        system("cp $spec $spec.beforeurlstrip");
         rename("$spec.new", "$spec") || die "rename failed";
     }
 
@@ -243,4 +242,64 @@ foreach my $rpmlint (glob("$dir/*rpmlintrc")) {
     }
 }
 
-exit($ret);
+exit($ret) if $ret;
+
+# now check if the change is small enough to warrent a review-by-mail
+exit(0) unless -d '_old';
+
+sub prepare_package($) {
+
+    my $files = shift;
+
+    unlink glob "*.changes"; # ignore changes
+    unlink glob "*.tar.*"; # we can't diff them anyway
+
+    # restore original spec file
+    for my $spec (glob("*.beforeurlstrip")) {
+        my $oldname = $spec;
+        $oldname =~ s/.beforeurlstrip//;
+        rename($spec, $oldname);
+    }
+
+    for my $spec (glob("*.spec")) {
+        open(SPEC, "/usr/lib/obs/service/format_spec_file.files/prepare_spec $spec | grep -v '^#' |");
+        my @lines = <SPEC>;
+        close(SPEC);
+        open(SPEC, ">", $spec);
+        print SPEC join('', @lines);
+        close(SPEC);
+    }
+
+    my $dir = getcwd();
+    my $diffcount = 0;
+
+    for my $file (glob "*") {
+        my $oldfile = $files->{$file};
+        if ($oldfile) {
+
+            for my $line (split(/\n/, diff($oldfile, $file))) {
+                next unless $line =~ m/^[-+]/;
+                $diffcount++;
+            }
+            delete $files->{$file};
+        }
+        else {
+            $files->{$file} = "$dir/$file";
+        }
+    }
+    return $diffcount;
+}
+
+my %files;
+chdir($old);
+prepare_package(\%files);
+chdir($odir);
+chdir($dir);
+my $diff = prepare_package(\%files);
+
+for my $file (keys %files) {
+    $diff += 10000;
+}
+
+print "DIFFCOUNT $diff\n";
+exit(0);
