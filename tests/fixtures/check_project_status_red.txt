@@ -1,8 +1,0 @@
-Following repositories are still building:
-    standard/x86_64: building
-
-Following packages are broken:
-    glibc (standard/i586): broken
-    openSUSE-images (standard/i586): failed
-
-Found errors in staging project red!

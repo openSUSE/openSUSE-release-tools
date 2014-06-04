@@ -9,9 +9,12 @@ import unittest
 import httpretty
 import time
 
+from obs import APIURL
 from obs import OBS
 from osc import oscerr
 from osclib.select_command import SelectCommand
+from oscs import StagingAPI
+
 
 class TestSelect(unittest.TestCase):
 
@@ -19,31 +22,22 @@ class TestSelect(unittest.TestCase):
         """
         Initialize the configuration
         """
-
         self.obs = OBS()
+        self.api = StagingAPI(APIURL)
 
-    @httpretty.activate
     def test_old_frozen(self):
-        self.obs.register_obs()
-        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
-        self.assertEqual(True, SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
-        self.assertEqual(self.obs.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), True)
+        self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
+        self.assertEqual(True, SelectCommand(self.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
+        self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), True)
 
-    @httpretty.activate
     def test_no_matches(self):
-        self.obs.register_obs()
-
         # search for requests
         with self.assertRaises(oscerr.WrongArgs) as cm:
-            SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:B', ['bash'])
-
+            SelectCommand(self.api).perform('openSUSE:Factory:Staging:B', ['bash'])
         self.assertEqual(str(cm.exception), "No SR# found for: bash")
 
-    @httpretty.activate
     def test_selected(self):
-        self.obs.register_obs()
         # make sure the project is frozen recently for other tests
 
-        self.obs.responses['GET']['/request'] = 'systemd-search-results.xml'
-        ret = SelectCommand(self.obs.api).perform('openSUSE:Factory:Staging:B', ['systemd'])
+        ret = SelectCommand(self.api).perform('openSUSE:Factory:Staging:B', ['wine'])
         self.assertEqual(True, ret)

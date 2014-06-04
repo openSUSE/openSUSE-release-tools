@@ -12,6 +12,7 @@ import tempfile
 
 from osclib.freeze_command import FreezeCommand
 
+
 class TestFreeze(unittest.TestCase):
     def _get_fixture_path(self, filename):
         """

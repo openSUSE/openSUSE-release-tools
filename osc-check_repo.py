@@ -5,21 +5,14 @@
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc check_repo --help' to see the usage.
 
-import cPickle
-from copy import deepcopy
-from datetime import datetime
-from functools import wraps
-import fcntl
 import os
 import re
-import shelve
 import shutil
 import subprocess
 import tempfile
-import sys
-
 from urllib import quote_plus
 import urllib2
+import sys
 from xml.etree import cElementTree as ET
 
 from osc import oscerr
@@ -35,295 +28,24 @@ from osc.core import Request
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
-from osclib.stagingapi import StagingAPI
+from osclib.checkrepo import CheckRepo
+from osclib.cycle import CycleDetector
+from osclib.memoize import memoize, CACHEDIR
+
+
+# Directory where download binary packages.
+DOWNLOADS = os.path.expanduser('~/co/downloads')
 
 #
 # XXX - Ugly Hack. Because the way that osc import plugings we need to
 # declare some functions and objects used in the decorator as global
 #
-global cPickle
-global deepcopy
-global datetime
-global fcntl
-global shelve
 global tempfile
 global wraps
 
-global Graph
-global Package_
-
-global memoize
-
 global build
 global last_build_success
-global builddepinfo
 global jobhistory
-
-
-class Graph(dict):
-    """Graph object. Inspired in NetworkX data model."""
-
-    def __init__(self):
-        """Initialize an empty graph."""
-        #  The nodes are stored in the Graph dict itself, but the
-        #  adjacent list is stored as an attribute.
-        self.adj = {}
-
-    def add_node(self, name, value):
-        """Add a node in the graph."""
-        self[name] = value
-        if name not in self.adj:
-            self.adj[name] = set()
-
-    def add_nodes_from(self, nodes_and_values):
-        """Add multiple nodes"""
-        for node, value in nodes_and_values:
-            self.add_node(node, value)
-
-    def add_edge(self, u, v, directed=True):
-        """Add the edge u -> v, an v -> u if not directed."""
-        self.adj[u].add(v)
-        if not directed:
-            self.adj[v].add(u)
-
-    def add_edges_from(self, edges, directed=True):
-        """Add the edges from an iterator."""
-        for u, v in edges:
-            self.add_edge(u, v, directed)
-
-    def remove_edge(self, u, v, directed=True):
-        """Remove the edge u -> v, an v -> u if not directed."""
-        try:
-            self.adj[u].remove(v)
-        except KeyError:
-            pass
-        if not directed:
-            try:
-                self.adj[v].remove(u)
-            except KeyError:
-                pass
-
-    def remove_edges_from(self, edges, directed=True):
-        """Remove the edges from an iterator."""
-        for u, v in edges:
-            self.remove_edge(u, v, directed)
-
-    def edges(self, v):
-        """Get the adjancent list for a vertex."""
-        return sorted(self.adj[v]) if v in self else ()
-
-    def edges_to(self, v):
-        """Get the all the vertex that point to v."""
-        return sorted(u for u in self.adj if v in self.adj[u])
-
-    def cycles(self):
-        """Detect cycles using Tarjan algorithm."""
-        index = [0]
-        path = []
-        cycles = []
-
-        v_index = {}
-        v_lowlink = {}
-
-        def scc(node, v):
-            v_index[v], v_lowlink[v] = index[0], index[0]
-            index[0] += 1
-            path.append(node)
-
-            for succ in self.adj.get(node, []):
-                w = self[succ]
-                if w not in v_index:
-                    scc(succ, w)
-                    v_lowlink[v] = min(v_lowlink[v], v_lowlink[w])
-                elif succ in path:
-                    v_lowlink[v] = min(v_lowlink[v], v_index[w])
-
-            if v_index[v] == v_lowlink[v]:
-                i = path.index(node)
-                path[:], cycle = path[:i], frozenset(path[i:])
-                if len(cycle) > 1:
-                    cycles.append(cycle)
-
-        for node in sorted(self):
-            v = self[node]
-            if not getattr(v, 'index', 0):
-                scc(node, v)
-        return frozenset(cycles)
-
-    # XXX - Deprecated - Remove in a future release
-    def cycles_fragments(self):
-        """Detect partial cycles using DFS."""
-        cycles = set()
-        visited = set()
-        path = []
-
-        def dfs(node):
-            if node in visited:
-                return
-
-            visited.add(node)
-            path.append(node)
-            for succ in self.adj.get(node, []):
-                try:
-                    i = path.index(succ)
-                except ValueError:
-                    i = None
-                if i is not None:
-                    cycle = path[i:]
-                    cycles.add(frozenset(cycle))
-                else:
-                    dfs(succ)
-            path.pop()
-
-        for node in sorted(self):
-            dfs(node)
-        return frozenset(cycles)
-
-
-class Package_(object):
-    """Simple package container. Used in a graph as a vertex."""
-
-    def __init__(self, pkg=None, src=None, deps=None, subs=None, element=None):
-        self.pkg = pkg
-        self.src = src
-        self.deps = deps
-        self.subs = subs
-        if element:
-            self.load(element)
-
-    def load(self, element):
-        """Load a node from a ElementTree package XML element"""
-        self.pkg = element.attrib['name']
-        self.src = [e.text for e in element.findall('source')]
-        assert len(self.src) == 1, 'There are more that one source packages in the graph'
-        self.src = self.src[0]
-        self.deps = set(e.text for e in element.findall('pkgdep'))
-        self.subs = set(e.text for e in element.findall('subpkg'))
-
-    def __repr__(self):
-        return 'PKG: %s\nSRC: %s\nDEPS: %s\n SUBS: %s' % (self.pkg, self.src, self.deps, self.subs)
-
-TMPDIR = '/var/cache/repo-checker'  # Where the cache files are stored
-
-
-def memoize(ttl=None):
-    """Decorator function to implement a persistent cache.
-
-    >>> @memoize()
-    ... def test_func(a):
-    ...     return a
-
-    Internally, the memoized function has a cache:
-
-    >>> cache = [c.cell_contents for c in test_func.func_closure if 'sync' in dir(c.cell_contents)][0]
-    >>> 'sync' in dir(cache)
-    True
-
-    There is a limit of the size of the cache
-
-    >>> for k in cache:
-    ...     del cache[k]
-    >>> len(cache)
-    0
-
-    >>> for i in range(4095):
-    ...     test_func(i)
-    ... len(cache)
-    4095
-
-    >>> test_func(0)
-    0
-
-    >>> len(cache)
-    4095
-
-    >>> test_func(4095)
-    4095
-
-    >>> len(cache)
-    3072
-
-    >>> test_func(0)
-    0
-
-    >>> len(cache)
-    3073
-
-    >>> from datetime import timedelta
-    >>> k = [k for k in cache if cPickle.loads(k) == ((0,), {})][0]
-    >>> t, v = cache[k]
-    >>> t = t - timedelta(days=10)
-    >>> cache[k] = (t, v)
-    >>> test_func(0)
-    0
-    >>> t2, v = cache[k]
-    >>> t != t2
-    True
-
-    """
-
-    # Configuration variables
-    SLOTS = 4096            # Number of slots in the cache file
-    NCLEAN = 1024           # Number of slots to remove when limit reached
-    TIMEOUT = 60*60*2       # Time to live for every cache slot (seconds)
-
-    def _memoize(f):
-        # Implement a POSIX lock / unlock extension for shelves. Inspired
-        # on ActiveState Code recipe #576591
-        def _lock(filename):
-            lckfile = open(filename + '.lck', 'w')
-            fcntl.flock(lckfile.fileno(), fcntl.LOCK_EX)
-            return lckfile
-
-        def _unlock(lckfile):
-            fcntl.flock(lckfile.fileno(), fcntl.LOCK_UN)
-            lckfile.close()
-
-        def _open_cache(cache_name):
-            lckfile = _lock(cache_name)
-            cache = shelve.open(cache_name, protocol=-1)
-            # Store a reference to the lckfile to avoid to be closed by gc
-            cache.lckfile = lckfile
-            return cache
-
-        def _close_cache(cache):
-            cache.close()
-            _unlock(cache.lckfile)
-
-        def _clean_cache(cache):
-            len_cache = len(cache)
-            if len_cache >= SLOTS:
-                nclean = NCLEAN + len_cache - SLOTS
-                keys_to_delete = sorted(cache, key=lambda k: cache[k][0])[:nclean]
-                for key in keys_to_delete:
-                    del cache[key]
-
-        @wraps(f)
-        def _f(*args, **kwargs):
-            def total_seconds(td):
-                return (td.microseconds + (td.seconds + td.days * 24 * 3600.) * 10**6) / 10**6
-            now = datetime.now()
-            key = cPickle.dumps((args, kwargs), protocol=-1)
-            updated = False
-            cache = _open_cache(cache_name)
-            if key in cache:
-                timestamp, value = cache[key]
-                updated = True if total_seconds(now-timestamp) < ttl else False
-            if not updated:
-                value = f(*args, **kwargs)
-                cache[key] = (now, value)
-            _clean_cache(cache)
-            _close_cache(cache)
-            return value
-
-        cache_dir = os.path.expanduser(TMPDIR)
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)
-        cache_name = os.path.join(cache_dir, f.__name__)
-        return _f
-
-    ttl = ttl if ttl else TIMEOUT
-    return _memoize
 
 
 @memoize()
@@ -353,18 +75,6 @@ def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
     return root
 
 
-@memoize(ttl=60*60*6)
-def builddepinfo(apiurl, project, repository, arch):
-    root = None
-    try:
-        print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
-        url = makeurl(apiurl, ['/build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
-        root = http_GET(url).read()
-    except urllib2.HTTPError, e:
-        print('ERROR in URL %s [%s]' % (url, e))
-    return root
-
-
 def get_project_repos(apiurl, src_project, tgt_project, src_package, rev):
     """Read the repositories of the project from _meta."""
     # XXX TODO - Shitty logic here. A better proposal is refactorize
@@ -388,11 +98,11 @@ def get_project_repos(apiurl, src_project, tgt_project, src_package, rev):
 
 def old_md5(apiurl, src_project, tgt_project, src_package, rev):
     """Recollect old MD5 for a package."""
-    # XXX TODO - instead of fixing the limit, use endtime to makes
+    # XXX TODO - instead of fixing the limit, use endtime to make
     # sure that we have the correct time frame.
     limit = 20
     query = {
-        'project': src_project,
+        'package': src_package,
         # 'code': 'succeeded',
         'limit': limit,
     }
@@ -400,21 +110,31 @@ def old_md5(apiurl, src_project, tgt_project, src_package, rev):
     repositories = get_project_repos(apiurl, src_project, tgt_project,
                                      src_package, rev)
 
-    md5_set = set()
+    srcmd5_list = []
     for repository, archs in repositories:
         for arch, status in archs:
-            if md5_set:
+            if srcmd5_list:
                 break
-            if status != 'succeeded':
+            if status not in ('succeeded', 'outdated'):
                 continue
-        
+
             url = makeurl(apiurl, ['build', src_project, repository, arch, '_jobhistory'],
                           query=query)
             try:
                 root = ET.parse(http_GET(url)).getroot()
-                md5_set = set(e.get('srcmd5') for e in root.findall('jobhist'))
+                srcmd5_list = [e.get('srcmd5') for e in root.findall('jobhist')]
             except urllib2.HTTPError, e:
                 print('ERROR in URL %s [%s]' % (url, e))
+
+    md5_set = set()
+    for srcmd5 in srcmd5_list:
+        query = {
+            'expand': 1,
+            'rev': srcmd5,
+        }
+        url = makeurl(apiurl, ['source', src_project, src_package], query=query)
+        root = ET.parse(http_GET(url)).getroot()
+        md5_set.add(root.find('linkinfo').get('srcmd5'))
 
     return md5_set
 
@@ -561,12 +281,12 @@ def _check_repo_one_request(self, rq, opts):
             p.updated = True
 
         if lmd5 != p.rev and not p.updated:
-            if lmd5 not in old_md5(opts.apiurl, lpkg, p.tpackage, spec, p.rev):
+            if lmd5 not in old_md5(opts.apiurl, lprj, p.tproject, spec, p.rev):
                 msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
             else:
                 msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
-            print 'DECLINED', msg
-            self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
+            print '[DECLINED] CHECK MANUALLY', msg
+            # self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
             p.updated = True
 
         sp = CheckRepoPackage()
@@ -763,13 +483,13 @@ def _check_repo_download(self, p, opts):
             todownload.append(('x86_64', fn[0], fn[3]))
 
         # now fetch -32bit packs
-        #for fn in self._check_repo_repo_list(p.sproject, repo, 'i586', p.spackage, opts):
+        # for fn in self._check_repo_repo_list(p.sproject, repo, 'i586', p.spackage, opts):
         #    if fn[2] == 'x86_64':
         #        todownload.append(('i586', fn[0], fn[3]))
 
         p.downloads[repo] = []
         for arch, fn, mt in todownload:
-            repodir = os.path.join(opts.downloads, p.spackage, repo)
+            repodir = os.path.join(DOWNLOADS, p.spackage, repo)
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
@@ -802,80 +522,6 @@ def _get_buildinfo(self, opts, prj, repo, arch, pkg):
     xml = get_buildinfo(opts.apiurl, prj, pkg, repo, arch)
     root = ET.fromstring(xml)
     return [e.attrib['name'] for e in root.findall('bdep')]
-
-
-def _get_builddepinfo(self, opts, prj, repo, arch, pkg):
-    """Get the builddep info for a single package"""
-    root = ET.fromstring(builddepinfo(opts.apiurl, prj, repo, arch))
-    packages = [Package_(element=e) for e in root.findall('package')]
-    package = [p for p in packages if p.pkg == pkg]
-    return package[0] if package else None
-
-
-# Store packages prevoiusly ignored. Don't pollute the screen.
-global _ignore_packages
-_ignore_packages = set()
-
-
-def _get_builddepinfo_graph(self, opts, project='openSUSE:Factory', repository='standard', arch='x86_64'):
-    """Generate the buildepinfo graph for a given architecture."""
-
-    _IGNORE_PREFIX = ('texlive-', 'master-boot-code')
-
-    # Note, by default generate the graph for all Factory. If you only
-    # need the base packages you can use:
-    #   project = 'Base:System'
-    #   repository = 'openSUSE_Factory'
-
-    root = ET.fromstring(builddepinfo(opts.apiurl, project, repository, arch))
-    # Reset the subpackages dict here, so for every graph is a
-    # different object.
-    packages = [Package_(element=e) for e in root.findall('package')]
-
-    # XXX - Ugly Exception. We need to ignore branding packages and
-    # packages that one of his dependencies do not exist. Also ignore
-    # preinstall images.
-    packages = [p for p in packages if not ('branding' in p.pkg or p.pkg.startswith('preinstallimage-'))]
-
-    graph = Graph()
-    graph.add_nodes_from((p.pkg, p) for p in packages)
-
-    subpkgs = {}    # Given a subpackage, recover the source package
-    for p in packages:
-        # Check for packages that provides the same subpackage
-        for subpkg in p.subs:
-            if subpkg in subpkgs:
-                # print 'Subpackage duplication %s - %s (subpkg: %s)' % (p.pkg, subpkgs[subpkg], subpkg)
-                pass
-            else:
-                subpkgs[subpkg] = p.pkg
-
-    for p in packages:
-        # Calculate the missing deps
-        deps = [d for d in p.deps if 'branding' not in d]
-        missing = [d for d in deps if not d.startswith(_IGNORE_PREFIX) and d not in subpkgs]
-        if missing:
-            if p.pkg not in _ignore_packages:
-                # print 'Ignoring package. Missing dependencies %s -> (%s) %s...' % (p.pkg, len(missing), missing[:5])
-                _ignore_packages.add(p.pkg)
-            continue
-
-        # XXX - Ugly Hack. Subpagackes for texlive are not correctly
-        # generated. If the dependency starts with texlive- prefix,
-        # assume that the correct source package is texlive.
-        graph.add_edges_from((p.pkg, subpkgs[d] if not d.startswith('texlive-') else 'texlive')
-                             for d in deps if not d.startswith('master-boot-code'))
-
-    # Store the subpkgs dict in the graph. It will be used later.
-    graph.subpkgs = subpkgs
-    return graph
-
-
-def _get_builddepinfo_cycles(self, opts, package='openSUSE:Factory', repository='standard', arch='x86_64'):
-    """Generate the buildepinfo cycle list for a given architecture."""
-    root = ET.fromstring(builddepinfo(opts.apiurl, package, repository, arch))
-    return frozenset(frozenset(e.text for e in cycle.findall('package'))
-                     for cycle in root.findall('cycle'))
 
 
 def _check_repo_group(self, id_, reqs, opts):
@@ -918,52 +564,16 @@ def _check_repo_group(self, id_, reqs, opts):
             p.updated = True
         toignore.update(i)
 
-    # Detect cycles - We create the full graph from _builddepinfo.
-    for arch in ('x86_64',):
-        factory_graph = self._get_builddepinfo_graph(opts, arch=arch)
-        factory_cycles = factory_graph.cycles()
-        # This graph will be updated for every request
-        current_graph = deepcopy(factory_graph)
-
-        subpkgs = current_graph.subpkgs
-
-        # Recover all packages at once, ignoring some packages that
-        # can't be found in x86_64 architecture.
-        #
-        # The first filter is to remove some packages that do not have
-        # `goodrepos`. Thouse packages are usually marks as 'p.update
-        # = True' (meaning that they are declined or there is a new
-        # updated review.
-        all_packages = [self._get_builddepinfo(opts, p.sproject, p.goodrepos[0], arch, p.spackage)
-                        for p in packs if not p.updated]
-        all_packages = [pkg for pkg in all_packages if pkg]
-
-        subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
-
-        for pkg in all_packages:
-            # Update the current graph and see if we have different cycles
-            edges_to = ()
-            if pkg.pkg in current_graph:
-                current_graph[pkg.pkg] = pkg
-                current_graph.remove_edges_from(set((pkg.pkg, p) for p in current_graph.edges(pkg.pkg)))
-                edges_to = current_graph.edges_to(pkg.pkg)
-                current_graph.remove_edges_from(set((p, pkg.pkg) for p in edges_to))
-            else:
-                current_graph.add_node(pkg.pkg, pkg)
-            current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
-            current_graph.add_edges_from((p, pkg.pkg) for p in edges_to
-                                         if pkg.pkg in set(subpkgs[sp] for sp in current_graph[p].deps if sp in subpkgs))
-
-        for cycle in current_graph.cycles():
-            if cycle not in factory_cycles:
-                print
-                print 'New cycle detected:', sorted(cycle)
-                factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
-                current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
-                print 'New edges:', sorted(current_edges - factory_edges)
-                # Mark all packages as updated, to avoid to be accepted
-                for p in reqs:
-                    p.updated = True
+    # Detect cycles into the current Factory graph after we update the
+    # links with the current list of request.
+    cycle_detector = CycleDetector(opts.apiurl)
+    for (cycle, new_edges) in cycle_detector.cycles(packages=packs):
+        print
+        print 'New cycle detected:', sorted(cycle)
+        print 'New edges:', new_edges
+        # Mark all packages as updated, to avoid to be accepted
+        for p in reqs:
+            p.updated = True
 
     for p in reqs:
         smissing = []
@@ -1089,33 +699,20 @@ def do_check_repo(self, subcmd, opts, *args):
     """
 
     opts.mode = ''
-
     opts.verbose = False
-
     opts.apiurl = self.get_api_url()
-    api = StagingAPI(opts.apiurl)
 
-    # grouped = { id: staging, }
-    opts.grouped = {}
-    for prj in api.get_staging_projects():
-        meta = api.get_prj_pseudometa(prj)
-        for req in meta['requests']:
-            opts.grouped[req['id']] = prj
-        for req in api.list_requests_in_prj(prj):
-            opts.grouped[req] = prj
+    checkrepo = CheckRepo(opts.apiurl)
 
-    # groups = { staging: [ids,], }
-    opts.groups = {}
-    for req, prj in opts.grouped.items():
-        group = opts.groups.get(prj, [])
-        group.append(req)
-        opts.groups[prj] = group
-
-    opts.downloads = os.path.expanduser('~/co/downloads')
+    # XXX TODO - Remove this the all access to opt.group[s|ed] comes
+    # from checkrepo.
+    opts.grouped = checkrepo.grouped
+    opts.groups = checkrepo.groups
 
     if opts.skip:
         if not len(args):
-            raise oscerr.WrongArgs('Please give, if you want to skip a review specify a SRID')
+            raise oscerr.WrongArgs('Provide #IDs to skip.')
+
         for id_ in args:
             msg = 'skip review'
             print 'ACCEPTED', msg
@@ -1149,7 +746,7 @@ def do_check_repo(self, subcmd, opts, *args):
         groups[p.group] = a
 
     self.repocheckerdir = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
-    self.repodir = "%s/repo-%s-%s-x86_64" % (TMPDIR, 'openSUSE:Factory', 'standard')
+    self.repodir = "%s/repo-%s-%s-x86_64" % (CACHEDIR, 'openSUSE:Factory', 'standard')
     if not os.path.exists(self.repodir):
         os.mkdir(self.repodir)
     civs = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug https://build.opensuse.org/build/%s/%s/x86_64 %s' % (
