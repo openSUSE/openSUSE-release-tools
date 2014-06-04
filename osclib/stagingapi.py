@@ -388,14 +388,16 @@ class StagingAPI(object):
         """
 
         data = self.get_prj_pseudometa(project)
-        author = get_request(self.apiurl, str(request_id)).get_creator()
         append = True
         for request in data['requests']:
             if request['package'] == package:
-                request['author'] = author
-                request['id'] = request_id
+                # Only update if needed (to save calls to get_request)
+                if request['id'] != request_id or not request.get('author'):
+                    request['id'] = request_id
+                    request['author'] = get_request(self.apiurl, str(request_id)).get_creator()
                 append = False
         if append:
+            author = get_request(self.apiurl, str(request_id)).get_creator()
             data['requests'].append({'id': request_id, 'package': package, 'author': author })
         self.set_prj_pseudometa(project, data)
 
@@ -1084,6 +1086,7 @@ class StagingAPI(object):
             # OBS API to update a comment
             if comment['comment'].startswith('[osc staging'):
                 comment_api.delete(comment['id'])
+                break # There can be only one! (if we keep deleting them)
 
         meta = self.get_prj_pseudometa(project)
         lines = ['[osc staging %s]\n' % command]
