@@ -522,9 +522,10 @@ def _check_repo_group(self, id_, reqs, opts):
         fetched[p.request] = True
         packs.append(p)
 
-    for req, f in fetched.items():
+    for request_id, f in fetched.items():
         if not f:
-            packs.extend(self._check_repo_fetch_request(req, opts))
+            request = self.checkrepo.get_request(request_id)
+            packs.extend(self._check_repo_one_request(request, opts))
     for p in packs:
         if fetched[p.request]:
             continue
@@ -654,12 +655,6 @@ def _check_repo_group(self, id_, reqs, opts):
     shutil.rmtree(destdir)
 
 
-def _check_repo_fetch_request(self, id_, opts):
-    url = makeurl(opts.apiurl, ['request', str(id_)])
-    root = ET.parse(http_GET(url)).getroot()
-    return self._check_repo_one_request(root, opts)
-
-
 @cmdln.alias('check', 'cr')
 @cmdln.option('-s', '--skip', action='store_true', help='skip review')
 def do_check_repo(self, subcmd, opts, *args):
@@ -696,18 +691,14 @@ def do_check_repo(self, subcmd, opts, *args):
 
     packs = []
     if not ids:
-        # xpath query, using the -m, -r, -s options
-        where = "@by_user='factory-repo-checker'+and+@state='new'"
-        url = makeurl(opts.apiurl, ['search', 'request'],
-                      "match=state/@name='review'+and+review[%s]" % where)
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
-        for rq in root.findall('request'):
-            packs.extend(self._check_repo_one_request(rq, opts))
+        # Return a list, we flat here with .extend()
+        for request in self.checkrepo.pending_requests():
+            packs.extend(self._check_repo_one_request(request, opts))
     else:
         # we have a list, use them.
-        for id_ in ids:
-            packs.extend(self._check_repo_fetch_request(id_, opts))
+        for request_id in ids:
+            request = self.checkrepo.get_request(request_id)
+            packs.extend(self._check_repo_one_request(request, opts))
 
     # Order the packs before grouping
     packs = sorted(packs, key=lambda p: p.request, reverse=True)

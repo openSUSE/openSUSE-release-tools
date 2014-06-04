@@ -17,6 +17,7 @@
 import urllib2
 from xml.etree import cElementTree as ET
 
+from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
 
@@ -73,3 +74,26 @@ class CheckRepo(object):
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return code
+
+    def get_request(self, request_id):
+        """Get a request XML onject."""
+        request = None
+        try:
+            url = makeurl(self.apiurl, ('request', str(request_id)))
+            request = ET.parse(http_GET(url)).getroot()
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return request
+
+    def pending_requests(self):
+        """Search pending requests to review."""
+        requests = []
+        where = "@by_user='factory-repo-checker'+and+@state='new'"
+        try:
+            url = makeurl(self.apiurl, ('search', 'request'),
+                          "match=state/@name='review'+and+review[%s]" % where)
+            root = ET.parse(http_GET(url)).getroot()
+            requests = root.findall('request')
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return requests
