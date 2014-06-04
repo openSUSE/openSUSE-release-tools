@@ -59,6 +59,9 @@ class CheckRepo(object):
         query = {
             'cmd': 'changereviewstate',
             'newstate': newstate,
+            # XXX TODO - We force the user here, check if the user
+            # expressed in .oscrc (with the password stored) have
+            # rights to become this user.
             'by_user': 'factory-repo-checker',
         }
 
