@@ -139,33 +139,6 @@ def old_md5(apiurl, src_project, tgt_project, src_package, rev):
     return md5_set
 
 
-def _check_repo_change_review_state(self, opts, id_, newstate, message='', supersed=None):
-    """Taken from osc/osc/core.py, improved:
-       - verbose option added,
-       - empty by_user=& removed.
-       - numeric id can be int().
-    """
-    query = {
-        'cmd': 'changereviewstate',
-        'newstate': newstate,
-        'by_user': 'factory-repo-checker',
-    }
-    if supersed:
-        query['superseded_by'] = supersed
-    # if message:
-    #     query['comment'] = message
-
-    code = 404
-    url = makeurl(opts.apiurl, ['request', str(id_)], query=query)
-    try:
-        f = http_POST(url, data=message)
-        root = ET.parse(f).getroot()
-        code = root.attrib['code']
-    except urllib2.HTTPError, e:
-        print('ERROR in URL %s [%s]' % (url, e))
-    return code
-
-
 def _check_repo_find_submit_request(self, opts, project, package):
     xpath = "(action/target/@project='%s' and "\
             "action/target/@package='%s' and "\
@@ -213,7 +186,7 @@ def _check_repo_one_request(self, rq, opts):
         msg = 'only one action per request is supported - create a group instead: '\
               'https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow'
         print('DECLINED', msg)
-        self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
+        self.checkrepo.change_review_state(id_, 'declined', message=msg)
         return []
 
     act = actions[0]
@@ -221,7 +194,7 @@ def _check_repo_one_request(self, rq, opts):
     if type_ != 'submit':
         msg = 'Unchecked request type %s' % type_
         print 'ACCEPTED', msg
-        self._check_repo_change_review_state(opts, id_, 'accepted', message=msg)
+        self.checkrepo.change_review_state(id_, 'accepted', message=msg)
         return []
 
     pkg = act.find('source').get('package')
@@ -277,7 +250,7 @@ def _check_repo_one_request(self, rq, opts):
         if lprj != prj or lpkg != pkg and not p.updated:
             msg = '%s/%s should _link to %s/%s' % (prj, spec, prj, pkg)
             print 'DECLINED', msg
-            self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
+            self.checkrepo.change_review_state(id_, 'declined', message=msg)
             p.updated = True
 
         if lmd5 != p.rev and not p.updated:
@@ -286,7 +259,7 @@ def _check_repo_one_request(self, rq, opts):
             else:
                 msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
             print '[DECLINED] CHECK MANUALLY', msg
-            # self._check_repo_change_review_state(opts, id_, 'declined', message=msg)
+            # self.checkrepo.change_review_state(id_, 'declined', message=msg)
             p.updated = True
 
         sp = CheckRepoPackage()
@@ -327,7 +300,7 @@ def _check_repo_buildsuccess(self, p, opts):
     if not tocheckrepos:
         msg = 'Missing i586 and x86_64 in the repo list'
         print msg
-        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        self.checkrepo.change_review_state(p.request, 'new', message=msg)
         # Next line not needed, but for documentation
         p.updated = True
         return False
@@ -361,7 +334,7 @@ def _check_repo_buildsuccess(self, p, opts):
             if arch.attrib['result'] == 'outdated':
                 msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % p.spackage
                 print 'DECLINED', msg
-                self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+                self.checkrepo.change_review_state(p.request, 'declined', message=msg)
                 # Next line is not needed, but for documentation
                 p.updated = True
                 return False
@@ -387,14 +360,14 @@ def _check_repo_buildsuccess(self, p, opts):
     if alldisabled:
         msg = '%s is disabled or does not build against factory. Please fix and resubmit' % p.spackage
         print 'DECLINED', msg
-        self._check_repo_change_review_state(opts, p.request, 'declined', message=msg)
+        self.checkrepo.change_review_state(p.request, 'declined', message=msg)
         # Next line not needed, but for documentation
         p.updated = True
         return False
     if foundbuilding:
         msg = '%s is still building for repository %s' % (p.spackage, foundbuilding)
         print msg
-        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        self.checkrepo.change_review_state(p.request, 'new', message=msg)
         # Next line not needed, but for documentation
         p.updated = True
         return False
@@ -402,7 +375,7 @@ def _check_repo_buildsuccess(self, p, opts):
         msg = '%s failed to build in repository %s - not accepting' % (p.spackage, foundfailed)
         # failures might be temporary, so don't autoreject but wait for a human to check
         print msg
-        self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+        self.checkrepo.change_review_state(p.request, 'new', message=msg)
         # Next line not needed, but for documentation
         p.updated = True
         return False
@@ -540,7 +513,7 @@ def _check_repo_group(self, id_, reqs, opts):
         if p.error:
             if not p.updated:
                 print p.error
-                self._check_repo_change_review_state(opts, p.request, 'new', message=p.error)
+                self.checkrepo.change_review_state(p.request, 'new', message=p.error)
                 p.updated = True
             else:
                 print p.error
@@ -549,9 +522,10 @@ def _check_repo_group(self, id_, reqs, opts):
         fetched[p.request] = True
         packs.append(p)
 
-    for req, f in fetched.items():
+    for request_id, f in fetched.items():
         if not f:
-            packs.extend(self._check_repo_fetch_request(req, opts))
+            request = self.checkrepo.get_request(request_id)
+            packs.extend(self._check_repo_one_request(request, opts))
     for p in packs:
         if fetched[p.request]:
             continue
@@ -596,7 +570,7 @@ def _check_repo_group(self, id_, reqs, opts):
         if len(smissing):
             msg = 'Please make sure to wait before these depencencies are in %s: %s' % (p.tproject, ', '.join(smissing))
             if not p.updated:
-                self._check_repo_change_review_state(opts, p.request, 'new', message=msg)
+                self.checkrepo.change_review_state(p.request, 'new', message=msg)
                 print msg
                 p.updated = True
             else:
@@ -666,7 +640,7 @@ def _check_repo_group(self, id_, reqs, opts):
             if updated.get(p.request, False) or p.updated:
                 continue
             print stdoutdata
-            self._check_repo_change_review_state(opts, p.request, 'new', message=stdoutdata)
+            self.checkrepo.change_review_state(p.request, 'new', message=stdoutdata)
             p.updated = True
             updated[p.request] = 1
         return
@@ -675,16 +649,10 @@ def _check_repo_group(self, id_, reqs, opts):
             continue
         msg = 'Builds for repo %s' % p.goodrepo
         print 'ACCEPTED', msg
-        self._check_repo_change_review_state(opts, p.request, 'accepted', message=msg)
+        self.checkrepo.change_review_state(p.request, 'accepted', message=msg)
         p.updated = True
         updated[p.request] = 1
     shutil.rmtree(destdir)
-
-
-def _check_repo_fetch_request(self, id_, opts):
-    url = makeurl(opts.apiurl, ['request', str(id_)])
-    root = ET.parse(http_GET(url)).getroot()
-    return self._check_repo_one_request(root, opts)
 
 
 @cmdln.alias('check', 'cr')
@@ -702,12 +670,12 @@ def do_check_repo(self, subcmd, opts, *args):
     opts.verbose = False
     opts.apiurl = self.get_api_url()
 
-    checkrepo = CheckRepo(opts.apiurl)
+    self.checkrepo = CheckRepo(opts.apiurl)
 
     # XXX TODO - Remove this the all access to opt.group[s|ed] comes
     # from checkrepo.
-    opts.grouped = checkrepo.grouped
-    opts.groups = checkrepo.groups
+    opts.grouped = self.checkrepo.grouped
+    opts.groups = self.checkrepo.groups
 
     if opts.skip:
         if not len(args):
@@ -716,25 +684,21 @@ def do_check_repo(self, subcmd, opts, *args):
         for id_ in args:
             msg = 'skip review'
             print 'ACCEPTED', msg
-            self._check_repo_change_review_state(opts, id_, 'accepted', message=msg)
+            self.checkrepo.change_review_state(id_, 'accepted', message=msg)
         return
 
     ids = [arg for arg in args if arg.isdigit()]
 
     packs = []
     if not ids:
-        # xpath query, using the -m, -r, -s options
-        where = "@by_user='factory-repo-checker'+and+@state='new'"
-        url = makeurl(opts.apiurl, ['search', 'request'],
-                      "match=state/@name='review'+and+review[%s]" % where)
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
-        for rq in root.findall('request'):
-            packs.extend(self._check_repo_one_request(rq, opts))
+        # Return a list, we flat here with .extend()
+        for request in self.checkrepo.pending_requests():
+            packs.extend(self._check_repo_one_request(request, opts))
     else:
         # we have a list, use them.
-        for id_ in ids:
-            packs.extend(self._check_repo_fetch_request(id_, opts))
+        for request_id in ids:
+            request = self.checkrepo.get_request(request_id)
+            packs.extend(self._check_repo_one_request(request, opts))
 
     # Order the packs before grouping
     packs = sorted(packs, key=lambda p: p.request, reverse=True)

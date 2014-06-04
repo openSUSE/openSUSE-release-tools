@@ -37,9 +37,11 @@ class StagingAPI(object):
         """
 
         self.apiurl = apiurl
-        self.rings = ['openSUSE:Factory:Rings:0-Bootstrap',
-                      'openSUSE:Factory:Rings:1-MinimalX',
-                      'openSUSE:Factory:Rings:2-TestDVD']
+        self.rings = (
+            'openSUSE:Factory:Rings:0-Bootstrap',
+            'openSUSE:Factory:Rings:1-MinimalX',
+            'openSUSE:Factory:Rings:2-TestDVD'
+        )
         self.ring_packages = self._generate_ring_packages()
         self.packages_staged = self._get_staged_requests()
 
@@ -56,7 +58,7 @@ class StagingAPI(object):
             return http_GET(url)
         except urllib2.HTTPError, e:
             if e.code / 100 == 5:
-                print "retrying {}".format(url)
+                print 'Retrying {}'.format(url)
                 return self.retried_GET(url)
             raise e
 
@@ -65,7 +67,7 @@ class StagingAPI(object):
             return http_POST(url)
         except urllib2.HTTPError, e:
             if e.code / 100 == 5:
-                print "retrying {}".format(url)
+                print 'Retrying {}'.format(url)
                 return self.retried_POST(url)
             raise e
 
@@ -74,7 +76,7 @@ class StagingAPI(object):
             return http_PUT(url, data=data)
         except urllib2.HTTPError, e:
             if e.code / 100 == 5:
-                print "retrying {}".format(url)
+                print 'Retrying {}'.format(url)
                 return self.retried_PUT(url, data)
             raise e
 
@@ -92,7 +94,7 @@ class StagingAPI(object):
             for entry in ET.parse(root).getroot().findall('entry'):
                 pkg = entry.attrib['name']
                 if pkg in ret and pkg != 'Test-DVD-x86_64':
-                    raise BaseException("{} is defined in two projects".format(pkg))
+                    raise BaseException('{} is defined in two projects'.format(pkg))
                 ret[pkg] = prj
         return ret
 
@@ -177,7 +179,7 @@ class StagingAPI(object):
         return projects
 
     def do_change_review_state(self, request_id, newstate, message=None,
-                            by_group=None, by_user=None, by_project=None):
+                               by_group=None, by_user=None, by_project=None):
         """
         Change review state of the staging request
         :param request_id: id of the request
@@ -359,8 +361,7 @@ class StagingAPI(object):
 
         # Get current metadata
         url = make_meta_url('prj', project, self.apiurl)
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
+        root = ET.parse(http_GET(url)).getroot()
         # Find description
         description = root.find('description')
         # Order the requests and replace it with yaml
@@ -480,16 +481,16 @@ class StagingAPI(object):
 
     def check_one_request(self, request, project):
         """
-        Check if a staging request is ready to be approved. Reviews for
-        the project are ignored, other open reviews will block the
+        Check if a staging request is ready to be approved. Reviews
+        for the project are ignored, other open reviews will block the
         acceptance
         :param project: staging project
         :param request_id: request id to check
 
         """
 
-        f = http_GET(self.makeurl(['request', str(request)]))
-        root = ET.parse(f).getroot()
+        url = self.makeurl(['request', str(request)])
+        root = ET.parse(http_GET(url)).getroot()
 
         # relevant info for printing
         package = str(root.find('action').find('target').attrib['package'])
@@ -607,7 +608,7 @@ class StagingAPI(object):
 
         if buildstatus:
             report += self.generate_build_status_details(buildstatus, verbose)
-            
+
         # Check the openqa state
         ret = self.find_openqa_state(project)
         if ret:
@@ -615,7 +616,7 @@ class StagingAPI(object):
 
         if report:
             return report
-        
+
         return True
 
     def days_since_last_freeze(self, project):
@@ -624,18 +625,16 @@ class StagingAPI(object):
         :param project: project to check
         :return age in days(float) of the last update
         """
-        u = self.makeurl(['source', project, '_project'], {'meta': '1'})
-        f = http_GET(u)
-        root = ET.parse(f).getroot()
+        url = self.makeurl(['source', project, '_project'], {'meta': '1'})
+        root = ET.parse(http_GET(url)).getroot()
         for entry in root.findall('entry'):
             if entry.get('name') == '_frozenlinks':
                 return (time.time() - float(entry.get('mtime')))/3600/24
         return 100000  # quite some!
 
     def find_openqa_jobs(self, project):
-        u = self.makeurl(['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
-        f = http_GET(u)
-        root = ET.parse(f).getroot()
+        url = self.makeurl(['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
+        root = ET.parse(http_GET(url)).getroot()
 
         filename = None
         for binary in root.findall('binary'):
@@ -686,48 +685,48 @@ class StagingAPI(object):
 
         for job in jobs.values():
             check = self.check_if_job_is_ok(job)
-            if check: 
-               return check
+            if check:
+                return check
 
         return None
 
     def check_if_job_is_ok(self, job):
-       url = "https://openqa.opensuse.org/tests/{}/file/results.json".format(job['id'])
-       try:
-          f = urllib2.urlopen(url)
-       except urllib2.HTTPError:
-          return "Can't open {}".format(url)
+        url = 'https://openqa.opensuse.org/tests/{}/file/results.json'.format(job['id'])
+        try:
+            f = urllib2.urlopen(url)
+        except urllib2.HTTPError:
+            return "Can't open {}".format(url)
 
-       try:
-         openqa = json.load(f)
-       except ValueError:
-         return "Can't decode {}".format(url)
+        try:
+            openqa = json.load(f)
+        except ValueError:
+            return "Can't decode {}".format(url)
 
-       overall = openqa.get('overall', 'inprogress')
-       if job['test'] == 'uefi':
-           return None # ignore
-       #pprint.pprint(openqa)
-       #pprint.pprint(job)
-       if overall != 'ok':
-          return "Openqa's overall status is {} for {}".format(overall, job['id'])
+        overall = openqa.get('overall', 'inprogress')
+        if job['test'] == 'uefi':
+            return None  # ignore
+        # pprint.pprint(openqa)
+        # pprint.pprint(job)
+        if overall != 'ok':
+            return "openQA's overall status is {} for {}".format(overall, job['id'])
 
-       for module in openqa['testmodules']:
-          # zypper_in fails at the moment - urgent fix needed
-          if module['result'] == 'ok': continue
-          if module['name'] in []:
-             continue
-          return "{} test failed: {}".format(module['name'], job['id'])
-       return None
- 
+        for module in openqa['testmodules']:
+            # zypper_in fails at the moment - urgent fix needed
+            if module['result'] == 'ok':
+                continue
+            if module['name'] in []:
+                continue
+            return '{} test failed: {}'.format(module['name'], job['id'])
+        return None
+
     def gather_build_status(self, project):
         """
         Checks whether everything is built in project
         :param project: project to check
         """
         # Get build results
-        u = self.makeurl(['build', project, '_result?code=failed&code=broken&code=unresolvable'])
-        f = http_GET(u)
-        root = ET.parse(f).getroot()
+        url = self.makeurl(['build', project, '_result?code=failed&code=broken&code=unresolvable'])
+        root = ET.parse(http_GET(url)).getroot()
 
         # Check them
         broken = []
@@ -746,7 +745,7 @@ class StagingAPI(object):
             for node in results:
                 # Find broken
                 result = node.get('code')
-                if result in ['broken', 'failed'] or (result == 'unresolvable' and not building):
+                if result in ('broken', 'failed') or (result == 'unresolvable' and not building):
                     broken.append({
                         'pkg': node.get('package'),
                         'state': result,
@@ -820,8 +819,8 @@ class StagingAPI(object):
 
         # now remove the staging checker
         self.do_change_review_state(request_id, 'accepted',
-                                 by_group='factory-staging',
-                                 message='Picked {}'.format(project))
+                                    by_group='factory-staging',
+                                    message='Picked {}'.format(project))
         return True
 
     def map_ring_package_to_subject(self, project, pkg):
@@ -934,7 +933,7 @@ class StagingAPI(object):
                 return
 
         # don't try to change reviews if the request is dead
-        if not req.state.name in ['new', 'review']:
+        if req.state.name not in ('new', 'review'):
             return
 
         query = {}
@@ -963,7 +962,7 @@ class StagingAPI(object):
         if not req:
             raise oscerr.WrongArgs('Request {} not found'.format(request_id))
         # don't try to change reviews if the request is dead
-        if not req.state.name in ['new', 'review']:
+        if req.state.name not in ('new', 'review'):
             return
         cont = False
         for i in req.reviews:
@@ -975,14 +974,14 @@ class StagingAPI(object):
             msg = 'Reviewed by staging project "{}" with result: "{}"'
             msg = msg.format(project, state)
         self.do_change_review_state(request_id, state, by_project=project,
-                                 message=msg)
+                                    message=msg)
 
     def switch_flag_in_prj(self, project, flag='build', state='disable', repository=None, arch=None):
         url = self.makeurl(['source', project, '_meta'])
         prjmeta = ET.parse(http_GET(url)).getroot()
 
         flagxml = prjmeta.find(flag)
-        if not flagxml: # appending is fine
+        if not flagxml:  # appending is fine
             flagxml = ET.SubElement(prjmeta, flag)
 
         foundone = False
@@ -1044,7 +1043,7 @@ class StagingAPI(object):
 
         if self.project_exists(target_project + ":DVD"):
             self.build_switch_prj(target_project + ":DVD", target_flag)
-    
+
     def project_exists(self, project):
         """
         Return true if the given project exists
@@ -1052,10 +1051,7 @@ class StagingAPI(object):
         """
         url = self.makeurl(['source', project, '_meta'])
         try:
-            root = http_GET(url)
-            # ugly work around for the test suite
-            if root.read().startswith('<result>Not found'):
-                return False
+            http_GET(url)
         except urllib2.HTTPError:
             return False
         return True
