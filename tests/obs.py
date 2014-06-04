@@ -573,7 +573,7 @@ class OBS(object):
             ret_str = '<comments project="%s">' % prj
             for c in comments:
                 ret_str += '<comment who="%s" when="%s" id="%s">' % (c['who'], c['when'], c['id'])
-                ret_str += c['body']
+                ret_str += c['body'].replace('<', '&lt;').replace('>', '&gt;')
                 ret_str += '</comment>'
             ret_str += '</comments>'
             return (200, headers, ret_str)

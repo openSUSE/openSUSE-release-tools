@@ -1071,8 +1071,8 @@ class StagingAPI(object):
         """
 
         # TODO: we need to discuss the best way to keep track of status
-        # comments. Right now they are marked with '[osc staging' at the
-        # beginning. Maybe a cleaner approach would be to store something
+        # comments. Right now they are marked with an initial markdown
+        # comment. Maybe a cleaner approach would be to store something
         # like 'last_status_comment_id' in the pseudometa. But the current
         # OBS API for adding comments doesn't return the id of the created
         # comment.
@@ -1084,12 +1084,12 @@ class StagingAPI(object):
             # TODO: update the comment removing the user mentions instead of
             # deleting the whole comment. But there is currently not call in
             # OBS API to update a comment
-            if comment['comment'].startswith('[osc staging'):
+            if comment['comment'].startswith('<!--- osc staging'):
                 comment_api.delete(comment['id'])
                 break # There can be only one! (if we keep deleting them)
 
         meta = self.get_prj_pseudometa(project)
-        lines = ['[osc staging %s]\n' % command]
+        lines = ['<!--- osc staging %s --->' % command]
         lines.append('The list of requests tracked in %s has changed:\n' % project)
         for req in meta['requests']:
             author = req.get('autor', None)
