@@ -1039,7 +1039,7 @@ class StagingAPI(object):
 
         if self.project_exists(target_project + ":DVD"):
             self.build_switch_prj(target_project + ":DVD", target_flag)
-    
+
     def project_exists(self, project):
         """
         Return true if the given project exists
@@ -1047,10 +1047,7 @@ class StagingAPI(object):
         """
         url = self.makeurl(['source', project, '_meta'])
         try:
-            root = http_GET(url)
-            # ugly work around for the test suite
-            if root.read().startswith('<result>Not found'):
-                return False
+            http_GET(url)
         except urllib2.HTTPError:
             return False
         return True
