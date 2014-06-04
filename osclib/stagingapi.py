@@ -1089,11 +1089,8 @@ class StagingAPI(object):
         lines = ['[osc staging %s]\n' % command]
         lines.append('The list of requests tracked in %s has changed:\n' % project)
         for req in meta['requests']:
-            author = ''
-            if 'author' in req.keys():
-                # Proper metadata
-                author = req['author']
-            else:
+            author = req.get('autor', None)
+            if not author:
                 # Old style metadata
                 author = get_request(self.apiurl, str(req['id'])).get_creator()
             lines.append('Request req#%s for package %s submitted by [AT]%s' % (req['id'], req['package'], author))
