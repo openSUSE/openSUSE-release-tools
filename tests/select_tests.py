@@ -14,7 +14,7 @@ from obs import OBS
 from osc import oscerr
 from osclib.select_command import SelectCommand
 from oscs import StagingAPI
-
+from osclib.comments import CommentAPI
 
 class TestSelect(unittest.TestCase):
 
@@ -29,6 +29,33 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
         self.assertEqual(True, SelectCommand(self.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
         self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), True)
+
+    def test_select_comments(self):
+        c_api = CommentAPI(self.api.apiurl)
+        staging_a = 'openSUSE:Factory:Staging:A'
+        comments = c_api.get_comments(project_name=staging_a)
+
+        # First select
+        self.assertEqual(True, SelectCommand(self.api).perform(staging_a, ['gcc', 'wine']))
+        first_select_comments = c_api.get_comments(project_name=staging_a)
+        last_id = sorted(first_select_comments.keys())[-1]
+        first_select_comment = first_select_comments[last_id]
+        # Only one comment is added
+        self.assertEqual(len(first_select_comments), len(comments) + 1)
+        # With the right content
+        self.assertTrue('Request req#123 for package gcc submitted by [AT]Admin' in first_select_comment['comment'])
+
+        # Second select
+        self.assertEqual(True, SelectCommand(self.api).perform(staging_a, ['puppet']))
+        second_select_comments = c_api.get_comments(project_name=staging_a)
+        last_id = sorted(second_select_comments.keys())[-1]
+        second_select_comment = second_select_comments[last_id]
+        # The number of comments remains, but they are different
+        self.assertEqual(len(second_select_comments), len(first_select_comments))
+        self.assertNotEqual(second_select_comment['comment'], first_select_comment['comment'])
+        # The new comments contents both old and new information
+        self.assertTrue('Request req#123 for package gcc submitted by [AT]Admin' in second_select_comment['comment'])
+        self.assertTrue('Request req#321 for package puppet submitted by [AT]Admin' in second_select_comment['comment'])
 
     def test_no_matches(self):
         # search for requests
