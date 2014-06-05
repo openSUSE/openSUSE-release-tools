@@ -66,6 +66,9 @@ class StagingAPI(object):
         try:
             return http_POST(url)
         except urllib2.HTTPError, e:
+            if e.code == 504:
+		print "Timeout on {}".format(url)
+	        return '<status code="timeout"/>'
             if e.code / 100 == 5:
                 print 'Retrying {}'.format(url)
                 return self.retried_POST(url)
