@@ -1093,6 +1093,6 @@ class StagingAPI(object):
             if not author:
                 # Old style metadata
                 author = get_request(self.apiurl, str(req['id'])).get_creator()
-            lines.append('Request req#%s for package %s submitted by [AT]%s' % (req['id'], req['package'], author))
+            lines.append('  * Request req#%s for package %s submitted by [AT]%s' % (req['id'], req['package'], author))
         msg = '\n'.join(lines)
         comment_api.add_comment(project_name=project, comment=msg)
