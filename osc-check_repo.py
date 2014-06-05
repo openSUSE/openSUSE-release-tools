@@ -21,7 +21,6 @@ from osc import cmdln
 from osc.core import get_binary_file
 from osc.core import get_buildinfo
 from osc.core import http_GET
-from osc.core import http_POST
 from osc.core import makeurl
 from osc.core import Request
 
@@ -30,49 +29,11 @@ _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
 from osclib.checkrepo import CheckRepo
 from osclib.cycle import CycleDetector
-from osclib.memoize import memoize, CACHEDIR
+from osclib.memoize import CACHEDIR
 
 
 # Directory where download binary packages.
 DOWNLOADS = os.path.expanduser('~/co/downloads')
-
-#
-# XXX - Ugly Hack. Because the way that osc import plugings we need to
-# declare some functions and objects used in the decorator as global
-#
-global tempfile
-global wraps
-
-global build
-global last_build_success
-global jobhistory
-
-
-@memoize()
-def build(apiurl, project, repo, arch, package):
-    root = None
-    try:
-        url = makeurl(apiurl, ['build', project, repo, arch, package])
-        root = http_GET(url).read()
-    except urllib2.HTTPError, e:
-        print('ERROR in URL %s [%s]' % (url, e))
-    return root
-
-
-@memoize()
-def last_build_success(apiurl, src_project, tgt_project, src_package, rev):
-    root = None
-    try:
-        url = makeurl(apiurl,
-                      ['build', src_project,
-                       '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s' % (
-                           quote_plus(src_package),
-                           quote_plus(tgt_project),
-                           rev)])
-        root = http_GET(url).read()
-    except urllib2.HTTPError, e:
-        print('ERROR in URL %s [%s]' % (url, e))
-    return root
 
 
 def get_project_repos(apiurl, src_project, tgt_project, src_package, rev):
@@ -160,7 +121,7 @@ def _check_repo_find_submit_request(self, opts, project, package):
 
 
 def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
-    xml = build(opts.apiurl, prj, repo, arch, pkg)
+    xml = self.checkrepo.build(prj, repo, arch, pkg)
     if xml:
         root = ET.fromstring(xml)
         for binary in root.findall('binary'):
@@ -275,7 +236,7 @@ def _check_repo_one_request(self, rq, opts):
 
 
 def _check_repo_buildsuccess(self, p, opts):
-    root_xml = last_build_success(opts.apiurl, p.sproject, p.tproject, p.spackage, p.rev)
+    root_xml = self.checkrepo.last_build_success(p.sproject, p.tproject, p.spackage, p.rev)
     root = ET.fromstring(root_xml)
     if not root:
         return False
@@ -695,7 +656,7 @@ def do_check_repo(self, subcmd, opts, *args):
         for request in self.checkrepo.pending_requests():
             packs.extend(self._check_repo_one_request(request, opts))
     else:
-        # we have a list, use them.
+        # We have a list, use them.
         for request_id in ids:
             request = self.checkrepo.get_request(request_id)
             packs.extend(self._check_repo_one_request(request, opts))

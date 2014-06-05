@@ -271,4 +271,4 @@ class CycleDetector(object):
             if cycle not in factory_cycles:
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
-                yield sorted(current_edges - factory_edges)
+                yield cycle, sorted(current_edges - factory_edges)

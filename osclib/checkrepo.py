@@ -14,14 +14,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from urllib import quote_plus
 import urllib2
 from xml.etree import cElementTree as ET
 
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
-
 from osclib.stagingapi import StagingAPI
+from osclib.memoize import memoize
 
 
 class CheckRepo(object):
@@ -97,3 +98,30 @@ class CheckRepo(object):
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return requests
+
+    @memoize()
+    def build(self, project, repo, arch, package):
+        """Return the build XML document from OBS."""
+        xml = None
+        try:
+            url = makeurl(self.apiurl, ('build', project, repo, arch, package))
+            xml = http_GET(url).read()
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return xml
+
+    @memoize()
+    def last_build_success(self, src_project, tgt_project, src_package, rev):
+        """Return the last build success XML document from OBS."""
+        xml = None
+        try:
+            url = makeurl(self.apiurl,
+                          ('build', src_project,
+                           '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s' % (
+                               quote_plus(src_package),
+                               quote_plus(tgt_project),
+                               rev)))
+            xml = http_GET(url).read()
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return xml
