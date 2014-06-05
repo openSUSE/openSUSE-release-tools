@@ -80,7 +80,7 @@ def _checker_add_review_team(self, opts, id):
     return self._checker_add_review(opts, id, by_group='opensuse-review-team', msg="Please review sources")
 
 def _checker_accept_request(self, opts, id, msg, diff=10000):
-    if diff > 10:
+    if diff > 12:
         self._checker_add_review_team(opts, id)
     else:
         self._checker_add_review(opts, id, by_user='coolo', msg='Does it look ok?')
@@ -197,9 +197,11 @@ def _checker_one_request(self, rq, opts):
 
 	    shutil.rmtree(dir)
             msg="Check script succeeded"
-            if checked[-1].startswith('DIFFCOUNT'):
+            if len(checked) and checked[-1].startswith('DIFFCOUNT'):
                 # this is a major break through in perl<->python communication!
                 diff = int(checked.pop().split(' ')[1])
+            else: # e.g. new package
+                diff = 10000
                                 
             if len(checked):
                 msg = msg + "\n\nOutput of check script (non-fatal):\n" + output

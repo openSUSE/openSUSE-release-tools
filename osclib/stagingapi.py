@@ -666,6 +666,7 @@ class StagingAPI(object):
         bestjobs = {}
         for job in jobs:
             if job['result'] != 'incomplete' and not job['clone_id']:
+                if job['test'] == 'miniuefi': continue
                 if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
                     bestjobs[job['name']] = job
 
