@@ -83,7 +83,7 @@ def _checker_accept_request(self, opts, id, msg, diff=10000):
     if diff > 12:
         self._checker_add_review_team(opts, id)
     else:
-        self._checker_add_review(opts, id, by_user='coolo', msg='Does it look ok?')
+        self._checker_add_review(opts, id, by_user='ancorgs', msg='Does it look harmless?')
         
     self._checker_add_review(opts, id, by_user='factory-repo-checker', msg='Please review build success')
 
