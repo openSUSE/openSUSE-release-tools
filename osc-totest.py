@@ -310,6 +310,7 @@ def do_totest(self, subcmd, opts, *args):
         can_release = False
     elif self.tt_build_of_ftp_tree('openSUSE:Factory') == self.tt_build_of_ftp_tree('openSUSE:Factory:ToTest'):
         # there was no change in factory since the last release, so drop it
+        print "FTP tree is the same"
         can_release = False
     elif not self.tt_all_repos_done('openSUSE:Factory:ToTest'):
         # the repos have to be done, otherwise we better not touch them with a new release
