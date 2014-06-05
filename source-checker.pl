@@ -193,17 +193,21 @@ if (-d "$old") {
         rename("$spec.new", "$spec") || die "rename failed";
     }
 
+    chdir($dir);
+    my @changes = glob("*.changes");
     chdir($odir);
 
     if (%patches) {
         # parsing changes
-        my $diff = diff "$old/$changes", "$dir/$changes";
-        for my $line (split(/\n/, $diff)) {
-            next unless $line =~ m/^+/;
-            $line =~ s/^\+//;
-            for my $patch (keys %patches) {
-                if ($line =~ m/$patch/) {
-                    delete $patches{$patch};
+        for my $changes (@changes) {
+            my $diff = diff "$old/$changes", "$dir/$changes";
+            for my $line (split(/\n/, $diff)) {
+                next unless $line =~ m/^+/;
+                $line =~ s/^\+//;
+                for my $patch (keys %patches) {
+                    if ($line =~ m/$patch/) {
+                        delete $patches{$patch};
+                    }
                 }
             }
         }
