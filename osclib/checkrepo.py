@@ -102,7 +102,7 @@ class CheckRepo(object):
     @memoize()
     def build(self, project, repo, arch, package):
         """Return the build XML document from OBS."""
-        xml = None
+        xml = ''
         try:
             url = makeurl(self.apiurl, ('build', project, repo, arch, package))
             xml = http_GET(url).read()
@@ -113,7 +113,7 @@ class CheckRepo(object):
     @memoize()
     def last_build_success(self, src_project, tgt_project, src_package, rev):
         """Return the last build success XML document from OBS."""
-        xml = None
+        xml = ''
         try:
             url = makeurl(self.apiurl,
                           ('build', src_project,

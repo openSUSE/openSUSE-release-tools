@@ -144,8 +144,7 @@ def _check_repo_one_request(self, rq, opts):
     id_ = int(rq.get('id'))
     actions = rq.findall('action')
     if len(actions) > 1:
-        msg = 'only one action per request is supported - create a group instead: '\
-              'https://github.com/SUSE/hackweek/wiki/Improved-Factory-devel-project-submission-workflow'
+        msg = 'Only one action per request is supported'
         print('DECLINED', msg)
         self.checkrepo.change_review_state(id_, 'declined', message=msg)
         return []
