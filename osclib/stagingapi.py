@@ -707,12 +707,12 @@ class StagingAPI(object):
             return "Can't decode {}".format(url)
 
         overall = openqa.get('overall', 'inprogress')
-        if job['test'] == 'uefi':
+        if job['test'] == 'miniuefi':
             return None  # ignore
         # pprint.pprint(openqa)
         # pprint.pprint(job)
         if overall != 'ok':
-            return "openQA's overall status is {} for {}".format(overall, job['id'])
+            return "openQA's overall status is {} for https://openqa.opensuse.org/tests/{}".format(overall, job['id'])
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
@@ -720,7 +720,7 @@ class StagingAPI(object):
                 continue
             if module['name'] in []:
                 continue
-            return '{} test failed: {}'.format(module['name'], job['id'])
+            return '{} test failed: https://openqa.opensuse.org/tests/{}'.format(module['name'], job['id'])
         return None
 
     def gather_build_status(self, project):
