@@ -26,6 +26,7 @@ from osc.core import http_PUT
 
 from osclib.comments import CommentAPI
 
+
 class StagingAPI(object):
     """
     Class containing various api calls to work with staging projects.
@@ -67,8 +68,8 @@ class StagingAPI(object):
             return http_POST(url)
         except urllib2.HTTPError, e:
             if e.code == 504:
-		print "Timeout on {}".format(url)
-	        return '<status code="timeout"/>'
+                print 'Timeout on {}'.format(url)
+                return '<status code="timeout"/>'
             if e.code / 100 == 5:
                 print 'Retrying {}'.format(url)
                 return self.retried_POST(url)
@@ -97,7 +98,8 @@ class StagingAPI(object):
             for entry in ET.parse(root).getroot().findall('entry'):
                 pkg = entry.attrib['name']
                 if pkg in ret and pkg != 'Test-DVD-x86_64':
-                    raise BaseException('{} is defined in two projects'.format(pkg))
+                    msg = '{} is defined in two projects ({} and {})'
+                    raise Exception(msg.format(pkg, ret[pkg], prj))
                 ret[pkg] = prj
         return ret
 
@@ -402,7 +404,7 @@ class StagingAPI(object):
                 append = False
         if append:
             author = get_request(self.apiurl, str(request_id)).get_creator()
-            data['requests'].append({'id': request_id, 'package': package, 'author': author })
+            data['requests'].append({'id': request_id, 'package': package, 'author': author})
         self.set_prj_pseudometa(project, data)
 
     def get_request_id_for_package(self, project, package):
@@ -669,7 +671,8 @@ class StagingAPI(object):
         bestjobs = {}
         for job in jobs:
             if job['result'] != 'incomplete' and not job['clone_id']:
-                if job['test'] == 'miniuefi': continue
+                if job['test'] == 'miniuefi':
+                    continue
                 if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
                     bestjobs[job['name']] = job
 
@@ -1086,7 +1089,7 @@ class StagingAPI(object):
             # OBS API to update a comment
             if comment['comment'].startswith('<!--- osc staging'):
                 comment_api.delete(comment['id'])
-                break # There can be only one! (if we keep deleting them)
+                break  # There can be only one! (if we keep deleting them)
 
         meta = self.get_prj_pseudometa(project)
         lines = ['<!--- osc staging %s --->' % command]
