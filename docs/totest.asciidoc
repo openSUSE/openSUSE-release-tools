@@ -1,0 +1,52 @@
+OpenQA starter guide
+====================
+:author: openSUSE Team at SUSE
+:toc:
+
+
+Introduction
+------------
+[id="intro"]
+
+In the current Factory model,
+https://build.opensuse.org/project/show/openSUSE:Factory:ToTest[Factory:ToTest]
+represent the project that store several Factory Snapshots that are
+candidates to be released if the measured quality (according to
+openQA) is good enough.
+
+This plugin encapsulate several conditions that are needed to decide
+if a snapshot can be published or not:
+
+* Check if the overall status of openQA is green.
+
+* Check if all the repositories in openSUSE:Factory can be published.
+
+If Factory meet both criteria, this plugin will publish a new version
+of the project openSUSE:Factory:ToTest, if the version if different
+from the current Factory.
+
+
+Installation
+------------
+[id="install"]
+
+Clone this repository:
+
+-------------------------------------------------------------------------------
+git clone https://github.com/openSUSE/osc-plugin-factory.git
+-------------------------------------------------------------------------------
+
+Link the plugin and the library in +~/.osc-plugins+ or +/var/lib/osc-plugins+.
+
+-------------------------------------------------------------------------------
+cd osc-plugin-factory
+ln -sr ./osc-totest.py ./osclib ~/.osc-plugins
+-------------------------------------------------------------------------------
+
+
+Command line
+------------
+[id="cli"]
+
+This plugin do not have any parameters, and need to be executed with
+the proper permissions in OBS.
