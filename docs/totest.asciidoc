@@ -1,5 +1,5 @@
-OpenQA starter guide
-====================
+ToTest Pluging Documentation
+============================
 :author: openSUSE Team at SUSE
 :toc:
 
