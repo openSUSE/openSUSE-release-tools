@@ -1,6 +1,9 @@
 PyYAML
+pycurl
+urlgrabber
 git+https://github.com/openSUSE/osc
 
 # Dependencies for testing
 httpretty
 mock
+
