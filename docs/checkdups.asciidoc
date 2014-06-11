@@ -1,0 +1,48 @@
+CheckDups Plugin Documentation
+==============================
+:author: openSUSE Team at SUSE
+:toc:
+
+
+Introduction
+------------
+[id="intro"]
+
+This plugin check for duplicated and superseded requests.
+
+
+Installation
+------------
+[id="install"]
+
+Clone this repository:
+
+-------------------------------------------------------------------------------
+git clone https://github.com/openSUSE/osc-plugin-factory.git
+-------------------------------------------------------------------------------
+
+Link the plugin and the library in +~/.osc-plugins+ or +/var/lib/osc-plugins+.
+
+-------------------------------------------------------------------------------
+cd osc-plugin-factory
+ln -sr ./osc-check_dups.py ./osclib ~/.osc-plugins
+-------------------------------------------------------------------------------
+
+
+Command line
+------------
+[id="cli"]
+
+The only allowed parameter is the list of projects where to find
+duplicated requests.
+
+
+Checks done
+-----------
+[id="checks"]
+
+Basically there is only one check in this plugin.  For every project
+listed in the command line, this plugin will search the list of
+request available for it.  The plugin will check if there are multiple
+requests that refer to the same project and package (but with a
+different request ID).
