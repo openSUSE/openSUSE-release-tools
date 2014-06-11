@@ -1,0 +1,216 @@
+Staging Plugin Documentation
+============================
+:author: openSUSE Team at SUSE
+:toc:
+
+
+Introduction
+------------
+[id="intro"]
+
+The staging plugin is used to enable the new
+https://progress.opensuse.org/workflow/factory-proposal.html[factory
+workflow] to work with staging projects.  This plugin implement some
+functionality that some day will be directly implemented in OBS
+itself.  Meanwhile this plugin is used as a playground field to
+explore these new concepts and operations.
+
+This plugin is used by the release manager to move requests into
+staging projects to evaluate the behavior and inter-compatibility of
+different changes working together.
+
+An staging project is a mere project linked to Factory, but with some
+packages that are different as a result of one or several requests.
+When the release manager assign a request into a staging project, this
+request is review inside this project.
+
+TODO: Describe the permissions that are needed in OBS to operate with
+the plugin.
+
+
+Installation
+------------
+[id="install"]
+
+Clone this repository:
+
+--------------------------------------------------------------------------------
+git clone https://github.com/openSUSE/osc-plugin-factory.git
+--------------------------------------------------------------------------------
+
+Link +osc-staging.py+ and the library either to +~/.osc-plugins+ or
++/var/lib/osc-plugins+
+
+--------------------------------------------------------------------------------
+cd osc-plugin-factory
+ln -sr ./osc-staging.py ./osclib ~/.osc-plugins
+--------------------------------------------------------------------------------
+
+
+Command line
+------------
+[id="cli"]
+
+This plugin is expected to be used interactively.  The basic commands
+are:
+
+* *accept* Accept all requests assigned to a staging project.
+
+* *check* Check the status of the different request inside the staging
+   project, including the status in openQA.
+
+* *cleanup_rings* Check the status of the different rings in Factory.
+
+* *freeze* Freeze the packages that are not affected in a staging project.
+
+* *list* Accept all the requests from packages that are not in any
+   ring, detect request that supersede the current ones that are
+   actually tracked in staging projects, and list the remaining
+   requests.
+
+* *select* Move a request (or a list of requests) to a staging
+   project, or move requests between staging projects.
+
+* *unselect* Remove a request from a staging project, and publish it
+   again into the backlog.
+
+
+List
+~~~~
+
+This action will list all the requests that are candidates to be
+assigned to a different staging project.  To decide this list, this
+command will perform to actions with side effects into the requests
+status.
+
+The first action is to accept requests that do not affect packages
+that are not inside one of the rings that are defined in Factory.
+This acceptance will move the request to the next status of revision
+(maybe waiting to the manual review or the legal review)
+
+The second action is to detect if a request supersede a different one
+that is currently in a staging project.  If this is the case, this
+command will replace the old request by the new one, declining the
+superseded after this.
+
+Because of the different side effects, this command needs to be
+executed with the proper permissions in OBS.
+
+
+Select
+~~~~~~
+
+The release manager or the staging project manager can take a request
+and assign it into a staging project using the +select+ command.
+
+Actually we have
+https://build.opensuse.org/project/subprojects/openSUSE:Factory:Staging[ten
+staging projects], that are managed according to some internal rules.
+Every time that the manager decides to move a request to one of those
+projects, a metadata attached to these projects are updated, and a new
+commend is generated.
+
+The metadata associated to a staging project contain the list of
+request that are assigned to this project, and is used by the plugin
+to track and manage the different requests.  For example, the command:
+
+--------------------------------------------------------------------------------
+osc staging select A 12345
+--------------------------------------------------------------------------------
+
+will add the request #12345 into the staging project
+openSUSE:Factory:Staging:A.  This command will take care that this
+request was not previously in the staging project A or in a different
+one.  If this is the case, will show an error message and exit without
+selecting the request.  Is we want to move a request from one staging
+project to another one, we need to use the parameter +--move+:
+
+--------------------------------------------------------------------------------
+osc staging select --move B 12345
+--------------------------------------------------------------------------------
+
+This command will move #12345 from openSUSE:Factory:Staging:A to
+openSUSE:Factory:Staging:B
+
+
+Unselect
+~~~~~~~~
+
+The +unselect+ command will untrack a request from a staging project,
+returning it back to the original backlog (without approving or
+declining the request) So for example, if #12345 is being tracked in
+A, the command:
+
+--------------------------------------------------------------------------------
+osc staging unselect 12345
+--------------------------------------------------------------------------------
+
+will find the correct staging project and remove the request from it.
+
+
+Check
+~~~~~
+
+Before accepting the requests inside a staging project, the user can
+check the state of those requests.  The +check+ command will check the
+project status, taking care of superseded requests or already accepted
+requests.
+
+This command will also check the status in openQA of the project.
+
+
+Accept
+~~~~~~
+
+If the current status of the staging project is good, this command
+will change the review status of the different requests assigned to
+the project, accepting them.
+
+Internally, the +accept+ command contains a call to the +check+
+command to make sure that the request can be accepted.
+
+After this command, the staging project status will be disabled, to
+avoid the overload of OBS.
+
+
+Cleanup Rings
+~~~~~~~~~~~~~
+
+https://build.opensuse.org/project/subprojects/openSUSE:Factory:Rings[Rings]
+are collection of packages that are deeply interconnected, and that
+are building basis for a different ring or for the rest of the
+distribution.  A ring is a way to organize Factory into
+inter-dependent packages that are again used to build a different
+layer of Factory itself.
+
+Actually we have identified three rings:
+
+* https://build.opensuse.org/project/show/openSUSE:Factory:Rings:0-Bootstrap[openSUSE:Factory:Rings:0-Bootstrap]
+* https://build.opensuse.org/project/show/openSUSE:Factory:Rings:1-MinimalX[openSUSE:Factory:Rings:1-MinimalX]
+* https://build.opensuse.org/project/show/openSUSE:Factory:Rings:2-TestDVD[openSUSE:Factory:Rings:2-TestDVD]
+
+And you can find a better description in the
+https://www.youtube.com/watch?v=K-wTVGqKFR8[talk conference]
+celebrated in 2014 in Dubrovnik, Croatia.
+
+This command is used to check the current status of the rings and to
+find undesirable dependencies of the packages that conform the rings.
+
+
+Freeze
+~~~~~~
+
+Factory is always a moving target, even with the staging projects.  If
+we want to check the status of the request assigned to a staging
+project, sometimes is desirable to have a frozen status of the source
+packages that are part of Factory but not of the staging project.
+
+This command is used to build frozenlink-kind-of links for a staging
+project.
+
+
+Use cases
+---------
+[id="usecases"]
+
+XXX TODO
