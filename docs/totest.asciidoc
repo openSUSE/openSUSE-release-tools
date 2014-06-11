@@ -1,5 +1,5 @@
-ToTest Pluging Documentation
-============================
+ToTest Plugin Documentation
+===========================
 :author: openSUSE Team at SUSE
 :toc:
 
