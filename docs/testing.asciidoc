@@ -42,30 +42,20 @@ OBS class
 +OBS+ class provides simulation of OBS including keeping internal states. It
 supports only limited number of command, but that can be extended.
 
-Extending OBS class via +responses+ dictionary
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Extending OBS class
+^^^^^^^^^^^^^^^^^^^
 
-It contains dictionaries for 'GET', 'PUT', 'POST' and 'ALL'. All of them
-correspond to the method used by program. 'ALL' is just a shortcut that covers
-all methods and it is called only if no specific handler is found.
+You can extend the OBS mockup class creating new method, and
+decorating it with one of the @GET, @PUT, @POST or @DELETE.  The
+parameter of the decorator is the PATH of the URL or a regular
+expression that match one of the possible paths.
 
-Dictionaries associated with each method contains as a key relative URL to the
-top of the server and as data one of the following:
+If the new response can be implemented as a simple fixture, you can
+create the file in the +fixtures/+ directory in a place compatible in
+the expected path.
 
-* path to the file in fixtures directory with XML to return
-* XML itself starting with +<+
-* function taking three arguments - 'request', 'uri' and 'headers'
-* list which is combination of any of the above
-
-If handling of +responses+ dictionary is enabled, URL is find in dictionary and
-appropriate action is taken. If there is XML or path to the XML, XML is
-returned directly. In case of function, function gets called and is expected to
-return string that will be passed back. If there is array, first item is used
-as described above and removed from the array.
-
-To add new possible actions, define private method of OBS class that will
-regiter handlers in this dictionary and add this method to be called by
-+_clear_responses+ method.
+Because we are decorating methods, we can maintain an internal status
+inside the OBS mock-up instance. 
 
 example
 ^^^^^^^
@@ -97,102 +87,50 @@ We can also define helpful local data structure representing actual state of OBS
 [source,python]
 --------------------------------------------------------------------------------
 # Initial request data
-requests_data = { '123': { 'request': 'new', 'review': 'accepted',
-                           'who': 'Admin', 'by': 'group', 'id': '123',
-                           'by_who': 'opensuse-review-team',
-                           'package': 'gcc' },
-                  '321': { 'request': 'review', 'review': 'new',
-                           'who': 'Admin', 'by': 'group', 'id': '321',
-                           'by_who': 'factory-staging',
-                           'package': 'puppet' }
-                }
+self.requests = {
+    '123': {
+        'request': 'new',
+        'review': 'accepted',
+        'who': 'Admin',
+        'by': 'group',
+        'id': '123',
+        'by_who': 'opensuse-review-team',
+        'package': 'gcc',
+    },
+    '321': {
+        'request': 'review',
+        'review': 'new',
+        'who': 'Admin',
+        'by': 'group',
+        'id': '321',
+        'by_who': 'factory-staging',
+        'package': 'puppet',
+    },
+}
 --------------------------------------------------------------------------------
 
 And the most important part is implementing OBS behaviour.
 
 [source,python]
 --------------------------------------------------------------------------------
-def _request_review(self):
-    """
-    Register requests methods
-    """
+@GET(re.compile(r'/request/\d+'))
+def request(self, request, uri, headers):
+    """Return a request XML description."""
+    request_id = re.search(r'(\d+)', uri).group(1)
+    response = (404, headers, '<result>Not found</result>')
+    try:
+        template = string.Template(self._fixture(uri))
+        response = (200, headers, template.substitute(self.requests[request_id]))
+    except Exception as e:
+        if DEBUG:
+            print uri, e
 
-    # Load template
-    tmpl = Template(self._get_fixture_content('request_review.xml'))
+    if DEBUG:
+        print 'REQUEST', uri, response
 
-    # What happens when we try to change the review
-    def review_change(responses, request, uri):
-        rq_id = re.match( r'.*/([0-9]+)',uri).group(1)
-        args = self.requests_data[rq_id]
-        # Adding review
-        if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'addreview']:
-            self.requests_data[rq_id]['request'] = 'review'
-            self.requests_data[rq_id]['review'] = 'new'
-        # Changing review
-        if request.querystring.has_key(u'cmd') and request.querystring[u'cmd'] == [u'changereviewstate']:
-            self.requests_data[rq_id]['request'] = 'new'
-            self.requests_data[rq_id]['review'] = request.querystring[u'newstate'][0]
-        # Project review
-        if request.querystring.has_key(u'by_project'):
-            self.requests_data[rq_id]['by'] = 'project'
-            self.requests_data[rq_id]['by_who'] = request.querystring[u'by_project'][0]
-        # Group review
-        if request.querystring.has_key(u'by_group'):
-            self.requests_data[rq_id]['by'] = 'group'
-            self.requests_data[rq_id]['by_who'] = request.querystring[u'by_group'][0]
-        responses['GET']['/request/' + rq_id] = tmpl.substitute(self.requests_data[rq_id])
-        return responses['GET']['/request/' + rq_id]
-
-    # Register methods for all requests
-    for rq in self.requests_data:
-        # Static response for gets (just filling template from local data)
-        self.responses['GET']['/request/' + rq] = tmpl.substitute(self.requests_data[rq])
-        # Interpret other requests
-        self.responses['POST']['/request/' + rq] = review_change
+    return response
 --------------------------------------------------------------------------------
 
-Method +_request_review+ will be called from +_clear_responses+ method and it
-will fill responses for 'GET' requests from local data strusture we defined
-before. It will also register +review_change+ function to handle 'POST'
-requests.
-
-Function +review_change+ will modify our local data structure to make sure we
-remeber the state for next time, replaces the results of 'GET' requests and
-returns whatever 'GET' should be returning now.
-
-So whenever somebody sends 'addreview' command, XML that 'GET' on request
-provides will be changed to reflect newly added review. And whenever somebody
-sends 'changereviewstate', review will be closed with appropriate state.
-
-So we have a simple testing framework with multiple states that reacts to the
-API calls from functions we are testing following the behaviour we specified.
-So tests itself can be pretty simple and depend on multiple function calls.
-
-Registering +OBS+ class
-~~~~~~~~~~~~~~~~~~~~~~~
-
-To take advantage of simulated OBS, you have to register it inside your test
-and use it's api.  To do so, just call +register_obs+ method at the beginning
-of the test. If you are using staging plugin API, you should use +OBS.api+
-object that is providing it for you convenience.
-
-If you run request that wasn't implemented yet, exception will be raised
-providing URL that program tried to access together with method used.
-
-Simple tests given all behaviour you are expecting is already implemented can
-be done for example like this:
-
-[source,python]
---------------------------------------------------------------------------------
-# Register OBS
-self.obs.register_obs()
-# Get rid of open requests
-self.obs.api.dispatch_open_requests()
-# Check that we tried to close it
-self.assertEqual(httpretty.last_request().method, 'POST')
-self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'changereviewstate'])
-# Try it again
-self.obs.api.dispatch_open_requests()
-# This time there should be nothing to close
-self.assertEqual(httpretty.last_request().method, 'GET')
---------------------------------------------------------------------------------
+The method +request+ will be called when a request to /request/NUMBER
+is made. The previous code will load the XML template and replace
+variables with the request dictionary content.
