@@ -1,0 +1,75 @@
+CheckSource Plugin Documentation
+================================
+:author: openSUSE Team at SUSE
+:toc:
+
+
+Introduction
+------------
+[id="intro"]
+
+This plugin check for usual mistakes and problems in the source
+packages submitted by the users.  The core of the analysis is done by
+the source-checker Perl script.  This script check, for example, if
+there is a changelog file, if there is a proper license in the SPEC
+file or if the patch if referenced in the changelog.
+
+
+Installation
+------------
+[id="install"]
+
+Clone this repository:
+
+-------------------------------------------------------------------------------
+git clone https://github.com/openSUSE/osc-plugin-factory.git
+-------------------------------------------------------------------------------
+
+Link the plugin and the library in +~/.osc-plugins+ or +/var/lib/osc-plugins+.
+
+-------------------------------------------------------------------------------
+cd osc-plugin-factory
+ln -sr ./osc-check_source.py ./osclib ~/.osc-plugins
+-------------------------------------------------------------------------------
+
+The program will search also some external scripts (like
+source-checker.pl) inside the cloned directory (following the symlink).
+
+
+Command line
+------------
+[id="cli"]
+
+This program is expected to be executed unattended, usually in a loop
+or in a cron job.
+
+
+Checks done
+-----------
+[id="checks"]
+
+The most important checks are done in the Perl script source-checker,
+and can be enumerated as:
+
+* Check if there are more that one action in the request.
+
+* Check if the request comes from a valid devel project.
+
+* Check if the package have a proper name.
+
+* Check if the service is running in mode='localonly'
+
+* Check if the *.changes file is present.
+
+* Check if there is a SPEC file with the same name of the source
+  container.
+
+* No Vendor line is allowed.
+
+* The changelog is updated.
+
+* There is a proper license in the SPEC file.
+
+* The added / deleted patch is documented in the changelog.
+
+* rpmlint report is good.
