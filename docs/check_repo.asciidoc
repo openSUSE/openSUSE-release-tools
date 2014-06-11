@@ -1,0 +1,93 @@
+CheckRepo Plugin Documentation
+==============================
+:author: openSUSE Team at SUSE
+:toc:
+
+
+Introduction
+------------
+[id="intro"]
+
+This plugin check for usual mistakes and problems in the packages and
+in the requests submitted by the users.  For example, when a user link
+incorrectly a project that is outside his own source container, or
+when a new dependency cycle is introduced in a request, etc.
+
+There are multiple ways of introducing problem into the requests and
+packages, and this plugin check for some of these conditions,
+accepting or declining the requests that are analyzed.
+
+This plugin, also, use external programs that are inside OBS to extend
+the analysis, like for example the repo checker program that analyze
+the binary RPM package.
+
+
+Installation
+------------
+[id="install"]
+
+Clone this repository:
+
+-------------------------------------------------------------------------------
+git clone https://github.com/openSUSE/osc-plugin-factory.git
+-------------------------------------------------------------------------------
+
+Link the plugin and the library in +~/.osc-plugins+ or +/var/lib/osc-plugins+.
+
+-------------------------------------------------------------------------------
+cd osc-plugin-factory
+ln -sr ./osc-check_repo.py ./osclib ~/.osc-plugins
+-------------------------------------------------------------------------------
+
+The program will search also some external scripts (like
+repo-checker.pl) inside the cloned directory (following the symlink).
+
+
+Command line
+------------
+[id="cli"]
+
+This program is expected to be executed unattended, usually in a loop
+or in a cron job.  For example, a valid loop that check the requests
+is:
+
+-------------------------------------------------------------------------------
+while true; do osc cr list; date; sleep 3000; done
+-------------------------------------------------------------------------------
+
+
+Checks done
+-----------
+[id="checks"]
+
+One of the first things that CheckRepo do is recover the list of
+pending requests and group then according to the staging project that
+are assigned.  If a request is not assigned to any staging project,
+this will be considered as a group itself.
+
+Groups are useful to accept or decline them all together if there is a
+problem in one of the request of the group.
+
+Each request inside the group is passed for a number of checks to
+decide if the request is valid or not.  Some of the checks performed
+are:
+
+* Check if there are more that one action in the request.
+
+* Check the different source containers that are created for each SPEC
+  file inside the request.  This check makes sure that the SPEC file
+  builds properly and that are pointing to the same source container.
+
+* Check that the package build at least for one Intel architecture
+  (i586 or x86-64).
+
+* Check that the sources build properly for the requests.
+
+* Check that Factory repository is enabled in the request.
+
+* Check that the dependencies builds properly.
+
+* Check that there are no new cycles introduced by this request.
+
+* The binary analysis of the RPM generated is OK, using external
+  applications.
