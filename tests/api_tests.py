@@ -114,6 +114,7 @@ class TestApiCalls(unittest.TestCase):
         """
 
         package_info = {
+            'dir_srcmd5': '751efeae52d6c99de48164088a33d855',
             'project': 'home:Admin',
             'rev': '7b98ac01b8071d63a402fa99dc79331c',
             'srcmd5': '7b98ac01b8071d63a402fa99dc79331c',

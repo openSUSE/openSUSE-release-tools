@@ -228,7 +228,7 @@ class CycleDetector(object):
         return frozenset(frozenset(e.text for e in cycle.findall('package'))
                          for cycle in root.findall('cycle'))
 
-    def cycles(self, packages, project='openSUSE:Factory', repository='standard', arch='x86_64'):
+    def cycles(self, requests, project='openSUSE:Factory', repository='standard', arch='x86_64'):
         """Detect cycles in a specific repository."""
 
         # Detect cycles - We create the full graph from _builddepinfo.
@@ -244,11 +244,11 @@ class CycleDetector(object):
         # can't be found in x86_64 architecture.
         #
         # The first filter is to remove some packages that do not have
-        # `goodrepos`. Those packages are usually marked as 'p.update
+        # `goodrepos`. Those packages are usually marked as 'rq.update
         # = True' (meaning that they are declined or there is a new
         # updated review).
-        all_packages = [self._get_builddepinfo(p.sproject, p.goodrepos[0], arch, p.spackage)
-                        for p in packages if not p.updated]
+        all_packages = [self._get_builddepinfo(rq.src_project, rq.goodrepos[0], arch, rq.src_package)
+                        for rq in requests if not rq.updated]
         all_packages = [pkg for pkg in all_packages if pkg]
 
         subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
