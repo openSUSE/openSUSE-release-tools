@@ -246,6 +246,7 @@ class CheckRepo(object):
         requests = []
 
         if request_id:
+            request_id = int(request_id)
             request = self.get_request(request_id)
         elif request:
             request_id = int(request.get('id'))
