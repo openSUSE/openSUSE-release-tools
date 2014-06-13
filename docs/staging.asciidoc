@@ -19,13 +19,17 @@ This plugin is used by the release manager to move requests into
 staging projects to evaluate the behavior and inter-compatibility of
 different changes working together.
 
-An staging project is a mere project linked to Factory, but with some
-packages that are different as a result of one or several requests.
-When the release manager assign a request into a staging project, this
-request is review inside this project.
+An staging project is a mere project linked to a subset of Factory
+(MinimalX) , but with some packages that are different as a result of
+one or several requests.  When the release manager assign a request
+into a staging project, this request is review inside this project.
 
-TODO: Describe the permissions that are needed in OBS to operate with
-the plugin.
+There is a precondition here, the user that have the role of staging
+manager need to have permission in OBS, he / she needs to be:
+
+* Maintainer of openSUSE:Factory:Staging (needs current staging manager)
+
+* Group member of factory-staging (needs OBS admin)
 
 
 Installation
@@ -158,6 +162,8 @@ requests.
 
 This command will also check the status in openQA of the project.
 
+This command can be called without special permissions.
+
 
 Accept
 ~~~~~~
@@ -200,10 +206,11 @@ find undesirable dependencies of the packages that conform the rings.
 Freeze
 ~~~~~~
 
-Factory is always a moving target, even with the staging projects.  If
-we want to check the status of the request assigned to a staging
-project, sometimes is desirable to have a frozen status of the source
-packages that are part of Factory but not of the staging project.
+Factory (or the subset MinimalX) is always a moving target, even with
+the staging projects.  If we want to check the status of the request
+assigned to a staging project, sometimes is desirable to have a frozen
+status of the source packages that are part of Factory but not of the
+staging project.
 
 This command is used to build frozenlink-kind-of links for a staging
 project.
@@ -213,4 +220,164 @@ Use cases
 ---------
 [id="usecases"]
 
-XXX TODO
+
+Use Case 1: Checking Factory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The staging manager want to see the status of Factory every morning.
+
+--------------------------------------------------------------------------------
+osc staging check
+--------------------------------------------------------------------------------
+
+With this status he / she will contact to the author of the request,
+or will rebuild the packages if there is a suspect or a random fail.
+
+After that, the staging manager can check the important packages that
+are pending in the queue.
+
+--------------------------------------------------------------------------------
+osc staging list
+--------------------------------------------------------------------------------
+
+This command can update the request attached to a staging project,
+replacing the superseded one.  The list show the name of the ring
+where this package is found.
+
+
+Use Case 2: Selecting packages from Ring:0-Bootstrap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The +list+ command show the name of the ring where we can found the
+package involved in the request.  This information is important,
+because actually only the staging project A support this kind of
+packages.
+
+--------------------------------------------------------------------------------
+osc staging select A 12345
+--------------------------------------------------------------------------------
+
+This command will put the request #12345 into the staging project A.
+If A is full, the user can wait until A is empty again before putting
+new packages from Ring:0.
+
+
+Use Case 3: Dispatching packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The staging manager want to move some packages into different staging
+projects.  The complex part is to decide how to distribute the
+packages here.  The staging manager need to make sure that packages
+that have related changes (e.g. new +rpmlint+ check and the packages
+having fixes for it) are tested in one letter.
+
+--------------------------------------------------------------------------------
+osc staging select B 22221 22222
+osc staging select C 22223
+osc staging select B 22224
+--------------------------------------------------------------------------------
+
+The +select+ also has a --move to correct mistakes done on first run.
+
+--------------------------------------------------------------------------------
+osc staging select --move C 22224
+--------------------------------------------------------------------------------
+
+Also the staging manager can return some request into the original
+queue.
+
+--------------------------------------------------------------------------------
+osc staging unselect 22224
+--------------------------------------------------------------------------------
+
+Staging projects should not be too small, but not too big either - and
+staging projects that are almost done testing shouldn't get a
+re-triggered build.  So in practice adding them in large batches has
+proven useful, i.e. adding to B for half a day and then open up C and
+add to it from then on and only look back at B if there is a problem.
+
+
+Use Case 4: Rebasing staging projects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From time to time the staging projects need a rebase to make sure that
+they are still working with the current status of Factory.  For this
+the staging manager can use the +freeze+ command to update the links
+of the packages.
+
+--------------------------------------------------------------------------------
+osc staging freeze
+--------------------------------------------------------------------------------
+
+Of course, this will be done only when the project is in green status
+and Factory, the base, is also green in
+https://openqa.opensuse.org/tests/?sort=-mtime&hours=18&match=staging&ob=[openQA].
+In other case we can see errors in the staging project that comes from
+Factory.
+
+A pro-tip: the ring projects should be basically built and tested -
+quite challenging to find the right moment.
+
+
+Use Case 5: A full day in Factory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Checking the current status
+
+--------------------------------------------------------------------------------
+osc staging check
+--------------------------------------------------------------------------------
+
+In the list we found a request that is independent, we move it to a
+isolated staging project.
+
+--------------------------------------------------------------------------------
+osc staging select B 12345
+--------------------------------------------------------------------------------
+
+There is also a Ring:0 package, that needs to be in A
+
+--------------------------------------------------------------------------------
+osc staging select A 12300
+--------------------------------------------------------------------------------
+
+Also we found three YaST packages that are related.
+
+--------------------------------------------------------------------------------
+osc staging select C 22201 22202 22203
+--------------------------------------------------------------------------------
+
+We wait a bit and we check the result in openQA.  We see that the
+packages works properly in OBS (compile correctly) but there is
+something wrong in openQA: some of the tests are failing.
+
+In this situation we can:
+
+* Rebuild the image in openQA to see if this is a random problem
+
+* If openQA is red again, check the packages that can be problematic
+  in the staging project, maybe reading the changelog.
+
+* With this information, remove one of the requests from the staging
+  project, putting it back to the queue.
+
+--------------------------------------------------------------------------------
+osc staging unselect C 22202
+--------------------------------------------------------------------------------
+
+After a while we see some packages that are failing in OBS, we need to
+discard that is a random fail, we re-trigger the build:
+
+--------------------------------------------------------------------------------
+osc rebuildpac $PROJ $PKG $REPO $ARCH
+--------------------------------------------------------------------------------
+
+From time to time, we see that there is a missing dependency for one
+of the packages that is in the staging project, and this dependency is
+not in the subset of Factory (MinimalX) that is linked in the staging
+project (for example: ImageMagick needs libqr to build properly).  In
+this case we need to +linpack+ this package into the staging project:
+
+--------------------------------------------------------------------------------
+osc linkpac openSUSE:Factory liblqr openSUSE:Factory:Staging:F
+--------------------------------------------------------------------------------
