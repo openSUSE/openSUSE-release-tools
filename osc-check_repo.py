@@ -406,8 +406,8 @@ def _check_repo_group(self, id_, requests, opts):
                     os.mkdir(dir)
                 os.symlink(d, os.path.join(dir, os.path.basename(d)))
 
-        repochecker = os.path.join(self.repocheckerdir, 'repo-checker.pl')
-        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repodir, params_file.name)
+        repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
+        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
         # print civs
         # continue
         # exit(1)
@@ -444,6 +444,17 @@ def _check_repo_group(self, id_, requests, opts):
         rq.updated = True
         updated[rq.request_id] = 1
     shutil.rmtree(destdir)
+
+
+def mirror_full(plugin_dir, repo_dir):
+    """Call bs_mirrorfull script to mirror packages."""
+    url = 'https://build.opensuse.org/build/%s/%s/x86_64' % ('openSUSE:Factory', 'standard')
+
+    if not os.path.exists(repo_dir):
+        os.mkdir(repo_dir)
+
+    script = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug %s %s' % (plugin_dir, url, repo_dir)
+    os.system(script)
 
 
 @cmdln.alias('check', 'cr')
@@ -501,15 +512,11 @@ def do_check_repo(self, subcmd, opts, *args):
         a.append(request)
         groups[request.group] = a
 
-    self.repocheckerdir = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
-    self.repodir = "%s/repo-%s-%s-x86_64" % (CACHEDIR, 'openSUSE:Factory', 'standard')
-    if not os.path.exists(self.repodir):
-        os.mkdir(self.repodir)
-    civs = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug https://build.opensuse.org/build/%s/%s/x86_64 %s' % (
-        self.repocheckerdir,
-        'openSUSE:Factory',
-        'standard', self.repodir)
-    os.system(civs)
+    # Mirror the packages locally in the CACHEDIR
+    plugin = '~/.osc-plugins/osc-check_repo.py'
+    self.plugin_dir = os.path.dirname(os.path.realpath(os.path.expanduser(plugin)))
+    self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:Factory', 'standard')
+    mirror_full(self.plugin_dir, self.repo_dir)
 
     # Sort the groups, from high to low. This put first the stating
     # projects also
