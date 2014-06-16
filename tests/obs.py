@@ -141,6 +141,24 @@ class OBS(object):
                 'by_who': 'openSUSE:Factory:Staging:B',
                 'package': 'wine',
             },
+            '501': {
+                'request': 'review',
+                'review': 'new',
+                'who': 'Admin',
+                'by': 'project',
+                'id': '501',
+                'by_who': 'openSUSE:Factory:Staging:C',
+                'package': 'apparmor',
+            },
+            '502': {
+                'request': 'review',
+                'review': 'new',
+                'who': 'Admin',
+                'by': 'project',
+                'id': '502',
+                'by_who': 'openSUSE:Factory:Staging:C',
+                'package': 'mariadb',
+            },
         }
 
         self.staging_project = {
@@ -159,12 +177,28 @@ class OBS(object):
                 'title': 'wine',
                 'description': 'requests:\n- {id: 333, package: wine}',
             },
+            'C': {
+                'project': 'openSUSE:Factory:Staging:C',
+                'title': 'A project ready to be accepted',
+                'description': ("requests:\n - {id: 501, package: apparmor, author: Admin}\n"
+                                " - {id: 502, package: mariadb, author: Admin}"),
+            },
         }
 
         self.links = {
             'openSUSE:Factory:Staging:B/wine': {
                 'prj': 'openSUSE:Factory:Staging:B',
                 'pkg': 'wine',
+                'devprj': 'home:Admin',
+            },
+            'openSUSE:Factory:Staging:C/apparmor': {
+                'prj': 'openSUSE:Factory:Staging:C',
+                'pkg': 'apparmor',
+                'devprj': 'home:Admin',
+            },
+            'openSUSE:Factory:Staging:C/mariadb': {
+                'prj': 'openSUSE:Factory:Staging:C',
+                'pkg': 'mariadb',
                 'devprj': 'home:Admin',
             },
         }
@@ -208,6 +242,30 @@ class OBS(object):
                 'name': 'wine',
                 'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
             },
+            'home:Admin/apparmor': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'apparmor',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
+            'openSUSE:Factory/apparmor': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'apparmor',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
+            'home:Admin/mariadb': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'mariadb',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
+            'openSUSE:Factory/mariadb': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'mariadb',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
         }
 
         self.comments = {
@@ -217,8 +275,19 @@ class OBS(object):
                 }
             ],
             'openSUSE:Factory:Staging:U': [],
-            'openSUSE:Factory:Staging:B': []
+            'openSUSE:Factory:Staging:B': [],
+            'openSUSE:Factory:Staging:C': [
+                {'who': 'Admin', 'when': '2014-06-01 17:56:28 UTC', 'id': '2',
+                  'body': ("The list of requests tracked in openSUSE:Factory:Staging:C has changed:\n\n"
+                           " * Request#501 for package apparmor submitted by Admin\n"
+                           " * Request#502 for package mariadb submitted by Admin\n")
+                }
+            ],
         }
+
+        # To track comments created during test execution, even if they have
+        # been deleted afterward
+        self.comment_bodies = []
 
     #
     #  /request/
@@ -316,7 +385,7 @@ class OBS(object):
     # /source/
     #
 
-    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B]/_project'))
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C]/_project'))
     def source_staging_project_project(self, request, uri, headers):
         """Return the _project information for a staging project."""
         # Load the proper fixture and adjust mtime according the
@@ -338,7 +407,7 @@ class OBS(object):
 
         return response
 
-    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|U](/\w+)?/_meta'))
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U](/\w+)?/_meta'))
     def source_staging_project_meta(self, request, uri, headers):
         """Return the _meta information for a staging project."""
         key = re.search(r'openSUSE:Factory:Staging:(\w(?:/\w+)?)/_meta', uri).group(1)
@@ -360,7 +429,7 @@ class OBS(object):
 
         return response
 
-    @PUT(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|U](/\w+)?/_meta'))
+    @PUT(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U](/\w+)?/_meta'))
     def put_source_staging_project_meta(self, request, uri, headers):
         """Set the _meta information for a staging project."""
         key = re.search(r'openSUSE:Factory:Staging:(\w(?:/\w+)?)/_meta', uri).group(1)
@@ -392,13 +461,21 @@ class OBS(object):
 
         return response
 
-    @DELETE('/source/openSUSE:Factory:Staging:B/wine')
-    def delete_wine(self, request, uri, headers):
-        """Delete the wine source package from B."""
-        del self.links['openSUSE:Factory:Staging:B/wine']
-        response = (200, headers, '<result>Ok</result>')
+    @DELETE(re.compile('/source/openSUSE:Factory:Staging:[B|C]/\w+'))
+    def delete_package(self, request, uri, headers):
+        """Delete a source package from a Staging project."""
+        package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
+        response = (404, headers, '<result>Not found</result>')
+        try:
+            del self.links[package]
+            response = (200, headers, '<result>Ok</result>')
+        except Exception as e:
+            if DEBUG:
+                print uri, e
+
         if DEBUG:
             print 'DELETE', uri, response
+
         return response
 
     @GET(re.compile(r'/source/home:Admin/wine'))
@@ -585,6 +662,7 @@ class OBS(object):
         comment = {'who': 'Admin', 'when': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
                     'id': str(sum(len(c) for c in self.comments.values()) + 1), 'body': request.body }
         self.comments[prj].append(comment)
+        self.comment_bodies.append(request.body)
         response = (200, headers, '<result>Ok</result>')
         return response
 
