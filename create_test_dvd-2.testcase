@@ -31,6 +31,7 @@ job install name xdelta
 job install name kate
 
 job lock name gtk2-branding-upstream
+job lock name gdm-branding-upstream
 job lock name readline-doc
 job lock name libgcc_s1-32bit
 
