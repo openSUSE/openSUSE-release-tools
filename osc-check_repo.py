@@ -56,125 +56,6 @@ def _check_repo_find_submit_request(self, opts, project, package):
     return None
 
 
-def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
-    xml = self.checkrepo.build(prj, repo, arch, pkg)
-    if xml:
-        root = ET.fromstring(xml)
-        for binary in root.findall('binary'):
-            # if there are binaries, we're out
-            return False
-    return True
-
-
-def _check_repo_buildsuccess(self, request, opts):
-    root_xml = self.checkrepo.last_build_success(request.src_project, request.tgt_project, request.src_package, request.srcmd5)
-    root = ET.fromstring(root_xml)
-    if not root:
-        return False
-    if 'code' in root.attrib:
-        print ET.tostring(root)
-        return False
-
-    result = False
-    request.goodrepos = []
-    missings = {}
-    alldisabled = True
-    foundbuilding = None
-    foundfailed = None
-
-    tocheckrepos = []
-    for repo in root.findall('repository'):
-        archs = [a.attrib['arch'] for a in repo.findall('arch')]
-        foundarchs = len([a for a in archs if a in ('i586', 'x86_64')])
-        if foundarchs == 2:
-            tocheckrepos.append(repo)
-
-    if not tocheckrepos:
-        msg = 'Missing i586 and x86_64 in the repo list'
-        print msg
-        self.checkrepo.change_review_state(request.request_id, 'new', message=msg)
-        # Next line not needed, but for documentation
-        request.updated = True
-        return False
-
-    for repo in tocheckrepos:
-        isgood = True
-        founddisabled = False
-        r_foundbuilding = None
-        r_foundfailed = None
-        r_missings = {}
-        for arch in repo.findall('arch'):
-            if arch.attrib['arch'] not in ('i586', 'x86_64'):
-                continue
-            if 'missing' in arch.attrib:
-                for pkg in arch.attrib['missing'].split(','):
-                    if not self._check_repo_avoid_wrong_friends(request.src_project, repo.attrib['name'], arch.attrib['arch'], pkg, opts):
-                        missings[pkg] = 1
-            if arch.attrib['result'] not in ('succeeded', 'excluded'):
-                isgood = False
-            if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
-                request.build_excluded = True
-            if arch.attrib['result'] == 'disabled':
-                founddisabled = True
-            if arch.attrib['result'] == 'failed' or arch.attrib['result'] == 'unknown':
-                # Sometimes an unknown status is equivalent to
-                # disabled, but we map it as failed to have a human
-                # check (no autoreject)
-                r_foundfailed = repo.attrib['name']
-            if arch.attrib['result'] == 'building':
-                r_foundbuilding = repo.attrib['name']
-            if arch.attrib['result'] == 'outdated':
-                msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % request.src_package
-                print 'DECLINED', msg
-                self.checkrepo.change_review_state(request.request_id, 'declined', message=msg)
-                # Next line is not needed, but for documentation
-                request.updated = True
-                return False
-
-        r_missings = r_missings.keys()
-        for pkg in r_missings:
-            missings[pkg] = 1
-        if not founddisabled:
-            alldisabled = False
-        if isgood:
-            request.goodrepos.append(repo.attrib['name'])
-            result = True
-        if r_foundbuilding:
-            foundbuilding = r_foundbuilding
-        if r_foundfailed:
-            foundfailed = r_foundfailed
-
-    request.missings = sorted(missings)
-
-    if result:
-        return True
-
-    if alldisabled:
-        msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
-        print 'DECLINED', msg
-        self.checkrepo.change_review_state(request.request_id, 'declined', message=msg)
-        # Next line not needed, but for documentation
-        request.updated = True
-        return False
-    if foundbuilding:
-        msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
-        print msg
-        self.checkrepo.change_review_state(request.request_id, 'new', message=msg)
-        # Next line not needed, but for documentation
-        request.updated = True
-        return False
-    if foundfailed:
-        msg = '%s failed to build in repository %s - not accepting' % (request.src_package, foundfailed)
-        # failures might be temporary, so don't autoreject but wait for a human to check
-        print msg
-        self.checkrepo.change_review_state(request.request_id, 'new', message=msg)
-        # Next line not needed, but for documentation
-        request.updated = True
-        return False
-
-    return True
-
-
 def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
     url = makeurl(opts.apiurl, ['build', prj, repo, arch, pkg])
     files = []
@@ -209,6 +90,7 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
         cur = os.path.getmtime(target)
         if cur > mtime:
             return
+
     get_binary_file(apiurl, prj, repo, arch, file, package=package, target_filename=target)
 
 
@@ -291,7 +173,8 @@ def _get_buildinfo(self, opts, prj, repo, arch, pkg):
 
 def _check_repo_group(self, id_, requests, opts):
     print '\nCheck group', requests
-    if not all(self._check_repo_buildsuccess(r, opts) for r in requests):
+
+    if not all(self.checkrepo.is_buildsuccess(r) for r in requests):
         return
 
     # all succeeded
@@ -322,7 +205,7 @@ def _check_repo_group(self, id_, requests, opts):
             continue
         # we need to call it to fetch the good repos to download
         # but the return value is of no interest right now
-        self._check_repo_buildsuccess(rq, opts)
+        self.checkrepo.is_buildsuccess(rq)
         i = self._check_repo_download(rq, opts)
         if rq.error:
             print 'ERROR (ALREADY ACEPTED?):', rq.error
@@ -435,6 +318,7 @@ def _check_repo_group(self, id_, requests, opts):
             p.updated = True
             updated[rq.request_id] = 1
         return
+
     for rq in requests:
         if updated.get(rq.request_id, False) or rq.updated:
             continue
@@ -506,11 +390,27 @@ def do_check_repo(self, subcmd, opts, *args):
     # Order the packs before grouping
     requests = sorted(requests, key=lambda p: p.request_id, reverse=True)
 
+    # Group the requests into staging projects (or alone if is an
+    # isolated request)
+    #
+    # For example:
+    # {
+    #     'openSUSE:Factory:Staging:J': [235851, 235753],
+    #     235856: [235856],
+    # }
+    #
+    # * The list of requests is not the full list of requests in this
+    #   group / staging project, but only the ones listed as a
+    #   paramenter.
+    #
+    # * The full list of requests can be found in
+    #   self.checkrepo.groups['openSUSE:Factory:Staging:J']
+    #
     groups = {}
     for request in requests:
-        a = groups.get(request.group, [])
-        a.append(request)
-        groups[request.group] = a
+        rqs = groups.get(request.group, [])
+        rqs.append(request)
+        groups[request.group] = rqs
 
     # Mirror the packages locally in the CACHEDIR
     plugin = '~/.osc-plugins/osc-check_repo.py'
