@@ -32,7 +32,7 @@ class TestAccept(unittest.TestCase):
 
         # Accept staging C (containing apparmor and mariadb)
         with mock.patch('oscs.StagingAPI.find_openqa_state', return_value='Nothing'):
-          self.assertEqual(True, AcceptCommand(self.api).perform(staging_c))
+            self.assertEqual(True, AcceptCommand(self.api).perform(staging_c))
 
         # Comments are cleared up
         accepted_comments = c_api.get_comments(project_name=staging_c)
