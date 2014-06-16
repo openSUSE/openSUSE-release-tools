@@ -36,70 +36,6 @@ from osclib.memoize import CACHEDIR
 DOWNLOADS = os.path.expanduser('~/co/downloads')
 
 
-def get_project_repos(apiurl, src_project, tgt_project, src_package, rev):
-    """Read the repositories of the project from _meta."""
-    # XXX TODO - Shitty logic here. A better proposal is refactorize
-    # _check_repo_buildsuccess.
-    repos = []
-    url = makeurl(apiurl,
-                  ['build', src_project,
-                   '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s' % (
-                       quote_plus(src_package),
-                       quote_plus(tgt_project),
-                       rev)])
-    try:
-        root = ET.parse(http_GET(url)).getroot()
-        for element in root.findall('repository'):
-            archs = [(e.get('arch'), e.get('result')) for e in element.findall('arch')]
-            repos.append((element.get('name'), archs))
-    except urllib2.HTTPError, e:
-        print('ERROR in URL %s [%s]' % (url, e))
-    return repos
-
-
-def old_md5(apiurl, src_project, tgt_project, src_package, rev):
-    """Recollect old MD5 for a package."""
-    # XXX TODO - instead of fixing the limit, use endtime to make
-    # sure that we have the correct time frame.
-    limit = 20
-    query = {
-        'package': src_package,
-        # 'code': 'succeeded',
-        'limit': limit,
-    }
-
-    repositories = get_project_repos(apiurl, src_project, tgt_project,
-                                     src_package, rev)
-
-    srcmd5_list = []
-    for repository, archs in repositories:
-        for arch, status in archs:
-            if srcmd5_list:
-                break
-            if status not in ('succeeded', 'outdated'):
-                continue
-
-            url = makeurl(apiurl, ['build', src_project, repository, arch, '_jobhistory'],
-                          query=query)
-            try:
-                root = ET.parse(http_GET(url)).getroot()
-                srcmd5_list = [e.get('srcmd5') for e in root.findall('jobhist')]
-            except urllib2.HTTPError, e:
-                print('ERROR in URL %s [%s]' % (url, e))
-
-    md5_set = set()
-    for srcmd5 in srcmd5_list:
-        query = {
-            'expand': 1,
-            'rev': srcmd5,
-        }
-        url = makeurl(apiurl, ['source', src_project, src_package], query=query)
-        root = ET.parse(http_GET(url)).getroot()
-        md5_set.add(root.find('linkinfo').get('srcmd5'))
-
-    return md5_set
-
-
 def _check_repo_find_submit_request(self, opts, project, package):
     xpath = "(action/target/@project='%s' and "\
             "action/target/@package='%s' and "\
@@ -130,112 +66,8 @@ def _check_repo_avoid_wrong_friends(self, prj, repo, arch, pkg, opts):
     return True
 
 
-def _check_repo_one_request(self, rq, opts):
-
-    class CheckRepoPackage:
-        def __repr__(self):
-            return '[%d:%s/%s]' % (int(self.request), self.sproject, self.spackage)
-
-        def __init__(self):
-            self.updated = False
-            self.error = None
-            self.build_excluded = False
-
-    id_ = int(rq.get('id'))
-    actions = rq.findall('action')
-    if len(actions) > 1:
-        msg = 'Only one action per request is supported'
-        print('DECLINED', msg)
-        self.checkrepo.change_review_state(id_, 'declined', message=msg)
-        return []
-
-    act = actions[0]
-    type_ = act.get('type')
-    if type_ != 'submit':
-        msg = 'Unchecked request type %s' % type_
-        print 'ACCEPTED', msg
-        self.checkrepo.change_review_state(id_, 'accepted', message=msg)
-        return []
-
-    pkg = act.find('source').get('package')
-    prj = act.find('source').get('project')
-    rev = act.find('source').get('rev')
-    tprj = act.find('target').get('project')
-    tpkg = act.find('target').get('package')
-
-    subm_id = 'SUBMIT(%d):' % id_
-    print '%s %s/%s -> %s/%s' % (subm_id, prj, pkg, tprj, tpkg)
-
-    packs = []
-    p = CheckRepoPackage()
-    p.spackage = pkg
-    p.sproject = prj
-    p.tpackage = tpkg
-    p.tproject = tprj
-    p.group = opts.grouped.get(id_, id_)
-    p.request = id_
-
-    # Get source information about the SR:
-    #   - Source MD5
-    #   - Entries (.tar.gz, .changes, .spec ...) and MD5
-    try:
-        url = makeurl(opts.apiurl, ['source', prj, pkg, '?expand=1&rev=%s' % rev])
-        root = ET.parse(http_GET(url)).getroot()
-    except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
-        return []
-    p.rev = root.attrib['srcmd5']
-
-    # Recover the .spec files
-    specs = [en.attrib['name'][:-5] for en in root.findall('entry')
-             if en.attrib['name'].endswith('.spec')]
-
-    # source checker validated it exists
-    specs.remove(tpkg)
-    packs.append(p)
-    # Validate the rest of the spec files
-    for spec in specs:
-        lprj, lpkg, lmd5 = '', '', ''
-        try:
-            url = makeurl(opts.apiurl, ['source', prj, spec, '?expand=1'])
-            root = ET.parse(http_GET(url)).getroot()
-            link = root.find('linkinfo')
-            if link is not None:
-                lprj = link.attrib.get('project', '')
-                lpkg = link.attrib.get('package', '')
-                lmd5 = link.attrib['srcmd5']
-        except urllib2.HTTPError:
-            pass  # leave lprj
-
-        if lprj != prj or lpkg != pkg and not p.updated:
-            msg = '%s/%s should _link to %s/%s' % (prj, spec, prj, pkg)
-            print 'DECLINED', msg
-            self.checkrepo.change_review_state(id_, 'declined', message=msg)
-            p.updated = True
-
-        if lmd5 != p.rev and not p.updated:
-            if lmd5 not in old_md5(opts.apiurl, lprj, p.tproject, spec, p.rev):
-                msg = '%s/%s is a link but has a different md5sum than %s?' % (prj, spec, pkg)
-            else:
-                msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
-            print '[DECLINED] CHECK MANUALLY', msg
-            # self.checkrepo.change_review_state(id_, 'declined', message=msg)
-            p.updated = True
-
-        sp = CheckRepoPackage()
-        sp.spackage = spec
-        sp.sproject = prj
-        sp.tpackage = spec
-        sp.tproject = tprj
-        sp.group = p.group
-        sp.request = id_
-        packs.append(sp)
-        sp.rev = root.attrib['srcmd5']
-    return packs
-
-
-def _check_repo_buildsuccess(self, p, opts):
-    root_xml = self.checkrepo.last_build_success(p.sproject, p.tproject, p.spackage, p.rev)
+def _check_repo_buildsuccess(self, request, opts):
+    root_xml = self.checkrepo.last_build_success(request.src_project, request.tgt_project, request.src_package, request.srcmd5)
     root = ET.fromstring(root_xml)
     if not root:
         return False
@@ -244,7 +76,7 @@ def _check_repo_buildsuccess(self, p, opts):
         return False
 
     result = False
-    p.goodrepos = []
+    request.goodrepos = []
     missings = {}
     alldisabled = True
     foundbuilding = None
@@ -260,9 +92,9 @@ def _check_repo_buildsuccess(self, p, opts):
     if not tocheckrepos:
         msg = 'Missing i586 and x86_64 in the repo list'
         print msg
-        self.checkrepo.change_review_state(p.request, 'new', message=msg)
+        self.checkrepo.change_review_state(request.request_id, 'new', message=msg)
         # Next line not needed, but for documentation
-        p.updated = True
+        request.updated = True
         return False
 
     for repo in tocheckrepos:
@@ -276,12 +108,12 @@ def _check_repo_buildsuccess(self, p, opts):
                 continue
             if 'missing' in arch.attrib:
                 for pkg in arch.attrib['missing'].split(','):
-                    if not self._check_repo_avoid_wrong_friends(p.sproject, repo.attrib['name'], arch.attrib['arch'], pkg, opts):
+                    if not self._check_repo_avoid_wrong_friends(request.src_project, repo.attrib['name'], arch.attrib['arch'], pkg, opts):
                         missings[pkg] = 1
-            if not (arch.attrib['result'] in ['succeeded', 'excluded']):
+            if arch.attrib['result'] not in ('succeeded', 'excluded'):
                 isgood = False
             if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
-                p.build_excluded = True
+                request.build_excluded = True
             if arch.attrib['result'] == 'disabled':
                 founddisabled = True
             if arch.attrib['result'] == 'failed' or arch.attrib['result'] == 'unknown':
@@ -292,11 +124,11 @@ def _check_repo_buildsuccess(self, p, opts):
             if arch.attrib['result'] == 'building':
                 r_foundbuilding = repo.attrib['name']
             if arch.attrib['result'] == 'outdated':
-                msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % p.spackage
+                msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % request.src_package
                 print 'DECLINED', msg
-                self.checkrepo.change_review_state(p.request, 'declined', message=msg)
+                self.checkrepo.change_review_state(request.request_id, 'declined', message=msg)
                 # Next line is not needed, but for documentation
-                p.updated = True
+                request.updated = True
                 return False
 
         r_missings = r_missings.keys()
@@ -305,39 +137,39 @@ def _check_repo_buildsuccess(self, p, opts):
         if not founddisabled:
             alldisabled = False
         if isgood:
-            p.goodrepos.append(repo.attrib['name'])
+            request.goodrepos.append(repo.attrib['name'])
             result = True
         if r_foundbuilding:
             foundbuilding = r_foundbuilding
         if r_foundfailed:
             foundfailed = r_foundfailed
 
-    p.missings = sorted(missings)
+    request.missings = sorted(missings)
 
     if result:
         return True
 
     if alldisabled:
-        msg = '%s is disabled or does not build against factory. Please fix and resubmit' % p.spackage
+        msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
         print 'DECLINED', msg
-        self.checkrepo.change_review_state(p.request, 'declined', message=msg)
+        self.checkrepo.change_review_state(request.request_id, 'declined', message=msg)
         # Next line not needed, but for documentation
-        p.updated = True
+        request.updated = True
         return False
     if foundbuilding:
-        msg = '%s is still building for repository %s' % (p.spackage, foundbuilding)
+        msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
         print msg
-        self.checkrepo.change_review_state(p.request, 'new', message=msg)
+        self.checkrepo.change_review_state(request.request_id, 'new', message=msg)
         # Next line not needed, but for documentation
-        p.updated = True
+        request.updated = True
         return False
     if foundfailed:
-        msg = '%s failed to build in repository %s - not accepting' % (p.spackage, foundfailed)
+        msg = '%s failed to build in repository %s - not accepting' % (request.src_package, foundfailed)
         # failures might be temporary, so don't autoreject but wait for a human to check
         print msg
-        self.checkrepo.change_review_state(p.request, 'new', message=msg)
+        self.checkrepo.change_review_state(request.request_id, 'new', message=msg)
         # Next line not needed, but for documentation
-        p.updated = True
+        request.updated = True
         return False
 
     return True
@@ -380,9 +212,9 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
     get_binary_file(apiurl, prj, repo, arch, file, package=package, target_filename=target)
 
 
-def _get_verifymd5(self, p, rev):
+def _get_verifymd5(self, request, rev):
     try:
-        url = makeurl(self.get_api_url(), ['source', p.sproject, p.spackage, '?view=info&rev=%s' % rev])
+        url = makeurl(self.get_api_url(), ['source', request.src_project, request.src_package, '?view=info&rev=%s' % rev])
         root = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError, e:
         print 'ERROR in URL %s [%s]' % (url, e)
@@ -390,29 +222,29 @@ def _get_verifymd5(self, p, rev):
     return root.attrib['verifymd5']
 
 
-def _checker_compare_disturl(self, disturl, p):
+def _checker_compare_disturl(self, disturl, request):
     distmd5 = os.path.basename(disturl).split('-')[0]
-    if distmd5 == p.rev:
+    if distmd5 == request.srcmd5:
         return True
 
-    vrev1 = self._get_verifymd5(p, p.rev)
-    vrev2 = self._get_verifymd5(p, distmd5)
+    vrev1 = self._get_verifymd5(request, request.srcmd5)
+    vrev2 = self._get_verifymd5(request, distmd5)
     if vrev1 == vrev2:
         return True
     print 'ERROR Revision missmatch: %s, %s' % (vrev1, vrev2)
     return False
 
 
-def _check_repo_download(self, p, opts):
-    p.downloads = dict()
+def _check_repo_download(self, request, opts):
+    request.downloads = dict()
 
-    if p.build_excluded:
+    if request.build_excluded:
         return set()
 
-    for repo in p.goodrepos:
+    for repo in request.goodrepos:
         # we can assume x86_64 is there
         todownload = []
-        for fn in self._check_repo_repo_list(p.sproject, repo, 'x86_64', p.spackage, opts):
+        for fn in self._check_repo_repo_list(request.src_project, repo, 'x86_64', request.src_package, opts):
             todownload.append(('x86_64', fn[0], fn[3]))
 
         # now fetch -32bit packs
@@ -420,31 +252,31 @@ def _check_repo_download(self, p, opts):
         #    if fn[2] == 'x86_64':
         #        todownload.append(('i586', fn[0], fn[3]))
 
-        p.downloads[repo] = []
+        request.downloads[repo] = []
         for arch, fn, mt in todownload:
-            repodir = os.path.join(DOWNLOADS, p.spackage, repo)
+            repodir = os.path.join(DOWNLOADS, request.src_package, repo)
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
-            self._check_repo_get_binary(opts.apiurl, p.sproject, repo,
-                                        arch, p.spackage, fn, t, mt)
-            p.downloads[repo].append(t)
+            self._check_repo_get_binary(opts.apiurl, request.src_project, repo,
+                                        arch, request.src_package, fn, t, mt)
+            request.downloads[repo].append(t)
             if fn.endswith('.rpm'):
                 pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t],
                                        stdout=subprocess.PIPE, close_fds=True)
                 os.waitpid(pid.pid, 0)[1]
                 disturl = pid.stdout.readlines()[0]
 
-                if not self._checker_compare_disturl(disturl, p):
-                    p.error = '[%s] %s does not match revision %s' % (p, disturl, p.rev)
+                if not self._checker_compare_disturl(disturl, request):
+                    request.error = '[%s] %s does not match revision %s' % (request, disturl, request.srcmd5)
                     return set()
 
     toignore = set()
-    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'x86_64', p.tpackage, opts, ignore=True):
+    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'x86_64', request.tgt_package, opts, ignore=True):
         toignore.add(fn[1])
 
     # now fetch -32bit pack list
-    for fn in self._check_repo_repo_list(p.tproject, 'standard', 'i586', p.tpackage, opts, ignore=True):
+    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'i586', request.tgt_package, opts, ignore=True):
         if fn[2] == 'x86_64':
             toignore.add(fn[1])
     return toignore
@@ -457,82 +289,81 @@ def _get_buildinfo(self, opts, prj, repo, arch, pkg):
     return [e.attrib['name'] for e in root.findall('bdep')]
 
 
-def _check_repo_group(self, id_, reqs, opts):
-    print '\nCheck group', reqs
-    if not all(self._check_repo_buildsuccess(r, opts) for r in reqs):
+def _check_repo_group(self, id_, requests, opts):
+    print '\nCheck group', requests
+    if not all(self._check_repo_buildsuccess(r, opts) for r in requests):
         return
 
     # all succeeded
     toignore = set()
-    destdir = os.path.expanduser('~/co/%s' % str(reqs[0].group))
+    destdir = os.path.expanduser('~/co/%s' % str(requests[0].group))
     fetched = dict((r, False) for r in opts.groups.get(id_, []))
     packs = []
 
-    for p in reqs:
-        i = self._check_repo_download(p, opts)
-        if p.error:
-            if not p.updated:
-                print p.error
-                self.checkrepo.change_review_state(p.request, 'new', message=p.error)
-                p.updated = True
+    for request in requests:
+        i = self._check_repo_download(request, opts)
+        if request.error:
+            if not request.updated:
+                print request.error
+                self.checkrepo.change_review_state(request.request_id, 'new', message=request.error)
+                request.updated = True
             else:
-                print p.error
+                print request.error
             return
         toignore.update(i)
-        fetched[p.request] = True
-        packs.append(p)
+        fetched[request.request_id] = True
+        packs.append(request)
 
     for request_id, f in fetched.items():
         if not f:
-            request = self.checkrepo.get_request(request_id)
-            packs.extend(self._check_repo_one_request(request, opts))
-    for p in packs:
-        if fetched[p.request]:
+            packs.extend(self.checkrepo.check_specs(request_id=request_id))
+    for rq in packs:
+        if fetched[rq.request_id]:
             continue
         # we need to call it to fetch the good repos to download
         # but the return value is of no interest right now
-        self._check_repo_buildsuccess(p, opts)
-        i = self._check_repo_download(p, opts)
-        if p.error:
-            print 'ERROR (ALREADY ACEPTED?):', p.error
-            p.updated = True
+        self._check_repo_buildsuccess(rq, opts)
+        i = self._check_repo_download(rq, opts)
+        if rq.error:
+            print 'ERROR (ALREADY ACEPTED?):', rq.error
+            rq.updated = True
         toignore.update(i)
 
     # Detect cycles into the current Factory graph after we update the
     # links with the current list of request.
     cycle_detector = CycleDetector(opts.apiurl)
-    for (cycle, new_edges) in cycle_detector.cycles(packages=packs):
+    for (cycle, new_edges) in cycle_detector.cycles(requests=packs):
         print
         print 'New cycle detected:', sorted(cycle)
         print 'New edges:', new_edges
         # Mark all packages as updated, to avoid to be accepted
-        for p in reqs:
-            p.updated = True
+        for request in requests:
+            request.updated = True
 
-    for p in reqs:
+    for rq in requests:
         smissing = []
-        for package in p.missings:
+        for package in rq.missings:
             alreadyin = False
             # print package, packs
             for t in packs:
-                if package == t.tpackage:
+                if package == t.tgt_package:
                     alreadyin = True
             if alreadyin:
                 continue
             # print package, packs, downloads, toignore
-            request = self._check_repo_find_submit_request(opts, p.tproject, package)
+            request = self._check_repo_find_submit_request(opts, rq.tgt_project, package)
             if request:
-                greqs = opts.groups.get(p.group, [])
+                greqs = opts.groups.get(rq.group, [])
                 if request in greqs:
                     continue
                 package = '%s(rq%s)' % (package, request)
             smissing.append(package)
         if len(smissing):
-            msg = 'Please make sure to wait before these depencencies are in %s: %s' % (p.tproject, ', '.join(smissing))
-            if not p.updated:
-                self.checkrepo.change_review_state(p.request, 'new', message=msg)
+            msg = 'Please make sure to wait before these depencencies are in %s: %s' % (rq.tgt_project, ', '.join(smissing))
+            if not rq.updated:
+                self.checkrepo.change_review_state(rq.request_id, 'new', message=msg)
                 print msg
-                p.updated = True
+                rq.updated = True
             else:
                 print msg
             return
@@ -552,12 +383,12 @@ def _check_repo_group(self, id_, reqs, opts):
         # TODO: for groups we just pick the first repo - we'd need to create a smart
         # matrix
         dirstolink = []
-        for p in packs:
-            keys = p.downloads.keys()
+        for rq in packs:
+            keys = rq.downloads.keys()
             if not keys:
                 continue
             r = keys[0]
-            dirstolink.append((p, r, p.downloads[r]))
+            dirstolink.append((rq, r, rq.downloads[r]))
         reposets.append(dirstolink)
 
     if len(reposets) == 0:
@@ -568,15 +399,15 @@ def _check_repo_group(self, id_, reqs, opts):
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
         os.makedirs(destdir)
-        for p, repo, downloads in dirstolink:
-            dir = destdir + '/%s' % p.tpackage
+        for rq, repo, downloads in dirstolink:
+            dir = destdir + '/%s' % rq.tgt_package
             for d in downloads:
                 if not os.path.exists(dir):
                     os.mkdir(dir)
                 os.symlink(d, os.path.join(dir, os.path.basename(d)))
 
-        repochecker = os.path.join(self.repocheckerdir, 'repo-checker.pl')
-        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repodir, params_file.name)
+        repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
+        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
         # print civs
         # continue
         # exit(1)
@@ -594,25 +425,36 @@ def _check_repo_group(self, id_, reqs, opts):
     updated = {}
 
     if ret:
-        # print stdoutdata, set(map(lambda x: x.request, reqs))
+        # print stdoutdata, set(map(lambda x: x.request_id, reqs))
 
-        for p in reqs:
-            if updated.get(p.request, False) or p.updated:
+        for rq in requests:
+            if updated.get(rq.request_id, False) or rq.updated:
                 continue
             print stdoutdata
-            self.checkrepo.change_review_state(p.request, 'new', message=stdoutdata)
+            self.checkrepo.change_review_state(rq.request_id, 'new', message=stdoutdata)
             p.updated = True
-            updated[p.request] = 1
+            updated[rq.request_id] = 1
         return
-    for p in reqs:
-        if updated.get(p.request, False) or p.updated:
+    for rq in requests:
+        if updated.get(rq.request_id, False) or rq.updated:
             continue
-        msg = 'Builds for repo %s' % p.goodrepo
+        msg = 'Builds for repo %s' % rq.goodrepo
         print 'ACCEPTED', msg
-        self.checkrepo.change_review_state(p.request, 'accepted', message=msg)
-        p.updated = True
-        updated[p.request] = 1
+        self.checkrepo.change_review_state(rq.request_id, 'accepted', message=msg)
+        rq.updated = True
+        updated[rq.request_id] = 1
     shutil.rmtree(destdir)
+
+
+def mirror_full(plugin_dir, repo_dir):
+    """Call bs_mirrorfull script to mirror packages."""
+    url = 'https://build.opensuse.org/build/%s/%s/x86_64' % ('openSUSE:Factory', 'standard')
+
+    if not os.path.exists(repo_dir):
+        os.mkdir(repo_dir)
+
+    script = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug %s %s' % (plugin_dir, url, repo_dir)
+    os.system(script)
 
 
 @cmdln.alias('check', 'cr')
@@ -649,35 +491,32 @@ def do_check_repo(self, subcmd, opts, *args):
 
     ids = [arg for arg in args if arg.isdigit()]
 
-    packs = []
+    # Store requests' package information and .spec files: store all
+    # source containers involved.
+    requests = []
     if not ids:
         # Return a list, we flat here with .extend()
         for request in self.checkrepo.pending_requests():
-            packs.extend(self._check_repo_one_request(request, opts))
+            requests.extend(self.checkrepo.check_specs(request=request))
     else:
         # We have a list, use them.
         for request_id in ids:
-            request = self.checkrepo.get_request(request_id)
-            packs.extend(self._check_repo_one_request(request, opts))
+            requests.extend(self.checkrepo.check_specs(request_id=request_id))
 
     # Order the packs before grouping
-    packs = sorted(packs, key=lambda p: p.request, reverse=True)
+    requests = sorted(requests, key=lambda p: p.request_id, reverse=True)
 
     groups = {}
-    for p in packs:
-        a = groups.get(p.group, [])
-        a.append(p)
-        groups[p.group] = a
+    for request in requests:
+        a = groups.get(request.group, [])
+        a.append(request)
+        groups[request.group] = a
 
-    self.repocheckerdir = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_repo.py')))
-    self.repodir = "%s/repo-%s-%s-x86_64" % (CACHEDIR, 'openSUSE:Factory', 'standard')
-    if not os.path.exists(self.repodir):
-        os.mkdir(self.repodir)
-    civs = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug https://build.opensuse.org/build/%s/%s/x86_64 %s' % (
-        self.repocheckerdir,
-        'openSUSE:Factory',
-        'standard', self.repodir)
-    os.system(civs)
+    # Mirror the packages locally in the CACHEDIR
+    plugin = '~/.osc-plugins/osc-check_repo.py'
+    self.plugin_dir = os.path.dirname(os.path.realpath(os.path.expanduser(plugin)))
+    self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:Factory', 'standard')
+    mirror_full(self.plugin_dir, self.repo_dir)
 
     # Sort the groups, from high to low. This put first the stating
     # projects also

@@ -130,11 +130,15 @@ class StagingAPI(object):
 
         url = self.makeurl(['source', project, pkgname])
         content = http_GET(url)
-        root = ET.parse(content).getroot().find('linkinfo')
-        package_info['srcmd5'] = root.attrib['srcmd5']
-        package_info['rev'] = root.attrib['rev']
-        package_info['project'] = root.attrib['project']
-        package_info['package'] = root.attrib['package']
+        root = ET.parse(content).getroot()
+        package_info['dir_srcmd5'] = root.attrib['srcmd5']
+
+        linkinfo = root.find('linkinfo')
+        package_info['srcmd5'] = linkinfo.attrib['srcmd5']
+        package_info['rev'] = linkinfo.attrib.get('rev', None)
+        package_info['project'] = linkinfo.attrib['project']
+        package_info['package'] = linkinfo.attrib['package']
+
         return package_info
 
     def move_between_project(self, source_project, req_id,
