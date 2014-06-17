@@ -258,6 +258,9 @@ def tt_totest_is_publishing(self):
     url = self.api.makeurl(['source', 'openSUSE:Factory:ToTest', '_meta'])
     f = self.api.retried_GET(url)
     root = ET.parse(f).getroot()
+    if not root.find('publish'): # default true
+        return True
+
     for flag in root.find('publish'):
         if flag.get('repository', None) or flag.get('arch', None):
             continue
