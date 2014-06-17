@@ -216,7 +216,13 @@ class OBS(object):
                 'rev': '1',
                 'vrev': '1',
                 'name': 'wine',
-                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+                'srcmd5': 'de9a9f5e3bedb01980465f3be3d236cb',
+            },
+            'home:Admin/puppet': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'puppet',
+                'srcmd5': 'de8a9f5e3bedb01980465f3be3d236cb',
             },
             'openSUSE:Factory/gcc': {
                 'rev': '1',
@@ -478,7 +484,7 @@ class OBS(object):
 
         return response
 
-    @GET(re.compile(r'/source/home:Admin/wine'))
+    @GET(re.compile(r'/source/home:Admin/\w+'))
     def source_project(self, request, uri, headers):
         """Return information of a source package."""
         package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
@@ -491,9 +497,14 @@ class OBS(object):
                 print uri, e
 
         if DEBUG:
-            print 'SOURCE HOME:ADMIN WINE', uri, response
+            print 'SOURCE HOME:ADMIN', package, uri, response
 
         return response
+
+    @POST(re.compile(r'/source/openSUSE:Factory:Rings:1-MinimalX/\w+'))
+    def show_wine_link(self, request, uri, headers):
+        # TODO: only useful answer if cmd=showlinked
+        return (200, headers, '<collection/>')
 
     @GET('/source/openSUSE:Factory:Staging:A/wine')
     def source_link(self, request, uri, headers):
@@ -511,7 +522,7 @@ class OBS(object):
 
         return response
 
-    @PUT('/source/openSUSE:Factory:Staging:A/wine/_link')
+    @PUT(re.compile(r'/source/openSUSE:Factory:Staging:[AB]/\w+/_link'))
     def put_source_link(self, request, uri, headers):
         """Create wine link in staging project A."""
         project_package = re.search(r'/source/([\w:]+/\w+)/_link', uri).group(1)

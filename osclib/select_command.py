@@ -111,6 +111,7 @@ class SelectCommand(object):
         # If the project is not frozen enough yet freeze it
         if not self.api.prj_frozen_enough(target_project):
             print('Freeze the prj first')
+            return False
             # FreezeCommand(self.api).perform(target_project)
         self.target_project = target_project
 
