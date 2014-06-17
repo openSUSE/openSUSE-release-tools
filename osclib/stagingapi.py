@@ -848,6 +848,39 @@ class StagingAPI(object):
 
         return project
 
+    def get_sub_packages(self, pkg):
+        """
+        Returns a list of packages that need to be linked into rings too. A package is actually
+        a tuple of project and package name
+        """
+        ret = []
+        project = self.ring_packages.get(pkg)
+        if not project:
+            return ret
+        url = self.makeurl(['source', project, pkg],
+                           {'cmd': 'showlinked'})
+
+        # showlinked is a POST for rather bizzare reasons
+        f = http_POST(url)
+        root = ET.parse(f).getroot()
+
+        for pkg in root.findall('package'):
+            ret.append((pkg.get('project'), pkg.get('name')))
+
+        return ret
+
+    def create_and_wipe_package(self, project, package):
+        """
+        Helper function for delete requests
+        """
+        # create build disabled package
+        self.create_package_container(project, package, disable_build=True)
+
+        # now trigger wipebinaries to emulate a delete
+        url = self.makeurl(['build', project],
+                           {'cmd': 'wipe', 'package': package})
+        http_POST(url)
+
     def delete_to_prj(self, act, project):
         """
         Hides Package in project
@@ -857,13 +890,11 @@ class StagingAPI(object):
 
         tar_pkg = act.tgt_package
         project = self.map_ring_package_to_subject(project, tar_pkg)
+        self.create_and_wipe_package(project, tar_pkg)
 
-        # create build disabled package
-        self.create_package_container(project, tar_pkg, disable_build=True)
-        # now trigger wipebinaries to emulate a delete
-        url = self.makeurl(['build', project],
-                           {'cmd': 'wipe', 'package': tar_pkg})
-        http_POST(url)
+        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg):
+            sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            self.create_and_wipe_package(sub_prj, sub_pkg)
 
         return tar_pkg
 
@@ -888,10 +919,6 @@ class StagingAPI(object):
         self.create_package_container(project, tar_pkg,
                                       disable_build=disable_build)
 
-        # if it's disabled anyway, it doesn't make a difference if we link or not
-        if disable_build:
-            return tar_pkg
-
         # expand the revision to a md5
         url = self.makeurl(['source', src_prj, src_pkg],
                            {'rev': src_rev, 'expand': 1})
@@ -908,6 +935,17 @@ class StagingAPI(object):
             root.attrib['vrev'] = src_vrev
         url = self.makeurl(['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
+
+        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg):
+            sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            if sub_prj == project: # skip inner-project links
+                continue
+            self.create_package_container(sub_prj, sub_pkg)
+
+            root = ET.Element('link', package=tar_pkg, project=project)
+            url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
+            http_PUT(url, data=ET.tostring(root))
+
         return tar_pkg
 
     def prj_from_letter(self, letter):
