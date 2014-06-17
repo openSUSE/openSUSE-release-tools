@@ -485,7 +485,7 @@ class CheckRepo(object):
         if foundbuilding:
             msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
             print msg
-            self.checkrepo.change_review_state(request.request_id, 'new', message=msg)
+            self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation
             request.updated = True
             return False
