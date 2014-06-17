@@ -31,7 +31,7 @@ class Request(object):
     def __init__(self, request_id=None, src_project=None,
                  src_package=None, tgt_project=None, tgt_package=None,
                  revision=None, srcmd5=None, group=None, goodrepos=None,
-                 element=None):
+                 missings=None, element=None):
 
         self.request_id = request_id
         self.src_project = src_project
@@ -42,6 +42,7 @@ class Request(object):
         self.srcmd5 = srcmd5
         self.group = group
         self.goodrepos = goodrepos if goodrepos else []
+        self.missings = missings if missings else []
 
         self.updated = False
         self.error = None
@@ -65,7 +66,8 @@ class Request(object):
         self.group = self.request_id
 
         # Assigned in is_buildsuccess
-        self.goodrepo = []
+        self.goodrepos = []
+        self.missings = []
 
     def __repr__(self):
         return 'SUBMIT(%s) %s/%s -> %s/%s' % (self.request_id,
