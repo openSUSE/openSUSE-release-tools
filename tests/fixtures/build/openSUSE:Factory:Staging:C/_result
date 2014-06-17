@@ -1,0 +1,10 @@
+<resultlist state="c7856c90c70c53fae88aacec964b80c0">
+  <result project="openSUSE:Factory:Staging:C" repository="standard" arch="x86_64" code="published" state="published">
+    <status package="apparmor" code="succeeded" />
+    <status package="mariadb" code="succeeded" />
+  </result>
+  <result project="openSUSE:Factory:Staging:C" repository="standard" arch="i585" code="unpublished" state="unpublished">
+    <status package="apparmor" code="succeeded" />
+    <status package="mariadb" code="succeeded" />
+  </result>
+</resultlist>
