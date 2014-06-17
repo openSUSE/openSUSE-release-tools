@@ -413,6 +413,7 @@ class CheckRepo(object):
             request.updated = True
             return False
 
+        result = False
         missings = {}
         alldisabled = True
         foundbuilding = None
