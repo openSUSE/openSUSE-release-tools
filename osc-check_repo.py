@@ -5,6 +5,8 @@
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc check_repo --help' to see the usage.
 
+from collections import defaultdict
+from collections import namedtuple
 import os
 import re
 import shutil
@@ -56,7 +58,7 @@ def _check_repo_find_submit_request(self, opts, project, package):
     return None
 
 
-def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
+def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
     url = makeurl(opts.apiurl, ['build', prj, repo, arch, pkg])
     files = []
     try:
@@ -79,8 +81,6 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts, ignore=False):
             files.append((fn, pname, result.group(4), mt))
     except urllib2.HTTPError:
         pass
-        # if not ignore:
-        #     print 'ERROR in URL %s [%s]' % (url, e)
     return files
 
 
@@ -117,49 +117,68 @@ def _checker_compare_disturl(self, disturl, request):
     return False
 
 
+def _download_and_check_disturl(self, request, todownload, opts):
+    for _project, _repo, arch, fn, mt in todownload:
+        repodir = os.path.join(DOWNLOADS, request.src_package, _repo)
+        if not os.path.exists(repodir):
+            os.makedirs(repodir)
+        t = os.path.join(repodir, fn)
+        self._check_repo_get_binary(opts.apiurl, _project, _repo,
+                                    arch, request.src_package, fn, t, mt)
+
+        request.downloads[_repo].append(t)
+        if fn.endswith('.rpm'):
+            pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t],
+                                   stdout=subprocess.PIPE, close_fds=True)
+            os.waitpid(pid.pid, 0)[1]
+            disturl = pid.stdout.readlines()[0]
+
+            if not self._checker_compare_disturl(disturl, request):
+                request.error = '[%s] %s does not match revision %s' % (request, disturl, request.srcmd5)
+
+
 def _check_repo_download(self, request, opts):
-    request.downloads = dict()
+    request.downloads = defaultdict(list)
 
     if request.build_excluded:
         return set()
 
+    ToDownload = namedtuple('ToDownload', ('project', 'repo', 'arch', 'package', 'size'))
+
     for repo in request.goodrepos:
         # we can assume x86_64 is there
-        todownload = []
-        for fn in self._check_repo_repo_list(request.src_project, repo, 'x86_64', request.src_package, opts):
-            todownload.append(('x86_64', fn[0], fn[3]))
+        todownload = [ToDownload(request.src_project, repo, 'x86_64', fn[0], fn[3])
+                      for fn in self._check_repo_repo_list(request.src_project,
+                                                           repo,
+                                                           'x86_64',
+                                                           request.src_package,
+                                                           opts)]
 
-        # now fetch -32bit packs
-        # for fn in self._check_repo_repo_list(p.sproject, repo, 'i586', p.spackage, opts):
-        #    if fn[2] == 'x86_64':
-        #        todownload.append(('i586', fn[0], fn[3]))
+        self._download_and_check_disturl(request, todownload, opts)
+        if request.error:
+            return set()
 
-        request.downloads[repo] = []
-        for arch, fn, mt in todownload:
-            repodir = os.path.join(DOWNLOADS, request.src_package, repo)
-            if not os.path.exists(repodir):
-                os.makedirs(repodir)
-            t = os.path.join(repodir, fn)
-            self._check_repo_get_binary(opts.apiurl, request.src_project, repo,
-                                        arch, request.src_package, fn, t, mt)
-            request.downloads[repo].append(t)
-            if fn.endswith('.rpm'):
-                pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t],
-                                       stdout=subprocess.PIPE, close_fds=True)
-                os.waitpid(pid.pid, 0)[1]
-                disturl = pid.stdout.readlines()[0]
+    if 'openSUSE:Factory:Staging:' in request.group:
+        todownload = [
+            ToDownload(request.group, 'standard', 'x86_64', fn[0], fn[3])
+            for fn in self._check_repo_repo_list(request.group,
+                                                 'standard',
+                                                 'x86_64',
+                                                 request.src_package,
+                                                 opts)]
 
-                if not self._checker_compare_disturl(disturl, request):
-                    request.error = '[%s] %s does not match revision %s' % (request, disturl, request.srcmd5)
-                    return set()
+        self._download_and_check_disturl(request, todownload, opts)
+        if request.error:
+            return set()
 
     toignore = set()
-    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'x86_64', request.tgt_package, opts, ignore=True):
-        toignore.add(fn[1])
+    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'x86_64', request.tgt_package, opts):
+        if fn[1]:
+            toignore.add(fn[1])
 
     # now fetch -32bit pack list
-    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'i586', request.tgt_package, opts, ignore=True):
-        if fn[2] == 'x86_64':
+    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'i586', request.tgt_package, opts):
+        if fn[1] and fn[2] == 'x86_64':
             toignore.add(fn[1])
     return toignore
 
@@ -177,7 +196,6 @@ def _check_repo_group(self, id_, requests, opts):
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests):
         return
 
-    # all succeeded
     toignore = set()
     destdir = os.path.expanduser('~/co/%s' % str(requests[0].group))
     fetched = dict((r, False) for r in opts.groups.get(id_, []))
@@ -197,9 +215,15 @@ def _check_repo_group(self, id_, requests, opts):
         fetched[request.request_id] = True
         packs.append(request)
 
-    for request_id, f in fetched.items():
-        if not f:
+    # Extend packs array with the packages and .spec files of the
+    # not-fetched requests.  The not fetched ones are the requests of
+    # the same group that are not listed as a paramater.
+    for request_id, is_fetched in fetched.items():
+        if not is_fetched:
             packs.extend(self.checkrepo.check_specs(request_id=request_id))
+
+    # Download the repos from the request of the same group not
+    # explicited in the command line.
     for rq in packs:
         if fetched[rq.request_id]:
             continue
@@ -256,29 +280,36 @@ def _check_repo_group(self, id_, requests, opts):
     params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
 
-    reposets = []
+    # If a package is in a Stagin Project, it will have in
+    # request.downloads an entry for 'standard' (the repository of a
+    # Staging Project) Also in this same field there will be another
+    # valid repository (probably openSUSE_Factory)
+    #
+    # We want to test with the Perl script the binaries of one of the
+    # repos, and if fail test the other repo.  The order of testing
+    # will be stored in the execution_plan.
 
-    if len(packs) == 1:
-        p = packs[0]
-        for r in p.downloads.keys():
-            reposets.append([(p, r, p.downloads[r])])
-    else:
-        # TODO: for groups we just pick the first repo - we'd need to create a smart
-        # matrix
-        dirstolink = []
-        for rq in packs:
-            keys = rq.downloads.keys()
-            if not keys:
-                continue
-            r = keys[0]
-            dirstolink.append((rq, r, rq.downloads[r]))
-        reposets.append(dirstolink)
+    execution_plan = defaultdict(list)
 
-    if len(reposets) == 0:
+    # Get all the repost where at least there is a package
+    all_repos = set()
+    for rq in packs:
+        all_repos.update(rq.downloads)
+
+    if len(all_repos) == 0:
         print 'NO REPOS'
         return
 
-    for dirstolink in reposets:
+    for rq in packs:
+        for _repo in all_repos:
+            if _repo in rq.downloads:
+                execution_plan[_repo].append((rq, _repo, rq.downloads[_repo]))
+            else:
+                _other_repo = [r for r in rq.downloads if r != _repo]
+                _other_repo = _other_repo[0]  # XXX TODO - Recurse here to create combinations
+                execution_plan[_repo].append((rq, _other_repo, rq.downloads[_other_repo]))
+
+    for dirstolink in execution_plan.values():
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
         os.makedirs(destdir)
@@ -291,11 +322,7 @@ def _check_repo_group(self, id_, requests, opts):
 
         repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
-        # print civs
-        # continue
-        # exit(1)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        # ret = os.waitpid(p.pid, 0)[1]
         stdoutdata, stderrdata = p.communicate()
         ret = p.returncode
         # print ret, stdoutdata, stderrdata
@@ -303,6 +330,7 @@ def _check_repo_group(self, id_, requests, opts):
             for p, repo, downloads in dirstolink:
                 p.goodrepo = repo
             break
+
     os.unlink(params_file.name)
 
     updated = {}
