@@ -467,6 +467,11 @@ class StagingAPI(object):
         self._remove_package_from_prj_pseudometa(project, package)
         subprj = self.map_ring_package_to_subject(project, package)
         delete_package(self.apiurl, subprj, package, force=True, msg=msg)
+
+        for sub_prj, sub_pkg in self.get_sub_packages(package):
+            sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
+
         self.set_review(request_id, project, state=review, msg=msg)
 
     def create_package_container(self, project, package, disable_build=False):
@@ -895,6 +900,11 @@ class StagingAPI(object):
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             self.create_and_wipe_package(sub_prj, sub_pkg)
+
+            # create a link so unselect can find it
+            root = ET.Element('link', package=tar_pkg, project=project)
+            url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
+            http_PUT(url, data=ET.tostring(root))
 
         return tar_pkg
 
