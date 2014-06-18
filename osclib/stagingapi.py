@@ -731,7 +731,7 @@ class StagingAPI(object):
             # zypper_in fails at the moment - urgent fix needed
             if module['result'] == 'ok':
                 continue
-            if module['name'] in ['kate', 'ooffice']:
+            if module['name'] in ['kate', 'ooffice', 'amarok', 'thunderbird', 'gnucash']:
                 continue
             return '{} test failed: https://openqa.opensuse.org/tests/{}'.format(module['name'], job['id'])
         return None
@@ -849,6 +849,9 @@ class StagingAPI(object):
         """
         # it's actually a pretty stupid algorithm, but it might become more complex later
 
+        if project.endswith(':DVD'):
+            return project # not yet
+
         if self.ring_packages.get(pkg) == 'openSUSE:Factory:Rings:2-TestDVD':
             return project + ":DVD"
 
@@ -949,6 +952,7 @@ class StagingAPI(object):
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            #print project, tar_pkg, sub_pkg, sub_prj
             if sub_prj == project: # skip inner-project links
                 continue
             self.create_package_container(sub_prj, sub_pkg)
