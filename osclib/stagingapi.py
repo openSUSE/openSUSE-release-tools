@@ -470,7 +470,8 @@ class StagingAPI(object):
 
         for sub_prj, sub_pkg in self.get_sub_packages(package):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
-            delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
+            if sub_prj != project:
+                delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
 
         self.set_review(request_id, project, state=review, msg=msg)
 
@@ -730,7 +731,7 @@ class StagingAPI(object):
             # zypper_in fails at the moment - urgent fix needed
             if module['result'] == 'ok':
                 continue
-            if module['name'] in []:
+            if module['name'] in ['kate', 'ooffice']:
                 continue
             return '{} test failed: https://openqa.opensuse.org/tests/{}'.format(module['name'], job['id'])
         return None

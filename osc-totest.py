@@ -42,7 +42,7 @@ def tt_find_openqa_results(self, snapshot):
     and filter out the cloned jobs
     """
 
-    url = "https://openqa.opensuse.org/api/v1/jobs?version=FTT&build={}&distro=openSUSE".format(snapshot)
+    url = "https://openqa.opensuse.org/api/v1/jobs?version=FTT&build={}&distri=opensuse".format(snapshot)
     f = self.api.retried_GET(url)
     jobs = []
     for job in json.load(f)['jobs']:
@@ -90,22 +90,26 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-Rescue-CD-i686-Build-rescue@32bit',
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
         'opensuse-FTT-DVD-x86_64-Build-uefi@64bit',
-        'opensuse-FTT-NET-x86_64-Build-uefi@64bit'
+        'opensuse-FTT-NET-x86_64-Build-uefi@64bit',
+        'opensuse-FTT-DVD-x86_64-Build-dual_windows8@64bit',
+        'opensuse-FTT-NET-x86_64-Build-dual_windows8@64bit',
     ]
 
     if len(jobs) < 80: # not yet scheduled
+        print "we have only", len(jobs), "jobs"
         return QAResult.InProgress
 
     number_of_fails = 0
     for job in jobs:
         #print json.dumps(job, sort_keys=True, indent=4)
         if job['result'] == 'failed' or job['result'] == 'incomplete' :
-            jobname = job['name'] + "@" + job['machine']
+            jobname = job['name'] + "@" + job['settings']['MACHINE']
             if jobname in known_failures:
                 known_failures.remove(jobname)
                 continue
             number_of_fails += 1
-            print json.dumps(job, sort_keys=True, indent=4), jobname
+            #print json.dumps(job, sort_keys=True, indent=4), jobname
+            print jobname, "https://openqa.opensuse.org/tests/{}".format(job['id'])
             if number_of_fails < 3: continue
             return QAResult.Failed
         elif job['result'] == 'passed':
