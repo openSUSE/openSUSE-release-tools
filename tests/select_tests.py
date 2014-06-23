@@ -4,17 +4,15 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or later
 
-import sys
 import unittest
-import httpretty
-import time
 
 from obs import APIURL
 from obs import OBS
 from osc import oscerr
 from osclib.select_command import SelectCommand
-from oscs import StagingAPI
+from osclib.stagingapi import StagingAPI
 from osclib.comments import CommentAPI
+
 
 class TestSelect(unittest.TestCase):
 

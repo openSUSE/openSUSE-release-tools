@@ -4,17 +4,15 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # Distribute under GPLv2 or later
 
-import sys
 import unittest
-import httpretty
 import mock
 
 from obs import APIURL
 from obs import OBS
-from osc import oscerr
 from osclib.accept_command import AcceptCommand
-from oscs import StagingAPI
+from osclib.stagingapi import StagingAPI
 from osclib.comments import CommentAPI
+
 
 class TestAccept(unittest.TestCase):
 
@@ -31,7 +29,7 @@ class TestAccept(unittest.TestCase):
         comments = c_api.get_comments(project_name=staging_c)
 
         # Accept staging C (containing apparmor and mariadb)
-        with mock.patch('oscs.StagingAPI.find_openqa_state', return_value='Nothing'):
+        with mock.patch('osclib.stagingapi.StagingAPI.find_openqa_state', return_value='Nothing'):
             self.assertEqual(True, AcceptCommand(self.api).perform(staging_c))
 
         # Comments are cleared up
