@@ -119,10 +119,11 @@ def _checker_compare_disturl(self, disturl, request):
 
 def _download_and_check_disturl(self, request, todownload, opts):
     for _project, _repo, arch, fn, mt in todownload:
-        repodir = os.path.join(DOWNLOADS, request.src_package, _repo)
+        repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
         if not os.path.exists(repodir):
             os.makedirs(repodir)
         t = os.path.join(repodir, fn)
+        print 'Downloading ...', _project, _repo, arch, request.src_package, fn, t, mt
         self._check_repo_get_binary(opts.apiurl, _project, _repo,
                                     arch, request.src_package, fn, t, mt)
 
@@ -158,10 +159,22 @@ def _check_repo_download(self, request, opts):
         if request.error:
             return set()
 
-    if 'openSUSE:Factory:Staging:' in request.group:
+    if 'openSUSE:Factory:Staging:' in str(request.group):
         todownload = [
             ToDownload(request.group, 'standard', 'x86_64', fn[0], fn[3])
             for fn in self._check_repo_repo_list(request.group,
+                                                 'standard',
+                                                 'x86_64',
+                                                 request.src_package,
+                                                 opts)]
+
+        self._download_and_check_disturl(request, todownload, opts)
+        if request.error:
+            return set()
+
+        todownload = [
+            ToDownload(request.group + ':DVD', 'standard', 'x86_64', fn[0], fn[3])
+            for fn in self._check_repo_repo_list(request.group + ':DVD',
                                                  'standard',
                                                  'x86_64',
                                                  request.src_package,
@@ -325,7 +338,10 @@ def _check_repo_group(self, id_, requests, opts):
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
         ret = p.returncode
+
         # print ret, stdoutdata, stderrdata
+        # raise Exception()
+
         if not ret:  # skip the others
             for p, repo, downloads in dirstolink:
                 p.goodrepo = repo
