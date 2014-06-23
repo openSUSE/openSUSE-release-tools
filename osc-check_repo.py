@@ -203,6 +203,10 @@ def _get_buildinfo(self, opts, prj, repo, arch, pkg):
     return [e.attrib['name'] for e in root.findall('bdep')]
 
 
+# Used in _check_repo_group only to cache error messages
+_errors_printed = set()
+
+
 def _check_repo_group(self, id_, requests, opts):
     print '\nCheck group', requests
 
@@ -216,7 +220,8 @@ def _check_repo_group(self, id_, requests, opts):
 
     for request in requests:
         i = self._check_repo_download(request, opts)
-        if request.error:
+        if request.error and request.error not in _errors_printed:
+            _errors_printed.add(request.error)
             if not request.updated:
                 print request.error
                 self.checkrepo.change_review_state(request.request_id, 'new', message=request.error)
@@ -304,7 +309,7 @@ def _check_repo_group(self, id_, requests, opts):
 
     execution_plan = defaultdict(list)
 
-    # Get all the repost where at least there is a package
+    # Get all the repos where at least there is a package
     all_repos = set()
     for rq in packs:
         all_repos.update(rq.downloads)
@@ -322,7 +327,8 @@ def _check_repo_group(self, id_, requests, opts):
                 _other_repo = _other_repo[0]  # XXX TODO - Recurse here to create combinations
                 execution_plan[_repo].append((rq, _other_repo, rq.downloads[_other_repo]))
 
-    for dirstolink in execution_plan.values():
+    repo_checker_error = None
+    for _repo, dirstolink in execution_plan.items():
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
         os.makedirs(destdir)
@@ -338,6 +344,13 @@ def _check_repo_group(self, id_, requests, opts):
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
         ret = p.returncode
+
+        # There are several execution plans, each one can have its own
+        # error message.  We are only interested in the error related
+        # with the staging project (_repo == 'standard').  If we need
+        # to report one, we will report this one.
+        if _repo == 'standard':
+            repo_checker_error = stdoutdata
 
         # print ret, stdoutdata, stderrdata
         # raise Exception()
@@ -357,8 +370,10 @@ def _check_repo_group(self, id_, requests, opts):
         for rq in requests:
             if updated.get(rq.request_id, False) or rq.updated:
                 continue
-            print stdoutdata
-            self.checkrepo.change_review_state(rq.request_id, 'new', message=stdoutdata)
+            if repo_checker_error not in _errors_printed:
+                _errors_printed.add(repo_checker_error)
+                print repo_checker_error
+            self.checkrepo.change_review_state(rq.request_id, 'new', message=repo_checker_error)
             p.updated = True
             updated[rq.request_id] = 1
         return
