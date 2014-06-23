@@ -123,7 +123,7 @@ def _download_and_check_disturl(self, request, todownload, opts):
         if not os.path.exists(repodir):
             os.makedirs(repodir)
         t = os.path.join(repodir, fn)
-        print 'Downloading ...', _project, _repo, arch, request.src_package, fn, t, mt
+        # print 'Downloading ...', _project, _repo, arch, request.src_package, fn, t, mt
         self._check_repo_get_binary(opts.apiurl, _project, _repo,
                                     arch, request.src_package, fn, t, mt)
 
