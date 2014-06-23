@@ -276,17 +276,23 @@ class OBS(object):
 
         self.comments = {
             'openSUSE:Factory:Staging:A': [
-                {'who': 'Admin', 'when': '2014-06-01 17:56:28 UTC', 'id': '1',
-                  'body': 'Just a comment'
+                {
+                    'who': 'Admin',
+                    'when': '2014-06-01 17:56:28 UTC',
+                    'id': '1',
+                    'body': 'Just a comment',
                 }
             ],
             'openSUSE:Factory:Staging:U': [],
             'openSUSE:Factory:Staging:B': [],
             'openSUSE:Factory:Staging:C': [
-                {'who': 'Admin', 'when': '2014-06-01 17:56:28 UTC', 'id': '2',
-                  'body': ("The list of requests tracked in openSUSE:Factory:Staging:C has changed:\n\n"
-                           " * Request#501 for package apparmor submitted by Admin\n"
-                           " * Request#502 for package mariadb submitted by Admin\n")
+                {
+                    'who': 'Admin',
+                    'when': '2014-06-01 17:56:28 UTC',
+                    'id': '2',
+                    'body': ("The list of requests tracked in openSUSE:Factory:Staging:C has changed:\n\n"
+                             " * Request#501 for package apparmor submitted by Admin\n"
+                             " * Request#502 for package mariadb submitted by Admin\n")
                 }
             ],
         }
@@ -670,8 +676,12 @@ class OBS(object):
     def post_comment(self, request, uri, headers):
         """Add comment to a project."""
         prj = re.search(r'comments/project/([^/]*)', uri).group(1)
-        comment = {'who': 'Admin', 'when': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
-                    'id': str(sum(len(c) for c in self.comments.values()) + 1), 'body': request.body }
+        comment = {
+            'who': 'Admin',
+            'when': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
+            'id': str(sum(len(c) for c in self.comments.values()) + 1),
+            'body': request.body
+        }
         self.comments[prj].append(comment)
         self.comment_bodies.append(request.body)
         response = (200, headers, '<result>Ok</result>')
