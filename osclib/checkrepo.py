@@ -30,7 +30,8 @@ class Request(object):
 
     def __init__(self, request_id=None, src_project=None,
                  src_package=None, tgt_project=None, tgt_package=None,
-                 revision=None, srcmd5=None, group=None, element=None):
+                 revision=None, srcmd5=None, group=None, goodrepos=None,
+                 missings=None, element=None):
 
         self.request_id = request_id
         self.src_project = src_project
@@ -40,6 +41,8 @@ class Request(object):
         self.revision = revision
         self.srcmd5 = srcmd5
         self.group = group
+        self.goodrepos = goodrepos if goodrepos else []
+        self.missings = missings if missings else []
 
         self.updated = False
         self.error = None
@@ -58,8 +61,13 @@ class Request(object):
         self.revision = action.find('source').get('rev')
         self.tgt_project = action.find('target').get('project')
         self.tgt_package = action.find('target').get('package')
+
         # The groups are in the CheckRepo object.
         self.group = self.request_id
+
+        # Assigned in is_buildsuccess
+        self.goodrepos = []
+        self.missings = []
 
     def __repr__(self):
         return 'SUBMIT(%s) %s/%s -> %s/%s' % (self.request_id,
@@ -144,11 +152,11 @@ class CheckRepo(object):
         return requests
 
     @memoize()
-    def build(self, project, repo, arch, package):
+    def build(self, repository, project, package, arch):
         """Return the build XML document from OBS."""
         xml = ''
         try:
-            url = makeurl(self.apiurl, ('build', project, repo, arch, package))
+            url = makeurl(self.apiurl, ('build', project, repository, arch, package))
             xml = http_GET(url).read()
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
@@ -315,18 +323,28 @@ class CheckRepo(object):
         #  - with the name of the .spec file.
 
         for spec in specs:
-            spec_info = self.staging.get_package_information(rq.src_project, spec)
+            spec_info = self.staging.get_package_information(rq.src_project,
+                                                             spec)
 
             if (spec_info['project'] != rq.src_project
                or spec_info['package'] != rq.src_package) and not rq.updated:
-                msg = '%s/%s should _link to %s/%s' % (rq.src_project, spec, rq.src_project, rq.src_package)
+                msg = '%s/%s should _link to %s/%s' % (rq.src_project,
+                                                       spec,
+                                                       rq.src_project,
+                                                       rq.src_package)
                 print 'DECLINED', msg
                 self.change_review_state(rq.request_id, 'declined', message=msg)
                 rq.updated = True
 
             if spec_info['srcmd5'] != rq.srcmd5 and not rq.updated:
-                if spec_info['srcmd5'] not in self.old_md5(rq.src_project, rq.tgt_project, spec, rq.srcmd5):
-                    msg = '%s/%s is a link but has a different md5sum than %s?' % (rq.src_project, spec, rq.src_package)
+                if spec_info['srcmd5'] not in self.old_md5(rq.src_project,
+                                                           rq.tgt_project,
+                                                           spec,
+                                                           rq.srcmd5):
+                    msg = '%s/%s is a link but has a different md5sum than %s?' % (
+                        rq.src_project,
+                        spec,
+                        rq.src_package)
                 else:
                     msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
                 print '[DECLINED] CHECK MANUALLY', msg
@@ -334,10 +352,152 @@ class CheckRepo(object):
                 rq.updated = True
 
             sp = Request(request_id=rq.request_id,
-                         src_project=rq.src_project, src_package=spec,
-                         tgt_project=rq.tgt_project, tgt_package=spec,
-                         revision=None, srcmd5=spec_info['dir_srcmd5'],
+                         src_project=rq.src_project,
+                         src_package=spec,
+                         tgt_project=rq.tgt_project,
+                         tgt_package=spec,
+                         revision=None,
+                         srcmd5=spec_info['dir_srcmd5'],
                          group=rq.group)
             requests.append(sp)
 
         return requests
+
+    def repositories_to_check(self, request):
+        """Return the list of repositories that contains both Intel arch.
+
+        Each repository is an XML ElementTree from last_build_success.
+
+        """
+        root_xml = self.last_build_success(request.src_project,
+                                           request.tgt_project,
+                                           request.src_package,
+                                           request.srcmd5)
+        root = ET.fromstring(root_xml)
+
+        repos_to_check = []
+        for repo in root.findall('repository'):
+            intel_archs = [a for a in repo.findall('arch')
+                           if a.attrib['arch'] in ('i586', 'x86_64')]
+            if len(intel_archs) == 2:
+                repos_to_check.append(repo)
+
+        return repos_to_check
+
+    def is_binary(self, repository, project, package, arch):
+        """Return True if is a binary package."""
+        root_xml = self.build(repository, project, package, arch)
+        root = ET.fromstring(root_xml)
+        for binary in root.findall('binary'):
+            # If there are binaries, we're out.
+            return False
+        return True
+
+    def is_buildsuccess(self, request):
+        """Return True if the request is correctly build
+
+        This method extend the Request object with the goodrepos
+        field.
+
+        :param request: Request object
+        :returns: True if the request is correctly build.
+
+        """
+
+        # If the request do not build properly in both Intel patforms,
+        # return False.
+        repos_to_check = self.repositories_to_check(request)
+        if not repos_to_check:
+            msg = 'Missing i586 and x86_64 in the repo list'
+            print msg
+            self.change_review_state(request.request_id, 'new', message=msg)
+            # Next line not needed, but for documentation.
+            request.updated = True
+            return False
+
+        result = False
+        missings = {}
+        alldisabled = True
+        foundbuilding = None
+        foundfailed = None
+
+        for repository in repos_to_check:
+            isgood = True
+            founddisabled = False
+            r_foundbuilding = None
+            r_foundfailed = None
+            r_missings = {}
+            for arch in repository.findall('arch'):
+                if arch.attrib['arch'] not in ('i586', 'x86_64'):
+                    continue
+                if 'missing' in arch.attrib:
+                    for package in arch.attrib['missing'].split(','):
+                        if not self.is_binary(
+                                repository.attrib['name'],
+                                request.src_project,
+                                package,
+                                arch.attrib['arch']):
+                            missings[package] = 1
+                if arch.attrib['result'] not in ('succeeded', 'excluded'):
+                    isgood = False
+                if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
+                    request.build_excluded = True
+                if arch.attrib['result'] == 'disabled':
+                    founddisabled = True
+                if arch.attrib['result'] == 'failed' or arch.attrib['result'] == 'unknown':
+                    # Sometimes an unknown status is equivalent to
+                    # disabled, but we map it as failed to have a human
+                    # check (no autoreject)
+                    r_foundfailed = repository.attrib['name']
+                if arch.attrib['result'] == 'building':
+                    r_foundbuilding = repository.attrib['name']
+                if arch.attrib['result'] == 'outdated':
+                    msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % request.src_package
+                    print 'DECLINED', msg
+                    self.change_review_state(request.request_id, 'declined', message=msg)
+                    # Next line is not needed, but for documentation
+                    request.updated = True
+                    return False
+
+            r_missings = r_missings.keys()
+            for pkg in r_missings:
+                missings[pkg] = 1
+            if not founddisabled:
+                alldisabled = False
+            if isgood:
+                request.goodrepos.append(repository.attrib['name'])
+                result = True
+            if r_foundbuilding:
+                foundbuilding = r_foundbuilding
+            if r_foundfailed:
+                foundfailed = r_foundfailed
+
+        request.missings = sorted(missings)
+
+        if result:
+            return True
+
+        if alldisabled:
+            msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
+            print 'DECLINED', msg
+            self.change_review_state(request.request_id, 'declined', message=msg)
+            # Next line not needed, but for documentation
+            request.updated = True
+            return False
+        if foundbuilding:
+            msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
+            print msg
+            self.change_review_state(request.request_id, 'new', message=msg)
+            # Next line not needed, but for documentation
+            request.updated = True
+            return False
+        if foundfailed:
+            msg = '%s failed to build in repository %s - not accepting' % (request.src_package, foundfailed)
+            # failures might be temporary, so don't autoreject but wait for a human to check
+            print msg
+            self.change_review_state(request.request_id, 'new', message=msg)
+            # Next line not needed, but for documentation
+            request.updated = True
+            return False
+
+        return True

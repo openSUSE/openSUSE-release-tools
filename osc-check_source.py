@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import urllib2
 from xml.etree import cElementTree as ET
 
@@ -17,6 +18,20 @@ from osc.core import checkout_package
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
+
+
+# For a description of this decorator, visit
+#  http://www.imdb.com/title/tt0067756/
+def _silent_running(fn):
+    def _fn(*args, **kwargs):
+        _stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'wb')
+        result = fn(*args, **kwargs)
+        sys.stdout = _stdout
+        return result
+    return _fn
+
+checkout_pkg = _silent_running(checkout_package)
 
 
 def _checker_parse_name(self, apiurl, project, package,
@@ -175,15 +190,15 @@ def _checker_one_request(self, rq, opts):
             os.mkdir(dir)
             os.chdir(dir)
             try:
-                checkout_package(opts.apiurl, tprj, tpkg, pathname=dir,
-                                 server_service_files=True, expand_link=True)
+                checkout_pkg(opts.apiurl, tprj, tpkg, pathname=dir,
+                             server_service_files=True, expand_link=True)
                 self._checker_prepare_dir(tpkg)
                 os.rename(tpkg, "_old")
             except urllib2.HTTPError:
                 print("failed to checkout %s/%s" % (tprj, tpkg))
 
-            checkout_package(opts.apiurl, prj, pkg, revision=rev,
-                             pathname=dir, server_service_files=True, expand_link=True)
+            checkout_pkg(opts.apiurl, prj, pkg, revision=rev,
+                         pathname=dir, server_service_files=True, expand_link=True)
             os.rename(pkg, tpkg)
             self._checker_prepare_dir(tpkg)
 
