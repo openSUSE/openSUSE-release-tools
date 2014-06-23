@@ -327,7 +327,7 @@ def _check_repo_group(self, id_, requests, opts):
                 _other_repo = _other_repo[0]  # XXX TODO - Recurse here to create combinations
                 execution_plan[_repo].append((rq, _other_repo, rq.downloads[_other_repo]))
 
-    repo_checker_error = None
+    repo_checker_error = ''
     for _repo, dirstolink in execution_plan.items():
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
@@ -351,6 +351,8 @@ def _check_repo_group(self, id_, requests, opts):
         # to report one, we will report this one.
         if _repo == 'standard':
             repo_checker_error = stdoutdata
+        if 'standard' not in execution_plan:
+            repo_checker_error += 'Execution plan: %s\n%s\n' % (_repo, stdoutdata)
 
         # print ret, stdoutdata, stderrdata
         # raise Exception()

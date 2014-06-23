@@ -11,7 +11,7 @@ import mock
 
 from obs import APIURL
 from obs import OBS
-from oscs import StagingAPI
+from osclib.stagingapi import StagingAPI
 
 
 PY3 = sys.version_info[0] == 3
@@ -156,7 +156,7 @@ class TestApiCalls(unittest.TestCase):
 
     def test_check_project_status(self):
         # Check the results
-        with mock.patch('oscs.StagingAPI.find_openqa_state', return_value='Nothing'):
+        with mock.patch('osclib.stagingapi.StagingAPI.find_openqa_state', return_value='Nothing'):
             broken_results = ['At least following repositories is still building:',
                               '    building/x86_64: building',
                               'Following packages are broken:',
