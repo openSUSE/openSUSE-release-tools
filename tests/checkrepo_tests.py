@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2014 SUSE Linux Products GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import unittest
+
+from obs import APIURL
+from obs import OBS
+from osclib.checkrepo import CheckRepo
+
+
+class TestCheckRepoCalls(unittest.TestCase):
+    """Tests for various check repo calls."""
+
+    def setUp(self):
+        """Initialize the configuration."""
+
+        self.obs = OBS()
+        self.checkrepo = CheckRepo(APIURL)
+
+    def test_packages_grouping(self):
+        """Validate the creation of the groups."""
+        grouped = {
+            1000: 'openSUSE:Factory:Staging:J',
+            1001: 'openSUSE:Factory:Staging:J',
+            501: 'openSUSE:Factory:Staging:C',
+            502: 'openSUSE:Factory:Staging:C',
+            333: 'openSUSE:Factory:Staging:B'
+        }
+        groups = {
+            'openSUSE:Factory:Staging:J': [1000, 1001],
+            'openSUSE:Factory:Staging:C': [501, 502],
+            'openSUSE:Factory:Staging:B': [333]
+        }
+        self.assertEqual(self.checkrepo.grouped, grouped)
+        self.assertEqual(self.checkrepo.groups, groups)
+
+    def test_pending_request(self):
+        """Test CheckRepo.get_request."""
+        self.assertEqual(len(self.checkrepo.pending_requests()), 2)
