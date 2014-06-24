@@ -324,8 +324,9 @@ def _check_repo_group(self, id_, requests, opts):
                 execution_plan[_repo].append((rq, _repo, rq.downloads[_repo]))
             else:
                 _other_repo = [r for r in rq.downloads if r != _repo]
-                _other_repo = _other_repo[0]  # XXX TODO - Recurse here to create combinations
-                execution_plan[_repo].append((rq, _other_repo, rq.downloads[_other_repo]))
+                if _other_repo:
+                    _other_repo = _other_repo[0]  # XXX TODO - Recurse here to create combinations
+                    execution_plan[_repo].append((rq, _other_repo, rq.downloads[_other_repo]))
 
     repo_checker_error = ''
     for _repo, dirstolink in execution_plan.items():
