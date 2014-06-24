@@ -198,8 +198,8 @@ class OBS(object):
             'C': {
                 'project': 'openSUSE:Factory:Staging:C',
                 'title': 'A project ready to be accepted',
-                'description': ('requests:\n - {id: 501, package: apparmor, author: Admin}\n'
-                                ' - {id: 502, package: mariadb, author: Admin}'),
+                'description': ('requests:\n- {id: 501, package: apparmor, author: Admin}\n'
+                                '- {id: 502, package: mariadb, author: Admin}'),
             },
             'J': {
                 'project': 'openSUSE:Factory:Staging:J',
