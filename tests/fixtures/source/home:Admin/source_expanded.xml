@@ -1,0 +1,4 @@
+<directory name="${name}" rev="${rev}" vrev="${vrev}" srcmd5="${srcmd5}">
+  <linkinfo project="openSUSE:Factory" package="${name}" srcmd5="" baserev="" lsrcmd5=""/>
+  <entry name="${name}.spec" md5="" size="" mtime=""/>
+</directory>

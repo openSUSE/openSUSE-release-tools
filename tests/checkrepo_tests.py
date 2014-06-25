@@ -53,3 +53,14 @@ class TestCheckRepoCalls(unittest.TestCase):
     def test_pending_request(self):
         """Test CheckRepo.get_request."""
         self.assertEqual(len(self.checkrepo.pending_requests()), 2)
+
+    def test_check_specs(self):
+        """Test CheckRepo.check_specs."""
+        for request in self.checkrepo.pending_requests():
+            request_and_specs = self.checkrepo.check_specs(request=request)
+            self.assertEqual(len(request_and_specs), 1)
+            self.assertTrue(request_and_specs[0].request_id in (1000, 1001))
+        for request_id in (1000, 1001):
+            request_and_specs = self.checkrepo.check_specs(request_id=request_id)
+            self.assertEqual(len(request_and_specs), 1)
+            self.assertEqual(request_and_specs[0].request_id, request_id)

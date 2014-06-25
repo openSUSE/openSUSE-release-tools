@@ -228,12 +228,12 @@ class OBS(object):
             'openSUSE:Factory:Staging:J/emacs': {
                 'prj': 'openSUSE:Factory:Staging:J',
                 'pkg': 'emacs',
-                'devprj': 'editors',
+                'devprj': 'home:Admin',
             },
             'openSUSE:Factory:Staging:J/python': {
                 'prj': 'openSUSE:Factory:Staging:J',
                 'pkg': 'python',
-                'devprj': 'devel:languages:python:Factory',
+                'devprj': 'home:Admin',
             },
         }
 
@@ -304,6 +304,18 @@ class OBS(object):
                 'rev': '1',
                 'vrev': '1',
                 'name': 'mariadb',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
+            'home:Admin/emacs': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'emacs',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
+            'home:Admin/python': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'python',
                 'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
             },
         }
@@ -525,7 +537,7 @@ class OBS(object):
 
         return response
 
-    @GET(re.compile(r'/source/home:Admin/\w+'))
+    @GET(re.compile(r'/source/home:Admin/\w+(\?rev=\w+&expand=1)?'))
     def source_project(self, request, uri, headers):
         """Return information of a source package."""
         package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
