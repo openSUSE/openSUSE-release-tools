@@ -370,6 +370,12 @@ def mirror_full(plugin_dir, repo_dir):
     os.system(script)
 
 
+def _print_request_and_specs(self, request_and_specs):
+    print request_and_specs[0]
+    for spec in request_and_specs[1:]:
+        print ' * ', spec
+
+
 @cmdln.alias('check', 'cr')
 @cmdln.option('-s', '--skip', action='store_true', help='skip review')
 def do_check_repo(self, subcmd, opts, *args):
@@ -410,11 +416,15 @@ def do_check_repo(self, subcmd, opts, *args):
     if not ids:
         # Return a list, we flat here with .extend()
         for request in self.checkrepo.pending_requests():
-            requests.extend(self.checkrepo.check_specs(request=request))
+            request_and_specs = self.checkrepo.check_specs(request=request)
+            self._print_request_and_specs(request_and_specs)
+            requests.extend(request_and_specs)
     else:
         # We have a list, use them.
         for request_id in ids:
-            requests.extend(self.checkrepo.check_specs(request_id=request_id))
+            request_and_specs = self.checkrepo.check_specs(request_id=request_id)
+            self._print_request_and_specs(request_and_specs)
+            requests.extend(request_and_specs)
 
     # Order the packs before grouping
     requests = sorted(requests, key=lambda p: p.request_id, reverse=True)

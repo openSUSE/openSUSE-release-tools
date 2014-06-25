@@ -286,7 +286,6 @@ class CheckRepo(object):
             return requests
 
         rq = Request(element=request)
-        print rq
         rq.group = self.grouped.get(request_id, request_id)
         requests.append(rq)
 
