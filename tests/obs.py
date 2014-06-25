@@ -159,6 +159,24 @@ class OBS(object):
                 'by_who': 'openSUSE:Factory:Staging:C',
                 'package': 'mariadb',
             },
+            '1000': {
+                'request': 'review',
+                'review': 'new',
+                'who': 'Admin',
+                'by': 'user',
+                'id': '1000',
+                'by_who': 'factory-repo-checker',
+                'package': 'emacs',
+            },
+            '1001': {
+                'request': 'review',
+                'review': 'new',
+                'who': 'Admin',
+                'by': 'user',
+                'id': '1001',
+                'by_who': 'factory-repo-checker',
+                'package': 'python',
+            },
         }
 
         self.staging_project = {
@@ -180,8 +198,14 @@ class OBS(object):
             'C': {
                 'project': 'openSUSE:Factory:Staging:C',
                 'title': 'A project ready to be accepted',
-                'description': ("requests:\n - {id: 501, package: apparmor, author: Admin}\n"
-                                " - {id: 502, package: mariadb, author: Admin}"),
+                'description': ('requests:\n- {id: 501, package: apparmor, author: Admin}\n'
+                                '- {id: 502, package: mariadb, author: Admin}'),
+            },
+            'J': {
+                'project': 'openSUSE:Factory:Staging:J',
+                'title': 'A project to be checked',
+                'description': ('requests:\n- {id: 1000, package: emacs, author: Admin}\n'
+                                '- {id: 1001, package: python, author: Admin}'),
             },
         }
 
@@ -199,6 +223,16 @@ class OBS(object):
             'openSUSE:Factory:Staging:C/mariadb': {
                 'prj': 'openSUSE:Factory:Staging:C',
                 'pkg': 'mariadb',
+                'devprj': 'home:Admin',
+            },
+            'openSUSE:Factory:Staging:J/emacs': {
+                'prj': 'openSUSE:Factory:Staging:J',
+                'pkg': 'emacs',
+                'devprj': 'home:Admin',
+            },
+            'openSUSE:Factory:Staging:J/python': {
+                'prj': 'openSUSE:Factory:Staging:J',
+                'pkg': 'python',
                 'devprj': 'home:Admin',
             },
         }
@@ -272,6 +306,18 @@ class OBS(object):
                 'name': 'mariadb',
                 'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
             },
+            'home:Admin/emacs': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'emacs',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
+            'home:Admin/python': {
+                'rev': '1',
+                'vrev': '1',
+                'name': 'python',
+                'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+            },
         }
 
         self.comments = {
@@ -295,6 +341,7 @@ class OBS(object):
                              " * Request#502 for package mariadb submitted by Admin\n")
                 }
             ],
+            'openSUSE:Factory:Staging:J': [],
         }
 
         # To track comments created during test execution, even if they have
@@ -397,7 +444,7 @@ class OBS(object):
     # /source/
     #
 
-    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C]/_project'))
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|J]/_project'))
     def source_staging_project_project(self, request, uri, headers):
         """Return the _project information for a staging project."""
         # Load the proper fixture and adjust mtime according the
@@ -419,7 +466,7 @@ class OBS(object):
 
         return response
 
-    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U](/\w+)?/_meta'))
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U|J](/\w+)?/_meta'))
     def source_staging_project_meta(self, request, uri, headers):
         """Return the _meta information for a staging project."""
         key = re.search(r'openSUSE:Factory:Staging:(\w(?:/\w+)?)/_meta', uri).group(1)
@@ -441,7 +488,7 @@ class OBS(object):
 
         return response
 
-    @PUT(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U](/\w+)?/_meta'))
+    @PUT(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U|J](/\w+)?/_meta'))
     def put_source_staging_project_meta(self, request, uri, headers):
         """Set the _meta information for a staging project."""
         key = re.search(r'openSUSE:Factory:Staging:(\w(?:/\w+)?)/_meta', uri).group(1)
@@ -490,7 +537,7 @@ class OBS(object):
 
         return response
 
-    @GET(re.compile(r'/source/home:Admin/\w+'))
+    @GET(re.compile(r'/source/home:Admin/\w+(\?rev=\w+&expand=1)?'))
     def source_project(self, request, uri, headers):
         """Return information of a source package."""
         package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
@@ -590,15 +637,21 @@ class OBS(object):
     def search_request(self, request, uri, headers):
         """Return a search result for /search/request."""
         query = urlparse.urlparse(uri).query
-        assert query == "match=state/@name='review'+and+review[@by_group='factory-staging'+and+@state='new']"
+        assert query in (
+            "match=state/@name='review'+and+review[@by_group='factory-staging'+and+@state='new']",
+            "match=state/@name='review'+and+review[@by_user='factory-repo-checker'+and+@state='new']"
+        )
 
         response = (404, headers, '<result>Not found</result>')
 
+        by, by_who = re.search(r"@by_(user|group)='([-\w]+)'", query).groups()
+        state = re.search(r"@state='(\w+)'", query).group(1)
+
         requests = [rq for rq in self.requests.values()
                     if rq['request'] == 'review'
-                    and rq['review'] == 'new'
-                    and rq['by'] == 'group'
-                    and rq['by_who'] == 'factory-staging']
+                    and rq['review'] == state
+                    and rq['by'] == by
+                    and rq['by_who'] == by_who]
 
         try:
             _requests = '\n'.join(self._request(rq['id']) for rq in requests)
