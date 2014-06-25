@@ -205,7 +205,7 @@ if (-d "$old") {
                 next unless $line =~ m/^+/;
                 $line =~ s/^\+//;
                 for my $patch (keys %patches) {
-                    if ($line =~ m/$patch/) {
+                    if (index($line, $patch) != -1) {
                         delete $patches{$patch};
                     }
                 }
