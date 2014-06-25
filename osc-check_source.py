@@ -152,7 +152,7 @@ def _checker_one_request(self, rq, opts):
                                             tprj, tpkg))
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
             # white list
-            self._devel_projects['KDE:Frameworks5/'] = 'x2go'
+            self._devel_projects['X11:Bumblebee/'] = 'x2go'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
