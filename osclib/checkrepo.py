@@ -14,6 +14,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
+import subprocess
 from urllib import quote_plus
 import urllib2
 from xml.etree import cElementTree as ET
@@ -23,6 +25,10 @@ from osc.core import http_POST
 from osc.core import makeurl
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize
+
+
+# Directory where download binary packages.
+DOWNLOADS = os.path.expanduser('~/co/downloads')
 
 
 class Request(object):
@@ -70,11 +76,11 @@ class Request(object):
         self.missings = []
 
     def __repr__(self):
-        return 'SUBMIT(%s) %s/%s -> %s/%s' % (self.request_id,
-                                              self.src_project,
-                                              self.src_package,
-                                              self.tgt_project,
-                                              self.tgt_package)
+        return '#%s %s/%s -> %s/%s' % (self.request_id,
+                                       self.src_project,
+                                       self.src_package,
+                                       self.tgt_project,
+                                       self.tgt_package)
 
 
 class CheckRepo(object):
@@ -120,7 +126,7 @@ class CheckRepo(object):
         }
 
         code = 404
-        url = makeurl(self.apiurl, ['request', str(request_id)], query=query)
+        url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
         try:
             root = ET.parse(http_POST(url, data=message)).getroot()
             code = root.attrib['code']
@@ -152,7 +158,7 @@ class CheckRepo(object):
         return requests
 
     @memoize()
-    def build(self, repository, project, package, arch):
+    def build(self, project, repository, arch, package):
         """Return the build XML document from OBS."""
         xml = ''
         try:
@@ -287,9 +293,13 @@ class CheckRepo(object):
         # Get source information about the SR:
         #   - Source MD5
         #   - Entries (.tar.gz, .changes, .spec ...) and MD5
+        query = {
+            'rev': rq.revision,
+            'expand': 1
+        }
         try:
             url = makeurl(self.apiurl, ['source', rq.src_project, rq.src_package],
-                          {'rev': rq.revision, 'expand': 1})
+                          query=query)
             root = ET.parse(http_GET(url)).getroot()
         except urllib2.HTTPError, e:
             print 'ERROR in URL %s [%s]' % (url, e)
@@ -323,8 +333,12 @@ class CheckRepo(object):
         #  - with the name of the .spec file.
 
         for spec in specs:
-            spec_info = self.staging.get_package_information(rq.src_project,
-                                                             spec)
+            try:
+                spec_info = self.staging.get_package_information(rq.src_project,
+                                                                 spec)
+            except urllib2.HTTPError as e:
+                print "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
+                rq.updated = True
 
             if (spec_info['project'] != rq.src_project
                or spec_info['package'] != rq.src_package) and not rq.updated:
@@ -384,14 +398,70 @@ class CheckRepo(object):
 
         return repos_to_check
 
-    def is_binary(self, repository, project, package, arch):
+    def is_binary(self, project, repository, arch, package):
         """Return True if is a binary package."""
-        root_xml = self.build(repository, project, package, arch)
+        root_xml = self.build(project, repository, arch, package)
         root = ET.fromstring(root_xml)
         for binary in root.findall('binary'):
             # If there are binaries, we're out.
             return False
         return True
+
+    def _disturl(self, filename):
+        """Get the DISTURL from a RPM file."""
+        pid = subprocess.Popen(('rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', filename),
+                               stdout=subprocess.PIPE, close_fds=True)
+        os.waitpid(pid.pid, 0)[1]
+        disturl = pid.stdout.readlines()[0]
+        return disturl
+        return os.path.basename(disturl).split('-')[0]
+
+    def _md5_disturl(self, disturl):
+        """Get the md5 from the DISTURL from a RPM file."""
+        return os.path.basename(disturl).split('-')[0]
+
+    def _get_verifymd5(self, request, revision):
+        """Return the verifymd5 attribute from a request."""
+        query = {
+            'view': 'info',
+            'rev': revision,
+        }
+        try:
+            url = makeurl(self.apiurl, ('source', request.src_project, request.src_package),
+                          query=query)
+            root = ET.parse(http_GET(url)).getroot()
+        except urllib2.HTTPError, e:
+            print 'ERROR in URL %s [%s]' % (url, e)
+            return []
+        return root.attrib['verifymd5']
+
+    def check_disturl(self, request, filename):
+        """Try to match the srcmd5 of a request with the one in the RPM package."""
+        disturl = self._disturl(filename)
+        md5_disturl = self._md5_disturl(disturl)
+
+        if md5_disturl == request.srcmd5:
+            return True
+
+        vrev1 = self._get_verifymd5(request, request.srcmd5)
+        vrev2 = self._get_verifymd5(request, md5_disturl)
+        if vrev1 == vrev2:
+            return True
+
+        return False
+
+    def is_request_cached(self, request):
+        """Search the request in the local cache."""
+        result = False
+
+        package_dir = os.path.join(DOWNLOADS, request.src_package)
+        rpm_packages = []
+        for dirpath, dirnames, filenames in os.walk(package_dir):
+            rpm_packages.extend(os.path.join(dirpath, f) for f in filenames if f.endswith('.rpm'))
+
+        result = any(self.check_disturl(request, rpm) for rpm in rpm_packages)
+
+        return result
 
     def is_buildsuccess(self, request):
         """Return True if the request is correctly build
@@ -433,10 +503,10 @@ class CheckRepo(object):
                 if 'missing' in arch.attrib:
                     for package in arch.attrib['missing'].split(','):
                         if not self.is_binary(
-                                repository.attrib['name'],
                                 request.src_project,
-                                package,
-                                arch.attrib['arch']):
+                                repository.attrib['name'],
+                                arch.attrib['arch'],
+                                package):
                             missings[package] = 1
                 if arch.attrib['result'] not in ('succeeded', 'excluded'):
                     isgood = False
@@ -484,13 +554,18 @@ class CheckRepo(object):
             # Next line not needed, but for documentation
             request.updated = True
             return False
+
         if foundbuilding:
             msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
             print msg
-            self.change_review_state(request.request_id, 'new', message=msg)
-            # Next line not needed, but for documentation
-            request.updated = True
-            return False
+            if self.is_request_cached(request):
+                print 'Found cached version.'
+            else:
+                self.change_review_state(request.request_id, 'new', message=msg)
+                # Next line not needed, but for documentation
+                request.updated = True
+                return False
+
         if foundfailed:
             msg = '%s failed to build in repository %s - not accepting' % (request.src_package, foundfailed)
             # failures might be temporary, so don't autoreject but wait for a human to check

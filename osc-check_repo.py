@@ -29,13 +29,9 @@ from osc.core import Request
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
-from osclib.checkrepo import CheckRepo
+from osclib.checkrepo import CheckRepo, DOWNLOADS
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
-
-
-# Directory where download binary packages.
-DOWNLOADS = os.path.expanduser('~/co/downloads')
 
 
 def _check_repo_find_submit_request(self, opts, project, package):
@@ -94,48 +90,19 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
     get_binary_file(apiurl, prj, repo, arch, file, package=package, target_filename=target)
 
 
-def _get_verifymd5(self, request, rev):
-    try:
-        url = makeurl(self.get_api_url(), ['source', request.src_project, request.src_package, '?view=info&rev=%s' % rev])
-        root = ET.parse(http_GET(url)).getroot()
-    except urllib2.HTTPError, e:
-        print 'ERROR in URL %s [%s]' % (url, e)
-        return []
-    return root.attrib['verifymd5']
-
-
-def _checker_compare_disturl(self, disturl, request):
-    distmd5 = os.path.basename(disturl).split('-')[0]
-    if distmd5 == request.srcmd5:
-        return True
-
-    vrev1 = self._get_verifymd5(request, request.srcmd5)
-    vrev2 = self._get_verifymd5(request, distmd5)
-    if vrev1 == vrev2:
-        return True
-    print 'ERROR Revision missmatch: %s, %s' % (vrev1, vrev2)
-    return False
-
-
 def _download_and_check_disturl(self, request, todownload, opts):
     for _project, _repo, arch, fn, mt in todownload:
         repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
         if not os.path.exists(repodir):
             os.makedirs(repodir)
         t = os.path.join(repodir, fn)
-        # print 'Downloading ...', _project, _repo, arch, request.src_package, fn, t, mt
         self._check_repo_get_binary(opts.apiurl, _project, _repo,
                                     arch, request.src_package, fn, t, mt)
 
         request.downloads[_repo].append(t)
         if fn.endswith('.rpm'):
-            pid = subprocess.Popen(['rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', t],
-                                   stdout=subprocess.PIPE, close_fds=True)
-            os.waitpid(pid.pid, 0)[1]
-            disturl = pid.stdout.readlines()[0]
-
-            if not self._checker_compare_disturl(disturl, request):
-                request.error = '[%s] %s does not match revision %s' % (request, disturl, request.srcmd5)
+            if not self.checkrepo.check_disturl(request, t):
+                request.error = '[#%s] DISTURL does not match revision %s' % (request.request_id, request.srcmd5)
 
 
 def _check_repo_download(self, request, opts):
