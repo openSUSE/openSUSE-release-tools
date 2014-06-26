@@ -213,7 +213,7 @@ def _check_repo_group(self, id_, requests, opts):
         if fetched[rq.request_id]:
             continue
         # we need to call it to fetch the good repos to download
-        # but the return value is of no interest right now
+        # but the return value is of no interest right now.
         self.checkrepo.is_buildsuccess(rq)
         i = self._check_repo_download(rq, opts)
         if rq.error:
