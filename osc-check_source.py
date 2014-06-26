@@ -26,8 +26,10 @@ def _silent_running(fn):
     def _fn(*args, **kwargs):
         _stdout = sys.stdout
         sys.stdout = open(os.devnull, 'wb')
-        result = fn(*args, **kwargs)
-        sys.stdout = _stdout
+        try:
+            result = fn(*args, **kwargs)
+        finally:
+            sys.stdout = _stdout
         return result
     return _fn
 
