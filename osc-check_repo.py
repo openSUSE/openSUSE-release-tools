@@ -108,6 +108,10 @@ def _download_and_check_disturl(self, request, todownload, opts):
 def _check_repo_download(self, request, opts):
     request.downloads = defaultdict(list)
 
+    if request.is_cached:
+        print 'Found cached version for', request
+        return set()
+
     if request.build_excluded:
         return set()
 

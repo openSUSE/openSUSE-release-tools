@@ -470,6 +470,12 @@ class CheckRepo(object):
 
         return result
 
+    def _get_goodrepos_from_local(self, request):
+        """Calculate 'goodrepos' from local cache."""
+        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
+        # This return the full list of firectories at this level.
+        return os.walk(project_dir).next()[1]
+
     def is_buildsuccess(self, request):
         """Return True if the request is correctly build
 
@@ -483,8 +489,12 @@ class CheckRepo(object):
 
         # Check if we have a local version of the package before
         # checking it.
-        # if self.is_request_cached(request):
-        #     return True
+        if self.is_request_cached(request):
+            request.is_cached = True
+            request.goodrepos = self._get_goodrepos_from_local(request)
+            return True
+        else:
+            request.is_cached = False
 
         # If the request do not build properly in both Intel platforms,
         # return False.
