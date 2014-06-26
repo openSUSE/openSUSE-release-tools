@@ -36,25 +36,29 @@ def _silent_running(fn):
 checkout_pkg = _silent_running(checkout_package)
 
 
-def _checker_parse_name(self, apiurl, project, package,
+def _checker_parse(self, apiurl, project, package,
                         revision=None, brief=False, verbose=False):
     query = {'view': 'info', 'parse': 1}
     if revision:
         query['rev'] = revision
     url = makeurl(apiurl, ['source', project, package], query)
 
+    ret = {'name': None, 'version': None }
+
     try:
-        xml = ET.parse(http_GET(url))
-        name = xml.find('name')
+        xml = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError, e:
         print('ERROR in URL %s [%s]' % (url, e))
-        return None
+        return ret
 
-    if name is None or not name.text:
-        return None
+    # ET's boolean check is screwed
+    if xml.find('name') != None:
+        ret['name'] = xml.find('name').text
 
-    return name.text
+    if xml.find('version') != None:
+        ret['version'] = xml.find('version').text
 
+    return ret
 
 def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
     """ taken from osc/osc/core.py, improved:
@@ -204,15 +208,20 @@ def _checker_one_request(self, rq, opts):
             os.rename(pkg, tpkg)
             self._checker_prepare_dir(tpkg)
 
-            r = self._checker_parse_name(opts.apiurl, prj, pkg, revision=rev)
-            if r != tpkg:
-                msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r)
+            new_infos = self._checker_parse(opts.apiurl, prj, pkg, revision=rev)
+            if new_infos['name'] != tpkg:
+                msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, new_infos['name'])
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                 continue
 
+            old_infos = self._checker_parse(opts.apiurl, tprj, tpkg)
+
             sourcechecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_source.py')))
             sourcechecker = os.path.join(sourcechecker, 'source-checker.pl')
-            civs = "LC_ALL=C perl %s _old %s 2>&1" % (sourcechecker, tpkg)
+            civs = ""
+            if old_infos['version'] and old_infos['version'] != new_infos['version']:
+                civs += "NEW_VERSION='{}' ".format(new_infos['version'])
+            civs += "LC_ALL=C perl %s _old %s 2>&1" % (sourcechecker, tpkg)
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
