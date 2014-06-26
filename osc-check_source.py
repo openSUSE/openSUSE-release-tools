@@ -219,8 +219,10 @@ def _checker_one_request(self, rq, opts):
             sourcechecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_source.py')))
             sourcechecker = os.path.join(sourcechecker, 'source-checker.pl')
             civs = ""
+            new_version = None
             if old_infos['version'] and old_infos['version'] != new_infos['version']:
-                civs += "NEW_VERSION='{}' ".format(new_infos['version'])
+                new_version = new_infos['version']
+                civs += "NEW_VERSION='{}' ".format(new_version)
             civs += "LC_ALL=C perl %s _old %s 2>&1" % (sourcechecker, tpkg)
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
@@ -238,7 +240,7 @@ def _checker_one_request(self, rq, opts):
 
             shutil.rmtree(dir)
             msg = 'Check script succeeded'
-            if len(checked) and checked[-1].startswith('DIFFCOUNT'):
+            if len(checked) and checked[-1].startswith('DIFFCOUNT') and new_version:
                 # this is a major break through in perl<->python communication!
                 diff = int(checked.pop().split(' ')[1])
             else:  # e.g. new package
