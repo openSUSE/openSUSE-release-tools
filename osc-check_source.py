@@ -36,25 +36,29 @@ def _silent_running(fn):
 checkout_pkg = _silent_running(checkout_package)
 
 
-def _checker_parse_name(self, apiurl, project, package,
+def _checker_parse(self, apiurl, project, package,
                         revision=None, brief=False, verbose=False):
     query = {'view': 'info', 'parse': 1}
     if revision:
         query['rev'] = revision
     url = makeurl(apiurl, ['source', project, package], query)
 
+    ret = {'name': None, 'version': None }
+
     try:
-        xml = ET.parse(http_GET(url))
-        name = xml.find('name')
+        xml = ET.parse(http_GET(url)).getroot()
     except urllib2.HTTPError, e:
         print('ERROR in URL %s [%s]' % (url, e))
-        return None
+        return ret
 
-    if name is None or not name.text:
-        return None
+    # ET's boolean check is screwed
+    if xml.find('name') != None:
+        ret['name'] = xml.find('name').text
 
-    return name.text
+    if xml.find('version') != None:
+        ret['version'] = xml.find('version').text
 
+    return ret
 
 def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user='', message='', supersed=None):
     """ taken from osc/osc/core.py, improved:
@@ -111,10 +115,10 @@ def _checker_add_review_team(self, opts, id):
 
 
 def _checker_accept_request(self, opts, id, msg, diff=10000):
-    if diff > 12:
+    if diff > 10:
         self._checker_add_review_team(opts, id)
     else:
-        self._checker_add_review(opts, id, by_user='ancorgs', msg='Does it look harmless?')
+        self._checker_add_review(opts, id, by_user='coolo', msg='Does it look harmless?')
 
     self._checker_add_review(opts, id, by_user='factory-repo-checker', msg='Please review build success')
 
@@ -191,11 +195,14 @@ def _checker_one_request(self, rq, opts):
                 continue
             os.mkdir(dir)
             os.chdir(dir)
+
+            old_infos = {'version': None}
             try:
                 checkout_pkg(opts.apiurl, tprj, tpkg, pathname=dir,
                              server_service_files=True, expand_link=True)
                 self._checker_prepare_dir(tpkg)
                 os.rename(tpkg, "_old")
+                old_infos = self._checker_parse(opts.apiurl, tprj, tpkg)
             except urllib2.HTTPError:
                 print("failed to checkout %s/%s" % (tprj, tpkg))
 
@@ -204,15 +211,20 @@ def _checker_one_request(self, rq, opts):
             os.rename(pkg, tpkg)
             self._checker_prepare_dir(tpkg)
 
-            r = self._checker_parse_name(opts.apiurl, prj, pkg, revision=rev)
-            if r != tpkg:
-                msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, r)
+            new_infos = self._checker_parse(opts.apiurl, prj, pkg, revision=rev)
+            if new_infos['name'] != tpkg:
+                msg = "A pkg submitted as %s has to build as 'Name: %s' - found Name '%s'" % (tpkg, tpkg, new_infos['name'])
                 self._checker_change_review_state(opts, id, 'declined', by_group='factory-auto', message=msg)
                 continue
 
             sourcechecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_source.py')))
             sourcechecker = os.path.join(sourcechecker, 'source-checker.pl')
-            civs = "LC_ALL=C perl %s _old %s 2>&1" % (sourcechecker, tpkg)
+            civs = ""
+            new_version = None
+            if old_infos['version'] and old_infos['version'] != new_infos['version']:
+                new_version = new_infos['version']
+                civs += "NEW_VERSION='{}' ".format(new_version)
+            civs += "LC_ALL=C perl %s _old %s 2>&1" % (sourcechecker, tpkg)
             p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
             ret = os.waitpid(p.pid, 0)[1]
             checked = p.stdout.readlines()
@@ -232,8 +244,11 @@ def _checker_one_request(self, rq, opts):
             if len(checked) and checked[-1].startswith('DIFFCOUNT'):
                 # this is a major break through in perl<->python communication!
                 diff = int(checked.pop().split(' ')[1])
+                output = '  '.join(checked).translate(None, '\033')
+                if not new_version:
+                    diff = 12345
             else:  # e.g. new package
-                diff = 10000
+                diff = 13579
 
             if len(checked):
                 msg = msg + "\n\nOutput of check script (non-fatal):\n" + output
