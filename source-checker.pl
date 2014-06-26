@@ -29,10 +29,6 @@ if (-f "$dir/_service") {
     unlink("$dir/_service");
 }
 
-if (-f "$dir/_constraints") {
-    unlink("$dir/_constraints");
-}
-
 if (!-f "$dir/$bname.changes") {
     print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
     $ret = 1;
@@ -87,6 +83,7 @@ for my $spec (glob("$dir/*.spec")) {
         $changes_updated = 1;
     }
 }
+
 if (!$changes_updated) {
     print "No changelog. Please use 'osc vc' to update the changes file(s).\n";
     $ret = 1;
@@ -283,10 +280,20 @@ sub prepare_package($) {
 
             for my $line (split(/\n/, diff($oldfile, $file))) {
                 next unless $line =~ m/^[-+]/;
+                next if $line =~ m/^\Q---/;
+                next if $line =~ m/^\Q+++/;
                 if ($file =~ m/\.spec$/) {
                   $diffcount++;
+                  
+                  for my $command (qw(chmod chown rm)) {
+                    if ($line =~ m/\b$command\b/) {
+                      $diffcount += 3000;
+		      last;
+                    }
+                  }
                 } else {
-                  $diffcount += 10000;
+                  $diffcount += 7777;
+		  last;
                 }
             }
             delete $files->{$file};
