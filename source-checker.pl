@@ -283,7 +283,11 @@ sub prepare_package($) {
 
             for my $line (split(/\n/, diff($oldfile, $file))) {
                 next unless $line =~ m/^[-+]/;
-                $diffcount++;
+                if ($file =~ m/\.spec$/) {
+                  $diffcount++;
+                } else {
+                  $diffcount += 10000;
+                }
             }
             delete $files->{$file};
         }
