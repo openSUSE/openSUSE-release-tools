@@ -76,7 +76,10 @@ class Request(object):
         self.goodrepos = []
         self.missings = []
 
-    def __repr__(self):
+    def str_compact(self):
+        return '#%s(%s)' % (self.request_id, self.src_package)
+
+    def __str__(self):
         return '#%s %s/%s -> %s/%s' % (self.request_id,
                                        self.src_project,
                                        self.src_package,
@@ -334,10 +337,9 @@ class CheckRepo(object):
 
         for spec in specs:
             try:
-                spec_info = self.staging.get_package_information(rq.src_project,
-                                                                 spec)
+                spec_info = self.staging.get_package_information(rq.src_project, spec)
             except urllib2.HTTPError as e:
-                print "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
+                rq.error = "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
                 rq.updated = True
                 continue
 
@@ -394,7 +396,7 @@ class CheckRepo(object):
         if root_xml:
             root = ET.fromstring(root_xml)
         else:
-            print 'The request is not built agains this project'
+            print ' - The request is not built agains this project'
             return repos_to_check
 
         for repo in root.findall('repository'):
@@ -516,7 +518,7 @@ class CheckRepo(object):
         repos_to_check = self.repositories_to_check(request)
         if not repos_to_check:
             msg = 'Missing i586 and x86_64 in the repo list'
-            print msg
+            print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation.
             request.updated = True
@@ -594,7 +596,7 @@ class CheckRepo(object):
 
         if foundbuilding:
             msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
-            print msg
+            print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation
             request.updated = True
@@ -603,7 +605,7 @@ class CheckRepo(object):
         if foundfailed:
             msg = '%s failed to build in repository %s - not accepting' % (request.src_package, foundfailed)
             # failures might be temporary, so don't autoreject but wait for a human to check
-            print msg
+            print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation
             request.updated = True

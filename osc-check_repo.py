@@ -110,7 +110,7 @@ def _check_repo_download(self, request, opts):
 
     if request.is_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
-        print 'Found cached version for', request
+        print ' - Found cached version for', request.str_compact()
         return set()
 
     if request.build_excluded:
@@ -180,7 +180,7 @@ _errors_printed = set()
 
 
 def _check_repo_group(self, id_, requests, opts):
-    print '\nCheck group', requests
+    print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests):
         return
@@ -195,11 +195,11 @@ def _check_repo_group(self, id_, requests, opts):
         if request.error and request.error not in _errors_printed:
             _errors_printed.add(request.error)
             if not request.updated:
-                print request.error
+                print ' - %s' % request.error
                 self.checkrepo.change_review_state(request.request_id, 'new', message=request.error)
                 request.updated = True
             else:
-                print request.error
+                print ' - %s' % request.error
             return
         toignore.update(i)
         fetched[request.request_id] = True
@@ -231,8 +231,8 @@ def _check_repo_group(self, id_, requests, opts):
     cycle_detector = CycleDetector(opts.apiurl)
     for (cycle, new_edges) in cycle_detector.cycles(requests=packs):
         print
-        print 'New cycle detected:', sorted(cycle)
-        print 'New edges:', new_edges
+        print ' - New cycle detected:', sorted(cycle)
+        print ' - New edges:', new_edges
         # Mark all packages as updated, to avoid to be accepted
         for request in requests:
             request.updated = True
@@ -259,10 +259,10 @@ def _check_repo_group(self, id_, requests, opts):
             msg = 'Please make sure to wait before these depencencies are in %s: %s' % (rq.tgt_project, ', '.join(smissing))
             if not rq.updated:
                 self.checkrepo.change_review_state(rq.request_id, 'new', message=msg)
-                print msg
+                print ' - %s' % msg
                 rq.updated = True
             else:
-                print msg
+                print ' - %s' % msg
             return
 
     # Create a temporal file for the params
@@ -287,7 +287,7 @@ def _check_repo_group(self, id_, requests, opts):
         all_repos.update(rq.downloads)
 
     if len(all_repos) == 0:
-        print 'NO REPOS'
+        print ' - NO REPOS'
         return
 
     for rq in packs:
@@ -325,7 +325,7 @@ def _check_repo_group(self, id_, requests, opts):
         if _repo == 'standard':
             repo_checker_error = stdoutdata
         if 'standard' not in execution_plan:
-            repo_checker_error += 'Execution plan: %s\n%s\n' % (_repo, stdoutdata)
+            repo_checker_error += 'Execution plan: %s\n%s' % (_repo, stdoutdata.strip())
 
         # print ret, stdoutdata, stderrdata
         # raise Exception()
@@ -378,7 +378,7 @@ def mirror_full(plugin_dir, repo_dir):
 def _print_request_and_specs(self, request_and_specs):
     print request_and_specs[0]
     for spec in request_and_specs[1:]:
-        print ' * ', spec
+        print ' *', spec
 
 
 @cmdln.alias('check', 'cr')
@@ -418,6 +418,8 @@ def do_check_repo(self, subcmd, opts, *args):
     # Store requests' package information and .spec files: store all
     # source containers involved.
     requests = []
+    print 'Pending requests list:'
+    print '----------------------'
     if not ids:
         # Return a list, we flat here with .extend()
         for request in self.checkrepo.pending_requests():
@@ -462,7 +464,14 @@ def do_check_repo(self, subcmd, opts, *args):
     self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:Factory', 'standard')
     mirror_full(self.plugin_dir, self.repo_dir)
 
+    print
+    print 'Analysis resuts'
+    print '---------------'
+    print
+
     # Sort the groups, from high to low. This put first the stating
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
         self._check_repo_group(id_, reqs, opts)
+        print
+        print
