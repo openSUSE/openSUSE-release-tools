@@ -109,6 +109,7 @@ def _check_repo_download(self, request, opts):
     request.downloads = defaultdict(list)
 
     if request.is_cached:
+        request.downloads = self.checkrepo._get_downloads_from_local(request)
         print 'Found cached version for', request
         return set()
 
@@ -269,7 +270,7 @@ def _check_repo_group(self, id_, requests, opts):
     params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
 
-    # If a package is in a Stagin Project, it will have in
+    # If a package is in a Staging Project, it will have in
     # request.downloads an entry for 'standard' (the repository of a
     # Staging Project) Also in this same field there will be another
     # valid repository (probably openSUSE_Factory)

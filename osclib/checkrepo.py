@@ -14,6 +14,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from collections import defaultdict
 import os
 import subprocess
 from urllib import quote_plus
@@ -473,8 +474,22 @@ class CheckRepo(object):
     def _get_goodrepos_from_local(self, request):
         """Calculate 'goodrepos' from local cache."""
         project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
-        # This return the full list of firectories at this level.
-        return os.walk(project_dir).next()[1]
+
+        # This return the full list of directories at this level.
+        goodrepos = os.walk(project_dir).next()[1]
+        return goodrepos
+
+    def _get_downloads_from_local(self, request):
+        """Calculate 'downloads' from local cache."""
+        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
+
+        downloads = defaultdict(list)
+        for dirpath, dirnames, filenames in os.walk(project_dir):
+            repo = os.path.basename(os.path.normpath(dirpath))
+            if filenames:
+                downloads[repo] = [os.path.join(dirpath, f) for f in filenames]
+
+        return downloads
 
     def is_buildsuccess(self, request):
         """Return True if the request is correctly build
