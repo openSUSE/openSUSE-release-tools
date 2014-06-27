@@ -108,6 +108,11 @@ def _download_and_check_disturl(self, request, todownload, opts):
 def _check_repo_download(self, request, opts):
     request.downloads = defaultdict(list)
 
+    if request.is_cached:
+        request.downloads = self.checkrepo._get_downloads_from_local(request)
+        print 'Found cached version for', request
+        return set()
+
     if request.build_excluded:
         return set()
 
@@ -213,7 +218,7 @@ def _check_repo_group(self, id_, requests, opts):
         if fetched[rq.request_id]:
             continue
         # we need to call it to fetch the good repos to download
-        # but the return value is of no interest right now
+        # but the return value is of no interest right now.
         self.checkrepo.is_buildsuccess(rq)
         i = self._check_repo_download(rq, opts)
         if rq.error:
@@ -265,7 +270,7 @@ def _check_repo_group(self, id_, requests, opts):
     params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
 
-    # If a package is in a Stagin Project, it will have in
+    # If a package is in a Staging Project, it will have in
     # request.downloads an entry for 'standard' (the repository of a
     # Staging Project) Also in this same field there will be another
     # valid repository (probably openSUSE_Factory)

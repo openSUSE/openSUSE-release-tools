@@ -14,6 +14,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from collections import defaultdict
 import os
 import subprocess
 from urllib import quote_plus
@@ -383,13 +384,19 @@ class CheckRepo(object):
         Each repository is an XML ElementTree from last_build_success.
 
         """
+        repos_to_check = []
+
         root_xml = self.last_build_success(request.src_project,
                                            request.tgt_project,
                                            request.src_package,
                                            request.srcmd5)
-        root = ET.fromstring(root_xml)
 
-        repos_to_check = []
+        if root_xml:
+            root = ET.fromstring(root_xml)
+        else:
+            print 'The request is not built agains this project'
+            return repos_to_check
+
         for repo in root.findall('repository'):
             intel_archs = [a for a in repo.findall('arch')
                            if a.attrib['arch'] in ('i586', 'x86_64')]
@@ -409,12 +416,12 @@ class CheckRepo(object):
 
     def _disturl(self, filename):
         """Get the DISTURL from a RPM file."""
-        pid = subprocess.Popen(('rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', filename),
-                               stdout=subprocess.PIPE, close_fds=True)
+        pid = subprocess.Popen(
+            ('rpm', '--nosignature', '--queryformat', '%{DISTURL}', '-qp', filename),
+            stdout=subprocess.PIPE, close_fds=True)
         os.waitpid(pid.pid, 0)[1]
         disturl = pid.stdout.readlines()[0]
         return disturl
-        return os.path.basename(disturl).split('-')[0]
 
     def _md5_disturl(self, disturl):
         """Get the md5 from the DISTURL from a RPM file."""
@@ -426,14 +433,15 @@ class CheckRepo(object):
             'view': 'info',
             'rev': revision,
         }
+        verifymd5 = ''
         try:
             url = makeurl(self.apiurl, ('source', request.src_project, request.src_package),
                           query=query)
             root = ET.parse(http_GET(url)).getroot()
+            verifymd5 = root.attrib['verifymd5']
         except urllib2.HTTPError, e:
             print 'ERROR in URL %s [%s]' % (url, e)
-            return []
-        return root.attrib['verifymd5']
+        return verifymd5
 
     def check_disturl(self, request, filename):
         """Try to match the srcmd5 of a request with the one in the RPM package."""
@@ -445,7 +453,7 @@ class CheckRepo(object):
 
         vrev1 = self._get_verifymd5(request, request.srcmd5)
         vrev2 = self._get_verifymd5(request, md5_disturl)
-        if vrev1 == vrev2:
+        if vrev1 and vrev1 == vrev2:
             return True
 
         return False
@@ -463,6 +471,26 @@ class CheckRepo(object):
 
         return result
 
+    def _get_goodrepos_from_local(self, request):
+        """Calculate 'goodrepos' from local cache."""
+        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
+
+        # This return the full list of directories at this level.
+        goodrepos = os.walk(project_dir).next()[1]
+        return goodrepos
+
+    def _get_downloads_from_local(self, request):
+        """Calculate 'downloads' from local cache."""
+        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
+
+        downloads = defaultdict(list)
+        for dirpath, dirnames, filenames in os.walk(project_dir):
+            repo = os.path.basename(os.path.normpath(dirpath))
+            if filenames:
+                downloads[repo] = [os.path.join(dirpath, f) for f in filenames]
+
+        return downloads
+
     def is_buildsuccess(self, request):
         """Return True if the request is correctly build
 
@@ -474,7 +502,16 @@ class CheckRepo(object):
 
         """
 
-        # If the request do not build properly in both Intel patforms,
+        # Check if we have a local version of the package before
+        # checking it.
+        if self.is_request_cached(request):
+            request.is_cached = True
+            request.goodrepos = self._get_goodrepos_from_local(request)
+            return True
+        else:
+            request.is_cached = False
+
+        # If the request do not build properly in both Intel platforms,
         # return False.
         repos_to_check = self.repositories_to_check(request)
         if not repos_to_check:
@@ -558,13 +595,10 @@ class CheckRepo(object):
         if foundbuilding:
             msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
             print msg
-            if self.is_request_cached(request):
-                print 'Found cached version.'
-            else:
-                self.change_review_state(request.request_id, 'new', message=msg)
-                # Next line not needed, but for documentation
-                request.updated = True
-                return False
+            self.change_review_state(request.request_id, 'new', message=msg)
+            # Next line not needed, but for documentation
+            request.updated = True
+            return False
 
         if foundfailed:
             msg = '%s failed to build in repository %s - not accepting' % (request.src_package, foundfailed)
