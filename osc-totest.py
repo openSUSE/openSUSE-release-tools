@@ -74,7 +74,6 @@ def tt_overall_result(self, snapshot):
     known_failures = [
         'opensuse-FTT-DVD-i586-Build-minimalx+btrfs+nosephome@32bit',
         'opensuse-FTT-DVD-x86_64-Build-doc@64bit',
-        'opensuse-FTT-DVD-x86_64-Build-minimalx+btrfs+nosephome@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_13.1-gnome@64bit',
         'opensuse-FTT-GNOME-Live-i686-Build-gnome-live@32bit',
