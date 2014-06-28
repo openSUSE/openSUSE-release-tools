@@ -254,6 +254,7 @@ sub prepare_package($) {
 
     unlink glob "*.changes"; # ignore changes
     unlink glob "*.tar.*"; # we can't diff them anyway
+    unlink glob "*.zip";
 
     # restore original spec file
     for my $spec (glob("*.beforeurlstrip")) {
