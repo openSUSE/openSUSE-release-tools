@@ -80,7 +80,7 @@ class Request(object):
     def str_compact(self):
         return '#%s(%s)' % (self.request_id, self.src_package)
 
-    def __str__(self):
+    def __repr__(self):
         return '#%s %s/%s -> %s/%s' % (self.request_id,
                                        self.src_project,
                                        self.src_package,
@@ -454,10 +454,12 @@ class CheckRepo(object):
             print 'ERROR in URL %s [%s]' % (url, e)
         return verifymd5
 
-    def check_disturl(self, request, filename):
+    def check_disturl(self, request, filename=None, md5_disturl=None):
         """Try to match the srcmd5 of a request with the one in the RPM package."""
-        disturl = self._disturl(filename)
-        md5_disturl = self._md5_disturl(disturl)
+        if not filename and not md5_disturl:
+            raise ValueError('Please, procide filename or md5_disturl')
+
+        md5_disturl = md5_disturl if md5_disturl else self._md5_disturl(self._disturl(filename))
 
         if md5_disturl == request.srcmd5:
             return True
@@ -478,27 +480,42 @@ class CheckRepo(object):
         for dirpath, dirnames, filenames in os.walk(package_dir):
             rpm_packages.extend(os.path.join(dirpath, f) for f in filenames if f.endswith('.rpm'))
 
-        result = any(self.check_disturl(request, rpm) for rpm in rpm_packages)
+        result = any(self.check_disturl(request, filename=rpm) for rpm in rpm_packages)
 
         return result
 
     def _get_goodrepos_from_local(self, request):
         """Calculate 'goodrepos' from local cache."""
-        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
 
-        # This return the full list of directories at this level.
-        goodrepos = os.walk(project_dir).next()[1]
+        # 'goodrepos' store the tuples (project, repos)
+        goodrepos = []
+
+        package_dir = os.path.join(DOWNLOADS, request.src_package)
+        projects = os.walk(package_dir).next()[1]
+
+        for project in projects:
+            project_dir = os.path.join(package_dir, project)
+            repos = os.walk(project_dir).next()[1]
+
+            for repo in repos:
+                goodrepos.append((project, repo))
+
         return goodrepos
 
     def _get_downloads_from_local(self, request):
         """Calculate 'downloads' from local cache."""
-        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
-
         downloads = defaultdict(list)
-        for dirpath, dirnames, filenames in os.walk(project_dir):
-            repo = os.path.basename(os.path.normpath(dirpath))
-            if filenames:
-                downloads[repo] = [os.path.join(dirpath, f) for f in filenames]
+
+        package_dir = os.path.join(DOWNLOADS, request.src_package)
+
+        for project, repo in self._get_goodrepos_from_local(request):
+            repo_dir = os.path.join(package_dir, project, repo)
+            disturls = os.walk(repo_dir).next()[1]
+
+            for disturl in disturls:
+                disturl_dir = os.path.join(DOWNLOADS, request.src_package, project, repo, disturl)
+                filenames = os.walk(disturl_dir).next()[2]
+                downloads[(project, repo, disturl)] = [os.path.join(disturl_dir, f) for f in filenames]
 
         return downloads
 
@@ -519,8 +536,6 @@ class CheckRepo(object):
             request.is_cached = True
             request.goodrepos = self._get_goodrepos_from_local(request)
             return True
-        else:
-            request.is_cached = False
 
         # If the request do not build properly in both Intel platforms,
         # return False.
@@ -583,7 +598,7 @@ class CheckRepo(object):
             if not founddisabled:
                 alldisabled = False
             if isgood:
-                request.goodrepos.append(repository.attrib['name'])
+                request.goodrepos.append((request.src_project, repository.attrib['name']))
                 result = True
             if r_foundbuilding:
                 foundbuilding = r_foundbuilding
