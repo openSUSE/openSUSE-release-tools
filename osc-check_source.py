@@ -115,7 +115,7 @@ def _checker_add_review_team(self, opts, id):
 
 
 def _checker_accept_request(self, opts, id, msg, diff=10000):
-    if diff > 10:
+    if diff > 8:
         self._checker_add_review_team(opts, id)
     #else:
     #    self._checker_add_review(opts, id, by_user='coolo', msg='Does it look harmless?')
