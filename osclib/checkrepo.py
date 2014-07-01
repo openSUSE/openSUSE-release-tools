@@ -161,8 +161,7 @@ class CheckRepo(object):
             print('ERROR in URL %s [%s]' % (url, e))
         return requests
 
-    @memoize()
-    def build(self, project, repository, arch, package):
+    def _build(self, project, repository, arch, package):
         """Return the build XML document from OBS."""
         xml = ''
         try:
@@ -173,7 +172,11 @@ class CheckRepo(object):
         return xml
 
     @memoize()
-    def last_build_success(self, src_project, tgt_project, src_package, rev):
+    def build(self, project, repository, arch, package):
+        """Return the build XML document from OBS."""
+        return self._build(project, repository, arch, package)
+
+    def _last_build_success(self, src_project, tgt_project, src_package, rev):
         """Return the last build success XML document from OBS."""
         xml = ''
         try:
@@ -187,6 +190,11 @@ class CheckRepo(object):
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return xml
+
+    @memoize()
+    def last_build_success(self, src_project, tgt_project, src_package, rev):
+        """Return the last build success XML document from OBS."""
+        return self._last_build_success(src_project, tgt_project, src_package, rev)
 
     def get_project_repos(self, src_project, tgt_project, src_package, rev):
         """Read the repositories of the project from _meta."""
