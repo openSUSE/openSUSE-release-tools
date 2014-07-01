@@ -54,6 +54,7 @@ class Request(object):
         self.updated = False
         self.error = None
         self.build_excluded = False
+        self.is_cached = False
 
         if element:
             self.load(element)
