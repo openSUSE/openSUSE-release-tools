@@ -27,7 +27,7 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
         # check it won't allow selecting
         self.assertEqual(False, SelectCommand(self.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
-        
+
     def test_select_comments(self):
         c_api = CommentAPI(self.api.apiurl)
         staging_b = 'openSUSE:Factory:Staging:B'
