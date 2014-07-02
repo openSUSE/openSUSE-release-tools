@@ -255,13 +255,11 @@ def _check_repo_group(self, id_, requests, opts):
         smissing = []
         for package in rq.missings:
             alreadyin = False
-            # print package, packs
             for t in packs:
                 if package == t.tgt_package:
                     alreadyin = True
             if alreadyin:
                 continue
-            # print package, packs, downloads, toignore
             request = self._check_repo_find_submit_request(opts, rq.tgt_project, package)
             if request:
                 greqs = opts.groups.get(rq.group, [])
@@ -310,12 +308,12 @@ def _check_repo_group(self, id_, requests, opts):
         print ' - NO REPOS'
         return
 
-    for rq in packs:
-        print 'IN', rq
-        for project, repo in all_good_downloads:
-            plan = (project, repo)
-            valid_disturl = all_good_downloads[plan]
-            # print 'DESIGNING PLAN', plan, valid_disturl
+    for project, repo in all_good_downloads:
+        plan = (project, repo)
+        valid_disturl = all_good_downloads[plan]
+        # print 'DESIGNING PLAN', plan, valid_disturl
+        for rq in packs:
+            # print 'IN', rq
             # Find (project, repo) in rq.downloads.
             keys = [key for key in rq.downloads if key[0] == project and key[1] == repo and key[2] in valid_disturl]
             # print 'KEYS', keys
@@ -336,10 +334,10 @@ def _check_repo_group(self, id_, requests, opts):
                     # assert len(downloads) == 1, 'Found more that one download candidate for the same (project, repo)'
                     # print 'FALLBACK DOWNLOADS', rq.downloads[fallback]
 
-                    execution_plan[plan].append((rq, fallback, rq.downloads[fallback]))
-                # else:
-                #     print 'no fallback for', rq
-
+                    alternative_plan = fallback[:2]
+                    execution_plan[plan].append((rq, alternative_plan, rq.downloads[fallback]))
+                else:
+                    print 'no fallback for', rq
 
     # raise Exception()
 
@@ -354,7 +352,7 @@ def _check_repo_group(self, id_, requests, opts):
         #     for f in downloads:
         #         print '   -', f
 
-        #continue
+        # continue
 
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
@@ -389,6 +387,8 @@ def _check_repo_group(self, id_, requests, opts):
             for p, gr, downloads in dirstolink:
                 p.goodrepo = '%s/%s' % gr
             break
+
+    # raise Exception()
 
     os.unlink(params_file.name)
 
