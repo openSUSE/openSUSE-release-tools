@@ -318,12 +318,14 @@ def _check_repo_group(self, id_, requests, opts):
         for (prj, repo, disturl) in rq.downloads:
             if self.checkrepo.check_disturl(rq, md5_disturl=disturl):
                 all_good_downloads[(prj, repo)].add(disturl)
-            #     print 'GOOD', (prj, repo, disturl)
-            # else:
-            #     print 'BAD', (prj, repo, disturl)
+            else:
+                # If this is a bad download (maybe outdated package),
+                # we simply remove it.  This will also avoid future
+                # collisions.
+                self.checkrepo.clean_local_cache(rq, prj, repo, disturl)
 
     if not all_good_downloads:
-        print ' - NO REPOS'
+        print ' - Not good downloads found (NO REPO).'
         return
 
     for project, repo in all_good_downloads:

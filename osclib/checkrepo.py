@@ -16,6 +16,7 @@
 
 from collections import defaultdict
 import os
+import shutil
 import subprocess
 from urllib import quote_plus
 import urllib2
@@ -483,6 +484,11 @@ class CheckRepo(object):
         result = any(self.check_disturl(request, filename=rpm) for rpm in rpm_packages)
 
         return result
+
+    def clean_local_cache(self, request, project, repository, md5_disturl):
+        """Remove a specific package from the local cache."""
+        # XXX TODO - We remove only symlinks yet
+        shutil.rmtree(os.path.join(DOWNLOADS, request.src_package, project, repository, md5_disturl))
 
     def _get_goodrepos_from_local(self, request):
         """Calculate 'goodrepos' from local cache."""
