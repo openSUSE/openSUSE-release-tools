@@ -92,8 +92,16 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
 
 def _download(self, request, todownload, opts):
     """Download the packages refereced in a request and return the DISTURL MD5."""
+    last_disturl = None
     last_disturldir = None
-    for _project, _repo, arch, fn, mt in todownload:
+
+    # We need to order the files to download.  First RPM packages (to
+    # set disturl), after that the rest.
+
+    todownload_rpm = [rpm for rpm in todownload if rpm[3].endswith('.rpm')]
+    todownload_rest = [rpm for rpm in todownload if not rpm[3].endswith('.rpm')]
+
+    for _project, _repo, arch, fn, mt in todownload_rpm:
         repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
         if not os.path.exists(repodir):
             os.makedirs(repodir)
@@ -102,19 +110,29 @@ def _download(self, request, todownload, opts):
                                     arch, request.src_package, fn, t, mt)
 
         # Organize the files into DISTURL directories.
-        if fn.endswith('.rpm'):
-            disturl = self.checkrepo._md5_disturl(self.checkrepo._disturl(t))
-            disturldir = os.path.join(repodir, disturl)
-            last_disturldir = disturldir
-            if not os.path.exists(disturldir):
-                os.makedirs(disturldir)
-            os.symlink(t, os.path.join(disturldir, fn))
-        elif last_disturldir:
+        disturl = self.checkrepo._md5_disturl(self.checkrepo._disturl(t))
+        disturldir = os.path.join(repodir, disturl)
+        last_disturl, last_disturldir = disturl, disturldir
+        if not os.path.exists(disturldir):
+            os.makedirs(disturldir)
+        os.symlink(t, os.path.join(disturldir, fn))
+
+        request.downloads[(_project, _repo, disturl)].append(t)
+
+    for _project, _repo, arch, fn, mt in todownload_rest:
+        repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
+        if not os.path.exists(repodir):
+            os.makedirs(repodir)
+        t = os.path.join(repodir, fn)
+        self._check_repo_get_binary(opts.apiurl, _project, _repo,
+                                    arch, request.src_package, fn, t, mt)
+
+        if last_disturldir:
             os.symlink(t, os.path.join(last_disturldir, fn))
         else:
             print "I don't know where to put", fn
 
-        request.downloads[(_project, _repo, disturl)].append(t)
+        request.downloads[(_project, _repo, last_disturl)].append(t)
 
 
 def _check_repo_download(self, request, opts):
