@@ -91,7 +91,7 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
 
 
 def _download(self, request, todownload, opts):
-    """Download the packages refereced in a request and return the DISTURL MD5."""
+    """Download the packages refereced in a request."""
     last_disturl = None
     last_disturldir = None
 
@@ -115,7 +115,10 @@ def _download(self, request, todownload, opts):
         last_disturl, last_disturldir = disturl, disturldir
         if not os.path.exists(disturldir):
             os.makedirs(disturldir)
-        os.symlink(t, os.path.join(disturldir, fn))
+        try:
+            os.symlink(t, os.path.join(disturldir, fn))
+        except:
+            print 'Found previous link.'
 
         request.downloads[(_project, _repo, disturl)].append(t)
 
@@ -318,11 +321,9 @@ def _check_repo_group(self, id_, requests, opts):
         for (prj, repo, disturl) in rq.downloads:
             if self.checkrepo.check_disturl(rq, md5_disturl=disturl):
                 all_good_downloads[(prj, repo)].add(disturl)
-            else:
-                # If this is a bad download (maybe outdated package),
-                # we simply remove it.  This will also avoid future
-                # collisions.
-                self.checkrepo.clean_local_cache(rq, prj, repo, disturl)
+            #     print 'GOOD -', rq.str_compact(), (prj, repo), disturl
+            # else:
+            #     print 'BAD -', rq.str_compact(), (prj, repo), disturl
 
     if not all_good_downloads:
         print ' - Not good downloads found (NO REPO).'
@@ -345,7 +346,6 @@ def _check_repo_group(self, id_, requests, opts):
             else:
                 # print 'FALLBACK'
                 fallbacks = [key for key in rq.downloads if (key[0], key[1]) in all_good_downloads and key[2] in all_good_downloads[(key[0], key[1])]]
-                # set(all_good_downloads) & set((p, r) for p, r, _ in rq.downloads)
                 if fallbacks:
                     # XXX TODO - Recurse here to create combinations
                     fallback = fallbacks.pop()
