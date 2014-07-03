@@ -319,7 +319,6 @@ class CheckRepo(object):
             return requests
 
         rq.srcmd5 = root.attrib['srcmd5']
-
         # Recover the .spec files
         specs = [en.attrib['name'][:-5] for en in root.findall('entry')
                  if en.attrib['name'].endswith('.spec')]
@@ -347,7 +346,7 @@ class CheckRepo(object):
 
         for spec in specs:
             try:
-                spec_info = self.staging.get_package_information(rq.src_project, spec)
+                spec_info = self.staging.get_package_information(rq.src_project, spec, rev=rq.revision)
             except urllib2.HTTPError as e:
                 rq.error = "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
                 rq.updated = True
