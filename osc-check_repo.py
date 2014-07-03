@@ -118,7 +118,8 @@ def _download(self, request, todownload, opts):
         try:
             os.symlink(t, os.path.join(disturldir, fn))
         except:
-            print 'Found previous link.'
+            pass
+            # print 'Found previous link.'
 
         request.downloads[(_project, _repo, disturl)].append(t)
 
@@ -131,7 +132,11 @@ def _download(self, request, todownload, opts):
                                     arch, request.src_package, fn, t, mt)
 
         if last_disturldir:
-            os.symlink(t, os.path.join(last_disturldir, fn))
+            try:
+                os.symlink(t, os.path.join(last_disturldir, fn))
+            except:
+                pass
+                # print 'Found previous link.'
         else:
             print "I don't know where to put", fn
 
