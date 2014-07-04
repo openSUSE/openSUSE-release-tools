@@ -1,0 +1,4 @@
+<sourceinfo package="${name}" rev="${rev}" vrev="${vrev}" srcmd5="${srcmd5}" lsrcmd5="${lsrcmd5}" verifymd5="${verifymd5}">
+  <filename>${name}.spec</filename>
+  <linked project="openSUSE:Factory" package="${name}" />
+</sourceinfo>

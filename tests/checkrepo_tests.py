@@ -32,6 +32,9 @@ class TestCheckRepoCalls(unittest.TestCase):
 
         self.obs = OBS()
         self.checkrepo = CheckRepo(APIURL)
+        # Des-memoize some functions
+        self.checkrepo.build = self.checkrepo._build
+        self.checkrepo.last_build_success = self.checkrepo._last_build_success
 
     def test_packages_grouping(self):
         """Validate the creation of the groups."""
@@ -64,3 +67,10 @@ class TestCheckRepoCalls(unittest.TestCase):
             request_and_specs = self.checkrepo.check_specs(request_id=request_id)
             self.assertEqual(len(request_and_specs), 1)
             self.assertEqual(request_and_specs[0].request_id, request_id)
+
+    def test_repos_to_check(self):
+        """Test CheckRepo.repositories_to_check."""
+        for request in self.checkrepo.pending_requests():
+            request_and_specs = self.checkrepo.check_specs(request=request)
+            for rq_or_spec in request_and_specs:
+                print self.checkrepo.repositories_to_check(rq_or_spec)
