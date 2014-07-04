@@ -311,12 +311,16 @@ class OBS(object):
                 'vrev': '1',
                 'name': 'emacs',
                 'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+                'lsrcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+                'verifymd5': 'de7a9f5e3bedb01980465f3be3d236cb',
             },
             'home:Admin/python': {
                 'rev': '1',
                 'vrev': '1',
                 'name': 'python',
                 'srcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+                'lsrcmd5': 'de7a9f5e3bedb01980465f3be3d236cb',
+                'verifymd5': 'de7a9f5e3bedb01980465f3be3d236cb',
             },
         }
 
@@ -537,14 +541,20 @@ class OBS(object):
 
         return response
 
-    @GET(re.compile(r'/source/home:Admin/\w+(\?rev=\w+&expand=1)?'))
+    @GET(re.compile(r'/source/home:Admin/\w+'))
     def source_project(self, request, uri, headers):
         """Return information of a source package."""
-        package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
+        qs = urlparse.parse_qs(urlparse.urlparse(uri).query)
+        index = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
+        project, package = index.split('/')
         response = (404, headers, '<result>Not found</result>')
+
+        suffix = '_expanded' if 'expanded' in qs else '_info' if 'info' in qs else ''
+        path = os.path.join('source', project, package + suffix)
+
         try:
-            template = string.Template(self._fixture(uri))
-            response = (200, headers, template.substitute(self.package[package]))
+            template = string.Template(self._fixture(path=path))
+            response = (200, headers, template.substitute(self.package[index]))
         except Exception as e:
             if DEBUG:
                 print uri, e
@@ -602,6 +612,22 @@ class OBS(object):
     #
     #  /build/
     #
+
+    # @GET(re.compile(r'build/home:Admin/_result'))
+    # def build_lastsuccess(self, request, uri, headers):
+    #     package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
+    #     response = (404, headers, '<result>Not found</result>')
+    #     try:
+    #         template = string.Template(self._fixture(uri))
+    #         response = (200, headers, template.substitute(self.package[package]))
+    #     except Exception as e:
+    #         if DEBUG:
+    #             print uri, e
+
+    #     if DEBUG:
+    #         print 'BUILD _RESULT LASTBUILDSUCCESS', package, uri, response
+
+    #     return response
 
     #
     #  /search/

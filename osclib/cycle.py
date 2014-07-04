@@ -155,7 +155,7 @@ class CycleDetector(object):
     def _builddepinfo(self, project, repository, arch):
         root = None
         try:
-            print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
+            # print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
             url = makeurl(self.apiurl, ['/build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
             root = http_GET(url).read()
         except urllib2.HTTPError, e:
@@ -247,7 +247,16 @@ class CycleDetector(object):
         # `goodrepos`. Those packages are usually marked as 'rq.update
         # = True' (meaning that they are declined or there is a new
         # updated review).
-        all_packages = [self._get_builddepinfo(rq.src_project, rq.goodrepos[0], arch, rq.src_package)
+        # all_packages = [self._get_builddepinfo(rq.src_project, rq.goodrepos[0], arch, rq.src_package)
+        #                 for rq in requests if not rq.updated]
+
+        # 'goodrepo' is a tuple (project, repository, disturl).  We
+        # take the ones that match the project from the request and
+        # take the first repository.
+        goodrepos = {
+            rq: [repo for (project, repo) in rq.goodrepos if rq.src_project == project][0] for rq in requests
+        }
+        all_packages = [self._get_builddepinfo(rq.src_project, goodrepos[rq], arch, rq.src_package)
                         for rq in requests if not rq.updated]
         all_packages = [pkg for pkg in all_packages if pkg]
 

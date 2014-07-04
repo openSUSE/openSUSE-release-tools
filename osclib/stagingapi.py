@@ -117,7 +117,7 @@ class StagingAPI(object):
 
         return packages_staged
 
-    def get_package_information(self, project, pkgname):
+    def get_package_information(self, project, pkgname, rev=None):
         """
         Get the revision packagename and source project to copy from
         based on content provided
@@ -128,7 +128,13 @@ class StagingAPI(object):
 
         package_info = {}
 
-        url = self.makeurl(['source', project, pkgname])
+        query = {
+            'rev': rev
+        }
+        if rev:
+            url = self.makeurl(['source', project, pkgname], query=query)
+        else:
+            url = self.makeurl(['source', project, pkgname])
         content = http_GET(url)
         root = ET.parse(content).getroot()
         package_info['dir_srcmd5'] = root.attrib['srcmd5']

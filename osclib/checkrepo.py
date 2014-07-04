@@ -16,6 +16,7 @@
 
 from collections import defaultdict
 import os
+import shutil
 import subprocess
 from urllib import quote_plus
 import urllib2
@@ -37,8 +38,9 @@ class Request(object):
 
     def __init__(self, request_id=None, src_project=None,
                  src_package=None, tgt_project=None, tgt_package=None,
-                 revision=None, srcmd5=None, group=None, goodrepos=None,
-                 missings=None, element=None):
+                 revision=None, srcmd5=None, verifymd5=None,
+                 group=None, goodrepos=None, missings=None,
+                 element=None):
 
         self.request_id = request_id
         self.src_project = src_project
@@ -47,6 +49,7 @@ class Request(object):
         self.tgt_package = tgt_package
         self.revision = revision
         self.srcmd5 = srcmd5
+        self.verifymd5 = verifymd5
         self.group = group
         self.goodrepos = goodrepos if goodrepos else []
         self.missings = missings if missings else []
@@ -54,6 +57,7 @@ class Request(object):
         self.updated = False
         self.error = None
         self.build_excluded = False
+        self.is_cached = False
 
         if element:
             self.load(element)
@@ -76,12 +80,15 @@ class Request(object):
         self.goodrepos = []
         self.missings = []
 
+    def str_compact(self):
+        return '#[%s](%s)' % (self.request_id, self.src_package)
+
     def __repr__(self):
-        return '#%s %s/%s -> %s/%s' % (self.request_id,
-                                       self.src_project,
-                                       self.src_package,
-                                       self.tgt_project,
-                                       self.tgt_package)
+        return '#[%s] %s/%s -> %s/%s' % (self.request_id,
+                                         self.src_project,
+                                         self.src_package,
+                                         self.tgt_project,
+                                         self.tgt_package)
 
 
 class CheckRepo(object):
@@ -158,8 +165,7 @@ class CheckRepo(object):
             print('ERROR in URL %s [%s]' % (url, e))
         return requests
 
-    @memoize()
-    def build(self, project, repository, arch, package):
+    def _build(self, project, repository, arch, package):
         """Return the build XML document from OBS."""
         xml = ''
         try:
@@ -170,7 +176,11 @@ class CheckRepo(object):
         return xml
 
     @memoize()
-    def last_build_success(self, src_project, tgt_project, src_package, rev):
+    def build(self, project, repository, arch, package):
+        """Return the build XML document from OBS."""
+        return self._build(project, repository, arch, package)
+
+    def _last_build_success(self, src_project, tgt_project, src_package, rev):
         """Return the last build success XML document from OBS."""
         xml = ''
         try:
@@ -184,6 +194,11 @@ class CheckRepo(object):
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return xml
+
+    @memoize()
+    def last_build_success(self, src_project, tgt_project, src_package, rev):
+        """Return the last build success XML document from OBS."""
+        return self._last_build_success(src_project, tgt_project, src_package, rev)
 
     def get_project_repos(self, src_project, tgt_project, src_package, rev):
         """Read the repositories of the project from _meta."""
@@ -306,7 +321,7 @@ class CheckRepo(object):
             return requests
 
         rq.srcmd5 = root.attrib['srcmd5']
-
+        rq.verifymd5 = self._get_verifymd5(rq, rq.srcmd5)
         # Recover the .spec files
         specs = [en.attrib['name'][:-5] for en in root.findall('entry')
                  if en.attrib['name'].endswith('.spec')]
@@ -334,10 +349,9 @@ class CheckRepo(object):
 
         for spec in specs:
             try:
-                spec_info = self.staging.get_package_information(rq.src_project,
-                                                                 spec)
+                spec_info = self.staging.get_package_information(rq.src_project, spec)
             except urllib2.HTTPError as e:
-                print "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
+                rq.error = "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
                 rq.updated = True
                 continue
 
@@ -372,7 +386,8 @@ class CheckRepo(object):
                          tgt_project=rq.tgt_project,
                          tgt_package=spec,
                          revision=None,
-                         srcmd5=spec_info['dir_srcmd5'],
+                         srcmd5=rq.srcmd5,
+                         verifymd5=rq.verifymd5,
                          group=rq.group)
             requests.append(sp)
 
@@ -389,12 +404,12 @@ class CheckRepo(object):
         root_xml = self.last_build_success(request.src_project,
                                            request.tgt_project,
                                            request.src_package,
-                                           request.srcmd5)
+                                           request.verifymd5)
 
         if root_xml:
             root = ET.fromstring(root_xml)
         else:
-            print 'The request is not built agains this project'
+            print ' - The request is not built agains this project'
             return repos_to_check
 
         for repo in root.findall('repository'):
@@ -443,17 +458,25 @@ class CheckRepo(object):
             print 'ERROR in URL %s [%s]' % (url, e)
         return verifymd5
 
-    def check_disturl(self, request, filename):
+    def check_disturl(self, request, filename=None, md5_disturl=None):
         """Try to match the srcmd5 of a request with the one in the RPM package."""
-        disturl = self._disturl(filename)
-        md5_disturl = self._md5_disturl(disturl)
+        if not filename and not md5_disturl:
+            raise ValueError('Please, procide filename or md5_disturl')
 
+        md5_disturl = md5_disturl if md5_disturl else self._md5_disturl(self._disturl(filename))
+
+        # This is true for packages in the devel project.
         if md5_disturl == request.srcmd5:
             return True
 
-        vrev1 = self._get_verifymd5(request, request.srcmd5)
-        vrev2 = self._get_verifymd5(request, md5_disturl)
-        if vrev1 and vrev1 == vrev2:
+        vrev_local = self._get_verifymd5(request, md5_disturl)
+
+        # For the kernel (maybe because is not linked)
+        if vrev_local == request.srcmd5:
+            return True
+
+        # For packages from different projects (devel and staging)
+        if vrev_local == request.verifymd5:
             return True
 
         return False
@@ -467,27 +490,47 @@ class CheckRepo(object):
         for dirpath, dirnames, filenames in os.walk(package_dir):
             rpm_packages.extend(os.path.join(dirpath, f) for f in filenames if f.endswith('.rpm'))
 
-        result = any(self.check_disturl(request, rpm) for rpm in rpm_packages)
+        result = any(self.check_disturl(request, filename=rpm) for rpm in rpm_packages)
 
         return result
 
+    def clean_local_cache(self, request, project, repository, md5_disturl):
+        """Remove a specific package from the local cache."""
+        # XXX TODO - We remove only symlinks yet
+        shutil.rmtree(os.path.join(DOWNLOADS, request.src_package, project, repository, md5_disturl))
+
     def _get_goodrepos_from_local(self, request):
         """Calculate 'goodrepos' from local cache."""
-        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
 
-        # This return the full list of directories at this level.
-        goodrepos = os.walk(project_dir).next()[1]
+        # 'goodrepos' store the tuples (project, repos)
+        goodrepos = []
+
+        package_dir = os.path.join(DOWNLOADS, request.src_package)
+        projects = os.walk(package_dir).next()[1]
+
+        for project in projects:
+            project_dir = os.path.join(package_dir, project)
+            repos = os.walk(project_dir).next()[1]
+
+            for repo in repos:
+                goodrepos.append((project, repo))
+
         return goodrepos
 
     def _get_downloads_from_local(self, request):
         """Calculate 'downloads' from local cache."""
-        project_dir = os.path.join(DOWNLOADS, request.src_package, request.src_project)
-
         downloads = defaultdict(list)
-        for dirpath, dirnames, filenames in os.walk(project_dir):
-            repo = os.path.basename(os.path.normpath(dirpath))
-            if filenames:
-                downloads[repo] = [os.path.join(dirpath, f) for f in filenames]
+
+        package_dir = os.path.join(DOWNLOADS, request.src_package)
+
+        for project, repo in self._get_goodrepos_from_local(request):
+            repo_dir = os.path.join(package_dir, project, repo)
+            disturls = os.walk(repo_dir).next()[1]
+
+            for disturl in disturls:
+                disturl_dir = os.path.join(DOWNLOADS, request.src_package, project, repo, disturl)
+                filenames = os.walk(disturl_dir).next()[2]
+                downloads[(project, repo, disturl)] = [os.path.join(disturl_dir, f) for f in filenames]
 
         return downloads
 
@@ -508,15 +551,13 @@ class CheckRepo(object):
             request.is_cached = True
             request.goodrepos = self._get_goodrepos_from_local(request)
             return True
-        else:
-            request.is_cached = False
 
         # If the request do not build properly in both Intel platforms,
         # return False.
         repos_to_check = self.repositories_to_check(request)
         if not repos_to_check:
             msg = 'Missing i586 and x86_64 in the repo list'
-            print msg
+            print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation.
             request.updated = True
@@ -572,7 +613,7 @@ class CheckRepo(object):
             if not founddisabled:
                 alldisabled = False
             if isgood:
-                request.goodrepos.append(repository.attrib['name'])
+                request.goodrepos.append((request.src_project, repository.attrib['name']))
                 result = True
             if r_foundbuilding:
                 foundbuilding = r_foundbuilding
@@ -594,7 +635,7 @@ class CheckRepo(object):
 
         if foundbuilding:
             msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
-            print msg
+            print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation
             request.updated = True
@@ -603,7 +644,7 @@ class CheckRepo(object):
         if foundfailed:
             msg = '%s failed to build in repository %s - not accepting' % (request.src_package, foundfailed)
             # failures might be temporary, so don't autoreject but wait for a human to check
-            print msg
+            print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation
             request.updated = True

@@ -90,8 +90,18 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
     get_binary_file(apiurl, prj, repo, arch, file, package=package, target_filename=target)
 
 
-def _download_and_check_disturl(self, request, todownload, opts):
-    for _project, _repo, arch, fn, mt in todownload:
+def _download(self, request, todownload, opts):
+    """Download the packages refereced in a request."""
+    last_disturl = None
+    last_disturldir = None
+
+    # We need to order the files to download.  First RPM packages (to
+    # set disturl), after that the rest.
+
+    todownload_rpm = [rpm for rpm in todownload if rpm[3].endswith('.rpm')]
+    todownload_rest = [rpm for rpm in todownload if not rpm[3].endswith('.rpm')]
+
+    for _project, _repo, arch, fn, mt in todownload_rpm:
         repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
         if not os.path.exists(repodir):
             os.makedirs(repodir)
@@ -99,10 +109,38 @@ def _download_and_check_disturl(self, request, todownload, opts):
         self._check_repo_get_binary(opts.apiurl, _project, _repo,
                                     arch, request.src_package, fn, t, mt)
 
-        request.downloads[_repo].append(t)
-        if fn.endswith('.rpm'):
-            if not self.checkrepo.check_disturl(request, t):
-                request.error = '[#%s] DISTURL does not match revision %s' % (request.request_id, request.srcmd5)
+        # Organize the files into DISTURL directories.
+        disturl = self.checkrepo._md5_disturl(self.checkrepo._disturl(t))
+        disturldir = os.path.join(repodir, disturl)
+        last_disturl, last_disturldir = disturl, disturldir
+        if not os.path.exists(disturldir):
+            os.makedirs(disturldir)
+        try:
+            os.symlink(t, os.path.join(disturldir, fn))
+        except:
+            pass
+            # print 'Found previous link.'
+
+        request.downloads[(_project, _repo, disturl)].append(t)
+
+    for _project, _repo, arch, fn, mt in todownload_rest:
+        repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
+        if not os.path.exists(repodir):
+            os.makedirs(repodir)
+        t = os.path.join(repodir, fn)
+        self._check_repo_get_binary(opts.apiurl, _project, _repo,
+                                    arch, request.src_package, fn, t, mt)
+
+        if last_disturldir:
+            try:
+                os.symlink(t, os.path.join(last_disturldir, fn))
+            except:
+                pass
+                # print 'Found previous link.'
+        else:
+            print "I don't know where to put", fn
+
+        request.downloads[(_project, _repo, last_disturl)].append(t)
 
 
 def _check_repo_download(self, request, opts):
@@ -110,7 +148,7 @@ def _check_repo_download(self, request, opts):
 
     if request.is_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
-        print 'Found cached version for', request
+        print ' - Found cached version for', request.str_compact()
         return set()
 
     if request.build_excluded:
@@ -118,7 +156,9 @@ def _check_repo_download(self, request, opts):
 
     ToDownload = namedtuple('ToDownload', ('project', 'repo', 'arch', 'package', 'size'))
 
-    for repo in request.goodrepos:
+    for i, goodrepo in enumerate(request.goodrepos):
+        repo = goodrepo[1]
+
         # we can assume x86_64 is there
         todownload = [ToDownload(request.src_project, repo, 'x86_64', fn[0], fn[3])
                       for fn in self._check_repo_repo_list(request.src_project,
@@ -127,7 +167,7 @@ def _check_repo_download(self, request, opts):
                                                            request.src_package,
                                                            opts)]
 
-        self._download_and_check_disturl(request, todownload, opts)
+        self._download(request, todownload, opts)
         if request.error:
             return set()
 
@@ -140,7 +180,7 @@ def _check_repo_download(self, request, opts):
                                                  request.src_package,
                                                  opts)]
 
-        self._download_and_check_disturl(request, todownload, opts)
+        self._download(request, todownload, opts)
         if request.error:
             return set()
 
@@ -152,7 +192,7 @@ def _check_repo_download(self, request, opts):
                                                  request.src_package,
                                                  opts)]
 
-        self._download_and_check_disturl(request, todownload, opts)
+        self._download(request, todownload, opts)
         if request.error:
             return set()
 
@@ -180,7 +220,7 @@ _errors_printed = set()
 
 
 def _check_repo_group(self, id_, requests, opts):
-    print '\nCheck group', requests
+    print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests):
         return
@@ -195,11 +235,11 @@ def _check_repo_group(self, id_, requests, opts):
         if request.error and request.error not in _errors_printed:
             _errors_printed.add(request.error)
             if not request.updated:
-                print request.error
+                print ' - %s' % request.error
                 self.checkrepo.change_review_state(request.request_id, 'new', message=request.error)
                 request.updated = True
             else:
-                print request.error
+                print ' - %s' % request.error
             return
         toignore.update(i)
         fetched[request.request_id] = True
@@ -231,8 +271,8 @@ def _check_repo_group(self, id_, requests, opts):
     cycle_detector = CycleDetector(opts.apiurl)
     for (cycle, new_edges) in cycle_detector.cycles(requests=packs):
         print
-        print 'New cycle detected:', sorted(cycle)
-        print 'New edges:', new_edges
+        print ' - New cycle detected:', sorted(cycle)
+        print ' - New edges:', new_edges
         # Mark all packages as updated, to avoid to be accepted
         for request in requests:
             request.updated = True
@@ -241,13 +281,11 @@ def _check_repo_group(self, id_, requests, opts):
         smissing = []
         for package in rq.missings:
             alreadyin = False
-            # print package, packs
             for t in packs:
                 if package == t.tgt_package:
                     alreadyin = True
             if alreadyin:
                 continue
-            # print package, packs, downloads, toignore
             request = self._check_repo_find_submit_request(opts, rq.tgt_project, package)
             if request:
                 greqs = opts.groups.get(rq.group, [])
@@ -259,10 +297,10 @@ def _check_repo_group(self, id_, requests, opts):
             msg = 'Please make sure to wait before these depencencies are in %s: %s' % (rq.tgt_project, ', '.join(smissing))
             if not rq.updated:
                 self.checkrepo.change_review_state(rq.request_id, 'new', message=msg)
-                print msg
+                print ' - %s' % msg
                 rq.updated = True
             else:
-                print msg
+                print ' - %s' % msg
             return
 
     # Create a temporal file for the params
@@ -270,78 +308,128 @@ def _check_repo_group(self, id_, requests, opts):
     params_file.write('\n'.join(f for f in toignore if f.strip()))
     params_file.close()
 
-    # If a package is in a Staging Project, it will have in
-    # request.downloads an entry for 'standard' (the repository of a
-    # Staging Project) Also in this same field there will be another
-    # valid repository (probably openSUSE_Factory)
-    #
     # We want to test with the Perl script the binaries of one of the
     # repos, and if fail test the other repo.  The order of testing
     # will be stored in the execution_plan.
 
     execution_plan = defaultdict(list)
 
-    # Get all the repos where at least there is a package
-    all_repos = set()
+    # Get all the (project, repo, disturl) where the disturl is
+    # compatible with the request.  For the same package we can have
+    # more than one good triplet, even with different MD5 DISTRUL.
+    # The general strategy is collect that the different triplets and
+    # provide some execution_plans where for the same (project, repo)
+    # for every package, with a fallback to a different (project,
+    # repo) in case that the original is not found.
+    all_good_downloads = defaultdict(set)
     for rq in packs:
-        all_repos.update(rq.downloads)
+        for (prj, repo, disturl) in rq.downloads:
+            if self.checkrepo.check_disturl(rq, md5_disturl=disturl):
+                all_good_downloads[(prj, repo)].add(disturl)
+            #     print 'GOOD -', rq.str_compact(), (prj, repo), disturl
+            # else:
+            #     print 'BAD -', rq.str_compact(), (prj, repo), disturl
 
-    if len(all_repos) == 0:
-        print 'NO REPOS'
+    if not all_good_downloads:
+        print ' - Not good downloads found (NO REPO).'
         return
 
-    for rq in packs:
-        for _repo in all_repos:
-            if _repo in rq.downloads:
-                execution_plan[_repo].append((rq, _repo, rq.downloads[_repo]))
+    for project, repo in all_good_downloads:
+        plan = (project, repo)
+        valid_disturl = all_good_downloads[plan]
+        # print 'DESIGNING PLAN', plan, valid_disturl
+        for rq in packs:
+            # print 'IN', rq
+            # Find (project, repo) in rq.downloads.
+            keys = [key for key in rq.downloads if key[0] == project and key[1] == repo and key[2] in valid_disturl]
+            # print 'KEYS', keys
+
+            if keys:
+                assert len(keys) == 1, 'Found more that one download candidate for the same (project, repo)'
+                execution_plan[plan].append((rq, plan, rq.downloads[keys[0]]))
+                # print 'DOWNLOADS', rq.downloads[keys[0]]
             else:
-                _other_repo = [r for r in rq.downloads if r != _repo]
-                if _other_repo:
-                    _other_repo = _other_repo[0]  # XXX TODO - Recurse here to create combinations
-                    execution_plan[_repo].append((rq, _other_repo, rq.downloads[_other_repo]))
+                # print 'FALLBACK'
+                fallbacks = [key for key in rq.downloads if (key[0], key[1]) in all_good_downloads and key[2] in all_good_downloads[(key[0], key[1])]]
+                if fallbacks:
+                    # XXX TODO - Recurse here to create combinations
+                    fallback = fallbacks.pop()
+                    # print 'FALLBACK TO', fallback
+
+                    # assert len(downloads) == 1, 'Found more that one download candidate for the same (project, repo)'
+                    # print 'FALLBACK DOWNLOADS', rq.downloads[fallback]
+
+                    alternative_plan = fallback[:2]
+                    execution_plan[plan].append((rq, alternative_plan, rq.downloads[fallback]))
+                # elif rq.status == 'succeeded':
+                else:
+                    print 'no fallback for', rq
+
+    # raise Exception()
 
     repo_checker_error = ''
-    for _repo, dirstolink in execution_plan.items():
+    for project_repo in execution_plan:
+        dirstolink = execution_plan[project_repo]
+
+        # print 'Running plan', project_repo
+        # for rq, repo, downloads in dirstolink:
+        #     print ' ', rq
+        #     print ' ', repo
+        #     for f in downloads:
+        #         print '   -', f
+
+        # continue
+
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
         os.makedirs(destdir)
-        for rq, repo, downloads in dirstolink:
-            dir = destdir + '/%s' % rq.tgt_package
+        for rq, _, downloads in dirstolink:
+            dir_ = destdir + '/%s' % rq.tgt_package
             for d in downloads:
-                if not os.path.exists(dir):
-                    os.mkdir(dir)
-                os.symlink(d, os.path.join(dir, os.path.basename(d)))
+                if not os.path.exists(dir_):
+                    os.mkdir(dir_)
+                os.symlink(d, os.path.join(dir_, os.path.basename(d)))
 
         repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
+        stdoutdata = stdoutdata.strip()
         ret = p.returncode
 
         # There are several execution plans, each one can have its own
-        # error message.  We are only interested in the error related
-        # with the staging project (_repo == 'standard').  If we need
-        # to report one, we will report this one.
-        if _repo == 'standard':
+        # error message.
+        if ret:
+            print ' - Result for execution plan', project_repo
+            print '-' * 40
+            print stdoutdata
+            print '-' * 40
+        else:
+            print ' - Successful plan', project_repo
+
+        # Detect if this error message comes from a staging project.
+        # Store it in the repo_checker_error, that is the text that
+        # will be published in the error message.
+        if 'openSUSE:Factory:Staging:' in project_repo[0]:
             repo_checker_error = stdoutdata
-        if 'standard' not in execution_plan:
-            repo_checker_error += 'Execution plan: %s\n%s\n' % (_repo, stdoutdata)
+        if not any('openSUSE:Factory:Staging:' in p_r[0] for p_r in execution_plan):
+            repo_checker_error += '\nExecution plan: %s\n%s' % ('/'.join(project_repo), stdoutdata)
 
         # print ret, stdoutdata, stderrdata
         # raise Exception()
 
         if not ret:  # skip the others
-            for p, repo, downloads in dirstolink:
-                p.goodrepo = repo
+            for p, gr, downloads in dirstolink:
+                p.goodrepo = '%s/%s' % gr
             break
+
+    # raise Exception()
 
     os.unlink(params_file.name)
 
     updated = {}
 
     if ret:
-        # print stdoutdata, set(map(lambda x: x.request_id, reqs))
-
         for rq in requests:
             if updated.get(rq.request_id, False) or rq.updated:
                 continue
@@ -378,7 +466,7 @@ def mirror_full(plugin_dir, repo_dir):
 def _print_request_and_specs(self, request_and_specs):
     print request_and_specs[0]
     for spec in request_and_specs[1:]:
-        print ' * ', spec
+        print ' *', spec
 
 
 @cmdln.alias('check', 'cr')
@@ -418,6 +506,8 @@ def do_check_repo(self, subcmd, opts, *args):
     # Store requests' package information and .spec files: store all
     # source containers involved.
     requests = []
+    print 'Pending requests list:'
+    print '----------------------'
     if not ids:
         # Return a list, we flat here with .extend()
         for request in self.checkrepo.pending_requests():
@@ -462,7 +552,14 @@ def do_check_repo(self, subcmd, opts, *args):
     self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:Factory', 'standard')
     mirror_full(self.plugin_dir, self.repo_dir)
 
+    print
+    print 'Analysis results'
+    print '----------------'
+    print
+
     # Sort the groups, from high to low. This put first the stating
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
         self._check_repo_group(id_, reqs, opts)
+        print
+        print
