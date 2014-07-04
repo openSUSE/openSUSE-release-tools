@@ -346,7 +346,7 @@ class CheckRepo(object):
 
         for spec in specs:
             try:
-                spec_info = self.staging.get_package_information(rq.src_project, spec, rev=rq.revision)
+                spec_info = self.staging.get_package_information(rq.src_project, spec)
             except urllib2.HTTPError as e:
                 rq.error = "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
                 rq.updated = True
@@ -383,7 +383,7 @@ class CheckRepo(object):
                          tgt_project=rq.tgt_project,
                          tgt_package=spec,
                          revision=None,
-                         srcmd5=spec_info['dir_srcmd5'],
+                         srcmd5=rq.srcmd5,
                          group=rq.group)
             requests.append(sp)
 
@@ -464,10 +464,14 @@ class CheckRepo(object):
         if md5_disturl == request.srcmd5:
             return True
 
-        vrev1 = self._get_verifymd5(request, request.srcmd5)
-        vrev2 = self._get_verifymd5(request, md5_disturl)
-        if vrev1 and vrev1 == vrev2:
+        vrev_local = self._get_verifymd5(request, md5_disturl)
+        if vrev_local == request.srcmd5:
             return True
+
+        # vrev1 = self._get_verifymd5(request, request.srcmd5)
+        # vrev2 = self._get_verifymd5(request, md5_disturl)
+        # if vrev1 and vrev1 == vrev2:
+        #     return True
 
         return False
 
