@@ -38,8 +38,9 @@ class Request(object):
 
     def __init__(self, request_id=None, src_project=None,
                  src_package=None, tgt_project=None, tgt_package=None,
-                 revision=None, srcmd5=None, group=None, goodrepos=None,
-                 missings=None, element=None):
+                 revision=None, srcmd5=None, verifymd5=None,
+                 group=None, goodrepos=None, missings=None,
+                 element=None):
 
         self.request_id = request_id
         self.src_project = src_project
@@ -48,6 +49,7 @@ class Request(object):
         self.tgt_package = tgt_package
         self.revision = revision
         self.srcmd5 = srcmd5
+        self.verifymd5 = verifymd5
         self.group = group
         self.goodrepos = goodrepos if goodrepos else []
         self.missings = missings if missings else []
@@ -319,6 +321,7 @@ class CheckRepo(object):
             return requests
 
         rq.srcmd5 = root.attrib['srcmd5']
+        rq.verifymd5 = self._get_verifymd5(rq, rq.srcmd5)
         # Recover the .spec files
         specs = [en.attrib['name'][:-5] for en in root.findall('entry')
                  if en.attrib['name'].endswith('.spec')]
@@ -384,6 +387,7 @@ class CheckRepo(object):
                          tgt_package=spec,
                          revision=None,
                          srcmd5=rq.srcmd5,
+                         verifymd5=rq.verifymd5,
                          group=rq.group)
             requests.append(sp)
 
@@ -400,7 +404,7 @@ class CheckRepo(object):
         root_xml = self.last_build_success(request.src_project,
                                            request.tgt_project,
                                            request.src_package,
-                                           request.srcmd5)
+                                           request.verifymd5)
 
         if root_xml:
             root = ET.fromstring(root_xml)
@@ -461,17 +465,19 @@ class CheckRepo(object):
 
         md5_disturl = md5_disturl if md5_disturl else self._md5_disturl(self._disturl(filename))
 
+        # This is true for packages in the devel project.
         if md5_disturl == request.srcmd5:
             return True
 
         vrev_local = self._get_verifymd5(request, md5_disturl)
+
+        # For the kernel (maybe because is not linked)
         if vrev_local == request.srcmd5:
             return True
 
-        # vrev1 = self._get_verifymd5(request, request.srcmd5)
-        # vrev2 = self._get_verifymd5(request, md5_disturl)
-        # if vrev1 and vrev1 == vrev2:
-        #     return True
+        # For packages from different projects (devel and staging)
+        if vrev_local == request.verifymd5:
+            return True
 
         return False
 
