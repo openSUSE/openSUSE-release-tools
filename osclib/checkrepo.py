@@ -81,14 +81,14 @@ class Request(object):
         self.missings = []
 
     def str_compact(self):
-        return '#%s(%s)' % (self.request_id, self.src_package)
+        return '#[%s](%s)' % (self.request_id, self.src_package)
 
     def __repr__(self):
-        return '#%s %s/%s -> %s/%s' % (self.request_id,
-                                       self.src_project,
-                                       self.src_package,
-                                       self.tgt_project,
-                                       self.tgt_package)
+        return '#[%s] %s/%s -> %s/%s' % (self.request_id,
+                                         self.src_project,
+                                         self.src_package,
+                                         self.tgt_project,
+                                         self.tgt_package)
 
 
 class CheckRepo(object):

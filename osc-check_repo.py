@@ -361,6 +361,7 @@ def _check_repo_group(self, id_, requests, opts):
 
                     alternative_plan = fallback[:2]
                     execution_plan[plan].append((rq, alternative_plan, rq.downloads[fallback]))
+                # elif rq.status == 'succeeded':
                 else:
                     print 'no fallback for', rq
 
@@ -393,17 +394,26 @@ def _check_repo_group(self, id_, requests, opts):
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
+        stdoutdata = stdoutdata.strip()
         ret = p.returncode
 
         # There are several execution plans, each one can have its own
-        # error message.  We are only interested in the error related
-        # with the staging project.  If we need to report one, we will
-        # report this one.
-        print 'HERE', (project_repo, stdoutdata.strip())
-        # if 'openSUSE:Factory:Staging:' in project_repo[0]:
-        #     repo_checker_error = stdoutdata
-        # if not any('openSUSE:Factory:Staging:' in k[0] for k in execution_plan):
-        #     repo_checker_error += 'Execution plan: %s\n%s' % (project_repo, stdoutdata.strip())
+        # error message.
+        if ret:
+            print ' - Result for execution plan', project_repo
+            print '-' * 40
+            print stdoutdata
+            print '-' * 40
+        else:
+            print ' - Successful plan', project_repo
+
+        # Detect if this error message comes from a staging project.
+        # Store it in the repo_checker_error, that is the text that
+        # will be published in the error message.
+        if 'openSUSE:Factory:Staging:' in project_repo[0]:
+            repo_checker_error = stdoutdata
+        if not any('openSUSE:Factory:Staging:' in p_r[0] for p_r in execution_plan):
+            repo_checker_error += 'Execution plan: %s\n%s' % ('/'.join(project_repo), stdoutdata)
 
         # print ret, stdoutdata, stderrdata
         # raise Exception()
@@ -420,8 +430,6 @@ def _check_repo_group(self, id_, requests, opts):
     updated = {}
 
     if ret:
-        # print stdoutdata, set(map(lambda x: x.request_id, reqs))
-
         for rq in requests:
             if updated.get(rq.request_id, False) or rq.updated:
                 continue
