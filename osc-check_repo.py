@@ -413,7 +413,7 @@ def _check_repo_group(self, id_, requests, opts):
         if 'openSUSE:Factory:Staging:' in project_repo[0]:
             repo_checker_error = stdoutdata
         if not any('openSUSE:Factory:Staging:' in p_r[0] for p_r in execution_plan):
-            repo_checker_error += 'Execution plan: %s\n%s' % ('/'.join(project_repo), stdoutdata)
+            repo_checker_error += '\nExecution plan: %s\n%s' % ('/'.join(project_repo), stdoutdata)
 
         # print ret, stdoutdata, stderrdata
         # raise Exception()
