@@ -113,15 +113,16 @@ def _download(self, request, todownload, opts):
         disturl = self.checkrepo._md5_disturl(self.checkrepo._disturl(t))
         disturldir = os.path.join(repodir, disturl)
         last_disturl, last_disturldir = disturl, disturldir
+        file_in_disturl = os.path.join(disturldir, fn)
         if not os.path.exists(disturldir):
             os.makedirs(disturldir)
         try:
-            os.symlink(t, os.path.join(disturldir, fn))
+            os.symlink(t, file_in_disturl)
         except:
             pass
             # print 'Found previous link.'
 
-        request.downloads[(_project, _repo, disturl)].append(t)
+        request.downloads[(_project, _repo, disturl)].append(file_in_disturl)
 
     for _project, _repo, arch, fn, mt in todownload_rest:
         repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
@@ -131,16 +132,30 @@ def _download(self, request, todownload, opts):
         self._check_repo_get_binary(opts.apiurl, _project, _repo,
                                     arch, request.src_package, fn, t, mt)
 
+        file_in_disturl = os.path.join(last_disturldir, fn)
         if last_disturldir:
             try:
-                os.symlink(t, os.path.join(last_disturldir, fn))
+                os.symlink(t, file_in_disturl)
             except:
                 pass
                 # print 'Found previous link.'
         else:
             print "I don't know where to put", fn
 
-        request.downloads[(_project, _repo, last_disturl)].append(t)
+        request.downloads[(_project, _repo, last_disturl)].append(file_in_disturl)
+
+
+def _check_repo_toignore(self, request, opts):
+    toignore = set()
+    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'x86_64', request.tgt_package, opts):
+        if fn[1]:
+            toignore.add(fn[1])
+
+    # now fetch -32bit pack list
+    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'i586', request.tgt_package, opts):
+        if fn[1] and fn[2] == 'x86_64':
+            toignore.add(fn[1])
+    return toignore
 
 
 def _check_repo_download(self, request, opts):
@@ -149,7 +164,7 @@ def _check_repo_download(self, request, opts):
     if request.is_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
         print ' - Found cached version for', request.str_compact()
-        return set()
+        return self._check_repo_toignore(request, opts)
 
     if request.build_excluded:
         return set()
@@ -195,17 +210,7 @@ def _check_repo_download(self, request, opts):
         self._download(request, todownload, opts)
         if request.error:
             return set()
-
-    toignore = set()
-    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'x86_64', request.tgt_package, opts):
-        if fn[1]:
-            toignore.add(fn[1])
-
-    # now fetch -32bit pack list
-    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'i586', request.tgt_package, opts):
-        if fn[1] and fn[2] == 'x86_64':
-            toignore.add(fn[1])
-    return toignore
+    return self._check_repo_toignore(request, opts)
 
 
 def _get_buildinfo(self, opts, prj, repo, arch, pkg):
