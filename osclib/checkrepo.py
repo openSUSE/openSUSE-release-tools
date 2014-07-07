@@ -16,7 +16,6 @@
 
 from collections import defaultdict
 import os
-import shutil
 import subprocess
 from urllib import quote_plus
 import urllib2

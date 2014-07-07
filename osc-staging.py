@@ -18,7 +18,6 @@ _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
 
 from osclib.stagingapi import StagingAPI
-from osclib.request_finder import RequestFinder
 from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
 from osclib.accept_command import AcceptCommand
@@ -26,7 +25,6 @@ from osclib.cleanup_rings import CleanupRings
 from osclib.list_command import ListCommand
 from osclib.freeze_command import FreezeCommand
 from osclib.check_command import CheckCommand
-from osclib.comments import CommentAPI
 
 OSC_STAGING_VERSION = '0.0.1'
 

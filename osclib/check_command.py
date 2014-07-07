@@ -1,9 +1,3 @@
-from xml.etree import cElementTree as ET
-
-from osc.core import makeurl
-from osc.core import http_GET
-
-
 class CheckCommand(object):
     def __init__(self, api):
         self.api = api
