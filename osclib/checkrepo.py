@@ -494,11 +494,6 @@ class CheckRepo(object):
 
         return result
 
-    def clean_local_cache(self, request, project, repository, md5_disturl):
-        """Remove a specific package from the local cache."""
-        # XXX TODO - We remove only symlinks yet
-        shutil.rmtree(os.path.join(DOWNLOADS, request.src_package, project, repository, md5_disturl))
-
     def _get_goodrepos_from_local(self, request):
         """Calculate 'goodrepos' from local cache."""
 
