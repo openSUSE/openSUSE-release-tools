@@ -1,0 +1,857 @@
+[
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests:\n- {id: 235410, package: ncurses}\n",
+        "missing_reviews": [],
+        "name": "openSUSE:Factory:Staging:A",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10576,
+                "iso": null,
+                "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10575,
+                "iso": null,
+                "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10574,
+                "iso": null,
+                "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:A:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10674,
+                        "iso": null,
+                        "name": "opensuse-Staging:A-Staging2-DVD-x86_64-Build141.4-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10673,
+                        "iso": null,
+                        "name": "opensuse-Staging:A-Staging2-DVD-x86_64-Build141.4-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10672,
+                        "iso": null,
+                        "name": "opensuse-Staging:A-Staging2-DVD-x86_64-Build141.4-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests: []\n",
+        "missing_reviews": [],
+        "name": "openSUSE:Factory:Staging:B",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10521,
+                "iso": null,
+                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10520,
+                "iso": null,
+                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10519,
+                "iso": null,
+                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:B:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10524,
+                        "iso": null,
+                        "name": "opensuse-Staging:B-Staging2-DVD-x86_64-Build115.2-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10523,
+                        "iso": null,
+                        "name": "opensuse-Staging:B-Staging2-DVD-x86_64-Build115.2-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10522,
+                        "iso": null,
+                        "name": "opensuse-Staging:B-Staging2-DVD-x86_64-Build115.2-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests:\n- {id: 235517, package: systemd}\n",
+        "missing_reviews": [],
+        "name": "openSUSE:Factory:Staging:C",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10193,
+                "iso": null,
+                "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-minimalx",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10158,
+                "iso": null,
+                "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10157,
+                "iso": null,
+                "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-RAID1",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:C:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10458,
+                        "iso": null,
+                        "name": "opensuse-Staging:C-Staging2-DVD-x86_64-Build128.1-kde",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10457,
+                        "iso": null,
+                        "name": "opensuse-Staging:C-Staging2-DVD-x86_64-Build128.1-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10162,
+                        "iso": null,
+                        "name": "opensuse-Staging:C-Staging2-DVD-x86_64-Build128.1-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests: []\n",
+        "missing_reviews": [],
+        "name": "openSUSE:Factory:Staging:D",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10570,
+                "iso": null,
+                "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10569,
+                "iso": null,
+                "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10568,
+                "iso": null,
+                "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:D:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10573,
+                        "iso": null,
+                        "name": "opensuse-Staging:D-Staging2-DVD-x86_64-Build127.14-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10572,
+                        "iso": null,
+                        "name": "opensuse-Staging:D-Staging2-DVD-x86_64-Build127.14-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10571,
+                        "iso": null,
+                        "name": "opensuse-Staging:D-Staging2-DVD-x86_64-Build127.14-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests: []\n",
+        "missing_reviews": [],
+        "name": "openSUSE:Factory:Staging:E",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10603,
+                "iso": null,
+                "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10602,
+                "iso": null,
+                "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10601,
+                "iso": null,
+                "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:E:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10658,
+                        "iso": null,
+                        "name": "opensuse-Staging:E-Staging2-DVD-x86_64-Build119.1-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10657,
+                        "iso": null,
+                        "name": "opensuse-Staging:E-Staging2-DVD-x86_64-Build119.1-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10656,
+                        "iso": null,
+                        "name": "opensuse-Staging:E-Staging2-DVD-x86_64-Build119.1-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests:\n- {id: 234678, package: yast2-iscsi-client}\n- {id: 234991, package: zypper}\n- {id: 235018, package: yast2-storage}\n- {id: 235047, package: libzypp}\n- {id: 235076, package: yast2-nfs-server}\n- {id: 235180, package: yast2}\n- {id: 235376, package: libyui-qt-pkg}\n- {id: 235402, package: libstorage}\n- {id: 235520, package: libqt5-qtbase}\n- {id: 235548, package: autoyast2}\n- {id: 235550, package: yast2-pkg-bindings}\n",
+        "missing_reviews": [
+            {
+                "by": "factory-repo-checker",
+                "id": 251286,
+                "package": "yast2-iscsi-client",
+                "request": 234678,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 252354,
+                "package": "yast2-storage",
+                "request": 235018,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 252276,
+                "package": "zypper",
+                "request": 234991,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 252430,
+                "package": "libzypp",
+                "request": 235047,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 252559,
+                "package": "yast2-nfs-server",
+                "request": 235076,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 252867,
+                "package": "yast2",
+                "request": 235180,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 253264,
+                "package": "libyui-qt-pkg",
+                "request": 235376,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 253373,
+                "package": "libstorage",
+                "request": 235402,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 253664,
+                "package": "libqt5-qtbase",
+                "request": 235520,
+                "state": "new"
+            },
+            {
+                "by": "opensuse-review-team",
+                "id": 253745,
+                "package": "autoyast2",
+                "request": 235548,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 253746,
+                "package": "autoyast2",
+                "request": 235548,
+                "state": "new"
+            },
+            {
+                "by": "opensuse-review-team",
+                "id": 253755,
+                "package": "yast2-pkg-bindings",
+                "request": 235550,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 253756,
+                "package": "yast2-pkg-bindings",
+                "request": 235550,
+                "state": "new"
+            }
+        ],
+        "name": "openSUSE:Factory:Staging:F",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10637,
+                "iso": null,
+                "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10636,
+                "iso": null,
+                "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10635,
+                "iso": null,
+                "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:F:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10641,
+                        "iso": null,
+                        "name": "opensuse-Staging:F-Staging2-DVD-x86_64-Build128.5-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10640,
+                        "iso": null,
+                        "name": "opensuse-Staging:F-Staging2-DVD-x86_64-Build128.5-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10638,
+                        "iso": null,
+                        "name": "opensuse-Staging:F-Staging2-DVD-x86_64-Build128.5-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests:\n- {id: 234718, package: libXfont}\n- {id: 234824, package: xf86-input-vmmouse}\n- {id: 234862, package: tigervnc}\n- {id: 234920, package: xf86-input-evdev}\n- {id: 234935, package: libmng}\n- {id: 234947, package: yast2-nfs-client}\n- {id: 234965, package: yast2-installation}\n- {id: 234981, package: yast2-fcoe-client}\n- {id: 235009, package: libxkbcommon}\n- {id: 235055, package: llvm}\n- {id: 235062, package: yast2-add-on}\n- {id: 235063, package: yast2-ca-management}\n- {id: 235378, package: xorg-x11-server}\n- {id: 235538, package: Mesa}\n",
+        "missing_reviews": [
+            {
+                "by": "opensuse-review-team",
+                "id": 253705,
+                "package": "Mesa",
+                "request": 235538,
+                "state": "new"
+            }
+        ],
+        "name": "openSUSE:Factory:Staging:G",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10631,
+                "iso": null,
+                "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10630,
+                "iso": null,
+                "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10629,
+                "iso": null,
+                "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:G:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10634,
+                        "iso": null,
+                        "name": "opensuse-Staging:G-Staging2-DVD-x86_64-Build115.3-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10633,
+                        "iso": null,
+                        "name": "opensuse-Staging:G-Staging2-DVD-x86_64-Build115.3-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10632,
+                        "iso": null,
+                        "name": "opensuse-Staging:G-Staging2-DVD-x86_64-Build115.3-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [
+            {
+                "arch": "i586",
+                "code": "building",
+                "repository": "standard",
+                "state": "building"
+            },
+            {
+                "arch": "x86_64",
+                "code": "building",
+                "repository": "standard",
+                "state": "building"
+            },
+            {
+                "arch": "x86_64",
+                "code": "blocked",
+                "repository": "images",
+                "state": "blocked"
+            }
+        ],
+        "description": "requests:\n- {id: 234999, package: kdebase4-openSUSE}\n- {id: 235422, package: yast2-network}\n- {id: 235482, package: libmtp}\n- {id: 235495, package: yast2-kdump}\n- {id: 235524, package: kdebase4-workspace}\n- {id: 235547, package: kiwi}\n",
+        "missing_reviews": [
+            {
+                "by": "opensuse-review-team",
+                "id": 253740,
+                "package": "kiwi",
+                "request": 235547,
+                "state": "new"
+            }
+        ],
+        "name": "openSUSE:Factory:Staging:H",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10661,
+                "iso": null,
+                "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10660,
+                "iso": null,
+                "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-RAID1",
+                "result": "failed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10659,
+                "iso": null,
+                "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [
+                    {
+                        "arch": "x86_64",
+                        "code": "blocked",
+                        "repository": "standard",
+                        "state": "blocked"
+                    },
+                    {
+                        "arch": "x86_64",
+                        "code": "blocked",
+                        "repository": "images",
+                        "state": "blocked"
+                    }
+                ],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:H:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10665,
+                        "iso": null,
+                        "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10664,
+                        "iso": null,
+                        "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10662,
+                        "iso": null,
+                        "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests: []\n",
+        "missing_reviews": [],
+        "name": "openSUSE:Factory:Staging:I",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 10517,
+                "iso": null,
+                "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10464,
+                "iso": null,
+                "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 10462,
+                "iso": null,
+                "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [
+            {
+                "broken_packages": [],
+                "building_repositories": [],
+                "description": "",
+                "missing_reviews": [],
+                "name": "openSUSE:Factory:Staging:I:DVD",
+                "obsolete_requests": [],
+                "openqa_jobs": [
+                    {
+                        "clone_id": null,
+                        "id": 10467,
+                        "iso": null,
+                        "name": "opensuse-Staging:I-Staging2-DVD-x86_64-Build117.4-miniuefi",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10466,
+                        "iso": null,
+                        "name": "opensuse-Staging:I-Staging2-DVD-x86_64-Build117.4-gnome",
+                        "result": "passed",
+                        "state": "done"
+                    },
+                    {
+                        "clone_id": null,
+                        "id": 10465,
+                        "iso": null,
+                        "name": "opensuse-Staging:I-Staging2-DVD-x86_64-Build117.4-kde",
+                        "result": "passed",
+                        "state": "done"
+                    }
+                ],
+                "subprojects": [],
+                "untracked_requests": []
+            }
+        ],
+        "untracked_requests": []
+    },
+    {
+        "broken_packages": [],
+        "building_repositories": [],
+        "description": "requests:\n- {id: 235022, package: scilab}\n- {id: 235030, package: apache-commons-cli}\n- {id: 235127, package: jeuclid}\n- {id: 235201, package: libcss}\n- {id: 235203, package: libparserutils}\n- {id: 235204, package: libwapcaplet}\n",
+        "missing_reviews": [
+            {
+                "by": "factory-repo-checker",
+                "id": 252728,
+                "package": "jeuclid",
+                "request": 235127,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 252918,
+                "package": "libcss",
+                "request": 235201,
+                "state": "new"
+            },
+            {
+                "by": "factory-repo-checker",
+                "id": 252365,
+                "package": "scilab",
+                "request": 235022,
+                "state": "new"
+            }
+        ],
+        "name": "openSUSE:Factory:Staging:J",
+        "obsolete_requests": [],
+        "openqa_jobs": [
+            {
+                "clone_id": null,
+                "id": 9637,
+                "iso": null,
+                "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-cryptlvm",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 9636,
+                "iso": null,
+                "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-RAID1",
+                "result": "passed",
+                "state": "done"
+            },
+            {
+                "clone_id": null,
+                "id": 9635,
+                "iso": null,
+                "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-minimalx",
+                "result": "passed",
+                "state": "done"
+            }
+        ],
+        "subprojects": [],
+        "untracked_requests": []
+    }
+]
