@@ -25,134 +25,36 @@ from osclib.check_command import CheckCommand
 from osclib.stagingapi import StagingAPI
 
 FULL_REPORT = """
- -- Project openSUSE:Factory:Staging:A still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10576
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10575
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10574
+ ++ Acceptable staging project openSUSE:Factory:Staging:A
 
- -- For subproject openSUSE:Factory:Staging:A:DVD
- -- Project openSUSE:Factory:Staging:A:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10674
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10673
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10672
+ ++ Acceptable staging project openSUSE:Factory:Staging:B
 
- -- Project openSUSE:Factory:Staging:B still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10521
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10520
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10519
+ ++ Acceptable staging project openSUSE:Factory:Staging:C
 
- -- For subproject openSUSE:Factory:Staging:B:DVD
- -- Project openSUSE:Factory:Staging:B:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10524
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10523
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10522
+ ++ Acceptable staging project openSUSE:Factory:Staging:D
 
- -- Project openSUSE:Factory:Staging:C still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10193
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10158
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10157
-
- -- For subproject openSUSE:Factory:Staging:C:DVD
- -- Project openSUSE:Factory:Staging:C:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10458
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10457
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10162
-
- -- Project openSUSE:Factory:Staging:D still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10570
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10569
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10568
-
- -- For subproject openSUSE:Factory:Staging:D:DVD
- -- Project openSUSE:Factory:Staging:D:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10573
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10572
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10571
-
- -- Project openSUSE:Factory:Staging:E still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10603
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10602
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10601
-
- -- For subproject openSUSE:Factory:Staging:E:DVD
- -- Project openSUSE:Factory:Staging:E:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10658
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10657
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10656
+ ++ Acceptable staging project openSUSE:Factory:Staging:E
 
  -- Project openSUSE:Factory:Staging:F still neeeds attention
    - yast2-iscsi-client: Missing reviews: factory-repo-checker
-   - yast2-storage: Missing reviews: factory-repo-checker
-   - zypper: Missing reviews: factory-repo-checker
-   - libzypp: Missing reviews: factory-repo-checker
-   - yast2-nfs-server: Missing reviews: factory-repo-checker
-   - yast2: Missing reviews: factory-repo-checker
-   - libyui-qt-pkg: Missing reviews: factory-repo-checker
-   - libstorage: Missing reviews: factory-repo-checker
-   - libqt5-qtbase: Missing reviews: factory-repo-checker
-   - autoyast2: Missing reviews: opensuse-review-team
-   - autoyast2: Missing reviews: factory-repo-checker
-   - yast2-pkg-bindings: Missing reviews: opensuse-review-team
-   - yast2-pkg-bindings: Missing reviews: factory-repo-checker
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10637
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10636
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10635
-
- -- For subproject openSUSE:Factory:Staging:F:DVD
- -- Project openSUSE:Factory:Staging:F:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10641
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10640
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10638
 
  -- Project openSUSE:Factory:Staging:G still neeeds attention
    - Mesa: Missing reviews: opensuse-review-team
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10631
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10630
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10629
-
- -- For subproject openSUSE:Factory:Staging:G:DVD
- -- Project openSUSE:Factory:Staging:G:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10634
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10633
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10632
 
  -- Project openSUSE:Factory:Staging:H still neeeds attention
    - kiwi: Missing reviews: opensuse-review-team
    - At least following repositories are still building:
      standard: building
-     standard: building
-     images: blocked
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10661
    - openQA's overall status is failed for https://openqa.opensuse.org/tests/10660
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10659
 
  -- For subproject openSUSE:Factory:Staging:H:DVD
- -- Project openSUSE:Factory:Staging:H:DVD still neeeds attention
    - At least following repositories are still building:
      standard: blocked
-     images: blocked
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10665
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10664
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10662
 
- -- Project openSUSE:Factory:Staging:I still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10517
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10464
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10462
-
- -- For subproject openSUSE:Factory:Staging:I:DVD
- -- Project openSUSE:Factory:Staging:I:DVD still neeeds attention
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10467
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10466
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10465
+ ++ Acceptable staging project openSUSE:Factory:Staging:I
 
  -- Project openSUSE:Factory:Staging:J still neeeds attention
    - jeuclid: Missing reviews: factory-repo-checker
-   - libcss: Missing reviews: factory-repo-checker
-   - scilab: Missing reviews: factory-repo-checker
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/9637
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/9636
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/9635
 """
 
 H_REPORT = """
@@ -162,18 +64,12 @@ H_REPORT = """
      standard: scheduling
      standard: building
      images: blocked
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10661
    - openQA's overall status is failed for https://openqa.opensuse.org/tests/10660
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10659
 
  -- For subproject openSUSE:Factory:Staging:H:DVD
- -- Project openSUSE:Factory:Staging:H:DVD still neeeds attention
    - At least following repositories are still building:
      standard: blocked
      images: blocked
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10665
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10664
-   - openQA's overall status is passed for https://openqa.opensuse.org/tests/10662
 """
 
 

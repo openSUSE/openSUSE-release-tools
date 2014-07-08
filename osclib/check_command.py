@@ -27,7 +27,7 @@ class CheckCommand(object):
 
         return True
 
-    def _report(self, project, verbose):
+    def _report(self, project, verbose, is_subproject=False):
         """Print a single report for a project.
         :param project: dict object, converted from JSON.
         :param verbose: do verbose check or not
@@ -78,15 +78,17 @@ class CheckCommand(object):
                       for job in project['openqa_jobs'] if job['result'] != 'passed')
         # XXX TODO - report the failling modules
 
-        if report:
-            report.insert(0, ' -- Project %s still neeeds attention' % project['name'])
-        else:
-            report.append(' ++ Acceptable staging project %s' % project['name'])
-
         for subproject in project['subprojects']:
-            report.append('')
-            report.append(' -- For subproject %s' % subproject['name'])
-            report.extend(self._report(subproject, verbose))
+            subreport = self._report(subproject, verbose, is_subproject=True)
+            if subreport:
+                report.append('')
+                report.append(' -- For subproject %s' % subproject['name'])
+                report.extend(subreport)
+
+        if report and not is_subproject:
+            report.insert(0, ' -- Project %s still neeeds attention' % project['name'])
+        elif not is_subproject:
+            report.append(' ++ Acceptable staging project %s' % project['name'])
 
         return report
 
@@ -105,7 +107,7 @@ class CheckCommand(object):
         info = json.load(self.api.retried_GET(url))
         if not project:
             for prj in info:
-                report.extend(self._report(prj, True))
+                report.extend(self._report(prj, False))
                 report.append('')
         else:
             report.extend(self._report(info, True))
