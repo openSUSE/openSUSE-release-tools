@@ -74,8 +74,8 @@ class CheckCommand(object):
         # openQA results
         if not project['openqa_jobs']:
             report.append('   - No openQA result yet')
-        for job in project['openqa_jobs']:
-            report.append("   - openQA's overall status is %s for https://openqa.opensuse.org/tests/%s" % (job['result'], job['id']))
+        report.extend("   - openQA's overall status is %s for https://openqa.opensuse.org/tests/%s" % (job['result'], job['id'])
+                      for job in project['openqa_jobs'] if job['result'] != 'passed')
         # XXX TODO - report the failling modules
 
         if report:
