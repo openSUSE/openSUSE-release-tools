@@ -45,6 +45,8 @@ class CheckCommand(object):
 
         # Status of obsolete requests
         for r in project['obsolete_requests']:
+            if r['state'] == 'superseded':
+                continue
             report.append('   - %s: %s' % (r['package'], r['state']))
             if not verbose:
                 break
