@@ -1,6 +1,5 @@
 language: python
 python:
-  - 3.3
   - 2.7
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
@@ -15,6 +14,3 @@ script:
   - nosetests --with-coverage --cover-package=osclib --cover-inclusive
 after_success:
   - coveralls
-matrix:
-  allow_failures:
-    - python: 3.3
