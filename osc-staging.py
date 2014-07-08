@@ -18,7 +18,6 @@ _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
 
 from osclib.stagingapi import StagingAPI
-from osclib.request_finder import RequestFinder
 from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
 from osclib.accept_command import AcceptCommand
@@ -26,7 +25,6 @@ from osclib.cleanup_rings import CleanupRings
 from osclib.list_command import ListCommand
 from osclib.freeze_command import FreezeCommand
 from osclib.check_command import CheckCommand
-from osclib.comments import CommentAPI
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -41,6 +39,8 @@ def _print_version(self):
               help='force the selection to become a move')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='manually specify different source project during request moving')
+@cmdln.option('-o', '--old', action='store_true',
+              help='use the old check algorithm')
 @cmdln.option('-v', '--version', action='store_true',
               help='show version of the plugin')
 def do_staging(self, subcmd, opts, *args):
@@ -65,11 +65,11 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging accept LETTER
-        osc staging check [--everything] REPO
+        osc staging check [--old] REPO
         osc staging cleanup_rings
         osc staging freeze PROJECT...
         osc staging list
-        osc staging select [--move [-from PROJECT]] LETTER REQUEST...
+        osc staging select [--move [--from PROJECT]] LETTER REQUEST...
         osc staging unselect REQUEST...
     """
     if opts.version:
@@ -103,10 +103,8 @@ def do_staging(self, subcmd, opts, *args):
 
     # call the respective command and parse args by need
     if cmd == 'check':
-        project = args[1] if len(args) > 1 else None
-        if project:
-            project = api.prj_from_letter(project)
-        CheckCommand(api).perform(project)
+        prj = args[1] if len(args) > 1 else None
+        CheckCommand(api).perform(prj, opts.old)
     elif cmd == 'freeze':
         for prj in args[1:]:
             FreezeCommand(api).perform(api.prj_from_letter(prj))
