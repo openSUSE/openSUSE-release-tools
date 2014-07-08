@@ -44,12 +44,12 @@ FULL_REPORT = """
  -- Project openSUSE:Factory:Staging:H still neeeds attention
    - kiwi: Missing reviews: opensuse-review-team
    - At least following repositories are still building:
-     standard: building
+     standard/i586: building
    - openQA's overall status is failed for https://openqa.opensuse.org/tests/10660
 
  -- For subproject openSUSE:Factory:Staging:H:DVD
    - At least following repositories are still building:
-     standard: blocked
+     standard/x86_64: blocked
 
  ++ Acceptable staging project openSUSE:Factory:Staging:I
 
@@ -61,15 +61,15 @@ H_REPORT = """
  -- Project openSUSE:Factory:Staging:H still neeeds attention
    - kiwi: Missing reviews: opensuse-review-team
    - At least following repositories are still building:
-     standard: scheduling
-     standard: building
-     images: blocked
+     standard/i586: scheduling
+     standard/x86_64: building
+     images/x86_64: blocked
    - openQA's overall status is failed for https://openqa.opensuse.org/tests/10660
 
  -- For subproject openSUSE:Factory:Staging:H:DVD
    - At least following repositories are still building:
-     standard: blocked
-     images: blocked
+     standard/x86_64: blocked
+     images/x86_64: blocked
 """
 
 

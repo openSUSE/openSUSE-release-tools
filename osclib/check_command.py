@@ -59,7 +59,7 @@ class CheckCommand(object):
         if project['building_repositories']:
             report.append('   - At least following repositories are still building:')
         for r in project['building_repositories']:
-            report.append('     %s: %s' % (r['repository'], r['state']))
+            report.append('     %s/%s: %s' % (r['repository'], r['arch'], r['state']))
             if not verbose:
                 break
 
