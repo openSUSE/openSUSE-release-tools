@@ -45,6 +45,8 @@ class CheckCommand(object):
 
         # Status of obsolete requests
         for r in project['obsolete_requests']:
+            if r['state'] == 'superseded':
+                continue
             report.append('   - %s: %s' % (r['package'], r['state']))
             if not verbose:
                 break
@@ -74,8 +76,10 @@ class CheckCommand(object):
         # openQA results
         if not project['openqa_jobs']:
             report.append('   - No openQA result yet')
-        report.extend("   - openQA's overall status is %s for https://openqa.opensuse.org/tests/%s" % (job['result'], job['id'])
-                      for job in project['openqa_jobs'] if job['result'] != 'passed')
+        for job in project['openqa_jobs']:
+            if job['result'] != 'passed':
+                qa_result = job['result'] if job['result'] != 'none' else 'running'
+                report.append("   - openQA's overall status is %s for https://openqa.opensuse.org/tests/%s" % (qa_result, job['id']))
         # XXX TODO - report the failling modules
 
         for subproject in project['subprojects']:
