@@ -80,7 +80,7 @@ class CheckCommand(object):
             if job['result'] != 'passed':
                 qa_result = job['result'] if job['result'] != 'none' else 'running'
                 report.append("   - openQA's overall status is %s for https://openqa.opensuse.org/tests/%s" % (qa_result, job['id']))
-        # XXX TODO - report the failling modules
+                report.extend('     %s: fail' % module['name'] for module in job['modules'] if module['result'] == 'fail')
 
         for subproject in project['subprojects']:
             subreport = self._report(subproject, verbose, is_subproject=True)

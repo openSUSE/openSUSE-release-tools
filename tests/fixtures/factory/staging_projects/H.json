@@ -41,7 +41,21 @@
             "iso": null,
             "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-cryptlvm",
             "result": "passed",
-            "state": "done"
+            "state": "done",
+	    "modules": [
+		{
+		    "name": "isosize",
+		    "result": "ok"
+		},
+		{
+		    "name": "livecdreboot",
+		    "result": "ok"
+		},
+		{
+		    "name": "first_boot",
+		    "result": "ok"
+		}
+	    ]
         },
         {
             "clone_id": null,
@@ -49,7 +63,21 @@
             "iso": null,
             "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-RAID1",
             "result": "failed",
-            "state": "done"
+            "state": "done",
+	    "modules": [
+		{
+		    "name": "isosize",
+		    "result": "ok"
+		},
+		{
+		    "name": "livecdreboot",
+		    "result": "fail"
+		},
+		{
+		    "name": "first_boot",
+		    "result": "na"
+		}
+	    ]
         },
         {
             "clone_id": null,
@@ -57,7 +85,21 @@
             "iso": null,
             "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-minimalx",
             "result": "passed",
-            "state": "done"
+            "state": "done",
+	    "modules": [
+		{
+		    "name": "isosize",
+		    "result": "ok"
+		},
+		{
+		    "name": "livecdreboot",
+		    "result": "na"
+		},
+		{
+		    "name": "first_boot",
+		    "result": "ok"
+		}
+	    ]
         }
     ],
     "subprojects": [
@@ -88,7 +130,21 @@
                     "iso": null,
                     "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-gnome",
                     "result": "passed",
-                    "state": "done"
+                    "state": "done",
+		    "modules": [
+			{
+			    "name": "isosize",
+			    "result": "ok"
+			},
+			{
+			    "name": "livecdreboot",
+			    "result": "ok"
+			},
+			{
+			    "name": "first_boot",
+			    "result": "ok"
+			}
+		    ]
                 },
                 {
                     "clone_id": null,
@@ -96,7 +152,21 @@
                     "iso": null,
                     "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-miniuefi",
                     "result": "passed",
-                    "state": "done"
+                    "state": "done",
+		    "modules": [
+			{
+			    "name": "isosize",
+			    "result": "ok"
+			},
+			{
+			    "name": "livecdreboot",
+			    "result": "ok"
+			},
+			{
+			    "name": "first_boot",
+			    "result": "ok"
+			}
+		    ]
                 },
                 {
                     "clone_id": null,
@@ -104,7 +174,21 @@
                     "iso": null,
                     "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-kde",
                     "result": "passed",
-                    "state": "done"
+                    "state": "done",
+		    "modules": [
+			{
+			    "name": "isosize",
+			    "result": "ok"
+			},
+			{
+			    "name": "livecdreboot",
+			    "result": "ok"
+			},
+			{
+			    "name": "first_boot",
+			    "result": "ok"
+			}
+		    ]
                 }
             ],
             "subprojects": [],
