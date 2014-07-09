@@ -13,7 +13,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -21,7 +35,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -29,7 +57,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -47,7 +89,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:A-Staging2-DVD-x86_64-Build141.4-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -55,7 +111,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:A-Staging2-DVD-x86_64-Build141.4-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -63,7 +133,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:A-Staging2-DVD-x86_64-Build141.4-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -86,7 +170,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -94,7 +192,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -102,7 +214,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -120,7 +246,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:B-Staging2-DVD-x86_64-Build115.2-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -128,7 +268,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:B-Staging2-DVD-x86_64-Build115.2-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -136,7 +290,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:B-Staging2-DVD-x86_64-Build115.2-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -159,7 +327,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -167,7 +349,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -175,7 +371,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -193,7 +403,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:C-Staging2-DVD-x86_64-Build128.1-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -201,7 +425,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:C-Staging2-DVD-x86_64-Build128.1-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -209,7 +447,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:C-Staging2-DVD-x86_64-Build128.1-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -232,7 +484,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -240,7 +506,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -248,7 +528,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -266,7 +560,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:D-Staging2-DVD-x86_64-Build127.14-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -274,7 +582,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:D-Staging2-DVD-x86_64-Build127.14-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -282,7 +604,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:D-Staging2-DVD-x86_64-Build127.14-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -305,7 +641,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -313,7 +663,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -321,7 +685,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -339,7 +717,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:E-Staging2-DVD-x86_64-Build119.1-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -347,7 +739,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:E-Staging2-DVD-x86_64-Build119.1-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -355,7 +761,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:E-Staging2-DVD-x86_64-Build119.1-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -470,7 +890,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -478,7 +912,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -486,7 +934,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -504,7 +966,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:F-Staging2-DVD-x86_64-Build128.5-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -512,7 +988,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:F-Staging2-DVD-x86_64-Build128.5-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -520,7 +1010,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:F-Staging2-DVD-x86_64-Build128.5-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -551,7 +1055,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -559,7 +1077,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -567,7 +1099,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -585,7 +1131,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:G-Staging2-DVD-x86_64-Build115.3-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -593,7 +1153,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:G-Staging2-DVD-x86_64-Build115.3-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -601,7 +1175,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:G-Staging2-DVD-x86_64-Build115.3-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -651,7 +1239,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -659,7 +1261,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-RAID1",
                 "result": "failed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "fail"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -667,7 +1283,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -698,7 +1328,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-gnome",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -706,7 +1350,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-miniuefi",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     },
                     {
                         "clone_id": null,
@@ -714,7 +1372,21 @@
                         "iso": null,
                         "name": "opensuse-Staging:H-Staging2-DVD-x86_64-Build110.12-kde",
                         "result": "passed",
-                        "state": "done"
+                        "state": "done",
+			"modules": [
+			    {
+				"name": "isosize",
+				"result": "ok"
+			    },
+			    {
+				"name": "livecdreboot",
+				"result": "na"
+			    },
+			    {
+				"name": "first_boot",
+				"result": "ok"
+			    }
+			]
                     }
                 ],
                 "subprojects": [],
@@ -737,7 +1409,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -745,7 +1431,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -753,7 +1453,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [
@@ -832,7 +1546,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-cryptlvm",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -840,7 +1568,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-RAID1",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             },
             {
                 "clone_id": null,
@@ -848,7 +1590,21 @@
                 "iso": null,
                 "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-minimalx",
                 "result": "passed",
-                "state": "done"
+                "state": "done",
+		"modules": [
+		    {
+			"name": "isosize",
+			"result": "ok"
+		    },
+		    {
+			"name": "livecdreboot",
+			"result": "na"
+		    },
+		    {
+			"name": "first_boot",
+			"result": "ok"
+		    }
+		]
             }
         ],
         "subprojects": [],
