@@ -12,6 +12,9 @@ job install name branding-openSUSE
 job install name openSUSE-release-livecd-x11
 job install name sudo
 job install name xdelta
+job install name screen
+job install name sshfs
+job install name alsa-utils
 
 job lock name bash-completion
 job lock name bash-doc
