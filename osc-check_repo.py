@@ -296,7 +296,7 @@ def _check_repo_group(self, id_, requests, opts):
                 greqs = opts.groups.get(rq.group, [])
                 if request in greqs:
                     continue
-                package = '%s(rq%s)' % (package, request)
+                package = '#[%s](%s)' % (request, package)
             smissing.append(package)
         if len(smissing):
             msg = 'Please make sure to wait before these depencencies are in %s: %s' % (rq.tgt_project, ', '.join(smissing))
