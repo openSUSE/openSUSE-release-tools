@@ -76,7 +76,7 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
                 continue
             files.append((fn, pname, result.group(4), mt))
     except urllib2.HTTPError:
-        pass
+        print " - WARNING: Can't found list of packages (RPM) for %s in %s (%s, %s)" % (pkg, prj, repo, arch)
     return files
 
 
@@ -163,7 +163,7 @@ def _check_repo_download(self, request, opts):
 
     if request.is_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
-        print ' - Found cached version for', request.str_compact()
+        # print ' - Found cached version for', request.str_compact()
         return self._check_repo_toignore(request, opts)
 
     if request.build_excluded:
