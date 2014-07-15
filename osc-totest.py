@@ -305,7 +305,7 @@ def do_totest(self, subcmd, opts, *args):
     current_result = self.tt_overall_result(current_snapshot)
     print "current_snapshot", current_snapshot, tt_result2str(current_result)
     if current_result == QAResult.Failed:
-        sys.exit(1)
+        pass
     can_release = current_result != QAResult.InProgress and self.tt_factory_snapshottable()
     
     # not overwriting

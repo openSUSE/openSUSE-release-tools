@@ -111,8 +111,10 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'accept':
         cmd = AcceptCommand(api)
         for prj in args[1:]:
-            cmd.perform(api.prj_from_letter(prj))
+            if not cmd.perform(api.prj_from_letter(prj)):
+                return
         cmd.accept_other_new()
+        cmd.update_factory_version()
     elif cmd == 'unselect':
         UnselectCommand(api).perform(args[1:])
     elif cmd == 'select':
