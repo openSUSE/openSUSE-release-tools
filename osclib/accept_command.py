@@ -1,8 +1,9 @@
 from osc.core import change_request_state
 from osc.core import get_request
-from osc.core import http_GET
-
+from osc.core import http_GET, http_PUT
+from datetime import date
 from osclib.comments import CommentAPI
+import re, string
 
 from xml.etree import cElementTree as ET
 
@@ -31,12 +32,12 @@ class AcceptCommand(object):
         Then disable the build to disabled
         :param project: staging project we are working with
         """
-                
+
         status = self.api.check_project_status(project)
 
         if not status:
             print('The project "{0}" is not yet acceptable.'.format(project))
-            return
+            return False
 
         meta = self.api.get_prj_pseudometa(project)
         requests = []
@@ -67,7 +68,26 @@ class AcceptCommand(object):
         return True
 
     def accept_other_new(self):
+        changed = False
         for req in self.find_new_requests('openSUSE:Factory'):
             change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to factory')
+            changed = True
 
-        return True
+        return changed
+
+    def update_factory_version(self):
+        url = self.api.makeurl(['source', 'openSUSE:Factory', '_product', 'openSUSE.product'])
+
+        f = http_GET(url)
+        f = f.read()
+        versionmatch = re.compile(r'(\s*)<version>201.*</version>')
+        newcontent = []
+        for line in f.split('\n'):
+            match = versionmatch.match(line)
+            if match:
+                line = match.group(1) + '<version>'
+                line += date.today().strftime('%Y%m%d')
+                line += "</version>"
+            newcontent.append(line)
+
+        http_PUT(url + "?comment=Update+version", data=string.join(newcontent, '\n'))
