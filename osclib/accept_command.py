@@ -1,11 +1,11 @@
+import re
+from xml.etree import cElementTree as ET
+
 from osc.core import change_request_state
-from osc.core import get_request
 from osc.core import http_GET, http_PUT
 from datetime import date
 from osclib.comments import CommentAPI
-import re, string
 
-from xml.etree import cElementTree as ET
 
 class AcceptCommand(object):
     def __init__(self, api):
@@ -13,19 +13,17 @@ class AcceptCommand(object):
         self.comment = CommentAPI(self.api.apiurl)
 
     def find_new_requests(self, project):
-        requests = []
-
         query = "match=state/@name='new'+and+(action/target/@project='{}'+and+action/@type='submit')".format(project)
         url = self.api.makeurl(['search', 'request'], query)
 
         f = http_GET(url)
         root = ET.parse(f).getroot()
-        
-        ids=[]
+
+        ids = []
         for rq in root.findall('request'):
             ids.append(int(rq.get('id')))
         return ids
-            
+
     def perform(self, project):
         """
         Accept the staging LETTER for review and submit to factory
@@ -76,18 +74,12 @@ class AcceptCommand(object):
         return changed
 
     def update_factory_version(self):
+        """Update Factory version if is necessary."""
         url = self.api.makeurl(['source', 'openSUSE:Factory', '_product', 'openSUSE.product'])
 
-        f = http_GET(url)
-        f = f.read()
-        versionmatch = re.compile(r'(\s*)<version>201.*</version>')
-        newcontent = []
-        for line in f.split('\n'):
-            match = versionmatch.match(line)
-            if match:
-                line = match.group(1) + '<version>'
-                line += date.today().strftime('%Y%m%d')
-                line += "</version>"
-            newcontent.append(line)
+        product = http_GET(url).read()
+        curr_version = date.today().strftime('%Y%m%d')
+        new_product = re.sub(r'<version>\d{8}</version>', '<version>%s</version>' % curr_version, product)
 
-        http_PUT(url + "?comment=Update+version", data=string.join(newcontent, '\n'))
+        if product != new_product:
+            http_PUT(url + "?comment=Update+version", data=new_product)
