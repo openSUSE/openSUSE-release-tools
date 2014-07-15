@@ -528,6 +528,28 @@ class CheckRepo(object):
 
         return downloads
 
+    def get_missings(self, request):
+        """Get the list of packages that are in missing status."""
+
+        missings = set()
+
+        # XXX TODO - This piece is contained in
+        # is_buildsuccess(). Integrate both.
+        repos_to_check = self.repositories_to_check(request)
+        for repository in repos_to_check:
+            for arch in repository.findall('arch'):
+                if arch.attrib['arch'] not in ('i586', 'x86_64'):
+                    continue
+                if 'missing' in arch.attrib:
+                    for package in arch.attrib['missing'].split(','):
+                        if not self.is_binary(
+                                request.src_project,
+                                repository.attrib['name'],
+                                arch.attrib['arch'],
+                                package):
+                            missings.add(package)
+        return sorted(missings)
+
     def is_buildsuccess(self, request):
         """Return True if the request is correctly build
 
@@ -544,6 +566,7 @@ class CheckRepo(object):
         if self.is_request_cached(request):
             request.is_cached = True
             request.goodrepos = self._get_goodrepos_from_local(request)
+            request.missings = self.get_missings(request)
             return True
 
         # If the request do not build properly in both Intel platforms,
@@ -558,7 +581,7 @@ class CheckRepo(object):
             return False
 
         result = False
-        missings = {}
+        missings = set()
         alldisabled = True
         foundbuilding = None
         foundfailed = None
@@ -568,7 +591,6 @@ class CheckRepo(object):
             founddisabled = False
             r_foundbuilding = None
             r_foundfailed = None
-            r_missings = {}
             for arch in repository.findall('arch'):
                 if arch.attrib['arch'] not in ('i586', 'x86_64'):
                     continue
@@ -579,7 +601,7 @@ class CheckRepo(object):
                                 repository.attrib['name'],
                                 arch.attrib['arch'],
                                 package):
-                            missings[package] = 1
+                            missings.add(package)
                 if arch.attrib['result'] not in ('succeeded', 'excluded'):
                     isgood = False
                 if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
@@ -601,9 +623,6 @@ class CheckRepo(object):
                     request.updated = True
                     return False
 
-            r_missings = r_missings.keys()
-            for pkg in r_missings:
-                missings[pkg] = 1
             if not founddisabled:
                 alldisabled = False
             if isgood:
