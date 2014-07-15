@@ -269,6 +269,17 @@ def tt_totest_is_publishing(self):
 
     return False
 
+def tt_current_factory_version(self):
+    url = self.api.makeurl(['build', 'openSUSE:Factory', 'standard', 'x86_64', '_product:openSUSE-release'])
+    f = self.api.retried_GET(url)
+    root = ET.parse(f).getroot()
+    for binary in root.findall('binary'):
+        binary = binary.get('filename', '')
+        result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
+        if result:
+            return result.group(1)
+    raise Exception("can't find factory version")
+
 def tt_build_of_ftp_tree(self, project):
     """Determine the build id of the FTP tree product in the given project"""
     
@@ -300,7 +311,7 @@ def do_totest(self, subcmd, opts, *args):
     self.api = StagingAPI(opts.apiurl)
 
     current_snapshot = self.tt_get_current_snapshot()
-    new_snapshot = date.today().strftime("%Y%m%d")
+    new_snapshot = self.tt_current_factory_version()
 
     current_result = self.tt_overall_result(current_snapshot)
     print "current_snapshot", current_snapshot, tt_result2str(current_result)
