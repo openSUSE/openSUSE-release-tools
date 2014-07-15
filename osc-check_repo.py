@@ -163,7 +163,7 @@ def _check_repo_download(self, request, opts):
 
     if request.is_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
-        print ' - Found cached version for', request.str_compact()
+        # print ' - Found cached version for', request.str_compact()
         return self._check_repo_toignore(request, opts)
 
     if request.build_excluded:
