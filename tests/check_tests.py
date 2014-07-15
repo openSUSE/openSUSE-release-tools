@@ -35,13 +35,13 @@ FULL_REPORT = """
 
  ++ Acceptable staging project openSUSE:Factory:Staging:E
 
- -- Project openSUSE:Factory:Staging:F still neeeds attention
+ -- Project openSUSE:Factory:Staging:F still needs attention
    - yast2-iscsi-client: Missing reviews: factory-repo-checker
 
- -- Project openSUSE:Factory:Staging:G still neeeds attention
+ -- Project openSUSE:Factory:Staging:G still needs attention
    - Mesa: Missing reviews: opensuse-review-team
 
- -- Project openSUSE:Factory:Staging:H still neeeds attention
+ -- Project openSUSE:Factory:Staging:H still needs attention
    - kiwi: Missing reviews: opensuse-review-team
    - At least following repositories are still building:
      standard/i586: building
@@ -54,12 +54,12 @@ FULL_REPORT = """
 
  ++ Acceptable staging project openSUSE:Factory:Staging:I
 
- -- Project openSUSE:Factory:Staging:J still neeeds attention
+ -- Project openSUSE:Factory:Staging:J still needs attention
    - jeuclid: Missing reviews: factory-repo-checker
 """
 
 H_REPORT = """
- -- Project openSUSE:Factory:Staging:H still neeeds attention
+ -- Project openSUSE:Factory:Staging:H still needs attention
    - kiwi: Missing reviews: opensuse-review-team
    - At least following repositories are still building:
      standard/i586: scheduling

@@ -19,7 +19,7 @@ class CheckCommand(object):
 
         print('Checking staging project: {}'.format(project))
         if type(state) is list:
-            print(' -- Project still neeeds attention')
+            print(' -- Project still needs attention')
             for issue in state:
                 print(issue)
         else:
@@ -90,7 +90,7 @@ class CheckCommand(object):
                 report.extend(subreport)
 
         if report and not is_subproject:
-            report.insert(0, ' -- Project %s still neeeds attention' % project['name'])
+            report.insert(0, ' -- Project %s still needs attention' % project['name'])
         elif not is_subproject:
             report.append(' ++ Acceptable staging project %s' % project['name'])
 
