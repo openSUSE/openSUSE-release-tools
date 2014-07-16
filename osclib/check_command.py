@@ -81,6 +81,7 @@ class CheckCommand(object):
                 qa_result = job['result'] if job['result'] != 'none' else 'running'
                 report.append("   - openQA's overall status is %s for https://openqa.opensuse.org/tests/%s" % (qa_result, job['id']))
                 report.extend('     %s: fail' % module['name'] for module in job['modules'] if module['result'] == 'fail')
+                break
 
         for subproject in project['subprojects']:
             subreport = self._report(subproject, verbose, is_subproject=True)
@@ -111,6 +112,8 @@ class CheckCommand(object):
         info = json.load(self.api.retried_GET(url))
         if not project:
             for prj in info:
+                if not prj['selected_requests']:
+                    continue
                 report.extend(self._report(prj, False))
                 report.append('')
         else:
