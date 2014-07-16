@@ -226,9 +226,13 @@ for my $path (@$paths) {
 open( PACKAGES, ">", $pfile ) || die "can not open $pfile";
 print PACKAGES "=Ver: 2.0\n";
 
+my %knipser;
+
 foreach my $package (@rpms) {
+    die $package unless $package =~ m,/.{32}-([^/]+)\.rpm$,;
+    next if $knipser{$1}++;
     my $out = CreatePackageDescr::package_snippet($package);
-    print PACKAGES CreatePackageDescr::package_snippet($package);
+    print PACKAGES $out;
 }
 close(PACKAGES);
 
