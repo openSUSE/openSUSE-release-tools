@@ -39,6 +39,8 @@ def _print_version(self):
               help='force the selection to become a move')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='manually specify different source project during request moving')
+@cmdln.option('--add', dest='add', metavar='PACKAGE',
+              help='mark additional packages to be checked by repo checker')
 @cmdln.option('-o', '--old', action='store_true',
               help='use the old check algorithm')
 @cmdln.option('-v', '--version', action='store_true',
@@ -84,7 +86,9 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'check':
         min_args, max_args = 0, 2
     elif cmd == 'select':
-        min_args, max_args = 2, None
+        min_args, max_args = 1, None
+        if not opts.add:
+            min_args = 2
     elif cmd == 'unselect':
         min_args, max_args = 1, None
     elif cmd in ('list', 'cleanup_rings'):
@@ -119,7 +123,10 @@ def do_staging(self, subcmd, opts, *args):
         UnselectCommand(api).perform(args[1:])
     elif cmd == 'select':
         tprj = api.prj_from_letter(args[1])
-        SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
+        if opts.add:
+            api.mark_additional_packages(tprj, [ opts.add ] )
+        else:
+            SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
     elif cmd == 'cleanup_rings':
         CleanupRings(opts.apiurl).perform()
     elif cmd == 'list':

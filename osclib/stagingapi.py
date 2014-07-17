@@ -362,9 +362,10 @@ class StagingAPI(object):
         # * removed linked packages
         try:
             data = yaml.load(description.text)
-            data['requests']
-        except:
-            data = yaml.load('requests: []')
+        except (TypeError, AttributeError):
+            data = {}
+        # make sure we have a requests field
+        data['requests'] = data.get('requests', [])
         return data
 
     def set_prj_pseudometa(self, project, meta):
@@ -392,8 +393,7 @@ class StagingAPI(object):
         title.text = nt[:240]
         # Write XML back
         url = make_meta_url('prj', project, self.apiurl, force=True)
-        f = metafile(url, ET.tostring(root))
-        http_PUT(f.url, file=f.filename)
+        http_PUT(url, data=ET.tostring(root))
 
     def _add_rq_to_prj_pseudometa(self, project, request_id, package):
         """
@@ -1165,3 +1165,13 @@ class StagingAPI(object):
             lines.append('  * Request#%s for package %s submitted by @%s' % (req['id'], req['package'], author))
         msg = '\n'.join(lines)
         comment_api.add_comment(project_name=project, comment=msg)
+
+    def mark_additional_packages(self, project, packages):
+        """
+        Adds packages that the repo checker needs to download from staging prj
+        """
+        meta = self.get_prj_pseudometa(project)
+        additionals = set(meta.get('add_to_repo', []))
+        additionals.update(packages)
+        meta['add_to_repo'] = sorted(additionals)
+        self.set_prj_pseudometa(project, meta)
