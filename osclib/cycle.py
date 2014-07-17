@@ -231,6 +231,9 @@ class CycleDetector(object):
     def cycles(self, requests, project='openSUSE:Factory', repository='standard', arch='x86_64'):
         """Detect cycles in a specific repository."""
 
+        # filter submit requests
+        requests = [ rq for rq in requests if rq.action_type == 'submit' ]
+
         # Detect cycles - We create the full graph from _builddepinfo.
         factory_graph = self._get_builddepinfo_graph(project, repository, arch)
         factory_cycles = factory_graph.cycles()

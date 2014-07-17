@@ -57,6 +57,8 @@ class Request(object):
         self.error = None
         self.build_excluded = False
         self.is_cached = False
+        self.action_type = 'submit' # assume default
+        self.downloads = []
 
         if element:
             self.load(element)
@@ -66,11 +68,16 @@ class Request(object):
         self.request_id = int(element.get('id'))
 
         action = element.find('action')
-        self.src_project = action.find('source').get('project')
-        self.src_package = action.find('source').get('package')
-        self.revision = action.find('source').get('rev')
-        self.tgt_project = action.find('target').get('project')
-        self.tgt_package = action.find('target').get('package')
+        self.action_type = action.get('type')
+        source = action.find('source')
+        if source is not None:
+            self.src_project = source.get('project')
+            self.src_package = source.get('package')
+            self.revision = source.get('rev')
+        target = action.find('target')
+        if target is not None:
+            self.tgt_project = target.get('project')
+            self.tgt_package = target.get('package')
 
         # The groups are in the CheckRepo object.
         self.group = self.request_id
@@ -290,19 +297,20 @@ class CheckRepo(object):
             self.change_review_state(request_id, 'declined', message=msg)
             return requests
 
-        # Accept requests that are not SUBMIT type.
-        # XXX TODO - DELETE requests need to be managed here too.
-        action = actions[0]
-        action_type = action.get('type')
-        if action_type != 'submit':
-            msg = 'Unchecked request type %s' % action_type
+        rq = Request(element=request)
+
+        if rq.action_type != 'submit' and rq.action_type != 'delete':
+            msg = 'Unchecked request type %s' % rq.action_type
             print 'ACCEPTED', msg
             self.change_review_state(request_id, 'accepted', message=msg)
             return requests
 
-        rq = Request(element=request)
         rq.group = self.grouped.get(request_id, request_id)
         requests.append(rq)
+
+        if rq.action_type == 'delete':
+            # only track the target package
+            return requests
 
         # Get source information about the SR:
         #   - Source MD5

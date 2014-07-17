@@ -262,13 +262,19 @@ def _check_repo_group(self, id_, requests, opts):
     for rq in packs:
         if fetched[rq.request_id]:
             continue
-        # we need to call it to fetch the good repos to download
-        # but the return value is of no interest right now.
-        self.checkrepo.is_buildsuccess(rq)
-        i = self._check_repo_download(rq, opts)
-        if rq.error:
-            print 'ERROR (ALREADY ACEPTED?):', rq.error
-            rq.updated = True
+        i = set()
+        if rq.action_type == 'delete':
+            # for delete requests we only care for toignore
+            i = self._check_repo_toignore(rq, opts)
+        else:
+            # we need to call it to fetch the good repos to download
+            # but the return value is of no interest right now.
+            self.checkrepo.is_buildsuccess(rq)
+            i = self._check_repo_download(rq, opts)
+            if rq.error:
+                print 'ERROR (ALREADY ACEPTED?):', rq.error
+                rq.updated = True
+
         toignore.update(i)
 
     # Detect cycles into the current Factory graph after we update the
