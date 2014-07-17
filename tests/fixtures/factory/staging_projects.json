@@ -1,5 +1,10 @@
 [
     {
+	"selected_requests": [
+	    {
+		"id": 235410
+	    }
+	],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests:\n- {id: 235410, package: ncurses}\n",
@@ -76,6 +81,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -157,6 +163,7 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests: []\n",
@@ -233,6 +240,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -314,6 +322,11 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [
+	    {
+		"id": 235517
+	    }
+	],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests:\n- {id: 235517, package: systemd}\n",
@@ -390,6 +403,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -471,6 +485,7 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests: []\n",
@@ -547,6 +562,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -628,6 +644,7 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests: []\n",
@@ -704,6 +721,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -785,6 +803,41 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [
+	    {
+		"id": 234678
+	    },
+	    {
+		"id": 234991
+	    },
+	    {
+		"id": 235018
+	    },
+	    {
+		"id": 235047
+	    },
+	    {
+		"id": 235076
+	    },
+	    {
+		"id": 235180
+	    },
+	    {
+		"id": 235376
+	    },
+	    {
+		"id": 235402
+	    },
+	    {
+		"id": 235520
+	    },
+	    {
+		"id": 235548
+	    },
+	    {
+		"id": 235550
+	    }
+	],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests:\n- {id: 234678, package: yast2-iscsi-client}\n- {id: 234991, package: zypper}\n- {id: 235018, package: yast2-storage}\n- {id: 235047, package: libzypp}\n- {id: 235076, package: yast2-nfs-server}\n- {id: 235180, package: yast2}\n- {id: 235376, package: libyui-qt-pkg}\n- {id: 235402, package: libstorage}\n- {id: 235520, package: libqt5-qtbase}\n- {id: 235548, package: autoyast2}\n- {id: 235550, package: yast2-pkg-bindings}\n",
@@ -953,6 +1006,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -1034,6 +1088,50 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [
+	    {
+		"id": 234718
+	    },
+	    {
+		"id": 234824
+	    },
+	    {
+		"id": 234862
+	    },
+	    {
+		"id": 234920
+	    },
+	    {
+		"id": 234935
+	    },
+	    {
+		"id": 234947
+	    },
+	    {
+		"id": 234965
+	    },
+	    {
+		"id": 234981
+	    },
+	    {
+		"id": 235009
+	    },
+	    {
+		"id": 235055
+	    },
+	    {
+		"id": 235062
+	    },
+	    {
+		"id": 235063
+	    },
+	    {
+		"id": 235378
+	    },
+	    {
+		"id": 235538
+	    }
+	],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests:\n- {id: 234718, package: libXfont}\n- {id: 234824, package: xf86-input-vmmouse}\n- {id: 234862, package: tigervnc}\n- {id: 234920, package: xf86-input-evdev}\n- {id: 234935, package: libmng}\n- {id: 234947, package: yast2-nfs-client}\n- {id: 234965, package: yast2-installation}\n- {id: 234981, package: yast2-fcoe-client}\n- {id: 235009, package: libxkbcommon}\n- {id: 235055, package: llvm}\n- {id: 235062, package: yast2-add-on}\n- {id: 235063, package: yast2-ca-management}\n- {id: 235378, package: xorg-x11-server}\n- {id: 235538, package: Mesa}\n",
@@ -1118,6 +1216,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -1199,6 +1298,26 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [
+	    {
+		"id": 234999
+	    },
+	    {
+		"id": 235422
+	    },
+	    {
+		"id": 235482
+	    },
+	    {
+		"id": 235495
+	    },
+	    {
+		"id": 235524
+	    },
+	    {
+		"id": 235547
+	    }
+	],
         "broken_packages": [],
         "building_repositories": [
             {
@@ -1302,6 +1421,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [
                     {
@@ -1396,6 +1516,7 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests: []\n",
@@ -1472,6 +1593,7 @@
         ],
         "subprojects": [
             {
+		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
                 "description": "",
@@ -1511,6 +1633,26 @@
         "untracked_requests": []
     },
     {
+	"selected_requests": [
+	    {
+		"id": 235022
+	    },
+	    {
+		"id": 235030
+	    },
+	    {
+		"id": 235127
+	    },
+	    {
+		"id": 235201
+	    },
+	    {
+		"id": 235203
+	    },
+	    {
+		"id": 235204
+	    }
+	],
         "broken_packages": [],
         "building_repositories": [],
         "description": "requests:\n- {id: 235022, package: scilab}\n- {id: 235030, package: apache-commons-cli}\n- {id: 235127, package: jeuclid}\n- {id: 235201, package: libcss}\n- {id: 235203, package: libparserutils}\n- {id: 235204, package: libwapcaplet}\n",
