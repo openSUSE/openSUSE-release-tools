@@ -280,20 +280,6 @@ def tt_current_factory_version(self):
             return result.group(1)
     raise Exception("can't find factory version")
 
-def tt_build_of_ftp_tree(self, project):
-    """Determine the build id of the FTP tree product in the given project"""
-    
-    url = self.api.makeurl(['build', project, 'images', 'local', '_product:openSUSE-ftp-ftp-i586_x86_64'])
-    f = self.api.retried_GET(url)
-    root = ET.parse(f).getroot()
-    for binary in root.findall('binary'):
-        binary = binary.get('filename', '')
-        result = re.match(r'.*Build(.*)-Media1.report', binary)
-        if result:
-            return result.group(1)
-    print ET.tostring(root)
-    raise Exception('No media1.report found')
-
 def do_totest(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -321,10 +307,6 @@ def do_totest(self, subcmd, opts, *args):
     
     # not overwriting
     if new_snapshot == current_snapshot:
-        can_release = False
-    elif self.tt_build_of_ftp_tree('openSUSE:Factory') == self.tt_build_of_ftp_tree('openSUSE:Factory:ToTest'):
-        # there was no change in factory since the last release, so drop it
-        print "FTP tree is the same"
         can_release = False
     elif not self.tt_all_repos_done('openSUSE:Factory:ToTest'):
         # the repos have to be done, otherwise we better not touch them with a new release
