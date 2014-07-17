@@ -27,13 +27,7 @@ from osclib.stagingapi import StagingAPI
 FULL_REPORT = """
  ++ Acceptable staging project openSUSE:Factory:Staging:A
 
- ++ Acceptable staging project openSUSE:Factory:Staging:B
-
  ++ Acceptable staging project openSUSE:Factory:Staging:C
-
- ++ Acceptable staging project openSUSE:Factory:Staging:D
-
- ++ Acceptable staging project openSUSE:Factory:Staging:E
 
  -- Project openSUSE:Factory:Staging:F still needs attention
    - yast2-iscsi-client: Missing reviews: factory-repo-checker
@@ -51,8 +45,6 @@ FULL_REPORT = """
  -- For subproject openSUSE:Factory:Staging:H:DVD
    - At least following repositories are still building:
      standard/x86_64: blocked
-
- ++ Acceptable staging project openSUSE:Factory:Staging:I
 
  -- Project openSUSE:Factory:Staging:J still needs attention
    - jeuclid: Missing reviews: factory-repo-checker

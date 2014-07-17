@@ -57,7 +57,7 @@ class Request(object):
         self.error = None
         self.build_excluded = False
         self.is_cached = False
-        self.action_type = 'submit' # assume default
+        self.action_type = 'submit'  # assume default
         self.downloads = []
 
         if element:
