@@ -167,6 +167,11 @@ def _check_repo_toignore(self, request, opts):
     for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'i586', request.tgt_package, opts):
         if fn[1] and fn[2] == 'x86_64':
             toignore.add(fn[1])
+
+    # Ignore also the extra packages
+    if request.extra_packages:
+        toignore.update(self.checkrepo.extra_packages[request.group][request.request_id])
+
     return toignore
 
 
