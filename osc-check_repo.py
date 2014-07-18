@@ -76,7 +76,8 @@ def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
                 continue
             files.append((fn, pname, result.group(4), mt))
     except urllib2.HTTPError:
-        print " - WARNING: Can't found list of packages (RPM) for %s in %s (%s, %s)" % (pkg, prj, repo, arch)
+        pass
+        # print " - WARNING: Can't found list of packages (RPM) for %s in %s (%s, %s)" % (pkg, prj, repo, arch)
     return files
 
 
