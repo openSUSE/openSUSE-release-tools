@@ -90,10 +90,14 @@ def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target,
     get_binary_file(apiurl, prj, repo, arch, file, package=package, target_filename=target)
 
 
-def _download(self, request, todownload, opts):
+def _download(self, request, todownload, opts, src_package=None, only_rpm=False):
     """Download the packages refereced in a request."""
+    downloaded = []
+
     last_disturl = None
     last_disturldir = None
+
+    src_package = request.src_package if not src_package else src_package
 
     # We need to order the files to download.  First RPM packages (to
     # set disturl), after that the rest.
@@ -107,7 +111,7 @@ def _download(self, request, todownload, opts):
             os.makedirs(repodir)
         t = os.path.join(repodir, fn)
         self._check_repo_get_binary(opts.apiurl, _project, _repo,
-                                    arch, request.src_package, fn, t, mt)
+                                    arch, src_package, fn, t, mt)
 
         # Organize the files into DISTURL directories.
         disturl = self.checkrepo._md5_disturl(self.checkrepo._disturl(t))
@@ -123,6 +127,10 @@ def _download(self, request, todownload, opts):
             # print 'Found previous link.'
 
         request.downloads[(_project, _repo, disturl)].append(file_in_disturl)
+        downloaded.append(file_in_disturl)
+
+    if only_rpm:
+        return downloaded
 
     for _project, _repo, arch, fn, mt in todownload_rest:
         repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
@@ -130,7 +138,7 @@ def _download(self, request, todownload, opts):
             os.makedirs(repodir)
         t = os.path.join(repodir, fn)
         self._check_repo_get_binary(opts.apiurl, _project, _repo,
-                                    arch, request.src_package, fn, t, mt)
+                                    arch, src_package, fn, t, mt)
 
         file_in_disturl = os.path.join(last_disturldir, fn)
         if last_disturldir:
@@ -143,6 +151,9 @@ def _download(self, request, todownload, opts):
             print "I don't know where to put", fn
 
         request.downloads[(_project, _repo, last_disturl)].append(file_in_disturl)
+        downloaded.append(file_in_disturl)
+
+    return downloaded
 
 
 def _check_repo_toignore(self, request, opts):
@@ -159,7 +170,6 @@ def _check_repo_toignore(self, request, opts):
 
 
 def _check_repo_download(self, request, opts):
-    request.downloads = defaultdict(list)
 
     if request.is_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
@@ -199,6 +209,27 @@ def _check_repo_download(self, request, opts):
         if request.error:
             return set()
 
+        # Download extra packages.  This will invalidate some checks.
+        # To identify the packages we need to store more information
+        # inside the request.
+        extra_packages = self.checkrepo.extra_packages[request.group][request.request_id]
+        for extra_package in extra_packages:
+            todownload = [
+                ToDownload(request.group, 'standard', 'x86_64', fn[0], fn[3])
+                for fn in self._check_repo_repo_list(request.group,
+                                                     'standard',
+                                                     'x86_64',
+                                                     extra_package,
+                                                     opts)]
+
+            extra_package_filenames = self._download(request, todownload, opts,
+                                                     src_package=extra_package, only_rpm=True)
+            request.extra_packages.extend(extra_package_filenames)
+
+            if request.error:
+                return set()
+
+        # Download packages for subproject :DVD
         todownload = [
             ToDownload(request.group + ':DVD', 'standard', 'x86_64', fn[0], fn[3])
             for fn in self._check_repo_repo_list(request.group + ':DVD',
@@ -335,7 +366,9 @@ def _check_repo_group(self, id_, requests, opts):
     all_good_downloads = defaultdict(set)
     for rq in packs:
         for (prj, repo, disturl) in rq.downloads:
-            if self.checkrepo.check_disturl(rq, md5_disturl=disturl):
+            extra_packages = set(rq.extra_packages)
+            is_extra_packages = all(download in extra_packages for download in rq.downloads[(prj, repo, disturl)])
+            if is_extra_packages or self.checkrepo.check_disturl(rq, md5_disturl=disturl):
                 all_good_downloads[(prj, repo)].add(disturl)
             #     print 'GOOD -', rq.str_compact(), (prj, repo), disturl
             # else:
@@ -352,26 +385,39 @@ def _check_repo_group(self, id_, requests, opts):
         for rq in packs:
             # print 'IN', rq
             # Find (project, repo) in rq.downloads.
-            keys = [key for key in rq.downloads if key[0] == project and key[1] == repo and key[2] in valid_disturl]
+            keys = [key for key in rq.downloads
+                    if key[0] == project and key[1] == repo and key[2] in valid_disturl]
             # print 'KEYS', keys
 
             if keys:
-                assert len(keys) == 1, 'Found more that one download candidate for the same (project, repo)'
-                execution_plan[plan].append((rq, plan, rq.downloads[keys[0]]))
-                # print 'DOWNLOADS', rq.downloads[keys[0]]
+                # Now we can have more than one key per (project,
+                # repo), because there are extra packages.
+                # assert len(keys) == 1, 'Found more that one download candidate for the same (project, repo)'
+                _downloads = []
+                for key in keys:
+                    _downloads.extend(rq.downloads[key])
+                execution_plan[plan].append((rq, plan, _downloads))
+                # print 'DOWNLOADS', _downloads
             else:
                 # print 'FALLBACK'
-                fallbacks = [key for key in rq.downloads if (key[0], key[1]) in all_good_downloads and key[2] in all_good_downloads[(key[0], key[1])]]
+                fallbacks = [key for key in rq.downloads
+                             if (key[0], key[1]) in all_good_downloads and key[2] in all_good_downloads[(key[0], key[1])]]
                 if fallbacks:
-                    # XXX TODO - Recurse here to create combinations
+                    # Merge the downloads for fallbacks in case that
+                    # are in the same (project, repo)
                     fallback = fallbacks.pop()
-                    # print 'FALLBACK TO', fallback
 
-                    # assert len(downloads) == 1, 'Found more that one download candidate for the same (project, repo)'
-                    # print 'FALLBACK DOWNLOADS', rq.downloads[fallback]
+                    keys = [key for key in fallbacks if key[0] == fallback[0] and key[1] == fallback[1]]
+                    keys.append(fallback)
+                    _downloads = []
+                    for key in keys:
+                        _downloads.extend(rq.downloads[key])
+
+                    # print 'FALLBACK TO', fallback
+                    # print 'FALLBACK DOWNLOADS', _downloads
 
                     alternative_plan = fallback[:2]
-                    execution_plan[plan].append((rq, alternative_plan, rq.downloads[fallback]))
+                    execution_plan[plan].append((rq, alternative_plan, _downloads))
                 # elif rq.status == 'succeeded':
                 else:
                     print 'no fallback for', rq

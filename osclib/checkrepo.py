@@ -58,7 +58,8 @@ class Request(object):
         self.build_excluded = False
         self.is_cached = False
         self.action_type = 'submit'  # assume default
-        self.downloads = []
+        self.downloads = defaultdict(list)
+        self.extra_packages = []
 
         if element:
             self.load(element)
@@ -68,16 +69,19 @@ class Request(object):
         self.request_id = int(element.get('id'))
 
         action = element.find('action')
-        self.action_type = action.get('type')
+
         source = action.find('source')
         if source is not None:
             self.src_project = source.get('project')
             self.src_package = source.get('package')
             self.revision = source.get('rev')
+
         target = action.find('target')
         if target is not None:
             self.tgt_project = target.get('project')
             self.tgt_package = target.get('package')
+
+        self.action_type = action.get('type')
 
         # The groups are in the CheckRepo object.
         self.group = self.request_id
@@ -108,6 +112,8 @@ class CheckRepo(object):
         self.grouped = {}
         # groups = { staging: [ids,], }
         self.groups = {}
+        # extra_packages = { staging: { id: [extra,], } }
+        self.extra_packages = {}
         self._staging()
 
     def _staging(self):
@@ -117,8 +123,8 @@ class CheckRepo(object):
         """
         for project in self.staging.get_staging_projects():
             # Get all the requests identifier for the project
-            requests = self.staging.get_prj_pseudometa(project)['requests']
-            requests = [req['id'] for req in requests]
+            metadata = self.staging.get_prj_pseudometa(project)['requests']
+            requests = [req['id'] for req in metadata]
 
             # Note: Originally we recover also the request returned by
             # list_requests_in_prj().  I guest that if the staging
@@ -127,6 +133,8 @@ class CheckRepo(object):
             if requests:
                 self.groups[project] = requests
                 self.grouped.update({req: project for req in requests})
+
+            self.extra_packages.update({project: {req['id']: req.get('added', []) for req in metadata}})
 
     def change_review_state(self, request_id, newstate, message=''):
         """Based on osc/osc/core.py. Fixed 'by_user'."""
