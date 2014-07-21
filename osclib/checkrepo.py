@@ -16,11 +16,13 @@
 
 from collections import defaultdict
 import os
+import re
 import subprocess
 from urllib import quote_plus
 import urllib2
 from xml.etree import cElementTree as ET
 
+from osc.core import get_binary_file
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
@@ -170,6 +172,32 @@ class CheckRepo(object):
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return requests
+
+    def find_request_id(self, project, package):
+        """Return a request id that is in new, review of accepted state for a
+        specific project/package.
+
+        """
+        xpath = "(action/target/@project='%s' and "\
+                "action/target/@package='%s' and "\
+                "action/@type='submit' and "\
+                "(state/@name='new' or state/@name='review' or "\
+                "state/@name='accepted'))" % (project, package)
+        query = {
+            'match': quote_plus(xpath)
+        }
+
+        request_id = None
+        try:
+            url = makeurl(self.apiurl, ('search', 'request'), query=query)
+            collection = ET.parse(http_GET(url)).getroot()
+            for root in collection.findall('request'):
+                r = Request()
+                r.read(root)
+                request_id = int(r.reqid)
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return request_id
 
     def _build(self, project, repository, arch, package):
         """Return the build XML document from OBS."""
@@ -384,7 +412,7 @@ class CheckRepo(object):
                 else:
                     msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
                 print '[DECLINED] CHECK MANUALLY', msg
-                # self.checkrepo.change_review_state(id_, 'declined', message=msg)
+                # self.change_review_state(id_, 'declined', message=msg)
                 rq.updated = True
 
             sp = Request(request_id=rq.request_id,
@@ -435,6 +463,87 @@ class CheckRepo(object):
             # If there are binaries, we're out.
             return False
         return True
+
+    def get_binary_file(self, project, repository, arch, package, filename, target, mtime):
+        """Get a binary file from OBS."""
+        if os.path.exists(target):
+            # we need to check the mtime too as the file might get updated
+            cur = os.path.getmtime(target)
+            if cur > mtime:
+                return
+
+        get_binary_file(self.apiurl, project, repository, arch,
+                        filename, package=package,
+                        target_filename=target)
+
+    def download(self, request, todownload):
+        """Download the packages refereced in a request."""
+        last_disturl = None
+        last_disturldir = None
+
+        # We need to order the files to download.  First RPM packages (to
+        # set disturl), after that the rest.
+
+        todownload_rpm = [rpm for rpm in todownload if rpm[3].endswith('.rpm')]
+        todownload_rest = [rpm for rpm in todownload if not rpm[3].endswith('.rpm')]
+
+        for _project, _repo, arch, fn, mt in todownload_rpm:
+            repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
+            if not os.path.exists(repodir):
+                os.makedirs(repodir)
+            t = os.path.join(repodir, fn)
+            self.get_binary_file(_project, _repo, arch,
+                                 request.src_package, fn, t, mt)
+
+            # Organize the files into DISTURL directories.
+            disturl = self._md5_disturl(self._disturl(t))
+            disturldir = os.path.join(repodir, disturl)
+            last_disturl, last_disturldir = disturl, disturldir
+            file_in_disturl = os.path.join(disturldir, fn)
+            if not os.path.exists(disturldir):
+                os.makedirs(disturldir)
+            try:
+                os.symlink(t, file_in_disturl)
+            except:
+                pass
+                # print 'Found previous link.'
+
+            request.downloads[(_project, _repo, disturl)].append(file_in_disturl)
+
+        for _project, _repo, arch, fn, mt in todownload_rest:
+            repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
+            if not os.path.exists(repodir):
+                os.makedirs(repodir)
+            t = os.path.join(repodir, fn)
+            self.get_binary_file(_project, _repo, arch,
+                                 request.src_package, fn, t, mt)
+
+            file_in_disturl = os.path.join(last_disturldir, fn)
+            if last_disturldir:
+                try:
+                    os.symlink(t, file_in_disturl)
+                except:
+                    pass
+                    # print 'Found previous link.'
+            else:
+                print "I don't know where to put", fn
+
+            request.downloads[(_project, _repo, last_disturl)].append(file_in_disturl)
+
+    def _toignore(self, request):
+        """Return the list of files to ignore during the checkrepo."""
+        toignore = set()
+        for fn in self.get_package_list_from_repository(
+                request.tgt_project, 'standard', 'x86_64', request.tgt_package):
+            if fn[1]:
+                toignore.add(fn[1])
+
+        # now fetch -32bit pack list
+        for fn in self.get_package_list_from_repository(
+                request.tgt_project, 'standard', 'i586', request.tgt_package):
+            if fn[1] and fn[2] == 'x86_64':
+                toignore.add(fn[1])
+        return toignore
 
     def _disturl(self, filename):
         """Get the DISTURL from a RPM file."""
@@ -672,3 +781,33 @@ class CheckRepo(object):
             return False
 
         return True
+
+    def get_package_list_from_repository(self, project, repository, arch, package):
+        url = makeurl(self.apiurl, ('build', project, repository, arch, package))
+        files = []
+        try:
+            binaries = ET.parse(http_GET(url)).getroot()
+            for binary in binaries.findall('binary'):
+                filename = binary.attrib['filename']
+                mtime = int(binary.attrib['mtime'])
+
+                result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', filename)
+                if not result:
+                    if filename == 'rpmlint.log':
+                        files.append((filename, '', '', mtime))
+                    continue
+
+                pname = result.group(1)
+                if pname.endswith('-debuginfo') or pname.endswith('-debuginfo-32bit'):
+                    continue
+                if pname.endswith('-debugsource'):
+                    continue
+                if result.group(4) == 'src':
+                    continue
+
+                files.append((filename, pname, result.group(4), mtime))
+        except urllib2.HTTPError:
+            pass
+            # print " - WARNING: Can't found list of packages (RPM) for %s in %s (%s, %s)" % (
+            #     package, project, repository, arch)
+        return files

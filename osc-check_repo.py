@@ -20,155 +20,21 @@
 from collections import defaultdict
 from collections import namedtuple
 import os
-import re
 import shutil
 import subprocess
 import tempfile
-from urllib import quote_plus
-import urllib2
 import sys
-from xml.etree import cElementTree as ET
 
 from osc import oscerr
 from osc import cmdln
 
-from osc.core import get_binary_file
-from osc.core import get_buildinfo
-from osc.core import http_GET
-from osc.core import makeurl
-from osc.core import Request
 
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
-from osclib.checkrepo import CheckRepo, DOWNLOADS
+from osclib.checkrepo import CheckRepo
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
-
-
-def _check_repo_find_submit_request(self, opts, project, package):
-    xpath = "(action/target/@project='%s' and "\
-            "action/target/@package='%s' and "\
-            "action/@type='submit' and "\
-            "(state/@name='new' or state/@name='review' or "\
-            "state/@name='accepted'))" % (project, package)
-    try:
-        url = makeurl(opts.apiurl, ['search', 'request'], 'match=%s' % quote_plus(xpath))
-        f = http_GET(url)
-        collection = ET.parse(f).getroot()
-    except urllib2.HTTPError, e:
-        print('ERROR in URL %s [%s]' % (url, e))
-        return None
-    for root in collection.findall('request'):
-        r = Request()
-        r.read(root)
-        return int(r.reqid)
-    return None
-
-
-def _check_repo_repo_list(self, prj, repo, arch, pkg, opts):
-    url = makeurl(opts.apiurl, ['build', prj, repo, arch, pkg])
-    files = []
-    try:
-        binaries = ET.parse(http_GET(url)).getroot()
-        for bin_ in binaries.findall('binary'):
-            fn = bin_.attrib['filename']
-            mt = int(bin_.attrib['mtime'])
-            result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', fn)
-            if not result:
-                if fn == 'rpmlint.log':
-                    files.append((fn, '', '', mt))
-                continue
-            pname = result.group(1)
-            if pname.endswith('-debuginfo') or pname.endswith('-debuginfo-32bit'):
-                continue
-            if pname.endswith('-debugsource'):
-                continue
-            if result.group(4) == 'src':
-                continue
-            files.append((fn, pname, result.group(4), mt))
-    except urllib2.HTTPError:
-        pass
-        # print " - WARNING: Can't found list of packages (RPM) for %s in %s (%s, %s)" % (pkg, prj, repo, arch)
-    return files
-
-
-def _check_repo_get_binary(self, apiurl, prj, repo, arch, package, file, target, mtime):
-    if os.path.exists(target):
-        # we need to check the mtime too as the file might get updated
-        cur = os.path.getmtime(target)
-        if cur > mtime:
-            return
-
-    get_binary_file(apiurl, prj, repo, arch, file, package=package, target_filename=target)
-
-
-def _download(self, request, todownload, opts):
-    """Download the packages refereced in a request."""
-    last_disturl = None
-    last_disturldir = None
-
-    # We need to order the files to download.  First RPM packages (to
-    # set disturl), after that the rest.
-
-    todownload_rpm = [rpm for rpm in todownload if rpm[3].endswith('.rpm')]
-    todownload_rest = [rpm for rpm in todownload if not rpm[3].endswith('.rpm')]
-
-    for _project, _repo, arch, fn, mt in todownload_rpm:
-        repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
-        if not os.path.exists(repodir):
-            os.makedirs(repodir)
-        t = os.path.join(repodir, fn)
-        self._check_repo_get_binary(opts.apiurl, _project, _repo,
-                                    arch, request.src_package, fn, t, mt)
-
-        # Organize the files into DISTURL directories.
-        disturl = self.checkrepo._md5_disturl(self.checkrepo._disturl(t))
-        disturldir = os.path.join(repodir, disturl)
-        last_disturl, last_disturldir = disturl, disturldir
-        file_in_disturl = os.path.join(disturldir, fn)
-        if not os.path.exists(disturldir):
-            os.makedirs(disturldir)
-        try:
-            os.symlink(t, file_in_disturl)
-        except:
-            pass
-            # print 'Found previous link.'
-
-        request.downloads[(_project, _repo, disturl)].append(file_in_disturl)
-
-    for _project, _repo, arch, fn, mt in todownload_rest:
-        repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
-        if not os.path.exists(repodir):
-            os.makedirs(repodir)
-        t = os.path.join(repodir, fn)
-        self._check_repo_get_binary(opts.apiurl, _project, _repo,
-                                    arch, request.src_package, fn, t, mt)
-
-        file_in_disturl = os.path.join(last_disturldir, fn)
-        if last_disturldir:
-            try:
-                os.symlink(t, file_in_disturl)
-            except:
-                pass
-                # print 'Found previous link.'
-        else:
-            print "I don't know where to put", fn
-
-        request.downloads[(_project, _repo, last_disturl)].append(file_in_disturl)
-
-
-def _check_repo_toignore(self, request, opts):
-    toignore = set()
-    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'x86_64', request.tgt_package, opts):
-        if fn[1]:
-            toignore.add(fn[1])
-
-    # now fetch -32bit pack list
-    for fn in self._check_repo_repo_list(request.tgt_project, 'standard', 'i586', request.tgt_package, opts):
-        if fn[1] and fn[2] == 'x86_64':
-            toignore.add(fn[1])
-    return toignore
 
 
 def _check_repo_download(self, request, opts):
@@ -177,7 +43,7 @@ def _check_repo_download(self, request, opts):
     if request.is_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
         # print ' - Found cached version for', request.str_compact()
-        return self._check_repo_toignore(request, opts)
+        return self.checkrepo._toignore(request)
 
     if request.build_excluded:
         return set()
@@ -188,49 +54,37 @@ def _check_repo_download(self, request, opts):
         repo = goodrepo[1]
 
         # we can assume x86_64 is there
-        todownload = [ToDownload(request.src_project, repo, 'x86_64', fn[0], fn[3])
-                      for fn in self._check_repo_repo_list(request.src_project,
-                                                           repo,
-                                                           'x86_64',
-                                                           request.src_package,
-                                                           opts)]
+        todownload = [ToDownload(request.src_project, repo, 'x86_64',
+                                 fn[0], fn[3]) for fn in
+                      self.checkrepo.get_package_list_from_repository(
+                          request.src_project, repo, 'x86_64',
+                          request.src_package)]
 
-        self._download(request, todownload, opts)
+        self.checkrepo.download(request, todownload)
         if request.error:
             return set()
 
     if 'openSUSE:Factory:Staging:' in str(request.group):
-        todownload = [
-            ToDownload(request.group, 'standard', 'x86_64', fn[0], fn[3])
-            for fn in self._check_repo_repo_list(request.group,
-                                                 'standard',
-                                                 'x86_64',
-                                                 request.src_package,
-                                                 opts)]
+        todownload = [ToDownload(request.group, 'standard', 'x86_64',
+                                 fn[0], fn[3]) for fn in
+                      self.checkrepo.get_package_list_from_repository(
+                          request.group, 'standard', 'x86_64',
+                          request.src_package)]
 
-        self._download(request, todownload, opts)
+        self.checkrepo.download(request, todownload)
         if request.error:
             return set()
 
-        todownload = [
-            ToDownload(request.group + ':DVD', 'standard', 'x86_64', fn[0], fn[3])
-            for fn in self._check_repo_repo_list(request.group + ':DVD',
-                                                 'standard',
-                                                 'x86_64',
-                                                 request.src_package,
-                                                 opts)]
+        todownload = [ToDownload(request.group + ':DVD', 'standard',
+                                 'x86_64', fn[0], fn[3]) for fn in
+                      self.checkrepo.get_package_list_from_repository(
+                          request.group + ':DVD', 'standard',
+                          'x86_64', request.src_package)]
 
-        self._download(request, todownload, opts)
+        self.checkrepo.download(request, todownload)
         if request.error:
             return set()
-    return self._check_repo_toignore(request, opts)
-
-
-def _get_buildinfo(self, opts, prj, repo, arch, pkg):
-    """Get the build info for a package"""
-    xml = get_buildinfo(opts.apiurl, prj, pkg, repo, arch)
-    root = ET.fromstring(xml)
-    return [e.attrib['name'] for e in root.findall('bdep')]
+    return self.checkrepo._toignore(request)
 
 
 # Used in _check_repo_group only to cache error messages
@@ -278,7 +132,7 @@ def _check_repo_group(self, id_, requests, opts):
         i = set()
         if rq.action_type == 'delete':
             # for delete requests we only care for toignore
-            i = self._check_repo_toignore(rq, opts)
+            i = self.checkrepo._toignore(rq)
         else:
             # we need to call it to fetch the good repos to download
             # but the return value is of no interest right now.
@@ -310,7 +164,7 @@ def _check_repo_group(self, id_, requests, opts):
                     alreadyin = True
             if alreadyin:
                 continue
-            request = self._check_repo_find_submit_request(opts, rq.tgt_project, package)
+            request = self.checkrepo.find_request_id(rq.tgt_project, package)
             if request:
                 greqs = opts.groups.get(rq.group, [])
                 if request in greqs:
