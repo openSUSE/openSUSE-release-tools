@@ -476,8 +476,8 @@ class CheckRepo(object):
                         filename, package=package,
                         target_filename=target)
 
-    def download(self, request, todownload):
-        """Download the packages refereced in a request."""
+    def _download(self, request, todownload):
+        """Download the packages refereced in the 'todownload' list."""
         last_disturl = None
         last_disturldir = None
 

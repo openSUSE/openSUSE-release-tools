@@ -60,7 +60,7 @@ def _check_repo_download(self, request, opts):
                           request.src_project, repo, 'x86_64',
                           request.src_package)]
 
-        self.checkrepo.download(request, todownload)
+        self.checkrepo._download(request, todownload)
         if request.error:
             return set()
 
@@ -71,7 +71,7 @@ def _check_repo_download(self, request, opts):
                           request.group, 'standard', 'x86_64',
                           request.src_package)]
 
-        self.checkrepo.download(request, todownload)
+        self.checkrepo._download(request, todownload)
         if request.error:
             return set()
 
@@ -81,7 +81,7 @@ def _check_repo_download(self, request, opts):
                           request.group + ':DVD', 'standard',
                           'x86_64', request.src_package)]
 
-        self.checkrepo.download(request, todownload)
+        self.checkrepo._download(request, todownload)
         if request.error:
             return set()
     return self.checkrepo._toignore(request)
