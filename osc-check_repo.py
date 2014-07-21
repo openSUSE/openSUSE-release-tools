@@ -1,7 +1,19 @@
+# Copyright (C) 2014 SUSE Linux Products GmbH
 #
-# (C) 2011 coolo@suse.de, Novell Inc, openSUSE.org
-# Distribute under GPLv2 or GPLv3
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc check_repo --help' to see the usage.
 
