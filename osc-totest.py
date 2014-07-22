@@ -72,23 +72,31 @@ def tt_overall_result(self, snapshot):
     jobs = self.tt_find_openqa_results(snapshot)
 
     known_failures = [
-        'opensuse-FTT-DVD-x86_64-Build-doc@64bit',
+        'opensuse-FTT-DVD-i586-Build-kde@USBboot_32',
+        'opensuse-FTT-DVD-i586-Build-textmode@32bit',
+        'opensuse-FTT-DVD-i586-Build-update_13.1-kde@32bit',
+        'opensuse-FTT-DVD-x86_64-Build-dual_windows8@64bit',
+        'opensuse-FTT-DVD-x86_64-Build-gnome@Laptop_64',
+        'opensuse-FTT-DVD-x86_64-Build-kde@Laptop_64',
+        'opensuse-FTT-DVD-x86_64-Build-kde@USBboot_64',
+        'opensuse-FTT-DVD-x86_64-Build-splitusr@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
-        'opensuse-FTT-DVD-x86_64-Build-update_13.1-gnome@64bit',
         'opensuse-FTT-GNOME-Live-i686-Build-gnome-live@32bit',
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@64bit',
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64',
-        'opensuse-FTT-KDE-Live-i686-Build-kde-live@32bit',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@64bit',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',
+        'opensuse-FTT-NET-i586-Build-textmode@32bit',
+        'opensuse-FTT-NET-x86_64-Build-dual_windows8@64bit',
+        'opensuse-FTT-NET-x86_64-Build-gnome@Laptop_64',
+        'opensuse-FTT-NET-x86_64-Build-kde@Laptop_64',
+        'opensuse-FTT-NET-x86_64-Build-kde@Laptop_64',
+        'opensuse-FTT-NET-x86_64-Build-kde@USBboot_64',
         'opensuse-FTT-NET-x86_64-Build-update_121@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_122@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_123@64bit',
         'opensuse-FTT-Rescue-CD-i686-Build-rescue@32bit',
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
-        'opensuse-FTT-NET-x86_64-Build-uefi@64bit',
-        'opensuse-FTT-DVD-x86_64-Build-dual_windows8@64bit',
-        'opensuse-FTT-NET-x86_64-Build-dual_windows8@64bit',
     ]
 
     if len(jobs) < 80: # not yet scheduled
