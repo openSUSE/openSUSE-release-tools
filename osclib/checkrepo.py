@@ -58,7 +58,7 @@ class Request(object):
         self.updated = False
         self.error = None
         self.build_excluded = False
-        self.is_cached = False
+        self.is_partially_cached = False
         self.action_type = 'submit'  # assume default
         self.downloads = []
 
@@ -464,8 +464,9 @@ class CheckRepo(object):
             return False
         return True
 
-    def get_binary_file(self, project, repository, arch, package, filename, target, mtime):
+    def _get_binary_file(self, project, repository, arch, package, filename, target, mtime):
         """Get a binary file from OBS."""
+        # Check if the file is already there.
         if os.path.exists(target):
             # we need to check the mtime too as the file might get updated
             cur = os.path.getmtime(target)
@@ -492,8 +493,8 @@ class CheckRepo(object):
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
-            self.get_binary_file(_project, _repo, arch,
-                                 request.src_package, fn, t, mt)
+            self._get_binary_file(_project, _repo, arch,
+                                  request.src_package, fn, t, mt)
 
             # Organize the files into DISTURL directories.
             disturl = self._md5_disturl(self._disturl(t))
@@ -515,8 +516,8 @@ class CheckRepo(object):
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
-            self.get_binary_file(_project, _repo, arch,
-                                 request.src_package, fn, t, mt)
+            self._get_binary_file(_project, _repo, arch,
+                                  request.src_package, fn, t, mt)
 
             file_in_disturl = os.path.join(last_disturldir, fn)
             if last_disturldir:
@@ -679,12 +680,12 @@ class CheckRepo(object):
         """
 
         # Check if we have a local version of the package before
-        # checking it.
+        # checking it.  If this is the case partially preload the
+        # 'goodrepos' and 'missings' fields.
         if self.is_request_cached(request):
-            request.is_cached = True
+            request.is_partially_cached = True
             request.goodrepos = self._get_goodrepos_from_local(request)
             request.missings = self.get_missings(request)
-            return True
 
         # If the request do not build properly in both Intel platforms,
         # return False.
@@ -743,14 +744,18 @@ class CheckRepo(object):
             if not founddisabled:
                 alldisabled = False
             if isgood:
-                request.goodrepos.append((request.src_project, repository.attrib['name']))
+                _goodrepo = (request.src_project, repository.attrib['name'])
+                if _goodrepo not in request.goodrepos:
+                    request.goodrepos.append(_goodrepo)
                 result = True
             if r_foundbuilding:
                 foundbuilding = r_foundbuilding
             if r_foundfailed:
                 foundfailed = r_foundfailed
 
-        request.missings = sorted(missings)
+        # If the request is partially cached, maybe there are some
+        # content in request.missings.
+        request.missings = sorted(set(request.missings) | missings)
 
         if result:
             return True
@@ -763,7 +768,7 @@ class CheckRepo(object):
             request.updated = True
             return False
 
-        if foundbuilding:
+        if foundbuilding and (request.src_package, foundbuilding) not in request.goodrepos:
             msg = '%s is still building for repository %s' % (request.src_package, foundbuilding)
             print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)

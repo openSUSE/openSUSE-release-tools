@@ -40,10 +40,12 @@ from osclib.memoize import CACHEDIR
 def _check_repo_download(self, request, opts):
     request.downloads = defaultdict(list)
 
-    if request.is_cached:
+    # Found cached version for the request, but the cached can be
+    # partial. For example, in a rebuild we can have locally a working
+    # package. So the download list needs to be updated with the local
+    # copies.
+    if request.is_partially_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
-        # print ' - Found cached version for', request.str_compact()
-        return self.checkrepo._toignore(request)
 
     if request.build_excluded:
         return set()
@@ -258,8 +260,6 @@ def _check_repo_group(self, id_, requests, opts):
 
         # continue
 
-        if os.path.exists(destdir):
-            shutil.rmtree(destdir)
         os.makedirs(destdir)
         for rq, _, downloads in dirstolink:
             dir_ = destdir + '/%s' % rq.tgt_package
@@ -274,6 +274,9 @@ def _check_repo_group(self, id_, requests, opts):
         stdoutdata, stderrdata = p.communicate()
         stdoutdata = stdoutdata.strip()
         ret = p.returncode
+
+        # Clean the directory that contains all the symlinks
+        shutil.rmtree(destdir)
 
         # There are several execution plans, each one can have its own
         # error message.
@@ -327,7 +330,6 @@ def _check_repo_group(self, id_, requests, opts):
         self.checkrepo.change_review_state(rq.request_id, 'accepted', message=msg)
         rq.updated = True
         updated[rq.request_id] = 1
-    shutil.rmtree(destdir)
 
 
 def mirror_full(plugin_dir, repo_dir):
