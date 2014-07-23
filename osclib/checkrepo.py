@@ -389,6 +389,12 @@ class CheckRepo(object):
                 rq.error = "Can't gather package information for (%s, %s)" % (rq.src_project, spec)
                 rq.updated = True
                 continue
+            except KeyError as e:
+                # This exception happends some times when there is an
+                # 'error' attribute in the package information XML
+                rq.error = "There is an error in the SPEC file." % (rq.src_project, spec)
+                rq.updated = True
+                continue
 
             if (spec_info['project'] != rq.src_project
                or spec_info['package'] != rq.src_package) and not rq.updated:
