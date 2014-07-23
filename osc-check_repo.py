@@ -361,6 +361,8 @@ def do_check_repo(self, subcmd, opts, *args):
     Usage:
        ${cmd_name} [SRID]...
            Shows pending review requests and their current state.
+       ${cmd_name} PRJ
+           Shows pending review requests in a specific project.
     ${cmd_option_list}
     """
 
@@ -385,7 +387,14 @@ def do_check_repo(self, subcmd, opts, *args):
             self.checkrepo.change_review_state(id_, 'accepted', message=msg)
         return
 
+    prjs = [arg for arg in args if not arg.isdigit()]
     ids = [arg for arg in args if arg.isdigit()]
+
+    # Recover the requests that are for this project and expand ids.
+    for prj in prjs:
+        prj = self.checkrepo.staging.prj_from_letter(prj)
+        meta = self.checkrepo.staging.get_prj_pseudometa(prj)
+        ids.extend(rq['id'] for rq in meta['requests'])
 
     # Store requests' package information and .spec files: store all
     # source containers involved.
