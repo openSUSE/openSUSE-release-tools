@@ -130,6 +130,17 @@ class CheckRepo(object):
                 self.groups[project] = requests
                 self.grouped.update({req: project for req in requests})
 
+    def get_request_state(self, request_id):
+        """Return the current state of the request."""
+        state = None
+        url = makeurl(self.apiurl, ('request', str(request_id)))
+        try:
+            root = ET.parse(http_GET(url)).getroot()
+            state = root.find('state').get('name')
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return state
+
     def change_review_state(self, request_id, newstate, message=''):
         """Based on osc/osc/core.py. Fixed 'by_user'."""
         query = {
@@ -140,6 +151,10 @@ class CheckRepo(object):
             # rights to become this user.
             'by_user': 'factory-repo-checker',
         }
+
+        current_state = self.get_request_state(request_id)
+        if current_state == 'accepted' and newstate != 'accepted':
+            print '  - Avoid change state %s -> %s (%s)' % (current_state, newstate, message)
 
         code = 404
         url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
