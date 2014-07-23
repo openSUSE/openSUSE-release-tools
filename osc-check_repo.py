@@ -260,6 +260,10 @@ def _check_repo_group(self, id_, requests, opts):
 
         # continue
 
+        # Makes sure to remove the directory is case of early exit.
+        if os.path.exists(destdir):
+            shutil.rmtree(destdir)
+
         os.makedirs(destdir)
         for rq, _, downloads in dirstolink:
             dir_ = destdir + '/%s' % rq.tgt_package
