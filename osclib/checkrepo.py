@@ -477,14 +477,15 @@ class CheckRepo(object):
             # we need to check the mtime too as the file might get updated
             cur = os.path.getmtime(target)
             if cur > mtime:
-                return
+                return True
 
         get_binary_file(self.apiurl, project, repository, arch,
                         filename, package=package,
                         target_filename=target)
+        return False
 
     def _download(self, request, todownload):
-        """Download the packages refereced in the 'todownload' list."""
+        """Download the packages referenced in the 'todownload' list."""
         last_disturl = None
         last_disturldir = None
 
@@ -499,8 +500,11 @@ class CheckRepo(object):
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
-            self._get_binary_file(_project, _repo, arch,
-                                  request.src_package, fn, t, mt)
+            was_cached = self._get_binary_file(_project, _repo, arch,
+                                               request.src_package,
+                                               fn, t, mt)
+            if was_cached:
+                continue
 
             # Organize the files into DISTURL directories.
             disturl = self._md5_disturl(self._disturl(t))
@@ -522,8 +526,11 @@ class CheckRepo(object):
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
-            self._get_binary_file(_project, _repo, arch,
-                                  request.src_package, fn, t, mt)
+            was_cached = self._get_binary_file(_project, _repo, arch,
+                                               request.src_package,
+                                               fn, t, mt)
+            if was_cached:
+                continue
 
             file_in_disturl = os.path.join(last_disturldir, fn)
             if last_disturldir:
