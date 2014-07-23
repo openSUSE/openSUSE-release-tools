@@ -19,7 +19,6 @@ from osc.core import delete_package
 from osc.core import get_request
 from osc.core import make_meta_url
 from osc.core import makeurl
-from osc.core import metafile
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
