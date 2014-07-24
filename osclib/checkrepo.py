@@ -154,7 +154,7 @@ class CheckRepo(object):
 
         current_state = self.get_request_state(request_id)
         if current_state == 'accepted' and newstate != 'accepted':
-            print '  - Avoid change state %s -> %s (%s)' % (current_state, newstate, message)
+            print ' - Avoid change state %s -> %s (%s)' % (current_state, newstate, message)
 
         code = 404
         url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
@@ -199,7 +199,7 @@ class CheckRepo(object):
                 "(state/@name='new' or state/@name='review' or "\
                 "state/@name='accepted'))" % (project, package)
         query = {
-            'match': quote_plus(xpath)
+            'match': xpath
         }
 
         request_id = None
@@ -207,9 +207,8 @@ class CheckRepo(object):
             url = makeurl(self.apiurl, ('search', 'request'), query=query)
             collection = ET.parse(http_GET(url)).getroot()
             for root in collection.findall('request'):
-                r = Request()
-                r.read(root)
-                request_id = int(r.reqid)
+                _request = Request(element=root)
+                request_id = _request.request_id
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return request_id
