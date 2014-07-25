@@ -476,7 +476,7 @@ class StagingAPI(object):
 
         for sub_prj, sub_pkg in self.get_sub_packages(package):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
-            if sub_prj != project:
+            if sub_prj != subprj: # if different to the main package's prj
                 delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
 
         self.set_review(request_id, project, state=review, msg=msg)
