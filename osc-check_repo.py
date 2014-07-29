@@ -277,10 +277,10 @@ def _check_repo_group(self, id_, requests, opts):
             for d in downloads:
                 if not os.path.exists(dir_):
                     os.mkdir(dir_)
-                try:
-                    os.symlink(d, os.path.join(dir_, os.path.basename(d)))
-                except OSError:
-                    print 'Warning, symlink already exists', d, os.path.join(dir_, os.path.basename(d))
+                target = os.path.join(dir_, os.path.basename(d))
+                if os.path.exists(target):
+                    print 'Warning, symlink already exists', d, target
+                    os.unlink(target)
 
         repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
