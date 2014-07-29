@@ -232,7 +232,7 @@ class CycleDetector(object):
         """Detect cycles in a specific repository."""
 
         # filter submit requests
-        requests = [ rq for rq in requests if rq.action_type == 'submit' ]
+        requests = [rq for rq in requests if rq.action_type == 'submit']
 
         # Detect cycles - We create the full graph from _builddepinfo.
         factory_graph = self._get_builddepinfo_graph(project, repository, arch)
@@ -253,12 +253,17 @@ class CycleDetector(object):
         # all_packages = [self._get_builddepinfo(rq.src_project, rq.goodrepos[0], arch, rq.src_package)
         #                 for rq in requests if not rq.updated]
 
-        # 'goodrepo' is a tuple (project, repository, disturl).  We
+        # 'goodrepos' are a list of tuples (project, repository).  We
         # take the ones that match the project from the request and
         # take the first repository.
-        goodrepos = {
-            rq: [repo for (project, repo) in rq.goodrepos if rq.src_project == project][0] for rq in requests
-        }
+        goodrepos = {}
+        for rq in requests:
+            _goodrepos = [_repo for (_prj, _repo) in rq.goodrepos if rq.src_project == _prj]
+            if _goodrepos:
+                goodrepos[rq] = _goodrepos[0]
+            else:
+                _prj, _repo = rq.goodrepos[0]
+                goodrepos[rq] = _repo
         all_packages = [self._get_builddepinfo(rq.src_project, goodrepos[rq], arch, rq.src_package)
                         for rq in requests if not rq.updated]
         all_packages = [pkg for pkg in all_packages if pkg]
