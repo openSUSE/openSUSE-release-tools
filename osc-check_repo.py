@@ -281,6 +281,7 @@ def _check_repo_group(self, id_, requests, opts):
                 if os.path.exists(target):
                     print 'Warning, symlink already exists', d, target
                     os.unlink(target)
+                os.symlink(d, target)
 
         repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
