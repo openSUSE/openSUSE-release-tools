@@ -83,20 +83,24 @@ while(<FL>) {
       $lnk = $2;
     }
     next unless /^(\d+ (\d+) \S+) (.*\/)(.*?)$/;
+    my $perms = $1;
     my $n = $dirs{$3};
     if (!defined($n)) {
       $n = @dirs;
       $dirs{$3} = $n;
       $dirs[$n] = $3;
     }
-    # ignore link targets of ghosts
-    $lnk = '' if $lnk && (oct($2) & 0100) != 0;
-    my $m = $modes{"$1$lnk"};
+    # ignore link targets and permissions of ghosts
+    if (oct($2) & 0100) != 0) {
+      $lnk = '' if $lnk;
+      $perms ~= s/^100000/100644/;
+    }
+    my $m = $modes{"$perms$lnk"};
     if (!defined($m)) {
       $m = @modes;
-      $modes{"$1$lnk"} = $m;
-      $modes[$m] = "$1$lnk";
-      $modes_type[$m] = oct($1) & 07770000;
+      $modes{"$perms$lnk"} = $m;
+      $modes[$m] = "$perms$lnk";
+      $modes_type[$m] = oct($perms) & 07770000;
       $modes_ghost[$m] = oct($2) & 0100;
     }
     my $f = "$n/$4";
