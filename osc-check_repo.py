@@ -194,6 +194,8 @@ def _check_repo_group(self, id_, requests, opts):
 
     execution_plan = defaultdict(list)
 
+    DEBUG_PLAN = 0
+
     # Get all the (project, repo, disturl) where the disturl is
     # compatible with the request.  For the same package we can have
     # more than one good triplet, even with different MD5 DISTRUL.
@@ -206,9 +208,10 @@ def _check_repo_group(self, id_, requests, opts):
         for (prj, repo, disturl) in rq.downloads:
             if self.checkrepo.check_disturl(rq, md5_disturl=disturl):
                 all_good_downloads[(prj, repo)].add(disturl)
-            #     print 'GOOD -', rq.str_compact(), (prj, repo), disturl
-            # else:
-            #     print 'BAD -', rq.str_compact(), (prj, repo), disturl
+                if DEBUG_PLAN:
+                    print 'DEBUG Good DISTURL -', rq.str_compact(), (prj, repo), disturl
+            elif DEBUG_PLAN:
+                print 'DEBUG Bad DISTURL -', rq.str_compact(), (prj, repo), disturl
 
     if not all_good_downloads:
         print ' - Not good downloads found (NO REPO).'
@@ -217,27 +220,34 @@ def _check_repo_group(self, id_, requests, opts):
     for project, repo in all_good_downloads:
         plan = (project, repo)
         valid_disturl = all_good_downloads[plan]
-        # print 'DESIGNING PLAN', plan, valid_disturl
+        if DEBUG_PLAN:
+            print 'DEBUG Designing plan', plan, valid_disturl
         for rq in packs:
-            # print 'IN', rq
+            if DEBUG_PLAN:
+                print 'DEBUG In', rq
             # Find (project, repo) in rq.downloads.
             keys = [key for key in rq.downloads if key[0] == project and key[1] == repo and key[2] in valid_disturl]
-            # print 'KEYS', keys
+            if DEBUG_PLAN:
+                print 'DEBUG Keys', keys
 
             if keys:
                 assert len(keys) == 1, 'Found more that one download candidate for the same (project, repo)'
                 execution_plan[plan].append((rq, plan, rq.downloads[keys[0]]))
-                # print 'DOWNLOADS', rq.downloads[keys[0]]
+                if DEBUG_PLAN:
+                    print 'DEBUG Downloads', rq.downloads[keys[0]]
             else:
-                # print 'FALLBACK'
+                if DEBUG_PLAN:
+                    print 'DEBUG Searching for a fallback!'
                 fallbacks = [key for key in rq.downloads if (key[0], key[1]) in all_good_downloads and key[2] in all_good_downloads[(key[0], key[1])]]
                 if fallbacks:
                     # XXX TODO - Recurse here to create combinations
+                    # Meanwhile, I will priorize the one fallback that is in a staging project.
+                    fallbacks_from_staging = [fb for fb in fallbacks if 'Staging' in fb[0]]
+                    fallbacks = fallbacks_from_staging if fallbacks_from_staging else fallbacks
                     fallback = fallbacks.pop()
-                    # print 'FALLBACK TO', fallback
-
-                    # assert len(downloads) == 1, 'Found more that one download candidate for the same (project, repo)'
-                    # print 'FALLBACK DOWNLOADS', rq.downloads[fallback]
+                    if DEBUG_PLAN:
+                        print 'DEBUG Fallback found', fallback
+                        print 'DEBUG Fallback downloads', rq.downloads[fallback]
 
                     alternative_plan = fallback[:2]
                     execution_plan[plan].append((rq, alternative_plan, rq.downloads[fallback]))
@@ -245,20 +255,17 @@ def _check_repo_group(self, id_, requests, opts):
                 else:
                     print 'no fallback for', rq
 
-    # raise Exception()
-
     repo_checker_error = ''
     for project_repo in execution_plan:
         dirstolink = execution_plan[project_repo]
 
-        # print 'Running plan', project_repo
-        # for rq, repo, downloads in dirstolink:
-        #     print ' ', rq
-        #     print ' ', repo
-        #     for f in downloads:
-        #         print '   -', f
-
-        # continue
+        if DEBUG_PLAN:
+            print 'DEBUG Running plan', project_repo
+            for rq, repo, downloads in dirstolink:
+                print ' ', rq
+                print ' ', repo
+                for f in downloads:
+                    print '   -', f
 
         # Makes sure to remove the directory is case of early exit.
         if os.path.exists(destdir):
@@ -270,7 +277,10 @@ def _check_repo_group(self, id_, requests, opts):
             for d in downloads:
                 if not os.path.exists(dir_):
                     os.mkdir(dir_)
-                os.symlink(d, os.path.join(dir_, os.path.basename(d)))
+                try:
+                    os.symlink(d, os.path.join(dir_, os.path.basename(d)))
+                except OSError:
+                    print 'Warning, symlink already exists', d, os.path.join(dir_, os.path.basename(d))
 
         repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
@@ -307,8 +317,6 @@ def _check_repo_group(self, id_, requests, opts):
             for p, gr, downloads in dirstolink:
                 p.goodrepo = '%s/%s' % gr
             break
-
-    # raise Exception()
 
     os.unlink(params_file.name)
 
