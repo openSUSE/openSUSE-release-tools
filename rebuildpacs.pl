@@ -202,7 +202,11 @@ sub get_paths($$$) {
   my $package = find_package_in_project($project);
 
   open(OSC, "osc api /build/$project/$repo/$arch/$package/_buildinfo|");
-  my $xml = XMLin(join('', <OSC>), ForceArray => 1);
+  my $xml = join('', <OSC>);
+  if ($xml !~ m/^</) {
+     die "failed to open /build/$project/$repo/$arch/$package/_buildinfo"; 
+  }
+  $xml = XMLin($xml, ForceArray => 1);
   close(OSC);
 
   return $xml->{path};

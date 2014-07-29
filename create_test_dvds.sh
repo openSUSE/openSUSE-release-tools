@@ -73,7 +73,7 @@ for l in B C D E F G H I J; do
   regenerate_pl "openSUSE:Factory:Staging:$l" 1 "staging_$l-bc" staging_$l
 done
 
-projects=$(osc api /search/project/id?match='starts-with(@name,"openSUSE:Factory:Staging")' | grep :DVD | cut -d\" -f2)
+projects=$(osc api /search/project/id?match='starts-with(@name,"openSUSE:Factory:Staging")' | grep :DVD | cut -d\' -f2)
 for prj in openSUSE:Factory:Rings:2-TestDVD $projects; do
   perl $SCRIPTDIR/rebuildpacs.pl $prj standard x86_64
 done
