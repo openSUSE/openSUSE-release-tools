@@ -1,5 +1,6 @@
 [
     {
+	"overall_state": "acceptable",
 	"selected_requests": [
 	    {
 		"id": 235410
@@ -81,6 +82,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -163,6 +165,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "empty",
 	"selected_requests": [],
         "broken_packages": [],
         "building_repositories": [],
@@ -240,6 +243,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -322,6 +326,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "acceptable",
 	"selected_requests": [
 	    {
 		"id": 235517
@@ -403,6 +408,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -485,6 +491,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "empty",
 	"selected_requests": [],
         "broken_packages": [],
         "building_repositories": [],
@@ -562,6 +569,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -644,6 +652,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "empty",
 	"selected_requests": [],
         "broken_packages": [],
         "building_repositories": [],
@@ -721,6 +730,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -803,6 +813,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "review",
 	"selected_requests": [
 	    {
 		"id": 234678
@@ -1006,6 +1017,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -1088,6 +1100,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "review",
 	"selected_requests": [
 	    {
 		"id": 234718
@@ -1216,6 +1229,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -1298,6 +1312,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "building",
 	"selected_requests": [
 	    {
 		"id": 234999
@@ -1421,6 +1436,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [
@@ -1593,6 +1609,7 @@
         ],
         "subprojects": [
             {
+		"overall_state": "empty",
 		"selected_requests": [],
                 "broken_packages": [],
                 "building_repositories": [],
@@ -1633,6 +1650,7 @@
         "untracked_requests": []
     },
     {
+	"overall_state": "review",
 	"selected_requests": [
 	    {
 		"id": 235022

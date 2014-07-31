@@ -1,4 +1,5 @@
 {
+    "overall_state": "building",
     "broken_packages": [],
     "building_repositories": [
         {
@@ -104,6 +105,7 @@
     ],
     "subprojects": [
         {
+	    "overall_state": "empty",
             "broken_packages": [],
             "building_repositories": [
                 {

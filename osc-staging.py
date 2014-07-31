@@ -124,7 +124,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'select':
         tprj = api.prj_from_letter(args[1])
         if opts.add:
-            api.mark_additional_packages(tprj, [ opts.add ] )
+            api.mark_additional_packages(tprj, [opts.add])
         else:
             SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
     elif cmd == 'cleanup_rings':

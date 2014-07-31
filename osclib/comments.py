@@ -76,8 +76,8 @@ class CommentAPI(object):
         root = root = ET.parse(http_GET(url)).getroot()
         comments = {}
         for c in root.findall('comment'):
-           c = self._comment_as_dict(c)
-           comments[c['id']] = c
+            c = self._comment_as_dict(c)
+            comments[c['id']] = c
         return comments
 
     def add_comment(self, request_id=None, project_name=None,
@@ -105,15 +105,15 @@ class CommentAPI(object):
 
     def delete_children(self, comments):
         """Removes the comments that have no childs
-        
+
         :param comments dict of id->comment dict
-        :return same hash without the deleted comments 
+        :return same hash without the deleted comments
         """
         parents = []
         for comment in comments.values():
             if comment['parent']:
                 parents.append(comment['parent'])
-        
+
         for id_ in comments.keys():
             if id_ not in parents:
                 self.delete(id_)
@@ -135,7 +135,7 @@ class CommentAPI(object):
         return True
 
     def delete_from_where_user(self, user, request_id=None, project_name=None,
-                                 package_name=None):
+                               package_name=None):
         """Remove comments where @user is mentioned.
 
         This method is used to remove notifications when a request is

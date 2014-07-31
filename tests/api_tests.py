@@ -7,7 +7,6 @@
 import sys
 import unittest
 import httpretty
-import mock
 
 from obs import APIURL
 from obs import OBS
@@ -138,34 +137,6 @@ class TestApiCalls(unittest.TestCase):
         # Get package name
         self.assertEqual('wine', self.api.get_package_for_request_id(prj, num))
 
-    def test_check_one_request(self):
-        prj = 'openSUSE:Factory:Staging:B'
-        pkg = 'wine'
-
-        full_name = prj + '/' + pkg
-
-        # Verify package is there
-        self.assertTrue(full_name in self.obs.links)
-        # Get rq number
-        num = self.api.get_request_id_for_package(prj, pkg)
-        # Check the results
-        self.assertEqual(self.api.check_one_request(num, prj), None)
-        # Pretend to be reviewed by other project
-        self.assertEqual(self.api.check_one_request(num, 'xyz'),
-                         'wine: missing reviews: openSUSE:Factory:Staging:B')
-
-    def test_check_project_status(self):
-        # Check the results
-        with mock.patch('osclib.stagingapi.StagingAPI.find_openqa_state', return_value='Nothing'):
-            broken_results = ['At least following repositories is still building:',
-                              '    building/x86_64: building',
-                              'Following packages are broken:',
-                              '    wine (failed/x86_64): failed',
-                              '    wine (broken/x86_64): broken',
-                              'Nothing']
-            self.assertEqual(self.api.check_project_status('openSUSE:Factory:Staging:B'), broken_results)
-            self.assertEqual(self.api.check_project_status('openSUSE:Factory:Staging:A'), False)
-
     def test_rm_from_prj(self):
         prj = 'openSUSE:Factory:Staging:B'
         pkg = 'wine'
@@ -230,26 +201,6 @@ class TestApiCalls(unittest.TestCase):
             self.assertEqual(self.api.get_prj_pseudometa('openSUSE:Factory:Staging:A'),
                              {'requests': [{'id': 123, 'package': 'gcc', 'author': 'Admin'}]})
 
-    def test_generate_build_status_details(self):
-        """Check whether generate_build_status_details works."""
-
-        details_green = self.api.gather_build_status('green')
-        details_red = self.api.gather_build_status('red')
-        red = ['red', [{'path': 'standard/x86_64', 'state': 'building'}],
-                      [{'path': 'standard/i586', 'state': 'broken', 'pkg': 'glibc'},
-                       {'path': 'standard/i586', 'state': 'failed', 'pkg': 'openSUSE-images'}]]
-        red_result = ['At least following repositories is still building:',
-                      '    standard/x86_64: building',
-                      'Following packages are broken:',
-                      '    glibc (standard/i586): broken',
-                      '    openSUSE-images (standard/i586): failed']
-
-        self.assertEqual(details_red, red)
-        self.assertEqual(self.api.generate_build_status_details(details_red), red_result)
-        self.assertEqual(self.api.generate_build_status_details(details_red, True), red_result)
-        self.assertEqual(details_green, None)
-        self.assertEqual(self.api.generate_build_status_details(details_green), [])
-
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
 
@@ -290,22 +241,6 @@ class TestApiCalls(unittest.TestCase):
         # Verify it works
         self.assertEqual(self.api.prj_from_letter('openSUSE:Factory'), 'openSUSE:Factory')
         self.assertEqual(self.api.prj_from_letter('A'), 'openSUSE:Factory:Staging:A')
-
-    def test_check_project_status_green(self):
-        """Test checking project status."""
-
-        # Check print output
-        self.assertEqual(self.api.gather_build_status('green'), None)
-
-    def test_check_project_status_red(self):
-        """Test checking project status."""
-
-        # Check print output
-        self.assertEqual(
-            self.api.gather_build_status('red'),
-            ['red', [{'path': 'standard/x86_64', 'state': 'building'}],
-             [{'path': 'standard/i586', 'pkg': 'glibc', 'state': 'broken'},
-              {'path': 'standard/i586', 'pkg': 'openSUSE-images', 'state': 'failed'}]])
 
     def test_frozen_mtime(self):
         """Test frozen mtime."""
