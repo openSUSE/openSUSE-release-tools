@@ -74,7 +74,6 @@ def tt_overall_result(self, snapshot):
     known_failures = [
         'opensuse-FTT-DVD-i586-Build-lxde@32bit',
         'opensuse-FTT-DVD-i586-Build-update_13.1-kde@32bit',
-        'opensuse-FTT-DVD-x86_64-Build-dual_windows8@64bit',
         'opensuse-FTT-DVD-x86_64-Build-lvm@64bit',
         'opensuse-FTT-DVD-x86_64-Build-lxde@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
@@ -82,8 +81,6 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',
         'opensuse-FTT-NET-i586-Build-lvm@32bit',
         'opensuse-FTT-NET-i586-Build-lxde@32bit',
-        'opensuse-FTT-NET-x86_64-Build-dual_windows8@64bit',
-        'opensuse-FTT-NET-x86_64-Build-kde@Laptop_64',
         'opensuse-FTT-NET-x86_64-Build-lxde@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_121@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_122@64bit',
