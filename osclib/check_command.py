@@ -90,10 +90,11 @@ class CheckCommand(object):
                 report.append(' -- For subproject %s' % subproject['name'])
                 report.extend(subreport)
 
-        if report and not is_subproject:
-            report.insert(0, ' -- Project %s still needs attention' % project['name'])
-        elif not is_subproject:
-            report.append(' ++ Acceptable staging project %s' % project['name'])
+        if project['overall_state'] == 'acceptable':
+            report.insert(0, ' ++ Acceptable staging project %s' % project['name'])
+        elif project['overall_state'] != 'empty':
+            report.insert(0, ' -- %s Project %s still needs attention' % (project['overall_state'].upper(),
+                                                                          project['name']))
 
         return report
 

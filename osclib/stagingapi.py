@@ -6,7 +6,6 @@
 
 import json
 import logging
-import re
 import urllib2
 import time
 from xml.etree import cElementTree as ET
@@ -475,7 +474,7 @@ class StagingAPI(object):
 
         for sub_prj, sub_pkg in self.get_sub_packages(package):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
-            if sub_prj != subprj: # if different to the main package's prj
+            if sub_prj != subprj:  # if different to the main package's prj
                 delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
 
         self.set_review(request_id, project, state=review, msg=msg)
@@ -499,48 +498,6 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, package, '_meta'])
         http_PUT(url, data=dst_meta)
 
-    def check_one_request(self, request, project):
-        """
-        Check if a staging request is ready to be approved. Reviews
-        for the project are ignored, other open reviews will block the
-        acceptance
-        :param project: staging project
-        :param request_id: request id to check
-
-        """
-
-        url = self.makeurl(['request', str(request)])
-        root = ET.parse(http_GET(url)).getroot()
-
-        # relevant info for printing
-        package = str(root.find('action').find('target').attrib['package'])
-
-        state = root.find('state').get('name')
-        if state in ['declined', 'superseded', 'revoked']:
-            return '{}: {}'.format(package, state)
-
-        # instead of just printing the state of the whole request find
-        # out who is remaining on the review and print it out,
-        # otherwise print out that it is ready for approval and
-        # waiting on others from GR to be accepted
-        review_state = root.findall('review')
-        failing_groups = []
-        for i in review_state:
-            if i.attrib['state'] == 'accepted':
-                continue
-            if i.get('by_project', None) == project:
-                continue
-            for attrib in ['by_group', 'by_user', 'by_project', 'by_package']:
-                value = i.get(attrib, None)
-                if value:
-                    failing_groups.append(value)
-
-        if not failing_groups:
-            return None
-        else:
-            state = 'missing reviews: ' + ', '.join(failing_groups)
-            return '{}: {}'.format(package, state)
-
     def check_ring_packages(self, project, requests):
         """
         Checks if packages from requests are in some ring or not
@@ -556,88 +513,21 @@ class StagingAPI(object):
 
         return False
 
-    def check_project_status(self, project, verbose=False):
+    def check_project_status(self, project):
         """
-        Checks a staging project for acceptance. Checks all open
-        requests for open reviews and build status
+        Checks a staging project for acceptance. Use the JSON document
+        for staging project to base the decision.
         :param project: project to check
         :return true (ok)/false (empty prj) or list of strings with
                 informations)
+
         """
-
-        # Report
-        report = list()
-
-        # First ensure we dispatched the open requests so we do not
-        # pass projects with update/superseded requests
-        for request in self.get_open_requests():
-            stage_info = self.supseded_request(request)
-            if stage_info and stage_info['prj'] == project:
-                return ['Request {} is superseded'.format(stage_info['rq_id'])]
-
-        # all requests with open review
-        requests = self.list_requests_in_prj(project)
-        open_requests = set(requests)
-
-        # all tracked requests - some of them might be declined, so we
-        # don't see them above
-        meta = self.get_prj_pseudometa(project)
-        for req in meta['requests']:
-            req = req['id']
-            if req in open_requests:
-                open_requests.remove(req)
-            if req not in requests:
-                requests.append(req)
-        if open_requests:
-            return ['Request(s) {} are not tracked but are open for the prj'.format(','.join(map(str, open_requests)))]
-
-        # If we find no requests in staging then it is empty so we ignore it
-        if not requests:
-            return False
-
-        # Check if the requests are acceptable and bail out on
-        # first failure unless verbose as it is slow
-        for request in requests:
-            ret = self.check_one_request(request, project)
-            if ret:
-                report.append(ret)
-                if not verbose:
-                    break
-
-        # Check the build/openQA only if we have some ring packages
-        if self.check_ring_packages(project, requests):
-            # Check the buildstatus
-            buildstatus = self.gather_build_status(project)
-            if buildstatus:
-                # here no append as we are adding list to list
-                report += self.generate_build_status_details(buildstatus, verbose)
-            # Check the openqa state
-            ret = self.find_openqa_state(project)
-            if ret:
-                report.append(ret)
-
-        if report:
-            return report
-        elif not self.project_exists(project + ":DVD"):
-            # The only case we are green
-            return True
-
-        # now check the same for the subprj
-        project = project + ":DVD"
-        buildstatus = self.gather_build_status(project)
-
-        if buildstatus:
-            report += self.generate_build_status_details(buildstatus, verbose)
-
-        # Check the openqa state
-        ret = self.find_openqa_state(project)
-        if ret:
-            report.append(ret)
-
-        if report:
-            return report
-
-        return True
+        _prefix = 'openSUSE:Factory:Staging:'
+        if project.startswith(_prefix):
+            project = project.replace(_prefix, '')
+        url = self.makeurl(('factory', 'staging_projects', project + '.json'))
+        result = json.load(self.retried_GET(url))
+        return result['overall_state'] == 'acceptable'
 
     def days_since_last_freeze(self, project):
         """
@@ -651,66 +541,6 @@ class StagingAPI(object):
             if entry.get('name') == '_frozenlinks':
                 return (time.time() - float(entry.get('mtime')))/3600/24
         return 100000  # quite some!
-
-    def find_openqa_jobs(self, project):
-        url = self.makeurl(['build', project, 'images', 'x86_64', 'Test-DVD-x86_64'])
-        root = ET.parse(http_GET(url)).getroot()
-
-        filename = None
-        for binary in root.findall('binary'):
-            filename = binary.get('filename', '')
-            if filename.endswith('.iso'):
-                break
-
-        if not filename:
-            return None
-
-        jobtemplate = '-Staging'
-        if project.endswith(':DVD'):
-            jobtemplate = '-Staging2'
-            project = project[:-4]
-
-        jobname = 'openSUSE-Staging:'
-        jobname += project.split(':')[-1] + jobtemplate
-        result = re.match('Test-Build([^-]+)-Media.iso', filename)
-        jobname += '-DVD-x86_64-Build' + result.group(1) + "-Media.iso"
-
-        try:
-            url = "https://openqa.opensuse.org/api/v1/jobs?iso={}".format(jobname)
-            f = urllib2.urlopen(url)
-        except urllib2.HTTPError:
-            return None
-
-        jobs = json.load(f)['jobs']
-
-        bestjobs = {}
-        for job in jobs:
-            if job['result'] != 'incomplete' and not job['clone_id']:
-                if job['test'] == 'miniuefi':
-                    continue
-                if job['name'] not in bestjobs or bestjobs[job['name']]['result'] != 'passed':
-                    bestjobs[job['name']] = job
-
-        return bestjobs
-
-    def find_openqa_state(self, project):
-        """
-        Checks the openqa state of the project
-        :param project: project to check
-        :return None or list with issue informations
-        """
-
-        jobs = self.find_openqa_jobs(project)
-
-        if not jobs:
-            return 'No openQA result yet'
-
-        for job in jobs.values():
-            check = self.check_if_job_is_ok(job)
-            if check:
-                return check
-
-        return None
 
     def check_if_job_is_ok(self, job):
         url = 'https://openqa.opensuse.org/tests/{}/file/results.json'.format(job['id'])
@@ -740,72 +570,6 @@ class StagingAPI(object):
                 continue
             return '{} test failed: https://openqa.opensuse.org/tests/{}'.format(module['name'], job['id'])
         return None
-
-    def gather_build_status(self, project):
-        """
-        Checks whether everything is built in project
-        :param project: project to check
-        """
-        # Get build results
-        url = self.makeurl(['build', project, '_result?code=failed&code=broken&code=unresolvable'])
-        root = ET.parse(http_GET(url)).getroot()
-
-        # Check them
-        broken = []
-        working = []
-        # Iterate through repositories
-        for results in root.findall('result'):
-            building = False
-            if results.get('state') not in ('published', 'unpublished') or results.get('dirty') == 'true':
-                working.append({
-                    'path': '{}/{}'.format(results.get('repository'),
-                                           results.get('arch')),
-                    'state': results.get('state')
-                })
-                building = True
-            # Iterate through packages
-            for node in results:
-                # Find broken
-                result = node.get('code')
-                if result in ('broken', 'failed') or (result == 'unresolvable' and not building):
-                    broken.append({
-                        'pkg': node.get('package'),
-                        'state': result,
-                        'path': '{}/{}'.format(results.get('repository'),
-                                               results.get('arch'))
-                    })
-
-        # Print the results
-        if not working and not broken:
-            return None
-        else:
-            return [project, working, broken]
-
-    def generate_build_status_details(self, details, verbose=False):
-        """
-        Generate list of strings for the buildstatus detail report.
-        :param details: buildstatus informations about project
-        :return list of strings for printing
-        """
-
-        retval = list()
-        if not isinstance(details, list):
-            return retval
-        project, working, broken = details
-
-        if working:
-            retval.append('At least following repositories is still building:')
-            for i in working:
-                retval.append('    {}: {}'.format(i['path'], i['state']))
-                if not verbose:
-                    break
-        if broken:
-            retval.append('Following packages are broken:')
-            for i in broken:
-                retval.append('    {} ({}): {}'.format(i['pkg'], i['path'],
-                                                       i['state']))
-
-        return retval
 
     def rq_to_prj(self, request_id, project):
         """

@@ -5,7 +5,6 @@
 # Distribute under GPLv2 or later
 
 import unittest
-import mock
 
 from obs import APIURL
 from obs import OBS
@@ -29,8 +28,7 @@ class TestAccept(unittest.TestCase):
         comments = c_api.get_comments(project_name=staging_c)
 
         # Accept staging C (containing apparmor and mariadb)
-        with mock.patch('osclib.stagingapi.StagingAPI.find_openqa_state', return_value='Nothing'):
-            self.assertEqual(True, AcceptCommand(self.api).perform(staging_c))
+        self.assertEqual(True, AcceptCommand(self.api).perform(staging_c))
 
         # Comments are cleared up
         accepted_comments = c_api.get_comments(project_name=staging_c)
