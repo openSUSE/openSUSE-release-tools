@@ -141,6 +141,17 @@ class CheckRepo(object):
             print('ERROR in URL %s [%s]' % (url, e))
         return state
 
+    def get_review_state(self, request_id):
+        """Return the current review state of the request."""
+        states = []
+        url = makeurl(self.apiurl, ('request', str(request_id)))
+        try:
+            root = ET.parse(http_GET(url)).getroot()
+            states = [review.get('state') for review in root.findall('review') if review.get('by_user') == 'factory-repo-checker']
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return states[0] if states else ''
+
     def change_review_state(self, request_id, newstate, message=''):
         """Based on osc/osc/core.py. Fixed 'by_user'."""
         query = {
@@ -152,9 +163,9 @@ class CheckRepo(object):
             'by_user': 'factory-repo-checker',
         }
 
-        current_state = self.get_request_state(request_id)
-        if current_state == 'accepted' and newstate != 'accepted':
-            print ' - Avoid change state %s -> %s (%s)' % (current_state, newstate, message)
+        review_state = self.get_review_state(request_id)
+        if review_state == 'accepted' and newstate != 'accepted':
+            print ' - Avoid change state %s -> %s (%s)' % (review_state, newstate, message)
 
         code = 404
         url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
