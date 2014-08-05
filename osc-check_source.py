@@ -18,6 +18,7 @@ from osc.core import checkout_package
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
+from osc import cmdln
 
 
 # For a description of this decorator, visit
@@ -74,6 +75,9 @@ def _checker_change_review_state(self, opts, id, newstate, by_group='', by_user=
     if supersed:
         query['superseded_by'] = supersed
     url = makeurl(opts.apiurl, ['request', str(id)], query=query)
+    if opts.dry_run:
+        print "dry-run: change review state: %s"%url
+        return
     root = ET.parse(http_POST(url, data=message)).getroot()
     return root.attrib['code']
 
@@ -95,6 +99,10 @@ def _checker_add_review(self, opts, id, by_group=None, by_user=None, msg=None):
         raise Exception('we need either by_group or by_user')
 
     url = makeurl(opts.apiurl, ['request', str(id)], query)
+    if opts.dry_run:
+            print "dry-run: adding review %s"%url
+            return 0
+
     try:
         r = http_POST(url, data=msg)
     except urllib2.HTTPError:
@@ -279,12 +287,18 @@ def _checker_check_devel_package(self, opts, project, package):
                 print("NO DEVEL IN", name)
             # mark we tried
             self._devel_projects[project] = 1
-    try:
-        return self._devel_projects["%s/%s" % (project, package)]
-    except KeyError:
-        return None
+    key = "%s/%s" % (project, package)
+    if key in self._devel_projects:
+        return self._devel_projects[key]
+    if project == 'openSUSE:13.2':
+        if opts.verbose:
+            print "no devel project for %s found in %s, retry using Factory projects"%(package, project)
+        return self._checker_check_devel_package(opts, 'openSUSE:Factory', package)
+    return None
 
 
+@cmdln.option('-v', '--verbose', action='store_true', help="verbose output")
+@cmdln.option('-n', '--dry-run', action='store_true', help="dry run")
 def do_check_source(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
 
@@ -296,7 +310,6 @@ def do_check_source(self, subcmd, opts, *args):
     """
 
     self._devel_projects = {}
-    opts.verbose = False
 
     opts.apiurl = self.get_api_url()
 
