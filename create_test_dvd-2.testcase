@@ -15,10 +15,8 @@ job install provides pattern() = kde4_basis
 job install provides pattern() = kde4_multimedia
 job install provides pattern() = kde4_utilities
 job install provides pattern() = laptop
-job install provides pattern() = lxde
 job install provides pattern() = multimedia
 job install provides pattern() = office
-job install provides pattern() = xfce
 job install provides pattern() = minimal_base
 
 job install provides pattern() = rest_core_dvd
