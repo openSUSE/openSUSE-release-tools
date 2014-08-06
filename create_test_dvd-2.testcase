@@ -27,6 +27,7 @@ job install name openSUSE-release-livecd-x11
 job install name sudo
 job install name xdelta
 job install name kate
+job install name MozillaThunderbird
 
 job lock name gtk2-branding-upstream
 job lock name gdm-branding-upstream
