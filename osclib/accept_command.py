@@ -67,15 +67,16 @@ class AcceptCommand(object):
 
     def accept_other_new(self):
         changed = False
-        for req in self.find_new_requests('openSUSE:Factory'):
+        for req in self.find_new_requests('openSUSE:{}'.format(self.api.opensuse)):
             change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to factory')
             changed = True
 
         return changed
 
     def update_factory_version(self):
-        """Update Factory version if is necessary."""
-        url = self.api.makeurl(['source', 'openSUSE:Factory', '_product', 'openSUSE.product'])
+        """Update openSUSE (Factory, 13.2, ...)  version if is necessary."""
+        project = 'openSUSE:{}'.format(self.api.opensuse)
+        url = self.api.makeurl(['source', project, '_product', 'openSUSE.product'])
 
         product = http_GET(url).read()
         curr_version = date.today().strftime('%Y%m%d')

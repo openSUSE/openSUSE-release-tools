@@ -30,16 +30,17 @@ class StagingAPI(object):
     Class containing various api calls to work with staging projects.
     """
 
-    def __init__(self, apiurl):
+    def __init__(self, apiurl, opensuse='Factory'):
         """
         Initialize instance variables
         """
 
         self.apiurl = apiurl
+        self.opensuse = opensuse
         self.rings = (
-            'openSUSE:Factory:Rings:0-Bootstrap',
-            'openSUSE:Factory:Rings:1-MinimalX',
-            'openSUSE:Factory:Rings:2-TestDVD'
+            'openSUSE:{}:Rings:0-Bootstrap'.format(self.opensuse),
+            'openSUSE:{}:Rings:1-MinimalX'.format(self.opensuse),
+            'openSUSE:{}:Rings:2-TestDVD'.format(self.opensuse)
         )
         self.ring_packages = self._generate_ring_packages()
         self.packages_staged = self._get_staged_requests()
@@ -183,7 +184,7 @@ class StagingAPI(object):
 
         projects = []
 
-        query = "id?match=starts-with(@name,'openSUSE:Factory:Staging:')"
+        query = "id?match=starts-with(@name,'openSUSE:{}:Staging:')".format(self.opensuse)
         url = self.makeurl(['search', 'project', query])
         projxml = http_GET(url)
         root = ET.parse(projxml).getroot()
@@ -522,7 +523,7 @@ class StagingAPI(object):
                 informations)
 
         """
-        _prefix = 'openSUSE:Factory:Staging:'
+        _prefix = 'openSUSE:{}:Staging:'.format(self.opensuse)
         if project.startswith(_prefix):
             project = project.replace(_prefix, '')
         url = self.makeurl(('factory', 'staging_projects', project + '.json'))
@@ -621,7 +622,8 @@ class StagingAPI(object):
         if project.endswith(':DVD'):
             return project  # not yet
 
-        if self.ring_packages.get(pkg) == 'openSUSE:Factory:Rings:2-TestDVD':
+        ring_dvd = 'openSUSE:{}:Rings:2-TestDVD'.format(self.opensuse)
+        if self.ring_packages.get(pkg) == ring_dvd:
             return project + ":DVD"
 
         return project
@@ -735,7 +737,7 @@ class StagingAPI(object):
     def prj_from_letter(self, letter):
         if ':' in letter:  # not a letter
             return letter
-        return 'openSUSE:Factory:Staging:%s' % letter
+        return 'openSUSE:{}:Staging:{}'.format(self.opensuse, letter)
 
     def list_requests_in_prj(self, project):
         where = "@by_project='%s'+and+@state='new'" % project

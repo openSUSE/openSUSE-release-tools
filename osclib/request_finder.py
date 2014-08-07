@@ -6,17 +6,13 @@ from osc.core import makeurl
 from osc.core import http_GET
 
 
-FACTORY = 'openSUSE:Factory'
-STG_PREFIX = 'openSUSE:Factory:Staging:'
-
-
 def _is_int(x):
     return isinstance(x, int) or x.isdigit()
 
 
 class RequestFinder(object):
 
-    def __init__(self, apiurl, stagingapi):
+    def __init__(self, api):
         """
         Store the list of submit request together with the source project
 
@@ -31,8 +27,7 @@ class RequestFinder(object):
                  }
              }
         """
-        self.apiurl = apiurl
-        self.stagingapi = stagingapi
+        self.api = api
         self.srs = {}
 
     def _filter_review_by_project(self, element, state):
@@ -56,8 +51,8 @@ class RequestFinder(object):
         :param element: XML with list of reviews
         """
         reviews = self._filter_review_by_project(element, 'new')
-        assert len(reviews) <= 1, 'Request "{}" have multiple review by project in new state "{}"'.format(request_id,
-                                                                                                          reviews)
+        msg = 'Request "{}" have multiple review by project in new state "{}"'.format(request_id, reviews)
+        assert len(reviews) <= 1, msg
         return reviews[0] if reviews else None
 
     def find_request_id(self, request_id):
@@ -69,7 +64,7 @@ class RequestFinder(object):
         if not _is_int(request_id):
             return False
 
-        url = makeurl(self.apiurl, ['request', str(request_id)])
+        url = makeurl(self.api.apiurl, ['request', str(request_id)])
         try:
             f = http_GET(url)
         except urllib2.HTTPError:
@@ -81,14 +76,14 @@ class RequestFinder(object):
             return None
 
         project = root.find('action').find('target').get('project')
-        if project != FACTORY and not project.startswith(STG_PREFIX):
-            msg = 'Request {} is not for openSUSE:Factory, but for {}'
-            msg = msg.format(request_id, project)
+        if (project != 'openSUSE:{}'.format(self.api.opensuse) and not project.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse))):
+            msg = 'Request {} is not for openSUSE:{}, but for {}'
+            msg = msg.format(request_id, self.api.opensuse, project)
             raise oscerr.WrongArgs(msg)
         self.srs[int(request_id)] = {'project': project}
 
         review = self._new_review_by_project(request_id, root)
-        if review and review.startswith(STG_PREFIX):
+        if review and review.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse)):
             self.srs[int(request_id)]['staging'] = review
 
         return True
@@ -99,9 +94,9 @@ class RequestFinder(object):
         :param package: name of the package
         """
 
-        query = 'states=new,review,declined&project=openSUSE:Factory&view=collection&package={}'
-        query = query.format(urllib2.quote(package))
-        url = makeurl(self.apiurl, ['request'], query)
+        query = 'states=new,review,declined&project=openSUSE:{}&view=collection&package={}'
+        query = query.format(self.api.opensuse, urllib2.quote(package))
+        url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
 
         root = ET.parse(f).getroot()
@@ -116,10 +111,10 @@ class RequestFinder(object):
             request = int(sr.get('id'))
             state = sr.find('state').get('name')
 
-            self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
+            self.srs[request] = {'project': 'openSUSE:{}'.format(self.api.opensuse), 'state': state}
 
             review = self._new_review_by_project(request, sr)
-            if review and review.startswith(STG_PREFIX):
+            if review and review.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse)):
                 self.srs[int(request)]['staging'] = review
 
             if last_rq:
@@ -145,8 +140,8 @@ class RequestFinder(object):
         :param source_project: name of the source project
         """
 
-        query = 'states=new,review&project=openSUSE:Factory&view=collection'
-        url = makeurl(self.apiurl, ['request'], query)
+        query = 'states=new,review&project=openSUSE:{}&view=collection'.format(self.api.opensuse)
+        url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
@@ -157,9 +152,9 @@ class RequestFinder(object):
                 if src is not None and src.get('project') == source_project:
                     request = int(sr.attrib['id'])
                     state = sr.find('state').get('name')
-                    self.srs[request] = {'project': 'openSUSE:Factory', 'state': state}
+                    self.srs[request] = {'project': 'openSUSE:{}'.format(self.api.opensuse), 'state': state}
                     review = self._new_review_by_project(request, sr)
-                    if review and review.startswith(STG_PREFIX):
+                    if review and review.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse)):
                         self.srs[int(request)]['staging'] = review
                     ret = True
 
@@ -193,13 +188,13 @@ class RequestFinder(object):
 
         for p in pkgs:
             found = False
-            for staging in self.stagingapi.get_staging_projects():
-                if _is_int(p) and self.stagingapi.get_package_for_request_id(staging, p):
+            for staging in self.api.get_staging_projects():
+                if _is_int(p) and self.api.get_package_for_request_id(staging, p):
                     self.srs[int(p)] = {'staging': staging}
                     found = True
                     continue
                 else:
-                    rq = self.stagingapi.get_request_id_for_package(staging, p)
+                    rq = self.api.get_request_id_for_package(staging, p)
                     if rq:
                         self.srs[rq] = {'staging': staging}
                         found = True
@@ -208,23 +203,23 @@ class RequestFinder(object):
                 raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
     @classmethod
-    def find_sr(cls, pkgs, apiurl, stagingapi=None):
+    def find_sr(cls, pkgs, api):
         """
         Search for all various mutations and return list of SR#s
         :param pkgs: mesh of argumets to search for
-        :param apiurl: OBS url
+        :param api: StagingAPI instance
         """
-        finder = cls(apiurl, stagingapi)
+        finder = cls(api)
         finder.find(pkgs)
         return finder.srs
 
     @classmethod
-    def find_staged_sr(cls, pkgs, stagingapi):
+    def find_staged_sr(cls, pkgs, api):
         """
         Search for all various mutations and return a single SR#s.
         :param pkgs: mesh of argumets to search for (SR#|package name)
-        :param stagingapi: StagingAPI instance
+        :param api: StagingAPI instance
         """
-        finder = cls(stagingapi.apiurl, stagingapi)
+        finder = cls(api)
         finder.find_via_stagingapi(pkgs)
         return finder.srs

@@ -1,7 +1,3 @@
-from osc import oscerr
-from osc.core import get_request
-from osc.core import http_GET
-
 from osclib.request_finder import RequestFinder
 
 

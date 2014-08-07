@@ -1,7 +1,4 @@
-from xml.etree import cElementTree as ET
-
-from osc.core import makeurl
-from osc.core import http_GET
+from osc import oscerr
 
 
 class ListCommand:

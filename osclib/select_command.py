@@ -1,4 +1,3 @@
-from collections import defaultdict
 from xml.etree import cElementTree as ET
 
 from osc import oscerr
@@ -115,7 +114,7 @@ class SelectCommand(object):
             # FreezeCommand(self.api).perform(target_project)
         self.target_project = target_project
 
-        for request, request_project in RequestFinder.find_sr(requests, self.api.apiurl).items():
+        for request, request_project in RequestFinder.find_sr(requests, self.api).items():
             if not self.select_request(request, request_project, move, from_):
                 return False
 
