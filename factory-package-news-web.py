@@ -45,7 +45,7 @@ def list():
     for i in sorted(os.listdir(_dir), reverse=True):
         if not digits_re.match(i):
             continue
-        ret = ret + '<a href="/diff/%s">%s</a>'%(i,i)
+        ret = ret + '<a href="diff/%s">%s</a>'%(i,i)
         if i == current:
             ret = ret + " &lt;--"
         ret = ret + '<br/>'
@@ -97,5 +97,7 @@ if __name__ == '__main__':
     parser.add_option("--host", metavar="IP", help="ip to listen to")
     (options, args) = parser.parse_args()
     app.run(debug=options.debug, host=options.host)
+
+application = app
 
 # vim: sw=4 et
