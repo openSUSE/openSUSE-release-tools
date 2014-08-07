@@ -92,7 +92,10 @@ class FreezeCommand(object):
         root = ET.parse(self.api.retried_GET(url)).getroot()
         for result in root.findall('result'):
             if result.get('repository') == 'bootstrap_copy':
-                if not result.find('status').get('code') in codes:
+                status = result.find('status')
+                if status == None:
+                    return False
+                if not status.get('code') in codes:
                     return False
         return True
 
