@@ -21,7 +21,7 @@
 
 
 from pprint import pprint
-import os, sys, re
+import os, sys, re, io
 import logging
 from optparse import OptionParser
 import rpm
@@ -44,6 +44,11 @@ class ChangeLogger(cmdln.Cmdln):
     def readRpmHeader(self, filename):
         """ Read an rpm header. """
         fd = os.open(filename, os.O_RDONLY)
+        h = self.readRpmHeaderFD(fd)
+        os.close(fd)
+        return h
+
+    def readRpmHeaderFD(self, fd):
         h = None
         try:
             h = self.ts.hdrFromFdno(fd)
@@ -55,8 +60,6 @@ class ChangeLogger(cmdln.Cmdln):
             if str(e) == "error reading package header":
                 print str(e)
             h = None
-        finally:
-            os.close(fd)
         return h
 
     def readChangeLogs(self, args):
@@ -64,24 +67,56 @@ class ChangeLogger(cmdln.Cmdln):
         pkgdata = dict()
         changelogs = dict()
 
-        for path in args:
-            for root, dirs, files in os.walk(path):
-                for pkg in [ os.path.join(root, file) for file in files]:
-                    h = self.readRpmHeader( pkg )
-                    #print h.sprintf("[* %{CHANGELOGTIME:day} %{CHANGELOGNAME}\n%{CHANGELOGTEXT}\n\n]")
-                    #print h['changelogname']
-                    evr = dict()
-                    for tag in ['name', 'version', 'release', 'sourcerpm']:
-                        evr[tag] = h[tag]
-                    pkgdata[h['name']] = evr
+        def _getdata(h):
+            evr = dict()
+            for tag in ['name', 'version', 'release', 'sourcerpm']:
+                evr[tag] = h[tag]
+            pkgdata[h['name']] = evr
 
-                    if h['sourcerpm'] in changelogs:
-                        changelogs[h['sourcerpm']]['packages'].append(h['name'])
-                    else:
-                        data = { 'packages': [ h['name'] ] }
-                        for tag in ['changelogtime', 'changelogtext']:
-                            data[tag] = h[tag]
-                        changelogs[h['sourcerpm']] = data
+            if h['sourcerpm'] in changelogs:
+                changelogs[h['sourcerpm']]['packages'].append(h['name'])
+            else:
+                data = { 'packages': [ h['name'] ] }
+                for tag in ['changelogtime', 'changelogtext']:
+                    data[tag] = h[tag]
+                changelogs[h['sourcerpm']] = data
+
+        for arg in args:
+            if arg.endswith('.iso'):
+                import pycdio
+                import iso9660
+                iso = iso9660.ISO9660.IFS(source=arg)
+                fd = os.open(arg, os.O_RDONLY)
+
+                if not iso.is_open() or fd is None:
+                    raise Exception("Could not open %s as an ISO-9660 image." %  arg)
+
+                for path in ['/suse/x86_64/', '/suse/noarch']:
+                    file_stats = iso.readdir(path)
+                    for stat in file_stats:
+                        filename = stat[0]
+                        LSN      = stat[1]
+                        size     = stat[2]
+                        sec_size = stat[3]
+                        is_dir   = stat[4] == 2
+#                       print("%s [LSN %6d] %8d %s%s" % (dir_tr[is_dir], LSN, size, path,
+#                           iso9660.name_translate(filename)))
+
+                        if (filename.endswith('.rpm')):
+                            os.lseek(fd, LSN*pycdio.ISO_BLOCKSIZE, io.SEEK_SET)
+                            h = self.ts.hdrFromFdno(fd)
+                            _getdata(h)
+
+                os.close(fd)
+
+            elif os.path.isdir(arg):
+                for root, dirs, files in os.walk(arg):
+                    for pkg in [ os.path.join(root, file) for file in files]:
+                        h = self.readRpmHeader( pkg )
+                        _getdata(h)
+            else:
+                raise Exception("don't know what to do with %s"%arg)
+
         return pkgdata, changelogs
 
     @cmdln.option("--snapshot", action="store", type='string', help="snapshot number")
