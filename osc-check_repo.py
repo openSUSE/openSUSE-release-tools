@@ -35,6 +35,7 @@ sys.path.append(_plugin_dir)
 from osclib.checkrepo import CheckRepo
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
+from osclib.stagingapi import StagingAPI
 
 
 def _check_repo_download(self, request, opts):
@@ -148,7 +149,8 @@ def _check_repo_group(self, id_, requests, opts):
 
     # Detect cycles into the current Factory graph after we update the
     # links with the current list of request.
-    cycle_detector = CycleDetector(opts.apiurl)
+    api = StagingAPI(opts.apiurl)
+    cycle_detector = CycleDetector(api)
     for (cycle, new_edges) in cycle_detector.cycles(requests=packs):
         print
         print ' - New cycle detected:', sorted(cycle)

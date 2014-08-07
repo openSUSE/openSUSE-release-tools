@@ -144,10 +144,10 @@ class Package(object):
 
 
 class CycleDetector(object):
-    """Class to detect cycles in Factory."""
+    """Class to detect cycles in Factory / 13.2."""
 
-    def __init__(self, apiurl):
-        self.apiurl = apiurl
+    def __init__(self, api):
+        self.api = api
         # Store packages prevoiusly ignored. Don't pollute the screen.
         self._ignore_packages = set()
 
@@ -156,7 +156,7 @@ class CycleDetector(object):
         root = None
         try:
             # print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
-            url = makeurl(self.apiurl, ['/build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
+            url = makeurl(self.api.apiurl, ['/build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
             root = http_GET(url).read()
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
@@ -174,8 +174,8 @@ class CycleDetector(object):
 
         _IGNORE_PREFIX = ('texlive-', 'master-boot-code')
 
-        # Note, by default generate the graph for all Factory. If you only
-        # need the base packages you can use:
+        # Note, by default generate the graph for all Factory /
+        # 13/2. If you only need the base packages you can use:
         #   project = 'Base:System'
         #   repository = 'openSUSE_Factory'
 
@@ -228,8 +228,11 @@ class CycleDetector(object):
         return frozenset(frozenset(e.text for e in cycle.findall('package'))
                          for cycle in root.findall('cycle'))
 
-    def cycles(self, requests, project='openSUSE:Factory', repository='standard', arch='x86_64'):
+    def cycles(self, requests, project=None, repository='standard', arch='x86_64'):
         """Detect cycles in a specific repository."""
+
+        if not project:
+            project = 'openSUSE:{}'.format(self.api.opensuse)
 
         # filter submit requests
         requests = [rq for rq in requests if rq.action_type == 'submit']

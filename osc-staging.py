@@ -17,14 +17,14 @@ from osc import cmdln, oscerr
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
 
-from osclib.stagingapi import StagingAPI
-from osclib.select_command import SelectCommand
-from osclib.unselect_command import UnselectCommand
 from osclib.accept_command import AcceptCommand
-from osclib.cleanup_rings import CleanupRings
-from osclib.list_command import ListCommand
-from osclib.freeze_command import FreezeCommand
 from osclib.check_command import CheckCommand
+from osclib.cleanup_rings import CleanupRings
+from osclib.freeze_command import FreezeCommand
+from osclib.list_command import ListCommand
+from osclib.select_command import SelectCommand
+from osclib.stagingapi import StagingAPI
+from osclib.unselect_command import UnselectCommand
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -39,6 +39,8 @@ def _print_version(self):
               help='force the selection to become a move')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='manually specify different source project during request moving')
+@cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
+              help='select a different project instead of openSUSE:Factory')
 @cmdln.option('--add', dest='add', metavar='PACKAGE',
               help='mark additional packages to be checked by repo checker')
 @cmdln.option('-o', '--old', action='store_true',
@@ -103,7 +105,7 @@ def do_staging(self, subcmd, opts, *args):
     # init the obs access
     opts.apiurl = self.get_api_url()
     opts.verbose = False
-    api = StagingAPI(opts.apiurl)
+    api = StagingAPI(opts.apiurl, opts.project)
 
     # call the respective command and parse args by need
     if cmd == 'check':
@@ -128,6 +130,6 @@ def do_staging(self, subcmd, opts, *args):
         else:
             SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
     elif cmd == 'cleanup_rings':
-        CleanupRings(opts.apiurl).perform()
+        CleanupRings(opts.api).perform()
     elif cmd == 'list':
         ListCommand(api).perform()
