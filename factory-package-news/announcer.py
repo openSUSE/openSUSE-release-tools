@@ -50,9 +50,10 @@ if m is None:
 
 version = m.group(1)
 
-prev = os.readlink(current_fn)
-if prev == version:
-    sys.exit(0)
+if os.path.lexists(current_fn):
+    prev = os.readlink(current_fn)
+    if prev == version:
+        sys.exit(0)
 
 u = urlparse(url+changes%version)
 conn = httplib.HTTPConnection(u.hostname, 80)
