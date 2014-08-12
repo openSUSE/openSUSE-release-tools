@@ -3,8 +3,15 @@
 set -e
 
 if ! test -d co; then
-  echo "you need to call this in a directory with a co directory containting osc checkouts with the staging prjs" 
-  exit 1
+	echo "you need to call this in a directory with a co directory containting osc checkouts with the staging prjs" 
+	exit 1
+fi
+
+# give it target Factory by default then will not breaks current operation
+if [ $# -eq 0 ]; then
+    targets='Factory'
+else
+    targets=$@
 fi
 
 CODIR=$PWD
@@ -14,6 +21,9 @@ function regenerate_pl() {
     prj=$1
     shift;
 
+    target=$1
+    shift;
+
     suffix=$1
     shift;
     
@@ -21,7 +31,7 @@ function regenerate_pl() {
     for i in "$@"; do
 	echo "repo $i 0 solv $i.solv" >> tc
     done
-    cat $SCRIPTDIR/create_test_dvd-$suffix.testcase >> tc
+    cat $SCRIPTDIR/create_test_$target\_dvd-$suffix.testcase >> tc
 
     out=$(mktemp)
     testsolv -r tc | sed -e 's,^install \(.*\)-[^-]*-[^-]*\.[^-\.]*@.*,\1,' > $out
@@ -53,32 +63,51 @@ function sync_prj() {
     rpms2solv $dir/*.rpm > $dir.solv
 }
 
-sync_prj openSUSE:Factory:Rings:0-Bootstrap/standard/ bootstrap
-sync_prj openSUSE:Factory:Rings:1-MinimalX/standard minimalx
+function start_creating() {
+    for target in "$@"; do
+        # Rings part
+        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ bootstrap
+        sync_prj openSUSE:$target:Rings:1-MinimalX/standard minimalx
 
-regenerate_pl openSUSE:Factory:Rings:1-MinimalX 1 bootstrap minimalx
+        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 bootstrap minimalx
 
-sync_prj openSUSE:Factory:Rings:2-TestDVD/standard testdvd
-regenerate_pl openSUSE:Factory:Rings:2-TestDVD 2 bootstrap minimalx testdvd
+        sync_prj openSUSE:$target:Rings:2-TestDVD/standard testdvd
+        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 bootstrap minimalx testdvd
 
-sync_prj openSUSE:Factory:Staging:A/standard staging_A
-regenerate_pl "openSUSE:Factory:Staging:A" 1 staging_A
+        # Staging A part
+        sync_prj openSUSE:$target:Staging:A/standard staging_A
+        regenerate_pl "openSUSE:$target:Staging:A" $target 1 staging_A
 
-sync_prj openSUSE:Factory:Staging:A:DVD/standard staging_A-dvd
-regenerate_pl "openSUSE:Factory:Staging:A:DVD" 2 staging_A staging_A-dvd
+        sync_prj openSUSE:$target:Staging:A:DVD/standard staging_A-dvd
+        regenerate_pl "openSUSE:$target:Staging:A:DVD" $target 2 staging_A staging_A-dvd
 
-for l in B C D E F G H I J; do
-  sync_prj openSUSE:Factory:Staging:$l/bootstrap_copy "staging_$l-bc"
-  sync_prj openSUSE:Factory:Staging:$l/standard staging_$l
-  regenerate_pl "openSUSE:Factory:Staging:$l" 1 "staging_$l-bc" staging_$l
-done
+        projects=$(osc api /search/project/id?match="starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
+        for prj in openSUSE:$target:Rings:2-TestDVD $projects; do
+            l=$(echo $prj | cut -d: -f4)
+            if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
+                # no need for A, already did
+                if [ $l != "A" ]; then
+                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$l-bc"
+                    sync_prj openSUSE:$target:Staging:$l/standard staging_$l
+                    regenerate_pl "openSUSE:$target:Staging:$l" $target 1 "staging_$l-bc" staging_$l
+                fi
+            fi
 
-projects=$(osc api /search/project/id?match='starts-with(@name,"openSUSE:Factory:Staging")' | grep :DVD | cut -d\' -f2)
-for prj in openSUSE:Factory:Rings:2-TestDVD $projects; do
-  perl $SCRIPTDIR/rebuildpacs.pl $prj standard x86_64
-done
+            if [[ ( $prj =~ :DVD ) || ( $prj =~ Rings:2-TestDVD ) ]]; then
+                perl $SCRIPTDIR/rebuildpacs.pl $prj standard x86_64
+            fi
 
-for l in B C D E F G H I; do
-  sync_prj openSUSE:Factory:Staging:$l:DVD/standard "staging_$l-dvd"
-  regenerate_pl "openSUSE:Factory:Staging:$l:DVD" 2 "staging_$l-bc" staging_$l "staging_$l-dvd"
-done
+            if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
+                # no need for A, already did
+                if [ $l != "A" ]; then
+                    sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$l-dvd"
+                    regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 "staging_$l-bc" staging_$l "staging_$l-dvd"
+                fi
+            fi
+        done
+    done
+}
+
+# call main function
+start_creating $targets
+
