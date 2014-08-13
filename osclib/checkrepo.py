@@ -101,10 +101,11 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl):
+    def __init__(self, apiurl, opensuse='Factory'):
         """CheckRepo constructor."""
         self.apiurl = apiurl
-        self.staging = StagingAPI(apiurl)
+        self.opensuse = opensuse
+        self.staging = StagingAPI(apiurl, opensuse)
 
         # grouped = { id: staging, }
         self.grouped = {}
@@ -189,10 +190,11 @@ class CheckRepo(object):
     def pending_requests(self):
         """Search pending requests to review."""
         requests = []
-        where = "@by_user='factory-repo-checker'+and+@state='new'"
+        review = "@by_user='factory-repo-checker'+and+@state='new'"
+        target = "@project='openSUSE:{}'".format(self.opensuse)
         try:
             url = makeurl(self.apiurl, ('search', 'request'),
-                          "match=state/@name='review'+and+review[%s]" % where)
+                          "match=state/@name='review'+and+review[%s]+and+target[%s]" % (review, target))
             root = ET.parse(http_GET(url)).getroot()
             requests = root.findall('request')
         except urllib2.HTTPError, e:
