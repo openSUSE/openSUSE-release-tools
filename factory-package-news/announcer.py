@@ -75,7 +75,7 @@ if res.status != 200:
 msg = MIMEText(res.read())
 msg['Subject'] = 'New Factory snapshot %s released!'%version
 msg['From'] = "Ludwig Nussel <ludwig.nussel@suse.de>"
-msg['To'] = "Ludwig Nussel <lnussel@suse.de>"
+msg['To'] = "opensuse-factory@opensuse.org"
 
 s = smtplib.SMTP('relay.suse.de')
 s.sendmail('ludwig.nussel@suse.de', [msg['To']], msg.as_string())
