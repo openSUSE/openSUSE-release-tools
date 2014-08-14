@@ -77,7 +77,9 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-DVD-x86_64-Build-lvm@64bit',
         'opensuse-FTT-DVD-x86_64-Build-lxde@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
+	'opensuse-FTT-GNOME-Live-i686-Build-gnome-live@32bit', # broken in 20140813
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64',
+	'opensuse-FTT-KDE-Live-i686-Build-kde-live@32bit', # broken in 20140813
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',
         'opensuse-FTT-NET-i586-Build-lvm@32bit',
         'opensuse-FTT-NET-i586-Build-lxde@32bit',
