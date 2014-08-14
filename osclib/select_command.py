@@ -56,22 +56,26 @@ class SelectCommand(object):
 
         return candidates[0] if candidates else None
 
-    def select_request(self, request, request_project, move, from_):
+    def select_request(self, request, move, from_):
         supersede = self._supersede(request)
 
-        if 'staging' not in request_project and not supersede:
+        staged_requests = {
+            self.api.packages_staged[package]['rq_id']: package for package in self.api.packages_staged
+        }
+
+        if request not in staged_requests and not supersede:
             # Normal 'select' command
             print('Adding request "{}" to project "{}"'.format(request, self.target_project))
 
             return self.api.rq_to_prj(request, self.target_project)
-        elif 'staging' in request_project and (move or supersede):
+        elif request in staged_requests and (move or supersede):
             # 'select' command becomes a 'move'
             fprj = None
             if from_:
                 fprj = self.api.prj_from_letter(from_)
             else:
                 # supersede = (new_rq, package, project)
-                fprj = request_project['staging'] if not supersede else supersede[2]
+                fprj = staged_requests[request] if not supersede else supersede[2]
 
             if supersede:
                 print('"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0]))
@@ -86,13 +90,13 @@ class SelectCommand(object):
             self.affected_projects.add(fprj)
 
             return self.api.move_between_project(fprj, request, self.target_project)
-        elif 'staging' in request_project and not move:
+        elif request in staged_requests and not move:
             # Previously selected, but not explicit move
             msg = 'Request {} is already tracked in "{}".'
-            msg = msg.format(request, request_project['staging'])
-            if request_project['staging'] != self.target_project:
+            msg = msg.format(request, staged_requests[request])
+            if staged_requests[request] != self.target_project:
                 msg += '\nUse --move modifier to move the request from "{}" to "{}"'
-                msg = msg.format(request_project['staging'], self.target_project)
+                msg = msg.format(staged_requests[request], self.target_project)
             print(msg)
             return True
         else:
@@ -114,8 +118,8 @@ class SelectCommand(object):
             # FreezeCommand(self.api).perform(target_project)
         self.target_project = target_project
 
-        for request, request_project in RequestFinder.find_sr(requests, self.api).items():
-            if not self.select_request(request, request_project, move, from_):
+        for request in RequestFinder.find_sr(requests, self.api):
+            if not self.select_request(request, move, from_):
                 return False
 
         # Notify everybody about the changes
