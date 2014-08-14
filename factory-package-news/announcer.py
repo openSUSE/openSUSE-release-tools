@@ -110,8 +110,8 @@ else:
     s.sendmail(options.sender, [msg['To']], msg.as_string())
     s.quit()
 
-tmpfn = os.path.join(os.path.dirname(__file__), ".announcer-current-version")
-os.symlink(version, tmpfn)
-os.rename(tmpfn, current_fn)
+    tmpfn = os.path.join(os.path.dirname(__file__), ".announcer-current-version")
+    os.symlink(version, tmpfn)
+    os.rename(tmpfn, current_fn)
 
 # vim: sw=4 et
