@@ -77,7 +77,9 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-DVD-x86_64-Build-lvm@64bit',
         'opensuse-FTT-DVD-x86_64-Build-lxde@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
+	'opensuse-FTT-GNOME-Live-i686-Build-gnome-live@32bit', # broken in 20140813
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64',
+	'opensuse-FTT-KDE-Live-i686-Build-kde-live@32bit', # broken in 20140813
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',
         'opensuse-FTT-NET-i586-Build-lvm@32bit',
         'opensuse-FTT-NET-i586-Build-lxde@32bit',
@@ -152,6 +154,9 @@ def tt_maxsize_for_package(self, package):
 
     if package == '_product:openSUSE-ftp-ftp-i586_x86_64':
         return None
+
+    if package == '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64':
+        return None
     
     raise Exception('No maxsize for {}'.format(package))
 
@@ -196,6 +201,7 @@ def tt_factory_snapshottable(self):
         return False
 
     for product in ['_product:openSUSE-ftp-ftp-i586_x86_64', 
+                    '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64',
                     '_product:openSUSE-dvd5-dvd-i586',
                     '_product:openSUSE-dvd5-dvd-x86_64',
                     '_product:openSUSE-cd-mini-i586',
@@ -236,6 +242,7 @@ def tt_update_totest(self, snapshot):
     self.api.switch_flag_in_prj('openSUSE:Factory:ToTest', flag='publish', state='disable')
 
     self.tt_release_package('openSUSE:Factory', '_product:openSUSE-ftp-ftp-i586_x86_64')
+    self.tt_release_package('openSUSE:Factory', '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64')
     for cd in ['kiwi-image-livecd-kde.i586',
                'kiwi-image-livecd-kde.x86_64',
                'kiwi-image-livecd-gnome.i586',

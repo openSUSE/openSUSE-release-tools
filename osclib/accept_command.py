@@ -68,6 +68,7 @@ class AcceptCommand(object):
     def accept_other_new(self):
         changed = False
         for req in self.find_new_requests('openSUSE:{}'.format(self.api.opensuse)):
+            print "accepting request %s"%str(req)
             change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to factory')
             changed = True
 
