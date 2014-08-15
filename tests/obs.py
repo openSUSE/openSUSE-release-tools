@@ -665,7 +665,7 @@ class OBS(object):
         query = urlparse.urlparse(uri).query
         assert query in (
             "match=state/@name='review'+and+review[@by_group='factory-staging'+and+@state='new']",
-            "match=state/@name='review'+and+review[@by_user='factory-repo-checker'+and+@state='new']"
+            "match=state/@name='review'+and+review[@by_user='factory-repo-checker'+and+@state='new']+and+target[@project='openSUSE:Factory']"
         )
 
         response = (404, headers, '<result>Not found</result>')
