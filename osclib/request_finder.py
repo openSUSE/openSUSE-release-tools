@@ -30,31 +30,6 @@ class RequestFinder(object):
         self.api = api
         self.srs = {}
 
-    def _filter_review_by_project(self, element, state):
-        """
-        Takes a XML that contains a list of reviews and take the ones
-        that in state 'state'.
-        :param element: xml list with reviews
-        :param state: state we filter for
-        """
-        reviews = [r.get('by_project')
-                   for r in element.findall('review')
-                   if r.get('by_project') and r.get('state') == state]
-        return reviews
-
-    def _new_review_by_project(self, request_id, element):
-        """
-        Takes a XML that contains a list of reviews and return the
-        staging project currantly assigned for review that is in 'new'
-        state. Makes sure that there is a most one.
-        :param request_id: request id
-        :param element: XML with list of reviews
-        """
-        reviews = self._filter_review_by_project(element, 'new')
-        msg = 'Request "{}" have multiple review by project in new state "{}"'.format(request_id, reviews)
-        assert len(reviews) <= 1, msg
-        return reviews[0] if reviews else None
-
     def find_request_id(self, request_id):
         """
         Look up the request by ID to verify if it is correct
@@ -82,10 +57,6 @@ class RequestFinder(object):
             raise oscerr.WrongArgs(msg)
         self.srs[int(request_id)] = {'project': project}
 
-        review = self._new_review_by_project(request_id, root)
-        if review and review.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse)):
-            self.srs[int(request_id)]['staging'] = review
-
         return True
 
     def find_request_package(self, package):
@@ -112,10 +83,6 @@ class RequestFinder(object):
             state = sr.find('state').get('name')
 
             self.srs[request] = {'project': 'openSUSE:{}'.format(self.api.opensuse), 'state': state}
-
-            review = self._new_review_by_project(request, sr)
-            if review and review.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse)):
-                self.srs[int(request)]['staging'] = review
 
             if last_rq:
                 if self.srs[last_rq]['state'] == 'declined':
@@ -153,9 +120,6 @@ class RequestFinder(object):
                     request = int(sr.attrib['id'])
                     state = sr.find('state').get('name')
                     self.srs[request] = {'project': 'openSUSE:{}'.format(self.api.opensuse), 'state': state}
-                    review = self._new_review_by_project(request, sr)
-                    if review and review.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse)):
-                        self.srs[int(request)]['staging'] = review
                     ret = True
 
         return ret

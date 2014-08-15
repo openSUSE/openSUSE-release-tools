@@ -35,10 +35,9 @@ sys.path.append(_plugin_dir)
 from osclib.checkrepo import CheckRepo
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
-from osclib.stagingapi import StagingAPI
 
 
-def _check_repo_download(self, request, opts):
+def _check_repo_download(self, request):
     request.downloads = defaultdict(list)
 
     # Found cached version for the request, but the cached can be
@@ -67,7 +66,8 @@ def _check_repo_download(self, request, opts):
         if request.error:
             return set()
 
-    if 'openSUSE:Factory:Staging:' in str(request.group):
+    staging_prefix = 'openSUSE:{}:Staging:'.format(self.checkrepo.opensuse)
+    if staging_prefix in str(request.group):
         todownload = [ToDownload(request.group, 'standard', 'x86_64',
                                  fn[0], fn[3]) for fn in
                       self.checkrepo.get_package_list_from_repository(
@@ -94,7 +94,7 @@ def _check_repo_download(self, request, opts):
 _errors_printed = set()
 
 
-def _check_repo_group(self, id_, requests, opts):
+def _check_repo_group(self, id_, requests):
     print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests):
@@ -102,11 +102,11 @@ def _check_repo_group(self, id_, requests, opts):
 
     toignore = set()
     destdir = os.path.expanduser('~/co/%s' % str(requests[0].group))
-    fetched = dict((r, False) for r in opts.groups.get(id_, []))
+    fetched = dict((r, False) for r in self.checkrepo.groups.get(id_, []))
     packs = []
 
     for request in requests:
-        i = self._check_repo_download(request, opts)
+        i = self._check_repo_download(request)
         if request.error and request.error not in _errors_printed:
             _errors_printed.add(request.error)
             if not request.updated:
@@ -140,17 +140,16 @@ def _check_repo_group(self, id_, requests, opts):
             # we need to call it to fetch the good repos to download
             # but the return value is of no interest right now.
             self.checkrepo.is_buildsuccess(rq)
-            i = self._check_repo_download(rq, opts)
+            i = self._check_repo_download(rq)
             if rq.error:
                 print 'ERROR (ALREADY ACEPTED?):', rq.error
                 rq.updated = True
 
         toignore.update(i)
 
-    # Detect cycles into the current Factory graph after we update the
-    # links with the current list of request.
-    api = StagingAPI(opts.apiurl)
-    cycle_detector = CycleDetector(api)
+    # Detect cycles into the current Factory / openSUSE graph after we
+    # update the links with the current list of request.
+    cycle_detector = CycleDetector(self.checkrepo.staging)
     for (cycle, new_edges) in cycle_detector.cycles(requests=packs):
         print
         print ' - New cycle detected:', sorted(cycle)
@@ -170,7 +169,7 @@ def _check_repo_group(self, id_, requests, opts):
                 continue
             request = self.checkrepo.find_request_id(rq.tgt_project, package)
             if request:
-                greqs = opts.groups.get(rq.group, [])
+                greqs = self.checkrepo.groups.get(rq.group, [])
                 if request in greqs:
                     continue
                 package = '#[%s](%s)' % (request, package)
@@ -308,9 +307,10 @@ def _check_repo_group(self, id_, requests, opts):
         # Detect if this error message comes from a staging project.
         # Store it in the repo_checker_error, that is the text that
         # will be published in the error message.
-        if 'openSUSE:Factory:Staging:' in project_repo[0]:
+        staging_prefix = 'openSUSE:{}:Staging:'.format(self.checkrepo.opensuse)
+        if staging_prefix in project_repo[0]:
             repo_checker_error = stdoutdata
-        if not any('openSUSE:Factory:Staging:' in p_r[0] for p_r in execution_plan):
+        if not any(staging_prefix in p_r[0] for p_r in execution_plan):
             repo_checker_error += '\nExecution plan: %s\n%s' % ('/'.join(project_repo), stdoutdata)
 
         # print ret, stdoutdata, stderrdata
@@ -347,9 +347,9 @@ def _check_repo_group(self, id_, requests, opts):
         updated[rq.request_id] = 1
 
 
-def mirror_full(plugin_dir, repo_dir):
+def _mirror_full(self, plugin_dir, repo_dir):
     """Call bs_mirrorfull script to mirror packages."""
-    url = 'https://build.opensuse.org/build/%s/%s/x86_64' % ('openSUSE:Factory', 'standard')
+    url = 'https://build.opensuse.org/build/openSUSE:%s/%s/x86_64' % (self.checkrepo.opensuse, 'standard')
 
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
@@ -365,6 +365,8 @@ def _print_request_and_specs(self, request_and_specs):
 
 
 @cmdln.alias('check', 'cr')
+@cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
+              help='select a different project instead of openSUSE:Factory')
 @cmdln.option('-s', '--skip', action='store_true', help='skip review')
 def do_check_repo(self, subcmd, opts, *args):
     """${cmd_name}: Checker review of submit requests.
@@ -377,16 +379,7 @@ def do_check_repo(self, subcmd, opts, *args):
     ${cmd_option_list}
     """
 
-    opts.mode = ''
-    opts.verbose = False
-    opts.apiurl = self.get_api_url()
-
-    self.checkrepo = CheckRepo(opts.apiurl)
-
-    # XXX TODO - Remove this the all access to opt.group[s|ed] comes
-    # from checkrepo.
-    opts.grouped = self.checkrepo.grouped
-    opts.groups = self.checkrepo.groups
+    self.checkrepo = CheckRepo(self.get_api_url(), opts.project)
 
     if opts.skip:
         if not len(args):
@@ -453,8 +446,8 @@ def do_check_repo(self, subcmd, opts, *args):
     # Mirror the packages locally in the CACHEDIR
     plugin = '~/.osc-plugins/osc-check_repo.py'
     self.plugin_dir = os.path.dirname(os.path.realpath(os.path.expanduser(plugin)))
-    self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:Factory', 'standard')
-    mirror_full(self.plugin_dir, self.repo_dir)
+    self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:{}'.format(opts.project), 'standard')
+    self._mirror_full(self.plugin_dir, self.repo_dir)
 
     print
     print 'Analysis results'
@@ -464,6 +457,6 @@ def do_check_repo(self, subcmd, opts, *args):
     # Sort the groups, from high to low. This put first the stating
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
-        self._check_repo_group(id_, reqs, opts)
+        self._check_repo_group(id_, reqs)
         print
         print
