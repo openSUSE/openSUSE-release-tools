@@ -38,6 +38,10 @@ function regenerate_pl() {
     
     p=$(mktemp)
     tdir=$CODIR/co/$prj/Test-DVD-x86_64
+    if [ ! -d "$tdir" ]; then
+	mkdir -p "$tdir"
+	osc co -o "$tdir" "$prj" Test-DVD-x86_64
+    fi
     pushd $tdir > /dev/null
     osc up
     popd > /dev/null
