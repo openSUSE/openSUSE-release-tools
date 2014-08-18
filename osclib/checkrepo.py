@@ -61,9 +61,18 @@ class Request(object):
         self.is_partially_cached = False
         self.action_type = 'submit'  # assume default
         self.downloads = []
+        self.is_shadow_devel = False
 
         if element:
             self.load(element)
+
+        # Detect if the request comes from Factory to a openSUSE
+        # release, and adjust the source and target projects
+        _is_product = re.match(r'openSUSE:\d{2}.\d', self.tgt_project)
+        if self.src_project == 'openSUSE:Factory' and _is_product:
+            self.is_shadow_devel = True
+            self.org_src_project, self.src_project = self.src_project, '%s:Devel' % self.tgt_project
+            self.org_src_package, self.src_package = self.src_package, self.tgt_package
 
     def load(self, element):
         """Load a node from a ElementTree request XML element."""
@@ -89,14 +98,16 @@ class Request(object):
         self.missings = []
 
     def str_compact(self):
-        return '#[%s](%s)' % (self.request_id, self.src_package)
+        return '#[%s](%s)%s' % (self.request_id, self.src_package,
+                                ' Shadow' if self.is_shadow_devel else '')
 
     def __repr__(self):
-        return '#[%s] %s/%s -> %s/%s' % (self.request_id,
-                                         self.src_project,
-                                         self.src_package,
-                                         self.tgt_project,
-                                         self.tgt_package)
+        return '#[%s] %s/%s -> %s/%s%s' % (self.request_id,
+                                           self.src_project,
+                                           self.src_package,
+                                           self.tgt_project,
+                                           self.tgt_package,
+                                           ' Shadow' if self.is_shadow_devel else '')
 
 
 class CheckRepo(object):
@@ -177,12 +188,14 @@ class CheckRepo(object):
             print('ERROR in URL %s [%s]' % (url, e))
         return code
 
-    def get_request(self, request_id):
-        """Get a request XML onject."""
+    def get_request(self, request_id, internal=False):
+        """Get a request XML or internal object."""
         request = None
         try:
             url = makeurl(self.apiurl, ('request', str(request_id)))
             request = ET.parse(http_GET(url)).getroot()
+            if internal:
+                request = Request(element=request)
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return request
@@ -419,7 +432,7 @@ class CheckRepo(object):
             except KeyError as e:
                 # This exception happends some times when there is an
                 # 'error' attribute in the package information XML
-                rq.error = "There is an error in the SPEC file." % (rq.src_project, spec)
+                rq.error = 'There is an error in the SPEC file for (%s, %s).' % (rq.src_project, spec)
                 rq.updated = True
                 continue
 
@@ -856,3 +869,12 @@ class CheckRepo(object):
             # print " - WARNING: Can't found list of packages (RPM) for %s in %s (%s, %s)" % (
             #     package, project, repository, arch)
         return files
+
+    def remove_link_if_shadow_devel(self, request):
+        """If the request is a shadow_devel (the reference is to a request
+        that is a link from the product to Factory), remove the link
+        to transform it as a normal request.
+
+        """
+        if request.is_shadow_devel:
+            self.staging.delete_to_prj(request, request.src_project)

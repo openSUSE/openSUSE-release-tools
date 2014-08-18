@@ -17,8 +17,12 @@ from xml.etree import cElementTree as ET
 from osc.core import checkout_package
 from osc.core import http_GET
 from osc.core import http_POST
+# from osc.core import link_pac
 from osc.core import makeurl
+# from osc.core import show_upstream_rev_vrev
 from osc import cmdln
+
+from osclib.stagingapi import StagingAPI
 
 
 # For a description of this decorator, visit
@@ -140,6 +144,15 @@ def _checker_accept_request(self, opts, id_, msg, diff=10000):
     print("accepted " + msg)
 
 
+class FakeAction(object):
+    def __init__(self, src_project, src_package, tgt_project, tgt_package, src_rev):
+        self.src_project = src_project
+        self.src_package = src_package
+        self.tgt_project = tgt_project
+        self.tgt_package = tgt_package
+        self.src_rev = src_rev
+
+
 def _checker_one_request(self, rq, opts):
     if (opts.verbose):
         ET.dump(rq)
@@ -183,6 +196,24 @@ def _checker_one_request(self, rq, opts):
             print ("\n%s %s/%s -> %s/%s" % (subm_id,
                                             prj,  pkg,
                                             tprj, tpkg))
+
+            # Check if the package comes from openSUSE:Factory and
+            # have a release target (like openSUSE:13.2)
+            if prj == 'openSUSE:Factory' and tprj == 'openSUSE:%s' % self.api.opensuse:
+                fake_devel_prj = 'openSUSE:%s:Devel' % self.api.opensuse
+
+                # _rev, _vrev = show_upstream_rev_vrev(opts.apiurl, prj, pkg, revision=rev, expand=True)
+                # assert _rev == rev, 'Revision is not the same'
+                # link_pac(src_project=prj, src_package=pkg,
+                #          dst_project=fake_devel_prj, dst_package=tpkg,
+                #          force=True,
+                #          rev=_rev, vrev=_vrev)
+
+                act = FakeAction(pkg, prj, tprj, tpkg, rev)
+                self.api.submit_to_prj(act, fake_devel_prj)
+                self._checker_accept_request(opts, id_, 'The request is linked to %s' % fake_devel_prj, diff=0)
+                continue
+
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
             # white list
             self._devel_projects['X11:Bumblebee/'] = 'x2go'
@@ -294,10 +325,6 @@ def _checker_check_devel_package(self, opts, project, package):
     key = "%s/%s" % (project, package)
     if key in self._devel_projects:
         return self._devel_projects[key]
-    if project == 'openSUSE:13.2':
-        if opts.verbose:
-            print 'no devel project for %s found in %s, retry using Factory projects' % (package, project)
-        return self._checker_check_devel_package(opts, 'openSUSE:Factory', package)
 
 
 @cmdln.option('-v', '--verbose', action='store_true', help="verbose output")
@@ -315,9 +342,9 @@ def do_check_source(self, subcmd, opts, *args):
     """
 
     self._devel_projects = {}
-    self.opensuse = opts.project
-
     opts.apiurl = self.get_api_url()
+
+    self.api = StagingAPI(opts.apiurl, opts.project)
 
     if len(args) and args[0] == 'skip':
         for id_ in args[1:]:
@@ -330,7 +357,7 @@ def do_check_source(self, subcmd, opts, *args):
 
     if not ids:
         review = "@by_group='factory-auto'+and+@state='new'"
-        target = "@project='openSUSE:{}'".format(self.opensuse)
+        target = "@project='openSUSE:{}'".format(self.api.opensuse)
         url = makeurl(opts.apiurl, ('search', 'request'),
                       "match=state/@name='review'+and+review[%s]+and+target[%s]" % (review, target))
         root = ET.parse(http_GET(url)).getroot()
@@ -338,7 +365,7 @@ def do_check_source(self, subcmd, opts, *args):
             self._checker_one_request(rq, opts)
     else:
         # we have a list, use them.
-        for id_ in ids.keys():
+        for id_ in ids:
             url = makeurl(opts.apiurl, ('request', id_))
             f = http_GET(url)
             xml = ET.parse(f)
