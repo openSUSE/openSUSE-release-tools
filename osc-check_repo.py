@@ -343,6 +343,7 @@ def _check_repo_group(self, id_, requests):
         msg = 'Builds for repo %s' % rq.goodrepo
         print 'ACCEPTED', msg
         self.checkrepo.change_review_state(rq.request_id, 'accepted', message=msg)
+        self.checkrepo.remove_link_if_shadow_devel(rq)
         rq.updated = True
         updated[rq.request_id] = 1
 
@@ -389,6 +390,8 @@ def do_check_repo(self, subcmd, opts, *args):
             msg = 'skip review'
             print 'ACCEPTED', msg
             self.checkrepo.change_review_state(id_, 'accepted', message=msg)
+            _request = self.checkrepo.get_request(id_, internal=True)
+            self.checkrepo.remove_link_if_shadow_devel(_request)
         return
 
     prjs = [arg for arg in args if not arg.isdigit()]
