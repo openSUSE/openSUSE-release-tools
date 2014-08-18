@@ -22,7 +22,6 @@
 import httplib
 import re
 from urlparse import urlparse
-from pprint import pprint
 import smtplib
 from email.mime.text import MIMEText
 import os
@@ -45,7 +44,7 @@ if not options.sender or not options.to or not options.relay:
 
 url = "http://download.opensuse.org/factory/iso/"
 iso = "openSUSE-Factory-DVD-x86_64-Current.iso"
-changes = "Changes.%s.txt "
+changes = "Changes.%s.txt"
 current_fn = os.path.join(os.path.dirname(__file__), "announcer-current-version")
 
 u = urlparse(url+iso)

@@ -19,10 +19,17 @@ class AcceptCommand(object):
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
-        ids = []
+        rqs = []
         for rq in root.findall('request'):
-            ids.append(int(rq.get('id')))
-        return ids
+            pkgs = []
+            actions = rq.findall('action')
+            for action in actions:
+                targets = action.findall('target')
+                for t in targets:
+                    pkgs.append(str(t.get('package')))
+
+            rqs.append({ 'id': int(rq.get('id')), 'packages': pkgs })
+        return rqs
 
     def perform(self, project):
         """
@@ -68,8 +75,8 @@ class AcceptCommand(object):
     def accept_other_new(self):
         changed = False
         for req in self.find_new_requests('openSUSE:{}'.format(self.api.opensuse)):
-            print "accepting request %s"%str(req)
-            change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to factory')
+            print "accepting request %d: %s"%(req['id'], ','.join(req['packages']))
+            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to factory')
             changed = True
 
         return changed
