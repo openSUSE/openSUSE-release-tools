@@ -56,10 +56,10 @@ def _check_repo_download(self, request):
         repo = goodrepo[1]
 
         # we can assume x86_64 is there
-        todownload = [ToDownload(request.src_project, repo, 'x86_64',
+        todownload = [ToDownload(request.shadow_src_project, repo, 'x86_64',
                                  fn[0], fn[3]) for fn in
                       self.checkrepo.get_package_list_from_repository(
-                          request.src_project, repo, 'x86_64',
+                          request.shadow_src_project, repo, 'x86_64',
                           request.src_package)]
 
         self.checkrepo._download(request, todownload)

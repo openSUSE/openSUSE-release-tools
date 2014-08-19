@@ -267,7 +267,7 @@ class CycleDetector(object):
             else:
                 _prj, _repo = rq.goodrepos[0]
                 goodrepos[rq] = _repo
-        all_packages = [self._get_builddepinfo(rq.src_project, goodrepos[rq], arch, rq.src_package)
+        all_packages = [self._get_builddepinfo(rq.shadow_src_project, goodrepos[rq], arch, rq.src_package)
                         for rq in requests if not rq.updated]
         all_packages = [pkg for pkg in all_packages if pkg]
 

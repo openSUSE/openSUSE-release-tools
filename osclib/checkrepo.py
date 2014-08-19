@@ -41,6 +41,7 @@ class Request(object):
                  src_package=None, tgt_project=None, tgt_package=None,
                  revision=None, srcmd5=None, verifymd5=None,
                  group=None, goodrepos=None, missings=None,
+                 is_shadow=None, shadow_src_project=None,
                  element=None):
 
         self.request_id = request_id
@@ -54,6 +55,8 @@ class Request(object):
         self.group = group
         self.goodrepos = goodrepos if goodrepos else []
         self.missings = missings if missings else []
+        self.is_shadow = is_shadow
+        self.shadow_src_project = shadow_src_project
 
         self.updated = False
         self.error = None
@@ -65,14 +68,6 @@ class Request(object):
 
         if element:
             self.load(element)
-
-        # Detect if the request comes from Factory to a openSUSE
-        # release, and adjust the source and target projects
-        _is_product = re.match(r'openSUSE:\d{2}.\d', self.tgt_project)
-        if self.src_project == 'openSUSE:Factory' and _is_product:
-            self.is_shadow_devel = True
-            self.org_src_project, self.src_project = self.src_project, '%s:Devel' % self.tgt_project
-            self.org_src_package, self.src_package = self.src_package, self.tgt_package
 
     def load(self, element):
         """Load a node from a ElementTree request XML element."""
@@ -97,9 +92,19 @@ class Request(object):
         self.goodrepos = []
         self.missings = []
 
+        # Detect if the request comes from Factory to a openSUSE
+        # release, and adjust the source and target projects
+        _is_product = re.match(r'openSUSE:\d{2}.\d', self.tgt_project)
+        if self.src_project == 'openSUSE:Factory' and _is_product:
+            self.is_shadow_devel = True
+            self.shadow_src_project = '%s:Devel' % self.tgt_project
+        else:
+            self.is_shadow_devel = False
+            self.shadow_src_project = self.src_project
+
     def str_compact(self):
         return '#[%s](%s)%s' % (self.request_id, self.src_package,
-                                ' Shadow' if self.is_shadow_devel else '')
+                                (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
 
     def __repr__(self):
         return '#[%s] %s/%s -> %s/%s%s' % (self.request_id,
@@ -107,7 +112,7 @@ class Request(object):
                                            self.src_package,
                                            self.tgt_project,
                                            self.tgt_package,
-                                           ' Shadow' if self.is_shadow_devel else '')
+                                           (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
 
 
 class CheckRepo(object):
@@ -469,7 +474,10 @@ class CheckRepo(object):
                          revision=None,
                          srcmd5=rq.srcmd5,
                          verifymd5=rq.verifymd5,
-                         group=rq.group)
+                         group=rq.group,
+                         is_shadow=rq.is_shadow,
+                         org_src_project=rq.org_src_project,
+                         org_src_package=rq.org_src_package)
             requests.append(sp)
 
         return requests
@@ -482,7 +490,7 @@ class CheckRepo(object):
         """
         repos_to_check = []
 
-        root_xml = self.last_build_success(request.src_project,
+        root_xml = self.last_build_success(request.shadow_src_project,
                                            request.tgt_project,
                                            request.src_package,
                                            request.verifymd5)
