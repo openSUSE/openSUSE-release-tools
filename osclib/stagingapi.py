@@ -683,11 +683,13 @@ class StagingAPI(object):
 
         return tar_pkg
 
-    def submit_to_prj(self, act, project):
+    def submit_to_prj(self, act, project, force_enable_build=False):
         """
         Links sources from request to project
         :param act: action for submit request
         :param project: project to link into
+        :param force_enable_build: overwrite the ring criteria to enable
+               or disable the build
         """
 
         src_prj = act.src_project
@@ -696,10 +698,13 @@ class StagingAPI(object):
         tar_pkg = act.tgt_package
 
         disable_build = False
-        if not self.ring_packages.get(tar_pkg):
-            disable_build = True
-        else:
-            project = self.map_ring_package_to_subject(project, tar_pkg)
+        # The force_enable_build will avoid the
+        # map_ring_package_to_subproject
+        if not force_enable_build:
+            if not self.ring_packages.get(tar_pkg):
+                disable_build = True
+            else:
+                project = self.map_ring_package_to_subject(project, tar_pkg)
 
         self.create_package_container(project, tar_pkg,
                                       disable_build=disable_build)

@@ -22,6 +22,9 @@ from osc.core import makeurl
 # from osc.core import show_upstream_rev_vrev
 from osc import cmdln
 
+# Expand sys.path to search modules inside the pluging directory
+_plugin_dir = os.path.expanduser('~/.osc-plugins')
+sys.path.append(_plugin_dir)
 from osclib.stagingapi import StagingAPI
 
 
@@ -209,8 +212,8 @@ def _checker_one_request(self, rq, opts):
                 #          force=True,
                 #          rev=_rev, vrev=_vrev)
 
-                act = FakeAction(pkg, prj, tprj, tpkg, rev)
-                self.api.submit_to_prj(act, fake_devel_prj)
+                act = FakeAction(prj, pkg, tprj, tpkg, rev)
+                self.api.submit_to_prj(act, fake_devel_prj, force_enable_build=True)
                 self._checker_accept_request(opts, id_, 'The request is linked to %s' % fake_devel_prj, diff=0)
                 continue
 
