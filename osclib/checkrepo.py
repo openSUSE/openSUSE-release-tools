@@ -476,8 +476,7 @@ class CheckRepo(object):
                          verifymd5=rq.verifymd5,
                          group=rq.group,
                          is_shadow=rq.is_shadow,
-                         org_src_project=rq.org_src_project,
-                         org_src_package=rq.org_src_package)
+                         shadow_src_project=rq.shadow_src_project)
             requests.append(sp)
 
         return requests
