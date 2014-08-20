@@ -628,13 +628,14 @@ class StagingAPI(object):
 
         return project
 
-    def get_sub_packages(self, pkg):
+    def get_sub_packages(self, pkg, project=None):
         """
-        Returns a list of packages that need to be linked into rings too. A package is actually
-        a tuple of project and package name
+        Returns a list of packages that need to be linked into rings
+        too. A package is actually a tuple of project and package name
         """
         ret = []
-        project = self.ring_packages.get(pkg)
+        if not project:
+            project = self.ring_packages.get(pkg)
         if not project:
             return ret
         url = self.makeurl(['source', project, pkg],
