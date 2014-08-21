@@ -23,6 +23,7 @@ import urllib2
 from xml.etree import cElementTree as ET
 
 from osc.core import get_binary_file
+from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
@@ -884,4 +885,9 @@ class CheckRepo(object):
 
         """
         if request.is_shadow_devel:
-            self.staging.delete_to_prj(request, request.src_project)
+            url = self.staging.makeurl(['source', request.shadow_src_project, request.src_package])
+            http_DELETE(url)
+            for sub_prj, sub_pkg in self.staging.get_sub_packages(request.src_package,
+                                                                  request.shadow_src_project):
+                url = self.staging.makeurl(['source', sub_prj, sub_pkg])
+                http_DELETE(url)
