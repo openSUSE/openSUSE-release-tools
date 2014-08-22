@@ -527,7 +527,8 @@ class StagingAPI(object):
         _prefix = 'openSUSE:{}:Staging:'.format(self.opensuse)
         if project.startswith(_prefix):
             project = project.replace(_prefix, '')
-        url = self.makeurl(('factory', 'staging_projects', project + '.json'))
+        url = self.makeurl(('distributions', 'openSUSE:%s' % self.opensuse,
+                            'staging_projects', project + '.json'))
         result = json.load(self.retried_GET(url))
         return result['overall_state'] == 'acceptable'
 

@@ -107,9 +107,11 @@ class CheckCommand(object):
         report = []
 
         if project:
-            url = self.api.makeurl(('factory', 'staging_projects', project + '.json'))
+            url = self.api.makeurl(('distributions', 'openSUSE:%s' % self.api.opensuse,
+                                    'staging_projects', project + '.json'))
         else:
-            url = self.api.makeurl(('factory', 'staging_projects.json'))
+            url = self.api.makeurl(('distributions', 'openSUSE:%s' % self.api.opensuse,
+                                    'staging_projects.json'))
         info = json.load(self.api.retried_GET(url))
         if not project:
             for prj in info:
