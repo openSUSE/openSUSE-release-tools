@@ -75,7 +75,7 @@ class SelectCommand(object):
                 fprj = self.api.prj_from_letter(from_)
             else:
                 # supersede = (new_rq, package, project)
-                fprj = staged_requests[request] if not supersede else supersede[2]
+                fprj = self.api.packages_staged[staged_requests[request]]['prj'] if not supersede else supersede[2]
 
             if supersede:
                 print('"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0]))

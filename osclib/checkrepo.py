@@ -407,8 +407,18 @@ class CheckRepo(object):
         specs = [en.attrib['name'][:-5] for en in root.findall('entry')
                  if en.attrib['name'].endswith('.spec')]
 
-        # source checker validated it exists
-        specs.remove(rq.src_package)
+        # source checker already validated it
+        if rq.src_package in specs:
+            specs.remove(rq.src_package)
+        elif rq.tgt_package in specs:
+            specs.remove(rq.tgt_package)
+        else:
+            msg = 'The name of the SPEC files %s do not match with the name of the package (%s)'
+            msg = msg % (specs, rq.src_package)
+            print('DECLINED', msg)
+            self.change_review_state(request_id, 'declined', message=msg)
+            rq.updated = True
+            return requests
 
         # Makes sure that the .spec file builds properly.
 
@@ -885,9 +895,58 @@ class CheckRepo(object):
 
         """
         if request.is_shadow_devel:
-            url = self.staging.makeurl(['source', request.shadow_src_project, request.src_package])
+            url = makeurl(self.apiurl, ('source', request.shadow_src_project, request.src_package))
             http_DELETE(url)
             for sub_prj, sub_pkg in self.staging.get_sub_packages(request.src_package,
                                                                   request.shadow_src_project):
-                url = self.staging.makeurl(['source', sub_prj, sub_pkg])
+                url = makeurl(self.apiurl, ('source', sub_prj, sub_pkg))
                 http_DELETE(url)
+
+    def _whatdependson(self, request):
+        """Return the list of packages that depends on the one in the
+        request.
+
+        """
+        deps = set()
+        query = {
+            'package': request.tgt_package,
+            'view': 'revpkgnames',
+        }
+        for arch in ('i586', 'x86_64'):
+            url = makeurl(self.apiurl, ('build', request.tgt_project, 'standard', arch, '_builddepinfo'),
+                          query=query)
+            root = ET.parse(http_GET(url)).getroot()
+            deps.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
+        return deps
+
+    def _maintainers(self, request):
+        """Get the maintainer of the package involved in the request."""
+        query = {
+            'binary': request.tgt_package,
+        }
+        url = makeurl(self.apiurl, ('search', 'owner'), query=query)
+        root = ET.parse(http_GET(url)).getroot()
+        return [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
+
+    def _author(self, request):
+        """Get the author of the request."""
+        url = makeurl(self.apiurl, ('request', str(request.request_id)))
+        root = ET.parse(http_GET(url)).getroot()
+
+        state = root.find('state')
+        if state.get('name') == 'new':
+            return state.get('who')
+        return root.find('history').get('who')
+
+    def is_secure_to_delete(self, request):
+        """Return True is the request is secure to remove:
+
+        - Nothing depends on the package anymore.
+        - The request originates by the package maintainer.
+
+        """
+        whatdependson = self._whatdependson(request)
+        maintainers = self._maintainers(request)
+        author = self._author(request)
+
+        return (not whatdependson) and author in maintainers

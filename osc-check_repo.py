@@ -97,7 +97,7 @@ _errors_printed = set()
 def _check_repo_group(self, id_, requests):
     print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
-    if not all(self.checkrepo.is_buildsuccess(r) for r in requests):
+    if not all(self.checkrepo.is_buildsuccess(r) for r in requests if r.action_type != 'delete'):
         return
 
     toignore = set()
@@ -106,6 +106,9 @@ def _check_repo_group(self, id_, requests):
     packs = []
 
     for request in requests:
+        if request.action_type == 'delete':
+            continue
+
         i = self._check_repo_download(request)
         if request.error and request.error not in _errors_printed:
             _errors_printed.add(request.error)
@@ -118,7 +121,8 @@ def _check_repo_group(self, id_, requests):
             return
         toignore.update(i)
         fetched[request.request_id] = True
-        packs.append(request)
+
+    packs.extend(requests)
 
     # Extend packs array with the packages and .spec files of the
     # not-fetched requests.  The not fetched ones are the requests of
@@ -130,12 +134,18 @@ def _check_repo_group(self, id_, requests):
     # Download the repos from the request of the same group not
     # explicited in the command line.
     for rq in packs:
-        if fetched[rq.request_id]:
+        if rq.request_id in fetched and fetched[rq.request_id]:
             continue
         i = set()
         if rq.action_type == 'delete':
-            # for delete requests we only care for toignore
+            # for delete requests we care for toignore
             i = self.checkrepo._toignore(rq)
+            # We also check that nothing depends on the package and
+            # that the request originates by the package maintainer
+            if not self.checkrepo.is_secure_to_delete(rq):
+                rq.error = 'This request is not secure to remove. Check dependencies or author.'
+                print ' - %s' % rq.error
+                rq.updated = True
         else:
             # we need to call it to fetch the good repos to download
             # but the return value is of no interest right now.
