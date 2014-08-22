@@ -407,8 +407,18 @@ class CheckRepo(object):
         specs = [en.attrib['name'][:-5] for en in root.findall('entry')
                  if en.attrib['name'].endswith('.spec')]
 
-        # source checker validated it exists
-        specs.remove(rq.src_package)
+        # source checker already validated it
+        if rq.src_package in specs:
+            specs.remove(rq.src_package)
+        elif rq.tgt_package in specs:
+            specs.remove(rq.tgt_package)
+        else:
+            msg = 'The name of the SPEC files %s do not match with the name of the package (%s)'
+            msg = msg % (specs, rq.src_package)
+            print('DECLINED', msg)
+            self.change_review_state(request_id, 'declined', message=msg)
+            rq.updated = True
+            return requests
 
         # Makes sure that the .spec file builds properly.
 

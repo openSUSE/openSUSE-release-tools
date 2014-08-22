@@ -205,7 +205,7 @@ def _check_repo_group(self, id_, requests):
 
     execution_plan = defaultdict(list)
 
-    DEBUG_PLAN = 1
+    DEBUG_PLAN = 0
 
     # Get all the (project, repo, disturl) where the disturl is
     # compatible with the request.  For the same package we can have
