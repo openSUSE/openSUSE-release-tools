@@ -31,6 +31,10 @@ job install name MozillaThunderbird
 
 job lock name gtk2-branding-upstream
 job lock name gdm-branding-upstream
+job lock name kdebase4-workspace-branding-upstream
+job lock name kdm-branding-upstream
+job lock name kdebase4-runtime-branding-upstream
+job lock name kdelibs4-branding-upstream
 job lock name readline-doc
 job lock name libgcc_s1-32bit
 
