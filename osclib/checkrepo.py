@@ -900,11 +900,17 @@ class CheckRepo(object):
         """
         if request.is_shadow_devel:
             url = makeurl(self.apiurl, ('source', request.shadow_src_project, request.src_package))
-            http_DELETE(url)
+            if self.readonly:
+                print "DRY RUN: DELETE %s"%url
+            else:
+                http_DELETE(url)
             for sub_prj, sub_pkg in self.staging.get_sub_packages(request.src_package,
                                                                   request.shadow_src_project):
                 url = makeurl(self.apiurl, ('source', sub_prj, sub_pkg))
-                http_DELETE(url)
+                if self.readonly:
+                    print "DRY RUN: DELETE %s"%url
+                else:
+                    http_DELETE(url)
 
     def _whatdependson(self, request):
         """Return the list of packages that depends on the one in the
