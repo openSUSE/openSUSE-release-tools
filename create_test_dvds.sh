@@ -27,14 +27,19 @@ function regenerate_pl() {
     suffix=$1
     shift;
     
-    : > tc
+    tcfile=tc.$target.$suffix.$1
+    : > $tcfile
     for i in "$@"; do
-	echo "repo $i 0 solv $i.solv" >> tc
+	echo "repo $i 0 solv $i.solv" >> $tcfile
     done
-    cat $SCRIPTDIR/create_test_$target\_dvd-$suffix.testcase >> tc
+    cat $SCRIPTDIR/create_test_$target\_dvd-$suffix.testcase >> $tcfile
 
     out=$(mktemp)
-    testsolv -r tc | sed -e 's,^install \(.*\)-[^-]*-[^-]*\.[^-\.]*@.*,\1,' > $out
+    testsolv -r $tcfile > $out
+    if grep ^problem $out ; then
+         return
+    fi
+    sed -i -e 's,^install \(.*\)-[^-]*-[^-]*\.[^-\.]*@.*,\1,' $out
     
     p=$(mktemp)
     tdir=$CODIR/co/$prj/Test-DVD-x86_64
@@ -70,20 +75,21 @@ function sync_prj() {
 function start_creating() {
     for target in "$@"; do
         # Rings part
-        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ bootstrap
-        sync_prj openSUSE:$target:Rings:1-MinimalX/standard minimalx
+        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap
+        sync_prj openSUSE:$target:Rings:1-MinimalX/standard $target-minimalx
 
-        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 bootstrap minimalx
+        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap $target-minimalx
 
-        sync_prj openSUSE:$target:Rings:2-TestDVD/standard testdvd
-        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 bootstrap minimalx testdvd
+        sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd
+        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd
 
+	echo "Checking $target:A"
         # Staging A part
-        sync_prj openSUSE:$target:Staging:A/standard staging_A
-        regenerate_pl "openSUSE:$target:Staging:A" $target 1 staging_A
+        sync_prj openSUSE:$target:Staging:A/standard staging_$target:A
+        regenerate_pl "openSUSE:$target:Staging:A" $target 1 staging_$target:A
 
-        sync_prj openSUSE:$target:Staging:A:DVD/standard staging_A-dvd
-        regenerate_pl "openSUSE:$target:Staging:A:DVD" $target 2 staging_A staging_A-dvd
+        sync_prj openSUSE:$target:Staging:A:DVD/standard staging_$target:A-dvd
+        regenerate_pl "openSUSE:$target:Staging:A:DVD" $target 2 staging_$target:A staging_$target:A-dvd
 
         projects=$(osc api /search/project/id?match="starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
         for prj in openSUSE:$target:Rings:2-TestDVD $projects; do
@@ -91,9 +97,10 @@ function start_creating() {
             if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
                 # no need for A, already did
                 if [ $l != "A" ]; then
-                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$l-bc"
-                    sync_prj openSUSE:$target:Staging:$l/standard staging_$l
-                    regenerate_pl "openSUSE:$target:Staging:$l" $target 1 "staging_$l-bc" staging_$l
+                    echo "Checking $target:$l"
+                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc"
+                    sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l
+                    regenerate_pl "openSUSE:$target:Staging:$l" $target 1 "staging_$target:$l-bc" staging_$target:$l
                 fi
             fi
 
@@ -104,8 +111,8 @@ function start_creating() {
             if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
                 # no need for A, already did
                 if [ $l != "A" ]; then
-                    sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$l-dvd"
-                    regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 "staging_$l-bc" staging_$l "staging_$l-dvd"
+                    sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd"
+                    regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 "staging_$target:$l-bc" staging_$target:$l "staging_$target:$l-dvd"
                 fi
             fi
         done
