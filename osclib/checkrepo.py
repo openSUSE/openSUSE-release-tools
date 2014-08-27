@@ -118,7 +118,7 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl, opensuse='Factory'):
+    def __init__(self, apiurl, opensuse='Factory', readonly = False):
         """CheckRepo constructor."""
         self.apiurl = apiurl
         self.opensuse = opensuse
@@ -129,6 +129,7 @@ class CheckRepo(object):
         # groups = { staging: [ids,], }
         self.groups = {}
         self._staging()
+	self.readonly = readonly
 
     def _staging(self):
         """Preload the groups of related request associated by the same
@@ -187,6 +188,9 @@ class CheckRepo(object):
 
         code = 404
         url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
+	if self.readonly:
+		print "DRY RUN: POST %s"%url
+		return 200
         try:
             root = ET.parse(http_POST(url, data=message)).getroot()
             code = root.attrib['code']

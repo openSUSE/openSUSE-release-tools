@@ -94,7 +94,7 @@ def _check_repo_download(self, request):
 _errors_printed = set()
 
 
-def _check_repo_group(self, id_, requests):
+def _check_repo_group(self, id_, requests, debug = False):
     print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests if r.action_type != 'delete'):
@@ -205,7 +205,7 @@ def _check_repo_group(self, id_, requests):
 
     execution_plan = defaultdict(list)
 
-    DEBUG_PLAN = 0
+    DEBUG_PLAN = debug
 
     # Get all the (project, repo, disturl) where the disturl is
     # compatible with the request.  For the same package we can have
@@ -379,6 +379,8 @@ def _print_request_and_specs(self, request_and_specs):
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
               help='select a different project instead of openSUSE:Factory')
 @cmdln.option('-s', '--skip', action='store_true', help='skip review')
+@cmdln.option('-n', '--dry', action='store_true', help='dry run, don\'t change review state')
+@cmdln.option('-v', '--verbose', action='store_true', help='verbose output')
 def do_check_repo(self, subcmd, opts, *args):
     """${cmd_name}: Checker review of submit requests.
 
@@ -390,7 +392,7 @@ def do_check_repo(self, subcmd, opts, *args):
     ${cmd_option_list}
     """
 
-    self.checkrepo = CheckRepo(self.get_api_url(), opts.project)
+    self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly = opts.dry)
 
     if opts.skip:
         if not len(args):
@@ -470,6 +472,6 @@ def do_check_repo(self, subcmd, opts, *args):
     # Sort the groups, from high to low. This put first the stating
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
-        self._check_repo_group(id_, reqs)
+        self._check_repo_group(id_, reqs, debug=opts.verbose)
         print
         print
