@@ -7,7 +7,7 @@ BEGIN {
 use File::Basename;
 
 use Rpm;
-use Fcntl;
+use Fcntl qw/:flock/;
 
 sub package_snippet($) {
 
@@ -18,7 +18,8 @@ sub package_snippet($) {
 
     my $out = '';
     if ( -f $cachefile ) {
-        open( C, $cachefile ) || die "no cache for $package";
+        open( C, '<', $cachefile ) || die "no cache for $package";
+        flock(C, LOCK_SH) or die "failed to lock $cachefile: $!\n";
         while (<C>) {
             $out .= $_;
         }
@@ -152,7 +153,9 @@ sub package_snippet($) {
     $out .= "-Sug:\n";
 
     mkdir($cachedir);
-    open( C, '>', $cachefile ) || die "can't write $cachefile";
+    open( C, '>>', $cachefile ) || die "can't open $cachefile";
+    flock(C, LOCK_EX) or die "failed to lock $cachefile: $!\n";
+    seek(C, 0, 0); truncate(C, 0);
     print C $out;
     close(C);
 

@@ -309,12 +309,18 @@ def _check_repo_group(self, id_, requests, debug = False):
         # There are several execution plans, each one can have its own
         # error message.
         if ret:
-            print ' - Result for execution plan', project_repo
+            print ' - Execution plan for %s failed'%project_repo
+        else:
+            print ' - Successful plan', project_repo
+
+        if stdoutdata:
             print '-' * 40
             print stdoutdata
             print '-' * 40
-        else:
-            print ' - Successful plan', project_repo
+        if stderrdata:
+            print '-' * 40
+            print stderrdata
+            print '-' * 40
 
         # Detect if this error message comes from a staging project.
         # Store it in the repo_checker_error, that is the text that

@@ -11,6 +11,7 @@ use BSUtil;
 use BSRPC ':https';
 use BSXML;
 use BSHTTP;
+use Fcntl qw/:flock/;
 
 use strict;
 
@@ -33,6 +34,13 @@ while (@ARGV) {
 die("uasge: bs_mirrorfull url dir\n") unless @ARGV == 2;
 my ($url, $dir) = @ARGV;
 $url =~ s/\/$//;
+
+open(my $fh, '>', $dir.'/.lock') or die "failed to open lock file: $!\n";
+unless(flock($fh, LOCK_EX|LOCK_NB)) {
+    print "$dir is locked, waiting ...\n";
+    flock($fh, LOCK_EX) or die "failed to lock: $!\n";
+    print "... lock released\n";
+}
 
 #print "receiving tree state\n";
 my $bvl = BSRPC::rpc("$url/_repository", $BSXML::binaryversionlist, "view=binaryversions", "nometa=1");
