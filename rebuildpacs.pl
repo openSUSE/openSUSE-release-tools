@@ -183,7 +183,7 @@ sub mirror_repo($$$) {
 sub find_package_in_project($) {
   my $project = shift;
 
-  open(OSC, "osc api /source/$project |");
+  open(OSC, "osc api /source/$project?expand=1 |");
   my $xml = XMLin(join('', <OSC>), ForceArray => 1);
   close(OSC);
   my @packs = keys %{$xml->{entry}};
