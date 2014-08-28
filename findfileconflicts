@@ -91,9 +91,9 @@ while(<FL>) {
       $dirs[$n] = $3;
     }
     # ignore link targets and permissions of ghosts
-    if (oct($2) & 0100) != 0) {
+    if ((oct($2) & 0100) != 0) {
       $lnk = '' if $lnk;
-      $perms ~= s/^100000/100644/;
+      $perms =~ s/^100000/100644/;
     }
     my $m = $modes{"$perms$lnk"};
     if (!defined($m)) {
