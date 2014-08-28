@@ -21,6 +21,7 @@ import subprocess
 from urllib import quote_plus
 import urllib2
 from xml.etree import cElementTree as ET
+from pprint import pformat
 
 from osc.core import get_binary_file
 from osc.core import http_DELETE
@@ -118,7 +119,7 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl, opensuse='Factory', readonly = False):
+    def __init__(self, apiurl, opensuse='Factory', readonly = False, debug = False):
         """CheckRepo constructor."""
         self.apiurl = apiurl
         self.opensuse = opensuse
@@ -130,6 +131,12 @@ class CheckRepo(object):
         self.groups = {}
         self._staging()
 	self.readonly = readonly
+        self.debug_enable = debug
+
+    def debug(self, *args):
+        if not self.debug_enable:
+            return
+        print ' '.join([ i if isinstance(i, basestring) else pformat(i) for i in args ])
 
     def _staging(self):
         """Preload the groups of related request associated by the same
@@ -366,6 +373,8 @@ class CheckRepo(object):
             request_id = int(request.get('id'))
         else:
             raise Exception('Please, provide a request_id or a request XML object.')
+
+        self.debug("check_specs", request_id)
 
         # Check that only one action is allowed in the request.
         actions = request.findall('action')
@@ -780,6 +789,7 @@ class CheckRepo(object):
         foundfailed = None
 
         for repository in repos_to_check:
+            self.debug("checking repo", ET.tostring(repository))
             isgood = True
             founddisabled = False
             r_foundbuilding = None
@@ -820,6 +830,7 @@ class CheckRepo(object):
                 alldisabled = False
             if isgood:
                 _goodrepo = (request.src_project, repository.attrib['name'])
+                self.debug("good repo", _goodrepo)
                 if _goodrepo not in request.goodrepos:
                     request.goodrepos.append(_goodrepo)
                 result = True

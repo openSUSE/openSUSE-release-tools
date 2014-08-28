@@ -392,7 +392,7 @@ def do_check_repo(self, subcmd, opts, *args):
     ${cmd_option_list}
     """
 
-    self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly = opts.dry)
+    self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly = opts.dry, debug=opts.verbose)
 
     if opts.skip:
         if not len(args):
