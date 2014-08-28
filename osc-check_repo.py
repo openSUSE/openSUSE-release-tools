@@ -225,7 +225,9 @@ def _check_repo_group(self, id_, requests, debug = False):
                 print 'DEBUG Bad DISTURL -', rq.str_compact(), (prj, repo), disturl
 
     if not all_good_downloads:
-        print ' - Not good downloads found (NO REPO).'
+        print ' - No matching downloads for disturl found.'
+        if len(packs) == 1 and packs[0].src_package in ('rpmlint-tests'):
+            print " - %s known to have no installable rpms, skipped"%packs[0].src_package
         return
 
     for project, repo in all_good_downloads:
