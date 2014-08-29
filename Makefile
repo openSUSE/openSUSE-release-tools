@@ -21,5 +21,6 @@ install:
 	for i in $(pkgdata_DATA); do cp -a $$i $(DESTDIR)$(pkgdatadir); done
 	for i in osc-*.py osclib; do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(oscplugindir)/$$i; done
 	for i in $(SUBDIRS); do $(MAKE) -C $$i install; done
+	install -m 644 systemd/* $(DESTDIR)$(unitdir)
 
 .PHONY: all install
