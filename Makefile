@@ -1,3 +1,5 @@
+SUBDIRS = factory-package-news
+
 prefix=/usr
 datadir=$(prefix)/share
 sysconfdir=/etc
@@ -7,13 +9,13 @@ oscplugindir=$(prefix)/lib/osc-plugins
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh *.testcase)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy osclib
-SUBDIRS = factory-package-news
+repocheckerhome = /var/lib/opensuse-repo-checker
 
 all:
 
 install:
 	install -d -m 755 $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir)
-	install -d -m 755 $(DESTDIR)/var/cache/repo-checker
+	install -d -m 755 $(DESTDIR)$(repocheckerhome)
 	for i in $(pkgdata_SCRIPTS); do install -m 755 $$i $(DESTDIR)$(pkgdatadir); done
 	chmod 644 $(DESTDIR)$(pkgdatadir)/{osc-*.py,*.testcase}
 	for i in $(pkgdata_DATA); do cp -a $$i $(DESTDIR)$(pkgdatadir); done
