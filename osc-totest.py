@@ -78,9 +78,7 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-DVD-x86_64-Build-lxde@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
 	'opensuse-FTT-GNOME-Live-i686-Build-gnome-live@32bit', # broken in 20140813
-	'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@64bit', # broken in 20140814 
 	'opensuse-FTT-KDE-Live-i686-Build-kde-live@32bit', # broken in 20140813
-	'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@64bit', # broken in 20140814
         'opensuse-FTT-NET-i586-Build-lvm@32bit',
         'opensuse-FTT-NET-i586-Build-lxde@32bit',
         'opensuse-FTT-NET-x86_64-Build-lxde@64bit',
@@ -89,7 +87,8 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-NET-x86_64-Build-update_123@64bit',
         'opensuse-FTT-Rescue-CD-i686-Build-rescue@32bit',
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
-        'opensuse-FTT-DVD-i586-Build-kde@USBboot_32',
+        'opensuse-FTT-DVD-x86_64-Build-uefi@64bit', # broken in 20140828
+        'opensuse-FTT-NET-x86_64-Build-uefi@64bit', # broken in 20140828
     ]
 
     if len(jobs) < 80: # not yet scheduled
