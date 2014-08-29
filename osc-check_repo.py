@@ -309,7 +309,7 @@ def _check_repo_group(self, id_, requests, debug = False):
         # There are several execution plans, each one can have its own
         # error message.
         if ret:
-            print ' - Execution plan for %s failed'%project_repo
+            print ' - Execution plan for %s failed'%str(project_repo)
         else:
             print ' - Successful plan', project_repo
 
