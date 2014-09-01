@@ -94,7 +94,7 @@ def _check_repo_download(self, request):
 _errors_printed = set()
 
 
-def _check_repo_group(self, id_, requests, debug = False):
+def _check_repo_group(self, id_, requests, debug=False):
     print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests if r.action_type != 'delete'):
@@ -227,7 +227,7 @@ def _check_repo_group(self, id_, requests, debug = False):
     if not all_good_downloads:
         print ' - No matching downloads for disturl found.'
         if len(packs) == 1 and packs[0].src_package in ('rpmlint-tests'):
-            print " - %s known to have no installable rpms, skipped"%packs[0].src_package
+            print ' - %s known to have no installable rpms, skipped' % packs[0].src_package
         return
 
     for project, repo in all_good_downloads:
@@ -309,7 +309,7 @@ def _check_repo_group(self, id_, requests, debug = False):
         # There are several execution plans, each one can have its own
         # error message.
         if ret:
-            print ' - Execution plan for %s failed'%str(project_repo)
+            print ' - Execution plan for %s failed' % str(project_repo)
         else:
             print ' - Successful plan', project_repo
 
@@ -400,7 +400,7 @@ def do_check_repo(self, subcmd, opts, *args):
     ${cmd_option_list}
     """
 
-    self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly = opts.dry, debug=opts.verbose)
+    self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly=opts.dry, debug=opts.verbose)
 
     if opts.skip:
         if not len(args):

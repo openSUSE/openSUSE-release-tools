@@ -119,7 +119,7 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl, opensuse='Factory', readonly = False, debug = False):
+    def __init__(self, apiurl, opensuse='Factory', readonly=False, debug=False):
         """CheckRepo constructor."""
         self.apiurl = apiurl
         self.opensuse = opensuse
@@ -130,13 +130,13 @@ class CheckRepo(object):
         # groups = { staging: [ids,], }
         self.groups = {}
         self._staging()
-	self.readonly = readonly
+        self.readonly = readonly
         self.debug_enable = debug
 
     def debug(self, *args):
         if not self.debug_enable:
             return
-        print ' '.join([ i if isinstance(i, basestring) else pformat(i) for i in args ])
+        print ' '.join([i if isinstance(i, basestring) else pformat(i) for i in args])
 
     def _staging(self):
         """Preload the groups of related request associated by the same
@@ -195,9 +195,9 @@ class CheckRepo(object):
 
         code = 404
         url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
-	if self.readonly:
-		print "DRY RUN: POST %s"%url
-		return 200
+        if self.readonly:
+            print 'DRY RUN: POST %s' % url
+            return 200
         try:
             root = ET.parse(http_POST(url, data=message)).getroot()
             code = root.attrib['code']
@@ -912,14 +912,14 @@ class CheckRepo(object):
         if request.is_shadow_devel:
             url = makeurl(self.apiurl, ('source', request.shadow_src_project, request.src_package))
             if self.readonly:
-                print "DRY RUN: DELETE %s"%url
+                print 'DRY RUN: DELETE %s' % url
             else:
                 http_DELETE(url)
             for sub_prj, sub_pkg in self.staging.get_sub_packages(request.src_package,
                                                                   request.shadow_src_project):
                 url = makeurl(self.apiurl, ('source', sub_prj, sub_pkg))
                 if self.readonly:
-                    print "DRY RUN: DELETE %s"%url
+                    print 'DRY RUN: DELETE %s' % url
                 else:
                     http_DELETE(url)
 
