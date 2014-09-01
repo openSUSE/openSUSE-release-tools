@@ -13,7 +13,7 @@
     <enable/>
   </debuginfo>
   <repository name="bootstrap_copy">
-     <path project="openSUSE:Factory" repository="ports"/>
+     <path project="openSUSE:Factory:Staging" repository="standard"/>
        <arch>i586</arch>
        <arch>x86_64</arch>
   </repository>
