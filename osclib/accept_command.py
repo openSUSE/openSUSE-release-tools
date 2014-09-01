@@ -28,7 +28,7 @@ class AcceptCommand(object):
                 for t in targets:
                     pkgs.append(str(t.get('package')))
 
-            rqs.append({ 'id': int(rq.get('id')), 'packages': pkgs })
+            rqs.append({'id': int(rq.get('id')), 'packages': pkgs})
         return rqs
 
     def perform(self, project):
@@ -41,7 +41,7 @@ class AcceptCommand(object):
         status = self.api.check_project_status(project)
 
         if not status:
-            print('The project "{0}" is not yet acceptable.'.format(project))
+            print('The project "{}" is not yet acceptable.'.format(project))
             return False
 
         meta = self.api.get_prj_pseudometa(project)
@@ -51,7 +51,7 @@ class AcceptCommand(object):
             self.api.rm_from_prj(project, request_id=req['id'], msg='ready to accept')
             requests.append(req['id'])
             packages.append(req['package'])
-            msg = 'Accepting staging review for {0}'.format(req['package'])
+            msg = 'Accepting staging review for {}'.format(req['package'])
             print(msg)
 
         for req in requests:
@@ -60,22 +60,22 @@ class AcceptCommand(object):
         # A single comment should be enough to notify everybody, since they are
         # already mentioned in the comments created by select/unselect
         pkg_list = ", ".join(packages)
-        cmmt = 'Project "{0}" accepted. The following packages have been submitted to factory: {1}.'.format(project, pkg_list)
+        cmmt = 'Project "{}" accepted. The following packages have been submitted to factory: {}.'.format(project, pkg_list)
         self.comment.add_comment(project_name=project, comment=cmmt)
 
         # XXX CAUTION - AFAIK the 'accept' command is expected to clean the messages here.
         self.comment.delete_from(project_name=project)
 
         self.api.build_switch_prj(project, 'disable')
-        if self.api.project_exists(project + ":DVD"):
-            self.api.build_switch_prj(project + ":DVD", 'disable')
+        if self.api.project_exists(project + ':DVD'):
+            self.api.build_switch_prj(project + ':DVD', 'disable')
 
         return True
 
     def accept_other_new(self):
         changed = False
         for req in self.find_new_requests('openSUSE:{}'.format(self.api.opensuse)):
-            print "accepting request %d: %s"%(req['id'], ','.join(req['packages']))
+            print 'Accepting request %d: %s' % (req['id'], ','.join(req['packages']))
             change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to factory')
             changed = True
 
@@ -91,4 +91,4 @@ class AcceptCommand(object):
         new_product = re.sub(r'<version>\d{8}</version>', '<version>%s</version>' % curr_version, product)
 
         if product != new_product:
-            http_PUT(url + "?comment=Update+version", data=new_product)
+            http_PUT(url + '?comment=Update+version', data=new_product)

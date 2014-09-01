@@ -93,7 +93,7 @@ class FreezeCommand(object):
         for result in root.findall('result'):
             if result.get('repository') == 'bootstrap_copy':
                 status = result.find('status')
-                if status == None:
+                if status is None:
                     return False
                 if not status.get('code') in codes:
                     return False

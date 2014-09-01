@@ -321,7 +321,7 @@ class StagingAPI(object):
         where = "@by_group='factory-staging'+and+@state='new'"
         target = "@project='openSUSE:{}'".format(self.opensuse)
 
-        query = "match=state/@name='review'+and+review[{}]+and+target[{}]".format(where,target)
+        query = "match=state/@name='review'+and+review[{}]+and+target[{}]".format(where, target)
         url = self.makeurl(['search', 'request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
