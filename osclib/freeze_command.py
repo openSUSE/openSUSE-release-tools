@@ -140,7 +140,7 @@ class FreezeCommand(object):
         ET.SubElement(f, 'enable')
 
         r = ET.SubElement(root, 'repository', {'name': 'bootstrap_copy'})
-        ET.SubElement(r, 'path', {'project': 'openSUSE:{}'.format(self.api.opensuse), 'repository': 'ports'})
+        ET.SubElement(r, 'path', {'project': 'openSUSE:{}:Staging'.format(self.api.opensuse), 'repository': 'standard'})
         a = ET.SubElement(r, 'arch')
         a.text = 'i586'
         a = ET.SubElement(r, 'arch')

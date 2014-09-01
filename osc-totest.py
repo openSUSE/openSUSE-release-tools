@@ -89,6 +89,8 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
         'opensuse-FTT-DVD-x86_64-Build-uefi@64bit', # broken in 20140828
         'opensuse-FTT-NET-x86_64-Build-uefi@64bit', # broken in 20140828
+        'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64', # broken in 20140828
+        'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64', # broken in 20140828
     ]
 
     if len(jobs) < 80: # not yet scheduled
