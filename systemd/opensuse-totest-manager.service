@@ -1,0 +1,7 @@
+[Unit]
+Description=openSUSE Factory ToTest Manager
+
+[Service]
+ExecStart=/usr/bin/osc totest
+User=_opensuse-totest-manager
+SyslogIdentifier=opensuse-totest-manager

@@ -17,8 +17,8 @@ from datetime import date
 from osc import cmdln, oscerr
 
 # Expand sys.path to search modules inside the pluging directory
-_plugin_dir = os.path.expanduser('~/.osc-plugins')
-sys.path.append(_plugin_dir)
+PLUGINDIR = os.path.expanduser(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(PLUGINDIR)
 
 from osclib.stagingapi import StagingAPI
 from osclib.comments import CommentAPI

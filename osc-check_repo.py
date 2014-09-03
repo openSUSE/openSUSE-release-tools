@@ -31,8 +31,8 @@ from osc import cmdln
 
 
 # Expand sys.path to search modules inside the pluging directory
-_plugin_dir = os.path.expanduser('~/.osc-plugins')
-sys.path.append(_plugin_dir)
+PLUGINDIR = os.path.expanduser(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(PLUGINDIR)
 from osclib.checkrepo import CheckRepo
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
@@ -341,7 +341,7 @@ def _check_repo_group(self, id_, requests, debug=False):
                     os.unlink(target)
                 os.symlink(d, target)
 
-        repochecker = os.path.join(self.plugin_dir, 'repo-checker.pl')
+        repochecker = os.path.join(PLUGINDIR, 'repo-checker.pl')
         civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
@@ -512,10 +512,8 @@ def do_check_repo(self, subcmd, opts, *args):
         groups[request.group] = rqs
 
     # Mirror the packages locally in the CACHEDIR
-    plugin = '~/.osc-plugins/osc-check_repo.py'
-    self.plugin_dir = os.path.dirname(os.path.realpath(os.path.expanduser(plugin)))
     self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:{}'.format(opts.project), 'standard')
-    self._mirror_full(self.plugin_dir, self.repo_dir)
+    self._mirror_full(PLUGINDIR, self.repo_dir)
 
     print
     print 'Analysis results'

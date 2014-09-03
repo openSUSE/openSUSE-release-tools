@@ -1,6 +1,7 @@
 PyYAML
 pycurl
 urlgrabber
+pyxdg
 git+https://github.com/openSUSE/osc
 
 # Dependencies for testing

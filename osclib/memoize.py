@@ -25,8 +25,9 @@ except:
     import pickle
 
 
+from xdg.BaseDirectory import save_cache_path
 # Where the cache files are stored
-CACHEDIR = '/var/cache/repo-checker'
+CACHEDIR = save_cache_path('opensuse-repo-checker')
 
 
 def memoize(ttl=None):
