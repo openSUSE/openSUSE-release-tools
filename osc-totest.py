@@ -64,6 +64,18 @@ def tt_result2str(result):
     else:
         return 'passed'
 
+def tt_find_failed_module(self, result):
+    #print json.dumps(result, sort_keys=True, indent=4)
+    for module in result['testmodules']:
+        if module['result'] != 'fail':
+            continue
+        flags = module['flags']
+        if 'fatal' in flags or 'important' in flags:
+            return module['name']
+            break
+        print module['name'], module['result'], module['flags']
+    return None
+
 def tt_overall_result(self, snapshot):
     """ Analyze the openQA jobs of a given snapshot
     Returns a QAResult
@@ -87,8 +99,6 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-NET-x86_64-Build-update_123@64bit',
         'opensuse-FTT-Rescue-CD-i686-Build-rescue@32bit',
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
-        'opensuse-FTT-DVD-x86_64-Build-uefi@64bit', # broken in 20140828
-        'opensuse-FTT-NET-x86_64-Build-uefi@64bit', # broken in 20140828
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64', # broken in 20140828
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64', # broken in 20140828
     ]
@@ -107,9 +117,11 @@ def tt_overall_result(self, snapshot):
                 continue
             number_of_fails += 1
             #print json.dumps(job, sort_keys=True, indent=4), jobname
-            print jobname, "https://openqa.opensuse.org/tests/{}".format(job['id'])
-            if number_of_fails < 3: continue
-            return QAResult.Failed
+            url = "https://openqa.opensuse.org/tests/{}".format(job['id'])
+            result = json.load(self.api.retried_GET(url + "/file/results.json" ))
+            failedmodule = self.tt_find_failed_module(result)
+            print jobname, url, failedmodule, job['retry_avbl']
+            #if number_of_fails < 3: continue
         elif job['result'] == 'passed':
             continue
         elif job['result'] == 'none':
@@ -117,6 +129,9 @@ def tt_overall_result(self, snapshot):
         else:
             raise Exception(job['result'])
             
+    if number_of_fails > 0:
+        return QAResult.Failed
+
     if known_failures:
         print "Some are now passing", known_failures
     return QAResult.Passed
