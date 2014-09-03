@@ -130,6 +130,6 @@ def do_staging(self, subcmd, opts, *args):
         else:
             SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
     elif cmd == 'cleanup_rings':
-        CleanupRings(opts.api).perform()
+        CleanupRings(api).perform()
     elif cmd == 'list':
         ListCommand(api).perform()
