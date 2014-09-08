@@ -103,11 +103,12 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64', # broken in 20140828
     ]
 
-    if len(jobs) < 80: # not yet scheduled
+    if len(jobs) < 90: # not yet scheduled
         print "we have only", len(jobs), "jobs"
         return QAResult.InProgress
 
     number_of_fails = 0
+    in_progress = False
     for job in jobs:
         #print json.dumps(job, sort_keys=True, indent=4)
         if job['result'] == 'failed' or job['result'] == 'incomplete' :
@@ -125,12 +126,15 @@ def tt_overall_result(self, snapshot):
         elif job['result'] == 'passed':
             continue
         elif job['result'] == 'none':
-            return QAResult.InProgress
+            in_progress = True
         else:
             raise Exception(job['result'])
             
     if number_of_fails > 0:
         return QAResult.Failed
+
+    if in_progress:
+        return QAResult.InProgress
 
     if known_failures:
         print "Some are now passing", known_failures

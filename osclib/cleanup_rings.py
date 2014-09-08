@@ -81,7 +81,7 @@ class CleanupRings(object):
         self.find_inner_ring_links(prj)
         self.fill_pkgdeps(prj, 'standard', 'x86_64')
 
-        if prj == 'openSUSE:{}:Rings:1-MinimalX':
+        if prj == 'openSUSE:{}:Rings:1-MinimalX'.format(self.api.opensuse):
             url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'])
             root = ET.parse(http_GET(url)).getroot()
             for bdep in root.findall('bdep'):
