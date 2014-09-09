@@ -23,8 +23,8 @@ from osc.core import makeurl
 from osc import cmdln
 
 # Expand sys.path to search modules inside the pluging directory
-_plugin_dir = os.path.expanduser('~/.osc-plugins')
-sys.path.append(_plugin_dir)
+PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
+sys.path.append(PLUGINDIR)
 from osclib.stagingapi import StagingAPI
 
 
@@ -263,8 +263,7 @@ def _checker_one_request(self, rq, opts):
                 self._checker_change_review_state(opts, id_, 'declined', by_group='factory-auto', message=msg)
                 continue
 
-            sourcechecker = os.path.dirname(os.path.realpath(os.path.expanduser('~/.osc-plugins/osc-check_source.py')))
-            sourcechecker = os.path.join(sourcechecker, 'source-checker.pl')
+            sourcechecker = os.path.join(PLUGINDIR, 'source-checker.pl')
             civs = ""
             new_version = None
             if old_infos['version'] and old_infos['version'] != new_infos['version']:
