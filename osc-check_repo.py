@@ -31,7 +31,7 @@ from osc import cmdln
 
 
 # Expand sys.path to search modules inside the pluging directory
-PLUGINDIR = os.path.expanduser(os.path.dirname(os.path.realpath(__file__)))
+PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
 sys.path.append(PLUGINDIR)
 from osclib.checkrepo import CheckRepo
 from osclib.cycle import CycleDetector
