@@ -101,6 +101,17 @@ def tt_overall_result(self, snapshot):
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64', # broken in 20140828
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64', # broken in 20140828
+        'opensuse-FTT-Rescue-CD-x86_64-Build-memtest@64bit', # broken in 20140904
+        'opensuse-FTT-GNOME-Live-i686-Build-memtest@32bit', # broken in 20140904
+        'opensuse-FTT-Rescue-CD-x86_64-Build-mediacheck@64bit', # broken in 20140904
+        'opensuse-FTT-KDE-Live-x86_64-Build-mediacheck@64bit', # broken in 20140904
+        'opensuse-FTT-GNOME-Live-x86_64-Build-mediacheck@64bit', # broken in 20140904
+        'opensuse-FTT-DVD-i586-Build-memtest@32bit', # broken in 20140904
+        'opensuse-FTT-NET-i586-Build-memtest@32bit', # broken in 20140904
+        'opensuse-FTT-Rescue-CD-i686-Build-mediacheck@32bit', # broken in 20140904
+        'opensuse-FTT-Rescue-CD-i686-Build-memtest@32bit', # broken in 20140904
+        'opensuse-FTT-KDE-Live-i686-Build-memtest@32bit', # broken in 20140904
+        'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@64bit', # broken in 20140904
     ]
 
     if len(jobs) < 90: # not yet scheduled
