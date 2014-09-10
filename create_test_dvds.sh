@@ -69,7 +69,11 @@ function sync_prj() {
     dir=$2
     mkdir -p $dir
     perl $SCRIPTDIR/bs_mirrorfull --nodebug https://build.opensuse.org/build/$prj/x86_64 $dir
-    rpms2solv $dir/*.rpm > $dir.solv
+    if [ "$dir" -nt "$dir.solv" ]; then
+	    local start=$SECONDS
+	    rpms2solv $dir/*.rpm > $dir.solv
+	    echo "creating ${dir}.solv took $((SECONDS-$start))s"
+    fi
 }
 
 function start_creating() {
