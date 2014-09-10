@@ -95,7 +95,7 @@ class SelectCommand(object):
             fprj = self.api.packages_staged[staged_requests[request]]['prj']
             msg = 'Request {} is already tracked in "{}".'
             msg = msg.format(request, fprj)
-            if staged_requests[request] != self.target_project:
+            if fprj != self.target_project:
                 msg += '\nUse --move modifier to move the request from "{}" to "{}"'
                 msg = msg.format(fprj, self.target_project)
             print(msg)
