@@ -211,7 +211,7 @@ class ChangeLogger(cmdln.Cmdln):
                 #print "+++ ",t2
                 print v2changelogs[srpm]['changelogtext'][i2]
 
-        print "\n"
+        print "\n\n\n"
         print "Removed packages:"
         group = self._get_packages_grouped(v1pkgs, p1-p2)
         print "  "+"\n  ".join(["\n   > ".join(sorted(group[s])) for s in sorted(group.keys()) ])
