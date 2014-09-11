@@ -12,6 +12,7 @@ use BSRPC ':https';
 use BSXML;
 use BSHTTP;
 use Fcntl qw/:flock/;
+use File::Path qw/make_path/;
 
 use strict;
 
@@ -34,6 +35,10 @@ while (@ARGV) {
 die("uasge: bs_mirrorfull url dir\n") unless @ARGV == 2;
 my ($url, $dir) = @ARGV;
 $url =~ s/\/$//;
+
+unless (-d $dir) {
+    make_path($dir);
+}
 
 open(my $fh, '>', $dir.'/.lock') or die "failed to open lock file: $!\n";
 unless(flock($fh, LOCK_EX|LOCK_NB)) {
