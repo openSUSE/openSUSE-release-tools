@@ -106,11 +106,13 @@ class CheckCommand(object):
         """
         report = []
 
+        query = {'format': 'json'}
         if project:
             url = self.api.makeurl(('project', 'staging_projects', 'openSUSE:%s' % self.api.opensuse,
-                                    project + '.json'))
+                                    project), query=query)
         else:
-            url = self.api.makeurl(('project', 'staging_projects', 'openSUSE:%s.json' % self.api.opensuse))
+            url = self.api.makeurl(('project', 'staging_projects', 'openSUSE:%s' % self.api.opensuse),
+                                   query=query)
         info = json.load(self.api.retried_GET(url))
         if not project:
             for prj in info:
