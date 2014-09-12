@@ -775,6 +775,27 @@ class OBS(object):
         return (200, headers, '<result>Ok</result>')
 
     #
+    # /project/staging_projects
+    #
+
+    @GET(re.compile(r'/project/staging_projects/openSUSE:Factory.*'))
+    def staging_projects(self, request, uri, headers):
+        """Return a JSON fixture."""
+        response = (404, headers, '<result>Not found</result>')
+        try:
+            path = urlparse.urlparse(uri).path + '.json'
+            fixture = self._fixture(path=path)
+            response = (200, headers, fixture)
+        except Exception as e:
+            if DEBUG:
+                print uri, e
+
+        if DEBUG:
+            print 'REQUEST', uri, response
+
+        return response
+
+    #
     #  Static fixtures
     #
 
