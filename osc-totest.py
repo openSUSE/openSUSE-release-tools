@@ -12,6 +12,8 @@ import json
 import os
 import re
 import sys
+import urllib2
+
 from xml.etree import cElementTree as ET
 
 import osc
@@ -35,25 +37,36 @@ class ToTestBase(object):
 
     def __init__(self, project):
         self.project = project
-        if project == 'Factory':
-            self.version = 'FTT'
-        else:
-            self.version = project
         self.api = StagingAPI(osc.conf.config['apiurl'])
+
+    def openqa_version(self):
+        return self.project
+
+    def binaries_of_product(self, project, product):
+        url = self.api.makeurl(['build', project, 'images', 'local', product])
+        try:
+            f = self.api.retried_GET(url)
+        except urllib2.HTTPError:
+            return []
+
+        ret = []
+        root = ET.parse(f).getroot()
+        for binary in root.findall('binary'):
+            ret.append(binary.get('filename'))
+
+        return ret
 
     def get_current_snapshot(self):
         """Return the current snapshot in :ToTest"""
 
         # for now we hardcode all kind of things
-        url = self.api.makeurl(['build', 'openSUSE:%s:ToTest' % self.project,
-                                'images', 'local', '_product:openSUSE-cd-mini-i586'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for binary in root.findall('binary'):
+        for binary in self.binaries_of_product('openSUSE:%s:ToTest' % self.project, '_product:openSUSE-cd-mini-i586'):
             result = re.match(r'openSUSE-%s-NET-i586-Snapshot(.*)-Media.iso' % self.project,
-                              binary.get('filename'))
+                              binary)
             if result:
                 return result.group(1)
+
+        return None
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -62,7 +75,7 @@ class ToTestBase(object):
         """
 
         url = 'https://openqa.opensuse.org/api/v1/' \
-              'jobs?version={}&build={}&distri=opensuse'.format(self.version, snapshot)
+              'jobs?version={}&build={}&distri=opensuse'.format(self.openqa_version(), snapshot)
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
@@ -93,6 +106,9 @@ class ToTestBase(object):
 
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
+
+        if snapshot == None:
+            return QA_FAILED
 
         jobs = self.find_openqa_results(snapshot)
 
@@ -191,7 +207,7 @@ class ToTestBase(object):
                 print project, package, repository, arch, status.get('code')
                 return False
 
-        maxsize = self.tt_maxsize_for_package(package)
+        maxsize = self.maxsize_for_package(package)
         if not maxsize:
             return True
 
@@ -292,26 +308,17 @@ class ToTestBase(object):
                 return True
         return False
 
-    def current_factory_version(self):
-        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', 'x86_64',
-                                '_product:openSUSE-release'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for binary in root.findall('binary'):
-            binary = binary.get('filename', '')
-            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
-            if result:
-                return result.group(1)
-        raise Exception("can't find factory version")
-
     def totest(self):
         current_snapshot = self.get_current_snapshot()
-        new_snapshot = self.current_factory_version()
+        new_snapshot = self.current_version()
 
         current_result = self.overall_result(current_snapshot)
+
         print 'current_snapshot', current_snapshot, self._result2str(current_result)
+
         if current_result == QA_FAILED:
             pass
+
         can_release = (current_result != QA_INPROGRESS and self.factory_snapshottable())
         
         # not overwriting
@@ -365,11 +372,37 @@ class ToTestFactory(ToTestBase):
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',  # broken in 20140909
     ]
 
+    def __init__(self, project):
+        ToTestBase.__init__(self, project)
+
+    def openqa_version(self):
+        return 'FTT'
+
+    # for Factory we check the version of the release package
+    def current_version(self):
+        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', 'x86_64',
+                                '_product:openSUSE-release'])
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        for binary in root.findall('binary'):
+            binary = binary.get('filename', '')
+            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
+            if result:
+                return result.group(1)
+        raise Exception("can't find factory version")
 
 class ToTest132(ToTestBase):
     known_failures = [
     ]
 
+    # for 13.2 we take the build number of the FTP tree
+    def current_version(self):
+        for binary in self.binaries_of_product('openSUSE:%s' % self.project, '_product:openSUSE-ftp-ftp-i586_x86_64'):
+            result = re.match(r'openSUSE.*Build(.*)-Media1.report', binary)
+            if result:
+                return result.group(1)
+
+        raise Exception("can't find 13.2 version")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -391,6 +424,7 @@ if __name__ == '__main__':
         exit(-1)
 
     osc.conf.get_config()
+#    osc.conf.config['debug'] = True
 
     totest = totest_class[args.project](args.project)
     totest.totest()
