@@ -33,7 +33,8 @@ from osclib.memoize import memoize
 
 
 # Directory where download binary packages.
-DOWNLOADS = os.path.expanduser('~/co/downloads')
+BINCACHE = os.path.expanduser('~/co')
+DOWNLOADS = os.path.join(BINCACHE, 'downloads')
 
 
 class Request(object):
