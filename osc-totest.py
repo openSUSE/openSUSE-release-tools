@@ -37,7 +37,7 @@ class ToTestBase(object):
 
     def __init__(self, project):
         self.project = project
-        self.api = StagingAPI(osc.conf.config['apiurl'])
+        self.api = StagingAPI(osc.conf.config['apiurl'], opensuse=project)
 
     def openqa_version(self):
         return self.project
@@ -339,7 +339,7 @@ class ToTestBase(object):
             can_release = False  # we have to wait
 
         if can_release:
-            self.tt_update_totest(new_snapshot)
+            self.update_totest(new_snapshot)
 
 
 class ToTestFactory(ToTestBase):
@@ -424,7 +424,7 @@ if __name__ == '__main__':
         exit(-1)
 
     osc.conf.get_config()
-#    osc.conf.config['debug'] = True
+    #osc.conf.config['debug'] = True
 
     totest = totest_class[args.project](args.project)
     totest.totest()
