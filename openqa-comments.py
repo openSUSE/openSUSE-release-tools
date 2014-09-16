@@ -23,6 +23,7 @@ from osclib.stagingapi import StagingAPI
 
 import osc
 
+MARGIN_HOURS = 4
 
 class OpenQAReport(object):
     def __init__(self, api):
@@ -30,7 +31,7 @@ class OpenQAReport(object):
         self.comment = CommentAPI(self.api.apiurl)
 
     def _openQA_url(self, job):
-        test_name = job['name'].split('-')[-1] 
+        test_name = job['name'].split('-')[-1]
         link = 'https://openqa.opensuse.org/tests/%s' % job['id']
         text = '[%s](%s)' % (test_name, link)
         return text
@@ -43,9 +44,8 @@ class OpenQAReport(object):
         return text
 
     def old_enough(self, _date):
-        
         time_delta = datetime.utcnow() - _date
-        safe_margin = timedelta(hours=4)
+        safe_margin = timedelta(hours=MARGIN_HOURS)
         return safe_margin <= time_delta
 
     def get_openQA_status(self, project):
@@ -81,34 +81,46 @@ class OpenQAReport(object):
         if write_comment:
             self.comment.add_comment(project_name=project, comment=report)
 
-    def report(self, project):
-        report_lines = []
+    def _report(self, project):
+        failing_lines, green_lines = [], []
 
         openQA_status = self.get_openQA_status(project)
         for job in openQA_status:
-            modules = job['modules']
-            report_lines.append('* openQA test: %s' % self._openQA_url(job))
-
+            test_name = job['name'].split('-')[-1]
             fails = [
-                '  * %s is failing' % self._openQA_module_url(job, module)
-                for module in modules if module['result'] == 'fail'
+                '  * %s (%s)' % (test_name, self._openQA_module_url(job, module))
+                for module in job['modules'] if module['result'] == 'fail'
             ]
 
             if fails:
-                report_lines.extend(fails)
+                failing_lines.extend(fails)
             else:
-                report_lines.append('  * Completely green!')
+                green_lines.append(self._openQA_url(job))
 
-        report = '\n'.join(report_lines)
-        if report:
+        failing_report, green_report = '', ''
+        if failing_lines:
+            failing_report = '* Failing openQA tests:\n' + '\n'.join(failing_lines)
+        if green_lines:
+            green_report = '* Succeeding tests:' + ', '.join(green_lines)
+
+        return '\n'.join((failing_report, green_report))
+
+    def report(self, project):
+        report = self._report(project)
+        report_dvd = self._report(project+':DVD')
+
+        if report or report_dvd:
+            report = report + '\n\nFor DVD:\n\n' + report_dvd
             self.update_openQA_status_comment(project, report)
-        
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Command to publish openQA status in Staging projects')
     parser.add_argument('-s', '--staging', type=str, default=None,
                         help='staging project letter')
+    parser.add_argument('-f', '--force', action='store_true', default=False,
+                        help='force the write of the comment')
     parser.add_argument('-p', '--project', type=str, default='Factory',
                         help='openSUSE version to make the check (Factory, 13.2)')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
@@ -119,6 +131,9 @@ if __name__ == '__main__':
     osc.conf.get_config()
     osc.conf.config['debug'] = args.debug
 
+    if args.force:
+        MARGIN_HOURS = 0
+
     api = StagingAPI(osc.conf.config['apiurl'], args.project)
     openQA = OpenQAReport(api)
 
@@ -126,4 +141,5 @@ if __name__ == '__main__':
          openQA.report(api.prj_from_letter(args.staging))
     else:
         for staging in api.get_staging_projects():
-            openQA.report(staging)
+            if not staging.endswith(':DVD'):
+                openQA.report(staging)
