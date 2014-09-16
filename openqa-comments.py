@@ -16,6 +16,7 @@
 
 import argparse
 from datetime import datetime, timedelta
+from collections import defaultdict
 import json
 
 from osclib.comments import CommentAPI
@@ -25,10 +26,17 @@ import osc
 
 MARGIN_HOURS = 4
 
+
 class OpenQAReport(object):
     def __init__(self, api):
         self.api = api
         self.comment = CommentAPI(self.api.apiurl)
+
+    def _package_url(self, package):
+        link = 'https://build.opensuse.org/package/live_build_log/%s/%s/%s/%s' % (
+            package['project'], package['package'], package['repository'], package['arch'])
+        text = '[%s](%s)' % (package['arch'], link)
+        return text
 
     def _openQA_url(self, job):
         test_name = job['name'].split('-')[-1]
@@ -48,7 +56,7 @@ class OpenQAReport(object):
         safe_margin = timedelta(hours=MARGIN_HOURS)
         return safe_margin <= time_delta
 
-    def get_openQA_status(self, project):
+    def get_info(self, project):
         _prefix = 'openSUSE:{}:Staging:'.format(self.api.opensuse)
         if project.startswith(_prefix):
             project = project.replace(_prefix, '')
@@ -57,9 +65,21 @@ class OpenQAReport(object):
         url = api.makeurl(('project', 'staging_projects',
                            'openSUSE:%s' % api.opensuse, project), query=query)
         info = json.load(api.retried_GET(url))
-        return info['openqa_jobs'] if 'openqa_jobs' in info else None
+        return info
 
-    def update_openQA_status_comment(self, project, report):
+    def get_broken_package_status(self, info):
+        status = info['broken_packages']
+        for subproject in info['subprojects']:
+            status.extend(subproject['broken_packages'])
+        return status
+
+    def get_openQA_status(self, info):
+        status = info['openqa_jobs']
+        for subproject in info['subprojects']:
+            status.extend(subproject['openqa_jobs'])
+        return status
+
+    def update_status_comment(self, project, report):
         signature = '<!-- openQA status -->'
         report = '%s\n%s' % (signature, str(report))
 
@@ -81,10 +101,25 @@ class OpenQAReport(object):
         if write_comment:
             self.comment.add_comment(project_name=project, comment=report)
 
-    def _report(self, project):
+    def _report_broken_packages(self, info):
+        broken_package_status = self.get_broken_package_status(info)
+
+        # Group packages by name
+        groups = defaultdict(list)
+        for package in broken_package_status:
+            groups[package['package']].append(package)
+
+        failing_lines = [
+            '* Build failed %s (%s)' % (key, ', '.join(self._package_url(p) for p in value))
+            for key, value in groups.iteritems()
+        ]
+
+        return '\n'.join(failing_lines)
+
+    def _report_openQA(self, info):
         failing_lines, green_lines = [], []
 
-        openQA_status = self.get_openQA_status(project)
+        openQA_status = self.get_openQA_status(info)
         for job in openQA_status:
             test_name = job['name'].split('-')[-1]
             fails = [
@@ -106,12 +141,14 @@ class OpenQAReport(object):
         return '\n'.join((failing_report, green_report))
 
     def report(self, project):
-        report = self._report(project)
-        report_dvd = self._report(project+':DVD')
+        info = self.get_info(project)
+        report_broken_packages = self._report_broken_packages(info)
+        report_openQA = self._report_openQA(info)
 
-        if report or report_dvd:
-            report = report + '\n\nFor DVD:\n\n' + report_dvd
-            self.update_openQA_status_comment(project, report)
+        if report_broken_packages or report_openQA:
+            report = report_broken_packages + '\n\n' + report_openQA
+            print report
+            # self.update_openQA_status_comment(project, report)
 
 
 if __name__ == '__main__':
@@ -138,7 +175,7 @@ if __name__ == '__main__':
     openQA = OpenQAReport(api)
 
     if args.staging:
-         openQA.report(api.prj_from_letter(args.staging))
+        openQA.report(api.prj_from_letter(args.staging))
     else:
         for staging in api.get_staging_projects():
             if not staging.endswith(':DVD'):
