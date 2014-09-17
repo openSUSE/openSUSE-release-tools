@@ -361,15 +361,17 @@ class ToTestFactory(ToTestBase):
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64',  # broken in 20140828
         'opensuse-FTT-GNOME-Live-i686-Build-memtest@32bit',  # broken in 20140904
         'opensuse-FTT-Rescue-CD-x86_64-Build-mediacheck@64bit',  # broken in 20140904
-        'opensuse-FTT-KDE-Live-x86_64-Build-mediacheck@64bit',  # broken in 20140904
-        'opensuse-FTT-GNOME-Live-x86_64-Build-mediacheck@64bit',  # broken in 20140904
         'opensuse-FTT-DVD-i586-Build-memtest@32bit',  # broken in 20140904
         'opensuse-FTT-NET-i586-Build-memtest@32bit',  # broken in 20140904
         'opensuse-FTT-Rescue-CD-i686-Build-mediacheck@32bit',  # broken in 20140904
         'opensuse-FTT-Rescue-CD-i686-Build-memtest@32bit',  # broken in 20140904
         'opensuse-FTT-KDE-Live-i686-Build-memtest@32bit',  # broken in 20140904
-        'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@64bit',  # broken in 20140904
-        'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',  # broken in 20140909
+        'opensuse-FTT-NET-x86_64-Build-zdup-13.2-M0@64bit', # broken in 20140915
+        'opensuse-FTT-NET-i586-Build-zdup-13.1-kde@32bit', # broken in 20140915
+        'opensuse-FTT-GNOME-Live-x86_64-Build-gnome@64bit', # broken in 20140915
+        'opensuse-FTT-NET-x86_64-Build-minimalx@64bit', # broken in 20140915
+        'opensuse-FTT-GNOME-Live-i686-Build-gnome@32bit', # broken in 20140915
+        'opensuse-FTT-NET-x86_64-Build-zdup-13.1-gnome@64bit', # broken in 20140915
     ]
 
     def __init__(self, project):
