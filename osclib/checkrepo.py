@@ -644,6 +644,7 @@ class CheckRepo(object):
         """Get the md5 from the DISTURL from a RPM file."""
         return os.path.basename(disturl).split('-')[0]
 
+    @memoize(session=True)
     def _get_verifymd5(self, request, revision):
         """Return the verifymd5 attribute from a request."""
         query = {
