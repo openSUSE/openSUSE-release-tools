@@ -138,7 +138,7 @@ class OpenQAReport(object):
         if green_lines:
             green_report = '* Succeeding tests:' + ', '.join(green_lines)
 
-        return '\n'.join((failing_report, green_report))
+        return '\n'.join((failing_report, green_report)), bool(failing_lines)
 
     def report(self, project):
         info = self.get_info(project)
@@ -152,9 +152,9 @@ class OpenQAReport(object):
             return
 
         report_broken_packages = self._report_broken_packages(info)
-        report_openQA = self._report_openQA(info)
+        report_openQA, some_openqa_fail = self._report_openQA(info)
 
-        if report_broken_packages or report_openQA:
+        if report_broken_packages or some_openqa_fail:
             report = '\n\n'.join((report_broken_packages, report_openQA))
             report = report.strip()
             if report:
