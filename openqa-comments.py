@@ -142,13 +142,23 @@ class OpenQAReport(object):
 
     def report(self, project):
         info = self.get_info(project)
+
+        # Some staging projects do not have info like
+        # openSUSE:Factory:Staging:Gcc49
+        if not info:
+            return
+
+        if info['overall_state'] == 'empty':
+            return
+
         report_broken_packages = self._report_broken_packages(info)
         report_openQA = self._report_openQA(info)
 
         if report_broken_packages or report_openQA:
-            report = report_broken_packages + '\n\n' + report_openQA
-            print report
-            # self.update_openQA_status_comment(project, report)
+            report = '\n\n'.join((report_broken_packages, report_openQA))
+            report = report.strip()
+            if report:
+                self.update_status_comment(project, report)
 
 
 if __name__ == '__main__':
