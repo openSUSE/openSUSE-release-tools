@@ -33,7 +33,8 @@ from osclib.memoize import memoize
 
 
 # Directory where download binary packages.
-DOWNLOADS = os.path.expanduser('~/co/downloads')
+BINCACHE = os.path.expanduser('~/co')
+DOWNLOADS = os.path.join(BINCACHE, 'downloads')
 
 
 class Request(object):
@@ -643,6 +644,7 @@ class CheckRepo(object):
         """Get the md5 from the DISTURL from a RPM file."""
         return os.path.basename(disturl).split('-')[0]
 
+    @memoize(session=True)
     def _get_verifymd5(self, request, revision):
         """Return the verifymd5 attribute from a request."""
         query = {
@@ -704,6 +706,10 @@ class CheckRepo(object):
         package_dir = os.path.join(DOWNLOADS, request.src_package)
         projects = os.walk(package_dir).next()[1]
 
+        # XXX TODO - The generated list can be false, we need to check
+        # if this is still a goodrepo.  To do this we need to check
+        # verifymd5 or something like that, because the build status
+        # can be a different value from 'success'.
         for project in projects:
             project_dir = os.path.join(package_dir, project)
             repos = os.walk(project_dir).next()[1]

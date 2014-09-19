@@ -30,7 +30,7 @@ from xdg.BaseDirectory import save_cache_path
 CACHEDIR = save_cache_path('opensuse-repo-checker')
 
 
-def memoize(ttl=None):
+def memoize(ttl=None, session=False):
     """Decorator function to implement a persistent cache.
 
     >>> @memoize()
@@ -91,6 +91,9 @@ def memoize(ttl=None):
     NCLEAN = 1024           # Number of slots to remove when limit reached
     TIMEOUT = 60*60*2       # Time to live for every cache slot (seconds)
 
+    # The session cache is only used when 'session' is True
+    session_cache = {}
+
     def _memoize(fn):
         # Implement a POSIX lock / unlock extension for shelves. Inspired
         # on ActiveState Code recipe #576591
@@ -104,15 +107,19 @@ def memoize(ttl=None):
             lckfile.close()
 
         def _open_cache(cache_name):
-            lckfile = _lock(cache_name)
-            cache = shelve.open(cache_name, protocol=-1)
-            # Store a reference to the lckfile to avoid to be closed by gc
-            cache.lckfile = lckfile
+            cache = session_cache
+            if not session:
+                lckfile = _lock(cache_name)
+                cache = shelve.open(cache_name, protocol=-1)
+                # Store a reference to the lckfile to avoid to be
+                # closed by gc
+                cache.lckfile = lckfile
             return cache
 
         def _close_cache(cache):
-            cache.close()
-            _unlock(cache.lckfile)
+            if not session:
+                cache.close()
+                _unlock(cache.lckfile)
 
         def _clean_cache(cache):
             len_cache = len(cache)

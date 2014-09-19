@@ -34,6 +34,7 @@ from osc import cmdln
 PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
 sys.path.append(PLUGINDIR)
 from osclib.checkrepo import CheckRepo
+from osclib.checkrepo import BINCACHE
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
 
@@ -75,10 +76,10 @@ def _fix_local_cache(self, request, keys):
 def _check_repo_download(self, request):
     request.downloads = defaultdict(list)
 
-    # Found cached version for the request, but the cached can be
-    # partial. For example, in a rebuild we can have locally a working
-    # package. So the download list needs to be updated with the local
-    # copies.
+    # Found cached version for the request, but the cache can be
+    # partial.  For example, in a rebuild we can have locally a
+    # working package.  So the download list needs to be updated with
+    # the local copies.
     if request.is_partially_cached:
         request.downloads = self.checkrepo._get_downloads_from_local(request)
 
@@ -132,12 +133,16 @@ _errors_printed = set()
 def _check_repo_group(self, id_, requests, debug=False):
     print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
+    # XXX TODO - If the requests comes from command line, the group is
+    # still not there.
+
+    # Do not continue if any of the packages do not successfully buid.
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests if r.action_type != 'delete'):
         return
 
     toignore = set()
-    destdir = os.path.expanduser('~/co/%s' % str(requests[0].group))
-    fetched = dict((r, False) for r in self.checkrepo.groups.get(id_, []))
+    destdir = os.path.join(BINCACHE, str(requests[0].group))
+    fetched = {r: False for r in self.checkrepo.groups.get(id_, [])}
     packs = []
 
     for request in requests:
