@@ -15,7 +15,7 @@ os.unlink(os.path.expanduser('~/.osc_cookiejar'))
 
 #initialize osc config
 osc.conf.get_config()
-#osc.conf.config['debug'] = True
+osc.conf.config['debug'] = True
 
 srcmd5s = dict()
 revs = dict()
@@ -72,8 +72,8 @@ def create_submit(project=None, package=None, rev=None, md5=None):
     text += "</request>"
 
     url = osc.core.makeurl(osc.conf.config['apiurl'], [ 'request' ], { 'cmd': 'create' })
-    print text
-    #print osc.core.http_POST(url, data=text).read()
+    #print text
+    print osc.core.http_POST(url, data=text).read()
 
 def create_delete(package):
     text  = "<request>\n"
@@ -84,9 +84,21 @@ def create_delete(package):
     text += "</request>"
 
     url = osc.core.makeurl(osc.conf.config['apiurl'], [ 'request' ], { 'cmd': 'create' })
-    print text
-    #print osc.core.http_POST(url, data=text).read()
+    #print text
+    print osc.core.http_POST(url, data=text).read()
 
+def find_request_md5s(package):
+    url = osc.core.makeurl(osc.conf.config['apiurl'], 
+                           ['search', 'request'],
+                           { 'match': "action/target/@project='openSUSE:13.2' and action/target/@package='{}'".format(package) })
+    f = osc.core.http_GET(url)
+    root = ET.parse(f).getroot()
+    md5s = set()
+    for rq in root.findall('request'):
+        for source in rq.findall('.//source'):
+            md5s.add(source.attrib['rev'])
+    return md5s
+        
 factory = parse_prj('openSUSE:Factory')
 d132 = parse_prj('openSUSE:13.2')
 
@@ -102,8 +114,12 @@ for package in sorted(set(factory) | set(d132)):
             continue
 
         if not d132.has_key(package):
-            prompt = "copy new package %s" % pmd5
+            if srcmd5s[factory[package]] in find_request_md5s(package):
+                continue
         elif factory[package] == d132[package]:
+            continue
+        elif srcmd5s[factory[package]] in find_request_md5s(package):
+            print "%s already requested" % pmd5
             continue
         else:
             url = osc.core.makeurl(osc.conf.config['apiurl'], ['source', 'openSUSE:Factory', package], 
@@ -121,6 +137,8 @@ for package in sorted(set(factory) | set(d132)):
 
             prompt = "copy diffing package %s ?" % pmd5
 
+        print prompt
+
         md5 = srcmd5s[factory[package]]
         rev = revs[factory[package]]
         devprj = get_devel_project(package)
@@ -132,3 +150,5 @@ for package in sorted(set(factory) | set(d132)):
     else: # the 13.2 must have it
         print "delete package 13.2/%s-%s" % ( package, d132[package] )
         create_delete(package)
+
+os.unlink(os.path.expanduser('~/.osc_cookiejar'))
