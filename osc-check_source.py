@@ -130,15 +130,21 @@ def _checker_add_review_team(self, opts, id_):
 
 
 def _checker_get_srcmd5(self, opts, src_project, src_package, rev):
+    srcmd5 = None
+
     query = {
         'expand': 1,
         'rev': rev,
     }
     url = makeurl(opts.apiurl, ('source', src_project, src_package), query=query)
-    root = ET.parse(http_GET(url)).getroot()
-    if root is not None:
-        srcmd5 = root.get('srcmd5')
-        return srcmd5
+
+    try:
+        root = ET.parse(http_GET(url)).getroot()
+        if root is not None:
+            srcmd5 = root.get('srcmd5')
+    except urllib2.HTTPError:
+        pass
+    return srcmd5
 
 
 def _checker_is_srcmd5_in_factory(self, opts, src_package, srcmd5):
