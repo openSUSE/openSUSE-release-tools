@@ -12,6 +12,7 @@ import re
 
 #initialize osc config
 osc.conf.get_config()
+osc.conf.config['debug'] = True
 
 srcmd5s = dict()
 revs = dict()
@@ -39,6 +40,8 @@ def parse_prj(prj):
 # POSIX system. Create and return a getch that manipulates the tty.
 import termios, sys, tty
 def _getch():
+    return 'n'
+
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
@@ -47,11 +50,33 @@ def _getch():
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
-       
+
+def get_devel_project(package):
+    url = osc.core.makeurl(osc.conf.config['apiurl'], ['source', 'openSUSE:Factory', package, '_meta'])
+    f = osc.core.http_GET(url)
+    root = ET.parse(f)
+    for dp in root.findall('./devel'):
+        return dp.attrib['project']
+
+    raise 'NOW WHAT?'
+
+def create_submit(project=None, package=None, rev=None, md5=None):
+    text  = "<request type='submit'>\n"
+    text += " <submit>\n"
+    text += " <source project='" + project + "' package='" + package + "' rev='" + md5 + "'/>\n"
+    text += " <target project='openSUSE:13.2'/>\n"
+    text += " </submit>\n"
+    text += " <description>Submit revision " + rev + " of openSUSE:Factory</description>\n"
+    text += "</request>"
+
+    url = osc.core.makeurl(osc.conf.config['apiurl'], [ 'request' ], { 'cmd': 'create' })
+    print osc.core.http_POST(url, data=text).read()
+
+
 factory = parse_prj('openSUSE:Factory')
 d132 = parse_prj('openSUSE:13.2')
 
-NOS = ('graphviz-1a63c5430695678e333d14020602b84e', 'java-1_7_0-openjdk-59f27f7560ea2c583520b06cbe11a9e4')
+NOS = ()
 
 for package in sorted(set(factory) | set(d132)):
     prompt = None
@@ -84,15 +109,8 @@ for package in sorted(set(factory) | set(d132)):
 
         md5 = srcmd5s[factory[package]]
         rev = revs[factory[package]]
-        url = osc.core.makeurl(osc.conf.config['apiurl'], ['source', 'openSUSE:13.2', package], 
-                               { 'cmd': 'copy', 'opackage': package, 'oproject': 'openSUSE:Factory', 'orev': md5, 
-                                 'noservice': 1, 'comment': 'Copy from Factory revision {}'.format(rev) } )
-
-        print prompt
-        likes = _getch()
-        if likes == 'y':
-            print url
-            osc.core.http_POST(url)
+        create_submit(project=get_devel_project(package), package=package, rev=rev, md5=md5)
+        exit(0)
 
     else: # the 13.2 must have it
         print "delete package 13.2/%s-%s" % ( package, d132[package] )
@@ -103,6 +121,3 @@ for package in sorted(set(factory) | set(d132)):
             print url
             osc.core.http_DELETE(url)
         
-
-
-    
