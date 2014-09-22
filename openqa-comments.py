@@ -25,6 +25,7 @@ from osclib.stagingapi import StagingAPI
 import osc
 
 MARGIN_HOURS = 4
+MAX_LINES = 6
 
 
 class OpenQAReport(object):
@@ -114,7 +115,10 @@ class OpenQAReport(object):
             for key, value in groups.iteritems()
         ]
 
-        return '\n'.join(failing_lines)
+        report = '\n'.join(failing_lines[:MAX_LINES])
+        if len(failing_lines) > MAX_LINES:
+            report += '* and more (%s) ...' % (len(failing_lines) - MAX_LINES)
+        return report
 
     def _report_openQA(self, info):
         failing_lines, green_lines = [], []
@@ -134,9 +138,13 @@ class OpenQAReport(object):
 
         failing_report, green_report = '', ''
         if failing_lines:
-            failing_report = '* Failing openQA tests:\n' + '\n'.join(failing_lines)
+            failing_report = '* Failing openQA tests:\n' + '\n'.join(failing_lines[:MAX_LINES])
+            if len(failing_lines) > MAX_LINES:
+                failing_report += '\n  * and more (%s) ...' % (len(failing_lines) - MAX_LINES)
         if green_lines:
-            green_report = '* Succeeding tests:' + ', '.join(green_lines)
+            green_report = '* Succeeding tests:' + ', '.join(green_lines[:MAX_LINES])
+            if len(green_lines) > MAX_LINES:
+                green_report += ', and more (%s) ...' % (len(green_lines) - MAX_LINES)
 
         return '\n'.join((failing_report, green_report)), bool(failing_lines)
 
