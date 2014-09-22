@@ -10,9 +10,12 @@ import osc.conf
 import xml.etree.ElementTree as ET
 import re
 
+os.environ['OSC_CONFIG'] = os.path.expanduser('~/.oscrc-syncer')
+os.unlink(os.path.expanduser('~/.osc_cookiejar'))
+
 #initialize osc config
 osc.conf.get_config()
-osc.conf.config['debug'] = True
+#osc.conf.config['debug'] = True
 
 srcmd5s = dict()
 revs = dict()
@@ -40,7 +43,6 @@ def parse_prj(prj):
 # POSIX system. Create and return a getch that manipulates the tty.
 import termios, sys, tty
 def _getch():
-    return 'n'
 
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
@@ -66,12 +68,24 @@ def create_submit(project=None, package=None, rev=None, md5=None):
     text += " <source project='" + project + "' package='" + package + "' rev='" + md5 + "'/>\n"
     text += " <target project='openSUSE:13.2'/>\n"
     text += " </submit>\n"
-    text += " <description>Submit revision " + rev + " of openSUSE:Factory</description>\n"
+    text += " <description>Submit revision " + rev + " of openSUSE:Factory/" + package + "</description>\n"
     text += "</request>"
 
     url = osc.core.makeurl(osc.conf.config['apiurl'], [ 'request' ], { 'cmd': 'create' })
-    print osc.core.http_POST(url, data=text).read()
+    print text
+    #print osc.core.http_POST(url, data=text).read()
 
+def create_delete(package):
+    text  = "<request>\n"
+    text += " <action type='delete'>\n"
+    text += " <target project='openSUSE:13.2' package='" + package + "'/>\n"
+    text += " </action>\n"
+    text += " <description>Gone from Factory</description>\n"
+    text += "</request>"
+
+    url = osc.core.makeurl(osc.conf.config['apiurl'], [ 'request' ], { 'cmd': 'create' })
+    print text
+    #print osc.core.http_POST(url, data=text).read()
 
 factory = parse_prj('openSUSE:Factory')
 d132 = parse_prj('openSUSE:13.2')
@@ -109,15 +123,12 @@ for package in sorted(set(factory) | set(d132)):
 
         md5 = srcmd5s[factory[package]]
         rev = revs[factory[package]]
-        create_submit(project=get_devel_project(package), package=package, rev=rev, md5=md5)
-        exit(0)
+        devprj = get_devel_project(package)
+        if devprj == 'openSUSE:Factory':
+            continue
+            
+        create_submit(project=devprj, package=package, rev=rev, md5=md5)
 
     else: # the 13.2 must have it
         print "delete package 13.2/%s-%s" % ( package, d132[package] )
-        url = osc.core.makeurl(osc.conf.config['apiurl'], ['source', 'openSUSE:13.2', package], 
-                               { 'comment': 'Gone from factory' })
-        likes = _getch()
-        if likes == 'y':
-            print url
-            osc.core.http_DELETE(url)
-        
+        create_delete(package)

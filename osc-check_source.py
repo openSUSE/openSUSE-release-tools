@@ -129,6 +129,33 @@ def _checker_add_review_team(self, opts, id_):
     return self._checker_add_review(opts, id_, by_group='opensuse-review-team', msg="Please review sources")
 
 
+def _checker_get_verifymd5(self, opts, src_project, src_package, rev=None):
+    query = {
+        'view': 'info',
+
+    }
+    if rev:
+        query['rev'] = rev
+    url = makeurl(opts.apiurl, ('source', src_project, src_package), query=query)
+    try:
+        root = ET.parse(http_GET(url)).getroot()
+    except urllib2.HTTPError:
+        return None
+
+    if root is not None:
+        srcmd5 = root.get('verifymd5')
+        return srcmd5
+
+
+def _checker_is_srcmd5_in_factory(self, opts, src_package, srcmd5):
+    if not srcmd5:
+        return False
+
+    factory_srcmd5 = self._checker_get_verifymd5(opts, 'openSUSE:Factory',
+                                                 src_package)
+    return srcmd5 == factory_srcmd5
+
+
 def _checker_accept_request(self, opts, id_, msg, diff=10000):
     if diff > 8:
         self._checker_add_review_team(opts, id_)
@@ -172,6 +199,13 @@ def _checker_one_request(self, rq, opts):
             rev = act.find('source').get('rev')
             tprj = act.find('target').get('project')
             tpkg = act.find('target').get('package')
+
+            # Check in the srcmd5 is actually in Factory
+            srcmd5 = self._checker_get_verifymd5(opts, prj, pkg, rev=rev)
+            if self._checker_is_srcmd5_in_factory(opts, pkg, srcmd5):
+                msg = 'Found Factory sources'
+                self._checker_change_review_state(opts, id_, 'accepted', by_group='factory-auto', message=msg)
+                continue
 
             src = {'package': pkg, 'project': prj, 'rev': rev, 'error': None}
             e = []
@@ -353,8 +387,9 @@ def do_check_source(self, subcmd, opts, *args):
     if not ids:
         review = "@by_group='factory-auto'+and+@state='new'"
         target = "@project='openSUSE:{}'".format(self.api.opensuse)
+        target_nf = "@project='openSUSE:{}:NonFree'".format(self.api.opensuse)
         url = makeurl(opts.apiurl, ('search', 'request'),
-                      "match=state/@name='review'+and+review[%s]+and+target[%s]" % (review, target))
+                      "match=state/@name='review'+and+review[%s]+and+(target[%s]+or+target[%s])" % (review, target, target_nf))
         root = ET.parse(http_GET(url)).getroot()
         for rq in root.findall('request'):
             self._checker_one_request(rq, opts)
