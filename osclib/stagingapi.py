@@ -320,8 +320,10 @@ class StagingAPI(object):
         # xpath query, using the -m, -r, -s options
         where = "@by_group='factory-staging'+and+@state='new'"
         target = "@project='openSUSE:{}'".format(self.opensuse)
+        target_nf = "@project='openSUSE:{}:NonFree'".format(self.opensuse)
 
-        query = "match=state/@name='review'+and+review[{}]+and+target[{}]".format(where, target)
+        query = "match=state/@name='review'+and+review[{}]+and+(target[{}]+or+target[{}])".format(
+            where, target, target_nf)
         url = self.makeurl(['search', 'request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
