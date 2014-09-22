@@ -10,6 +10,9 @@ import osc.conf
 import xml.etree.ElementTree as ET
 import re
 
+os.environ['OSC_CONFIG'] = os.path.expanduser('~/.oscrc-syncer')
+os.unlink(os.path.expanduser('~/.osc_cookiejar'))
+
 #initialize osc config
 osc.conf.get_config()
 osc.conf.config['debug'] = True
