@@ -194,7 +194,8 @@ def _checker_one_request(self, rq, opts):
             # Check in the srcmd5 is actually in Factory
             srcmd5 = self._checker_get_srcmd5(opts, prj, pkg, rev)
             if self._checker_is_srcmd5_in_factory(opts, pkg, srcmd5):
-                self._checker_accept_request(opts, id_, 'Found Factory sources', diff=0)
+                msg = 'Found Factory sources'
+                self._checker_change_review_state(opts, id_, 'accepted', by_group='factory-auto', message=msg)
                 continue
 
             src = {'package': pkg, 'project': prj, 'rev': rev, 'error': None}
