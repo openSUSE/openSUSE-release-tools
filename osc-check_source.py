@@ -129,6 +129,30 @@ def _checker_add_review_team(self, opts, id_):
     return self._checker_add_review(opts, id_, by_group='opensuse-review-team', msg="Please review sources")
 
 
+def _checker_get_srcmd5(self, opts, src_project, src_package, rev):
+    srcmd5 = None
+
+    query = {
+        'expand': 1,
+        'rev': rev,
+    }
+    url = makeurl(opts.apiurl, ('source', src_project, src_package), query=query)
+
+    try:
+        root = ET.parse(http_GET(url)).getroot()
+        if root is not None:
+            srcmd5 = root.get('srcmd5')
+    except urllib2.HTTPError:
+        pass
+    return srcmd5
+
+
+def _checker_is_srcmd5_in_factory(self, opts, src_package, srcmd5):
+    factory_srcmd5 = self._checker_get_srcmd5(opts, 'openSUSE:Factory',
+                                              src_package, srcmd5)
+    return srcmd5 and srcmd5 == factory_srcmd5
+
+
 def _checker_accept_request(self, opts, id_, msg, diff=10000):
     if diff > 8:
         self._checker_add_review_team(opts, id_)
@@ -172,6 +196,13 @@ def _checker_one_request(self, rq, opts):
             rev = act.find('source').get('rev')
             tprj = act.find('target').get('project')
             tpkg = act.find('target').get('package')
+
+            # Check in the srcmd5 is actually in Factory
+            srcmd5 = self._checker_get_srcmd5(opts, prj, pkg, rev)
+            if self._checker_is_srcmd5_in_factory(opts, pkg, srcmd5):
+                msg = 'Found Factory sources'
+                self._checker_change_review_state(opts, id_, 'accepted', by_group='factory-auto', message=msg)
+                continue
 
             src = {'package': pkg, 'project': prj, 'rev': rev, 'error': None}
             e = []
