@@ -223,9 +223,11 @@ class CheckRepo(object):
         requests = []
         review = "@by_user='factory-repo-checker'+and+@state='new'"
         target = "@project='openSUSE:{}'".format(self.opensuse)
+        target_nf = "@project='openSUSE:{}:NonFree'".format(self.opensuse)
         try:
             url = makeurl(self.apiurl, ('search', 'request'),
-                          "match=state/@name='review'+and+review[%s]+and+target[%s]" % (review, target))
+                          "match=state/@name='review'+and+review[%s]+and+(target[%s]+or+target[%s])" % (
+                              review, target, target_nf))
             root = ET.parse(http_GET(url)).getroot()
             requests = root.findall('request')
         except urllib2.HTTPError, e:
