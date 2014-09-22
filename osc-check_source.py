@@ -125,10 +125,6 @@ def _checker_add_review(self, opts, id_, by_group=None, by_user=None,
     return 0
 
 
-def _checker_forward_to_staging(self, opts, id_):
-    return self._checker_add_review(opts, id_, by_group='factory-staging', msg="Pick Staging Project")
-
-
 def _checker_add_review_team(self, opts, id_):
     return self._checker_add_review(opts, id_, by_group='opensuse-review-team', msg="Please review sources")
 
@@ -140,8 +136,6 @@ def _checker_accept_request(self, opts, id_, msg, diff=10000):
     #     self._checker_add_review(opts, id_, by_user='coolo', msg='Does it look harmless?')
 
     self._checker_add_review(opts, id_, by_user='factory-repo-checker', msg='Please review build success')
-
-    self._checker_forward_to_staging(opts, id_)
 
     self._checker_change_review_state(opts, id_, 'accepted', by_group='factory-auto', message=msg)
     print("accepted " + msg)
@@ -302,7 +296,6 @@ def _checker_one_request(self, rq, opts):
                 continue
 
         else:
-            self._checker_forward_to_staging(opts, id_)
             self._checker_change_review_state(opts, id_, 'accepted',
                                               by_group='factory-auto',
                                               message="Unchecked request type %s" % _type)
