@@ -38,6 +38,6 @@ class TestAccept(unittest.TestCase):
         # But the comment was written at some point
         self.assertEqual(len(self.obs.comment_bodies), 1)
         comment = self.obs.comment_bodies[0]
-        self.assertTrue('The following packages have been submitted to factory' in comment)
+        self.assertTrue('The following packages have been submitted to Factory' in comment)
         self.assertTrue('apparmor' in comment)
         self.assertTrue('mariadb' in comment)
