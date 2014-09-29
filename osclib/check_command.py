@@ -83,9 +83,8 @@ class CheckCommand(object):
                 report.extend('     %s: fail' % module['name'] for module in job['modules'] if module['result'] == 'fail')
                 break
 
-        for subproject in project['subprojects']:
-            if not subproject:
-                continue
+        subproject = project['subproject']
+        if subproject:
             subreport = self._report(subproject, verbose, is_subproject=True)
             if subreport:
                 report.append('')
