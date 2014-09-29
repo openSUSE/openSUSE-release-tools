@@ -84,6 +84,8 @@ class CheckCommand(object):
                 break
 
         for subproject in project['subprojects']:
+            if not subproject:
+                continue
             subreport = self._report(subproject, verbose, is_subproject=True)
             if subreport:
                 report.append('')
