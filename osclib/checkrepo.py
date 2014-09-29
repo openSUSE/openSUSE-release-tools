@@ -595,6 +595,10 @@ class CheckRepo(object):
 
             request.downloads[(_project, _repo, disturl)].append(file_in_disturl)
 
+        # Some subpackage do not have any rpm (e.g. rpmlint)
+        if not last_disturldir:
+            return
+
         for _project, _repo, arch, fn, mt in todownload_rest:
             repodir = os.path.join(DOWNLOADS, request.src_package, _project, _repo)
             if not os.path.exists(repodir):
