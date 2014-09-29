@@ -168,6 +168,10 @@ class OpenQAReport(object):
             report = '\n\n'.join((report_broken_packages, report_openQA))
             report = report.strip()
             if report:
+                if osc.conf.config['debug']:
+                    print project
+                    print '-' * len(project)
+                    print report
                 self.update_status_comment(project, report)
 
 
