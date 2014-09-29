@@ -32,10 +32,12 @@ class AcceptCommand(object):
         return rqs
 
     def perform(self, project):
-        """
-        Accept the staging LETTER for review and submit to factory
+        """Accept the staging LETTER for review and submit to Factory /
+        openSUSE 13.2 ...
+
         Then disable the build to disabled
         :param project: staging project we are working with
+
         """
 
         status = self.api.check_project_status(project)
@@ -55,12 +57,13 @@ class AcceptCommand(object):
             print(msg)
 
         for req in requests:
-            change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to factory')
+            change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to %s' % self.api.opensuse)
 
-        # A single comment should be enough to notify everybody, since they are
-        # already mentioned in the comments created by select/unselect
+        # A single comment should be enough to notify everybody, since
+        # they are already mentioned in the comments created by
+        # select/unselect
         pkg_list = ", ".join(packages)
-        cmmt = 'Project "{}" accepted. The following packages have been submitted to factory: {}.'.format(project, pkg_list)
+        cmmt = 'Project "{}" accepted. The following packages have been submitted to {}: {}.'.format(project, self.api.opensuse, pkg_list)
         self.comment.add_comment(project_name=project, comment=cmmt)
 
         # XXX CAUTION - AFAIK the 'accept' command is expected to clean the messages here.
@@ -76,7 +79,7 @@ class AcceptCommand(object):
         changed = False
         for req in self.find_new_requests('openSUSE:{}'.format(self.api.opensuse)):
             print 'Accepting request %d: %s' % (req['id'], ','.join(req['packages']))
-            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to factory')
+            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.opensuse)
             changed = True
 
         return changed

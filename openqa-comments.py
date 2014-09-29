@@ -70,13 +70,15 @@ class OpenQAReport(object):
 
     def get_broken_package_status(self, info):
         status = info['broken_packages']
-        for subproject in info['subprojects']:
+        subproject = info['subproject']
+        if subproject:
             status.extend(subproject['broken_packages'])
         return status
 
     def get_openQA_status(self, info):
         status = info['openqa_jobs']
-        for subproject in info['subprojects']:
+        subproject = info['subproject']
+        if subproject:
             status.extend(subproject['openqa_jobs'])
         return status
 
@@ -166,6 +168,10 @@ class OpenQAReport(object):
             report = '\n\n'.join((report_broken_packages, report_openQA))
             report = report.strip()
             if report:
+                if osc.conf.config['debug']:
+                    print project
+                    print '-' * len(project)
+                    print report
                 self.update_status_comment(project, report)
 
 
