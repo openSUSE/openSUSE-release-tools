@@ -71,13 +71,15 @@ class OpenQAReport(object):
     def get_broken_package_status(self, info):
         status = info['broken_packages']
         for subproject in info['subprojects']:
-            status.extend(subproject['broken_packages'])
+            if subproject:
+                status.extend(subproject['broken_packages'])
         return status
 
     def get_openQA_status(self, info):
         status = info['openqa_jobs']
         for subproject in info['subprojects']:
-            status.extend(subproject['openqa_jobs'])
+            if subproject:
+                status.extend(subproject['openqa_jobs'])
         return status
 
     def update_status_comment(self, project, report):
