@@ -14,7 +14,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from collections import defaultdict
 import os
 import re
 import subprocess
@@ -64,7 +63,6 @@ class Request(object):
         self.updated = False
         self.error = None
         self.build_excluded = False
-        self.is_partially_cached = False
         self.action_type = 'submit'  # assume default
         self.downloads = []
         self.is_shadow_devel = False
@@ -574,11 +572,7 @@ class CheckRepo(object):
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
-            was_cached = self._get_binary_file(_project, _repo, arch,
-                                               request.src_package,
-                                               fn, t, mt)
-            if was_cached:
-                continue
+            self._get_binary_file(_project, _repo, arch, request.src_package, fn, t, mt)
 
             # Organize the files into DISTURL directories.
             disturl = self._md5_disturl(self._disturl(t))
@@ -604,11 +598,7 @@ class CheckRepo(object):
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
-            was_cached = self._get_binary_file(_project, _repo, arch,
-                                               request.src_package,
-                                               fn, t, mt)
-            if was_cached:
-                continue
+            self._get_binary_file(_project, _repo, arch, request.src_package, fn, t, mt)
 
             file_in_disturl = os.path.join(last_disturldir, fn)
             if last_disturldir:
@@ -690,58 +680,6 @@ class CheckRepo(object):
 
         return False
 
-    def is_request_cached(self, request):
-        """Search the request in the local cache."""
-        result = False
-
-        package_dir = os.path.join(DOWNLOADS, request.src_package)
-        rpm_packages = []
-        for dirpath, dirnames, filenames in os.walk(package_dir):
-            rpm_packages.extend(os.path.join(dirpath, f) for f in filenames if f.endswith('.rpm'))
-
-        result = any(self.check_disturl(request, filename=rpm) for rpm in rpm_packages)
-
-        return result
-
-    def _get_goodrepos_from_local(self, request):
-        """Calculate 'goodrepos' from local cache."""
-
-        # 'goodrepos' store the tuples (project, repos)
-        goodrepos = []
-
-        package_dir = os.path.join(DOWNLOADS, request.src_package)
-        projects = os.walk(package_dir).next()[1]
-
-        # XXX TODO - The generated list can be false, we need to check
-        # if this is still a goodrepo.  To do this we need to check
-        # verifymd5 or something like that, because the build status
-        # can be a different value from 'success'.
-        for project in projects:
-            project_dir = os.path.join(package_dir, project)
-            repos = os.walk(project_dir).next()[1]
-
-            for repo in repos:
-                goodrepos.append((project, repo))
-
-        return goodrepos
-
-    def _get_downloads_from_local(self, request):
-        """Calculate 'downloads' from local cache."""
-        downloads = defaultdict(list)
-
-        package_dir = os.path.join(DOWNLOADS, request.src_package)
-
-        for project, repo in self._get_goodrepos_from_local(request):
-            repo_dir = os.path.join(package_dir, project, repo)
-            disturls = os.walk(repo_dir).next()[1]
-
-            for disturl in disturls:
-                disturl_dir = os.path.join(DOWNLOADS, request.src_package, project, repo, disturl)
-                filenames = os.walk(disturl_dir).next()[2]
-                downloads[(project, repo, disturl)] = [os.path.join(disturl_dir, f) for f in filenames]
-
-        return downloads
-
     def get_missings(self, request):
         """Get the list of packages that are in missing status."""
 
@@ -774,14 +712,6 @@ class CheckRepo(object):
         :returns: True if the request is correctly build.
 
         """
-
-        # Check if we have a local version of the package before
-        # checking it.  If this is the case partially preload the
-        # 'goodrepos' and 'missings' fields.
-        if self.is_request_cached(request):
-            request.is_partially_cached = True
-            request.goodrepos = self._get_goodrepos_from_local(request)
-            request.missings = self.get_missings(request)
 
         # If the request do not build properly in both Intel platforms,
         # return False.
@@ -851,9 +781,7 @@ class CheckRepo(object):
             if r_foundfailed:
                 foundfailed = r_foundfailed
 
-        # If the request is partially cached, maybe there are some
-        # content in request.missings.
-        request.missings = sorted(set(request.missings) | missings)
+        request.missings = sorted(missings)
 
         if result:
             return True
