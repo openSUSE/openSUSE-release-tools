@@ -20,7 +20,6 @@
 from collections import defaultdict
 from collections import namedtuple
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -39,49 +38,8 @@ from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
 
 
-def _fix_local_cache(self, request, keys):
-    """Remove old package versions from the cache."""
-    def _cmp(x, y):
-        x = [int(i) for i in x.split('.')]
-        y = [int(i) for i in y.split('.')]
-        return cmp(x, y)
-
-    # Detect the most updated version
-    dirnames = set()
-    newest = (None, None, None, None)
-    for key in keys:
-        for full_filename in request.downloads[key]:
-            dirname = os.path.dirname(full_filename)
-            dirnames.add(dirname)
-
-            filename = os.path.basename(full_filename)
-            result = re.match(r'.*-([^-]*)-([^-]*)\.[^-\.]+\.rpm', filename)
-            if result:
-                version, revision = result.groups()
-                _, cversion, crevision, _ = newest
-                if (not cversion
-                   or _cmp(version, cversion) > 0
-                   or (not _cmp(version, cversion) and _cmp(revision, crevision) > 0)):
-                    newest = (key, version, revision, dirname)
-
-    # Remove the rest
-    most_updated_key, _, _, correct_dirname = newest
-    dirnames.remove(correct_dirname)
-    for dirname in dirnames:
-        shutil.rmtree(dirname)
-
-    return [most_updated_key]
-
-
 def _check_repo_download(self, request):
     request.downloads = defaultdict(list)
-
-    # Found cached version for the request, but the cache can be
-    # partial.  For example, in a rebuild we can have locally a
-    # working package.  So the download list needs to be updated with
-    # the local copies.
-    if request.is_partially_cached:
-        request.downloads = self.checkrepo._get_downloads_from_local(request)
 
     if request.build_excluded:
         return set()
@@ -284,16 +242,7 @@ def _check_repo_group(self, id_, requests, debug=False):
                 print 'DEBUG Keys', keys
 
             if keys:
-                # From time to time, a rebuild of a package can create
-                # another revision.  In this case can happend that an
-                # old revision of the package with a still valid
-                # DISTURL is also in the cache.  In this case
-                # `len(keys) > 1`, and one workaround is to take the
-                # newest package and remove the old one.
-                if len(keys) > 1:
-                    keys = self._fix_local_cache(rq, keys)
-                    if DEBUG_PLAN:
-                        print 'DEBUG Cleaning the cache. New keys', keys
+                assert len(keys) == 1, 'Found more than one candidate for the plan'
 
                 execution_plan[plan].append((rq, plan, rq.downloads[keys[0]]))
                 if DEBUG_PLAN:
@@ -531,3 +480,6 @@ def do_check_repo(self, subcmd, opts, *args):
         self._check_repo_group(id_, reqs, debug=opts.verbose)
         print
         print
+
+    # Makes sure to remove the cache for now
+    shutil.rmtree(CACHEDIR)
