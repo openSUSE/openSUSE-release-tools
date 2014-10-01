@@ -316,9 +316,6 @@ class ToTestBase(object):
 
         print 'current_snapshot', current_snapshot, self._result2str(current_result)
 
-        if current_result == QA_FAILED:
-            pass
-
         can_release = (current_result != QA_INPROGRESS and self.factory_snapshottable())
         
         # not overwriting
@@ -344,7 +341,6 @@ class ToTestBase(object):
 
 class ToTestFactory(ToTestBase):
     known_failures = [
-        'opensuse-FTT-DVD-i586-Build-update_13.1-kde@32bit',
         'opensuse-FTT-DVD-x86_64-Build-lvm@64bit',
         'opensuse-FTT-DVD-x86_64-Build-update_123@64bit',
         'opensuse-FTT-NET-i586-Build-lvm@32bit',
@@ -355,12 +351,12 @@ class ToTestFactory(ToTestBase):
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@64bit',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',  # broken in 20140828
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64',  # broken in 20140828
-        'opensuse-FTT-NET-i586-Build-memtest@32bit',  # broken in 20140904
         'opensuse-FTT-NET-x86_64-Build-zdup-13.2-M0@64bit', # broken in 20140915
         'opensuse-FTT-NET-i586-Build-zdup-13.1-kde@32bit', # broken in 20140915
-        'opensuse-FTT-GNOME-Live-x86_64-Build-gnome@64bit', # broken in 20140915
-        'opensuse-FTT-GNOME-Live-i686-Build-gnome@32bit', # broken in 20140915
         'opensuse-FTT-NET-x86_64-Build-zdup-13.1-gnome@64bit', # broken in 20140915
+        'opensuse-FTT-DVD-i586-Build-lxde@32bit', # broken in 20140928
+        'opensuse-FTT-DVD-x86_64-Build-lxde@64bit', # broken in 20140928
+        'opensuse-FTT-DVD-x86_64-Build-splitusr@64bit', # broken in 20140928
     ]
 
     def __init__(self, project):

@@ -11,7 +11,6 @@ import xml.etree.ElementTree as ET
 import re
 
 os.environ['OSC_CONFIG'] = os.path.expanduser('~/.oscrc-syncer')
-os.unlink(os.path.expanduser('~/.osc_cookiejar'))
 
 #initialize osc config
 osc.conf.get_config()
@@ -66,7 +65,7 @@ def create_submit(project=None, package=None, rev=None, md5=None):
     text  = "<request type='submit'>\n"
     text += " <submit>\n"
     text += " <source project='" + project + "' package='" + package + "' rev='" + md5 + "'/>\n"
-    text += " <target project='openSUSE:13.2'/>\n"
+    text += " <target project='openSUSE:13.2' package='" + package + "'/>\n"
     text += " </submit>\n"
     text += " <description>Submit revision " + rev + " of openSUSE:Factory/" + package + "</description>\n"
     text += "</request>"
@@ -151,4 +150,3 @@ for package in sorted(set(factory) | set(d132)):
         print "delete package 13.2/%s-%s" % ( package, d132[package] )
         create_delete(package)
 
-os.unlink(os.path.expanduser('~/.osc_cookiejar'))
