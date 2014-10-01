@@ -33,7 +33,7 @@ from osc import cmdln
 PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
 sys.path.append(PLUGINDIR)
 from osclib.checkrepo import CheckRepo
-from osclib.checkrepo import BINCACHE
+from osclib.checkrepo import BINCACHE, DOWNLOADS
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
 
@@ -399,6 +399,10 @@ def do_check_repo(self, subcmd, opts, *args):
     ${cmd_option_list}
     """
 
+    # Makes sure to remove the place where are the downloaded files
+    # (is not the cache)
+    shutil.rmtree(DOWNLOADS)
+
     self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly=opts.dry, debug=opts.verbose)
 
     if opts.skip:
@@ -480,6 +484,3 @@ def do_check_repo(self, subcmd, opts, *args):
         self._check_repo_group(id_, reqs, debug=opts.verbose)
         print
         print
-
-    # Makes sure to remove the cache for now
-    shutil.rmtree(CACHEDIR)

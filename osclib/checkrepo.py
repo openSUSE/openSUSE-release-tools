@@ -29,6 +29,7 @@ from osc.core import http_POST
 from osc.core import makeurl
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize
+from osclib.pkgcache import PkgCache
 
 
 # Directory where download binary packages.
@@ -123,6 +124,8 @@ class CheckRepo(object):
         self.apiurl = apiurl
         self.opensuse = opensuse
         self.staging = StagingAPI(apiurl, opensuse)
+
+        self.pkgcache = PkgCache(BINCACHE)
 
         # grouped = { id: staging, }
         self.grouped = {}
@@ -545,16 +548,18 @@ class CheckRepo(object):
     def _get_binary_file(self, project, repository, arch, package, filename, target, mtime):
         """Get a binary file from OBS."""
         # Check if the file is already there.
-        if os.path.exists(target):
-            # we need to check the mtime too as the file might get updated
-            cur = os.path.getmtime(target)
-            if cur > mtime:
-                return True
-
-        get_binary_file(self.apiurl, project, repository, arch,
-                        filename, package=package,
-                        target_filename=target)
-        return False
+        key = (project, repository, arch, package, filename, mtime)
+        if key in self.pkgcache:
+            try:
+                os.unlink(target)
+            except:
+                pass
+            self.pkgcache.linkto(key, target)
+        else:
+            get_binary_file(self.apiurl, project, repository, arch,
+                            filename, package=package,
+                            target_filename=target)
+            self.pkgcache[key] = target
 
     def _download(self, request, todownload):
         """Download the packages referenced in the 'todownload' list."""
