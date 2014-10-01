@@ -170,6 +170,11 @@ class OpenQAReport(object):
         if info['overall_state'] == 'empty':
             return
 
+        # The 'unacceptable' status means that the project will be
+        # replaced soon. Better do not disturb with noise.
+        if info['overall_state'] == 'unacceptable':
+            return
+
         report_broken_packages = self._report_broken_packages(info)
         report_openQA, some_openqa_fail = self._report_openQA(info)
 
