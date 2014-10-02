@@ -82,7 +82,14 @@ class OpenQAReport(object):
             status.extend(subproject['openqa_jobs'])
         return status
 
-    def update_status_comment(self, project, report):
+    def is_there_openqa_comment(self, project):
+        """Return True if there is a previous comment."""
+        signature = '<!-- openQA status -->'
+        comments = self.comment.get_comments(project_name=project)
+        comment = [c for c in comments.values() if signature in c['comment']]
+        return len(comment) > 0
+
+    def update_status_comment(self, project, report, force=False):
         signature = '<!-- openQA status -->'
         report = '%s\n%s' % (signature, str(report))
 
@@ -101,7 +108,9 @@ class OpenQAReport(object):
         elif not comment:
             write_comment = True
 
-        if write_comment:
+        if write_comment or force:
+            if osc.conf.config['debug']:
+                print 'Updating comment'
             self.comment.add_comment(project_name=project, comment=report)
 
     def _report_broken_packages(self, info):
@@ -161,6 +170,11 @@ class OpenQAReport(object):
         if info['overall_state'] == 'empty':
             return
 
+        # The 'unacceptable' status means that the project will be
+        # replaced soon. Better do not disturb with noise.
+        if info['overall_state'] == 'unacceptable':
+            return
+
         report_broken_packages = self._report_broken_packages(info)
         report_openQA, some_openqa_fail = self._report_openQA(info)
 
@@ -173,6 +187,13 @@ class OpenQAReport(object):
                     print '-' * len(project)
                     print report
                 self.update_status_comment(project, report)
+            elif not info['overall_state'] == 'acceptable' and self.is_there_openqa_comment(project):
+                report = 'Congratulations! All fine now.'
+                if osc.conf.config['debug']:
+                    print project
+                    print '-' * len(project)
+                    print report
+                self.update_status_comment(project, report, force=True)
 
 
 if __name__ == '__main__':
