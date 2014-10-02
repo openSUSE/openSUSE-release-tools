@@ -20,6 +20,7 @@ job install provides pattern() = office
 job install provides pattern() = minimal_base
 
 job install provides pattern() = rest_core_dvd
+job install provides virtualbox-guest-kmp
 
 job install name aaa_base-extras
 job install name branding-openSUSE
