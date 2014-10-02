@@ -219,7 +219,7 @@ class ToTestBase(object):
                 continue
             isosize = int(binary.get('size', 0))
             if isosize > maxsize:
-                print project, package, repository, arch, 'too large by %s bytes' % isosize-maxsize
+                print project, package, repository, arch, 'too large by %s bytes' % (isosize-maxsize)
                 return False
 
         return True
