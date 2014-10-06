@@ -401,7 +401,11 @@ def do_check_repo(self, subcmd, opts, *args):
 
     # Makes sure to remove the place where are the downloaded files
     # (is not the cache)
-    shutil.rmtree(DOWNLOADS)
+    try:
+        shutil.rmtree(DOWNLOADS)
+    except:
+        pass
+    os.makedirs(DOWNLOADS)
 
     self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly=opts.dry, debug=opts.verbose)
 
