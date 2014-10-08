@@ -98,17 +98,9 @@ class Checker(object):
             logger.debug("declining")
     
     def _check_factory(self, rev, package):
+        """check if factory sources contain the package and revision. check head and history"""
         logger.debug("checking %s in %s"%(package, self.factory))
-        u = osc.core.makeurl(self.apiurl, [ 'source', self.factory, package ])
-        r = None
-        try:
-            r = osc.core.http_GET(u)
-        except urllib2.HTTPError, e:
-            logger.debug("not found")
-            return None
-
-        root = ET.parse(r).getroot()
-        srcmd5 = root.get('srcmd5')
+        srcmd5 = self._get_verifymd5(self.factory, package)
         if rev == srcmd5:
             logger.debug("srcmd5 matches")
             return True
@@ -132,24 +124,19 @@ class Checker(object):
         return False
 
     def _check_requests(self, rev, package):
-#        xpath = 'submit/target/@project=\'%(project)s\'' \
-#            + 'submit/target/@package=\'%(package)s\'' \
-#            + 'and state/@name=\'new\'' \
-#            %{'project':self.factory, 'package': package}
-#        res = search(apiurl, request=xpath)
-#        collection = res['request']
-#            for root in collection.findall('request'):
-#        r = Request()
-#        r.read(root)
         logger.debug("checking requests")
-        requests = osc.core.get_request_list(self.apiurl, self.factory, package, None, ['new'], 'submit')
+        requests = osc.core.get_request_list(self.apiurl, self.factory, package, None, ['new', 'review'], 'submit')
         for req in requests:
             for a in req.actions:
                 rqrev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
                 logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, rqrev))
                 if rqrev == rev:
-                    logger.debug("srcmd5 matches")
-                    return True
+                    if req.state == 'new':
+                        logger.debug("request ok")
+                        return True
+                    else:
+                        logger.debug("request still in review")
+                        return None
         return False
 
     def _get_verifymd5(self, src_project, src_package, rev=None):
