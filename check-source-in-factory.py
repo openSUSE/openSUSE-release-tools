@@ -23,6 +23,7 @@ from pprint import pprint
 import os, sys, re
 import logging
 from optparse import OptionParser
+import cmdln
 
 try:
     from xml.etree import cElementTree as ET
@@ -33,29 +34,14 @@ import osc.conf
 import osc.core
 import urllib2
 
-parser = OptionParser()
-parser.add_option("--factory", metavar="project", help="the openSUSE Factory project")
-parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
-parser.add_option("--dry", action="store_true", help="dry run")
-parser.add_option("--debug", action="store_true", help="debug output")
-parser.add_option("--verbose", action="store_true", help="verbose")
-
-(options, args) = parser.parse_args()
-
-logging.basicConfig()
-logger = logging.getLogger("factorychecker")
-if (options.debug):
-    logger.setLevel(logging.DEBUG)
-elif (options.verbose):
-    logger.setLevel(logging.INFO)
-
 class Checker(object):
     requests = []
 
-    def __init__(self, apiurl = None, factory = None, dryrun = False):
+    def __init__(self, apiurl = None, factory = None, dryrun = False, logger = None):
         self.apiurl = apiurl
         self.factory = factory
         self.dryrun = dryrun
+        self.logger = logger
 
         if self.factory is None:
             self.factory = "openSUSE:Factory"
@@ -84,58 +70,61 @@ class Checker(object):
                 print >> sys.stderr, "unhandled request type %s"%a.type
 
     def _check_package(self, src_project, src_package, src_rev, target_project, target_package):
-        logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
+        self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         good = self._check_factory(src_rev, target_package)
 
         if not good:
             good = self._check_requests(src_rev, target_package)
 
         if good is None:
-            logger.debug("ignoring")
+            self.logger.debug("ignoring")
         elif good:
-            logger.debug("accepting")
+            self.logger.debug("accepting")
         else:
-            logger.debug("declining")
+            self.logger.debug("declining")
     
     def _check_factory(self, rev, package):
         """check if factory sources contain the package and revision. check head and history"""
-        logger.debug("checking %s in %s"%(package, self.factory))
+        self.logger.debug("checking %s in %s"%(package, self.factory))
         srcmd5 = self._get_verifymd5(self.factory, package)
-        if rev == srcmd5:
-            logger.debug("srcmd5 matches")
+        if srcmd5 is None:
+            self.logger.debug("new package")
+            return None
+        elif rev == srcmd5:
+            self.logger.debug("srcmd5 matches")
             return True
 
-        logger.debug("srcmd5 not the latest version, checking history")
+        self.logger.debug("srcmd5 not the latest version, checking history")
         u = osc.core.makeurl(self.apiurl, [ 'source', self.factory, package, '_history' ], { 'limit': '5' })
         try:
             r = osc.core.http_GET(u)
         except urllib2.HTTPError, e:
-            logger.debug("package has no history!?")
+            self.logger.debug("package has no history!?")
             return None
 
         root = ET.parse(r).getroot()
         for revision in root.findall('revision'):
             node = revision.find('srcmd5')
             if node and node.text == rev:
-                logger.debug("got it, rev %s"%revision.get('rev'))
+                self.logger.debug("got it, rev %s"%revision.get('rev'))
                 return True
 
-        logger.debug("srcmd5 not found in history either")
+        self.logger.debug("srcmd5 not found in history either")
         return False
 
     def _check_requests(self, rev, package):
-        logger.debug("checking requests")
+        self.logger.debug("checking requests")
         requests = osc.core.get_request_list(self.apiurl, self.factory, package, None, ['new', 'review'], 'submit')
         for req in requests:
             for a in req.actions:
                 rqrev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-                logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, rqrev))
+                self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, rqrev))
                 if rqrev == rev:
-                    if req.state == 'new':
-                        logger.debug("request ok")
+                    if req.state.name == 'new':
+                        self.logger.debug("request ok")
                         return True
                     else:
-                        logger.debug("request still in review")
+                        self.logger.debug("request still in review")
                         return None
         return False
 
@@ -153,13 +142,49 @@ class Checker(object):
             srcmd5 = root.get('verifymd5')
             return srcmd5
 
-osc.conf.get_config(override_apiurl = options.apiurl)
+class CommandLineInterface(cmdln.Cmdln):
+    def __init__(self, *args, **kwargs):
+        cmdln.Cmdln.__init__(self, args, kwargs)
 
-#if (options.debug):
-#    osc.conf.config['debug'] = 1
+    def get_optparser(self):
+        parser = cmdln.CmdlnOptionParser(self)
+        parser.add_option("--factory", metavar="project", help="the openSUSE Factory project")
+        parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
+        parser.add_option("--dry", action="store_true", help="dry run")
+        parser.add_option("--debug", action="store_true", help="debug output")
+        parser.add_option("--verbose", action="store_true", help="verbose")
 
-checker = Checker(apiurl = osc.conf.config['apiurl'], factory = options.factory, dryrun = options.dry)
-checker.set_request_ids(args)
-checker.check_requests()
+        return parser
+
+    def postoptparse(self):
+        logging.basicConfig()
+        self.logger = logging.getLogger(self.optparser.prog)
+        if (self.options.debug):
+            self.logger.setLevel(logging.DEBUG)
+        elif (self.options.verbose):
+            self.logger.setLevel(logging.INFO)
+
+        osc.conf.get_config(override_apiurl = self.options.apiurl)
+
+        #if (self.options.debug):
+        #    osc.conf.config['debug'] = 1
+
+        self.checker = Checker(apiurl = osc.conf.config['apiurl'], \
+                factory = self.options.factory, \
+                dryrun = self.options.dry, \
+                logger = self.logger)
+
+    def do_id(self, subcmd, opts, *args):
+        """${cmd_name}: print the status of working copy files and directories
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        self.checker.set_request_ids(args)
+        self.checker.check_requests()
+
+if __name__ == "__main__":
+    app = CommandLineInterface()
+    sys.exit( app.main() )
 
 # vim: sw=4 et
