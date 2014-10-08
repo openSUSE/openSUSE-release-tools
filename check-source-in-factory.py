@@ -37,11 +37,12 @@ import urllib2
 class Checker(object):
     requests = []
 
-    def __init__(self, apiurl = None, factory = None, dryrun = False, logger = None):
+    def __init__(self, apiurl = None, factory = None, dryrun = False, logger = None, user = None):
         self.apiurl = apiurl
         self.factory = factory
         self.dryrun = dryrun
         self.logger = logger
+        self.review_user = user
 
         if self.factory is None:
             self.factory = "openSUSE:Factory"
@@ -57,32 +58,58 @@ class Checker(object):
 
     def check_requests(self):
         for req in self.requests:
-            self._check_one_request(req)
+            good = self._check_one_request(req)
+
+            if good is None:
+                self.logger.debug("ignoring")
+            elif good:
+                self.logger.debug("%s is good"%req.reqid)
+                self._set_review(req, 'accepted')
+            else:
+                self.logger.debug("%s is not acceptable"%req.reqid)
+                self._set_review(req, 'declined')
+
+    def _set_review(self, req, state):
+        if not self.review_user:
+            return
+
+        review_state = self.get_review_state(req.reqid, self.review_user)
+        if review_state == 'new':
+            self.logger.debug("setting %s to %s"%(req.reqid, state))
+            if not self.dryrun:
+                change_review_state(self,apiurl, req.reqid, state, by_user=self.review_user, message='Factory submission ok')
+        elif review_state == '':
+            self.logger.info("can't change state, %s does not have '%s' as reviewer"%(req.reqid, self.review_user))
+        else:
+            self.logger.debug("%s review in state '%s' not changed"%(req.reqid, review_state))
 
     def _check_one_request(self, req):
+        overall = None
         for a in req.actions:
             if a.type == 'maintenance_incident':
-                self._check_package(a.src_project, a.src_package, a.src_rev, a.tgt_releaseproject, a.src_package)
+                ret = self._check_package(a.src_project, a.src_package, a.src_rev, a.tgt_releaseproject, a.src_package)
             elif a.type == 'submit':
                 rev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-                self._check_package(a.src_project, a.src_package, rev, a.tgt_package, a.tgt_package)
+                ret = self._check_package(a.src_project, a.src_package, rev, a.tgt_package, a.tgt_package)
             else:
-                print >> sys.stderr, "unhandled request type %s"%a.type
+                self.logger.error("unhandled request type %s"%a.type)
+                ret = None
+            if ret == False or overall is None and ret is not None:
+                overall = ret
+        return overall
 
     def _check_package(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         good = self._check_factory(src_rev, target_package)
 
-        if not good:
-            good = self._check_requests(src_rev, target_package)
+        if good:
+            return good
 
-        if good is None:
-            self.logger.debug("ignoring")
-        elif good:
-            self.logger.debug("accepting")
-        else:
-            self.logger.debug("declining")
-    
+        good = self._check_requests(src_rev, target_package)
+
+        return good
+
+
     def _check_factory(self, rev, package):
         """check if factory sources contain the package and revision. check head and history"""
         self.logger.debug("checking %s in %s"%(package, self.factory))
@@ -128,6 +155,7 @@ class Checker(object):
                         return None
         return False
 
+    # XXX used in other modules
     def _get_verifymd5(self, src_project, src_package, rev=None):
         query = { 'view': 'info' }
         if rev:
@@ -142,6 +170,18 @@ class Checker(object):
             srcmd5 = root.get('verifymd5')
             return srcmd5
 
+    # XXX used in other modules
+    def get_review_state(self, request_id, user):
+        """Return the current review state of the request."""
+        states = []
+        url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
+        try:
+            root = ET.parse(osc.core.http_GET(url)).getroot()
+            states = [review.get('state') for review in root.findall('review') if review.get('by_user') == user]
+        except urllib2.HTTPError, e:
+            print('ERROR in URL %s [%s]' % (url, e))
+        return states[0] if states else ''
+
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
@@ -150,6 +190,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser = cmdln.CmdlnOptionParser(self)
         parser.add_option("--factory", metavar="project", help="the openSUSE Factory project")
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
+        parser.add_option("--user",  metavar="USER", help="reviewer user name")
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--verbose", action="store_true", help="verbose")
@@ -172,6 +213,7 @@ class CommandLineInterface(cmdln.Cmdln):
         self.checker = Checker(apiurl = osc.conf.config['apiurl'], \
                 factory = self.options.factory, \
                 dryrun = self.options.dry, \
+                user = self.options.user, \
                 logger = self.logger)
 
     def do_id(self, subcmd, opts, *args):
