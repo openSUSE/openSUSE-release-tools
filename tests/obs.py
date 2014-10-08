@@ -57,12 +57,6 @@ def router_handler_DELETE(request, uri, headers):
     return router_handler(_table[httpretty.DELETE], 'DELETE', request, uri, headers)
 
 
-httpretty.register_uri(httpretty.GET, re.compile(r'.*'), body=router_handler_GET)
-httpretty.register_uri(httpretty.POST, re.compile(r'.*'), body=router_handler_POST)
-httpretty.register_uri(httpretty.PUT, re.compile(r'.*'), body=router_handler_PUT)
-httpretty.register_uri(httpretty.DELETE, re.compile(r'.*'), body=router_handler_DELETE)
-
-
 def method_decorator(method, path):
     def _decorator(fn):
         def _fn(*args, **kwargs):
@@ -94,9 +88,18 @@ class OBS(object):
 
     def __new__(cls, *args, **kwargs):
         """Class constructor."""
-        if not cls._self:
-            cls._self = super(OBS, cls).__new__(cls, *args, **kwargs)
-        return cls._self
+        if not OBS._self:
+            OBS._self = super(OBS, cls).__new__(cls, *args, **kwargs)
+
+        httpretty.reset()
+        httpretty.enable()
+
+        httpretty.register_uri(httpretty.GET, re.compile(r'.*'), body=router_handler_GET)
+        httpretty.register_uri(httpretty.POST, re.compile(r'.*'), body=router_handler_POST)
+        httpretty.register_uri(httpretty.PUT, re.compile(r'.*'), body=router_handler_PUT)
+        httpretty.register_uri(httpretty.DELETE, re.compile(r'.*'), body=router_handler_DELETE)
+
+        return OBS._self
 
     def __init__(self, fixtures=FIXTURES):
         """Instance constructor."""

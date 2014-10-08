@@ -1,0 +1,40 @@
+Maintenance Bot
+===============
+:author: Ludwig Nussel <ludwig.nussel@suse.de>
+:toc:
+
+
+Introduction
+------------
+[id="intro"]
+
+A review bot that handles maintenance incident requests.
+
+It's based on the generic ReviewBot.py
+
+Installation
+------------
+[id="install"]
+
+No installation. The bot can run directly from git.
+
+Command line
+------------
+[id="cli"]
+
+Check all request that have "maintbot" as reviewer:
+
+-------------------------------------------------------------------------------
+./check_maintenance_incidents.py review
+-------------------------------------------------------------------------------
+
+Checks done
+-----------
+[id="checks"]
+
+
+This bot accepts review requests if the author of the request is a known
+maintainer of the package in Factory. If not the devel project/package is set
+as reviewer.
+Furthermore the bot checks if the submission is for the CPE project. In that
+case it adds factory-source as reviewer.

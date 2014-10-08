@@ -1,0 +1,42 @@
+Factory Source Check
+====================
+:author: Ludwig Nussel <ludwig.nussel@suse.de>
+:toc:
+
+
+Introduction
+------------
+[id="intro"]
+
+A review bot that checks if the sources of a submission are either in Factory
+or a request for Factory with the same sources exist. If the latter a request
+is only accepted if the Factory request is reviewed positive.
+
+It's based on the generic ReviewBot.py
+
+Installation
+------------
+[id="install"]
+
+No installation. The bot can run directly from git.
+
+Command line
+------------
+[id="cli"]
+
+Check all request that have "factory-source" as reviewer:
+
+-------------------------------------------------------------------------------
+./check_source_in_factory.py review
+-------------------------------------------------------------------------------
+
+Checks done
+-----------
+[id="checks"]
+
+
+This bot accepts review requests if sources for a request are accepted in
+factory. Either at top, in the history or due to a submit request with the same
+sources in state new. If not the request is rejected unless a submission with
+the same sources in state review exists. In that case the bot doesn't touch the
+request.
