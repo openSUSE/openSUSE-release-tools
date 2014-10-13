@@ -86,6 +86,18 @@ def create_delete(package):
     #print text
     print osc.core.http_POST(url, data=text).read()
 
+def load_nos():
+    ret = set()
+    with open('nos') as f:
+        for line in f.readlines():
+            ret.add(line.strip())
+    return ret
+
+def save_nos(nos):
+    with open('nos', 'w') as f:
+        for key in nos:
+            f.write(key + "\n")
+
 def find_request_md5s(package):
     url = osc.core.makeurl(osc.conf.config['apiurl'], 
                            ['search', 'request'],
@@ -101,7 +113,7 @@ def find_request_md5s(package):
 factory = parse_prj('openSUSE:Factory')
 d132 = parse_prj('openSUSE:13.2')
 
-NOS = ()
+NOS = load_nos()
 
 for package in sorted(set(factory) | set(d132)):
     prompt = None
@@ -136,15 +148,19 @@ for package in sorted(set(factory) | set(d132)):
 
             prompt = "copy diffing package %s ?" % pmd5
 
-        print prompt
-
         md5 = srcmd5s[factory[package]]
         rev = revs[factory[package]]
         devprj = get_devel_project(package)
         if devprj == 'openSUSE:Factory':
             continue
             
-        create_submit(project=devprj, package=package, rev=rev, md5=md5)
+        print prompt
+        d = _getch()
+        if d == 'y':
+            create_submit(project=devprj, package=package, rev=rev, md5=md5)
+        elif d == 'n':
+            NOS.add(pmd5)
+            save_nos(NOS)
 
     else: # the 13.2 must have it
         print "delete package 13.2/%s-%s" % ( package, d132[package] )
