@@ -233,11 +233,7 @@ class ToTestBase(object):
             return False
 
         for product in ['_product:openSUSE-ftp-ftp-i586_x86_64',
-                        '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64',
-                        '_product:openSUSE-dvd5-dvd-i586',
-                        '_product:openSUSE-dvd5-dvd-x86_64',
-                        '_product:openSUSE-cd-mini-i586',
-                        '_product:openSUSE-cd-mini-x86_64']:
+                        '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64'] + self.main_products:
             if not self.package_ok('openSUSE:%s' % self.project, product, 'images', 'local'):
                 return False
 
@@ -354,10 +350,12 @@ class ToTestFactory(ToTestBase):
         'opensuse-FTT-NET-x86_64-Build-zdup-13.2-M0@64bit', # broken in 20140915
         'opensuse-FTT-NET-i586-Build-zdup-13.1-kde@32bit', # broken in 20140915
         'opensuse-FTT-NET-x86_64-Build-zdup-13.1-gnome@64bit', # broken in 20140915
-        'opensuse-FTT-DVD-i586-Build-lxde@32bit', # broken in 20140928
-        'opensuse-FTT-DVD-x86_64-Build-lxde@64bit', # broken in 20140928
-        'opensuse-FTT-DVD-x86_64-Build-splitusr@64bit', # broken in 20140928
     ]
+    
+    main_products = ['_product:openSUSE-dvd5-dvd-i586',
+                     '_product:openSUSE-dvd5-dvd-x86_64',
+                     '_product:openSUSE-cd-mini-i586',
+                     '_product:openSUSE-cd-mini-x86_64']
 
     def __init__(self, project):
         ToTestBase.__init__(self, project)
@@ -382,6 +380,15 @@ class ToTest132(ToTestBase):
     known_failures = [
     ]
 
+    main_products = ['_product:openSUSE-dvd5-dvd-i586',
+                     '_product:openSUSE-dvd5-dvd-x86_64',
+                     '_product:openSUSE-cd-mini-i586',
+                     '_product:openSUSE-cd-mini-x86_64',
+                     '_product:openSUSE-dvd5-dvd-promo-i586',
+                     '_product:openSUSE-dvd5-dvd-promo-x86_64',
+                     '_product:openSUSE-dvd9-dvd-biarch-i586_x86_64'
+    ]
+    
     # for 13.2 we take the build number of the FTP tree
     def current_version(self):
         for binary in self.binaries_of_product('openSUSE:%s' % self.project, '_product:openSUSE-ftp-ftp-i586_x86_64'):
