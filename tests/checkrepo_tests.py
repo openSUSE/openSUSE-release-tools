@@ -31,7 +31,7 @@ class TestCheckRepoCalls(unittest.TestCase):
         """Initialize the configuration."""
 
         self.obs = OBS()
-        self.checkrepo = CheckRepo(APIURL)
+        self.checkrepo = CheckRepo(APIURL, force_clean=True)
         # Des-memoize some functions
         self.checkrepo.build = self.checkrepo._build
         self.checkrepo.last_build_success = self.checkrepo._last_build_success

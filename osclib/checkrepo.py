@@ -119,13 +119,13 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl, opensuse='Factory', readonly=False, debug=False):
+    def __init__(self, apiurl, opensuse='Factory', readonly=False, force_clean=False, debug=False):
         """CheckRepo constructor."""
         self.apiurl = apiurl
         self.opensuse = opensuse
         self.staging = StagingAPI(apiurl, opensuse)
 
-        self.pkgcache = PkgCache(BINCACHE)
+        self.pkgcache = PkgCache(BINCACHE, force_clean=force_clean)
 
         # grouped = { id: staging, }
         self.grouped = {}
