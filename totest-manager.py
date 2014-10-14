@@ -183,6 +183,9 @@ class ToTestBase(object):
         if re.match(r'.*-image-livecd.*', package):
             return 999999999  # a GB stick
 
+        if re.match(r'.*-dvd9-dvd-.*', package):
+            return 8539996159
+
         if package == '_product:openSUSE-ftp-ftp-i586_x86_64':
             return None
 
