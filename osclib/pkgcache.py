@@ -24,6 +24,7 @@ except:
     import pickle
 import shelve
 import shutil
+import time
 from UserDict import DictMixin
 
 
@@ -40,6 +41,8 @@ class PkgCache(DictMixin):
 
         if not os.path.exists(self.cachedir):
             os.makedirs(self.cachedir)
+
+        self._clean_cache()
 
     def _lock(self, filename):
         """Get a lock for the index file."""
@@ -65,22 +68,33 @@ class PkgCache(DictMixin):
         index.close()
         self._unlock(index.lckfile)
 
-    # def _clean_cache(self, index=None):
-    #     """Remove elements in the cache that thare the same prefix of the key
-    #     (all except the mtime), and keep the latest one.
+    def _clean_cache(self, ttl=14*24*60*60, index=None):
+        """Remove elements in the cache that share the same prefix of the key
+        (all except the mtime), and keep the latest one.  Also remove
+        old entries based on the TTL.
 
-    #     """
-    #     _i = self._open_index() if not index else index
-    #     keys = sorted(_i)
+        """
+        _i = self._open_index() if index is None else index
 
-    #     last = []
-    #     for key in keys:
-    #         if last[:-1] == key[:-1]:
-    #             self.__delitem__(key, _i)
-    #         last = key
+        # Ugly hack to assure that the key is serialized always with
+        # the same pickle format.  Pickle do not guarantee that the
+        # same object is serialized always in the same string.
+        skeys = {pickle.loads(key): key for key in _i}
+        keys = sorted(skeys)
 
-    #     if not index:
-    #         self._close_index(_i)
+        now = int(time.time())
+        last = None
+        for key in keys:
+            if last and last[:-1] == key[:-1]:
+                self.__delitem__(key=skeys[last], skey=True, index=_i)
+                last = key
+            elif now - key[-1] >= ttl:
+                self.__delitem__(key=skeys[key], skey=True, index=_i)
+            else:
+                last = key
+
+        if index is None:
+            self._close_index(_i)
 
     def __getitem__(self, key, index=None):
         """Get a element in the cache.
@@ -89,11 +103,14 @@ class PkgCache(DictMixin):
         (project, repository, arch, package, filename, mtime)
 
         """
-        _i = self._open_index() if not index else index
+        _i = self._open_index() if index is None else index
+
         key = pickle.dumps(key, protocol=-1)
         value = pickle.loads(_i[key])
-        if not index:
+
+        if index is None:
             self._close_index(_i)
+
         return value
 
     def __setitem__(self, key, value, index=None):
@@ -101,7 +118,8 @@ class PkgCache(DictMixin):
         path of file.
 
         """
-        _i = self._open_index() if not index else index
+        _i = self._open_index() if index is None else index
+
         key = pickle.dumps(key, protocol=-1)
 
         original_value = value
@@ -128,13 +146,14 @@ class PkgCache(DictMixin):
                 os.makedirs(dirname)
             os.link(original_value, cache_fn)
 
-        if not index:
+        if index is None:
             self._close_index(_i)
 
-    def __delitem__(self, key, index=None):
+    def __delitem__(self, key, skey=False, index=None):
         """Remove a file from the cache."""
-        _i = self._open_index() if not index else index
-        key = pickle.dumps(key, protocol=-1)
+        _i = self._open_index() if index is None else index
+
+        key = pickle.dumps(key, protocol=-1) if not skey else key
         value = pickle.loads(_i[key])
 
         md5, _ = value
@@ -154,19 +173,22 @@ class PkgCache(DictMixin):
 
         del _i[key]
 
-        if not index:
+        if index is None:
             self._close_index(_i)
 
     def keys(self, index=None):
-        _i = self._open_index() if not index else index
+        _i = self._open_index() if index is None else index
+
         keys = [pickle.loads(key) for key in _i]
-        if not index:
+
+        if index is None:
             self._close_index(_i)
+
         return keys
 
     def linkto(self, key, target, index=None):
         """Create a link between the cached object and the target"""
-        _i = self._open_index() if not index else index
+        _i = self._open_index() if index is None else index
 
         md5, filename = self.__getitem__(key, index=_i)
         if filename != target:
@@ -175,6 +197,5 @@ class PkgCache(DictMixin):
         cache_fn = os.path.join(self.cachedir, md5[:2], md5[2:])
         os.link(cache_fn, target)
 
-        if not index:
+        if index is None:
             self._close_index(_i)
- 
