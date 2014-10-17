@@ -485,6 +485,10 @@ def do_check_repo(self, subcmd, opts, *args):
     # Sort the groups, from high to low. This put first the stating
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
-        self._check_repo_group(id_, reqs, debug=opts.verbose)
+        try:
+            self._check_repo_group(id_, reqs, debug=opts.verbose)
+        except Exception as e:
+            print 'ERROR -- An exception happends while checking a group'
+            print e
         print
         print
