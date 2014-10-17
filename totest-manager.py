@@ -281,10 +281,7 @@ class ToTestBase(object):
                    'kiwi-image-livecd-x11']:
             self.release_package('openSUSE:%s:Live' % self.project, cd, set_release='Snapshot%s' % snapshot)
 
-        for cd in ['_product:openSUSE-dvd5-dvd-i586',
-                   '_product:openSUSE-dvd5-dvd-x86_64',
-                   '_product:openSUSE-cd-mini-i586',
-                   '_product:openSUSE-cd-mini-x86_64']:
+        for cd in self.main_products:
             self.release_package('openSUSE:%s' % self.project, cd, set_release='Snapshot%s' % snapshot)
 
     def publish_factory_totest(self):
