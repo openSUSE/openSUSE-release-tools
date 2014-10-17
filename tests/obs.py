@@ -95,9 +95,9 @@ class OBS(object):
 
     def __new__(cls, *args, **kwargs):
         """Class constructor."""
-        if not cls._self:
-            cls._self = super(OBS, cls).__new__(cls, *args, **kwargs)
-        return cls._self
+        if not OBS._self:
+            OBS._self = super(OBS, cls).__new__(cls, *args, **kwargs)
+        return OBS._self
 
     def __init__(self, fixtures=FIXTURES):
         """Instance constructor."""
