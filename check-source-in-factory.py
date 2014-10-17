@@ -77,7 +77,7 @@ class Checker(object):
         if review_state == 'new':
             self.logger.debug("setting %s to %s"%(req.reqid, state))
             if not self.dryrun:
-                change_review_state(self,apiurl, req.reqid, state, by_user=self.review_user, message='Factory submission ok')
+                osc.core.change_review_state(self.apiurl, req.reqid, state, by_user=self.review_user, message='Factory submission ok')
         elif review_state == '':
             self.logger.info("can't change state, %s does not have '%s' as reviewer"%(req.reqid, self.review_user))
         else:
@@ -150,8 +150,11 @@ class Checker(object):
                     if req.state.name == 'new':
                         self.logger.debug("request ok")
                         return True
-                    else:
+                    elif req.state.name == 'review':
                         self.logger.debug("request still in review")
+                        return None
+                    else:
+                        self.logger.error("request in state %s not expected"%req.state.name)
                         return None
         return False
 
