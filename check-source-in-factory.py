@@ -193,6 +193,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--user",  metavar="USER", help="reviewer user name")
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
+        parser.add_option("--osc-debug", action="store_true", help="debug osc requests")
         parser.add_option("--verbose", action="store_true", help="verbose")
 
         return parser
@@ -207,8 +208,8 @@ class CommandLineInterface(cmdln.Cmdln):
 
         osc.conf.get_config(override_apiurl = self.options.apiurl)
 
-        #if (self.options.debug):
-        #    osc.conf.config['debug'] = 1
+        if (self.options.osc_debug):
+            osc.conf.config['debug'] = 1
 
         self.checker = Checker(apiurl = osc.conf.config['apiurl'], \
                 factory = self.options.factory, \
