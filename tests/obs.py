@@ -7,6 +7,7 @@ import xml.etree.cElementTree as ET
 
 import httpretty
 import osc
+import osc.core
 
 
 APIURL = 'https://localhost'
@@ -363,7 +364,7 @@ class OBS(object):
         response = (404, headers, '<result>Not found</result>')
         try:
             template = string.Template(self._fixture(uri))
-            response = (200, headers, template.substitute(self.requests[request_id]))
+            response = (200, headers, template.substitute(self.requests[request_id] if request_id in self.requests else dict()))
         except Exception as e:
             if DEBUG:
                 print uri, e
@@ -523,6 +524,59 @@ class OBS(object):
             print 'SOURCE WINE', uri, response
 
         return response
+
+    @GET(re.compile(r'/source/(?:Base:System|openSUSE:Factory)/timezone'))
+    def source_base_system_timezone(self, request, uri, headers):
+        """Return timezone package information. Is a link."""
+        response = (404, headers, '<result>Not found</result>')
+        u = urlparse.urlparse(uri)
+        if (u.path.startswith('/source/Base:System')):
+            if u.query == 'rev=481ecbe0dfc63ece3a1f1b5598f7d96c&view=info':
+                response = (200, headers, """
+                    <sourceinfo package="timezone"
+                        rev="481ecbe0dfc63ece3a1f1b5598f7d96c"
+                        srcmd5="481ecbe0dfc63ece3a1f1b5598f7d96c"
+                        verifymd5="67bac34d29d70553239d33aaf92d2fdd">
+                      <filename>timezone.spec</filename>
+                    </sourceinfo>
+                    """)
+            else:
+                print 'REQUEST', uri
+                assert False
+        elif (u.path.startswith('/source/openSUSE:Factory')):
+            if u.path.endswith('/_history'):
+                    response = (200, headers, """
+                        <revisionlist>
+                          <revision rev="85" vrev="1">
+                            <srcmd5>8fbd89c09bb7611e4da38a64d7c7ec7f</srcmd5>
+                            <version>2014c</version>
+                            <time>1400783885</time>
+                            <user>coolo</user>
+                            <comment>Update to 2014c (bnc#877535) (forwarded request 233760 from leonardocf)</comment>
+                            <requestid>233811</requestid>
+                          </revision>
+                        </revisionlist>
+                    """)
+            else:
+                if u.query == 'view=info':
+                    response = (200, headers, """
+                        <sourceinfo package="timezone"
+                            rev="89"
+                            vrev="1"
+                            srcmd5="a36605617cbeefa8168bf0ccf3058074"
+                            verifymd5="a36605617cbeefa8168bf0ccf3058074">
+                          <filename>timezone.spec</filename>
+                        </sourceinfo>
+                        """)
+                else:
+                    print 'REQUEST', uri
+                    assert False
+
+        if DEBUG:
+            print 'REQUEST', uri, response
+
+        return response
+
 
     @DELETE(re.compile('/source/openSUSE:Factory:Staging:[B|C]/\w+'))
     def delete_package(self, request, uri, headers):
