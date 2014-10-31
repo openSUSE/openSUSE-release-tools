@@ -38,6 +38,7 @@ from osclib.checkrepo import CheckRepo
 from osclib.checkrepo import BINCACHE, DOWNLOADS
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
+from osclib.request_finder import RequestFinder
 
 
 def _check_repo_download(self, request):
@@ -423,14 +424,24 @@ def do_check_repo(self, subcmd, opts, *args):
             self.checkrepo.remove_link_if_shadow_devel(_request)
         return
 
-    prjs = [arg for arg in args if not arg.isdigit()]
+    prjs_or_pkg = [arg for arg in args if not arg.isdigit()]
     ids = [arg for arg in args if arg.isdigit()]
 
-    # Recover the requests that are for this project and expand ids.
-    for prj in prjs:
-        prj = self.checkrepo.staging.prj_from_letter(prj)
-        meta = self.checkrepo.staging.get_prj_pseudometa(prj)
-        ids.extend(rq['id'] for rq in meta['requests'])
+    # Recover the requests that are for this project or package and
+    # expand ids.
+    for pop in prjs_or_pkg:
+        # We try it as a project first
+        as_prj = pop
+        if ':' not in as_prj:
+            as_prj = self.checkrepo.staging.prj_from_letter(as_prj)
+        try:
+            meta = self.checkrepo.staging.get_prj_pseudometa(as_prj)
+            ids.extend(rq['id'] for rq in meta['requests'])
+        except:
+            # Now as a package
+            as_pkg = pop
+            srs = RequestFinder.find_sr([as_pkg], self.checkrepo.staging)
+            ids.extend(srs.keys())
 
     # Store requests' package information and .spec files: store all
     # source containers involved.
