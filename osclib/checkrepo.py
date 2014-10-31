@@ -899,10 +899,16 @@ class CheckRepo(object):
         url = makeurl(self.apiurl, ('request', str(request.request_id)))
         root = ET.parse(http_GET(url)).getroot()
 
+        who = None
         state = root.find('state')
-        if state.get('name') == 'new':
-            return state.get('who')
-        return root.find('history').get('who')
+        try:
+            if state.get('name') == 'new':
+                who = state.get('who')
+            else:
+                who = root.find('history').get('who')
+        except Exception:
+            who = None
+        return who
 
     def is_secure_to_delete(self, request):
         """Return True is the request is secure to remove:
