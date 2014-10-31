@@ -23,8 +23,10 @@ import os
 import shutil
 import subprocess
 import tempfile
+import traceback
 import sys
 
+import osc
 from osc import oscerr
 from osc import cmdln
 
@@ -488,7 +490,8 @@ def do_check_repo(self, subcmd, opts, *args):
         try:
             self._check_repo_group(id_, reqs, debug=opts.verbose)
         except Exception as e:
-            print 'ERROR -- An exception happends while checking a group'
-            print e
+            print 'ERROR -- An exception happends while checking a group [%s]' % e
+            if osc.conf.config['debug']:
+                print traceback.format_exc()
         print
         print
