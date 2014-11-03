@@ -343,14 +343,17 @@ class ToTestFactory(ToTestBase):
         'opensuse-FTT-NET-x86_64-Build-update_121@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_122@64bit',
         'opensuse-FTT-NET-x86_64-Build-update_123@64bit',
-        'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@USBboot_64',  # broken in 20140828
         'opensuse-FTT-NET-x86_64-Build-zdup-13.2-M0@64bit', # broken in 20140915
         'opensuse-FTT-NET-i586-Build-zdup-13.1-kde@32bit', # broken in 20140915
         'opensuse-FTT-NET-x86_64-Build-zdup-13.1-gnome@64bit', # broken in 20140915
         'opensuse-FTT-Rescue-CD-x86_64-Build-rescue@uefi-usb',
         'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@uefi-usb',
         'opensuse-FTT-GNOME-Live-x86_64-Build-gnome-live@uefi-usb',
-        'opensuse-FTT-DVD-x86_64-Build-gnome@Laptop_64'
+        'opensuse-FTT-KDE-Live-x86_64-Build-kde-live@USBboot_64',
+        'opensuse-FTT-KDE-Live-i686-Build-mediacheck@32bit',
+        'opensuse-FTT-GNOME-Live-i686-Build-mediacheck@32bit',
+        'opensuse-FTT-KDE-Live-x86_64-Build-mediacheck@64bit',
+        'opensuse-FTT-GNOME-Live-x86_64-Build-mediacheck@64bit'
     ]
     
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
