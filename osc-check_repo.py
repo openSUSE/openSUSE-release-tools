@@ -186,7 +186,8 @@ def _check_repo_group(self, id_, requests, debug=False):
                 package = '#[%s](%s)' % (request, package)
             smissing.append(package)
         if len(smissing):
-            msg = 'Please make sure to wait before these depencencies are in %s: %s' % (rq.tgt_project, ', '.join(smissing))
+            msg = 'Please make sure to wait before these depencencies are in %s: %s [%s]' % (
+                rq.tgt_project, ', '.join(smissing), rq.tgt_package)
             if not rq.updated:
                 self.checkrepo.change_review_state(rq.request_id, 'new', message=msg)
                 print ' - %s' % msg
