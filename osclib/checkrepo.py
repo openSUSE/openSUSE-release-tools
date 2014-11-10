@@ -910,15 +910,21 @@ class CheckRepo(object):
             who = None
         return who
 
-    def is_secure_to_delete(self, request):
+    def is_safe_to_delete(self, request):
         """Return True is the request is secure to remove:
 
         - Nothing depends on the package anymore.
         - The request originates by the package maintainer.
 
         """
+        reasons = []
         whatdependson = self._whatdependson(request)
         maintainers = self._maintainers(request)
         author = self._author(request)
 
-        return (not whatdependson) and author in maintainers
+        if whatdependson:
+            reasons.append('There are packages that depends on this package: %s' % ', '.join(whatdependson))
+        if author not in maintainers:
+            reasons.append('The author (%s) is not one of the maintainers (%s)' % (author,
+                                                                                   ', '.join(maintainers)))
+        return '. '.join(reasons)

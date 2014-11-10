@@ -143,8 +143,9 @@ def _check_repo_group(self, id_, requests, debug=False):
             i = self.checkrepo._toignore(rq)
             # We also check that nothing depends on the package and
             # that the request originates by the package maintainer
-            if not self.checkrepo.is_secure_to_delete(rq):
-                rq.error = 'This request is not secure to remove. Check dependencies or author.'
+            error_delete = self.checkrepo.is_safe_to_delete(rq)
+            if error_delete:
+                rq.error = 'This request is not safe to remove. %s' % error_delete
                 print ' - %s' % rq.error
                 rq.updated = True
         else:
@@ -228,8 +229,8 @@ def _check_repo_group(self, id_, requests, debug=False):
 
     if not all_good_downloads:
         print ' - No matching downloads for disturl found.'
-        if len(packs) == 1 and packs[0].src_package in ('rpmlint-tests'):
-            print ' - %s known to have no installable rpms, skipped' % packs[0].src_package
+        if len(packs) == 1 and packs[0].tgt_package in ('rpmlint-tests'):
+            print ' - %s known to have no installable rpms, skipped' % packs[0].tgt_package
         return
 
     for project, repo in all_good_downloads:
