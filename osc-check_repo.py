@@ -23,8 +23,10 @@ import os
 import shutil
 import subprocess
 import tempfile
+import traceback
 import sys
 
+import osc
 from osc import oscerr
 from osc import cmdln
 
@@ -36,6 +38,7 @@ from osclib.checkrepo import CheckRepo
 from osclib.checkrepo import BINCACHE, DOWNLOADS
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
+from osclib.request_finder import RequestFinder
 
 
 def _check_repo_download(self, request):
@@ -140,8 +143,9 @@ def _check_repo_group(self, id_, requests, debug=False):
             i = self.checkrepo._toignore(rq)
             # We also check that nothing depends on the package and
             # that the request originates by the package maintainer
-            if not self.checkrepo.is_secure_to_delete(rq):
-                rq.error = 'This request is not secure to remove. Check dependencies or author.'
+            error_delete = self.checkrepo.is_safe_to_delete(rq)
+            if error_delete:
+                rq.error = 'This request is not safe to remove. %s' % error_delete
                 print ' - %s' % rq.error
                 rq.updated = True
         else:
@@ -183,7 +187,8 @@ def _check_repo_group(self, id_, requests, debug=False):
                 package = '#[%s](%s)' % (request, package)
             smissing.append(package)
         if len(smissing):
-            msg = 'Please make sure to wait before these depencencies are in %s: %s' % (rq.tgt_project, ', '.join(smissing))
+            msg = 'Please make sure to wait before these depencencies are in %s: %s [%s]' % (
+                rq.tgt_project, ', '.join(smissing), rq.tgt_package)
             if not rq.updated:
                 self.checkrepo.change_review_state(rq.request_id, 'new', message=msg)
                 print ' - %s' % msg
@@ -224,8 +229,8 @@ def _check_repo_group(self, id_, requests, debug=False):
 
     if not all_good_downloads:
         print ' - No matching downloads for disturl found.'
-        if len(packs) == 1 and packs[0].src_package in ('rpmlint-tests'):
-            print ' - %s known to have no installable rpms, skipped' % packs[0].src_package
+        if len(packs) == 1 and packs[0].tgt_package in ('rpmlint-tests'):
+            print ' - %s known to have no installable rpms, skipped' % packs[0].tgt_package
         return
 
     for project, repo in all_good_downloads:
@@ -421,14 +426,24 @@ def do_check_repo(self, subcmd, opts, *args):
             self.checkrepo.remove_link_if_shadow_devel(_request)
         return
 
-    prjs = [arg for arg in args if not arg.isdigit()]
+    prjs_or_pkg = [arg for arg in args if not arg.isdigit()]
     ids = [arg for arg in args if arg.isdigit()]
 
-    # Recover the requests that are for this project and expand ids.
-    for prj in prjs:
-        prj = self.checkrepo.staging.prj_from_letter(prj)
-        meta = self.checkrepo.staging.get_prj_pseudometa(prj)
-        ids.extend(rq['id'] for rq in meta['requests'])
+    # Recover the requests that are for this project or package and
+    # expand ids.
+    for pop in prjs_or_pkg:
+        # We try it as a project first
+        as_prj = pop
+        if ':' not in as_prj:
+            as_prj = self.checkrepo.staging.prj_from_letter(as_prj)
+        try:
+            meta = self.checkrepo.staging.get_prj_pseudometa(as_prj)
+            ids.extend(rq['id'] for rq in meta['requests'])
+        except:
+            # Now as a package
+            as_pkg = pop
+            srs = RequestFinder.find_sr([as_pkg], self.checkrepo.staging)
+            ids.extend(srs.keys())
 
     # Store requests' package information and .spec files: store all
     # source containers involved.
@@ -485,6 +500,11 @@ def do_check_repo(self, subcmd, opts, *args):
     # Sort the groups, from high to low. This put first the stating
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
-        self._check_repo_group(id_, reqs, debug=opts.verbose)
+        try:
+            self._check_repo_group(id_, reqs, debug=opts.verbose)
+        except Exception as e:
+            print 'ERROR -- An exception happends while checking a group [%s]' % e
+            if osc.conf.config['debug']:
+                print traceback.format_exc()
         print
         print

@@ -235,7 +235,7 @@ class CycleDetector(object):
             project = 'openSUSE:{}'.format(self.api.opensuse)
 
         # filter submit requests
-        requests = [rq for rq in requests if rq.action_type == 'submit']
+        requests = [rq for rq in requests if rq.action_type == 'submit' and not rq.updated]
 
         # Detect cycles - We create the full graph from _builddepinfo.
         factory_graph = self._get_builddepinfo_graph(project, repository, arch)

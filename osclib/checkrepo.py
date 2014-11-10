@@ -899,20 +899,32 @@ class CheckRepo(object):
         url = makeurl(self.apiurl, ('request', str(request.request_id)))
         root = ET.parse(http_GET(url)).getroot()
 
+        who = None
         state = root.find('state')
-        if state.get('name') == 'new':
-            return state.get('who')
-        return root.find('history').get('who')
+        try:
+            if state.get('name') == 'new':
+                who = state.get('who')
+            else:
+                who = root.find('history').get('who')
+        except Exception:
+            who = None
+        return who
 
-    def is_secure_to_delete(self, request):
+    def is_safe_to_delete(self, request):
         """Return True is the request is secure to remove:
 
         - Nothing depends on the package anymore.
         - The request originates by the package maintainer.
 
         """
+        reasons = []
         whatdependson = self._whatdependson(request)
         maintainers = self._maintainers(request)
         author = self._author(request)
 
-        return (not whatdependson) and author in maintainers
+        if whatdependson:
+            reasons.append('There are packages that depends on this package: %s' % ', '.join(whatdependson))
+        if author not in maintainers:
+            reasons.append('The author (%s) is not one of the maintainers (%s)' % (author,
+                                                                                   ', '.join(maintainers)))
+        return '. '.join(reasons)
