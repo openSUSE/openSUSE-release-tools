@@ -44,19 +44,21 @@ from osclib.request_finder import RequestFinder
 def _check_repo_download(self, request):
     request.downloads = defaultdict(list)
 
-    if request.build_excluded:
-        return set()
+    if not request.build_excluded:
+        arch = 'x86_64'
+    else:
+        arch = 'i586'
 
     ToDownload = namedtuple('ToDownload', ('project', 'repo', 'arch', 'package', 'size'))
 
     for i, goodrepo in enumerate(request.goodrepos):
         repo = goodrepo[1]
 
-        # we can assume x86_64 is there
-        todownload = [ToDownload(request.shadow_src_project, repo, 'x86_64',
+        # we assume x86_64 is there unless build is excluded
+        todownload = [ToDownload(request.shadow_src_project, repo, arch,
                                  fn[0], fn[3]) for fn in
                       self.checkrepo.get_package_list_from_repository(
-                          request.shadow_src_project, repo, 'x86_64',
+                          request.shadow_src_project, repo, arch,
                           request.src_package)]
 
         self.checkrepo._download(request, todownload)
@@ -65,10 +67,10 @@ def _check_repo_download(self, request):
 
     staging_prefix = 'openSUSE:{}:Staging:'.format(self.checkrepo.opensuse)
     if staging_prefix in str(request.group):
-        todownload = [ToDownload(request.group, 'standard', 'x86_64',
+        todownload = [ToDownload(request.group, 'standard', arch,
                                  fn[0], fn[3]) for fn in
                       self.checkrepo.get_package_list_from_repository(
-                          request.group, 'standard', 'x86_64',
+                          request.group, 'standard', arch,
                           request.src_package)]
 
         self.checkrepo._download(request, todownload)
