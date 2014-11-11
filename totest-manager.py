@@ -42,6 +42,9 @@ class ToTestBase(object):
     def openqa_version(self):
         return self.project
 
+    def iso_prefix(self):
+        return self.project
+
     def binaries_of_product(self, project, product):
         url = self.api.makeurl(['build', project, 'images', 'local', product])
         try:
@@ -61,7 +64,7 @@ class ToTestBase(object):
 
         # for now we hardcode all kind of things
         for binary in self.binaries_of_product('openSUSE:%s:ToTest' % self.project, '_product:openSUSE-cd-mini-i586'):
-            result = re.match(r'openSUSE-%s-NET-i586-Snapshot(.*)-Media.iso' % self.project,
+            result = re.match(r'openSUSE-%s-NET-i586-Snapshot(.*)-Media.iso' % self.iso_prefix(),
                               binary)
             if result:
                 return result.group(1)
@@ -366,6 +369,9 @@ class ToTestFactory(ToTestBase):
 
     def openqa_version(self):
         return 'FTT'
+
+    def iso_prefix(self):
+        return 'Tumbleweed'
 
     # for Factory we check the version of the release package
     def current_version(self):
