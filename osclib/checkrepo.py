@@ -944,6 +944,13 @@ class CheckRepo(object):
             who = None
         return who
 
+    def _project_maintainer(self, request):
+        """Get the list of maintainer of the target project."""
+        url = makeurl(self.apiurl, ('source', request.tgt_project, '_meta'))
+        root = ET.parse(http_GET(url)).getroot()
+        persons = [e.get('userid') for e in root.findall('.//person') if e.get('role') == 'maintainer']
+        return persons
+
     def is_safe_to_delete(self, request):
         """Return True is the request is secure to remove:
 
@@ -953,19 +960,16 @@ class CheckRepo(object):
         """
         reasons = []
         whatdependson = self._whatdependson(request)
-        # maintainers = self._maintainers(request)
-        # author = self._author(request)
+        maintainers = self._maintainers(request)
+        author = self._author(request)
+        prj_maintainers = self._project_maintainer(request)
 
         for dep in whatdependson:
             deps = self._builddepinfo(request.tgt_project, dep)
             if request.tgt_package in deps:
                 reasons.append('%s still depends on %s in %s' % (dep, request.tgt_package, request.tgt_project))
 
-        # XXX TODO - Do not fail because of the author. I need to
-        # figure out how to detect the maintainers in the target
-        # project.
-
-        # if author not in maintainers:
-        #     reasons.append('The author (%s) is not one of the maintainers (%s)' % (author,
-        #                                                                            ', '.join(maintainers)))
+        if author not in maintainers and author not in prj_maintainers:
+            reasons.append('The author (%s) is not one of the maintainers (%s) or a project maintainer in %s' % (
+                author, ', '.join(maintainers), request.tgt_project))
         return '. '.join(reasons)
