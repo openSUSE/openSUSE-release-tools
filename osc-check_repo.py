@@ -136,7 +136,7 @@ def _check_repo_group(self, id_, requests, debug=False):
 
     # Download the repos from the request of the same group not
     # explicited in the command line.
-    for rq in packs:
+    for rq in packs[:]:
         if rq.request_id in fetched and fetched[rq.request_id]:
             continue
         i = set()
@@ -147,9 +147,20 @@ def _check_repo_group(self, id_, requests, debug=False):
             # that the request originates by the package maintainer
             error_delete = self.checkrepo.is_safe_to_delete(rq)
             if error_delete:
-                rq.error = 'This request is not safe to remove. %s' % error_delete
+                rq.error = 'This delete request is not safe to accept yet, ' \
+                           'please wait until the reasons dissapear in the ' \
+                           'target project. %s' % error_delete
                 print ' - %s' % rq.error
+                self.checkrepo.change_review_state(request.request_id, 'new', message=request.error)
                 rq.updated = True
+            else:
+                msg = 'Request is safe %s' % rq
+                print 'ACCEPTED', msg
+                self.checkrepo.change_review_state(rq.request_id, 'accepted', message=msg)
+
+            # Remove it from the packs, so do not interfere with the
+            # rest of the check.
+            packs.remove(rq)
         else:
             # we need to call it to fetch the good repos to download
             # but the return value is of no interest right now.
