@@ -1,0 +1,11 @@
+<request id="770002">
+  <action type="submit">
+    <source project="devel:openSUSE:Factory:rpmlint" package="rpmlint" rev="d006843ef05feffbe49cf1336f73bed7"/>
+    <target project="openSUSE:13.2" package="rpmlint"/>
+  </action>
+  <state name="new" who="factory-auto" when="2014-10-08T12:06:07">
+    <comment>...</comment>
+  </state>
+  <review state="new" by_user="factory-reviewed-source"/>
+  <description>...</description>
+</request>

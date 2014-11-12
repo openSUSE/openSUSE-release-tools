@@ -1,0 +1,28 @@
+<request id="770003">
+  <action type="submit">
+    <source project="devel:openSUSE:Factory:rpmlint" package="rpmlint" rev="298"/>
+    <target project="openSUSE:Factory" package="rpmlint"/>
+  </action>
+  <state name="new" who="babelworx" when="2014-10-08T09:31:25">
+    <comment></comment>
+  </state>
+  <review state="accepted" when="2014-09-24T19:18:40" who="licensedigger" by_group="legal-auto">
+    <comment>...</comment>
+  </review>
+  <review state="accepted" when="2014-09-24T19:18:40" who="factory-auto" by_group="factory-auto">
+    <comment>Check script succeeded</comment>
+  </review>
+  <review state="accepted" when="2014-09-24T19:18:40" who="coolo" by_group="factory-staging">
+    <comment></comment>
+  </review>
+  <review state="accepted" when="2014-09-24T19:20:20" who="babelworx" by_group="legal-team">
+    <comment></comment>
+  </review>
+  <review state="accepted" when="2014-09-24T19:25:45" who="dimstar" by_group="opensuse-review-team">
+    <comment>ok</comment>
+  </review>
+  <review state="accepted" when="2014-09-24T19:25:45" who="factory-repo-checker" by_user="factory-repo-checker">
+    <comment>Builds for repo devel:openSUSE:Factory:rpmlint/openSUSE_Factory</comment>
+  </review>
+  <description>...</description>
+</request>

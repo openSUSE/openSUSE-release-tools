@@ -1,0 +1,11 @@
+<request id="770001">
+  <action type="submit">
+    <source project="Base:System" package="timezone" rev="481ecbe0dfc63ece3a1f1b5598f7d96c"/>
+    <target project="openSUSE:13.2" package="timezone"/>
+  </action>
+  <state name="new" who="factory-auto" when="2014-10-08T12:06:07">
+    <comment>...</comment>
+  </state>
+  <review state="new" by_user="factory-reviewed-source"/>
+  <description>...</description>
+</request>
