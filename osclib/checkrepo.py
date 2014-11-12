@@ -105,16 +105,34 @@ class Request(object):
             self.shadow_src_project = self.src_project
 
     def str_compact(self):
-        return '#[%s](%s)%s' % (self.request_id, self.src_package,
-                                (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
+        s = None
+        if self.action_type == 'delete':
+            s = '#[%s] DELETE (%s)%s' % (
+                self.request_id, self.tgt_package,
+                (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
+        else:
+            s = '#[%s](%s)%s' % (
+                self.request_id, self.src_package,
+                (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
+        return s
 
     def __repr__(self):
-        return '#[%s] %s/%s -> %s/%s%s' % (self.request_id,
-                                           self.src_project,
-                                           self.src_package,
-                                           self.tgt_project,
-                                           self.tgt_package,
-                                           (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
+        s = None
+        if self.action_type == 'delete':
+            s = '#[%s] DELETE -> %s/%s%s' % (
+                self.request_id,
+                self.tgt_project,
+                self.tgt_package,
+                (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
+        else:
+            s = '#[%s] %s/%s -> %s/%s%s' % (
+                self.request_id,
+                self.src_project,
+                self.src_package,
+                self.tgt_project,
+                self.tgt_package,
+                (' Shadow via %s' % self.shadow_src_project) if self.is_shadow_devel else '')
+        return s
 
 
 class CheckRepo(object):
@@ -885,6 +903,19 @@ class CheckRepo(object):
             deps.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
         return deps
 
+    def _builddepinfo(self, project, package):
+        """Return the list dependencies for a request."""
+        deps = set()
+        query = {
+            'package': package,
+        }
+        for arch in ('i586', 'x86_64'):
+            url = makeurl(self.apiurl, ('build', project, 'standard', arch, '_builddepinfo'),
+                          query=query)
+            root = ET.parse(http_GET(url)).getroot()
+            deps.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
+        return deps
+
     def _maintainers(self, request):
         """Get the maintainer of the package involved in the request."""
         query = {
@@ -896,7 +927,10 @@ class CheckRepo(object):
 
     def _author(self, request):
         """Get the author of the request."""
-        url = makeurl(self.apiurl, ('request', str(request.request_id)))
+        query = {
+            'withhistory': 1,
+        }
+        url = makeurl(self.apiurl, ('request', str(request.request_id)), query=query)
         root = ET.parse(http_GET(url)).getroot()
 
         who = None
@@ -919,12 +953,19 @@ class CheckRepo(object):
         """
         reasons = []
         whatdependson = self._whatdependson(request)
-        maintainers = self._maintainers(request)
-        author = self._author(request)
+        # maintainers = self._maintainers(request)
+        # author = self._author(request)
 
-        if whatdependson:
-            reasons.append('There are packages that depends on this package: %s' % ', '.join(whatdependson))
-        if author not in maintainers:
-            reasons.append('The author (%s) is not one of the maintainers (%s)' % (author,
-                                                                                   ', '.join(maintainers)))
+        for dep in whatdependson:
+            deps = self._builddepinfo(request.tgt_project, dep)
+            if request.tgt_package in deps:
+                reasons.append('%s still depends on %s in %s' % (dep, request.tgt_package, request.tgt_project))
+
+        # XXX TODO - Do not fail because of the author. I need to
+        # figure out how to detect the maintainers in the target
+        # project.
+
+        # if author not in maintainers:
+        #     reasons.append('The author (%s) is not one of the maintainers (%s)' % (author,
+        #                                                                            ', '.join(maintainers)))
         return '. '.join(reasons)
