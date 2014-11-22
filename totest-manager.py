@@ -351,11 +351,7 @@ class ToTestFactory(ToTestBase):
         'opensuse-Tumbleweed-NET-x86_64-Build-zdup-13.1-gnome@64bit', # broken in 20140915
         'opensuse-Tumbleweed-Rescue-CD-x86_64-Build-rescue@uefi-usb',
         'opensuse-Tumbleweed-KDE-Live-x86_64-Build-kde-live@uefi-usb',
-        'opensuse-Tumbleweed-GNOME-Live-x86_64-Build-gnome-live@uefi-usb',
-        'opensuse-Tumbleweed-NET-x86_64-Build-RAID10@64bit',
-        'opensuse-Tumbleweed-NET-x86_64-Build-RAID5@64bit',
-        'opensuse-Tumbleweed-NET-x86_64-Build-RAID1@64bit',
-        'opensuse-Tumbleweed-NET-i586-Build-lvm@32bit',
+        'opensuse-Tumbleweed-GNOME-Live-x86_64-Build-gnome-live@uefi-usb'
     ]
     
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
