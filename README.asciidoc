@@ -3,12 +3,10 @@ Factory workflow plugins
 
 image:https://travis-ci.org/openSUSE/osc-plugin-factory.png?branch=master["Build Status", link="https://travis-ci.org/openSUSE/osc-plugin-factory"] image:https://coveralls.io/repos/openSUSE/osc-plugin-factory/badge.png?branch=master["Coverage Status", link="https://coveralls.io/r/openSUSE/osc-plugin-factory"]
 
-This repository contains different OSC plugins that help and support
-the maintenance of Factory.  These plugins use the OBS API to check,
-evaluate and manage the different submit request of packages that go
-from a devel project to Factory.
+This repository contains various OSC plugins and scripts used for the
+maintenance of openSUSE distributions like Factory.
 
-Plugins
+Scripts
 -------
 
 * *link:docs/staging.asciidoc[Staging].* Plugin used to manage the
@@ -19,14 +17,20 @@ Plugins
    continuously for usual mistakes or problems in requests like, for
    example, new dependency cycles or errors in the binary RPM.
 
-* *link:docs/checksource.asciidoc[CheckSource].* Check the source
-   version of the RPM package.
+* *link:docs/checksource.asciidoc[CheckSource].* This plugin checks for usual
+   mistakes and problems in the source packages submitted by the users.
 
-* *link:docs/totest.asciidoc[ToTest].* A plugin that help the
-   publishing process of Factory.
+* *link:docs/totest.asciidoc[ToTest].* A plugin that checks if Factory is ready
+   to be released as Tumbleweed.
 
 * *link:docs/checkdups.asciidoc[CheckDups].* Plugin to detect
    superseded or duplicated requests.
+
+* *link:docs/factory-source.asciidoc[factory-source].* script that checks if the
+   submitted sources of a request are already accepted in Factory
+
+* *link:docs/maintbot.asciidoc[maintbot].* script that checks maintenance
+  incidents to make sure the Factory maintainer submitted the package.
 
 
 Installation
