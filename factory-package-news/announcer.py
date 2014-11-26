@@ -42,8 +42,8 @@ if not options.sender or not options.to or not options.relay:
     print >>sys.stderr, "need to specify --from and --to and --relay"
     sys.exit(1)
 
-url = "http://download.opensuse.org/factory/iso/"
-iso = "openSUSE-Factory-DVD-x86_64-Current.iso"
+url = "http://download.opensuse.org/tumbleweed/iso/"
+iso = "openSUSE-Tumbleweed-DVD-x86_64-Current.iso"
 changes = "Changes.%s.txt"
 current_fn = os.path.join(os.path.dirname(__file__), "announcer-current-version")
 
@@ -97,7 +97,7 @@ if not "====" in txt:
     sys.exit(1)
 
 msg = MIMEText(txt)
-msg['Subject'] = 'New Factory snapshot %s released!'%version
+msg['Subject'] = 'New Tumbleweed snapshot %s released!'%version
 msg['From'] = options.sender
 msg['To'] = options.to
 
