@@ -248,6 +248,7 @@ def _checker_one_request(self, rq, opts):
             dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
             # white list
             self._devel_projects['X11:Bumblebee/'] = 'x2go'
+            self._devel_projects['devel:languages:D/'] = 'd'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
