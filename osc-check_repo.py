@@ -45,10 +45,14 @@ def _check_repo_download(self, request):
     toignore = set()
     request.downloads = defaultdict(list)
 
-    if not request.build_excluded:
-        arch = 'x86_64'
-    else:
-        arch = 'i586'
+    # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
+    if request.build_excluded:
+        return set()
+    arch = 'x86_64'
+    # if not request.build_excluded:
+    #     arch = 'x86_64'
+    # else:
+    #     arch = 'i586'
 
     ToDownload = namedtuple('ToDownload', ('project', 'repo', 'arch', 'package', 'size'))
 
