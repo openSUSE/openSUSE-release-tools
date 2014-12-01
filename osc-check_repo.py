@@ -97,6 +97,11 @@ def _check_repo_download(self, request):
         self.checkrepo._download(request, todownload)
         if request.error:
             return set()
+
+    # Update toignore with the names of the source project (here in
+    # this method) and with the names of the target project (_toignore
+    # method).
+    toignore.update(self.checkrepo._toignore(request))
     return toignore
 
 
