@@ -38,6 +38,7 @@ class ToTestBase(object):
     def __init__(self, project):
         self.project = project
         self.api = StagingAPI(osc.conf.config['apiurl'], opensuse=project)
+        self.known_failures = self.known_failures_from_dashboard(project)
 
     def openqa_version(self):
         return self.project
@@ -339,21 +340,16 @@ class ToTestBase(object):
         if can_release:
             self.update_totest(new_snapshot)
 
+    def known_failures_from_dashboard(self, project):
+        known_failures = []
+        url = self.api.makeurl(['source', 'openSUSE:%s:Staging' % self.project, 'dashboard', 'known_failures'])
+        f = self.api.retried_GET(url)
+        for line in f:
+            if not line[0] == '#':
+                known_failures.append(line.strip())
+        return known_failures
 
 class ToTestFactory(ToTestBase):
-    known_failures = [
-        'opensuse-Tumbleweed-DVD-x86_64-Build-update_123@64bit',
-        'opensuse-Tumbleweed-NET-x86_64-Build-update_121@64bit',
-        'opensuse-Tumbleweed-NET-x86_64-Build-update_122@64bit',
-        'opensuse-Tumbleweed-NET-x86_64-Build-update_123@64bit',
-        'opensuse-Tumbleweed-NET-x86_64-Build-zdup-13.2-M0@64bit', # broken in 20140915
-        'opensuse-Tumbleweed-NET-i586-Build-zdup-13.1-kde@32bit', # broken in 20140915
-        'opensuse-Tumbleweed-NET-x86_64-Build-zdup-13.1-gnome@64bit', # broken in 20140915
-        'opensuse-Tumbleweed-Rescue-CD-x86_64-Build-rescue@uefi-usb',
-        'opensuse-Tumbleweed-KDE-Live-x86_64-Build-kde-live@uefi-usb',
-        'opensuse-Tumbleweed-GNOME-Live-x86_64-Build-gnome-live@uefi-usb'
-    ]
-    
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
                      '_product:openSUSE-dvd5-dvd-x86_64',
                      '_product:openSUSE-cd-mini-i586',
@@ -382,12 +378,6 @@ class ToTestFactory(ToTestBase):
         raise Exception("can't find factory version")
 
 class ToTest132(ToTestBase):
-    known_failures = [
-      'opensuse-13.2-DVD-Biarch-i586-x86_64-Build-update_123@32bit',
-      'opensuse-13.2-DVD-Biarch-i586-x86_64-Build-update_122@32bit',
-      'opensuse-13.2-DVD-Biarch-i586-x86_64-Build-update_121@32bit'
-    ]
-
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
                      '_product:openSUSE-dvd5-dvd-x86_64',
                      '_product:openSUSE-cd-mini-i586',
