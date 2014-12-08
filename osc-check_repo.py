@@ -42,12 +42,17 @@ from osclib.request_finder import RequestFinder
 
 
 def _check_repo_download(self, request):
+    toignore = set()
     request.downloads = defaultdict(list)
 
-    if not request.build_excluded:
-        arch = 'x86_64'
-    else:
-        arch = 'i586'
+    # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
+    if request.build_excluded:
+        return set()
+    arch = 'x86_64'
+    # if not request.build_excluded:
+    #     arch = 'x86_64'
+    # else:
+    #     arch = 'i586'
 
     ToDownload = namedtuple('ToDownload', ('project', 'repo', 'arch', 'package', 'size'))
 
@@ -55,11 +60,13 @@ def _check_repo_download(self, request):
         repo = goodrepo[1]
 
         # we assume x86_64 is there unless build is excluded
+        pkglist = self.checkrepo.get_package_list_from_repository(
+            request.shadow_src_project, repo, arch,
+            request.src_package)
         todownload = [ToDownload(request.shadow_src_project, repo, arch,
-                                 fn[0], fn[3]) for fn in
-                      self.checkrepo.get_package_list_from_repository(
-                          request.shadow_src_project, repo, arch,
-                          request.src_package)]
+                                 fn[0], fn[3]) for fn in pkglist]
+
+        toignore.update(fn[1] for fn in pkglist)
 
         self.checkrepo._download(request, todownload)
         if request.error:
@@ -67,26 +74,35 @@ def _check_repo_download(self, request):
 
     staging_prefix = 'openSUSE:{}:Staging:'.format(self.checkrepo.opensuse)
     if staging_prefix in str(request.group):
+        pkglist = self.checkrepo.get_package_list_from_repository(
+            request.group, 'standard', arch,
+            request.src_package)
         todownload = [ToDownload(request.group, 'standard', arch,
-                                 fn[0], fn[3]) for fn in
-                      self.checkrepo.get_package_list_from_repository(
-                          request.group, 'standard', arch,
-                          request.src_package)]
+                                 fn[0], fn[3]) for fn in pkglist]
 
         self.checkrepo._download(request, todownload)
         if request.error:
             return set()
 
+        toignore.update(fn[1] for fn in pkglist)
+
+        pkglist = self.checkrepo.get_package_list_from_repository(
+            request.group + ':DVD', 'standard',
+            'x86_64', request.src_package)
         todownload = [ToDownload(request.group + ':DVD', 'standard',
-                                 'x86_64', fn[0], fn[3]) for fn in
-                      self.checkrepo.get_package_list_from_repository(
-                          request.group + ':DVD', 'standard',
-                          'x86_64', request.src_package)]
+                                 'x86_64', fn[0], fn[3]) for fn in pkglist]
+
+        toignore.update(fn[1] for fn in pkglist)
 
         self.checkrepo._download(request, todownload)
         if request.error:
             return set()
-    return self.checkrepo._toignore(request)
+
+    # Update toignore with the names of the source project (here in
+    # this method) and with the names of the target project (_toignore
+    # method).
+    toignore.update(self.checkrepo._toignore(request))
+    return toignore
 
 
 # Used in _check_repo_group only to cache error messages
