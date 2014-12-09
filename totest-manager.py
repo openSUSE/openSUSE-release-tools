@@ -35,8 +35,9 @@ QA_PASSED = 3
 class ToTestBase(object):
     """Base class to store the basic interface"""
 
-    def __init__(self, project):
+    def __init__(self, project, dryrun):
         self.project = project
+        self.dryrun = dryrun
         self.api = StagingAPI(osc.conf.config['apiurl'], opensuse=project)
         self.known_failures = self.known_failures_from_dashboard(project)
 
@@ -337,7 +338,7 @@ class ToTestBase(object):
             self.publish_factory_totest()
             can_release = False  # we have to wait
 
-        if can_release:
+        if can_release and not self.dryrun:
             self.update_totest(new_snapshot)
 
     def known_failures_from_dashboard(self, project):
@@ -355,8 +356,8 @@ class ToTestFactory(ToTestBase):
                      '_product:openSUSE-cd-mini-i586',
                      '_product:openSUSE-cd-mini-x86_64']
 
-    def __init__(self, project):
-        ToTestBase.__init__(self, project)
+    def __init__(self, project, dryrun):
+        ToTestBase.__init__(self, project, dryrun)
 
     def openqa_version(self):
         return 'Tumbleweed'
@@ -401,6 +402,8 @@ if __name__ == '__main__':
         description='Commands to work with staging projects')
     parser.add_argument('project', metavar='P', type=str, default='Factory',
                         help='openSUSE version to make the check (Factory, 13.2)')
+    parser.add_argument('-D', '--dryrun', dest="dryrun", action="store_true",  default=False,
+                        help="dry run: do not actually publish")
 
     args = parser.parse_args()
 
@@ -418,5 +421,5 @@ if __name__ == '__main__':
     osc.conf.get_config()
     #osc.conf.config['debug'] = True
 
-    totest = totest_class[args.project](args.project)
+    totest = totest_class[args.project](args.project, args.dryrun)
     totest.totest()
