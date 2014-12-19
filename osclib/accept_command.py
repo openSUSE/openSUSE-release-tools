@@ -77,7 +77,9 @@ class AcceptCommand(object):
 
     def accept_other_new(self):
         changed = False
-        for req in self.find_new_requests('openSUSE:{}'.format(self.api.opensuse)):
+        rqlist = self.find_new_requests('openSUSE:{}'.format(self.api.opensuse))
+        rqlist += self.find_new_requests('openSUSE:{}:NonFree'.format(self.api.opensuse))
+        for req in rqlist:
             print 'Accepting request %d: %s' % (req['id'], ','.join(req['packages']))
             change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.opensuse)
             changed = True
