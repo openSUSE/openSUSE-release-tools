@@ -29,6 +29,7 @@ job install name sudo
 job install name xdelta
 job install name kate
 job install name MozillaThunderbird
+job install name libreoffice
 
 job lock name gtk2-branding-upstream
 job lock name gdm-branding-upstream
@@ -38,6 +39,7 @@ job lock name kdebase4-runtime-branding-upstream
 job lock name kdelibs4-branding-upstream
 job lock name readline-doc
 job lock name libgcc_s1-32bit
+job lock name gtk3-branding-upstream
 
 job lock name openvpn
 job lock name systemtap
