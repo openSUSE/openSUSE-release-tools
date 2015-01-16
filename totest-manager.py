@@ -334,7 +334,7 @@ class ToTestBase(object):
         if self.totest_is_publishing():
             can_publish = False
 
-        if can_publish:
+        if can_publish and not self.dryrun:
             self.publish_factory_totest()
             can_release = False  # we have to wait
 
