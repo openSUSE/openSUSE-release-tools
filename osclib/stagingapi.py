@@ -147,6 +147,35 @@ class StagingAPI(object):
 
         return package_info
 
+    def get_filelist_for_package(self, pkgname, project, extension=None):
+        """
+        Get a list of files inside a package container
+        :param package: the base packagename to be linked to
+        :param project: Project to verify
+        :param extension: Limit the file list to files with this extension
+        """
+
+        filelist = []
+        query ={
+            'extension': extension
+        }
+
+        if extension:
+            url = self.makeurl(['source', project, pkgname], query=query)
+        else:
+            url = self.makeurl(['source', project, pkgname])
+        try:
+            content = http_GET(url)
+            for entry in ET.parse(content).getroot().findall('entry'):
+                filelist.append(entry.attrib['name'])
+        except urllib2.HTTPError, err:
+            if err.code == 404:
+                # The package we were supposed to query does not exist
+                # we can pass this up and return the empty filelist
+                pass
+
+        return filelist
+
     def move_between_project(self, source_project, req_id,
                              destination_project):
         """
