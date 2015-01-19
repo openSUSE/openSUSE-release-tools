@@ -122,6 +122,23 @@ class FreezeCommand(object):
             self.set_links()
             self.freeze_prjlinks()
 
+            # Update the version information found in the Test-DVD package, to match openSUSE-release
+            version = self.api.package_version(prj, 'openSUSE-release')
+            self.update_product_version(prj + ':DVD', 'Test-DVD-x86_64', version)
+
+    def update_product_version(self, project, product, version):
+        if not self.api.item_exists(project, product):
+            return None
+
+        kiwifile = self.api.load_file_content(project, product, 'PRODUCT-x86_64.kiwi')
+        root = ET.fromstring(kiwifile)
+        prodvar = root.find(".//productvar[@name='VERSION']")
+        prodvar.text = version
+        prodinfoversion = root.find(".//productinfo[@name='VERSION']")
+        prodinfoversion.text = version
+
+        self.api.save_file_content(project, product, 'PRODUCT-x86_64.kiwi', ET.tostring(root))
+
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', {'name': prj})
         ET.SubElement(root, 'title')
