@@ -117,7 +117,7 @@ class FreezeCommand(object):
         self.build_switch_bootstrap_copy('disable')
 
         # now try to freeze sub project - much easier
-        if self.api.project_exists(prj + ':DVD'):
+        if self.api.item_exists(prj + ':DVD'):
             self.prj = prj + ':DVD'
             self.set_links()
             self.freeze_prjlinks()

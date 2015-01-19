@@ -888,20 +888,25 @@ class StagingAPI(object):
             target_flag = 'enable'
         self.build_switch_prj(target_project, target_flag)
 
-        if self.project_exists(target_project + ":DVD"):
+        if self.item_exists(target_project + ":DVD"):
             self.build_switch_prj(target_project + ":DVD", target_flag)
 
-    def project_exists(self, project):
+    def item_exists(self, project, package=None):
         """
         Return true if the given project exists
         :param project: project name to check
+        :param package: optional package to check
         """
-        url = self.makeurl(['source', project, '_meta'])
+        if package:
+            url = self.makeurl(['source', project, package, '_meta'])
+        else:
+            url = self.makeurl(['source', project, '_meta'])
         try:
             http_GET(url)
         except urllib2.HTTPError:
             return False
         return True
+
 
     def update_status_comments(self, project, command):
         """

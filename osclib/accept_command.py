@@ -70,7 +70,7 @@ class AcceptCommand(object):
         self.comment.delete_from(project_name=project)
 
         self.api.build_switch_prj(project, 'disable')
-        if self.api.project_exists(project + ':DVD'):
+        if self.api.item_exists(project + ':DVD'):
             self.api.build_switch_prj(project + ':DVD', 'disable')
 
         return True
