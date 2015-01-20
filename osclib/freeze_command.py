@@ -131,13 +131,11 @@ class FreezeCommand(object):
             return None
 
         kiwifile = self.api.load_file_content(project, product, 'PRODUCT-x86_64.kiwi')
-        root = ET.fromstring(kiwifile)
-        prodvar = root.find(".//productvar[@name='VERSION']")
-        prodvar.text = version
-        prodinfoversion = root.find(".//productinfo[@name='VERSION']")
-        prodinfoversion.text = version
 
-        self.api.save_file_content(project, product, 'PRODUCT-x86_64.kiwi', ET.tostring(root))
+        tmpkiwifile = re.sub(r'<productinfo name="VERSION">.*</productinfo>', '<productinfo name="VERSION">%s</productinfo>' % version, kiwifile)
+        newkiwifile = re.sub(r'<productvar name="VERSION">.*</productvar>', '<productvar name="VERSION">%s</productvar>' % version, tmpkiwifile)
+
+        self.api.save_file_content(project, product, 'PRODUCT-x86_64.kiwi', newkiwifile)
 
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', {'name': prj})
