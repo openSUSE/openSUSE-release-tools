@@ -949,7 +949,7 @@ class StagingAPI(object):
         :param filename: the filename to save the data to
         :param content: the content to write to the file
         """
-        url = self.api.makeurl(['source', project, package, filename])
+        url = self.api.makeurl(['source', project, package, '{}?keeplink=1'.format(filename)])
         http_PUT(url + '?comment=scripted+update', data=content)
 
     def update_status_comments(self, project, command):
