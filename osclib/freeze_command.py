@@ -1,4 +1,5 @@
 import time
+import re
 from xml.etree import cElementTree as ET
 
 

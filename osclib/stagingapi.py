@@ -8,6 +8,7 @@ import json
 import logging
 import urllib2
 import time
+import re
 from xml.etree import cElementTree as ET
 
 import yaml
@@ -924,7 +925,7 @@ class StagingAPI(object):
         if specfile:
             try:
                 version = re.findall("^Version:(.*)",specfile,re.MULTILINE)[0].strip()
-            except:
+            except IndexError:
                 pass
         return version
 
@@ -938,7 +939,7 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, package, '{}?expand=1'.format(filename)])
         try:
             return http_GET(url).read()
-        except:
+        except urllib2.HTTPError:
             return None
 
     def save_file_content(self, project, package, filename, content):
