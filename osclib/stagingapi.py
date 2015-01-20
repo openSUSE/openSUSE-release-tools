@@ -920,7 +920,7 @@ class StagingAPI(object):
 
         version = None
 
-        specfile = self.api.load_file_content(project, package, '{}.spec'.format(package))
+        specfile = self.load_file_content(project, package, '{}.spec'.format(package))
         if specfile:
             try:
                 version = re.findall("^Version:(.*)",specfile,re.MULTILINE)[0].strip()
@@ -935,7 +935,7 @@ class StagingAPI(object):
         :param package:  The package to quert
         :param filename: The filename to query
         """
-        url = self.api.makeurl(['source', project, package, '{}?expand=1'.format(filename)])
+        url = self.makeurl(['source', project, package, '{}?expand=1'.format(filename)])
         try:
             return http_GET(url).read()
         except:
@@ -949,7 +949,7 @@ class StagingAPI(object):
         :param filename: the filename to save the data to
         :param content: the content to write to the file
         """
-        url = self.api.makeurl(['source', project, package, filename])
+        url = self.makeurl(['source', project, package, filename])
         http_PUT(url + '?comment=scripted+update', data=content)
 
     def update_status_comments(self, project, command):
