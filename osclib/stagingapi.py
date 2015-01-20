@@ -888,20 +888,69 @@ class StagingAPI(object):
             target_flag = 'enable'
         self.build_switch_prj(target_project, target_flag)
 
-        if self.project_exists(target_project + ":DVD"):
+        if self.item_exists(target_project + ":DVD"):
             self.build_switch_prj(target_project + ":DVD", target_flag)
 
-    def project_exists(self, project):
+    def item_exists(self, project, package=None):
         """
         Return true if the given project exists
         :param project: project name to check
+        :param package: optional package to check
         """
-        url = self.makeurl(['source', project, '_meta'])
+        if package:
+            url = self.makeurl(['source', project, package, '_meta'])
+        else:
+            url = self.makeurl(['source', project, '_meta'])
         try:
             http_GET(url)
         except urllib2.HTTPError:
             return False
         return True
+
+    def package_version(self, project, package):
+        """
+        Return the version of a package, None in case the package does not exist
+        The first non-commented Version: tag found is used.
+        :param project: the project the package resides in
+        :param package: the package to check
+        :param product: if passed, the package to be checked is considered to be part of _product
+        """
+        if not self.item_exists(project, package):
+            return None
+
+        version = None
+
+        specfile = self.api.load_file_content(project, package, '{}.spec'.format(package))
+        if specfile:
+            try:
+                version = re.findall("^Version:(.*)",specfile,re.MULTILINE)[0].strip()
+            except:
+                pass
+        return version
+
+    def load_file_content(self, project, package, filename):
+        """
+        Load the content of a file and return the content as data. If the package is a link, it will be expanded
+        :param project: The project to query
+        :param package:  The package to quert
+        :param filename: The filename to query
+        """
+        url = self.api.makeurl(['source', project, package, '{}?expand=1'.format(filename)])
+        try:
+            return http_GET(url).read()
+        except:
+            return None
+
+    def save_file_content(self, project, package, filename, content):
+        """
+        Save content to a project/package/file
+        :param project: The project containing the package
+        :param package: the package to update
+        :param filename: the filename to save the data to
+        :param content: the content to write to the file
+        """
+        url = self.api.makeurl(['source', project, package, filename])
+        http_PUT(url + '?comment=scripted+update', data=content)
 
     def update_status_comments(self, project, command):
         """
