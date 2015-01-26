@@ -66,7 +66,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         for p in root.findall('./owner'):
             prj = p.get("project")
             pkg = p.get("package")
-            if ((pkg, prj) in package_reviews):
+            if ((prj, pkg) in package_reviews):
                 # there already is a review for this project/package
                 continue
             self.add_review(req, by_project = prj, by_package = pkg,
