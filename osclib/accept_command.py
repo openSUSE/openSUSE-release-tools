@@ -138,3 +138,22 @@ class AcceptCommand(object):
 
         if product != new_product:
             http_PUT(url + '?comment=Update+version', data=new_product)
+
+    def sync_buildfailures(self):
+        """Trigger rebuild of packages that failed build in either
+        openSUSE:Factory or openSUSE:Factory:Rebuild, but not the other
+        Helps over the fact that openSUSE:Factory uses rebuild=local,
+        thus sometimes 'hiding' build failures."""
+
+        for arch in ["x86_64","i586"]:
+            fact_result = self.api.get_prj_results('openSUSE:Factory', arch)
+            fact_result = self.api.check_pkgs(fact_result)
+            rebuild_result = self.api.get_prj_results('openSUSE:Factory:Rebuild', arch)
+            rebuild_result = self.api.check_pkgs(rebuild_result)
+            result = set(rebuild_result) ^ set(fact_result)
+
+            print sorted(result)
+
+            for package in result:
+                self.api.rebuild_pkg(package, 'openSUSE:Factory', arch, None)
+                self.api.rebuild_pkg(package, 'openSUSE:Factory:Rebuild', arch, None)
