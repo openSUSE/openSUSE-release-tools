@@ -102,7 +102,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         else:
             self.logger.warning("%s doesn't have maintainers"%pkgname)
 
-        if a.tgt_releaseproject == "openSUSE:CPE:SLE-12":
+        if a.tgt_releaseproject == "openSUSE:Backports:SLE-12":
             self.add_factory_source = True
 
         return True

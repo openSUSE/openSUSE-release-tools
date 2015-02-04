@@ -262,7 +262,7 @@ class TestMaintenance(unittest.TestCase):
 
 
 
-    def test_cpe_submit(self):
+    def test_backports_submit(self):
 
         httpretty.register_uri(httpretty.GET,
             rr("/search/request?match=state/@name='review'+and+review[@by_user='maintbot'+and+@state='new']&withhistory=1"),
@@ -271,8 +271,8 @@ class TestMaintenance(unittest.TestCase):
                 <collection matches="1">
                     <request id="261411">
                       <action type="maintenance_incident">
-                        <source project="home:lnussel:branches:openSUSE:CPE:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
-                        <target project="openSUSE:Maintenance" releaseproject="openSUSE:CPE:SLE-12"/>
+                        <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
+                        <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
                       </action>
                       <state name="review" who="lnussel" when="2014-11-13T13:22:02">
                         <comment></comment>
@@ -292,8 +292,8 @@ class TestMaintenance(unittest.TestCase):
             body = """
                 <request id="261411">
                   <action type="maintenance_incident">
-                    <source project="home:lnussel:branches:openSUSE:CPE:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
-                    <target project="openSUSE:Maintenance" releaseproject="openSUSE:CPE:SLE-12"/>
+                    <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
+                    <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
                   </action>
                   <state name="review" who="lnussel" when="2014-11-13T13:22:02">
                     <comment></comment>
@@ -308,7 +308,7 @@ class TestMaintenance(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/home:lnussel:branches:openSUSE:CPE:SLE-12/plan",
+            APIURL + "/source/home:lnussel:branches:openSUSE:Backports:SLE-12/plan",
             body = """
                 <directory name="plan" rev="1" vrev="1" srcmd5="b4ed19dc30c1b328168bc62a81ec6998">
                   <linkinfo project="home:lnussel:plan" package="plan" srcmd5="7a2353f73b29dba970702053229542a0" baserev="7a2353f73b29dba970702053229542a0" xsrcmd5="71e76daf2c2e9ddb0b9208f54a14f608" lsrcmd5="b4ed19dc30c1b328168bc62a81ec6998" />
