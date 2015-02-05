@@ -2,7 +2,7 @@ import re
 from xml.etree import cElementTree as ET
 
 from osc.core import change_request_state
-from osc.core import http_GET, http_PUT
+from osc.core import http_GET, http_PUT, http_DELETE
 from datetime import date
 from osclib.comments import CommentAPI
 
@@ -56,8 +56,9 @@ class AcceptCommand(object):
             msg = 'Accepting staging review for {}'.format(req['package'])
             print(msg)
 
-        for req in requests:
-            change_request_state(self.api.apiurl, str(req), 'accepted', message='Accept to %s' % self.api.opensuse)
+            oldspecs = self.api.get_filelist_for_package(pkgname=req['package'], project='openSUSE:{}'.format(self.api.opensuse), extension='spec')
+            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.opensuse)
+            self.create_new_links('openSUSE:{}'.format(self.api.opensuse), req['package'], oldspecs)
 
         # A single comment should be enough to notify everybody, since
         # they are already mentioned in the comments created by
@@ -80,11 +81,51 @@ class AcceptCommand(object):
         rqlist = self.find_new_requests('openSUSE:{}'.format(self.api.opensuse))
         rqlist += self.find_new_requests('openSUSE:{}:NonFree'.format(self.api.opensuse))
         for req in rqlist:
+            oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project='openSUSE:{}'.format(self.api.opensuse), extension='spec')
             print 'Accepting request %d: %s' % (req['id'], ','.join(req['packages']))
             change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.opensuse)
+            # Check if all .spec files of the package we just accepted has a package container to build
+            self.create_new_links('openSUSE:{}'.format(self.api.opensuse), req['packages'][0], oldspecs)
             changed = True
 
         return changed
+
+    def create_new_links(self, project, pkgname, oldspeclist):
+        filelist = self.api.get_filelist_for_package(pkgname=pkgname, project=project, extension='spec')
+        removedspecs = set(oldspeclist) - set(filelist)
+        for spec in removedspecs:
+            # Deleting all the packages that no longer have a .spec file
+            url = self.api.makeurl(['source', project, spec[:-5]])
+            print "Deleting package %s from project %s" % (spec[:-5], project)
+            try:
+                http_DELETE(url)
+            except urllib2.HTTPError, err:
+                if err.code == 404:
+                    # the package link was not yet created, which was likely a mistake from earlier
+                    pass
+                else:
+                    # If the package was there bug could not be delete, raise the error
+                    raise
+        if len(filelist) > 1:
+            # There is more than one .spec file in the package; link package containers as needed
+            origmeta = self.api.load_file_content(project, pkgname, '_meta')
+            for specfile in filelist:
+                package = specfile[:-5] # stripping .spec off the filename gives the packagename
+                if package == pkgname:
+                    # This is the original package and does not need to be linked to itself
+                    continue
+                # Check if the target package already exists, if it does not, we get a HTTP error 404 to catch
+                if not self.api.item_exists(project, package):
+                    print "Creating new package %s linked to %s" % (package, pkgname)
+                    # new package does not exist. Let's link it with new metadata
+                    newmeta = re.sub(r'(<package.*name=.){}'.format(pkgname),r'\1{}'.format(package), origmeta)
+                    newmeta = re.sub(r'<devel.*>\$',r'<devel package=\'{}\'/>'.format(pkgname), newmeta)
+                    newmeta = re.sub(r'<bcntsynctag>.*</bcntsynctag>',r'', newmeta)
+                    newmeta = re.sub(r'</package>',r'<bcntsynctag>{}</bcntsynctag></package>'.format(pkgname), newmeta)
+                    self.api.save_file_content(project, package, '_meta', newmeta)
+                    link = "<link package=\"{}\" cicount=\"copy\" />".format(pkgname)
+                    self.api.save_file_content(project, package, '_link', link)
+        return True
 
     def update_factory_version(self):
         """Update openSUSE (Factory, 13.2, ...)  version if is necessary."""
