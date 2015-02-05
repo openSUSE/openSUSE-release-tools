@@ -36,5 +36,5 @@ Checks done
 This bot accepts review requests if the author of the request is a known
 maintainer of the package in Factory. If not the devel project/package is set
 as reviewer.
-Furthermore the bot checks if the submission is for the CPE project. In that
+Furthermore the bot checks if the submission is for the Backports project. In that
 case it adds factory-source as reviewer.
