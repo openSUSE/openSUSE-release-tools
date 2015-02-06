@@ -87,25 +87,21 @@ function start_creating() {
         sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd
         regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd
 
-	echo "Checking $target:A"
-        # Staging A part
-        sync_prj openSUSE:$target:Staging:A/standard staging_$target:A
-        regenerate_pl "openSUSE:$target:Staging:A" $target 1 staging_$target:A
-
-        sync_prj openSUSE:$target:Staging:A:DVD/standard staging_$target:A-dvd
-        regenerate_pl "openSUSE:$target:Staging:A:DVD" $target 2 staging_$target:A staging_$target:A-dvd
-
         projects=$(osc api /search/project/id?match="starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
         for prj in openSUSE:$target:Rings:2-TestDVD $projects; do
             l=$(echo $prj | cut -d: -f4)
+            use_bc="staging_$target:$l-bc"
+            if [ "$l" = "A" -o "$l" = "B" ]; then
+                use_bc=
+            fi
             if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
-                # no need for A, already did
-                if [ $l != "A" ]; then
-                    echo "Checking $target:$l"
+
+                echo "Checking $target:$l"
+                if [ -n "$use_bc" ]; then
                     sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc"
-                    sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l
-                    regenerate_pl "openSUSE:$target:Staging:$l" $target 1 "staging_$target:$l-bc" staging_$target:$l
                 fi
+                sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l
+                regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l
             fi
 
             if [[ ( $prj =~ :DVD ) || ( $prj =~ Rings:2-TestDVD ) ]]; then
@@ -113,11 +109,8 @@ function start_creating() {
             fi
 
             if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
-                # no need for A, already did
-                if [ $l != "A" ]; then
-                    sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd"
-                    regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 "staging_$target:$l-bc" staging_$target:$l "staging_$target:$l-dvd"
-                fi
+                sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd"
+                regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l "staging_$target:$l-dvd"
             fi
         done
     done
