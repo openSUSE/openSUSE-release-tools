@@ -8,14 +8,12 @@ import json
 import logging
 import urllib2
 import time
-import sys
 import re
 from xml.etree import cElementTree as ET
 
 import yaml
 
 from osc import oscerr
-from osc import conf
 from osc.core import change_review_state
 from osc.core import delete_package
 from osc.core import get_request
@@ -38,10 +36,8 @@ class StagingAPI(object):
         Initialize instance variables
         """
 
-        user = conf.config['api_host_options'][apiurl]['user']
         self.apiurl = apiurl
         self.opensuse = opensuse
-        self.grab_lock('openSUSE:Factory:Staging', user)
         self.rings = (
             'openSUSE:{}:Rings:0-Bootstrap'.format(self.opensuse),
             'openSUSE:{}:Rings:1-MinimalX'.format(self.opensuse),
@@ -50,8 +46,6 @@ class StagingAPI(object):
         self.ring_packages = self._generate_ring_packages()
         self.packages_staged = self._get_staged_requests()
 
-    def __del__(self):
-        self.release_lock('openSUSE:Factory:Staging')
 
     def makeurl(self, l, query=None):
         """
@@ -90,42 +84,6 @@ class StagingAPI(object):
                 print 'Retrying {}'.format(url)
                 return self.retried_PUT(url, data)
             raise e
-
-    def read_lock(self, project):
-        url = self.makeurl(['source', project, '_attribute', 'openSUSE:LockedBy'])
-        root = ET.parse(http_GET(url)).getroot()
-        try:
-            lockedby = root[0][0].text
-        except IndexError:
-            # There was no value specified we could parse - assume unlocked
-            lockedby = None
-        return lockedby
-
-    def set_lock(self, project, user):
-        url = self.makeurl(['source', project, '_attribute', 'openSUSE:LockedBy'])
-        try:
-            schema = "<attributes><attribute namespace='openSUSE' name='LockedBy'><value>%s</value></attribute></attributes>"
-            http_POST(url, data=schema % user)
-        except:
-           print "Failed to acquire lock - exiting"
-           sys.exit(2)
-
-    def grab_lock(self, project, user):
-        lockedby = self.read_lock(project)
-        if lockedby != None:
-            print "Staging tasks are currently executed by %s - project locked" % lockedby
-            sys.exit(9)
-        self.set_lock(project, user)
-        # wait 2s to see if the lock is now actually ours or if we were racing somebody
-        time.sleep(2)
-
-        lockedby = self.read_lock(project)
-        if  lockedby != user:
-            print "Lock was stolen by '%s' - ABORTING" % lockedby
-            sys.exit(8)
-
-    def release_lock(self, project):
-        self.set_lock(project, '')
 
     def _generate_ring_packages(self):
         """
@@ -199,7 +157,7 @@ class StagingAPI(object):
         """
 
         filelist = []
-        query ={
+        query = {
             'extension': extension
         }
 
@@ -996,7 +954,7 @@ class StagingAPI(object):
         specfile = self.load_file_content(project, package, '{}.spec'.format(package))
         if specfile:
             try:
-                version = re.findall("^Version:(.*)",specfile,re.MULTILINE)[0].strip()
+                version = re.findall('^Version:(.*)', specfile, re.MULTILINE)[0].strip()
             except IndexError:
                 pass
         return version
@@ -1103,8 +1061,11 @@ class StagingAPI(object):
 
         return pkglist
 
-    def rebuild_pkg(self, package, prj, arch, code=None): 
-        query = { 'cmd': 'rebuild', 'arch': arch }
+    def rebuild_pkg(self, package, prj, arch, code=None):
+        query = {
+            'cmd': 'rebuild',
+            'arch': arch
+        }
         if package:
             query['package'] = package
         pkg = query['package']
@@ -1113,7 +1074,6 @@ class StagingAPI(object):
 
         try:
             print "tried to trigger rebuild for project '%s' package '%s'" % (prj, pkg)
-            f = http_POST(u)
-
+            http_POST(u)
         except:
             print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)

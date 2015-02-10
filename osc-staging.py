@@ -11,17 +11,18 @@ import os
 import os.path
 import sys
 
-from osc import cmdln, oscerr
+from osc import cmdln
+from osc import oscerr
 
 # Expand sys.path to search modules inside the pluging directory
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
-
 from osclib.accept_command import AcceptCommand
 from osclib.check_command import CheckCommand
 from osclib.cleanup_rings import CleanupRings
 from osclib.freeze_command import FreezeCommand
 from osclib.list_command import ListCommand
+from osclib.obslock import OBSLock
 from osclib.select_command import SelectCommand
 from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
@@ -105,32 +106,34 @@ def do_staging(self, subcmd, opts, *args):
     # init the obs access
     opts.apiurl = self.get_api_url()
     opts.verbose = False
-    api = StagingAPI(opts.apiurl, opts.project)
 
-    # call the respective command and parse args by need
-    if cmd == 'check':
-        prj = args[1] if len(args) > 1 else None
-        CheckCommand(api).perform(prj, opts.old)
-    elif cmd == 'freeze':
-        for prj in args[1:]:
-            FreezeCommand(api).perform(api.prj_from_letter(prj))
-    elif cmd == 'accept':
-        cmd = AcceptCommand(api)
-        for prj in args[1:]:
-            if not cmd.perform(api.prj_from_letter(prj)):
-                return
-        cmd.accept_other_new()
-        cmd.update_factory_version()
-        cmd.sync_buildfailures()
-    elif cmd == 'unselect':
-        UnselectCommand(api).perform(args[1:])
-    elif cmd == 'select':
-        tprj = api.prj_from_letter(args[1])
-        if opts.add:
-            api.mark_additional_packages(tprj, [opts.add])
-        else:
-            SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
-    elif cmd == 'cleanup_rings':
-        CleanupRings(api).perform()
-    elif cmd == 'list':
-        ListCommand(api).perform()
+    with OBSLock(opts.apiurl, 'openSUSE:%s:Staging' % opts.project):
+        api = StagingAPI(opts.apiurl, opts.project)
+
+        # call the respective command and parse args by need
+        if cmd == 'check':
+            prj = args[1] if len(args) > 1 else None
+            CheckCommand(api).perform(prj, opts.old)
+        elif cmd == 'freeze':
+            for prj in args[1:]:
+                FreezeCommand(api).perform(api.prj_from_letter(prj))
+        elif cmd == 'accept':
+            cmd = AcceptCommand(api)
+            for prj in args[1:]:
+                if not cmd.perform(api.prj_from_letter(prj)):
+                    return
+            cmd.accept_other_new()
+            cmd.update_factory_version()
+            cmd.sync_buildfailures()
+        elif cmd == 'unselect':
+            UnselectCommand(api).perform(args[1:])
+        elif cmd == 'select':
+            tprj = api.prj_from_letter(args[1])
+            if opts.add:
+                api.mark_additional_packages(tprj, [opts.add])
+            else:
+                SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
+        elif cmd == 'cleanup_rings':
+            CleanupRings(api).perform()
+        elif cmd == 'list':
+            ListCommand(api).perform()
