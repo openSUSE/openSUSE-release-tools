@@ -1031,3 +1031,46 @@ class StagingAPI(object):
         additionals.update(packages)
         meta['add_to_repo'] = sorted(additionals)
         self.set_prj_pseudometa(project, meta)
+
+    def get_prj_results(self, prj, arch):
+        url = self.makeurl(['build', prj, 'standard', arch, "_jobhistory?code=lastfailures"])
+        results = []
+
+        root = ET.parse(http_GET(url)).getroot()
+
+        xmllines = root.findall("./jobhist")
+
+        for pkg in xmllines:
+            if pkg.attrib['code'] == 'failed':
+                results.append(pkg.attrib['package'])
+
+        return results
+
+    def check_pkgs(self, rebuild_list):
+        url = self.makeurl(['source', 'openSUSE:Factory'])
+        pkglist = []
+
+        root = ET.parse(http_GET(url)).getroot()
+
+        xmllines = root.findall("./entry")
+
+        for pkg in xmllines:
+            if pkg.attrib['name'] in rebuild_list:
+                pkglist.append(pkg.attrib['name'])
+
+        return pkglist
+
+    def rebuild_pkg(self, package, prj, arch, code=None): 
+        query = { 'cmd': 'rebuild', 'arch': arch }
+        if package:
+            query['package'] = package
+        pkg = query['package']
+
+        u = self.makeurl(['build', prj], query=query)
+
+        try:
+            print "tried to trigger rebuild for project '%s' package '%s'" % (prj, pkg)
+            f = http_POST(u)
+
+        except:
+            print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)
