@@ -46,6 +46,7 @@ class StagingAPI(object):
         self.ring_packages = self._generate_ring_packages()
         self.packages_staged = self._get_staged_requests()
 
+
     def makeurl(self, l, query=None):
         """
         Wrapper around osc's makeurl passing our apiurl
@@ -156,7 +157,7 @@ class StagingAPI(object):
         """
 
         filelist = []
-        query ={
+        query = {
             'extension': extension
         }
 
@@ -953,7 +954,7 @@ class StagingAPI(object):
         specfile = self.load_file_content(project, package, '{}.spec'.format(package))
         if specfile:
             try:
-                version = re.findall("^Version:(.*)",specfile,re.MULTILINE)[0].strip()
+                version = re.findall('^Version:(.*)', specfile, re.MULTILINE)[0].strip()
             except IndexError:
                 pass
         return version
@@ -1060,8 +1061,11 @@ class StagingAPI(object):
 
         return pkglist
 
-    def rebuild_pkg(self, package, prj, arch, code=None): 
-        query = { 'cmd': 'rebuild', 'arch': arch }
+    def rebuild_pkg(self, package, prj, arch, code=None):
+        query = {
+            'cmd': 'rebuild',
+            'arch': arch
+        }
         if package:
             query['package'] = package
         pkg = query['package']
@@ -1070,7 +1074,6 @@ class StagingAPI(object):
 
         try:
             print "tried to trigger rebuild for project '%s' package '%s'" % (prj, pkg)
-            f = http_POST(u)
-
+            http_POST(u)
         except:
             print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)

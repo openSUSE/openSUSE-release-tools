@@ -26,10 +26,9 @@ import tempfile
 import traceback
 import sys
 
-import osc
-from osc import oscerr
 from osc import cmdln
-
+from osc import conf
+from osc import oscerr
 
 # Expand sys.path to search modules inside the pluging directory
 PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
@@ -533,7 +532,7 @@ def do_check_repo(self, subcmd, opts, *args):
             self._check_repo_group(id_, reqs, debug=opts.verbose)
         except Exception as e:
             print 'ERROR -- An exception happends while checking a group [%s]' % e
-            if osc.conf.config['debug']:
+            if conf.config['debug']:
                 print traceback.format_exc()
         print
         print
