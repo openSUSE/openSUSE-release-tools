@@ -287,8 +287,19 @@ class CycleDetector(object):
             current_graph.add_edges_from((p, pkg.pkg) for p in edges_to
                                          if pkg.pkg in set(subpkgs[sp] for sp in current_graph[p].deps if sp in subpkgs))
 
+        # Sometimes, new cycles have only new edges, but not new
+        # packages.  We need to inform about this, so this can become
+        # a warning instead of an error.
+        #
+        # To do that, we store in `factory_cycles_pkgs` all the
+        # factory cycles as a set of packages, so we can check in the
+        # new cycle (also as a set of package) is included here.
+        factory_cycles_pkgs = {frozenset(cycle) for cycle in factory_cycles}
         for cycle in current_graph.cycles():
             if cycle not in factory_cycles:
                 factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
-                yield cycle, sorted(current_edges - factory_edges)
+                current_pkgs = set(cycle)
+                yield (cycle,
+                       sorted(current_edges - factory_edges),
+                       current_pkgs in factory_cycles_pkgs)
