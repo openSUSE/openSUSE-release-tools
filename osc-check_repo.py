@@ -190,13 +190,15 @@ def _check_repo_group(self, id_, requests, debug=False):
     # Detect cycles into the current Factory / openSUSE graph after we
     # update the links with the current list of request.
     cycle_detector = CycleDetector(self.checkrepo.staging)
-    for (cycle, new_edges) in cycle_detector.cycles(requests=packs):
-        print
-        print ' - New cycle detected:', sorted(cycle)
-        print ' - New edges:', new_edges
-        # Mark all packages as updated, to avoid to be accepted
-        for request in requests:
-            request.updated = True
+    for (cycle, new_edges, new_pkgs) in cycle_detector.cycles(requests=packs):
+        # If there are new cycles that also contains new packages,
+        # mark all packages as updated, to avoid to be accepted
+        if new_pkgs:
+            print
+            print ' - New cycle detected:', sorted(cycle)
+            print ' - New edges:', new_edges
+            for request in requests:
+                request.updated = True
 
     for rq in requests:
         smissing = []
