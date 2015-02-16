@@ -106,6 +106,11 @@ class FreezeCommand(object):
 
         self.freeze_prjlinks()
 
+        # If there is not a bootstrap repository, there is not
+        # anything more to do.
+        if not self.is_bootstrap():
+            return
+
         self.set_bootstrap_copy()
         self.create_bootstrap_aggregate()
         print("waiting for scheduler to disable...")
@@ -217,3 +222,13 @@ class FreezeCommand(object):
             return package  # we should not freeze aggregates
         ET.SubElement(flink, 'package', {'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
         return package
+
+    def is_bootstrap(self):
+        """Check if there is a bootstrap copy repository."""
+        url = self.api.makeurl(['source', self.prj, '_meta'])
+        root = ET.parse(self.api.retried_GET(url)).getroot()
+
+        for repo in root.findall('.//repository'):
+            if 'bootstrap_copy' == repo.get('name'):
+                return True
+        return False
