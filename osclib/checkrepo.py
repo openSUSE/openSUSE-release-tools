@@ -27,6 +27,7 @@ from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
+from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize
 from osclib.pkgcache import PkgCache
@@ -141,6 +142,7 @@ class CheckRepo(object):
         """CheckRepo constructor."""
         self.apiurl = apiurl
         self.project = 'openSUSE:%s' % project
+        Config(self.project)
         self.staging = StagingAPI(apiurl, self.project)
 
         self.pkgcache = PkgCache(BINCACHE, force_clean=force_clean)

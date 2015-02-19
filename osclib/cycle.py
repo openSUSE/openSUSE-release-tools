@@ -295,7 +295,7 @@ class CycleDetector(object):
         # project (i.e Factory) cycles as a set of packages, so we can
         # check in the new cycle (also as a set of package) is
         # included here.
-        project_cycles_pkgs = {frozenset(cycle) for cycle in project_cycles}
+        project_cycles_pkgs = [set(cycle) for cycle in project_cycles]
         for cycle in current_graph.cycles():
             if cycle not in project_cycles:
                 project_edges = set((u, v) for u in cycle for v in project_graph.edges(u) if v in cycle)
@@ -303,4 +303,4 @@ class CycleDetector(object):
                 current_pkgs = set(cycle)
                 yield (cycle,
                        sorted(current_edges - project_edges),
-                       current_pkgs in project_cycles_pkgs)
+                       not any(current_pkgs.issubset(cpkgs) for cpkgs in project_cycles_pkgs))
