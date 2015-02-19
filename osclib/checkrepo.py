@@ -137,11 +137,11 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl, opensuse='Factory', readonly=False, force_clean=False, debug=False):
+    def __init__(self, apiurl, project='Factory', readonly=False, force_clean=False, debug=False):
         """CheckRepo constructor."""
         self.apiurl = apiurl
-        self.opensuse = opensuse
-        self.staging = StagingAPI(apiurl, opensuse)
+        self.project = 'openSUSE:%s' % project
+        self.staging = StagingAPI(apiurl, self.project)
 
         self.pkgcache = PkgCache(BINCACHE, force_clean=force_clean)
 
@@ -241,8 +241,8 @@ class CheckRepo(object):
         """Search pending requests to review."""
         requests = []
         review = "@by_user='factory-repo-checker'+and+@state='new'"
-        target = "@project='openSUSE:{}'".format(self.opensuse)
-        target_nf = "@project='openSUSE:{}:NonFree'".format(self.opensuse)
+        target = "@project='{}'".format(self.project)
+        target_nf = "@project='{}'".format(self.staging.cnonfree)
         try:
             url = makeurl(self.apiurl, ('search', 'request'),
                           "match=state/@name='review'+and+review[%s]+and+(target[%s]+or+target[%s])" % (

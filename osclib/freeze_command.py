@@ -1,3 +1,19 @@
+# Copyright (C) 2015 SUSE Linux GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 import time
 import re
 from xml.etree import cElementTree as ET
@@ -34,7 +50,7 @@ class FreezeCommand(object):
         self.create_bootstrap_aggregate_file()
 
     def bootstrap_packages(self):
-        url = self.api.makeurl(['source', 'openSUSE:{}:Rings:0-Bootstrap'.format(self.api.opensuse)])
+        url = self.api.makeurl(['source', '{}:0-Bootstrap'.format(self.api.crings)])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         l = list()
@@ -51,7 +67,7 @@ class FreezeCommand(object):
 
         root = ET.Element('aggregatelist')
         a = ET.SubElement(root, 'aggregate',
-                          {'project': 'openSUSE:{}:Rings:0-Bootstrap'.format(self.api.opensuse)})
+                          {'project': '{}:0-Bootstrap'.format(self.api.crings)})
 
         for package in self.bootstrap_packages():
             p = ET.SubElement(a, 'package')
@@ -147,7 +163,7 @@ class FreezeCommand(object):
         root = ET.Element('project', {'name': prj})
         ET.SubElement(root, 'title')
         ET.SubElement(root, 'description')
-        links = self.projectlinks or ['openSUSE:{}:Rings:1-MinimalX'.format(self.api.opensuse)]
+        links = self.projectlinks or ['{}:1-MinimalX'.format(self.api.crings)]
         for lprj in links:
             ET.SubElement(root, 'link', {'project': lprj})
         f = ET.SubElement(root, 'build')
@@ -161,7 +177,7 @@ class FreezeCommand(object):
         ET.SubElement(f, 'enable')
 
         r = ET.SubElement(root, 'repository', {'name': 'bootstrap_copy'})
-        ET.SubElement(r, 'path', {'project': 'openSUSE:{}:Staging'.format(self.api.opensuse), 'repository': 'standard'})
+        ET.SubElement(r, 'path', {'project': self.api.cstaging, 'repository': 'standard'})
         a = ET.SubElement(r, 'arch')
         a.text = 'i586'
         a = ET.SubElement(r, 'arch')
@@ -182,7 +198,7 @@ class FreezeCommand(object):
         return ET.tostring(root)
 
     def freeze_prjlinks(self):
-        sources = dict()
+        sources = {}
         flink = ET.Element('frozenlinks')
 
         for lprj in self.projectlinks:
@@ -211,7 +227,7 @@ class FreezeCommand(object):
         for linked in si.findall('linked'):
             if linked.get('project') in self.projectlinks:
                 # take the unexpanded md5 from Factory / 13.2 link
-                url = self.api.makeurl(['source', 'openSUSE:{}'.format(self.api.opensuse), package],
+                url = self.api.makeurl(['source', self.api.project, package],
                                        {'view': 'info', 'nofilename': '1'})
                 # print(package, linked.get('package'), linked.get('project'))
                 f = self.api.retried_GET(url)

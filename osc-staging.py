@@ -17,6 +17,7 @@
 import os
 import os.path
 import sys
+import warnings
 
 from osc import cmdln
 from osc import oscerr
@@ -46,7 +47,7 @@ def _print_version(self):
 
 def _full_project_name(self, project):
     """Deduce the full project name."""
-    if ':' in project:
+    if project.startswith(('openSUSE', 'SUSE')):
         return project
 
     if 'Factory' in project or 'openSUSE' in project:
@@ -56,7 +57,7 @@ def _full_project_name(self, project):
         return 'SUSE:%s' % project
 
     # If we can't guess, raise a Warning
-    raise Warning('% project not recognized.' % project)
+    warnings.warn('% project not recognized.' % project)
     return project
 
 

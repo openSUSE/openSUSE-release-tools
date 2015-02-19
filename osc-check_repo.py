@@ -71,7 +71,7 @@ def _check_repo_download(self, request):
         if request.error:
             return set()
 
-    staging_prefix = 'openSUSE:{}:Staging:'.format(self.checkrepo.opensuse)
+    staging_prefix = '{}:'.format(self.checkrepo.staging.cstaging)
     if staging_prefix in str(request.group):
         pkglist = self.checkrepo.get_package_list_from_repository(
             request.group, 'standard', arch,
@@ -359,7 +359,7 @@ def _check_repo_group(self, id_, requests, debug=False):
         # Detect if this error message comes from a staging project.
         # Store it in the repo_checker_error, that is the text that
         # will be published in the error message.
-        staging_prefix = 'openSUSE:{}:Staging:'.format(self.checkrepo.opensuse)
+        staging_prefix = '{}:'.format(self.checkrepo.staging.cstaging)
         if staging_prefix in project_repo[0]:
             repo_checker_error = stdoutdata
         if not any(staging_prefix in p_r[0] for p_r in execution_plan):
@@ -402,7 +402,7 @@ def _check_repo_group(self, id_, requests, debug=False):
 
 def _mirror_full(self, plugin_dir, repo_dir):
     """Call bs_mirrorfull script to mirror packages."""
-    url = 'https://build.opensuse.org/build/openSUSE:%s/%s/x86_64' % (self.checkrepo.opensuse, 'standard')
+    url = 'https://build.opensuse.org/build/%s/%s/x86_64' % (self.checkrepo.project, 'standard')
 
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)

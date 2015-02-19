@@ -1,4 +1,4 @@
-# Copyright (C) 2015 SUSE Linux Products GmbH
+# Copyright (C) 2015 SUSE Linux GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,14 +22,35 @@ import re
 from osc import conf
 
 
+# Sane defatuls for openSUSE and SUSE.  The string interpolation rule
+# is as this:
+#
+# * %(project)s to replace the name of the project.
+# * %(project.lower)s to replace the lower case version of the name of
+#   the project.
+
 DEFAULT = {
     r'openSUSE:(?P<project>[-\w\d]+)': {
         'staging': 'openSUSE:%(project)s:Staging',
+        'staging-group': '%(project.lower)s-staging',
+        'rings': 'openSUSE:%(project)s:Rings',
+        'nonfree': 'openSUSE:%(project)s:NonFree',
+        'rebuild': 'openSUSE:%(project)s:Rebuild',
+        'product': 'openSUSE.product',
+        'openqa': 'https://openqa.opensuse.org',
         'lock': 'openSUSE:%(project)s:Staging',
+        'lock-ns': 'openSUSE',
     },
     r'SUSE:(?P<project>[-\w\d]+)': {
-        'staging': 'SUSE:%(project)s:GA:Staging',
-        'lock': 'SUSE:%(project)s:GA:Staging',
+        'staging': 'SUSE:%(project)s:Staging',
+        'staging-group': '%(project.lower)s-staging',
+        'rings': None,
+        'nonfree': None,
+        'rebuild': None,
+        'product': None,
+        'openqa': None,
+        'lock': None,
+        'lock-ns': 'OBS',
     }
 }
 
@@ -41,6 +62,7 @@ DEFAULT = {
 # [openSUSE:Factory]
 #
 # staging = openSUSE:Factory:Staging
+# rings = openSUSE:Factory:Rings
 # lock = openSUSE:Factory:Staging
 #
 
@@ -69,9 +91,13 @@ class Config(object):
             match = re.match(prj_pattern, self.project)
             if match:
                 project = match.group('project')
-                defaults = {
-                    k: v % {'project': project} for k, v in DEFAULT[prj_pattern].items() if v
-                }
+                for k, v in DEFAULT[prj_pattern].items():
+                    if isinstance(v, basestring) and '%(project)s' in v:
+                        defaults[k] = v % {'project': project}
+                    elif isinstance(v, basestring) and '%(project.lower)s' in v:
+                        defaults[k] = v % {'project.lower': project.lower()}
+                    else:
+                        defaults[k] = v
                 break
 
         # Update the configuration, only when it is necessary

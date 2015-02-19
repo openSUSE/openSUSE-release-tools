@@ -1,8 +1,18 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2015 SUSE Linux GmbH
 #
-# (C) 2014 mhrusecky@suse.cz, openSUSE.org
-# (C) 2014 tchvatal@suse.cz, openSUSE.org
-# Distribute under GPLv2 or GPLv3
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import json
 import logging
@@ -13,6 +23,7 @@ from xml.etree import cElementTree as ET
 
 import yaml
 
+from osc import conf
 from osc import oscerr
 from osc.core import change_review_state
 from osc.core import delete_package
@@ -31,21 +42,31 @@ class StagingAPI(object):
     Class containing various api calls to work with staging projects.
     """
 
-    def __init__(self, apiurl, opensuse='Factory'):
-        """
-        Initialize instance variables
-        """
+    def __init__(self, apiurl, project):
+        """Initialize instance variables."""
 
         self.apiurl = apiurl
-        self.opensuse = opensuse
-        self.rings = (
-            'openSUSE:{}:Rings:0-Bootstrap'.format(self.opensuse),
-            'openSUSE:{}:Rings:1-MinimalX'.format(self.opensuse),
-            'openSUSE:{}:Rings:2-TestDVD'.format(self.opensuse)
-        )
-        self.ring_packages = self._generate_ring_packages()
-        self.packages_staged = self._get_staged_requests()
+        self.project = project
 
+        # Store some prefix / data used in the code.
+        self.cstaging = conf.config[project]['staging']
+        self.cstaging_group = conf.config[project]['staging-group']
+        self.crings = conf.config[project]['rings']
+        self.cnonfree = conf.config[project]['nonfree']
+        self.crebuild = conf.config[project]['rebuild']
+        self.cproduct = conf.config[project]['product']
+        self.copenqa = conf.config[project]['openqa']
+
+        # If the project support rings, inititialize some variables.
+        if self.crings:
+            self.rings = (
+                '{}:0-Bootstrap'.format(self.crings),
+                '{}:1-MinimalX'.format(self.crings),
+                '{}:2-TestDVD'.format(self.crings)
+            )
+            self.ring_packages = self._generate_ring_packages()
+
+        self.packages_staged = self._get_staged_requests()
 
     def makeurl(self, l, query=None):
         """
@@ -92,12 +113,12 @@ class StagingAPI(object):
         """
 
         ret = {}
-
         for prj in self.rings:
             url = self.makeurl(['source', prj])
             root = http_GET(url)
             for entry in ET.parse(root).getroot().findall('entry'):
                 pkg = entry.attrib['name']
+                # XXX TODO - Test-DVD-x86_64 is hardcoded here
                 if pkg in ret and pkg != 'Test-DVD-x86_64':
                     msg = '{} is defined in two projects ({} and {})'
                     raise Exception(msg.format(pkg, ret[pkg], prj))
@@ -110,7 +131,7 @@ class StagingAPI(object):
         :return dict of staged requests with their project and srid
         """
 
-        packages_staged = dict()
+        packages_staged = {}
         for prj in self.get_staging_projects():
             meta = self.get_prj_pseudometa(prj)
             for req in meta['requests']:
@@ -215,7 +236,7 @@ class StagingAPI(object):
 
         projects = []
 
-        query = "id?match=starts-with(@name,'openSUSE:{}:Staging:')".format(self.opensuse)
+        query = "id?match=starts-with(@name,'{}:')".format(self.cstaging)
         url = self.makeurl(['search', 'project', query])
         projxml = http_GET(url)
         root = ET.parse(projxml).getroot()
@@ -287,7 +308,7 @@ class StagingAPI(object):
             # accept the request here
             message = 'No need for staging, not in tested ring projects.'
             self.do_change_review_state(request_id, 'accepted', message=message,
-                                        by_group='factory-staging')
+                                        by_group=self.cstaging_group)
 
     def supseded_request(self, request):
         """
@@ -349,12 +370,14 @@ class StagingAPI(object):
         requests = []
 
         # xpath query, using the -m, -r, -s options
-        where = "@by_group='factory-staging'+and+@state='new'"
-        target = "@project='openSUSE:{}'".format(self.opensuse)
-        target_nf = "@project='openSUSE:{}:NonFree'".format(self.opensuse)
+        where = "@by_group='{}'+and+@state='new'".format(self.cstaging_group)
+        projects = [format(self.project)]
+        if self.cnonfree:
+            projects.append(self.cnonfree)
+        targets = ["target[@project='{}']".format(p) for p in projects]
 
-        query = "match=state/@name='review'+and+review[{}]+and+(target[{}]+or+target[{}])".format(
-            where, target, target_nf)
+        query = "match=state/@name='review'+and+review[{}]+and+({})".format(
+            where, '+or+'.join(targets))
         url = self.makeurl(['search', 'request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
@@ -557,12 +580,12 @@ class StagingAPI(object):
                 informations)
 
         """
-        _prefix = 'openSUSE:{}:Staging:'.format(self.opensuse)
+        _prefix = '{}:'.format(self.cstaging)
         if project.startswith(_prefix):
             project = project.replace(_prefix, '')
 
         query = {'format': 'json'}
-        url = self.makeurl(('project',  'staging_projects', 'openSUSE:%s' % self.opensuse, project),
+        url = self.makeurl(('project',  'staging_projects', self.project, project),
                            query=query)
         result = json.load(self.retried_GET(url))
         return result['overall_state'] == 'acceptable'
@@ -581,7 +604,10 @@ class StagingAPI(object):
         return 100000  # quite some!
 
     def check_if_job_is_ok(self, job):
-        url = 'https://openqa.opensuse.org/tests/{}/file/results.json'.format(job['id'])
+        if not self.copenqa:
+            return
+
+        url = '{}/tests/{}/file/results.json'.format(self.copenqa, job['id'])
         try:
             f = urllib2.urlopen(url)
         except urllib2.HTTPError:
@@ -598,7 +624,7 @@ class StagingAPI(object):
         # pprint.pprint(openqa)
         # pprint.pprint(job)
         if overall != 'ok':
-            return "openQA's overall status is {} for https://openqa.opensuse.org/tests/{}".format(overall, job['id'])
+            return "openQA's overall status is {} for {}/tests/{}".format(overall, self.openqa, job['id'])
 
         for module in openqa['testmodules']:
             # zypper_in fails at the moment - urgent fix needed
@@ -606,7 +632,7 @@ class StagingAPI(object):
                 continue
             if module['name'] in ['kate', 'ooffice', 'amarok', 'thunderbird', 'gnucash']:
                 continue
-            return '{} test failed: https://openqa.opensuse.org/tests/{}'.format(module['name'], job['id'])
+            return '{} test failed: {}/tests/{}'.format(module['name'], self.openqa, job['id'])
         return None
 
     def rq_to_prj(self, request_id, project):
@@ -643,7 +669,7 @@ class StagingAPI(object):
 
         # now remove the staging checker
         self.do_change_review_state(request_id, 'accepted',
-                                    by_group='factory-staging',
+                                    by_group=self.cstaging_group,
                                     message='Picked {}'.format(project))
         return True
 
@@ -659,7 +685,7 @@ class StagingAPI(object):
         if project.endswith(':DVD'):
             return project  # not yet
 
-        ring_dvd = 'openSUSE:{}:Rings:2-TestDVD'.format(self.opensuse)
+        ring_dvd = '{}:2-TestDVD'.format(self.project)
         if self.ring_packages.get(pkg) == ring_dvd:
             return project + ":DVD"
 
@@ -780,7 +806,7 @@ class StagingAPI(object):
     def prj_from_letter(self, letter):
         if ':' in letter:  # not a letter
             return letter
-        return 'openSUSE:{}:Staging:{}'.format(self.opensuse, letter)
+        return '{}:{}'.format(self.cstaging, letter)
 
     def list_requests_in_prj(self, project):
         where = "@by_project='%s'+and+@state='new'" % project
@@ -1048,7 +1074,7 @@ class StagingAPI(object):
         return results
 
     def check_pkgs(self, rebuild_list):
-        url = self.makeurl(['source', 'openSUSE:Factory'])
+        url = self.makeurl(['source', self.project])
         pkglist = []
 
         root = ET.parse(http_GET(url)).getroot()
