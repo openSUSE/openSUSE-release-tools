@@ -77,7 +77,6 @@ class Config(object):
         self.conf_file = os.path.expanduser(conf_file)
 
         # Populate the configuration dictionary
-        conf.get_config()
         self.populate_conf()
 
     @property
