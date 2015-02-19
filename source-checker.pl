@@ -169,6 +169,9 @@ if (-d "$old") {
             if (m/^Source/) {
                 my $line = $_;
                 $line =~ s/^(Source[0-9]*)\s*:\s*//;
+                if ($patches{$line}) {
+                   delete $patches{$line};
+                }
                 my $prefix = $1;
                 my $parsedline = $ps->{lc $prefix};
                 if (defined $thash{$parsedline}) {
