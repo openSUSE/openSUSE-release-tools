@@ -220,6 +220,16 @@ class FreezeCommand(object):
 
     def check_one_source(self, flink, si):
         package = si.get('package')
+
+        # If the package is an internal one (e.g _product)
+        if package.startswith('_'):
+            return None
+
+        # Ignore packages with an origing (i.e. with an origin
+        # different from the current project)
+        if si.find('originproject') != None:
+            return None
+
         # we have to check if its a link within the staging project
         # in this case we need to keep the link as is, and not freezing
         # the target. Otherwise putting kernel-source into staging prj
