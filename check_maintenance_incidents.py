@@ -52,7 +52,13 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         }
         url = osc.core.makeurl(self.apiurl, ('search', 'owner'), query=query)
         root = ET.parse(osc.core.http_GET(url)).getroot()
-        return [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
+        maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
+        if not maintainers:
+            for group in [p.get('name') for p in root.findall('.//group') if p.get('role') == 'maintainer']:
+                url = osc.core.makeurl(self.apiurl, ('group', group))
+                root = ET.parse(osc.core.http_GET(url)).getroot()
+                maintainers = maintainers + [p.get('userid') for p in root.findall('./person/person')]
+        return maintainers
 
     def add_devel_project_review(self, req, package):
         """ add devel project/package as reviewer """
