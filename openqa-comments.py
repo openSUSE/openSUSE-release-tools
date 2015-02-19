@@ -20,6 +20,7 @@ from collections import defaultdict
 import json
 
 from osclib.comments import CommentAPI
+from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
 import osc
@@ -41,13 +42,13 @@ class OpenQAReport(object):
 
     def _openQA_url(self, job):
         test_name = job['name'].split('-')[-1]
-        link = 'https://openqa.opensuse.org/tests/%s' % job['id']
+        link = '%s/tests/%s' % (self.api.copenqa, job['id'])
         text = '[%s](%s)' % (test_name, link)
         return text
 
     def _openQA_module_url(self, job, module):
-        link = 'https://openqa.opensuse.org/tests/%s/modules/%s/steps/1' % (
-            job['id'], module['name']
+        link = '%s/tests/%s/modules/%s/steps/1' % (
+            self.api.copenqa, job['id'], module['name']
         )
         text = '[%s](%s)' % (module['name'], link)
         return text
@@ -58,13 +59,13 @@ class OpenQAReport(object):
         return safe_margin <= time_delta
 
     def get_info(self, project):
-        _prefix = 'openSUSE:{}:Staging:'.format(self.api.opensuse)
+        _prefix = '{}:'.format(self.api.cstaging)
         if project.startswith(_prefix):
             project = project.replace(_prefix, '')
 
         query = {'format': 'json'}
         url = api.makeurl(('project', 'staging_projects',
-                           'openSUSE:%s' % api.opensuse, project), query=query)
+                           api.project, project), query=query)
         info = json.load(api.retried_GET(url))
         return info
 
@@ -216,7 +217,8 @@ if __name__ == '__main__':
     if args.force:
         MARGIN_HOURS = 0
 
-    api = StagingAPI(osc.conf.config['apiurl'], args.project)
+    Config('openSUSE:%s' % args.project)
+    api = StagingAPI(osc.conf.config['apiurl'], 'openSUSE:%s' % args.project)
     openQA = OpenQAReport(api)
 
     if args.staging:

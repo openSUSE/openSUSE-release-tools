@@ -51,9 +51,9 @@ class RequestFinder(object):
             return None
 
         project = root.find('action').find('target').get('project')
-        if (project != 'openSUSE:{}'.format(self.api.opensuse) and not project.startswith('openSUSE:{}:Staging:'.format(self.api.opensuse))):
-            msg = 'Request {} is not for openSUSE:{}, but for {}'
-            msg = msg.format(request_id, self.api.opensuse, project)
+        if (project != self.api.project and not project.startswith(self.api.cstaging)):
+            msg = 'Request {} is not for {}, but for {}'
+            msg = msg.format(request_id, self.api.project, project)
             raise oscerr.WrongArgs(msg)
         self.srs[int(request_id)] = {'project': project}
 
@@ -65,8 +65,8 @@ class RequestFinder(object):
         :param package: name of the package
         """
 
-        query = 'states=new,review,declined&project=openSUSE:{}&view=collection&package={}'
-        query = query.format(self.api.opensuse, urllib2.quote(package))
+        query = 'states=new,review,declined&project={}&view=collection&package={}'
+        query = query.format(self.api.project, urllib2.quote(package))
         url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
 
@@ -82,7 +82,7 @@ class RequestFinder(object):
             request = int(sr.get('id'))
             state = sr.find('state').get('name')
 
-            self.srs[request] = {'project': 'openSUSE:{}'.format(self.api.opensuse), 'state': state}
+            self.srs[request] = {'project': self.api.project, 'state': state}
 
             if last_rq:
                 if self.srs[last_rq]['state'] == 'declined':
@@ -107,7 +107,7 @@ class RequestFinder(object):
         :param source_project: name of the source project
         """
 
-        query = 'states=new,review&project=openSUSE:{}&view=collection'.format(self.api.opensuse)
+        query = 'states=new,review&project={}&view=collection'.format(self.api.project)
         url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
@@ -119,7 +119,7 @@ class RequestFinder(object):
                 if src is not None and src.get('project') == source_project:
                     request = int(sr.attrib['id'])
                     state = sr.find('state').get('name')
-                    self.srs[request] = {'project': 'openSUSE:{}'.format(self.api.opensuse), 'state': state}
+                    self.srs[request] = {'project': self.api.project, 'state': state}
                     ret = True
 
         return ret

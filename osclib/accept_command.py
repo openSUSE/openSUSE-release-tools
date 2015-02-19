@@ -1,4 +1,5 @@
 import re
+import warnings
 from xml.etree import cElementTree as ET
 
 from osc.core import change_request_state
@@ -56,15 +57,15 @@ class AcceptCommand(object):
             msg = 'Accepting staging review for {}'.format(req['package'])
             print(msg)
 
-            oldspecs = self.api.get_filelist_for_package(pkgname=req['package'], project='openSUSE:{}'.format(self.api.opensuse), extension='spec')
-            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.opensuse)
-            self.create_new_links('openSUSE:{}'.format(self.api.opensuse), req['package'], oldspecs)
+            oldspecs = self.api.get_filelist_for_package(pkgname=req['package'], project=self.api.project, extension='spec')
+            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
+            self.create_new_links(self.api.project, req['package'], oldspecs)
 
         # A single comment should be enough to notify everybody, since
         # they are already mentioned in the comments created by
         # select/unselect
         pkg_list = ", ".join(packages)
-        cmmt = 'Project "{}" accepted. The following packages have been submitted to {}: {}.'.format(project, self.api.opensuse, pkg_list)
+        cmmt = 'Project "{}" accepted. The following packages have been submitted to {}: {}.'.format(project, self.api.project, pkg_list)
         self.comment.add_comment(project_name=project, comment=cmmt)
 
         # XXX CAUTION - AFAIK the 'accept' command is expected to clean the messages here.
@@ -78,14 +79,16 @@ class AcceptCommand(object):
 
     def accept_other_new(self):
         changed = False
-        rqlist = self.find_new_requests('openSUSE:{}'.format(self.api.opensuse))
-        rqlist += self.find_new_requests('openSUSE:{}:NonFree'.format(self.api.opensuse))
+        rqlist = self.find_new_requests(self.api.project)
+        if self.api.cnonfree:
+            rqlist += self.find_new_requests(self.api.cnonfree)
+
         for req in rqlist:
-            oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project='openSUSE:{}'.format(self.api.opensuse), extension='spec')
+            oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project=self.api.project, extension='spec')
             print 'Accepting request %d: %s' % (req['id'], ','.join(req['packages']))
-            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.opensuse)
+            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
             # Check if all .spec files of the package we just accepted has a package container to build
-            self.create_new_links('openSUSE:{}'.format(self.api.opensuse), req['packages'][0], oldspecs)
+            self.create_new_links(self.api.project, req['packages'][0], oldspecs)
             changed = True
 
         return changed
@@ -128,9 +131,19 @@ class AcceptCommand(object):
         return True
 
     def update_factory_version(self):
-        """Update openSUSE (Factory, 13.2, ...)  version if is necessary."""
-        project = 'openSUSE:{}'.format(self.api.opensuse)
-        url = self.api.makeurl(['source', project, '_product', 'openSUSE.product'])
+        """Update project (Factory, 13.2, ...) version if is necessary."""
+
+        # XXX TODO - This method have `factory` in the name.  Can be
+        # missleading.
+
+        # If thereis not product defined for this project, show the
+        # warning and return.
+        if not self.api.cproduct:
+            warnings.warn('There is not product defined in the configuration file.')
+            return
+
+        project = self.api.project
+        url = self.api.makeurl(['source', project, '_product', self.api.cproduct])
 
         product = http_GET(url).read()
         curr_version = date.today().strftime('%Y%m%d')
@@ -140,20 +153,22 @@ class AcceptCommand(object):
             http_PUT(url + '?comment=Update+version', data=new_product)
 
     def sync_buildfailures(self):
-        """Trigger rebuild of packages that failed build in either
-        openSUSE:Factory or openSUSE:Factory:Rebuild, but not the other
-        Helps over the fact that openSUSE:Factory uses rebuild=local,
-        thus sometimes 'hiding' build failures."""
+        """
+        Trigger rebuild of packages that failed build in either
+        openSUSE:Factory or openSUSE:Factory:Rebuild, but not the
+        other Helps over the fact that openSUSE:Factory uses
+        rebuild=local, thus sometimes 'hiding' build failures.
+        """
 
-        for arch in ["x86_64","i586"]:
-            fact_result = self.api.get_prj_results('openSUSE:Factory', arch)
+        for arch in ["x86_64", "i586"]:
+            fact_result = self.api.get_prj_results(self.api.project, arch)
             fact_result = self.api.check_pkgs(fact_result)
-            rebuild_result = self.api.get_prj_results('openSUSE:Factory:Rebuild', arch)
+            rebuild_result = self.api.get_prj_results(self.api.crebuild, arch)
             rebuild_result = self.api.check_pkgs(rebuild_result)
             result = set(rebuild_result) ^ set(fact_result)
 
             print sorted(result)
 
             for package in result:
-                self.api.rebuild_pkg(package, 'openSUSE:Factory', arch, None)
-                self.api.rebuild_pkg(package, 'openSUSE:Factory:Rebuild', arch, None)
+                self.api.rebuild_pkg(package, self.api.project, arch, None)
+                self.api.rebuild_pkg(package, self.api.crebuild, arch, None)

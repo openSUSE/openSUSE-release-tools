@@ -74,14 +74,15 @@ class CheckCommand(object):
                 break
 
         # openQA results
-        if not project['openqa_jobs']:
-            report.append('   - No openQA result yet')
-        for job in project['openqa_jobs']:
-            if job['result'] != 'passed':
-                qa_result = job['result'] if job['result'] != 'none' else 'running'
-                report.append("   - openQA's overall status is %s for https://openqa.opensuse.org/tests/%s" % (qa_result, job['id']))
-                report.extend('     %s: fail' % module['name'] for module in job['modules'] if module['result'] == 'fail')
-                break
+        if self.api.copenqa:
+            if not project['openqa_jobs']:
+                report.append('   - No openQA result yet')
+            for job in project['openqa_jobs']:
+                if job['result'] != 'passed':
+                    qa_result = job['result'] if job['result'] != 'none' else 'running'
+                    report.append("   - openQA's overall status is %s for %s/tests/%s" % (qa_result, self.api.copenqa, job['id']))
+                    report.extend('     %s: fail' % module['name'] for module in job['modules'] if module['result'] == 'fail')
+                    break
 
         subproject = project['subproject']
         if subproject:
@@ -109,10 +110,10 @@ class CheckCommand(object):
 
         query = {'format': 'json'}
         if project:
-            url = self.api.makeurl(('project', 'staging_projects', 'openSUSE:%s' % self.api.opensuse,
+            url = self.api.makeurl(('project', 'staging_projects', self.api.project,
                                     project), query=query)
         else:
-            url = self.api.makeurl(('project', 'staging_projects', 'openSUSE:%s' % self.api.opensuse),
+            url = self.api.makeurl(('project', 'staging_projects', self.api.project),
                                    query=query)
         info = json.load(self.api.retried_GET(url))
         if not project:

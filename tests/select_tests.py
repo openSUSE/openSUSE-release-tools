@@ -1,17 +1,28 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# Copyright (C) 2015 SUSE Linux GmbH
 #
-# (C) 2014 tchvatal@suse.cz, openSUSE.org
-# Distribute under GPLv2 or later
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import unittest
 
 from obs import APIURL
 from obs import OBS
 from osc import oscerr
+from osclib.comments import CommentAPI
+from osclib.conf import Config
 from osclib.select_command import SelectCommand
 from osclib.stagingapi import StagingAPI
-from osclib.comments import CommentAPI
 
 
 class TestSelect(unittest.TestCase):
@@ -21,7 +32,8 @@ class TestSelect(unittest.TestCase):
         Initialize the configuration
         """
         self.obs = OBS()
-        self.api = StagingAPI(APIURL)
+        Config('openSUSE:Factory')
+        self.api = StagingAPI(APIURL, 'openSUSE:Factory')
 
     def test_old_frozen(self):
         self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)

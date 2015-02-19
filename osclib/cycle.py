@@ -232,17 +232,17 @@ class CycleDetector(object):
         """Detect cycles in a specific repository."""
 
         if not project:
-            project = 'openSUSE:{}'.format(self.api.opensuse)
+            project = self.api.project
 
         # filter submit requests
         requests = [rq for rq in requests if rq.action_type == 'submit' and not rq.updated]
 
         # Detect cycles - We create the full graph from _builddepinfo.
-        factory_graph = self._get_builddepinfo_graph(project, repository, arch)
-        factory_cycles = factory_graph.cycles()
+        project_graph = self._get_builddepinfo_graph(project, repository, arch)
+        project_cycles = project_graph.cycles()
 
         # This graph will be updated for every request
-        current_graph = deepcopy(factory_graph)
+        current_graph = deepcopy(project_graph)
 
         subpkgs = current_graph.subpkgs
 
@@ -291,15 +291,16 @@ class CycleDetector(object):
         # packages.  We need to inform about this, so this can become
         # a warning instead of an error.
         #
-        # To do that, we store in `factory_cycles_pkgs` all the
-        # factory cycles as a set of packages, so we can check in the
-        # new cycle (also as a set of package) is included here.
-        factory_cycles_pkgs = {frozenset(cycle) for cycle in factory_cycles}
+        # To do that, we store in `project_cycles_pkgs` all the
+        # project (i.e Factory) cycles as a set of packages, so we can
+        # check in the new cycle (also as a set of package) is
+        # included here.
+        project_cycles_pkgs = [set(cycle) for cycle in project_cycles]
         for cycle in current_graph.cycles():
-            if cycle not in factory_cycles:
-                factory_edges = set((u, v) for u in cycle for v in factory_graph.edges(u) if v in cycle)
+            if cycle not in project_cycles:
+                project_edges = set((u, v) for u in cycle for v in project_graph.edges(u) if v in cycle)
                 current_edges = set((u, v) for u in cycle for v in current_graph.edges(u) if v in cycle)
                 current_pkgs = set(cycle)
                 yield (cycle,
-                       sorted(current_edges - factory_edges),
-                       current_pkgs in factory_cycles_pkgs)
+                       sorted(current_edges - project_edges),
+                       not any(current_pkgs.issubset(cpkgs) for cpkgs in project_cycles_pkgs))

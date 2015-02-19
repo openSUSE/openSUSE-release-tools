@@ -27,6 +27,7 @@ from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
+from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize
 from osclib.pkgcache import PkgCache
@@ -137,11 +138,12 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl, opensuse='Factory', readonly=False, force_clean=False, debug=False):
+    def __init__(self, apiurl, project='Factory', readonly=False, force_clean=False, debug=False):
         """CheckRepo constructor."""
         self.apiurl = apiurl
-        self.opensuse = opensuse
-        self.staging = StagingAPI(apiurl, opensuse)
+        self.project = 'openSUSE:%s' % project
+        Config(self.project)
+        self.staging = StagingAPI(apiurl, self.project)
 
         self.pkgcache = PkgCache(BINCACHE, force_clean=force_clean)
 
@@ -241,8 +243,8 @@ class CheckRepo(object):
         """Search pending requests to review."""
         requests = []
         review = "@by_user='factory-repo-checker'+and+@state='new'"
-        target = "@project='openSUSE:{}'".format(self.opensuse)
-        target_nf = "@project='openSUSE:{}:NonFree'".format(self.opensuse)
+        target = "@project='{}'".format(self.project)
+        target_nf = "@project='{}'".format(self.staging.cnonfree)
         try:
             url = makeurl(self.apiurl, ('search', 'request'),
                           "match=state/@name='review'+and+review[%s]+and+(target[%s]+or+target[%s])" % (

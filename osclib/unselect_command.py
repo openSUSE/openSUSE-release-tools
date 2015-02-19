@@ -20,7 +20,7 @@ class UnselectCommand(object):
             msg = 'Unselecting "{}" from "{}"'.format(request, staging_project)
             print(msg)
             self.api.rm_from_prj(staging_project, request_id=request)
-            self.api.add_review(request, by_group='factory-staging', msg='Please recheck')
+            self.api.add_review(request, by_group=self.api.cstaging_group, msg='Please recheck')
 
         # Notify everybody about the changes
         for prj in affected_projects:

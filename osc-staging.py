@@ -1,15 +1,23 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# Copyright (C) 2015 SUSE Linux Products GmbH
 #
-# (C) 2014 mhrusecky@suse.cz, openSUSE.org
-# (C) 2014 tchvatal@suse.cz, openSUSE.org
-# (C) 2014 aplanas@suse.de, openSUSE.org
-# (C) 2014 coolo@suse.de, openSUSE.org
-# Distribute under GPLv2 or GPLv3
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
 import os.path
 import sys
+import warnings
 
 from osc import cmdln
 from osc import oscerr
@@ -20,6 +28,7 @@ sys.path.append(_plugin_dir)
 from osclib.accept_command import AcceptCommand
 from osclib.check_command import CheckCommand
 from osclib.cleanup_rings import CleanupRings
+from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
 from osclib.list_command import ListCommand
 from osclib.obslock import OBSLock
@@ -34,6 +43,22 @@ def _print_version(self):
     """ Print version information about this extension. """
     print(self.OSC_STAGING_VERSION)
     quit(0)
+
+
+def _full_project_name(self, project):
+    """Deduce the full project name."""
+    if project.startswith(('openSUSE', 'SUSE')):
+        return project
+
+    if 'Factory' in project or 'openSUSE' in project:
+        return 'openSUSE:%s' % project
+
+    if 'SLE' in project:
+        return 'SUSE:%s' % project
+
+    # If we can't guess, raise a Warning
+    warnings.warn('% project not recognized.' % project)
+    return project
 
 
 @cmdln.option('--move', action='store_true',
@@ -103,11 +128,13 @@ def do_staging(self, subcmd, opts, *args):
     if max_args is not None and len(args) - 1 > max_args:
         raise oscerr.WrongArgs('Too many arguments.')
 
-    # init the obs access
+    # Init the OBS access and configuration
+    opts.project = self._full_project_name(opts.project)
     opts.apiurl = self.get_api_url()
     opts.verbose = False
+    Config(opts.project)
 
-    with OBSLock(opts.apiurl, 'openSUSE:%s:Staging' % opts.project):
+    with OBSLock(opts.apiurl, opts.project):
         api = StagingAPI(opts.apiurl, opts.project)
 
         # call the respective command and parse args by need

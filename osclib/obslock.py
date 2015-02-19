@@ -1,4 +1,4 @@
-# Copyright (C) 2015 SUSE Linux Products GmbH
+# Copyright (C) 2015 SUSE Linux GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 
 from datetime import datetime
 import time
+import warnings
 from xml.etree import cElementTree as ET
 
 from osc import conf
@@ -30,6 +31,8 @@ class OBSLock(object):
     def __init__(self, apiurl, project, ttl=3600):
         self.apiurl = apiurl
         self.project = project
+        self.lock = conf.config[project]['lock']
+        self.ns = conf.config[project]['lock-ns']
         # TTL is measured in seconds
         self.ttl = ttl
         self.user = conf.config['api_host_options'][apiurl]['user']
@@ -50,7 +53,7 @@ class OBSLock(object):
         return user, ts
 
     def _read(self):
-        url = makeurl(self.apiurl, ['source', self.project, '_attribute', 'openSUSE:LockedBy'])
+        url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
         root = ET.parse(http_GET(url)).getroot()
         signature = None
         try:
@@ -60,16 +63,22 @@ class OBSLock(object):
         return signature
 
     def _write(self, signature):
-        url = makeurl(self.apiurl, ['source', self.project, '_attribute', 'openSUSE:LockedBy'])
+        url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
         data = """
         <attributes>
-          <attribute namespace='openSUSE' name='LockedBy'>
+          <attribute namespace='%s' name='LockedBy'>
             <value>%s</value>
           </attribute>
-        </attributes>""" % signature
+        </attributes>""" % (self.ns, signature)
         http_POST(url, data=data)
 
     def acquire(self):
+        # If the project doesn't have locks configured, raise a
+        # Warning (but continue the operation)
+        if not self.lock:
+            warnings.warn('Locking attribute is not found.  Create one to avoid race conditions.')
+            return self
+
         user, ts = self._parse(self._read())
         if user and ts:
             now = datetime.utcnow()
@@ -89,6 +98,11 @@ class OBSLock(object):
         return self
 
     def release(self):
+        # If the project do not have locks configured, simply ignore
+        # the operation.
+        if not self.lock:
+            return
+
         user, ts = self._parse(self._read())
         if user == self.user:
             self._write('')

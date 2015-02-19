@@ -13,11 +13,11 @@ class CleanupRings(object):
         self.links = {}
 
     def perform(self):
-        self.check_depinfo_ring('openSUSE:{}:Rings:0-Bootstrap'.format(self.api.opensuse),
-                                'openSUSE:{}:Rings:1-MinimalX'.format(self.api.opensuse))
-        self.check_depinfo_ring('openSUSE:{}:Rings:1-MinimalX'.format(self.api.opensuse),
-                                'openSUSE:{}:Rings:2-TestDVD'.format(self.api.opensuse))
-        self.check_depinfo_ring('openSUSE:{}:Rings:2-TestDVD'.format(self.api.opensuse), None)
+        self.check_depinfo_ring('{}:0-Bootstrap'.format(self.api.crings),
+                                '{}:1-MinimalX'.format(self.api.crings))
+        self.check_depinfo_ring('{}:1-MinimalX'.format(self.api.crings),
+                                '{}:2-TestDVD'.format(self.api.crings))
+        self.check_depinfo_ring('{}:2-TestDVD'.format(self.api.crings), None)
 
     def find_inner_ring_links(self, prj):
         query = {
@@ -29,8 +29,8 @@ class CleanupRings(object):
         root = ET.parse(f).getroot()
         for si in root.findall('sourceinfo'):
             linked = si.find('linked')
-            if linked is not None and linked.get('project') != 'openSUSE:{}'.format(self.api.opensuse):
-                if not linked.get('project').startswith('openSUSE:{}:Rings:'.format(self.api.opensuse)):
+            if linked is not None and linked.get('project') != self.api.project:
+                if not linked.get('project').startswith(self.api.crings):
                     print(ET.tostring(si))
                 self.links[linked.get('package')] = si.get('package')
 
@@ -81,7 +81,7 @@ class CleanupRings(object):
         self.find_inner_ring_links(prj)
         self.fill_pkgdeps(prj, 'standard', 'x86_64')
 
-        if prj == 'openSUSE:{}:Rings:1-MinimalX'.format(self.api.opensuse):
+        if prj == '{}:1-MinimalX'.format(self.api.crings):
             url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'])
             root = ET.parse(http_GET(url)).getroot()
             for bdep in root.findall('bdep'):
@@ -93,7 +93,7 @@ class CleanupRings(object):
                 b = self.bin2src[b]
                 self.pkgdeps[b] = 'MYdvd'
 
-        if prj == 'openSUSE:{}:Rings:2-TestDVD'.format(self.api.opensuse):
+        if prj == '{}:2-TestDVD'.format(self.api.crings):
             url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'])
             root = ET.parse(http_GET(url)).getroot()
             for bdep in root.findall('bdep'):
@@ -105,7 +105,7 @@ class CleanupRings(object):
                 b = self.bin2src[b]
                 self.pkgdeps[b] = 'MYdvd2'
 
-        if prj == 'openSUSE:{}:Rings:0-Bootstrap'.format(self.api.opensuse):
+        if prj == '{}:0-Bootstrap'.format(self.api.crings):
             url = makeurl(self.api.apiurl, ['build', prj, 'standard', '_buildconfig'])
             for line in http_GET(url).read().split('\n'):
                 if line.startswith('Preinstall:') or line.startswith('Support:'):
@@ -119,4 +119,4 @@ class CleanupRings(object):
             if source not in self.pkgdeps and source not in self.links:
                 print('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
-                    print('osc linkpac openSUSE:{} {} {}').format(self.api.opensuse, source, nextprj)
+                    print('osc linkpac {} {} {}').format(self.api.project, source, nextprj)

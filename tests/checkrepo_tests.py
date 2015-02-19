@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2014 SUSE Linux Products GmbH
+# Copyright (C) 2015 SUSE Linux GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +19,7 @@ import unittest
 from obs import APIURL
 from obs import OBS
 from osclib.checkrepo import CheckRepo
+from osclib.conf import Config
 
 
 class TestCheckRepoCalls(unittest.TestCase):
@@ -31,6 +29,7 @@ class TestCheckRepoCalls(unittest.TestCase):
         """Initialize the configuration."""
 
         self.obs = OBS()
+        Config('openSUSE:Factory')
         self.checkrepo = CheckRepo(APIURL, force_clean=True)
         # Des-memoize some functions
         self.checkrepo.build = self.checkrepo._build
