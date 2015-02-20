@@ -375,7 +375,7 @@ def do_check_source(self, subcmd, opts, *args):
     self._devel_projects = {}
     opts.apiurl = self.get_api_url()
 
-    self.api = StagingAPI(opts.apiurl, opts.project)
+    self.api = StagingAPI(opts.apiurl, 'openSUSE:%s' % opts.project)
 
     if len(args) and args[0] == 'skip':
         for id_ in args[1:]:

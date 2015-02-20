@@ -38,7 +38,7 @@ class ToTestBase(object):
     def __init__(self, project, dryrun):
         self.project = project
         self.dryrun = dryrun
-        self.api = StagingAPI(osc.conf.config['apiurl'], opensuse=project)
+        self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
         self.known_failures = self.known_failures_from_dashboard(project)
 
     def openqa_version(self):
