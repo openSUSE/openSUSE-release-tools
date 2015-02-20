@@ -78,18 +78,18 @@ class ReviewBot(object):
         if not self.review_user:
             return
 
-        review_state = self.get_review_state(req.reqid, self.review_user)
-        if review_state == 'new':
+        doit = self.can_accept_review(req.reqid, self.review_user)
+        if doit is None:
+            self.logger.info("can't change state, %s does not have '%s' as reviewer"%(req.reqid, self.review_user))
+        if doit == True:
             self.logger.debug("setting %s to %s"%(req.reqid, state))
             if not self.dryrun:
                 msg = self.review_messages[state] if state in self.review_messages else state
                 osc.core.change_review_state(apiurl = self.apiurl,
                         reqid = req.reqid, newstate = state,
                         by_user=self.review_user, message=msg)
-        elif review_state == '':
-            self.logger.info("can't change state, %s does not have '%s' as reviewer"%(req.reqid, self.review_user))
         else:
-            self.logger.debug("%s review in state '%s' not changed"%(req.reqid, review_state))
+            self.logger.debug("%s review not changed"%(req.reqid))
 
     def add_review(self, req, by_group=None, by_user=None, by_project = None, by_package = None, msg=None):
         query = {
@@ -184,16 +184,20 @@ class ReviewBot(object):
         return (None, None)
 
     # XXX used in other modules
-    def get_review_state(self, request_id, user):
-        """Return the current review state of the request."""
-        states = []
+    def can_accept_review(self, request_id, user):
+        """return True if there is a new review for the specified user"""
+        states = set()
         url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-            states = [review.get('state') for review in root.findall('review') if review.get('by_user') == user]
+            states = set([review.get('state') for review in root.findall('review') if review.get('by_user') == user])
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
-        return states[0] if states else ''
+        if not states:
+            return None
+        elif 'new' in states:
+            return True
+        return False
 
     def set_request_ids_search_review(self, user = None):
         if user is None:
