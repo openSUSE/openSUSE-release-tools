@@ -25,6 +25,7 @@ from osc import cmdln
 # Expand sys.path to search modules inside the pluging directory
 PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
 sys.path.append(PLUGINDIR)
+from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
 
@@ -375,6 +376,7 @@ def do_check_source(self, subcmd, opts, *args):
     self._devel_projects = {}
     opts.apiurl = self.get_api_url()
 
+    Config('openSUSE:%s' % opts.project)
     self.api = StagingAPI(opts.apiurl, 'openSUSE:%s' % opts.project)
 
     if len(args) and args[0] == 'skip':
