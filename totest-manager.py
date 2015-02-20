@@ -22,7 +22,7 @@ import osc
 # Expand sys.path to search modules inside the pluging directory
 PLUGINDIR = os.path.expanduser(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(PLUGINDIR)
-
+from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
 
@@ -38,6 +38,7 @@ class ToTestBase(object):
     def __init__(self, project, dryrun):
         self.project = project
         self.dryrun = dryrun
+        Config('openSUSE:%s' % project)
         self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
         self.known_failures = self.known_failures_from_dashboard(project)
 
@@ -167,7 +168,7 @@ class ToTestBase(object):
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for repo in root.findall('result'):
-            if repo.get('repository') == 'ports': 
+            if repo.get('repository') == 'ports':
                 continue
             if repo.get('dirty', '') == 'true':
                 print repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'
@@ -320,7 +321,7 @@ class ToTestBase(object):
         print 'current_snapshot', current_snapshot, self._result2str(current_result)
 
         can_release = (current_result != QA_INPROGRESS and self.factory_snapshottable())
-        
+
         # not overwriting
         if new_snapshot == current_snapshot:
             can_release = False
@@ -350,6 +351,7 @@ class ToTestBase(object):
                 known_failures.append(line.strip())
         return known_failures
 
+
 class ToTestFactory(ToTestBase):
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
                      '_product:openSUSE-dvd5-dvd-x86_64',
@@ -377,6 +379,7 @@ class ToTestFactory(ToTestBase):
             if result:
                 return result.group(1)
         raise Exception("can't find factory version")
+
 
 class ToTest132(ToTestBase):
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
@@ -418,7 +421,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(-1)
 
-    osc.conf.get_config()
+    #osc.conf.get_config()
     #osc.conf.config['debug'] = True
 
     totest = totest_class[args.project](args.project, args.dryrun)
