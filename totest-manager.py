@@ -38,7 +38,6 @@ class ToTestBase(object):
     def __init__(self, project, dryrun):
         self.project = project
         self.dryrun = dryrun
-        Config('openSUSE:%s' % project)
         self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
         self.known_failures = self.known_failures_from_dashboard(project)
 
@@ -113,7 +112,7 @@ class ToTestBase(object):
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
 
-        if snapshot == None:
+        if snapshot is None:
             return QA_FAILED
 
         jobs = self.find_openqa_results(snapshot)
@@ -382,15 +381,16 @@ class ToTestFactory(ToTestBase):
 
 
 class ToTest132(ToTestBase):
-    main_products = ['_product:openSUSE-dvd5-dvd-i586',
-                     '_product:openSUSE-dvd5-dvd-x86_64',
-                     '_product:openSUSE-cd-mini-i586',
-                     '_product:openSUSE-cd-mini-x86_64',
-                     '_product:openSUSE-dvd5-dvd-promo-i586',
-                     '_product:openSUSE-dvd5-dvd-promo-x86_64',
-                     '_product:openSUSE-dvd9-dvd-biarch-i586_x86_64'
+    main_products = [
+        '_product:openSUSE-dvd5-dvd-i586',
+        '_product:openSUSE-dvd5-dvd-x86_64',
+        '_product:openSUSE-cd-mini-i586',
+        '_product:openSUSE-cd-mini-x86_64',
+        '_product:openSUSE-dvd5-dvd-promo-i586',
+        '_product:openSUSE-dvd5-dvd-promo-x86_64',
+        '_product:openSUSE-dvd9-dvd-biarch-i586_x86_64'
     ]
-    
+
     # for 13.2 we take the build number of the FTP tree
     def current_version(self):
         for binary in self.binaries_of_product('openSUSE:%s' % self.project, '_product:openSUSE-ftp-ftp-i586_x86_64'):
@@ -421,8 +421,9 @@ if __name__ == '__main__':
         parser.print_help()
         exit(-1)
 
-    #osc.conf.get_config()
-    #osc.conf.config['debug'] = True
+    osc.conf.get_config()
+    Config('openSUSE:%s' % args.project)
+    # osc.conf.config['debug'] = True
 
     totest = totest_class[args.project](args.project, args.dryrun)
     totest.totest()
