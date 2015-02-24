@@ -201,8 +201,14 @@ def _check_repo_group(self, id_, requests, debug=False):
                 request.updated = True
 
     for rq in requests:
+        # Check if there are any goodrepo without missing packages
+        missing_repos = set(rq.missings.keys())
+        if any(r not in missing_repos for r in rq.goodrepos):
+            continue
+
         smissing = []
-        for package in rq.missings:
+        all_missing_packages = {item for sublist in rq.missings.values() for item in sublist}
+        for package in all_missing_packages:
             alreadyin = False
             for t in packs:
                 if package == t.tgt_package:
