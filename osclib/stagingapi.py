@@ -58,6 +58,7 @@ class StagingAPI(object):
         self.copenqa = conf.config[project]['openqa']
 
         # If the project support rings, inititialize some variables.
+        self.ring_packages = {}
         if self.crings:
             self.rings = (
                 '{}:0-Bootstrap'.format(self.crings),

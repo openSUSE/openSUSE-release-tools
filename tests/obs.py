@@ -367,9 +367,19 @@ class OBS(object):
             'openSUSE:Factory:Staging:J': [],
         }
 
-        # To track comments created during test execution, even if they have
-        # been deleted afterward
+        # To track comments created during test execution, even if
+        # they have been deleted afterward
         self.comment_bodies = []
+
+        # Different spec files stored in some openSUSE:Factory
+        # projects
+        self.spec_list = {
+            'openSUSE:Factory/apparmor': [
+                {
+                    'spec': 'apparmor.spec',
+                }
+            ],
+        }
 
     #
     #  /request/
@@ -557,6 +567,30 @@ class OBS(object):
 
         if DEBUG:
             print 'DELETE', uri, response
+
+        return response
+
+    @GET(re.compile(r'/source/openSUSE:Factory/apparmor$'))
+    def source_project_apparmor(self, request, uri, headers):
+        """Return apparmor spec list."""
+        package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
+        response = (404, headers, '<result>Not found</result>')
+        try:
+            template = string.Template(self._fixture(uri, filename='apparmor.xml'))
+            entry_template = string.Template(self._fixture(uri, filename='_entry.xml'))
+            entries = ''.join(entry_template.substitute(entry) for entry in self.spec_list[package])
+            response = (200, headers, template.substitute({'entries': entries}))
+
+            # The next call len() will be 2
+            if len(self.spec_list[package]) == 1:
+                self.spec_list[package].append({'spec': 'apparmor-doc.spec'})
+
+        except Exception as e:
+            if DEBUG:
+                print uri, e
+
+        if DEBUG:
+            print 'SOURCE APPARMOR', uri, response
 
         return response
 
