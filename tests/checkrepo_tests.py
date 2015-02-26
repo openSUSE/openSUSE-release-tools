@@ -30,7 +30,7 @@ class TestCheckRepoCalls(unittest.TestCase):
 
         self.obs = OBS()
         Config('openSUSE:Factory')
-        self.checkrepo = CheckRepo(APIURL, force_clean=True)
+        self.checkrepo = CheckRepo(APIURL, project='openSUSE:Factory', force_clean=True)
         # Des-memoize some functions
         self.checkrepo.build = self.checkrepo._build
         self.checkrepo.last_build_success = self.checkrepo._last_build_success
