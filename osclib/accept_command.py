@@ -1,4 +1,5 @@
 import re
+import urllib2
 import warnings
 from xml.etree import cElementTree as ET
 
@@ -33,7 +34,7 @@ class AcceptCommand(object):
         return rqs
 
     def perform(self, project):
-        """Accept the staging LETTER for review and submit to Factory /
+        """Accept the staging project for review and submit to Factory /
         openSUSE 13.2 ...
 
         Then disable the build to disabled
@@ -57,15 +58,23 @@ class AcceptCommand(object):
             msg = 'Accepting staging review for {}'.format(req['package'])
             print(msg)
 
-            oldspecs = self.api.get_filelist_for_package(pkgname=req['package'], project=self.api.project, extension='spec')
-            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
+            oldspecs = self.api.get_filelist_for_package(pkgname=req['package'],
+                                                         project=self.api.project,
+                                                         extension='spec')
+            change_request_state(self.api.apiurl,
+                                 str(req['id']),
+                                 'accepted',
+                                 message='Accept to %s' % self.api.project)
             self.create_new_links(self.api.project, req['package'], oldspecs)
 
         # A single comment should be enough to notify everybody, since
         # they are already mentioned in the comments created by
         # select/unselect
         pkg_list = ", ".join(packages)
-        cmmt = 'Project "{}" accepted. The following packages have been submitted to {}: {}.'.format(project, self.api.project, pkg_list)
+        cmmt = 'Project "{}" accepted.' \
+               ' The following packages have been submitted to {}: {}.'.format(project,
+                                                                               self.api.project,
+                                                                               pkg_list)
         self.comment.add_comment(project_name=project, comment=cmmt)
 
         # XXX CAUTION - AFAIK the 'accept' command is expected to clean the messages here.
@@ -113,7 +122,7 @@ class AcceptCommand(object):
             # There is more than one .spec file in the package; link package containers as needed
             origmeta = self.api.load_file_content(project, pkgname, '_meta')
             for specfile in filelist:
-                package = specfile[:-5] # stripping .spec off the filename gives the packagename
+                package = specfile[:-5]  # stripping .spec off the filename gives the packagename
                 if package == pkgname:
                     # This is the original package and does not need to be linked to itself
                     continue
@@ -121,10 +130,18 @@ class AcceptCommand(object):
                 if not self.api.item_exists(project, package):
                     print "Creating new package %s linked to %s" % (package, pkgname)
                     # new package does not exist. Let's link it with new metadata
-                    newmeta = re.sub(r'(<package.*name=.){}'.format(pkgname),r'\1{}'.format(package), origmeta)
-                    newmeta = re.sub(r'<devel.*>\$',r'<devel package=\'{}\'/>'.format(pkgname), newmeta)
-                    newmeta = re.sub(r'<bcntsynctag>.*</bcntsynctag>',r'', newmeta)
-                    newmeta = re.sub(r'</package>',r'<bcntsynctag>{}</bcntsynctag></package>'.format(pkgname), newmeta)
+                    newmeta = re.sub(r'(<package.*name=.){}'.format(pkgname),
+                                     r'\1{}'.format(package),
+                                     origmeta)
+                    newmeta = re.sub(r'<devel.*>\$',
+                                     r'<devel package=\'{}\'/>'.format(pkgname),
+                                     newmeta)
+                    newmeta = re.sub(r'<bcntsynctag>.*</bcntsynctag>',
+                                     r'',
+                                     newmeta)
+                    newmeta = re.sub(r'</package>',
+                                     r'<bcntsynctag>{}</bcntsynctag></package>'.format(pkgname),
+                                     newmeta)
                     self.api.save_file_content(project, package, '_meta', newmeta)
                     link = "<link package=\"{}\" cicount=\"copy\" />".format(pkgname)
                     self.api.save_file_content(project, package, '_link', link)
