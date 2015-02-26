@@ -32,7 +32,7 @@ MAX_LINES = 6
 class OpenQAReport(object):
     def __init__(self, api):
         self.api = api
-        self.comment = CommentAPI(self.api.apiurl)
+        self.comment = CommentAPI(api.apiurl)
 
     def _package_url(self, package):
         link = 'https://build.opensuse.org/package/live_build_log/%s/%s/%s/%s' % (
@@ -64,9 +64,9 @@ class OpenQAReport(object):
             project = project.replace(_prefix, '')
 
         query = {'format': 'json'}
-        url = api.makeurl(('project', 'staging_projects',
-                           api.project, project), query=query)
-        info = json.load(api.retried_GET(url))
+        url = self.api.makeurl(('project', 'staging_projects',
+                                self.api.project, project), query=query)
+        info = json.load(self.api.retried_GET(url))
         return info
 
     def get_broken_package_status(self, info):

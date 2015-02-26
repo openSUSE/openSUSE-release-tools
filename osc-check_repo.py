@@ -33,6 +33,7 @@ from osc import oscerr
 # Expand sys.path to search modules inside the pluging directory
 PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
 sys.path.append(PLUGINDIR)
+from osclib.conf import Config
 from osclib.checkrepo import CheckRepo
 from osclib.checkrepo import BINCACHE, DOWNLOADS
 from osclib.cycle import CycleDetector
@@ -201,8 +202,14 @@ def _check_repo_group(self, id_, requests, debug=False):
                 request.updated = True
 
     for rq in requests:
+        # Check if there are any goodrepo without missing packages
+        missing_repos = set(rq.missings.keys())
+        if any(r not in missing_repos for r in rq.goodrepos):
+            continue
+
         smissing = []
-        for package in rq.missings:
+        all_missing_packages = {item for sublist in rq.missings.values() for item in sublist}
+        for package in all_missing_packages:
             alreadyin = False
             for t in packs:
                 if package == t.tgt_package:
@@ -442,7 +449,11 @@ def do_check_repo(self, subcmd, opts, *args):
         pass
     os.makedirs(DOWNLOADS)
 
-    self.checkrepo = CheckRepo(self.get_api_url(), opts.project, readonly=opts.dry, debug=opts.verbose)
+    Config('openSUSE:%s' % opts.project)
+    self.checkrepo = CheckRepo(self.get_api_url(),
+                               'openSUSE:%s' % opts.project,
+                               readonly=opts.dry,
+                               debug=opts.verbose)
 
     if opts.skip:
         if not len(args):

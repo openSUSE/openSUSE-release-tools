@@ -27,7 +27,6 @@ from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
-from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize
 from osclib.pkgcache import PkgCache
@@ -58,7 +57,7 @@ class Request(object):
         self.verifymd5 = verifymd5
         self.group = group
         self.goodrepos = goodrepos if goodrepos else []
-        self.missings = missings if missings else []
+        self.missings = missings if missings else {}
         self.is_shadow = is_shadow
         self.shadow_src_project = shadow_src_project
 
@@ -93,7 +92,7 @@ class Request(object):
 
         # Assigned in is_buildsuccess
         self.goodrepos = []
-        self.missings = []
+        self.missings = {}
 
         # Detect if the request comes from Factory to a openSUSE
         # release, and adjust the source and target projects
@@ -138,11 +137,10 @@ class Request(object):
 
 class CheckRepo(object):
 
-    def __init__(self, apiurl, project='Factory', readonly=False, force_clean=False, debug=False):
+    def __init__(self, apiurl, project, readonly=False, force_clean=False, debug=False):
         """CheckRepo constructor."""
         self.apiurl = apiurl
-        self.project = 'openSUSE:%s' % project
-        Config(self.project)
+        self.project = project
         self.staging = StagingAPI(apiurl, self.project)
 
         self.pkgcache = PkgCache(BINCACHE, force_clean=force_clean)
@@ -705,28 +703,6 @@ class CheckRepo(object):
 
         return False
 
-    def get_missings(self, request):
-        """Get the list of packages that are in missing status."""
-
-        missings = set()
-
-        # XXX TODO - This piece is contained in
-        # is_buildsuccess(). Integrate both.
-        repos_to_check = self.repositories_to_check(request)
-        for repository in repos_to_check:
-            for arch in repository.findall('arch'):
-                if arch.attrib['arch'] not in ('i586', 'x86_64'):
-                    continue
-                if 'missing' in arch.attrib:
-                    for package in arch.attrib['missing'].split(','):
-                        if not self.is_binary(
-                                request.src_project,
-                                repository.attrib['name'],
-                                arch.attrib['arch'],
-                                package):
-                            missings.add(package)
-        return sorted(missings)
-
     def is_buildsuccess(self, request):
         """Return True if the request is correctly build
 
@@ -750,17 +726,18 @@ class CheckRepo(object):
             return False
 
         result = False
-        missings = set()
         alldisabled = True
         foundbuilding = None
         foundfailed = None
 
         for repository in repos_to_check:
+            repo_name = repository.attrib['name']
             self.debug("checking repo", ET.tostring(repository))
             isgood = True
             founddisabled = False
             r_foundbuilding = None
             r_foundfailed = None
+            missings = []
             for arch in repository.findall('arch'):
                 if arch.attrib['arch'] not in ('i586', 'x86_64'):
                     continue
@@ -768,10 +745,10 @@ class CheckRepo(object):
                     for package in arch.attrib['missing'].split(','):
                         if not self.is_binary(
                                 request.src_project,
-                                repository.attrib['name'],
+                                repo_name,
                                 arch.attrib['arch'],
                                 package):
-                            missings.add(package)
+                            missings.append(package)
                 if arch.attrib['result'] not in ('succeeded', 'excluded'):
                     isgood = False
                 if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
@@ -782,9 +759,9 @@ class CheckRepo(object):
                     # Sometimes an unknown status is equivalent to
                     # disabled, but we map it as failed to have a human
                     # check (no autoreject)
-                    r_foundfailed = repository.attrib['name']
+                    r_foundfailed = repo_name
                 if arch.attrib['result'] == 'building':
-                    r_foundbuilding = repository.attrib['name']
+                    r_foundbuilding = repo_name
                 if arch.attrib['result'] == 'outdated':
                     msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % request.src_package
                     print 'DECLINED', msg
@@ -796,7 +773,7 @@ class CheckRepo(object):
             if not founddisabled:
                 alldisabled = False
             if isgood:
-                _goodrepo = (request.src_project, repository.attrib['name'])
+                _goodrepo = (request.src_project, repo_name)
                 self.debug("good repo", _goodrepo)
                 if _goodrepo not in request.goodrepos:
                     request.goodrepos.append(_goodrepo)
@@ -805,8 +782,8 @@ class CheckRepo(object):
                 foundbuilding = r_foundbuilding
             if r_foundfailed:
                 foundfailed = r_foundfailed
-
-        request.missings = sorted(missings)
+            if missings:
+                request.missings[repo_name] = missings
 
         if result:
             return True
