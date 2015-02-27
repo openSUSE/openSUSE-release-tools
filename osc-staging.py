@@ -73,6 +73,8 @@ def _full_project_name(self, project):
               help='use the old check algorithm')
 @cmdln.option('-v', '--version', action='store_true',
               help='show version of the plugin')
+@cmdln.option('--debug', action='store_true',
+              help='enable debug output')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -135,7 +137,7 @@ def do_staging(self, subcmd, opts, *args):
     Config(opts.project)
 
     with OBSLock(opts.apiurl, opts.project):
-        api = StagingAPI(opts.apiurl, opts.project)
+        api = StagingAPI(opts.apiurl, opts.project, debug=opts.debug)
 
         # call the respective command and parse args by need
         if cmd == 'check':

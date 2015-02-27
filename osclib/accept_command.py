@@ -66,6 +66,7 @@ class AcceptCommand(object):
         # select/unselect
         pkg_list = ", ".join(packages)
         cmmt = 'Project "{}" accepted. The following packages have been submitted to {}: {}.'.format(project, self.api.project, pkg_list)
+        self.api.debug_print ("Comment to be added to '%s': %s" % (project, cmmt))
         self.comment.add_comment(project_name=project, comment=cmmt)
 
         # XXX CAUTION - AFAIK the 'accept' command is expected to clean the messages here.
@@ -101,6 +102,7 @@ class AcceptCommand(object):
             url = self.api.makeurl(['source', project, spec[:-5]])
             print "Deleting package %s from project %s" % (spec[:-5], project)
             try:
+                self.api.debug_print ("Attempting to delete %s" % url)
                 http_DELETE(url)
             except urllib2.HTTPError, err:
                 if err.code == 404:
@@ -125,6 +127,7 @@ class AcceptCommand(object):
                     newmeta = re.sub(r'<devel.*>\$',r'<devel package=\'{}\'/>'.format(pkgname), newmeta)
                     newmeta = re.sub(r'<bcntsynctag>.*</bcntsynctag>',r'', newmeta)
                     newmeta = re.sub(r'</package>',r'<bcntsynctag>{}</bcntsynctag></package>'.format(pkgname), newmeta)
+                    self.api.debug_print ("Saving new link for [%s/%s]" % (project, package))
                     self.api.save_file_content(project, package, '_meta', newmeta)
                     link = "<link package=\"{}\" cicount=\"copy\" />".format(pkgname)
                     self.api.save_file_content(project, package, '_link', link)

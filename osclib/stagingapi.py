@@ -42,11 +42,12 @@ class StagingAPI(object):
     Class containing various api calls to work with staging projects.
     """
 
-    def __init__(self, apiurl, project):
+    def __init__(self, apiurl, project, debug=False):
         """Initialize instance variables."""
 
         self.apiurl = apiurl
         self.project = project
+        self.debug = debug
 
         # Store some prefix / data used in the code.
         self.cstaging = conf.config[project]['staging']
@@ -177,6 +178,7 @@ class StagingAPI(object):
         :param extension: Limit the file list to files with this extension
         """
 
+        self.debug_print ("getting filelist for [%s/%s]" % (project, pkgname))
         filelist = []
         query = {
             'extension': extension
@@ -1103,3 +1105,7 @@ class StagingAPI(object):
             http_POST(u)
         except:
             print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)
+
+    def debug_print(self, message):
+        if self.debug:
+            print "DEBUG: %s" % message
