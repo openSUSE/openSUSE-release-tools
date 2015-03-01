@@ -42,11 +42,12 @@ class StagingAPI(object):
     Class containing various api calls to work with staging projects.
     """
 
-    def __init__(self, apiurl, project):
+    def __init__(self, apiurl, project, debug=False):
         """Initialize instance variables."""
 
         self.apiurl = apiurl
         self.project = project
+        self.debug = debug
 
         # Store some prefix / data used in the code.
         self.cstaging = conf.config[project]['staging']
@@ -114,6 +115,7 @@ class StagingAPI(object):
 
         ret = {}
         for prj in self.rings:
+            self.debug_print("Getting package list for ring %s" % prj)
             url = self.makeurl(['source', prj])
             root = http_GET(url)
             for entry in ET.parse(root).getroot().findall('entry'):
@@ -177,6 +179,7 @@ class StagingAPI(object):
         :param extension: Limit the file list to files with this extension
         """
 
+        self.debug_print ("getting filelist for [%s/%s]" % (project, pkgname))
         filelist = []
         query = {
             'extension': extension
@@ -519,6 +522,7 @@ class StagingAPI(object):
         :param review: review state for the review, defautl accepted
         """
 
+        self.debug_print ("Getting detailed infos for [%s/%s (%s)]" % (project, package, request_id))
         if not request_id:
             request_id = self.get_request_id_for_package(project, package)
         if not package:
@@ -526,14 +530,18 @@ class StagingAPI(object):
         if not package or not request_id:
             return
 
+        self.debug_print ("Now removing %s/%s from prj_pseudometa" % (project, package))
         self._remove_package_from_prj_pseudometa(project, package)
         subprj = self.map_ring_package_to_subject(project, package)
+        self.debug_print ("Deleting %s/%s" % (subprj, package))
         delete_package(self.apiurl, subprj, package, force=True, msg=msg)
 
         for sub_prj, sub_pkg in self.get_sub_packages(package):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             if sub_prj != subprj:  # if different to the main package's prj
                 delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
+
+        self.debug_print ("Setting review state on %s for %s" % (request_id, project))
 
         self.set_review(request_id, project, state=review, msg=msg)
 
@@ -685,7 +693,8 @@ class StagingAPI(object):
         if project.endswith(':DVD'):
             return project  # not yet
 
-        ring_dvd = '{}:2-TestDVD'.format(self.project)
+        ring_dvd = '{}:2-TestDVD'.format(self.crings)
+        self.debug_print("Ring2-DVD package identified to be %s" % ring_dvd)
         if self.ring_packages.get(pkg) == ring_dvd:
             return project + ":DVD"
 
@@ -1103,3 +1112,7 @@ class StagingAPI(object):
             http_POST(u)
         except:
             print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)
+
+    def debug_print(self, message):
+        if self.debug:
+            print "DEBUG: %s" % message
