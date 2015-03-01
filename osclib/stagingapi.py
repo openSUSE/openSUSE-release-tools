@@ -693,7 +693,7 @@ class StagingAPI(object):
         if project.endswith(':DVD'):
             return project  # not yet
 
-        ring_dvd = '{}:2-TestDVD'.format(self.project)
+        ring_dvd = '{}:2-TestDVD'.format(self.crings)
         self.debug_print("Ring2-DVD package identified to be %s" % ring_dvd)
         if self.ring_packages.get(pkg) == ring_dvd:
             return project + ":DVD"
