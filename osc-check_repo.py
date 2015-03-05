@@ -109,7 +109,10 @@ def _check_repo_download(self, request):
 _errors_printed = set()
 
 
-def _check_repo_group(self, id_, requests, debug=False):
+def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
+    if skip_cycle is None:
+        skip_cycle = []
+
     print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
 
     # XXX TODO - If the requests comes from command line, the group is
@@ -198,6 +201,14 @@ def _check_repo_group(self, id_, requests, debug=False):
             print
             print ' - New cycle detected:', sorted(cycle)
             print ' - New edges:', new_edges
+
+            if skip_cycle:
+                print ' - Skiping this cycle and moving to the next check.'
+                continue
+            else:
+                print ' - If you want to skip this cycle, run manually the ' \
+                    'check repo with -c / --skipcycle option.'
+
             for request in requests:
                 request.updated = True
 
@@ -428,6 +439,7 @@ def _print_request_and_specs(self, request_and_specs):
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
               help='select a different project instead of openSUSE:Factory')
 @cmdln.option('-s', '--skip', action='store_true', help='skip review')
+@cmdln.option('-c', '--skipcycle', action='store_true', help='skip cycle check')
 @cmdln.option('-n', '--dry', action='store_true', help='dry run, don\'t change review state')
 @cmdln.option('-v', '--verbose', action='store_true', help='verbose output')
 def do_check_repo(self, subcmd, opts, *args):
@@ -542,7 +554,9 @@ def do_check_repo(self, subcmd, opts, *args):
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
         try:
-            self._check_repo_group(id_, reqs, debug=opts.verbose)
+            self._check_repo_group(id_, reqs,
+                                   skip_cycle=opts.skipcycle,
+                                   debug=opts.verbose)
         except Exception as e:
             print 'ERROR -- An exception happends while checking a group [%s]' % e
             if conf.config['debug']:
