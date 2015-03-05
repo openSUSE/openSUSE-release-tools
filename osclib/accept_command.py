@@ -1,5 +1,6 @@
 import re
 import warnings
+import urllib2
 from xml.etree import cElementTree as ET
 
 from osc.core import change_request_state
