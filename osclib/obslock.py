@@ -84,7 +84,7 @@ class OBSLock(object):
             now = datetime.utcnow()
             if now < ts:
                 raise Exception('Lock acquired from the future [%s] by [%s]. Try later.' % (ts, user))
-            if user != self.user and (now - ts).seconds < self.ttl:
+            if (now - ts).seconds < self.ttl:
                 print 'Lock acquired by [%s]. Try later.' % user
                 exit(-1)
                 # raise Exception('Lock acquired by [%s]. Try later.' % user)

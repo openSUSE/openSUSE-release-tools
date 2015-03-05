@@ -57,7 +57,7 @@ def _full_project_name(self, project):
         return 'SUSE:%s' % project
 
     # If we can't guess, raise a Warning
-    warnings.warn('% project not recognized.' % project)
+    warnings.warn('%s project not recognized.' % project)
     return project
 
 

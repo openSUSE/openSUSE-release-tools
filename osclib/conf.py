@@ -51,7 +51,7 @@ DEFAULT = {
         'openqa': None,
         'lock': None,
         'lock-ns': 'OBS',
-    }
+    },
 }
 
 #

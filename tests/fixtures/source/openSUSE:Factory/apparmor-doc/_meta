@@ -1,0 +1,11 @@
+<package name="apparmor-doc" project="openSUSE:Factory">
+  <title>AppArmor userlevel parser utility</title>
+  <description>
+    The AppArmor Parser is a userlevel program that is used to load in
+    program profiles to the AppArmor Security kernel module.
+
+    This package is part of a suite of tools that used to be named
+    SubDomain.
+  </description>
+  <devel project="security:apparmor" package="apparmor-doc"/>
+</package>

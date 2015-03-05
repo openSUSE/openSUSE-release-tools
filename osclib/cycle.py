@@ -293,7 +293,7 @@ class CycleDetector(object):
         #
         # To do that, we store in `project_cycles_pkgs` all the
         # project (i.e Factory) cycles as a set of packages, so we can
-        # check in the new cycle (also as a set of package) is
+        # check if the new cycle (also as a set of packages) is
         # included here.
         project_cycles_pkgs = [set(cycle) for cycle in project_cycles]
         for cycle in current_graph.cycles():
