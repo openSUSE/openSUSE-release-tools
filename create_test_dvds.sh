@@ -36,8 +36,6 @@ function regenerate_pl() {
 
     arch=${@: -1}
 
-    cpp -E -U__ppc64__ -U__x86_64__ -D__$arch\__ create_test_$target\_dvd-1.testcase -o \
-	    $SCRIPTDIR/create_test_$target\_dvd-$suffix.$arch.testcase
     tcfile=tc.$target.$suffix.$1
     : > $tcfile
     for i in "$@"; do
@@ -45,7 +43,7 @@ function regenerate_pl() {
 		echo "repo $i 0 solv $i.solv" >> $tcfile
 	fi
     done
-    cat $SCRIPTDIR/create_test_$target\_dvd-$suffix.$arch.testcase >> $tcfile
+    cpp -E -U__ppc64__ -U__x86_64__ -D__$arch\__ $SCRIPTDIR/create_test_$target\_dvd-1.testcase >> $tcfile
 
     out=$(mktemp)
     testsolv -r $tcfile > $out
