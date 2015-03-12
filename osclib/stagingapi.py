@@ -604,38 +604,6 @@ class StagingAPI(object):
                 return (time.time() - float(entry.get('mtime')))/3600/24
         return 100000  # quite some!
 
-    def check_if_job_is_ok(self, job):
-        if not self.copenqa:
-            return
-
-        url = '{}/tests/{}/file/results.json'.format(self.copenqa, job['id'])
-        try:
-            f = urllib2.urlopen(url)
-        except urllib2.HTTPError:
-            return "Can't open {}".format(url)
-
-        try:
-            openqa = json.load(f)
-        except ValueError:
-            return "Can't decode {}".format(url)
-
-        overall = openqa.get('overall', 'inprogress')
-        if job['test'] == 'miniuefi':
-            return None  # ignore
-        # pprint.pprint(openqa)
-        # pprint.pprint(job)
-        if overall != 'ok':
-            return "openQA's overall status is {} for {}/tests/{}".format(overall, self.openqa, job['id'])
-
-        for module in openqa['testmodules']:
-            # zypper_in fails at the moment - urgent fix needed
-            if module['result'] == 'ok':
-                continue
-            if module['name'] in ['kate', 'ooffice', 'amarok', 'thunderbird', 'gnucash']:
-                continue
-            return '{} test failed: {}/tests/{}'.format(module['name'], self.openqa, job['id'])
-        return None
-
     def rq_to_prj(self, request_id, project):
         """
         Links request to project - delete or submit
