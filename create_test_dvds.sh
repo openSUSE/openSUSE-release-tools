@@ -10,8 +10,15 @@ fi
 # give it target Factory by default then will not breaks current operation
 if [ $# -eq 0 ]; then
     targets='Factory'
+    arch='x86_64'
 else
-    targets=$@
+    for arg in $@;do
+        if [ "$arg" = "x86_64" -o "$arg" = "ppc64le" ]; then
+            arch="$arg"
+        else
+            targets+="$arg"
+        fi
+    done
 fi
 
 CODIR=$PWD
@@ -26,13 +33,19 @@ function regenerate_pl() {
 
     suffix=$1
     shift;
-    
+
+    arch=${@: -1}
+
+    cpp -E -U__ppc64__ -U__x86_64__ -D__$arch\__ create_test_$target\_dvd-1.testcase -o \
+	    $SCRIPTDIR/create_test_$target\_dvd-$suffix.$arch.testcase
     tcfile=tc.$target.$suffix.$1
     : > $tcfile
     for i in "$@"; do
-	echo "repo $i 0 solv $i.solv" >> $tcfile
+	if [ "$i" != "$arch" ];then
+		echo "repo $i 0 solv $i.solv" >> $tcfile
+	fi
     done
-    cat $SCRIPTDIR/create_test_$target\_dvd-$suffix.testcase >> $tcfile
+    cat $SCRIPTDIR/create_test_$target\_dvd-$suffix.$arch.testcase >> $tcfile
 
     out=$(mktemp)
     testsolv -r $tcfile > $out
@@ -42,23 +55,23 @@ function regenerate_pl() {
     sed -i -e 's,^install \(.*\)-[^-]*-[^-]*\.[^-\.]*@.*,\1,' $out
     
     p=$(mktemp)
-    tdir=$CODIR/co/$prj/Test-DVD-x86_64
+    tdir=$CODIR/co/$prj/Test-DVD-$arch
     if [ ! -d "$tdir" ]; then
 	mkdir -p "$tdir"
-	osc co -o "$tdir" "$prj" Test-DVD-x86_64
+	osc co -o "$tdir" "$prj" Test-DVD-$arch
     fi
     pushd $tdir > /dev/null
     osc up
     popd > /dev/null
-    sed -n -e '1,/BEGIN-PACKAGELIST/p' $tdir/PRODUCT-x86_64.kiwi > $p
+    sed -n -e '1,/BEGIN-PACKAGELIST/p' $tdir/PRODUCT-$arch.kiwi > $p
     for i in $(cat $out); do
 	echo "<repopackage name='$i'/>" >> $p
     done
-    sed -n -e '/END-PACKAGELIST/,$p' $tdir/PRODUCT-x86_64.kiwi >> $p
-    xmllint --format $p -o $tdir/PRODUCT-x86_64.kiwi
+    sed -n -e '/END-PACKAGELIST/,$p' $tdir/PRODUCT-$arch.kiwi >> $p
+    xmllint --format $p -o $tdir/PRODUCT-$arch.kiwi
     rm $p $out
     pushd $tdir > /dev/null
-    if ! cmp -s .osc/PRODUCT-x86_64.kiwi PRODUCT-x86_64.kiwi; then
+    if ! cmp -s .osc/PRODUCT-$arch.kiwi PRODUCT-$arch.kiwi; then
       osc ci -m "auto update"
     fi
     popd > /dev/null
@@ -67,8 +80,9 @@ function regenerate_pl() {
 function sync_prj() {
     prj=$1
     dir=$2
+    arch=$3
     mkdir -p $dir
-    perl $SCRIPTDIR/bs_mirrorfull --nodebug https://build.opensuse.org/build/$prj/x86_64 $dir
+    perl $SCRIPTDIR/bs_mirrorfull --nodebug https://build.opensuse.org/build/$prj/$arch $dir
     if [ "$dir" -nt "$dir.solv" ]; then
 	    local start=$SECONDS
 	    rpms2solv $dir/*.rpm > $dir.solv
@@ -77,15 +91,17 @@ function sync_prj() {
 }
 
 function start_creating() {
-    for target in "$@"; do
+    for target in "$targets"; do
         # Rings part
-        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap
-        sync_prj openSUSE:$target:Rings:1-MinimalX/standard $target-minimalx
+        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap $arch
+        sync_prj openSUSE:$target:Rings:1-MinimalX/standard $target-minimalx $arch
 
-        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap $target-minimalx
+        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap $target-minimalx $arch
 
-        sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd
-        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd
+	#we don't have all architectures yet.
+	if [ "$arch" = "x86_64" ];then
+	        sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd $arch
+	        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd $arch
 
         projects=$(osc api /search/project/id?match="starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
         for prj in openSUSE:$target:Rings:2-TestDVD $projects; do
@@ -98,24 +114,25 @@ function start_creating() {
 
                 echo "Checking $target:$l"
                 if [ -n "$use_bc" ]; then
-                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc"
+                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc" $arch
                 fi
-                sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l
-                regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l
+                sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l $arch
+                regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l $arch
             fi
 
             if [[ ( $prj =~ :DVD ) || ( $prj =~ Rings:2-TestDVD ) ]]; then
-                perl $SCRIPTDIR/rebuildpacs.pl $prj standard x86_64
+                perl $SCRIPTDIR/rebuildpacs.pl $prj standard $arch
             fi
 
             if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
-                sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd"
-                regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l "staging_$target:$l-dvd"
+                sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd" $arch
+                regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l "staging_$target:$l-dvd" $arch
             fi
         done
+	fi
     done
 }
 
 # call main function
-start_creating $targets
+start_creating $targets $arch
 
