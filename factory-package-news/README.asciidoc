@@ -1,0 +1,46 @@
+openSUSE Tumbleweed Snapshot Announcer
+======================================
+:author: Ludwig Nussel <ludwig.nussel@suse.de>
+:toc:
+
+This set of scripts is used to generate the tumbleweed snapshot
+announcement mails.
+
+scripts
+-------
+
+factory-package-news.py
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The main tool
+
+- extract changelog information from rpm packages contained in iso
+  images (command 'save'). The information is stored as pickle file
+  in the specified directory.
+- create diff between previously saved pickle files (command 'diff')
+
+factory-package-news-web.py
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Simple web service to generate diffs between specified snapshots and
+to set the last announced snapshot version.
+
+announcer.py
+~~~~~~~~~~~~
+sends a mail with the current changelog if the the snapshot
+published on download.opensuse.org is newer than the last announced
+one
+
+current deployment on opensuse.org
+----------------------------------
+
+openqa.opensuse.org syncs factory isos in a cron job and generates
+pickle files to store changelog information in
+/var/lib/openqa/factory/snapshot-changes/
+
+the obs factory publisher script fetches the diff for the to be
+published snapshot from openqa.opensuse.org via http. Then sets the
+current version to the snapshot number via post request.
+
+the factory announcer script runs on the packagelists vm, polling
+the changelog file that was created by the publish script.
