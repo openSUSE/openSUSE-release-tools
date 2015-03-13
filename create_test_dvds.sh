@@ -43,7 +43,7 @@ function regenerate_pl() {
 		echo "repo $i 0 solv $i.solv" >> $tcfile
 	fi
     done
-    cpp -E -U__ppc64__ -U__x86_64__ -D__$arch\__ $SCRIPTDIR/create_test_$target\_dvd-1.testcase >> $tcfile
+    cpp -E -U__ppc64__ -U__x86_64__ -D__$arch\__ $SCRIPTDIR/create_test_$target\_dvd-$suffix.testcase >> $tcfile
 
     out=$(mktemp)
     testsolv -r $tcfile > $out
