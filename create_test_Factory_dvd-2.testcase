@@ -1,5 +1,10 @@
-# common part
+## common part
+#ifdef __x86_64__
 system x86_64 rpm
+#endif
+#ifdef __ppc64le__
+system ppc64le rpm
+#endif
 namespace namespace:language(en_US) @SYSTEM
 
 job install provides pattern() = apparmor
