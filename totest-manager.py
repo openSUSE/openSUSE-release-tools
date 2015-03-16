@@ -98,10 +98,10 @@ class ToTestBase(object):
         else:
             return 'passed'
 
-    def find_failed_module(self, result):
-        # print json.dumps(result, sort_keys=True, indent=4)
-        for module in result['testmodules']:
-            if module['result'] != 'fail':
+    def find_failed_module(self, testmodules):
+        # print json.dumps(testmodules, sort_keys=True, indent=4)
+        for module in testmodules:
+            if module['result'] != 'failed':
                 continue
             flags = module['flags']
             if 'fatal' in flags or 'important' in flags:
@@ -132,9 +132,8 @@ class ToTestBase(object):
                     continue
                 number_of_fails += 1
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
+                failedmodule = self.find_failed_module(job['modules'])
                 url = 'https://openqa.opensuse.org/tests/%s' % job['id']
-                result = json.load(self.api.retried_GET(url + '/file/results.json'))
-                failedmodule = self.find_failed_module(result)
                 print jobname, url, failedmodule, job['retry_avbl']
                 # if number_of_fails < 3: continue
             elif job['result'] == 'passed':
