@@ -100,6 +100,7 @@ msg = MIMEText(txt)
 msg['Subject'] = 'New Tumbleweed snapshot %s released!'%version
 msg['From'] = options.sender
 msg['To'] = options.to
+msg['Mail-Followup-To'] = options.to
 
 if options.dry:
     print "sending ..."
