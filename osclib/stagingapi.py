@@ -120,7 +120,7 @@ class StagingAPI(object):
             for entry in ET.parse(root).getroot().findall('entry'):
                 pkg = entry.attrib['name']
                 # XXX TODO - Test-DVD-x86_64 is hardcoded here
-                if pkg in ret and pkg != 'Test-DVD-x86_64':
+                if pkg in ret and not pkg.startswith('Test-DVD-'):
                     msg = '{} is defined in two projects ({} and {})'
                     raise Exception(msg.format(pkg, ret[pkg], prj))
                 ret[pkg] = prj

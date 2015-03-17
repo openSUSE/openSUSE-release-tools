@@ -146,18 +146,19 @@ class FreezeCommand(object):
 
             # Update the version information found in the Test-DVD package, to match openSUSE-release
             version = self.api.package_version(prj, 'openSUSE-release')
-            self.update_product_version(prj + ':DVD', 'Test-DVD-x86_64', version)
+            for arch in ['x86_64', 'ppc64le']:
+                self.update_product_version(prj + ':DVD', 'Test-DVD-' + arch, arch, version)
 
-    def update_product_version(self, project, product, version):
+    def update_product_version(self, project, product, arch, version):
         if not self.api.item_exists(project, product):
             return None
 
-        kiwifile = self.api.load_file_content(project, product, 'PRODUCT-x86_64.kiwi')
+        kiwifile = self.api.load_file_content(project, product, 'PRODUCT-'+arch+'.kiwi')
 
         tmpkiwifile = re.sub(r'<productinfo name="VERSION">.*</productinfo>', '<productinfo name="VERSION">%s</productinfo>' % version, kiwifile)
         newkiwifile = re.sub(r'<productvar name="VERSION">.*</productvar>', '<productvar name="VERSION">%s</productvar>' % version, tmpkiwifile)
 
-        self.api.save_file_content(project, product, 'PRODUCT-x86_64.kiwi', newkiwifile)
+        self.api.save_file_content(project, product, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
 
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', {'name': prj})
