@@ -183,6 +183,8 @@ class FreezeCommand(object):
         a.text = 'i586'
         a = ET.SubElement(r, 'arch')
         a.text = 'x86_64'
+        a = ET.SubElement(r, 'arch')
+        a.text = 'ppc64le'
 
         r = ET.SubElement(root, 'repository', {'name': 'standard', 'linkedbuild': 'all', 'rebuild': 'direct'})
         ET.SubElement(r, 'path', {'project': prj, 'repository': 'bootstrap_copy'})
@@ -190,11 +192,16 @@ class FreezeCommand(object):
         a.text = 'i586'
         a = ET.SubElement(r, 'arch')
         a.text = 'x86_64'
+        a = ET.SubElement(r, 'arch')
+        a.text = 'ppc64le'
 
         r = ET.SubElement(root, 'repository', {'name': 'images', 'linkedbuild': 'all', 'rebuild': 'direct'})
         ET.SubElement(r, 'path', {'project': prj, 'repository': 'standard'})
         a = ET.SubElement(r, 'arch')
         a.text = 'x86_64'
+
+        a = ET.SubElement(r, 'arch')
+        a.text = 'ppc64le'
 
         return ET.tostring(root)
 
