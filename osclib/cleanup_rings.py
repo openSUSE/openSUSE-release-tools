@@ -79,31 +79,32 @@ class CleanupRings(object):
                     return False
 
         self.find_inner_ring_links(prj)
-        self.fill_pkgdeps(prj, 'standard', 'x86_64')
+        for arch in [ 'x86_64', 'ppc64le' ]:
+            self.fill_pkgdeps(prj, 'standard', arch)
 
-        if prj == '{}:1-MinimalX'.format(self.api.crings):
-            url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'])
-            root = ET.parse(http_GET(url)).getroot()
-            for bdep in root.findall('bdep'):
-                if 'name' not in bdep.attrib:
-                    continue
-                b = bdep.attrib['name']
-                if b not in self.bin2src:
-                    continue
-                b = self.bin2src[b]
-                self.pkgdeps[b] = 'MYdvd'
+            if prj == '{}:1-MinimalX'.format(self.api.crings):
+                url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-' + arch, '_buildinfo'])
+                root = ET.parse(http_GET(url)).getroot()
+                for bdep in root.findall('bdep'):
+                    if 'name' not in bdep.attrib:
+                        continue
+                    b = bdep.attrib['name']
+                    if b not in self.bin2src:
+                        continue
+                    b = self.bin2src[b]
+                    self.pkgdeps[b] = 'MYdvd'
 
-        if prj == '{}:2-TestDVD'.format(self.api.crings):
-            url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-x86_64', '_buildinfo'])
-            root = ET.parse(http_GET(url)).getroot()
-            for bdep in root.findall('bdep'):
-                if 'name' not in bdep.attrib:
-                    continue
-                b = bdep.attrib['name']
-                if b not in self.bin2src:
-                    continue
-                b = self.bin2src[b]
-                self.pkgdeps[b] = 'MYdvd2'
+            if prj == '{}:2-TestDVD'.format(self.api.crings):
+                url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-' + arch, '_buildinfo'])
+                root = ET.parse(http_GET(url)).getroot()
+                for bdep in root.findall('bdep'):
+                    if 'name' not in bdep.attrib:
+                        continue
+                    b = bdep.attrib['name']
+                    if b not in self.bin2src:
+                        continue
+                    b = self.bin2src[b]
+                    self.pkgdeps[b] = 'MYdvd2'
 
         if prj == '{}:0-Bootstrap'.format(self.api.crings):
             url = makeurl(self.api.apiurl, ['build', prj, 'standard', '_buildconfig'])
