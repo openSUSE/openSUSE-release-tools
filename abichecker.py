@@ -67,15 +67,20 @@ class ABIChecker(ReviewBot.ReviewBot):
         # fetch cpio headers from source and target
         # check file lists for library packages
 
-        missing_debuginfo = set()
         so_re = re.compile(r'^(?:/usr)/lib(?:64)?/[^/]+\.so(?:\.[^/]+)')
         debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
-        for mr in myrepos:
-            self.logger.debug('scanning %s/%s %s/%s'%(dst_project, dst_package, mr.dstrepo, mr.arch))
-            headers = self._fetchcpioheaders(dst_project, dst_package, mr.dstrepo, mr.arch)
+
+        def compute_fetchlist(prj, pkg, repo, arch):
+            self.logger.debug('scanning %s/%s %s/%s'%(prj, pkg, repo, arch))
+            headers = self._fetchcpioheaders(prj, pkg, repo, arch)
+            missing_debuginfo = set()
             lib_packages = dict() # pkgname -> set(lib file names)
             pkgs = dict() # pkgname -> rpmhdr
+            fetchlist = set()
             for h in headers:
+                # skip src rpm
+                if h['sourcepackage']:
+                    continue
                 pkgname = h['name']
                 self.logger.debug(pkgname)
                 pkgs[pkgname] = h
@@ -94,20 +99,33 @@ class ABIChecker(ReviewBot.ReviewBot):
                 else:
                     dpkgname = pkgname+'-debuginfo'
                 if not dpkgname in pkgs:
-                    missing_debuginfo.add((dst_project, dst_package, mr.dstrepo, mr.arch, pkgname))
+                    missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
                     continue
 
                 # check file list of debuginfo package
                 h = pkgs[dpkgname]
                 files = set (h['filenames'])
+                ok = True
                 for lib in lib_packages[pkgname]:
                     fn = '/usr/lib/debug%s.debug'%lib
                     if not fn in files:
-                        missing_debuginfo.add((dst_project, dst_package, mr.dstrepo, mr.arch, pkgname, lib))
+                        missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
+                        ok = False
+                    if ok:
+                        fetchlist.add(pkgname)
+                        fetchlist.add(dpkgname)
 
             if missing_debuginfo:
                 self.logger.error('missing debuginfo: %s'%pformat(missing_debuginfo))
-                return False
+                return None
+
+            return fetchlist
+
+        for mr in myrepos:
+            fetchlist_dst = compute_fetchlist(dst_project, dst_package, mr.dstrepo, mr.arch)
+            fetchlist_src = compute_fetchlist(src_project, src_package, mr.srcrepo, mr.arch)
+            self.logger.debug(pformat(fetchlist_dst))
+            self.logger.debug(pformat(fetchlist_src))
 
         # fetch binary rpms
 
