@@ -231,8 +231,8 @@ def _checker_one_request(self, rq, opts):
 
             # Check if the package comes from openSUSE:Factory and
             # have a release target (like openSUSE:13.2)
-            if prj == 'openSUSE:Factory' and tprj == 'openSUSE:%s' % self.api.opensuse:
-                fake_devel_prj = 'openSUSE:%s:Devel' % self.api.opensuse
+            if prj == 'openSUSE:Factory' and tprj == '%s' % self.api.project:
+                fake_devel_prj = '%s:Devel' % self.api.project
 
                 # _rev, _vrev = show_upstream_rev_vrev(opts.apiurl, prj, pkg, revision=rev, expand=True)
                 # assert _rev == rev, 'Revision is not the same'
@@ -390,8 +390,8 @@ def do_check_source(self, subcmd, opts, *args):
 
     if not ids:
         review = "@by_group='factory-auto'+and+@state='new'"
-        target = "@project='openSUSE:{}'".format(self.api.opensuse)
-        target_nf = "@project='openSUSE:{}:NonFree'".format(self.api.opensuse)
+        target = "@project='{}'".format(self.api.project)
+        target_nf = "@project='{}:NonFree'".format(self.api.project)
         url = makeurl(opts.apiurl, ('search', 'request'),
                       "match=state/@name='review'+and+review[%s]+and+(target[%s]+or+target[%s])" % (review, target, target_nf))
         root = ET.parse(http_GET(url)).getroot()
