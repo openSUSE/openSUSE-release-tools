@@ -96,13 +96,11 @@ function start_creating() {
 
         regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap $target-minimalx $arch
 
-        #we don't have all architectures yet.
+        sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd $arch
+        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd $arch
+
         projects=$(osc api /search/project/id?match="starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
-        if [ "$arch" = "x86_64" ];then
-                sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd $arch
-                regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd $arch
-                $projects+=" openSUSE:$target:Rings:2-TestDVD"
-        fi
+        $projects+=" openSUSE:$target:Rings:2-TestDVD"
 
         for prj in $projects; do
             l=$(echo $prj | cut -d: -f4)
