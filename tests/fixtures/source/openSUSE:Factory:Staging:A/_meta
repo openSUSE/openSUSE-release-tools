@@ -16,9 +16,11 @@
     <path project="openSUSE:Factory:Build" repository="standard"/>
     <arch>i586</arch>
     <arch>x86_64</arch>
+    <arch>ppc64le</arch>
   </repository>
   <repository name="images" rebuild="direct" linkedbuild="all">
     <path project="openSUSE:Factory" repository="standard"/>
+    <arch>ppc64le</arch>
     <arch>x86_64</arch>
     <arch>i586</arch>
   </repository>
