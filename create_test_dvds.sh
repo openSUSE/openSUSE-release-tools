@@ -100,7 +100,7 @@ function start_creating() {
         regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd $arch
 
         projects=$(osc api /search/project/id?match="starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
-        $projects+=" openSUSE:$target:Rings:2-TestDVD"
+        projects+=" openSUSE:$target:Rings:2-TestDVD"
 
         for prj in $projects; do
             l=$(echo $prj | cut -d: -f4)
