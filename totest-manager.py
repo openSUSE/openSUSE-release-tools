@@ -68,7 +68,7 @@ class ToTestBase(object):
         """Return the current snapshot in :ToTest"""
 
         # for now we hardcode all kind of things
-        for binary in self.binaries_of_product('openSUSE:%s:ToTest' % self.project, '_product:openSUSE-cd-mini-%s' % self.arch()):
+        for binary in self.binaries_of_product('openSUSE:%s:ToTest' % self.project, '_product:openSUSE-cd-mini-%s' % self.arch):
             result = re.match(r'openSUSE-%s-NET-.*-Snapshot(.*)-Media.iso' % self.iso_prefix(),
                               binary)
             if result:
@@ -248,14 +248,14 @@ class ToTestBase(object):
             if not self.package_ok('openSUSE:%s' % self.project, product, 'images', 'local'):
                 return False
 
-            if self.arch == "x86_64":
+            if len(self.livecd_products):
 
                 if not self.all_repos_done('openSUSE:%s:Live' % self.project):
                     return False
 
                 for arch in ['i586', 'x86_64' ]:
                     for product in self.livecd_products:
-                        if not self.package_ok('openSUSE:%s:Live' % self.project, product, 'standard', '%s' % arch):
+                        if not self.package_ok('openSUSE:%s:Live' % self.project, product, 'standard', arch):
                             return False
 
         return True
@@ -276,11 +276,10 @@ class ToTestBase(object):
         self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
 
         for product in self.ftp_products:
-            self.release_package('openSUSE:%s' % self.project, '%s' % product)
+            self.release_package('openSUSE:%s' % self.project, product)
 
-        if self.arch == "x86_64":
-            for cd in self.livecd_products:
-                self.release_package('openSUSE:%s:Live' % self.project, cd, set_release='Snapshot%s' % snapshot)
+        for cd in self.livecd_products:
+            self.release_package('openSUSE:%s:Live' % self.project, cd, set_release='Snapshot%s' % snapshot)
 
         for cd in self.main_products:
             self.release_package('openSUSE:%s' % self.project, cd, set_release='Snapshot%s' % snapshot)
@@ -395,6 +394,8 @@ class ToTestFactoryPowerPC(ToTestBase):
                      '_product:openSUSE-cd-mini-ppc64le']
 
     ftp_products = [ '_product:openSUSE-ftp-ftp-ppc_ppc64_ppc64le' ]
+
+    livecd_products = []
 
     def __init__(self, project, dryrun):
         ToTestBase.__init__(self, project, dryrun)
