@@ -47,9 +47,6 @@ class ToTestBase(object):
     def iso_prefix(self):
         return self.project
 
-    def arch(self):
-        return self.arch
-
     def binaries_of_product(self, project, product):
         url = self.api.makeurl(['build', project, 'images', 'local', product])
         try:
@@ -68,7 +65,7 @@ class ToTestBase(object):
         """Return the current snapshot in :ToTest"""
 
         # for now we hardcode all kind of things
-        for binary in self.binaries_of_product('openSUSE:%s:ToTest' % self.project, '_product:openSUSE-cd-mini-%s' % self.arch):
+        for binary in self.binaries_of_product('openSUSE:%s:ToTest' % self.project, '_product:openSUSE-cd-mini-%s' % self.arch()):
             result = re.match(r'openSUSE-%s-NET-.*-Snapshot(.*)-Media.iso' % self.iso_prefix(),
                               binary)
             if result:
