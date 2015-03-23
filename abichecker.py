@@ -27,6 +27,7 @@ import cmdln
 import re
 from stat import S_ISREG, S_ISLNK
 from tempfile import NamedTemporaryFile
+import subprocess
 
 try:
     from xml.etree import cElementTree as ET
@@ -35,6 +36,8 @@ except ImportError:
 
 import osc.conf
 import osc.core
+from osc.util.cpio import CpioRead
+
 import urllib2
 import rpm
 from collections import namedtuple
@@ -87,18 +90,66 @@ class ABIChecker(ReviewBot.ReviewBot):
             # fetch cpio headers
             # check file lists for library packages
             fetchlist, liblist, lib_aliases = self.compute_fetchlist(project, package, repo, arch)
+
+            if not fetchlist:
+                self.logger.warning("fetchlist empty")
+                # XXX record
+                return
+
+            # mtimes in cpio are not the original ones, so we need to fetch
+            # that separately :-(
             mtimes= self._getmtimes(project, package, repo, arch)
-            self.logger.debug(pformat(fetchlist))
+
+            self.logger.debug("fetchlist %s", pformat(fetchlist))
+            self.logger.debug("liblist %s", pformat(liblist))
 
             # fetch binary rpms
-            self.download_files(project, package, repo, arch, fetchlist, mtimes)
+            downloaded = self.download_files(project, package, repo, arch, fetchlist, mtimes)
 
             # extract binary rpms
-            tmpfile = NamedTemporaryFile(prefix="cpio-", delete=False)
-
-            os.unlink(tmpfile.name)
+            tmpfile = os.path.join(CACHEDIR, "cpio")
+            for fn in fetchlist:
+                self.logger.debug("extract %s"%fn)
+                with open(tmpfile, 'wb') as tmpfd:
+                    if not fn in downloaded:
+                        self.logger.error("%s was not downloaded!"%fn)
+                        # XXX: record error
+                        continue
+                    self.logger.debug(downloaded[fn])
+                    r = subprocess.call(['rpm2cpio', downloaded[fn]], stdout=tmpfd, close_fds=True)
+                    if r != 0:
+                        self.logger.error("failed to extract %s!"%fn)
+                        # XXX: record error
+                        continue
+                    tmpfd.close()
+                    cpio = CpioRead(tmpfile)
+                    cpio.read()
+                    for ch in cpio:
+                        fn = ch.filename
+                        if fn.startswith('./'): # rpm payload is relative
+                            fn = fn[1:]
+                        self.logger.debug("cpio fn %s", fn)
+                        if not fn in liblist:
+                            continue
+                        dst = os.path.join(CACHEDIR, project, package, repo, arch)
+                        dst += fn
+                        if not os.path.exists(os.path.dirname(dst)):
+                            os.makedirs(os.path.dirname(dst))
+                        self.logger.debug("dst %s", dst)
+                        # the filehandle in the cpio archive is private so
+                        # open it again
+                        with open(tmpfile, 'rb') as cpiofh:
+                            cpiofh.seek(ch.dataoff, os.SEEK_SET)
+                            with open(dst, 'wb') as fh:
+                                while True:
+                                    buf = cpiofh.read(4096)
+                                    if buf is None or buf == '':
+                                        break
+                                    fh.write(buf)
+            os.unlink(tmpfile)
 
     def download_files(self, project, package, repo, arch, filenames, mtimes):
+        downloaded = dict()
         for fn in filenames:
             if not fn in mtimes:
                 self.logger.error("missing mtime information for %s, can't check"% fn)
@@ -109,7 +160,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                 os.makedirs(repodir)
             t = os.path.join(repodir, fn)
             self._get_binary_file(project, repo, arch, package, fn, t, mtimes[fn])
-
+            downloaded[fn] = t
+        return downloaded
 
     # XXX: from repochecker
     def _get_binary_file(self, project, repository, arch, package, filename, target, mtime):
@@ -143,8 +195,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         return h
 
     def _fetchcpioheaders(self, project, package, repo, arch):
-        from osc.util.cpio import CpioRead
-
         u = osc.core.makeurl(self.apiurl, [ 'build', project, repo, arch, package ],
             [ 'view=cpioheaders' ])
         try:
