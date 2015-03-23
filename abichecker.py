@@ -75,15 +75,15 @@ class ABIChecker(ReviewBot.ReviewBot):
             headers = self._fetchcpioheaders(prj, pkg, repo, arch)
             missing_debuginfo = set()
             lib_packages = dict() # pkgname -> set(lib file names)
-            pkgs = dict() # pkgname -> rpmhdr
+            pkgs = dict() # pkgname -> cpiohdr, rpmhdr
             lib_aliases = dict()
-            for h in headers:
+            for ch, h in headers:
                 # skip src rpm
                 if h['sourcepackage']:
                     continue
                 pkgname = h['name']
                 self.logger.debug(pkgname)
-                pkgs[pkgname] = h
+                pkgs[pkgname] = (ch, h)
                 if debugpkg_re.match(pkgname):
                     continue
                 for fn, mode, lnk in zip(h['filenames'], h['filemodes'], h['filelinktos']):
@@ -111,7 +111,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     continue
 
                 # check file list of debuginfo package
-                h = pkgs[dpkgname]
+                ch, h = pkgs[dpkgname]
                 files = set (h['filenames'])
                 ok = True
                 for lib in lib_packages[pkgname]:
@@ -120,8 +120,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                         missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
                         ok = False
                     if ok:
-                        fetchlist.add(pkgname)
-                        fetchlist.add(dpkgname)
+                        fetchlist.add(pkgs[pkgname][0].filename)
+                        fetchlist.add(ch.filename)
                         liblist.add(lib)
 
             if missing_debuginfo:
@@ -134,11 +134,11 @@ class ABIChecker(ReviewBot.ReviewBot):
             fetchlist_dst, liblist_dst, lib_aliases_dst = compute_fetchlist(dst_project, dst_package, mr.dstrepo, mr.arch)
             fetchlist_src, liblist_src, lib_aliases_src = compute_fetchlist(src_project, src_package, mr.srcrepo, mr.arch)
             self.logger.debug(pformat(fetchlist_dst))
-            self.logger.debug(pformat(liblist_dst))
-            self.logger.debug(pformat(lib_aliases_dst))
+#            self.logger.debug(pformat(liblist_dst))
+#            self.logger.debug(pformat(lib_aliases_dst))
             self.logger.debug(pformat(fetchlist_src))
-            self.logger.debug(pformat(liblist_src))
-            self.logger.debug(pformat(lib_aliases_dst))
+#            self.logger.debug(pformat(liblist_src))
+#            self.logger.debug(pformat(lib_aliases_dst))
 
         # fetch binary rpms
 
@@ -167,7 +167,11 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         u = osc.core.makeurl(self.apiurl, [ 'build', project, repo, arch, package ],
             [ 'view=cpioheaders' ])
-        r = osc.core.http_GET(u)
+        try:
+            r = osc.core.http_GET(u)
+        except urllib2.HTTPError, e:
+            self.logger.error('failed to fetch header information')
+            raise StopIteration
         from tempfile import NamedTemporaryFile
         tmpfile = NamedTemporaryFile(prefix="cpio-", delete=False)
         for chunk in r:
@@ -187,7 +191,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 if h is None:
                     self.logger.warn("failed to read rpm header for %s"%ch.filename)
                 else:
-                    yield h
+                    yield ch, h
         os.unlink(tmpfile.name)
 
     def findrepos(self, src_project, dst_project):
@@ -249,6 +253,11 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 dryrun = self.options.dry, \
                 user = user, \
                 logger = self.logger)
+
+    @cmdln.option('-r', '--revision', metavar="number", type="int", help="revision number")
+    def do_diff(self, subcmd, opts, src_project, src_package, dst_project, dst_package):
+        src_rev = opts.revision
+        print self.checker.check_source_submission(src_project, src_package, src_rev, dst_project, dst_package)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
