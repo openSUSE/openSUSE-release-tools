@@ -26,6 +26,7 @@ from optparse import OptionParser
 import cmdln
 import re
 from stat import S_ISREG, S_ISLNK
+from tempfile import NamedTemporaryFile
 
 try:
     from xml.etree import cElementTree as ET
@@ -75,89 +76,27 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         notes = []
 
-        # fetch cpio headers from source and target
-        # check file lists for library packages
-
-        so_re = re.compile(r'^(?:/usr)/lib(?:64)?/[^/]+\.so(?:\.[^/]+)?')
-        debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
-
-        def compute_fetchlist(prj, pkg, repo, arch):
-            self.logger.debug('scanning %s/%s %s/%s'%(prj, pkg, repo, arch))
-            headers = self._fetchcpioheaders(prj, pkg, repo, arch)
-            missing_debuginfo = set()
-            lib_packages = dict() # pkgname -> set(lib file names)
-            pkgs = dict() # pkgname -> cpiohdr, rpmhdr
-            lib_aliases = dict()
-            for rpmfn, h in headers:
-                # skip src rpm
-                if h['sourcepackage']:
-                    continue
-                pkgname = h['name']
-                self.logger.debug(pkgname)
-                pkgs[pkgname] = (rpmfn, h)
-                if debugpkg_re.match(pkgname):
-                    continue
-                for fn, mode, lnk in zip(h['filenames'], h['filemodes'], h['filelinktos']):
-                    if so_re.match(fn):
-                        if S_ISREG(mode):
-                            self.logger.debug('found lib: %s'%fn)
-                            lib_packages.setdefault(pkgname, set()).add(fn)
-                        elif S_ISLNK(mode) and lnk is not None:
-                            alias = os.path.basename(fn)
-                            libname = os.path.basename(lnk)
-                            self.logger.debug('found alias: %s -> %s'%(alias, libname))
-                            lib_aliases.setdefault(alias, set()).add(libname)
-
-            fetchlist = set()
-            liblist = set()
-            # check whether debug info exists for each lib
-            for pkgname in sorted(lib_packages.keys()):
-                # 32bit debug packages have special names
-                if pkgname.endswith('-32bit'):
-                    dpkgname = pkgname[:-len('-32bit')]+'-debuginfo-32bit'
-                else:
-                    dpkgname = pkgname+'-debuginfo'
-                if not dpkgname in pkgs:
-                    missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
-                    continue
-
-                # check file list of debuginfo package
-                rpmfn, h = pkgs[dpkgname]
-                files = set (h['filenames'])
-                ok = True
-                for lib in lib_packages[pkgname]:
-                    fn = '/usr/lib/debug%s.debug'%lib
-                    if not fn in files:
-                        missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
-                        ok = False
-                    if ok:
-                        fetchlist.add(pkgs[pkgname][0])
-                        fetchlist.add(rpmfn)
-                        liblist.add(lib)
-
-            if missing_debuginfo:
-                self.logger.error('missing debuginfo: %s'%pformat(missing_debuginfo))
-                return None
-
-            return fetchlist, liblist, lib_aliases
-
         for mr in myrepos:
-            fetchlist_dst, liblist_dst, lib_aliases_dst = compute_fetchlist(dst_project, dst_package, mr.dstrepo, mr.arch)
-            mtimes_dst = self._getmtimes(dst_project, dst_package, mr.dstrepo, mr.arch)
-            fetchlist_src, liblist_src, lib_aliases_src = compute_fetchlist(src_project, src_package, mr.srcrepo, mr.arch)
-            mtimes_src = self._getmtimes(src_project, src_package, mr.srcrepo, mr.arch)
-            self.logger.debug(pformat(fetchlist_dst))
-            self.logger.debug(pformat(fetchlist_src))
-
-            # fetch binary rpms
-            self.download_files(dst_project, dst_package, mr.dstrepo, mr.arch, fetchlist_dst, mtimes_dst)
-            self.download_files(src_project, src_package, mr.srcrepo, mr.arch, fetchlist_src, mtimes_src)
-
-            # extract binary rpms
+            self.extract(dst_project, dst_package, mr.dstrepo, mr.arch)
+            self.extract(src_project, src_package, mr.srcrepo, mr.arch)
 
         # run abichecker
-
         # upload result
+
+    def extract(self, project, package, repo, arch):
+            # fetch cpio headers
+            # check file lists for library packages
+            fetchlist, liblist, lib_aliases = self.compute_fetchlist(project, package, repo, arch)
+            mtimes= self._getmtimes(project, package, repo, arch)
+            self.logger.debug(pformat(fetchlist))
+
+            # fetch binary rpms
+            self.download_files(project, package, repo, arch, fetchlist, mtimes)
+
+            # extract binary rpms
+            tmpfile = NamedTemporaryFile(prefix="cpio-", delete=False)
+
+            os.unlink(tmpfile.name)
 
     def download_files(self, project, package, repo, arch, filenames, mtimes):
         for fn in filenames:
@@ -213,7 +152,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         except urllib2.HTTPError, e:
             self.logger.error('failed to fetch header information')
             raise StopIteration
-        from tempfile import NamedTemporaryFile
         tmpfile = NamedTemporaryFile(prefix="cpio-", delete=False)
         for chunk in r:
             tmpfile.write(chunk)
@@ -289,6 +227,70 @@ class ABIChecker(ReviewBot.ReviewBot):
                     matchrepos.add(MR(name, dstname, arch))
 
         return matchrepos
+
+    def compute_fetchlist(self, prj, pkg, repo, arch):
+        self.logger.debug('scanning %s/%s %s/%s'%(prj, pkg, repo, arch))
+
+        so_re = re.compile(r'^(?:/usr)/lib(?:64)?/[^/]+\.so(?:\.[^/]+)?')
+        debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
+
+        headers = self._fetchcpioheaders(prj, pkg, repo, arch)
+        missing_debuginfo = set()
+        lib_packages = dict() # pkgname -> set(lib file names)
+        pkgs = dict() # pkgname -> cpiohdr, rpmhdr
+        lib_aliases = dict()
+        for rpmfn, h in headers:
+            # skip src rpm
+            if h['sourcepackage']:
+                continue
+            pkgname = h['name']
+            self.logger.debug(pkgname)
+            pkgs[pkgname] = (rpmfn, h)
+            if debugpkg_re.match(pkgname):
+                continue
+            for fn, mode, lnk in zip(h['filenames'], h['filemodes'], h['filelinktos']):
+                if so_re.match(fn):
+                    if S_ISREG(mode):
+                        self.logger.debug('found lib: %s'%fn)
+                        lib_packages.setdefault(pkgname, set()).add(fn)
+                    elif S_ISLNK(mode) and lnk is not None:
+                        alias = os.path.basename(fn)
+                        libname = os.path.basename(lnk)
+                        self.logger.debug('found alias: %s -> %s'%(alias, libname))
+                        lib_aliases.setdefault(alias, set()).add(libname)
+
+        fetchlist = set()
+        liblist = set()
+        # check whether debug info exists for each lib
+        for pkgname in sorted(lib_packages.keys()):
+            # 32bit debug packages have special names
+            if pkgname.endswith('-32bit'):
+                dpkgname = pkgname[:-len('-32bit')]+'-debuginfo-32bit'
+            else:
+                dpkgname = pkgname+'-debuginfo'
+            if not dpkgname in pkgs:
+                missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
+                continue
+
+            # check file list of debuginfo package
+            rpmfn, h = pkgs[dpkgname]
+            files = set (h['filenames'])
+            ok = True
+            for lib in lib_packages[pkgname]:
+                fn = '/usr/lib/debug%s.debug'%lib
+                if not fn in files:
+                    missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
+                    ok = False
+                if ok:
+                    fetchlist.add(pkgs[pkgname][0])
+                    fetchlist.add(rpmfn)
+                    liblist.add(lib)
+
+        if missing_debuginfo:
+            self.logger.error('missing debuginfo: %s'%pformat(missing_debuginfo))
+            return None
+
+        return fetchlist, liblist, lib_aliases
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
