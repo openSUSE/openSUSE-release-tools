@@ -37,6 +37,15 @@ import osc.core
 import urllib2
 import rpm
 from collections import namedtuple
+from osclib.pkgcache import PkgCache
+
+# Directory where download binary packages.
+BINCACHE = os.path.expanduser('~/co')
+DOWNLOADS = os.path.join(BINCACHE, 'downloads')
+
+from xdg.BaseDirectory import save_cache_path
+# Where the cache files are stored
+CACHEDIR = save_cache_path('opensuse-abi-checker')
 
 import ReviewBot
 
@@ -49,10 +58,12 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.ts = rpm.TransactionSet()
         self.ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
-    
+
+        self.pkgcache = PkgCache(BINCACHE)
+
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
-        
+
         if self._get_verifymd5(dst_project, dst_package) is None:
             self.logger.info("%s/%s does not exist, skip"%(dst_project, dst_package))
             return None
@@ -77,13 +88,13 @@ class ABIChecker(ReviewBot.ReviewBot):
             lib_packages = dict() # pkgname -> set(lib file names)
             pkgs = dict() # pkgname -> cpiohdr, rpmhdr
             lib_aliases = dict()
-            for ch, h in headers:
+            for rpmfn, h in headers:
                 # skip src rpm
                 if h['sourcepackage']:
                     continue
                 pkgname = h['name']
                 self.logger.debug(pkgname)
-                pkgs[pkgname] = (ch, h)
+                pkgs[pkgname] = (rpmfn, h)
                 if debugpkg_re.match(pkgname):
                     continue
                 for fn, mode, lnk in zip(h['filenames'], h['filemodes'], h['filelinktos']):
@@ -111,7 +122,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     continue
 
                 # check file list of debuginfo package
-                ch, h = pkgs[dpkgname]
+                rpmfn, h = pkgs[dpkgname]
                 files = set (h['filenames'])
                 ok = True
                 for lib in lib_packages[pkgname]:
@@ -120,8 +131,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                         missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
                         ok = False
                     if ok:
-                        fetchlist.add(pkgs[pkgname][0].filename)
-                        fetchlist.add(ch.filename)
+                        fetchlist.add(pkgs[pkgname][0])
+                        fetchlist.add(rpmfn)
                         liblist.add(lib)
 
             if missing_debuginfo:
@@ -132,21 +143,51 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         for mr in myrepos:
             fetchlist_dst, liblist_dst, lib_aliases_dst = compute_fetchlist(dst_project, dst_package, mr.dstrepo, mr.arch)
+            mtimes_dst = self._getmtimes(dst_project, dst_package, mr.dstrepo, mr.arch)
             fetchlist_src, liblist_src, lib_aliases_src = compute_fetchlist(src_project, src_package, mr.srcrepo, mr.arch)
+            mtimes_src = self._getmtimes(src_project, src_package, mr.srcrepo, mr.arch)
             self.logger.debug(pformat(fetchlist_dst))
-#            self.logger.debug(pformat(liblist_dst))
-#            self.logger.debug(pformat(lib_aliases_dst))
             self.logger.debug(pformat(fetchlist_src))
-#            self.logger.debug(pformat(liblist_src))
-#            self.logger.debug(pformat(lib_aliases_dst))
 
-        # fetch binary rpms
+            # fetch binary rpms
+            self.download_files(dst_project, dst_package, mr.dstrepo, mr.arch, fetchlist_dst, mtimes_dst)
+            self.download_files(src_project, src_package, mr.srcrepo, mr.arch, fetchlist_src, mtimes_src)
 
-        # extract binary rpms
+            # extract binary rpms
 
         # run abichecker
 
         # upload result
+
+    def download_files(self, project, package, repo, arch, filenames, mtimes):
+        for fn in filenames:
+            if not fn in mtimes:
+                self.logger.error("missing mtime information for %s, can't check"% fn)
+                # XXX record error
+                continue
+            repodir = os.path.join(DOWNLOADS, package, project, repo)
+            if not os.path.exists(repodir):
+                os.makedirs(repodir)
+            t = os.path.join(repodir, fn)
+            self._get_binary_file(project, repo, arch, package, fn, t, mtimes[fn])
+
+
+    # XXX: from repochecker
+    def _get_binary_file(self, project, repository, arch, package, filename, target, mtime):
+        """Get a binary file from OBS."""
+        # Check if the file is already there.
+        key = (project, repository, arch, package, filename, mtime)
+        if key in self.pkgcache:
+            try:
+                os.unlink(target)
+            except:
+                pass
+            self.pkgcache.linkto(key, target)
+        else:
+            osc.core.get_binary_file(self.apiurl, project, repository, arch,
+                            filename, package=package,
+                            target_filename=target)
+            self.pkgcache[key] = target
 
     def readRpmHeaderFD(self, fd):
         h = None
@@ -179,6 +220,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         tmpfile.close()
         cpio = CpioRead(tmpfile.name)
         cpio.read()
+        rpm_re = re.compile('(.+\.rpm)-[0-9A-Fa-f]{32}$')
         for ch in cpio:
             # ignore errors
             if ch.filename == '.errors':
@@ -190,9 +232,22 @@ class ABIChecker(ReviewBot.ReviewBot):
                 h = self.readRpmHeaderFD(fh)
                 if h is None:
                     self.logger.warn("failed to read rpm header for %s"%ch.filename)
-                else:
-                    yield ch, h
+                    continue
+                m = rpm_re.match(ch.filename)
+                if m:
+                    yield m.group(1), h
         os.unlink(tmpfile.name)
+
+    def _getmtimes(self, prj, pkg, repo, arch):
+        """ returns a dict of filename: mtime """
+        url = osc.core.makeurl(self.apiurl, ('build', prj, repo, arch, pkg))
+        try:
+            root = ET.parse(osc.core.http_GET(url)).getroot()
+        except urllib2.HTTPError:
+            return None
+
+        return dict([(node.attrib['filename'], node.attrib['mtime']) for node in root.findall('binary')])
+
 
     def findrepos(self, src_project, dst_project):
         url = osc.core.makeurl(self.apiurl, ('source', dst_project, '_meta'))
