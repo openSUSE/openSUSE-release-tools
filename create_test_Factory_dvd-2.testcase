@@ -19,13 +19,10 @@ job install provides pattern() = kde
 job install provides pattern() = kde4_basis
 job install provides pattern() = kde4_multimedia
 job install provides pattern() = kde4_utilities
-job install provides pattern() = laptop
 job install provides pattern() = multimedia
-job install provides pattern() = office
 job install provides pattern() = minimal_base
 
 job install provides pattern() = rest_core_dvd
-job install provides virtualbox-guest-kmp
 
 job install name aaa_base-extras
 job install name branding-openSUSE
@@ -33,8 +30,6 @@ job install name openSUSE-release-livecd-x11
 job install name sudo
 job install name xdelta
 job install name kate
-job install name MozillaThunderbird
-job install name libreoffice
 
 job lock name gtk2-branding-upstream
 job lock name gdm-branding-upstream
@@ -43,7 +38,14 @@ job lock name kdm-branding-upstream
 job lock name kdebase4-runtime-branding-upstream
 job lock name kdelibs4-branding-upstream
 job lock name readline-doc
+#ifdef __x86_64__
+job install provides pattern() = laptop
+job install provides pattern() = office
+job install name MozillaThunderbird
+job install name libreoffice
 job lock name libgcc_s1-32bit
+job install provides virtualbox-guest-kmp
+#endif
 job lock name gtk3-branding-upstream
 
 job lock name openvpn
