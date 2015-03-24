@@ -103,7 +103,8 @@ class SelectCommand(object):
         else:
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
-    def perform(self, target_project, requests, move=False, from_=None):
+    def perform(self, target_project, requests, move=False,
+                from_=None, no_freeze=False):
         """
         Select package and move it accordingly by arguments
         :param target_project: project we want to target
@@ -113,7 +114,7 @@ class SelectCommand(object):
         """
 
         # If the project is not frozen enough yet freeze it
-        if not self.api.prj_frozen_enough(target_project):
+        if not (no_freeze or self.api.prj_frozen_enough(target_project)):
             print('Freeze the prj first')
             return False
             # FreezeCommand(self.api).perform(target_project)

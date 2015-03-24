@@ -41,9 +41,9 @@ DEFAULT = {
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
     },
-    r'SUSE:(?P<project>[-\w\d]+)': {
+    r'SUSE:(?P<project>.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
-        'staging-group': '%(project.lower)s-staging',
+        'staging-group': 'sle-staging-managers',  # '%(project.lower)s-staging',
         'rings': None,
         'nonfree': None,
         'rebuild': None,
