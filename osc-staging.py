@@ -73,6 +73,8 @@ def _full_project_name(self, project):
               help='use the old check algorithm')
 @cmdln.option('-v', '--version', action='store_true',
               help='show version of the plugin')
+@cmdln.option('--no-freeze', dest='no_freeze', action='store_true',
+              help='force the select command ignoring the time from the last freeze')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -99,7 +101,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging cleanup_rings
         osc staging freeze PROJECT...
         osc staging list
-        osc staging select [--move [--from PROJECT]] LETTER REQUEST...
+        osc staging select [--no-freeze] [--move [--from PROJECT]] LETTER REQUEST...
         osc staging unselect REQUEST...
     """
     if opts.version:
@@ -159,7 +161,8 @@ def do_staging(self, subcmd, opts, *args):
             if opts.add:
                 api.mark_additional_packages(tprj, [opts.add])
             else:
-                SelectCommand(api).perform(tprj, args[2:], opts.move, opts.from_)
+                SelectCommand(api).perform(tprj, args[2:], opts.move,
+                                           opts.from_, opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'list':

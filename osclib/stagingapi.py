@@ -398,7 +398,8 @@ class StagingAPI(object):
         requests = self.get_open_requests()
         # check if we can reduce it down by accepting some
         for rq in requests:
-            self.accept_non_ring_request(rq)
+            if self.crings:
+                self.accept_non_ring_request(rq)
             self.update_superseded_request(rq)
 
     def get_prj_pseudometa(self, project):
@@ -734,7 +735,7 @@ class StagingAPI(object):
         # The force_enable_build will avoid the
         # map_ring_package_to_subproject
         if not force_enable_build:
-            if not self.ring_packages.get(tar_pkg):
+            if self.crings and not self.ring_packages.get(tar_pkg):
                 disable_build = True
             else:
                 project = self.map_ring_package_to_subject(project, tar_pkg)
@@ -910,7 +911,7 @@ class StagingAPI(object):
         for request in meta['requests']:
             staged_requests.append(request['id'])
         target_flag = 'disable'
-        if self.check_ring_packages(target_project, staged_requests):
+        if not self.crings or self.check_ring_packages(target_project, staged_requests):
             target_flag = 'enable'
         self.build_switch_prj(target_project, target_flag)
 

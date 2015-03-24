@@ -29,7 +29,14 @@ class ListCommand:
             # Where are we targeting the package
             target_package = action.find('target').get('package')
 
-            ring = self.api.ring_packages.get(target_package)
-            # This condition is quite moot as we dispatched stuff above anyway
+            # If the system have rings, we ask for the ring of the
+            # package
+            if self.api.crings:
+                ring = self.api.ring_packages.get(target_package)
+            else:
+                ring = self.api.project
+
+            # This condition is quite moot as we dispatched stuff
+            # above anyway
             if ring:
                 print('Request({}): {} -> {}'.format(request_id, target_package, ring))
