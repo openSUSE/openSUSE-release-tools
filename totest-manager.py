@@ -198,6 +198,9 @@ class ToTestBase(object):
         if package == '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64':
             return None
 
+        if package == '_product:openSUSE-ftp-ftp-ppc_ppc64_ppc64le':
+            return None
+
         raise Exception('No maxsize for {}'.format(package))
 
     def package_ok(self, project, package, repository, arch):
