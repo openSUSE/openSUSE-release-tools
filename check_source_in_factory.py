@@ -51,33 +51,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
 
-    def check_action_maintenance_incident(self, req, a):
-        rev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-        return self._check_package(a.src_project, a.src_package, rev, a.tgt_releaseproject, a.src_package)
-
-    def check_action_maintenance_release(self, req, a):
-        pkgname = a.src_package
-        if pkgname == 'patchinfo':
-            return None
-        linkpkg = self._get_linktarget_self(a.src_project, pkgname)
-        if linkpkg is not None:
-            pkgname = linkpkg
-        # packages in maintenance have links to the target. Use that
-        # to find the real package name
-        (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
-        if linkpkg is None or linkprj is None or linkprj != a.tgt_project:
-            self.logger.error("%s/%s is not a link to %s"%(a.src_project, pkgname, a.tgt_project))
-            return False
-        else:
-            pkgname = linkpkg
-        src_rev = self._get_verifymd5(a.src_project, a.src_package)
-        return self._check_package(a.src_project, a.src_package, src_rev, a.tgt_project, pkgname)
-
-    def check_action_submit(self, req, a):
-        rev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-        return self._check_package(a.src_project, a.src_package, rev, a.tgt_package, a.tgt_package)
-
-    def _check_package(self, src_project, src_package, src_rev, target_project, target_package):
+    def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         good = self._check_factory(src_rev, target_package)
 
