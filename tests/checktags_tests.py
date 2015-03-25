@@ -13,7 +13,7 @@ import urlparse
 import sys
 sys.path.append(".")
 
-from check_tags_in_sle import TagChecker
+from check_tags_in_requests import TagChecker
 
 APIURL = 'https://maintenancetest.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
