@@ -43,15 +43,21 @@ import rpm
 from collections import namedtuple
 from osclib.pkgcache import PkgCache
 
+from xdg.BaseDirectory import save_cache_path
+
+import ReviewBot
+
 # Directory where download binary packages.
 BINCACHE = os.path.expanduser('~/co')
 DOWNLOADS = os.path.join(BINCACHE, 'downloads')
 
-from xdg.BaseDirectory import save_cache_path
 # Where the cache files are stored
 CACHEDIR = save_cache_path('opensuse-abi-checker')
 
-import ReviewBot
+so_re = re.compile(r'^(?:/usr)/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
+debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
+
+
 
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
@@ -72,7 +78,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.logger.info("%s/%s does not exist, skip"%(dst_project, dst_package))
             return None
 
-        # compute list of common repos
+        # compute list of common repos to find out what to compare
         myrepos = self.findrepos(src_project, dst_project)
 
         self.logger.debug(pformat(myrepos))
@@ -83,11 +89,15 @@ class ABIChecker(ReviewBot.ReviewBot):
             dst_libs = self.extract(dst_project, dst_package, mr.dstrepo, mr.arch)
             src_libs = self.extract(src_project, src_package, mr.srcrepo, mr.arch)
 
+            # create reverse index for aliases in the source project
             src_aliases = dict()
             for lib in src_libs.keys():
                 for a in src_libs[lib]:
                     src_aliases.setdefault(a, set()).add(lib)
 
+            # for each library in the destination project check if the same lib
+            # exists in the source project. If not check the aliases (symlinks)
+            # to catch soname changes. Generate pairs of matching libraries.
             pairs = set()
             for lib in dst_libs.keys():
                 if lib in src_libs:
@@ -100,10 +110,59 @@ class ABIChecker(ReviewBot.ReviewBot):
                                 pairs.add((lib, l))
 
             self.logger.debug("to diff: %s", pformat(pairs))
+            
+            # for each pair dump and compare the abi
+            for old, new in pairs:
+                # abi dump of old lib
+                new_base = os.path.join(CACHEDIR, 'unpacked', dst_project, dst_package, mr.dstrepo, mr.arch)
+                old_dump = os.path.join(CACHEDIR, 'old.dump')
+                # abi dump of new lib
+                old_base = os.path.join(CACHEDIR, 'unpacked', src_project, src_package, mr.srcrepo, mr.arch)
+                new_dump = os.path.join(CACHEDIR, 'new.dump')
 
+                m = so_re.match(old)
+
+                if m \
+                    and self.run_abi_dumper(old_dump, new_base, old) \
+                    and self.run_abi_dumper(new_dump, old_base, new):
+                        report = os.path.join(CACHEDIR, 'report.html')
+                        if self.run_abi_checker(m.group(1), old_dump, new_dump, report):
+                            self.logger.info('report saved to %s', report)
+                else:
+                    self.logger.error('failed to compare %s <> %s'%(old,new))
+                    # XXX: report
 
         # run abichecker
         # upload result
+
+    def run_abi_checker(self, libname, old, new, output):
+        cmd = ['abi-compliance-checker',
+                '-lib', libname,
+                '-old', old,
+                '-new', new,
+                '-report-path', output 
+                ]
+        self.logger.debug(cmd)
+        r = subprocess.call(cmd, close_fds=True)
+        if not r in (0, 1):
+            self.logger.error('abi-compliance-checker failed')
+            # XXX: record error
+            return False
+        return True
+
+    def run_abi_dumper(self, output, base, filename):
+        cmd = ['abi-dumper',
+                '-o', output,
+                '-lver', os.path.basename(filename),
+                '-debuginfo-dir', '%s/usr/lib/debug/%s'%(base, os.path.dirname(filename)),
+                '/'.join([base, filename])]
+        self.logger.debug(cmd)
+        r = subprocess.call(cmd, close_fds=True)
+        if r != 0:
+            self.logger.error("failed to dump %s!"%filename)
+            # XXX: record error
+            return False
+        return True
 
     def extract(self, project, package, repo, arch):
             # fetch cpio headers
@@ -121,6 +180,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
             self.logger.debug("fetchlist %s", pformat(fetchlist))
             self.logger.debug("liblist %s", pformat(liblist))
+
+            debugfiles = set(['/usr/lib/debug%s.debug'%f for f in liblist])
 
             # fetch binary rpms
             downloaded = self.download_files(project, package, repo, arch, fetchlist, mtimes)
@@ -148,7 +209,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         if fn.startswith('./'): # rpm payload is relative
                             fn = fn[1:]
                         self.logger.debug("cpio fn %s", fn)
-                        if not fn in liblist:
+                        if not fn in liblist and not fn in debugfiles:
                             continue
                         dst = os.path.join(CACHEDIR, 'unpacked', project, package, repo, arch)
                         dst += fn
@@ -301,9 +362,6 @@ class ABIChecker(ReviewBot.ReviewBot):
 
     def compute_fetchlist(self, prj, pkg, repo, arch):
         self.logger.debug('scanning %s/%s %s/%s'%(prj, pkg, repo, arch))
-
-        so_re = re.compile(r'^(?:/usr)/lib(?:64)?/[^/]+\.so(?:\.[^/]+)?')
-        debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
 
         headers = self._fetchcpioheaders(prj, pkg, repo, arch)
         missing_debuginfo = set()
