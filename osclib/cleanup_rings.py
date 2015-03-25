@@ -83,7 +83,7 @@ class CleanupRings(object):
             self.fill_pkgdeps(prj, 'standard', arch)
 
             if prj == '{}:1-MinimalX'.format(self.api.crings):
-                url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-' + arch, '_buildinfo'])
+                url = makeurl(self.api.apiurl, ['build', prj, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
                 root = ET.parse(http_GET(url)).getroot()
                 for bdep in root.findall('bdep'):
                     if 'name' not in bdep.attrib:
@@ -95,7 +95,7 @@ class CleanupRings(object):
                     self.pkgdeps[b] = 'MYdvd'
 
             if prj == '{}:2-TestDVD'.format(self.api.crings):
-                url = makeurl(self.api.apiurl, ['build', prj, 'images', 'x86_64', 'Test-DVD-' + arch, '_buildinfo'])
+                url = makeurl(self.api.apiurl, ['build', prj, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
                 root = ET.parse(http_GET(url)).getroot()
                 for bdep in root.findall('bdep'):
                     if 'name' not in bdep.attrib:

@@ -376,7 +376,7 @@ class ToTestFactory(ToTestBase):
 
     # for Factory we check the version of the release package
     def current_version(self):
-        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', 'x86_64',
+        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
                                 '_product:openSUSE-release'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
@@ -411,7 +411,7 @@ class ToTestFactoryPowerPC(ToTestBase):
 
     # for Factory we check the version of the release package
     def current_version(self):
-        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', 'ppc64le',
+        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
                                 '_product:openSUSE-release'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
