@@ -49,14 +49,17 @@ class TagChecker(ReviewBot.ReviewBot):
 
         return matches
 
-    def check_action_submit(self, req, a):
+    def checkTagInRequest(self, req, a):
         return self.textMatchesAnyTag(req.description)
+
+    def check_action_submit(self, req, a):
+        return self.checkTagInRequest(req,a)
 
     def check_action_maintenance_incident(self, req, a):
-        return self.textMatchesAnyTag(req.description)
+        return self.checkTagInRequest(req,a)
 
     def check_action_maintenance_release(self, req, a):
-        return self.textMatchesAnyTag(req.description)
+        return self.checkTagInRequest(req,a)
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
