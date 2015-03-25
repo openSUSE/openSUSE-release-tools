@@ -80,8 +80,27 @@ class ABIChecker(ReviewBot.ReviewBot):
         notes = []
 
         for mr in myrepos:
-            self.extract(dst_project, dst_package, mr.dstrepo, mr.arch)
-            self.extract(src_project, src_package, mr.srcrepo, mr.arch)
+            dst_libs = self.extract(dst_project, dst_package, mr.dstrepo, mr.arch)
+            src_libs = self.extract(src_project, src_package, mr.srcrepo, mr.arch)
+
+            src_aliases = dict()
+            for lib in src_libs.keys():
+                for a in src_libs[lib]:
+                    src_aliases.setdefault(a, set()).add(lib)
+
+            pairs = set()
+            for lib in dst_libs.keys():
+                if lib in src_libs:
+                    paris.add((lib, lib))
+                else:
+                    self.logger.debug("%s not found in submission, checking aliases", lib)
+                    for a in dst_libs[lib]:
+                        if a in src_aliases:
+                            for l in src_aliases[a]:
+                                pairs.add((lib, l))
+
+            self.logger.debug("to diff: %s", pformat(pairs))
+
 
         # run abichecker
         # upload result
@@ -89,7 +108,7 @@ class ABIChecker(ReviewBot.ReviewBot):
     def extract(self, project, package, repo, arch):
             # fetch cpio headers
             # check file lists for library packages
-            fetchlist, liblist, lib_aliases = self.compute_fetchlist(project, package, repo, arch)
+            fetchlist, liblist = self.compute_fetchlist(project, package, repo, arch)
 
             if not fetchlist:
                 self.logger.warning("fetchlist empty")
@@ -131,7 +150,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         self.logger.debug("cpio fn %s", fn)
                         if not fn in liblist:
                             continue
-                        dst = os.path.join(CACHEDIR, project, package, repo, arch)
+                        dst = os.path.join(CACHEDIR, 'unpacked', project, package, repo, arch)
                         dst += fn
                         if not os.path.exists(os.path.dirname(dst)):
                             os.makedirs(os.path.dirname(dst))
@@ -147,6 +166,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                                         break
                                     fh.write(buf)
             os.unlink(tmpfile)
+
+            return liblist
 
     def download_files(self, project, package, repo, arch, filenames, mtimes):
         downloaded = dict()
@@ -307,10 +328,10 @@ class ABIChecker(ReviewBot.ReviewBot):
                         alias = os.path.basename(fn)
                         libname = os.path.basename(lnk)
                         self.logger.debug('found alias: %s -> %s'%(alias, libname))
-                        lib_aliases.setdefault(alias, set()).add(libname)
+                        lib_aliases.setdefault(libname, set()).add(alias)
 
         fetchlist = set()
-        liblist = set()
+        liblist = dict()
         # check whether debug info exists for each lib
         for pkgname in sorted(lib_packages.keys()):
             # 32bit debug packages have special names
@@ -334,13 +355,16 @@ class ABIChecker(ReviewBot.ReviewBot):
                 if ok:
                     fetchlist.add(pkgs[pkgname][0])
                     fetchlist.add(rpmfn)
-                    liblist.add(lib)
+                    liblist.setdefault(lib, set())
+                    libname = os.path.basename(lib)
+                    if libname in lib_aliases:
+                        liblist[lib] |= lib_aliases[libname]
 
         if missing_debuginfo:
             self.logger.error('missing debuginfo: %s'%pformat(missing_debuginfo))
             return None
 
-        return fetchlist, liblist, lib_aliases
+        return fetchlist, liblist
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
