@@ -19,15 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from pprint import pprint, pformat
-import os, sys, re
-import logging
 from optparse import OptionParser
-import cmdln
-import re
+from pprint import pprint, pformat
 from stat import S_ISREG, S_ISLNK
 from tempfile import NamedTemporaryFile
+import cmdln
+import logging
+import os
+import re
+import shutil
 import subprocess
+import sys
 
 try:
     from xml.etree import cElementTree as ET
@@ -53,11 +55,15 @@ DOWNLOADS = os.path.join(BINCACHE, 'downloads')
 
 # Where the cache files are stored
 CACHEDIR = save_cache_path('opensuse-abi-checker')
+UNPACKDIR = os.path.join(CACHEDIR, 'unpacked')
 
 so_re = re.compile(r'^(?:/usr)/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
 debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
 
-
+# report for source submissions. contains multiple libresult for each library
+Report = namedtuple('Report', ('src_project', 'src_package', 'src_rev', 'dst_project', 'dst_package', 'reports', 'result'))
+# report for a single library
+LibResult = namedtuple('LibResult', ('src_repo', 'src_lib', 'dst_repo', 'dst_lib', 'arch', 'htmlreport', 'result'))
 
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
@@ -71,6 +77,9 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.pkgcache = PkgCache(BINCACHE)
 
+        # reports of source submission
+        self.reports = []
+
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
@@ -78,12 +87,20 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.logger.info("%s/%s does not exist, skip"%(dst_project, dst_package))
             return None
 
+        if os.path.exists(UNPACKDIR):
+            shutil.rmtree(UNPACKDIR)
+
         # compute list of common repos to find out what to compare
         myrepos = self.findrepos(src_project, dst_project)
+
+        # TODO: check build completed
 
         self.logger.debug(pformat(myrepos))
 
         notes = []
+        libresults = []
+
+        overall = None
 
         for mr in myrepos:
             dst_libs = self.extract(dst_project, dst_package, mr.dstrepo, mr.arch)
@@ -114,26 +131,61 @@ class ABIChecker(ReviewBot.ReviewBot):
             # for each pair dump and compare the abi
             for old, new in pairs:
                 # abi dump of old lib
-                new_base = os.path.join(CACHEDIR, 'unpacked', dst_project, dst_package, mr.dstrepo, mr.arch)
+                new_base = os.path.join(UNPACKDIR, dst_project, dst_package, mr.dstrepo, mr.arch)
                 old_dump = os.path.join(CACHEDIR, 'old.dump')
                 # abi dump of new lib
-                old_base = os.path.join(CACHEDIR, 'unpacked', src_project, src_package, mr.srcrepo, mr.arch)
+                old_base = os.path.join(UNPACKDIR, src_project, src_package, mr.srcrepo, mr.arch)
                 new_dump = os.path.join(CACHEDIR, 'new.dump')
 
-                m = so_re.match(old)
+                def cleanup():
+                    if os.path.exists(old_dump):
+                        os.unlink(old_dump)
+                    if os.path.exists(new_dump):
+                        os.unlink(new_dump)
 
+                cleanup()
+
+                # we just need that to pass a name to abi checker
+                m = so_re.match(old)
+                htmlreport = 'report-%s-%s-%s-%s-%s.html'%(mr.srcrepo, os.path.basename(old), mr.dstrepo, os.path.basename(new), mr.arch)
+
+                # run abichecker
                 if m \
                     and self.run_abi_dumper(old_dump, new_base, old) \
                     and self.run_abi_dumper(new_dump, old_base, new):
-                        report = os.path.join(CACHEDIR, 'report.html')
-                        if self.run_abi_checker(m.group(1), old_dump, new_dump, report):
-                            self.logger.info('report saved to %s', report)
+                        reportfn = os.path.join(CACHEDIR, htmlreport)
+                        r = self.run_abi_checker(m.group(1), old_dump, new_dump, reportfn)
+                        if r is not None:
+                            self.logger.info('report saved to %s, compatible: %d', reportfn, r)
+                            libresults.append(LibResult(mr.srcrepo, os.path.basename(old), mr.dstrepo, os.path.basename(new), mr.arch, htmlreport, r))
+                            if overall is None:
+                                overall = r
+                            elif overall == True and r == False:
+                                overall = r
                 else:
                     self.logger.error('failed to compare %s <> %s'%(old,new))
                     # XXX: report
 
-        # run abichecker
-        # upload result
+                cleanup()
+
+        if libresults != [] and overall is not None:
+            self.reports.append(Report(src_project, src_package, src_rev, dst_project, dst_package, libresults, overall))
+
+        # upload reports
+
+        if os.path.exists(UNPACKDIR):
+            shutil.rmtree(UNPACKDIR)
+
+        # we always accept the review, just leave a note if there were problems
+        return True
+
+    def check_one_request(self, req):
+
+        self.reports = []
+        ret = ReviewBot.ReviewBot.check_one_request(self, req)
+        pprint(self.reports)
+
+        return ret
 
     def run_abi_checker(self, libname, old, new, output):
         cmd = ['abi-compliance-checker',
@@ -147,8 +199,8 @@ class ABIChecker(ReviewBot.ReviewBot):
         if not r in (0, 1):
             self.logger.error('abi-compliance-checker failed')
             # XXX: record error
-            return False
-        return True
+            return None
+        return r == 0
 
     def run_abi_dumper(self, output, base, filename):
         cmd = ['abi-dumper',
@@ -211,7 +263,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         self.logger.debug("cpio fn %s", fn)
                         if not fn in liblist and not fn in debugfiles:
                             continue
-                        dst = os.path.join(CACHEDIR, 'unpacked', project, package, repo, arch)
+                        dst = os.path.join(UNPACKDIR, project, package, repo, arch)
                         dst += fn
                         if not os.path.exists(os.path.dirname(dst)):
                             os.makedirs(os.path.dirname(dst))
