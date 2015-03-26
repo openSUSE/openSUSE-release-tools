@@ -37,20 +37,64 @@ class TagChecker(ReviewBot.ReviewBot):
     """
 
     def __init__(self, *args, **kwargs):
-        ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
-        self.needed_tags=['bnc#','cve-','fate#','boo#','bsc#']
+        super(TagChecker, self).__init__(*args, **kwargs)
+        needed_tags=[r'bnc#[0-9]+',r'cve-[0-9]{4}-[0-9]+',r'fate#[0-9]+',r'boo#[0-9]+',r'bsc#[0-9]+']
+        self.needed_tags_re=[ re.compile(tag, re.IGNORECASE) for tag in needed_tags ]
+
 
     def textMatchesAnyTag(self, text):
-        matches=False
-        for tag in self.needed_tags:
-            if tag in text.lower():
-                matches=True
-                break
+        """
+        Returns if the text parameter contains any of the needed tags
+        """
+        for tag_re in self.needed_tags_re:
+            if tag_re.search(text):
+                return True
 
-        return matches
+        return False
+
+    def changesFilesDiffsFromRequest(self, reqid):
+        """
+        Returns an array of strings, each one of which contains the diff of one .changes file modified by request reqid.
+        This method should probably be moved to ReviewBot
+        """
+
+        diff = osc.core.request_diff(self.apiurl, reqid)
+        changesdiffs=[]
+        changesdiff=''
+        inchanges = False
+        for line in diff.split('\n'):
+            if re.match(r'^---.*\.changes', line):
+                if changesdiff:
+                    changesdiffs.append(changesdiff)
+                    changesdiff=''
+                inchanges = True
+            elif re.match(r'^---', line):
+                if changesdiff:
+                    changesdiffs.append(changesdiff)
+                    changesdiff=''
+                inchanges = False
+
+            if inchanges:
+                changesdiff+=line+'\n'
+
+        if changesdiff:
+            changesdiffs.append(changesdiff)
+        return changesdiffs
 
     def checkTagInRequest(self, req, a):
-        return self.textMatchesAnyTag(req.description)
+        # First, we obtain the diff for each .changes file modified by the request
+        diffs = self.changesFilesDiffsFromRequest(req.reqid)
+
+        # If diffs is empty or just contains empty strings, there's no tag
+        if not filter(None, diffs): 
+            return False
+
+        for diff in diffs:
+            # each diff must contain at least one of the needed tags
+            if not self.textMatchesAnyTag(diff):
+               return False
+
+        return True
 
     def check_action_submit(self, req, a):
         return self.checkTagInRequest(req,a)
