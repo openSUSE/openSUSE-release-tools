@@ -30,6 +30,7 @@ import re
 import shutil
 import subprocess
 import sys
+import abichecker_dbmodel as DB
 
 try:
     from xml.etree import cElementTree as ET
@@ -79,6 +80,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         # reports of source submission
         self.reports = []
+
+        self.session = DB.db_session()
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
@@ -185,7 +188,37 @@ class ABIChecker(ReviewBot.ReviewBot):
         ret = ReviewBot.ReviewBot.check_one_request(self, req)
         pprint(self.reports)
 
+        self.save_reports_to_db()
+
         return ret
+
+    def save_reports_to_db(self):
+        for r in self.reports:
+            submission = DB.Submission(
+                    src_project = r.src_project,
+                    src_package = r.src_package,
+                    src_rev = r.src_rev,
+                    dst_project = r.dst_project,
+                    dst_package = r.dst_package,
+                    result = r.result,
+                    )
+            self.session.add(submission)
+            self.logger.info("id %d"%submission.id)
+            for lr in r.reports:
+                libreport = DB.LibReport(
+                        submission = submission,
+                        src_repo = lr.src_repo,
+                        src_lib = lr.src_lib,
+                        dst_repo = lr.dst_repo,
+                        dst_lib = lr.dst_lib,
+                        arch = lr.arch,
+                        htmlreport = lr.htmlreport,
+                        result = lr.result,
+                        )
+                self.session.add(libreport)
+        self.session.commit()
+
+        self.reports = []
 
     def run_abi_checker(self, libname, old, new, output):
         cmd = ['abi-compliance-checker',
