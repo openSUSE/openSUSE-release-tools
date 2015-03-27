@@ -220,7 +220,15 @@ class ReviewBot(object):
         url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-            states = set([review.get('state') for review in root.findall('review') if review.get('by_user') == self.review_user])
+            if self.review_user:
+                by_what = 'by_user'
+                reviewer = self.review_user
+            elif self.review_group:
+                by_what = 'by_group'
+                reviewer = self.review_group
+            else:
+                return False
+            states = set([review.get('state') for review in root.findall('review') if review.get(by_what) == reviewer])
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         if not states:
