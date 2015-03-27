@@ -30,6 +30,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import abichecker_dbmodel as DB
 
 try:
@@ -121,7 +122,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             pairs = set()
             for lib in dst_libs.keys():
                 if lib in src_libs:
-                    paris.add((lib, lib))
+                    pairs.add((lib, lib))
                 else:
                     self.logger.debug("%s not found in submission, checking aliases", lib)
                     for a in dst_libs[lib]:
@@ -130,7 +131,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                                 pairs.add((lib, l))
 
             self.logger.debug("to diff: %s", pformat(pairs))
-            
+
             # for each pair dump and compare the abi
             for old, new in pairs:
                 # abi dump of old lib
@@ -150,7 +151,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
                 # we just need that to pass a name to abi checker
                 m = so_re.match(old)
-                htmlreport = 'report-%s-%s-%s-%s-%s.html'%(mr.srcrepo, os.path.basename(old), mr.dstrepo, os.path.basename(new), mr.arch)
+                htmlreport = 'report-%s-%s-%s-%s-%s-%08x.html'%(mr.srcrepo, os.path.basename(old), mr.dstrepo, os.path.basename(new), mr.arch, time.time())
 
                 # run abichecker
                 if m \
@@ -186,7 +187,6 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.reports = []
         ret = ReviewBot.ReviewBot.check_one_request(self, req)
-        pprint(self.reports)
 
         self.save_reports_to_db()
 
@@ -194,7 +194,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
     def save_reports_to_db(self):
         for r in self.reports:
-            submission = DB.Submission(
+            abicheck = DB.ABICheck(
                     src_project = r.src_project,
                     src_package = r.src_package,
                     src_rev = r.src_rev,
@@ -202,11 +202,12 @@ class ABIChecker(ReviewBot.ReviewBot):
                     dst_package = r.dst_package,
                     result = r.result,
                     )
-            self.session.add(submission)
-            self.logger.info("id %d"%submission.id)
+            self.session.add(abicheck)
+            self.session.commit()
+            self.logger.info("id %d"%abicheck.id)
             for lr in r.reports:
                 libreport = DB.LibReport(
-                        submission = submission,
+                        abicheck = abicheck,
                         src_repo = lr.src_repo,
                         src_lib = lr.src_lib,
                         dst_repo = lr.dst_repo,
@@ -216,7 +217,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         result = lr.result,
                         )
                 self.session.add(libreport)
-        self.session.commit()
+            self.session.commit()
 
         self.reports = []
 
