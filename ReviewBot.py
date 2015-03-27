@@ -43,11 +43,12 @@ class ReviewBot(object):
         return (None|True|False)
     """
 
-    def __init__(self, apiurl = None, dryrun = False, logger = None, user = None):
+    def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
         self.dryrun = dryrun
         self.logger = logger
         self.review_user = user
+        self.review_group = group
         self.requests = []
         self.review_messages = { 'accepted' : 'ok', 'declined': 'review failed' }
 
@@ -75,18 +76,17 @@ class ReviewBot(object):
                 self._set_review(req, 'declined')
 
     def _set_review(self, req, state):
-        if not self.review_user:
-            return
-
-        doit = self.can_accept_review(req.reqid, self.review_user)
+        doit = self.can_accept_review(req.reqid)
         if doit is None:
-            self.logger.info("can't change state, %s does not have '%s' as reviewer"%(req.reqid, self.review_user))
+           self.logger.info("can't change state, %s does not have the reviewer"%(req.reqid))
+
         if doit == True:
             self.logger.debug("setting %s to %s"%(req.reqid, state))
             if not self.dryrun:
                 msg = self.review_messages[state] if state in self.review_messages else state
                 osc.core.change_review_state(apiurl = self.apiurl,
-                        reqid = req.reqid, newstate = state,
+                        reqid = req.reqid, newstate = state, 
+                        by_group=self.review_group,
                         by_user=self.review_user, message=msg)
         else:
             self.logger.debug("%s review not changed"%(req.reqid))
@@ -214,14 +214,13 @@ class ReviewBot(object):
 
         return (None, None)
 
-    # XXX used in other modules
-    def can_accept_review(self, request_id, user):
-        """return True if there is a new review for the specified user"""
+    def can_accept_review(self, request_id):
+        """return True if there is a new review for the specified reviewer"""
         states = set()
         url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-            states = set([review.get('state') for review in root.findall('review') if review.get('by_user') == user])
+            states = set([review.get('state') for review in root.findall('review') if review.get('by_user') == self.review_user])
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         if not states:
@@ -230,10 +229,11 @@ class ReviewBot(object):
             return True
         return False
 
-    def set_request_ids_search_review(self, user = None):
-        if user is None:
-            user = self.review_user
-        review = "@by_user='%s'+and+@state='new'"%user
+    def set_request_ids_search_review(self):
+        if self.review_user:
+           review = "@by_user='%s'+and+@state='new'"%self.review_user
+        else:
+           review = "@by_group='%s'+and+@state='new'"%self.review_group
         url = osc.core.makeurl(self.apiurl, ('search', 'request'), "match=state/@name='review'+and+review[%s]&withhistory=1"%review)
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
@@ -250,6 +250,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser = cmdln.CmdlnOptionParser(self)
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
         parser.add_option("--user",  metavar="USER", help="reviewer user name")
+        parser.add_option("--group",  metavar="GROUP", help="reviewer group name")
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")
@@ -279,12 +280,15 @@ class CommandLineInterface(cmdln.Cmdln):
         if apiurl is None:
             raise osc.oscerr.ConfigError("missing apiurl")
         user = self.options.user
-        if user is None:
+        group = self.options.group
+        # if no args are given, use the current oscrc "owner"
+        if user is None and group is None:
             user = osc.conf.get_apiurl_usr(apiurl)
 
         return ReviewBot(apiurl = apiurl, \
                 dryrun = self.options.dry, \
                 user = user, \
+                group = group, \
                 logger = self.logger)
 
     def do_id(self, subcmd, opts, *args):
@@ -302,8 +306,8 @@ class CommandLineInterface(cmdln.Cmdln):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        if self.checker.review_user is None:
-            raise osc.oscerr.WrongArgs("missing user")
+        if self.checker.review_user is None and self.checker.review_group is None:
+            raise osc.oscerr.WrongArgs("missing reviewer (user or group)")
 
         self.checker.set_request_ids_search_review()
         self.checker.check_requests()
