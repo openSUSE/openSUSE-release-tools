@@ -188,13 +188,14 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.reports = []
         ret = ReviewBot.ReviewBot.check_one_request(self, req)
 
-        self.save_reports_to_db()
+        self.save_reports_to_db(req)
 
         return ret
 
-    def save_reports_to_db(self):
+    def save_reports_to_db(self, req):
         for r in self.reports:
             abicheck = DB.ABICheck(
+                    request_id = req.reqid,
                     src_project = r.src_project,
                     src_package = r.src_package,
                     src_rev = r.src_rev,
