@@ -61,11 +61,19 @@ UNPACKDIR = os.path.join(CACHEDIR, 'unpacked')
 
 so_re = re.compile(r'^(?:/usr)/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
 debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
+disturl_re = re.compile(r'^obs://[^/]+/(?P<prj>[^/]+)/(?P<repo>[^/]+)/(?P<md5>[0-9a-f]{32})-(?P<pkg>.*)$')
 
 # report for source submissions. contains multiple libresult for each library
 Report = namedtuple('Report', ('src_project', 'src_package', 'src_rev', 'dst_project', 'dst_package', 'reports', 'result'))
 # report for a single library
 LibResult = namedtuple('LibResult', ('src_repo', 'src_lib', 'dst_repo', 'dst_lib', 'arch', 'htmlreport', 'result'))
+
+class DistUrlMismatch(Exception):
+    def __init__(self, disturl, prj, pkg, repo, vmd5):
+        Exception.__init__(self)
+        self.msg = 'disturl mismatch %s vs ...%s/%s/%s-%s'%(disturl, prj, repo, vmd5, pkg)
+    def __str__(self):
+        return self.msg
 
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
@@ -87,8 +95,13 @@ class ABIChecker(ReviewBot.ReviewBot):
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
-        if self._get_verifymd5(dst_project, dst_package) is None:
+        dst_vmd5 = self._get_verifymd5(dst_project, dst_package)
+        if dst_vmd5 is None:
             self.logger.info("%s/%s does not exist, skip"%(dst_project, dst_package))
+            return None
+        src_vmd5 = self._get_verifymd5(src_project, src_package)
+        if src_vmd5 is None:
+            self.logger.info("%s/%s does not exist, skip"%(src_project, src_package))
             return None
 
         if os.path.exists(UNPACKDIR):
@@ -107,8 +120,12 @@ class ABIChecker(ReviewBot.ReviewBot):
         overall = None
 
         for mr in myrepos:
-            dst_libs = self.extract(dst_project, dst_package, mr.dstrepo, mr.arch)
-            src_libs = self.extract(src_project, src_package, mr.srcrepo, mr.arch)
+            dst_libs = self.extract(dst_project, dst_package, dst_vmd5, mr.dstrepo, mr.arch)
+            src_libs = self.extract(src_project, src_package, dst_vmd5, mr.srcrepo, mr.arch)
+
+            if dst_libs is none or src_libs is None:
+                # nothing to fetch, so no libs
+                continue
 
             # create reverse index for aliases in the source project
             src_aliases = dict()
@@ -251,15 +268,15 @@ class ABIChecker(ReviewBot.ReviewBot):
             return False
         return True
 
-    def extract(self, project, package, repo, arch):
+    def extract(self, project, package, vmd5, repo, arch):
             # fetch cpio headers
             # check file lists for library packages
-            fetchlist, liblist = self.compute_fetchlist(project, package, repo, arch)
+            fetchlist, liblist = self.compute_fetchlist(project, package, vmd5, repo, arch)
 
             if not fetchlist:
-                self.logger.warning("fetchlist empty")
+                self.logger.info("nothing to fetch for %s/%s %s/%s"%(project, package, repo, arch))
                 # XXX record
-                return
+                return None
 
             # mtimes in cpio are not the original ones, so we need to fetch
             # that separately :-(
@@ -447,7 +464,23 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return matchrepos
 
-    def compute_fetchlist(self, prj, pkg, repo, arch):
+    def disturl_matches(self, disturl, prj, pkg, repo, vmd5):
+        self.logger.warning("%s %s"%(disturl, vmd5))
+        m = disturl_re.match(disturl)
+        self.logger.warning(m)
+        if m is None \
+        or m.group('prj') != prj \
+        or m.group('pkg') != pkg \
+        or m.group('repo') != repo \
+        or m.group('md5') != vmd5:
+            self.logger.warning('disturl mismatch %s vs ...%s/%s/%s-%s'%(disturl, prj, repo, vmd5, pkg))
+            return False
+        return True
+
+    def compute_fetchlist(self, prj, pkg, vmd5, repo, arch):
+        """ scan binary rpms of the specified repo for libraries.
+        Returns a set of packages to fetch and the libraries found
+        """
         self.logger.debug('scanning %s/%s %s/%s'%(prj, pkg, repo, arch))
 
         headers = self._fetchcpioheaders(prj, pkg, repo, arch)
@@ -461,6 +494,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                 continue
             pkgname = h['name']
             self.logger.debug(pkgname)
+            if not self.disturl_matches(h['disturl'], prj, pkg, repo, vmd5):
+                raise DistUrlMismatch(h['disturl'], prj, pkg, repo, vmd5)
             pkgs[pkgname] = (rpmfn, h)
             if debugpkg_re.match(pkgname):
                 continue
