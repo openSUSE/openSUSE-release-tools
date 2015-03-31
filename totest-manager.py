@@ -61,6 +61,9 @@ class ToTestBase(object):
 
         return ret
 
+    def openqa_group(self):
+        return self.project
+
     def get_current_snapshot(self):
         """Return the current snapshot in :ToTest"""
 
@@ -79,8 +82,9 @@ class ToTestBase(object):
 
         """
 
+        group = 'openSUSE' + ' ' + self.openqa_version() + ' ' + self.openqa_group()
         url = 'https://openqa.opensuse.org/api/v1/' \
-              'jobs?version={}&build={}&distri=opensuse'.format(self.openqa_version(), snapshot)
+              'jobs?version={}&build={}&distri=opensuse&group={}'.format(self.openqa_version(), snapshot, group)
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
@@ -368,6 +372,9 @@ class ToTestFactory(ToTestBase):
     def openqa_version(self):
         return 'Tumbleweed'
 
+    def openqa_group(self):
+        return ''
+
     def iso_prefix(self):
         return 'Tumbleweed'
 
@@ -402,6 +409,9 @@ class ToTestFactoryPowerPC(ToTestBase):
 
     def openqa_version(self):
         return 'Tumbleweed'
+
+    def openqa_group(self):
+        return 'PowerPC'
 
     def arch(self):
         return 'ppc64le'
