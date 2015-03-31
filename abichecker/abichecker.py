@@ -69,9 +69,9 @@ Report = namedtuple('Report', ('src_project', 'src_package', 'src_rev', 'dst_pro
 LibResult = namedtuple('LibResult', ('src_repo', 'src_lib', 'dst_repo', 'dst_lib', 'arch', 'htmlreport', 'result'))
 
 class DistUrlMismatch(Exception):
-    def __init__(self, disturl, prj, pkg, repo, md5):
+    def __init__(self, disturl, md5):
         Exception.__init__(self)
-        self.msg = 'disturl mismatch has: %s wanted ...%s/%s/%s-%s'%(disturl, prj, repo, md5, pkg)
+        self.msg = 'disturl mismatch has: %s wanted ...%s'%(disturl, md5)
     def __str__(self):
         return self.msg
 
@@ -464,14 +464,13 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return matchrepos
 
-    def disturl_matches(self, disturl, prj, pkg, repo, md5):
-        m = disturl_re.match(disturl)
-        if m is None \
-        or m.group('prj') != prj \
-        or m.group('pkg') != pkg \
-        or m.group('repo') != repo \
-        or m.group('md5') != md5:
-            self.logger.warning('disturl mismatch %s vs ...%s/%s/%s-%s'%(disturl, prj, repo, md5, pkg))
+    # common with repochecker
+    def _md5_disturl(self, disturl):
+        """Get the md5 from the DISTURL from a RPM file."""
+        return os.path.basename(disturl).split('-')[0]
+
+    def disturl_matches_md5(self, disturl, md5):
+        if self._md5_disturl(disturl) != md5:
             return False
         return True
 
@@ -492,8 +491,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                 continue
             pkgname = h['name']
             self.logger.debug(pkgname)
-            if not self.disturl_matches(h['disturl'], prj, pkg, repo, srcinfo.srcmd5):
-                raise DistUrlMismatch(h['disturl'], prj, pkg, repo, srcinfo.srcmd5)
+            if not self.disturl_matches_md5(h['disturl'], srcinfo.srcmd5):
+                raise DistUrlMismatch(h['disturl'], srcinfo.srcmd5)
             pkgs[pkgname] = (rpmfn, h)
             if debugpkg_re.match(pkgname):
                 continue
