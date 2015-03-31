@@ -24,6 +24,7 @@ import os, sys, re
 import logging
 from optparse import OptionParser
 import cmdln
+from collections import namedtuple
 
 try:
     from xml.etree import cElementTree as ET
@@ -146,8 +147,7 @@ class ReviewBot(object):
         return overall
 
     def check_action_maintenance_incident(self, req, a):
-        rev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-        return self.check_source_submission(a.src_project, a.src_package, rev, a.tgt_releaseproject, a.src_package)
+        return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_releaseproject, a.src_package)
 
     def check_action_maintenance_release(self, req, a):
         pkgname = a.src_package
@@ -164,32 +164,32 @@ class ReviewBot(object):
             return False
         else:
             pkgname = linkpkg
-        src_rev = self._get_verifymd5(a.src_project, a.src_package)
-        return self.check_source_submission(a.src_project, a.src_package, src_rev, a.tgt_project, pkgname)
+        return self.check_source_submission(a.src_project, a.src_package, None, a.tgt_project, pkgname)
 
     def check_action_submit(self, req, a):
-        rev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-        return self.check_source_submission(a.src_project, a.src_package, rev, a.tgt_project, a.tgt_package)
+        return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         return None
 
-    # XXX used in other modules
-    def _get_verifymd5(self, src_project, src_package, rev=None):
+    # TODO: cache?
+    def get_sourceinfo(self, project, package, rev=None):
         query = { 'view': 'info' }
-        if rev:
+        if rev is not None:
             query['rev'] = rev
-        url = osc.core.makeurl(self.apiurl, ('source', src_project, src_package), query=query)
+        url = osc.core.makeurl(self.apiurl, ('source', project, package), query=query)
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
             return None
 
-        if root is not None:
-            srcmd5 = root.get('verifymd5')
-            return srcmd5
+        if root is None:
+            return None
+
+        props = ('package', 'rev', 'vrev', 'srcmd5', 'lsrcmd5', 'verifymd5')
+        return namedtuple('SourceInfo', props)(*[ root.get(p) for p in props ])
 
     # TODO: what if there is more than _link?
     def _get_linktarget_self(self, src_project, src_package):
