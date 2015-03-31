@@ -69,9 +69,9 @@ Report = namedtuple('Report', ('src_project', 'src_package', 'src_rev', 'dst_pro
 LibResult = namedtuple('LibResult', ('src_repo', 'src_lib', 'dst_repo', 'dst_lib', 'arch', 'htmlreport', 'result'))
 
 class DistUrlMismatch(Exception):
-    def __init__(self, disturl, prj, pkg, repo, vmd5):
+    def __init__(self, disturl, prj, pkg, repo, md5):
         Exception.__init__(self)
-        self.msg = 'disturl mismatch %s vs ...%s/%s/%s-%s'%(disturl, prj, repo, vmd5, pkg)
+        self.msg = 'disturl mismatch has: %s wanted ...%s/%s/%s-%s'%(disturl, prj, repo, md5, pkg)
     def __str__(self):
         return self.msg
 
@@ -95,13 +95,15 @@ class ABIChecker(ReviewBot.ReviewBot):
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
-        dst_vmd5 = self._get_verifymd5(dst_project, dst_package)
-        if dst_vmd5 is None:
+        dst_srcinfo = self.get_sourceinfo(dst_project, dst_package)
+        self.logger.warning(dst_srcinfo)
+        if dst_srcinfo is None:
             self.logger.info("%s/%s does not exist, skip"%(dst_project, dst_package))
             return None
-        src_vmd5 = self._get_verifymd5(src_project, src_package)
-        if src_vmd5 is None:
-            self.logger.info("%s/%s does not exist, skip"%(src_project, src_package))
+        src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
+        self.logger.warning(src_srcinfo)
+        if src_srcinfo is None:
+            self.logger.info("%s/%s@%s does not exist, skip"%(src_project, src_package, src_rev))
             return None
 
         if os.path.exists(UNPACKDIR):
@@ -109,8 +111,6 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         # compute list of common repos to find out what to compare
         myrepos = self.findrepos(src_project, dst_project)
-
-        # TODO: check build completed
 
         self.logger.debug(pformat(myrepos))
 
@@ -120,10 +120,10 @@ class ABIChecker(ReviewBot.ReviewBot):
         overall = None
 
         for mr in myrepos:
-            dst_libs = self.extract(dst_project, dst_package, dst_vmd5, mr.dstrepo, mr.arch)
-            src_libs = self.extract(src_project, src_package, dst_vmd5, mr.srcrepo, mr.arch)
+            dst_libs = self.extract(dst_project, dst_package, dst_srcinfo, mr.dstrepo, mr.arch)
+            src_libs = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
 
-            if dst_libs is none or src_libs is None:
+            if dst_libs is None or src_libs is None:
                 # nothing to fetch, so no libs
                 continue
 
@@ -268,10 +268,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             return False
         return True
 
-    def extract(self, project, package, vmd5, repo, arch):
+    def extract(self, project, package, srcinfo, repo, arch):
             # fetch cpio headers
             # check file lists for library packages
-            fetchlist, liblist = self.compute_fetchlist(project, package, vmd5, repo, arch)
+            fetchlist, liblist = self.compute_fetchlist(project, package, srcinfo, repo, arch)
 
             if not fetchlist:
                 self.logger.info("nothing to fetch for %s/%s %s/%s"%(project, package, repo, arch))
@@ -464,20 +464,18 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return matchrepos
 
-    def disturl_matches(self, disturl, prj, pkg, repo, vmd5):
-        self.logger.warning("%s %s"%(disturl, vmd5))
+    def disturl_matches(self, disturl, prj, pkg, repo, md5):
         m = disturl_re.match(disturl)
-        self.logger.warning(m)
         if m is None \
         or m.group('prj') != prj \
         or m.group('pkg') != pkg \
         or m.group('repo') != repo \
-        or m.group('md5') != vmd5:
-            self.logger.warning('disturl mismatch %s vs ...%s/%s/%s-%s'%(disturl, prj, repo, vmd5, pkg))
+        or m.group('md5') != md5:
+            self.logger.warning('disturl mismatch %s vs ...%s/%s/%s-%s'%(disturl, prj, repo, md5, pkg))
             return False
         return True
 
-    def compute_fetchlist(self, prj, pkg, vmd5, repo, arch):
+    def compute_fetchlist(self, prj, pkg, srcinfo, repo, arch):
         """ scan binary rpms of the specified repo for libraries.
         Returns a set of packages to fetch and the libraries found
         """
@@ -494,8 +492,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                 continue
             pkgname = h['name']
             self.logger.debug(pkgname)
-            if not self.disturl_matches(h['disturl'], prj, pkg, repo, vmd5):
-                raise DistUrlMismatch(h['disturl'], prj, pkg, repo, vmd5)
+            if not self.disturl_matches(h['disturl'], prj, pkg, repo, srcinfo.srcmd5):
+                raise DistUrlMismatch(h['disturl'], prj, pkg, repo, srcinfo.srcmd5)
             pkgs[pkgname] = (rpmfn, h)
             if debugpkg_re.match(pkgname):
                 continue
