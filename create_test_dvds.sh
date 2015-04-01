@@ -82,9 +82,16 @@ function sync_prj() {
     mkdir -p $dir
     perl $SCRIPTDIR/bs_mirrorfull --nodebug https://build.opensuse.org/build/$prj/$arch $dir
     if [ "$dir" -nt "$dir.solv" ]; then
-	    local start=$SECONDS
-	    rpms2solv $dir/*.rpm > $dir.solv
-	    echo "creating ${dir}.solv took $((SECONDS-$start))s"
+        shopt -s nullglob
+        rpms=($dir/*.rpm)
+        if [ "${#rpms[@]}" -gt 0 ]; then
+            local start=$SECONDS
+            rpms2solv "${rpms[@]}" > $dir.solv
+            echo "creating ${dir}.solv took $((SECONDS-$start))s"
+        else
+            echo "cannot find any rpm file in ${dir}"
+            return
+        fi
     fi
 }
 
@@ -110,7 +117,7 @@ function start_creating() {
             fi
             if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
 
-                echo "Checking $target:$l"
+                echo "Checking $target:$l-$arch"
                 if [ -n "$use_bc" ]; then
                     sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc" $arch
                 fi
@@ -123,6 +130,7 @@ function start_creating() {
             fi
 
             if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
+                echo "Checking $target:$l:DVD-$arch"
                 sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd" $arch
                 regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l "staging_$target:$l-dvd" $arch
             fi
