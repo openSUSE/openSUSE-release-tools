@@ -82,7 +82,7 @@ class ToTestBase(object):
 
         """
 
-        group = 'openSUSE' + ' ' + self.openqa_version() + ' ' + self.openqa_group()
+        group = ' '.join(('openSUSE', self.openqa_version(), self.openqa_group())).strip()
         url = 'https://openqa.opensuse.org/api/v1/' \
               'jobs?version={}&build={}&distri=opensuse&group={}'.format(self.openqa_version(), snapshot, group)
         f = self.api.retried_GET(url)
