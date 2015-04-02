@@ -83,8 +83,8 @@ class ToTestBase(object):
         """
 
         group = ' '.join(('openSUSE', self.openqa_version(), self.openqa_group())).strip()
-        url = 'https://openqa.opensuse.org/api/v1/' \
-              'jobs?version={}&build={}&distri=opensuse&group={}'.format(self.openqa_version(), snapshot, group)
+        url = urllib2.quote('https://openqa.opensuse.org/api/v1/' \
+                'jobs?version={}&build={}&distri=opensuse&group={}'.format(self.openqa_version(), snapshot, group), safe=':/?=&')
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
