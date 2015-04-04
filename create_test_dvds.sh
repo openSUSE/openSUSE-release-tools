@@ -84,6 +84,7 @@ function sync_prj() {
     if [ "$dir" -nt "$dir.solv" ]; then
         shopt -s nullglob
         rpms=($dir/*.rpm)
+        shopt -u nullglob
         if [ "${#rpms[@]}" -gt 0 ]; then
             local start=$SECONDS
             rpms2solv "${rpms[@]}" > $dir.solv
