@@ -1,6 +1,7 @@
 #! /bin/bash
 
 set -e
+shopt -s nullglob
 
 if ! test -d co; then
 	echo "you need to call this in a directory with a co directory containting osc checkouts with the staging prjs" 
@@ -82,9 +83,7 @@ function sync_prj() {
     mkdir -p $dir
     perl $SCRIPTDIR/bs_mirrorfull --nodebug https://build.opensuse.org/build/$prj/$arch $dir
     if [ "$dir" -nt "$dir.solv" ]; then
-        shopt -s nullglob
         rpms=($dir/*.rpm)
-        shopt -u nullglob
         if [ "${#rpms[@]}" -gt 0 ]; then
             local start=$SECONDS
             rpms2solv "${rpms[@]}" > $dir.solv
@@ -107,7 +106,7 @@ function start_creating() {
         sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd $arch
         regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd $arch
 
-        projects=$(osc api /search/project/id?match="starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
+        projects=$(osc api "/search/project/id?match=starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
         projects+=" openSUSE:$target:Rings:2-TestDVD"
 
         for prj in $projects; do
