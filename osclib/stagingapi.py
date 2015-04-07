@@ -78,7 +78,6 @@ class StagingAPI(object):
         return makeurl(self.apiurl, l, query)
 
     def retried_GET(self, url):
-        url = urllib2.quote(url, safe=':/?=&')
         try:
             return http_GET(url)
         except urllib2.HTTPError, e:
