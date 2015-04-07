@@ -116,8 +116,12 @@ class ABIChecker(ReviewBot.ReviewBot):
         if os.path.exists(UNPACKDIR):
             shutil.rmtree(UNPACKDIR)
 
-        # compute list of common repos to find out what to compare
-        myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
+        try:
+            # compute list of common repos to find out what to compare
+            myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
+        except NoBuildSuccessYet, e:
+            self.logger.info(e)
+            return None
 
         notes = []
         libresults = []
@@ -461,7 +465,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         # get target repos that had a successful buid
         dstrepos = self.get_buildsuccess_repos(dst_project, dst_project, dst_srcinfo.package, dst_srcinfo.verifymd5)
-        if dstrepos is None:
+        if not dstrepos:
             raise NoBuildSuccessYet(dst_project, dst_srcinfo.package)
 
         url = osc.core.makeurl(self.apiurl, ('source', src_project, '_meta'))
