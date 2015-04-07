@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from optparse import OptionParser
-from pprint import pprint, pformat
+from pprint import pformat
 from stat import S_ISREG, S_ISLNK
 from tempfile import NamedTemporaryFile
 import cmdln
@@ -75,6 +75,13 @@ class DistUrlMismatch(Exception):
     def __str__(self):
         return self.msg
 
+class NoBuildSuccessYet(Exception):
+    def __init__(self, project, package):
+        Exception.__init__(self)
+        self.msg = '%s/%s had no successful build yet'%(project, package)
+    def __str__(self):
+        return self.msg
+
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
     """
@@ -96,12 +103,12 @@ class ABIChecker(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
         dst_srcinfo = self.get_sourceinfo(dst_project, dst_package)
-        self.logger.warning(dst_srcinfo)
+        self.logger.debug('dest sourceinfo %s', pformat(dst_srcinfo))
         if dst_srcinfo is None:
             self.logger.info("%s/%s does not exist, skip"%(dst_project, dst_package))
             return None
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
-        self.logger.warning(src_srcinfo)
+        self.logger.debug('src sourceinfo %s', pformat(src_srcinfo))
         if src_srcinfo is None:
             self.logger.info("%s/%s@%s does not exist, skip"%(src_project, src_package, src_rev))
             return None
@@ -110,9 +117,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             shutil.rmtree(UNPACKDIR)
 
         # compute list of common repos to find out what to compare
-        myrepos = self.findrepos(src_project, dst_project)
-
-        self.logger.debug(pformat(myrepos))
+        myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
 
         notes = []
         libresults = []
@@ -422,26 +427,50 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return dict([(node.attrib['filename'], node.attrib['mtime']) for node in root.findall('binary')])
 
-
-    def findrepos(self, src_project, dst_project):
-        url = osc.core.makeurl(self.apiurl, ('source', dst_project, '_meta'))
+    # modified from repochecker
+    def _last_build_success(self, src_project, tgt_project, src_package, rev):
+        """Return the last build success XML document from OBS."""
         try:
-            root = ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError:
+            query = { 'lastsuccess' : 1,
+                    'package' : src_package,
+                    'pathproject' : tgt_project,
+                    'srcmd5' : rev }
+            url = osc.core.makeurl(self.apiurl, ('build', src_project, '_result'), query)
+            return ET.parse(osc.core.http_GET(url)).getroot()
+        except urllib2.HTTPError, e:
+            self.logger.error('ERROR in URL %s [%s]' % (url, e))
+        return None
+
+    def get_buildsuccess_repos(self, src_project, tgt_project, src_package, rev):
+        root = self._last_build_success(src_project, tgt_project, src_package, rev)
+        if root is None:
             return None
 
-        # build list of target repos as set of name, arch
-        dstrepos = set()
+        # build list of repos as set of (name, arch) tuples
+        repos = set()
         for repo in root.findall('repository'):
             name = repo.attrib['name']
             for node in repo.findall('arch'):
-                dstrepos.add((name, node.text))
+                repos.add((name, node.attrib['arch']))
+
+        self.logger.debug("repos: %s", pformat(repos))
+
+        return repos
+
+    def findrepos(self, src_project, src_srcinfo, dst_project, dst_srcinfo):
+
+        # get target repos that had a successful buid
+        dstrepos = self.get_buildsuccess_repos(dst_project, dst_project, dst_srcinfo.package, dst_srcinfo.verifymd5)
+        if dstrepos is None:
+            raise NoBuildSuccessYet(dst_project, dst_srcinfo.package)
 
         url = osc.core.makeurl(self.apiurl, ('source', src_project, '_meta'))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
             return None
+
+        # build mapping between source repos and target repos
 
         MR = namedtuple('MatchRepo', ('srcrepo', 'dstrepo', 'arch'))
         # set of source repo name, target repo name, arch
@@ -461,6 +490,17 @@ class ABIChecker(ReviewBot.ReviewBot):
                 dstname = path[0].attrib['repository']
                 if (dstname, arch) in dstrepos:
                     matchrepos.add(MR(name, dstname, arch))
+
+        self.logger.debug('matched repos %s', pformat(matchrepos))
+
+        # now check if all matched repos built successfully
+        srcrepos = self.get_buildsuccess_repos(src_project, dst_project, src_srcinfo.package, src_srcinfo.verifymd5)
+        if srcrepos is None:
+            raise NoBuildSuccessYet(src_project, src_srcinfo.package)
+        for mr in matchrepos:
+            if not (mr.srcrepo, arch) in srcrepos:
+                self.logger.error("%s/%s had no build success"%(mr.srcrepo, arch))
+                raise NoBuildSuccessYet(src_project, src_srcinfo.package)
 
         return matchrepos
 
