@@ -47,6 +47,9 @@ class ToTestBase(object):
     def iso_prefix(self):
         return self.project
 
+    def jobs_num(self):
+        return 90
+
     def binaries_of_product(self, project, product):
         url = self.api.makeurl(['build', project, 'images', 'local', product])
         try:
@@ -121,7 +124,7 @@ class ToTestBase(object):
 
         jobs = self.find_openqa_results(snapshot)
 
-        if len(jobs) < 90:  # not yet scheduled
+        if len(jobs) < self.jobs_num():  # not yet scheduled
             print 'we have only %s jobs' % len(jobs)
             return QA_INPROGRESS
 
@@ -418,6 +421,9 @@ class ToTestFactoryPowerPC(ToTestBase):
 
     def iso_prefix(self):
         return 'Tumbleweed'
+
+    def jobs_num(self):
+        return 4
 
     # for Factory we check the version of the release package
     def current_version(self):
