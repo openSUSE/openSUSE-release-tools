@@ -587,6 +587,16 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return fetchlist, liblist
 
+    def set_request_ids_project(self, project):
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'),
+            "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='submit')&withhistory=1"%project)
+        root = ET.parse(osc.core.http_GET(url)).getroot()
+
+        for request in root.findall('request'):
+            req = osc.core.Request()
+            req.read(request)
+            self.requests.append(req)
+
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
@@ -610,6 +620,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def do_diff(self, subcmd, opts, src_project, src_package, dst_project, dst_package):
         src_rev = opts.revision
         print self.checker.check_source_submission(src_project, src_package, src_rev, dst_project, dst_package)
+
+    def do_project(self, subcmd, opts, project):
+        self.checker.set_request_ids_project(project)
+        self.checker.check_requests()
 
 if __name__ == "__main__":
     app = CommandLineInterface()
