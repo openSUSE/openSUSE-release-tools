@@ -339,7 +339,7 @@ class ToTestBase(object):
 
     def known_failures_from_dashboard(self, project):
         known_failures = []
-        if self.project == "Factory:PowerPC":
+        if self.project in ("Factory:PowerPC", "Factory:ARM"):
             project = "Factory"
         else:
             project = self.project
@@ -428,6 +428,24 @@ class ToTestFactoryPowerPC(ToTestBase):
                 return result.group(1)
         raise Exception("can't find factory powerpc version")
 
+class ToTestFactoryARM(ToTestFactory):
+    main_products = [ '_product:openSUSE-cd-mini-aarch64']
+
+    ftp_products = [ '_product:openSUSE-ftp-ftp-aarch64' ]
+
+    livecd_products = []
+
+    def __init__(self, project, dryrun):
+        ToTestFactory.__init__(self, project, dryrun)
+
+    def openqa_group(self):
+        return 'AArch64'
+
+    def arch(self):
+        return 'aarch64'
+
+    def jobs_num(self):
+        return 4
 
 class ToTest132(ToTestBase):
     main_products = [
@@ -456,12 +474,14 @@ if __name__ == '__main__':
                         help='openSUSE version to make the check (Factory, 13.2)')
     parser.add_argument('-D', '--dryrun', dest="dryrun", action="store_true",  default=False,
                         help="dry run: do not actually publish")
+    parser.add_argument("--osc-debug", action="store_true", help="osc debug output")
 
     args = parser.parse_args()
 
     totest_class = {
         'Factory': ToTestFactory,
         'Factory:PowerPC': ToTestFactoryPowerPC,
+        'Factory:ARM': ToTestFactoryARM,
         '13.2': ToTest132,
     }
 
@@ -473,7 +493,8 @@ if __name__ == '__main__':
 
     osc.conf.get_config()
     Config('openSUSE:%s' % args.project)
-    # osc.conf.config['debug'] = True
+    if (args.osc_debug):
+        osc.conf.config['debug'] = True
 
     totest = totest_class[args.project](args.project, args.dryrun)
     totest.totest()
