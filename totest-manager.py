@@ -24,6 +24,7 @@ PLUGINDIR = os.path.expanduser(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(PLUGINDIR)
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
+from osc.core import makeurl
 
 
 # QA Results
@@ -41,7 +42,7 @@ class ToTestBase(object):
         self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
         self.known_failures = self.known_failures_from_dashboard(project)
 
-    def openqa_version(self):
+    def openqa_group(self):
         return self.project
 
     def iso_prefix(self):
@@ -64,9 +65,6 @@ class ToTestBase(object):
 
         return ret
 
-    def openqa_group(self):
-        return self.project
-
     def get_current_snapshot(self):
         """Return the current snapshot in :ToTest"""
 
@@ -85,9 +83,7 @@ class ToTestBase(object):
 
         """
 
-        group = ' '.join(('openSUSE', self.openqa_version(), self.openqa_group())).strip()
-        url = 'https://openqa.opensuse.org/api/v1/' \
-              'jobs?version={}&build={}&distri=opensuse&group={}'.format(self.openqa_version(), snapshot, group)
+        url = makeurl('https://openqa.opensuse.org', ['api', 'v1', 'jobs'], { 'group': self.openqa_group(), 'build': snapshot } )
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
@@ -372,11 +368,8 @@ class ToTestFactory(ToTestBase):
     def __init__(self, project, dryrun):
         ToTestBase.__init__(self, project, dryrun)
 
-    def openqa_version(self):
-        return 'Tumbleweed'
-
     def openqa_group(self):
-        return ''
+        return 'openSUSE Tumbleweed'
 
     def iso_prefix(self):
         return 'Tumbleweed'
@@ -410,11 +403,8 @@ class ToTestFactoryPowerPC(ToTestBase):
     def __init__(self, project, dryrun):
         ToTestBase.__init__(self, project, dryrun)
 
-    def openqa_version(self):
-        return 'Tumbleweed'
-
     def openqa_group(self):
-        return 'PowerPC'
+        return 'openSUSE Tumbleweed PowerPC'
 
     def arch(self):
         return 'ppc64le'
