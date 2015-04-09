@@ -98,20 +98,20 @@ function sync_prj() {
 function start_creating() {
     for target in "$targets"; do
         # Rings part
-        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap $arch
-        sync_prj openSUSE:$target:Rings:1-MinimalX/standard $target-minimalx $arch
+        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap-$arch $arch
+        sync_prj openSUSE:$target:Rings:1-MinimalX/standard $target-minimalx-$arch $arch
 
-        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap $target-minimalx $arch
+        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap-$arch $target-minimalx-$arch $arch
 
-        sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd $arch
-        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap $target-minimalx $target-testdvd $arch
+        sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd-$arch $arch
+        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap-$arch $target-minimalx-$arch $target-testdvd-$arch $arch
 
         projects=$(osc api "/search/project/id?match=starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
         projects+=" openSUSE:$target:Rings:2-TestDVD"
 
         for prj in $projects; do
             l=$(echo $prj | cut -d: -f4)
-            use_bc="staging_$target:$l-bc"
+            use_bc="staging_$target:$l-bc-$arch"
             if [ "$l" = "A" -o "$l" = "B" ]; then
                 use_bc=
             fi
@@ -119,10 +119,10 @@ function start_creating() {
 
                 echo "Checking $target:$l-$arch"
                 if [ -n "$use_bc" ]; then
-                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc" $arch
+                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc-$arch" $arch
                 fi
-                sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l $arch
-                regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l $arch
+                sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l-$arch $arch
+                regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l-$arch $arch
             fi
 
             if [[ ( $prj =~ :DVD ) || ( $prj =~ Rings:2-TestDVD ) ]]; then
@@ -131,8 +131,8 @@ function start_creating() {
 
             if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
                 echo "Checking $target:$l:DVD-$arch"
-                sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd" $arch
-                regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l "staging_$target:$l-dvd" $arch
+                sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd-$arch" $arch
+                regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l-$arch "staging_$target:$l-dvd-$arch" $arch
             fi
         done
     done
