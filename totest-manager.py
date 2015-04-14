@@ -7,12 +7,13 @@
 # (C) 2014 coolo@suse.de, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
-import argparse
+import cmdln
 import json
 import os
 import re
 import sys
 import urllib2
+import logging
 
 from xml.etree import cElementTree as ET
 
@@ -272,11 +273,15 @@ class ToTestBase(object):
         baseurl = ['source', project, package]
 
         url = self.api.makeurl(baseurl, query=query)
-        self.api.retried_POST(url)
+        if self.dryrun:
+            print "release %s/%s (%s)"%(project, package, set_release)
+        else:
+            self.api.retried_POST(url)
 
     def update_totest(self, snapshot):
         print 'Updating snapshot %s' % snapshot
-        self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
+        if not self.dryrun:
+            self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
 
         for product in self.ftp_products:
             self.release_package('openSUSE:%s' % self.project, product)
@@ -289,7 +294,8 @@ class ToTestBase(object):
 
     def publish_factory_totest(self):
         print 'Publish ToTest'
-        self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='enable')
+        if not self.dryrun:
+            self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='enable')
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
@@ -330,11 +336,11 @@ class ToTestBase(object):
         if self.totest_is_publishing():
             can_publish = False
 
-        if can_publish and not self.dryrun:
+        if can_publish:
             self.publish_factory_totest()
             can_release = False  # we have to wait
 
-        if can_release and not self.dryrun:
+        if can_release:
             self.update_totest(new_snapshot)
 
     def release(self):
@@ -471,36 +477,74 @@ class ToTest132(ToTestBase):
 
         raise Exception("can't find 13.2 version")
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Commands to work with staging projects')
-    parser.add_argument('project', metavar='P', type=str, default='Factory',
-                        help='openSUSE version to make the check (Factory, 13.2)')
-    parser.add_argument('-D', '--dryrun', dest="dryrun", action="store_true",  default=False,
-                        help="dry run: do not actually publish")
-    parser.add_argument("--osc-debug", action="store_true", help="osc debug output")
 
-    args = parser.parse_args()
+class CommandlineInterface(cmdln.Cmdln):
+    def __init__(self, *args, **kwargs):
+        cmdln.Cmdln.__init__(self, args, kwargs)
 
-    totest_class = {
-        'Factory': ToTestFactory,
-        'Factory:PowerPC': ToTestFactoryPowerPC,
-        'Factory:ARM': ToTestFactoryARM,
-        '13.2': ToTest132,
-    }
+        self.totest_class = {
+            'Factory': ToTestFactory,
+            'Factory:PowerPC': ToTestFactoryPowerPC,
+            'Factory:ARM': ToTestFactoryARM,
+            '13.2': ToTest132,
+        }
 
-    if args.project not in totest_class:
-        print 'Project %s not recognized. Possible values [%s]' % (args.project,
-                                                                   ', '.join(totest_class))
-        parser.print_help()
-        exit(-1)
+    def get_optparser(self):
+        parser = cmdln.CmdlnOptionParser(self)
+        parser.add_option("--dry", action="store_true", help="dry run")
+        parser.add_option("--debug", action="store_true", help="debug output")
+        parser.add_option("--verbose", action="store_true", help="verbose")
+        parser.add_option("--osc-debug", action="store_true", help="osc debug output")
+        return parser
 
-    osc.conf.get_config()
-    Config('openSUSE:%s' % args.project)
-    if (args.osc_debug):
-        osc.conf.config['debug'] = True
+    def postoptparse(self):
+        logging.basicConfig()
+        self.logger = logging.getLogger(self.optparser.prog)
+        if (self.options.debug):
+            self.logger.setLevel(logging.DEBUG)
+        elif (self.options.verbose):
+            self.logger.setLevel(logging.INFO)
 
-    totest = totest_class[args.project](args.project, args.dryrun)
-    # use this for initial release
-    #totest.release()
-    totest.totest()
+        osc.conf.get_config()
+        if (self.options.osc_debug):
+            osc.conf.config['debug'] = True
+
+    def _setup_totest(self, project):
+        Config('openSUSE:%s' % project)
+
+        if project not in self.totest_class:
+            msg = 'Project %s not recognized. Possible values [%s]' % (project, ', '.join(self.totest_class))
+            raise CmdlnUserError()
+
+        return self.totest_class[project](project, self.options.dry)
+
+    @cmdln.option("-f", "--force", action="store_true",
+                  help="force something")
+    def do_run(self, subcmd, opts, project = 'Factory'):
+        """${cmd_name}: run the ToTest Manager
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        totest = self._setup_totest(project)
+
+        totest.totest()
+
+    def do_release(self, subcmd, opts, project = 'Factory'):
+        """${cmd_name}: manually release all media. Use with caution!
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        totest = self._setup_totest(project)
+
+        totest.release()
+
+
+if __name__ == "__main__":
+    app = CommandlineInterface()
+    sys.exit( app.main() )
+
+# vim: sw=4 et
