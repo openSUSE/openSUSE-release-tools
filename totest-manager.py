@@ -198,13 +198,10 @@ class ToTestBase(object):
         if re.match(r'.*-dvd9-dvd-.*', package):
             return 8539996159
 
-        if package == '_product:openSUSE-ftp-ftp-i586_x86_64':
+        if package.startswith('_product:openSUSE-ftp-ftp-'):
             return None
 
         if package == '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64':
-            return None
-
-        if package == '_product:openSUSE-ftp-ftp-ppc_ppc64_ppc64le':
             return None
 
         raise Exception('No maxsize for {}'.format(package))
