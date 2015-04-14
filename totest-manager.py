@@ -171,6 +171,9 @@ class ToTestBase(object):
         for repo in root.findall('result'):
             if repo.get('repository') == 'ports':
                 continue
+            # ignore 32bit for now. We're only interesed in aarch64 here
+            if repo.get('arch') in ('armv6l', 'armv7l'):
+                continue
             if repo.get('dirty', '') == 'true':
                 print repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'
                 return False
