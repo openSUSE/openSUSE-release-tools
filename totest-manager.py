@@ -337,6 +337,10 @@ class ToTestBase(object):
         if can_release and not self.dryrun:
             self.update_totest(new_snapshot)
 
+    def release(self):
+        new_snapshot = self.current_version()
+        self.update_totest(new_snapshot)
+
     def known_failures_from_dashboard(self, project):
         known_failures = []
         if self.project in ("Factory:PowerPC", "Factory:ARM"):
@@ -497,4 +501,6 @@ if __name__ == '__main__':
         osc.conf.config['debug'] = True
 
     totest = totest_class[args.project](args.project, args.dryrun)
+    # use this for initial release
+    #totest.release()
     totest.totest()
