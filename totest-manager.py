@@ -36,9 +36,10 @@ QA_PASSED = 3
 class ToTestBase(object):
     """Base class to store the basic interface"""
 
-    def __init__(self, project, dryrun):
+    def __init__(self, project, dryrun, restart_tests):
         self.project = project
         self.dryrun = dryrun
+        self.restart_tests = restart_tests
         self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
         self.known_failures = self.known_failures_from_dashboard(project)
 
@@ -139,6 +140,9 @@ class ToTestBase(object):
                 url = 'https://openqa.opensuse.org/tests/%s' % job['id']
                 print jobname, url, failedmodule, job['retry_avbl']
                 # if number_of_fails < 3: continue
+                if self.restart_tests:
+                    result = os.system("openqa jobs/%s/restart post" % job['id'])
+                    print "Restarted job %s" % job['id']
             elif job['result'] == 'passed':
                 continue
             elif job['result'] == 'none':
@@ -365,8 +369,8 @@ class ToTestFactory(ToTestBase):
                        'kiwi-image-livecd-gnome',
                        'kiwi-image-livecd-x11']
 
-    def __init__(self, project, dryrun):
-        ToTestBase.__init__(self, project, dryrun)
+    def __init__(self, project, dryrun, restart_tests):
+        ToTestBase.__init__(self, project, dryrun, restart_tests)
 
     def openqa_group(self):
         return 'openSUSE Tumbleweed'
@@ -474,6 +478,8 @@ if __name__ == '__main__':
                         help='openSUSE version to make the check (Factory, 13.2)')
     parser.add_argument('-D', '--dryrun', dest="dryrun", action="store_true",  default=False,
                         help="dry run: do not actually publish")
+    parser.add_argument('--restart-tests', dest="restart_tests", action="store_true", default=False,
+                        help="Restart failed tests using external openqa helper script (must be setup with keys)")
     parser.add_argument("--osc-debug", action="store_true", help="osc debug output")
 
     args = parser.parse_args()
@@ -496,5 +502,5 @@ if __name__ == '__main__':
     if (args.osc_debug):
         osc.conf.config['debug'] = True
 
-    totest = totest_class[args.project](args.project, args.dryrun)
+    totest = totest_class[args.project](args.project, args.dryrun, args.restart_tests)
     totest.totest()
