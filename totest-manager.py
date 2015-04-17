@@ -128,7 +128,7 @@ class ToTestBase(object):
         in_progress = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
-            if job['result'] in ('failed', 'incomplete'):
+            if job['result'] in ('failed', 'incomplete', 'skipped'):
                 jobname = job['name'] + '@' + job['settings']['MACHINE']
                 if jobname in self.known_failures:
                     self.known_failures.remove(jobname)
