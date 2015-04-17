@@ -104,7 +104,7 @@ Note: there is no whitespace behind before or after the number sign
             if not self.textMatchesAnyTag(diff):
                return False
 
-        return None
+        return True
 
     def check_action_submit(self, req, a):
         return self.checkTagInRequest(req,a)
