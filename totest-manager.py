@@ -14,6 +14,7 @@ import re
 import sys
 import urllib2
 import logging
+import signal
 
 from xml.etree import cElementTree as ET
 
@@ -518,8 +519,7 @@ class CommandlineInterface(cmdln.Cmdln):
 
         return self.totest_class[project](project, self.options.dry)
 
-    @cmdln.option("-f", "--force", action="store_true",
-                  help="force something")
+    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_run(self, subcmd, opts, project = 'Factory'):
         """${cmd_name}: run the ToTest Manager
 
@@ -527,9 +527,31 @@ class CommandlineInterface(cmdln.Cmdln):
         ${cmd_option_list}
         """
 
-        totest = self._setup_totest(project)
+        class ExTimeout(Exception):
+            """raised on timeout"""
 
-        totest.totest()
+        if opts.interval:
+            def alarm_called(nr, frame):
+                raise ExTimeout()
+            signal.signal(signal.SIGALRM, alarm_called)
+
+        while True:
+            try:
+                totest = self._setup_totest(project)
+                totest.totest()
+            except Exception, e:
+                self.logger.error(e)
+
+            if opts.interval:
+                self.logger.info("sleeping %d minutes. Press enter to check now ..."%opts.interval)
+                signal.alarm(opts.interval*60)
+                try:
+                    raw_input()
+                except ExTimeout:
+                    pass
+                signal.alarm(0)
+                continue
+            break
 
     def do_release(self, subcmd, opts, project = 'Factory'):
         """${cmd_name}: manually release all media. Use with caution!
