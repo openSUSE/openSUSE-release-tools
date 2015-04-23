@@ -450,13 +450,13 @@ class ToTestFactoryARM(ToTestFactory):
         ToTestFactory.__init__(self, project, dryrun)
 
     def openqa_group(self):
-        return 'AArch64'
+        return 'openSUSE Tumbleweed AArch64'
 
     def arch(self):
         return 'aarch64'
 
     def jobs_num(self):
-        return 4
+        return 2
 
 class ToTest132(ToTestBase):
     main_products = [
