@@ -23,4 +23,9 @@ install:
 	for i in $(SUBDIRS); do $(MAKE) -C $$i install; done
 	install -m 644 systemd/* $(DESTDIR)$(unitdir)
 
-.PHONY: all install
+check: test
+
+test:
+	$(wildcard /usr/bin/nosetests-2.*)
+
+.PHONY: all install test check
