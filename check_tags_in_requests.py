@@ -38,8 +38,18 @@ class TagChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         super(TagChecker, self).__init__(*args, **kwargs)
-        needed_tags=[r'bnc#[0-9]+',r'cve-[0-9]{4}-[0-9]+',r'fate#[0-9]+',r'boo#[0-9]+',r'bsc#[0-9]+']
+        needed_tags=[r'bnc#[0-9]+',r'cve-[0-9]{4}-[0-9]+',r'fate#[0-9]+',r'boo#[0-9]+',r'bsc#[0-9]+', r'bgo#[0-9]+']
         self.needed_tags_re=[ re.compile(tag, re.IGNORECASE) for tag in needed_tags ]
+	self.review_messages['declined'] = \
+"""
+(This is a script running, so report bugs)
+
+We require a ID marked in .changes file to detect later if the changes 
+are also merged into openSUSE:Factory. We accept bnc#, cve#, fate#, boo#, bsc# and bgo# atm.
+
+Note: there is no whitespace behind before or after the number sign 
+(compare with the packaging policies)
+"""
 
 
     def textMatchesAnyTag(self, text):
@@ -115,13 +125,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         apiurl = osc.conf.config['apiurl']
         if apiurl is None:
             raise osc.oscerr.ConfigError("missing apiurl")
-        user = self.options.user
-        if user is None:
-            user = osc.conf.get_apiurl_usr(apiurl)
 
         return TagChecker(apiurl = apiurl, \
                 dryrun = self.options.dry, \
-                user = user, \
+                group = self.options.group, \
                 logger = self.logger)
 
 if __name__ == "__main__":
