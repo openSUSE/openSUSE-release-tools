@@ -8,6 +8,7 @@
 # Distribute under GPLv2 or GPLv3
 
 import cmdln
+import datetime
 import json
 import os
 import re
@@ -553,6 +554,7 @@ class CommandlineInterface(cmdln.Cmdln):
                 except ExTimeout:
                     pass
                 signal.alarm(0)
+                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
                 continue
             break
 
