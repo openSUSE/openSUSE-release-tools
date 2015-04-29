@@ -8,6 +8,7 @@
 # Distribute under GPLv2 or GPLv3
 
 import cmdln
+import datetime
 import json
 import os
 import re
@@ -170,19 +171,22 @@ class ToTestBase(object):
         url = self.api.makeurl(['build', project, '_result'], {'code': 'failed'})
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
+        ready = True
         for repo in root.findall('result'):
-            if repo.get('repository') == 'ports':
+            # ignore ports. 'factory' is used by arm for repos that are not
+            # meant to use the totest manager.
+            if repo.get('repository') in ('ports', 'factory'):
                 continue
             # ignore 32bit for now. We're only interesed in aarch64 here
             if repo.get('arch') in ('armv6l', 'armv7l'):
                 continue
             if repo.get('dirty', '') == 'true':
                 print repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'
-                return False
+                ready = False
             if repo.get('code') not in codes:
                 print repo.get('project'), repo.get('repository'), repo.get('arch'), repo.get('code')
-                return False
-        return True
+                ready = False
+        return ready
 
     def maxsize_for_package(self, package):
         if re.match(r'.*-mini-.*', package):
@@ -550,6 +554,7 @@ class CommandlineInterface(cmdln.Cmdln):
                 except ExTimeout:
                     pass
                 signal.alarm(0)
+                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
                 continue
             break
 
