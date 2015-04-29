@@ -170,6 +170,7 @@ class ToTestBase(object):
         url = self.api.makeurl(['build', project, '_result'], {'code': 'failed'})
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
+        ready = True
         for repo in root.findall('result'):
             # ignore ports. 'factory' is used by arm for repos that are not
             # meant to use the totest manager.
@@ -180,11 +181,11 @@ class ToTestBase(object):
                 continue
             if repo.get('dirty', '') == 'true':
                 print repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'
-                return False
+                ready = False
             if repo.get('code') not in codes:
                 print repo.get('project'), repo.get('repository'), repo.get('arch'), repo.get('code')
-                return False
-        return True
+                ready = False
+        return ready
 
     def maxsize_for_package(self, package):
         if re.match(r'.*-mini-.*', package):
