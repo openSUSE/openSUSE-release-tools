@@ -171,7 +171,9 @@ class ToTestBase(object):
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for repo in root.findall('result'):
-            if repo.get('repository') == 'ports':
+            # ignore ports. 'factory' is used by arm for repos that are not
+            # meant to use the totest manager.
+            if repo.get('repository') in ('ports', 'factory'):
                 continue
             # ignore 32bit for now. We're only interesed in aarch64 here
             if repo.get('arch') in ('armv6l', 'armv7l'):
