@@ -140,7 +140,7 @@ class OpenQAReport(object):
             test_name = job['name'].split('-')[-1]
             fails = [
                 '  * %s (%s)' % (test_name, self._openQA_module_url(job, module))
-                for module in job['modules'] if module['result'] == 'fail'
+                for module in job['modules'] if module['result'] == 'failed'
             ]
 
             if fails:
