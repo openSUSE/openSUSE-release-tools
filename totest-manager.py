@@ -54,6 +54,9 @@ class ToTestBase(object):
     def jobs_num(self):
         return 90
 
+    def current_version(self):
+        return self.release_version
+
     def binaries_of_product(self, project, product):
         url = self.api.makeurl(['build', project, 'images', 'local', product])
         try:
@@ -79,6 +82,28 @@ class ToTestBase(object):
                 return result.group(1)
 
         return None
+
+
+    def ftp_build_version(self, tree):
+        for binary in self.binaries_of_product('openSUSE:%s' % self.project, tree):
+            result = re.match(r'openSUSE.*Build(.*)-Media1.report', binary)
+
+        if result:
+            return result.group(1)
+        raise Exception("can't find %s version" % self.project)
+
+    def release_version(self):
+       url = self.api.makeurl(['build', 'openSUSE:%s' % project, 'standard', arch,
+                               '_product:openSUSE-release'])
+       f = self.api.retried_GET(url)
+       root = ET.parse(f).getroot()
+       for binary in root.findall('binary'):
+           binary = binary.get('filename', '')
+           result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
+           if result:
+              return result.group(1)
+
+       raise Exception("can't find %s version" % project)
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -392,18 +417,6 @@ class ToTestFactory(ToTestBase):
     def arch(self):
         return 'x86_64'
 
-    # for Factory we check the version of the release package
-    def current_version(self):
-        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
-                                '_product:openSUSE-release'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for binary in root.findall('binary'):
-            binary = binary.get('filename', '')
-            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
-            if result:
-                return result.group(1)
-        raise Exception("can't find factory version")
 
 class ToTestFactoryPowerPC(ToTestBase):
     main_products = ['_product:openSUSE-dvd5-BE-ppc64',
@@ -429,19 +442,6 @@ class ToTestFactoryPowerPC(ToTestBase):
 
     def jobs_num(self):
         return 4
-
-    # for Factory we check the version of the release package
-    def current_version(self):
-        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
-                                '_product:openSUSE-release'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for binary in root.findall('binary'):
-            binary = binary.get('filename', '')
-            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
-            if result:
-                return result.group(1)
-        raise Exception("can't find factory powerpc version")
 
 class ToTestFactoryARM(ToTestFactory):
     main_products = [ '_product:openSUSE-cd-mini-aarch64']
@@ -473,14 +473,8 @@ class ToTest132(ToTestBase):
         '_product:openSUSE-dvd9-dvd-biarch-i586_x86_64'
     ]
 
-    # for 13.2 we take the build number of the FTP tree
     def current_version(self):
-        for binary in self.binaries_of_product('openSUSE:%s' % self.project, '_product:openSUSE-ftp-ftp-i586_x86_64'):
-            result = re.match(r'openSUSE.*Build(.*)-Media1.report', binary)
-            if result:
-                return result.group(1)
-
-        raise Exception("can't find 13.2 version")
+        return self.ftp_tree_version('_product:openSUSE-ftp-ftp-i586_x86_64')
 
 
 class CommandlineInterface(cmdln.Cmdln):
