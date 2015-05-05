@@ -169,6 +169,17 @@ class AcceptCommand(object):
         if product != new_product:
             http_PUT(url + '?comment=Update+version', data=new_product)
 
+        service = {'cmd': 'runservice'}
+
+        ports_prjs = ['PowerPC', 'ARM' ]
+
+        for ports in ports_prjs:
+            project = project + ':' + ports
+            if self.api.item_exists(project):
+                baseurl = ['source', project, '_product']
+                url = self.api.makeurl(baseurl, query=service)
+                self.api.retried_POST(url)
+
     def sync_buildfailures(self):
         """
         Trigger rebuild of packages that failed build in either
