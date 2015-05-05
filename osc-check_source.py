@@ -251,6 +251,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['network:mail:zarafa/'] = 'x2go'
             self._devel_projects['devel:languages:D/'] = 'd'
             self._devel_projects['Novell:NTS'] = 'support'
+            self._devel_projects['systemsmanagement:machinery'] = 'machinery'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
