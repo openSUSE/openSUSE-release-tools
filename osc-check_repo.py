@@ -467,18 +467,6 @@ def do_check_repo(self, subcmd, opts, *args):
                                readonly=opts.dry,
                                debug=opts.verbose)
 
-    if opts.skip:
-        if not len(args):
-            raise oscerr.WrongArgs('Provide #IDs to skip.')
-
-        for id_ in args:
-            msg = 'skip review'
-            print 'ACCEPTED', msg
-            self.checkrepo.change_review_state(id_, 'accepted', message=msg)
-            _request = self.checkrepo.get_request(id_, internal=True)
-            self.checkrepo.remove_link_if_shadow_devel(_request)
-        return
-
     prjs_or_pkg = [arg for arg in args if not arg.isdigit()]
     ids = [arg for arg in args if arg.isdigit()]
 
@@ -497,6 +485,18 @@ def do_check_repo(self, subcmd, opts, *args):
             as_pkg = pop
             srs = RequestFinder.find_sr([as_pkg], self.checkrepo.staging)
             ids.extend(srs.keys())
+
+    if opts.skip:
+        if not len(ids):
+            raise oscerr.WrongArgs('Provide #IDs or package names to skip.')
+
+        for request_id in ids:
+            msg = 'skip review'
+            print 'ACCEPTED', msg
+            self.checkrepo.change_review_state(request_id, 'accepted', message=msg)
+            _request = self.checkrepo.get_request(request_id, internal=True)
+            self.checkrepo.remove_link_if_shadow_devel(_request)
+        return
 
     # Store requests' package information and .spec files: store all
     # source containers involved.
