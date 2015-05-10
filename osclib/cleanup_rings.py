@@ -68,7 +68,7 @@ class CleanupRings(object):
         root = ET.parse(http_GET(url)).getroot()
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
-            if repostate not in ['unpublished', 'published']:
+            if repostate not in ['unpublished', 'published'] or repo.get('dirty', 'false') == 'true':
                 print('Repo {}/{} is in state {}'.format(repo.get('project'), repo.get('repository'), repostate))
                 return False
             for package in repo.findall('status'):
