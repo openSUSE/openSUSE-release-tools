@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from optparse import OptionParser
-from pprint import pformat
+from pprint import pformat, pprint
 from stat import S_ISREG, S_ISLNK
 from tempfile import NamedTemporaryFile
 import cmdln
@@ -100,6 +100,10 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.session = DB.db_session()
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
+        # default is to accept the review, just leave a note if
+        # there were problems.
+        ret = True
+
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
         dst_srcinfo = self.get_sourceinfo(dst_project, dst_package)
@@ -116,6 +120,22 @@ class ABIChecker(ReviewBot.ReviewBot):
         if os.path.exists(UNPACKDIR):
             shutil.rmtree(UNPACKDIR)
 
+        # check if target project is a project link where the
+        # source don't actually build (like openSUSE:...:Update).
+        originproject = self.get_originproject(dst_project, dst_package)
+        if originproject is not None:
+            self.logger.debug("origin project %s", originproject)
+            url = osc.core.makeurl(self.apiurl, ('build', dst_project, '_result'), { 'package': dst_package })
+            root = ET.parse(osc.core.http_GET(url)).getroot()
+            alldisabled = True
+            for node in root.findall('status'):
+                if node.get('code') != 'disabled':
+                    alldisabled = False
+            if alldisabled:
+                self.logger.debug("all repos disabled, using originproject %s"%originproject)
+            else:
+                originproject = None
+
         try:
             # compute list of common repos to find out what to compare
             myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
@@ -123,17 +143,40 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.logger.info(e)
             return None
 
+        if not myrepos:
+            # XXX: report
+            self.logger.info("no matching repos, can't compare")
+            return False
+
+        # can't do that earlier as the repo match must use original
+        # dst
+        if originproject is not None:
+            dst_project = originproject
+
         notes = []
         libresults = []
 
         overall = None
 
         for mr in myrepos:
-            dst_libs = self.extract(dst_project, dst_package, dst_srcinfo, mr.dstrepo, mr.arch)
-            src_libs = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
-
-            if dst_libs is None or src_libs is None:
+            try:
+                dst_libs = self.extract(dst_project, dst_package, dst_srcinfo, mr.dstrepo, mr.arch)
                 # nothing to fetch, so no libs
+                if dst_libs is None:
+                    continue
+            except DistUrlMismatch, e:
+                self.logger.error("%s/%s %s/%s: %s"%(dst_project, dst_package, mr.dstrepo, mr.arch, e))
+                ret = None # need to check again
+                continue
+
+            try:
+                src_libs = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
+                if src_libs is None:
+                    # XXX: hmm, libs vanished? report!
+                    continue
+            except DistUrlMismatch, e:
+                self.logger.error("%s/%s %s/%s: %s"%(src_project, src_package, mr.srcrepo, mr.arch, e))
+                ret = None # need to check again
                 continue
 
             # create reverse index for aliases in the source project
@@ -168,6 +211,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 new_dump = os.path.join(CACHEDIR, 'new.dump')
 
                 def cleanup():
+                    return
                     if os.path.exists(old_dump):
                         os.unlink(old_dump)
                     if os.path.exists(new_dump):
@@ -206,8 +250,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         if os.path.exists(UNPACKDIR):
             shutil.rmtree(UNPACKDIR)
 
-        # we always accept the review, just leave a note if there were problems
-        return True
+        return ret
 
     def check_one_request(self, req):
 
@@ -267,8 +310,10 @@ class ABIChecker(ReviewBot.ReviewBot):
         cmd = ['abi-dumper',
                 '-o', output,
                 '-lver', os.path.basename(filename),
-                '-debuginfo-dir', '%s/usr/lib/debug/%s'%(base, os.path.dirname(filename)),
                 '/'.join([base, filename])]
+        debuglib = '%s/usr/lib/debug/%s.debug'%(base, filename)
+        if os.path.exists(debuglib):
+            cmd.append(debuglib)
         self.logger.debug(cmd)
         r = subprocess.call(cmd, close_fds=True)
         if r != 0:
@@ -457,16 +502,35 @@ class ABIChecker(ReviewBot.ReviewBot):
             for node in repo.findall('arch'):
                 repos.add((name, node.attrib['arch']))
 
-        self.logger.debug("repos: %s", pformat(repos))
+        self.logger.debug("success repos: %s", pformat(repos))
+
+        return repos
+
+    def get_dstrepos(self, project):
+        # XXX: these are ugly
+        if re.match(r'^openSUSE:(?:Factory|\d\d\.\d:Update)', project):
+            return (('standard', 'x86_64'), ('standard', 'i586'))
+
+        url = osc.core.makeurl(self.apiurl, ('source', project, '_meta'))
+        try:
+            root = ET.parse(osc.core.http_GET(url)).getroot()
+        except urllib2.HTTPError:
+            return None
+
+        repos = set()
+        for repo in root.findall('repository'):
+            name = repo.attrib['name']
+            for node in repo.findall('arch'):
+                repos.add((name, node.text))
 
         return repos
 
     def findrepos(self, src_project, src_srcinfo, dst_project, dst_srcinfo):
 
-        # get target repos that had a successful buid
-        dstrepos = self.get_buildsuccess_repos(dst_project, dst_project, dst_srcinfo.package, dst_srcinfo.verifymd5)
-        if not dstrepos:
-            raise NoBuildSuccessYet(dst_project, dst_srcinfo.package)
+        # get target repos that had a successful build
+        dstrepos = self.get_dstrepos(dst_project)
+        if dstrepos is None:
+            return None
 
         url = osc.core.makeurl(self.apiurl, ('source', src_project, '_meta'))
         try:
@@ -495,7 +559,10 @@ class ABIChecker(ReviewBot.ReviewBot):
                 if (dstname, arch) in dstrepos:
                     matchrepos.add(MR(name, dstname, arch))
 
-        self.logger.debug('matched repos %s', pformat(matchrepos))
+        if not matchrepos:
+            return None
+        else:
+            self.logger.debug('matched repos %s', pformat(matchrepos))
 
         # now check if all matched repos built successfully
         srcrepos = self.get_buildsuccess_repos(src_project, dst_project, src_srcinfo.package, src_srcinfo.verifymd5)

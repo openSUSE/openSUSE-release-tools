@@ -36,7 +36,7 @@ class ABICheck(Base):
     request_id = Column(Integer, nullable=True)
     src_project = Column(String(255), nullable=False)
     src_package = Column(String(255), nullable=False)
-    src_rev = Column(String(255), nullable=False)
+    src_rev = Column(String(255), nullable=True)
     dst_project = Column(String(255), nullable=False)
     dst_package = Column(String(255), nullable=False)
     result = Column(Boolean(), nullable = False)
