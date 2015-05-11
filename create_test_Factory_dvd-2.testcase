@@ -16,9 +16,9 @@ job install provides pattern() = gnome_multimedia
 job install provides pattern() = gnome_utilities
 job install provides pattern() = imaging
 job install provides pattern() = kde
-job install provides pattern() = kde4_basis
-job install provides pattern() = kde4_multimedia
-job install provides pattern() = kde4_utilities
+job install provides pattern() = kde_plasma
+job install provides pattern() = kde_multimedia
+job install provides pattern() = kde_utilities
 job install provides pattern() = multimedia
 job install provides pattern() = minimal_base
 
@@ -30,6 +30,7 @@ job install name openSUSE-release-livecd-x11
 job install name sudo
 job install name xdelta
 job install name kate
+job install name sddm
 
 job lock name gtk2-branding-upstream
 job lock name gdm-branding-upstream
@@ -37,6 +38,9 @@ job lock name kdebase4-workspace-branding-upstream
 job lock name kdm-branding-upstream
 job lock name kdebase4-runtime-branding-upstream
 job lock name kdelibs4-branding-upstream
+job lock name sddm-branding-upstream
+job lock name plasma5-desktop-branding-upstream
+job lock name plasma5-workspace-branding-upstream
 job lock name readline-doc
 #ifdef __x86_64__
 job install provides pattern() = laptop
