@@ -8,7 +8,7 @@ class CleanupRings(object):
     def __init__(self, api):
         self.bin2src = {}
         self.pkgdeps = {}
-        self.sources = []
+        self.sources = set()
         self.api = api
         self.links = {}
 
@@ -31,7 +31,7 @@ class CleanupRings(object):
             linked = si.find('linked')
             if linked is not None and linked.get('project') != self.api.project:
                 if not linked.get('project').startswith(self.api.crings):
-                    print(ET.tostring(si))
+                    print "#not linking to base: ", self.api.crings, linked.get('project')
                 self.links[linked.get('package')] = si.get('package')
 
     def fill_pkgdeps(self, prj, repo, arch):
@@ -43,11 +43,14 @@ class CleanupRings(object):
             source = package.find('source').text
             if package.attrib['name'].startswith('preinstall'):
                 continue
-            self.sources.append(source)
+            self.sources.add(source)
 
             for subpkg in package.findall('subpkg'):
                 subpkg = subpkg.text
                 if subpkg in self.bin2src:
+                    if self.bin2src[subpkg] == source:
+                        # different archs
+                        continue
                     print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, source))
                 self.bin2src[subpkg] = source
 
@@ -55,11 +58,7 @@ class CleanupRings(object):
             source = package.find('source').text
             for pkg in package.findall('pkgdep'):
                 if pkg.text not in self.bin2src:
-                    if pkg.text.startswith('texlive-'):
-                        for letter in range(ord('a'), ord('z') + 1):
-                            self.pkgdeps['texlive-specs-' + chr(letter)] = 'texlive-specs-' + chr(letter)
-                    else:
-                        print('Package {} not found in place'.format(pkg.text))
+                    print('Package {} not found in place'.format(pkg.text))
                     continue
                 b = self.bin2src[pkg.text]
                 self.pkgdeps[b] = source
@@ -69,7 +68,7 @@ class CleanupRings(object):
         root = ET.parse(http_GET(url)).getroot()
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
-            if repostate not in ['unpublished', 'published']:
+            if repostate not in ['unpublished', 'published'] or repo.get('dirty', 'false') == 'true':
                 print('Repo {}/{} is in state {}'.format(repo.get('project'), repo.get('repository'), repostate))
                 return False
             for package in repo.findall('status'):
