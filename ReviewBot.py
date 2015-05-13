@@ -45,6 +45,8 @@ class ReviewBot(object):
         return (None|True|False)
     """
 
+    DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
+
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
         self.dryrun = dryrun
@@ -52,7 +54,7 @@ class ReviewBot(object):
         self.review_user = user
         self.review_group = group
         self.requests = []
-        self.review_messages = { 'accepted' : 'ok', 'declined': 'review failed' }
+        self.review_messages = ReviewBot.DEFAULT_REVIEW_MESSAGES
 
     def set_request_ids(self, ids):
         for rqid in ids:
