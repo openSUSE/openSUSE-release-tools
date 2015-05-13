@@ -150,7 +150,12 @@ class ReviewBot(object):
         return overall
 
     def check_action_maintenance_incident(self, req, a):
-        return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_releaseproject, a.src_package)
+        dst_package = a.src_package
+        # dirty obs crap
+        ugly_suffix = '.'+a.tgt_releaseproject.replace(':', '_')
+        if dst_package.endswith(ugly_suffix):
+            dst_package = dst_package[:-len(ugly_suffix)]
+        return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_releaseproject, dst_package)
 
     def check_action_maintenance_release(self, req, a):
         pkgname = a.src_package
