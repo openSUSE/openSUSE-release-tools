@@ -46,10 +46,13 @@ import urllib2
 import rpm
 from collections import namedtuple
 from osclib.pkgcache import PkgCache
+from osclib.comments import CommentAPI
 
 from xdg.BaseDirectory import save_cache_path
 
 import ReviewBot
+
+WEB_URL="http://127.0.0.1:5000/report"
 
 # Directory where download binary packages.
 BINCACHE = os.path.expanduser('~/co')
@@ -87,6 +90,11 @@ class ABIChecker(ReviewBot.ReviewBot):
     """
 
     def __init__(self, *args, **kwargs):
+        self.comments = False
+        if 'comments' in kwargs:
+            self.comments = True
+            del kwargs['comments']
+
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         self.ts = rpm.TransactionSet()
@@ -96,6 +104,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         # reports of source submission
         self.reports = []
+        self.text_summary = ''
 
         self.session = DB.db_session()
 
@@ -144,7 +153,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             return None
 
         if not myrepos:
-            # XXX: report
+            self.text_summary += "**Error**: %s does not build against %s, can't check library ABIs\n\n"%(src_project, dst_project)
             self.logger.info("no matching repos, can't compare")
             return False
 
@@ -172,7 +181,8 @@ class ABIChecker(ReviewBot.ReviewBot):
             try:
                 src_libs = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
                 if src_libs is None:
-                    # XXX: hmm, libs vanished? report!
+                    if dst_libs:
+                        self.text_summary += "*Warning*: the submission does not contain any libs anymore\n\n"
                     continue
             except DistUrlMismatch, e:
                 self.logger.error("%s/%s %s/%s: %s"%(src_project, src_package, mr.srcrepo, mr.arch, e))
@@ -194,10 +204,14 @@ class ABIChecker(ReviewBot.ReviewBot):
                     pairs.add((lib, lib))
                 else:
                     self.logger.debug("%s not found in submission, checking aliases", lib)
+                    found = False
                     for a in dst_libs[lib]:
                         if a in src_aliases:
                             for l in src_aliases[a]:
                                 pairs.add((lib, l))
+                                found = True
+                    if found == False:
+                        self.text_summary += "*Warning*: %s no longer packaged\n\n"%lib
 
             self.logger.debug("to diff: %s", pformat(pairs))
 
@@ -238,7 +252,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                                 overall = r
                 else:
                     self.logger.error('failed to compare %s <> %s'%(old,new))
-                    # XXX: report
+                    self.text_summary += "**Error**: ABI check failed on %s vs %s\n\n"%(old, new)
 
                 cleanup()
 
@@ -254,10 +268,18 @@ class ABIChecker(ReviewBot.ReviewBot):
 
     def check_one_request(self, req):
 
+        self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
+
         self.reports = []
+        self.text_summary = ''
         ret = ReviewBot.ReviewBot.check_one_request(self, req)
 
         self.save_reports_to_db(req)
+
+        if self.comments:
+            self.post_comment(req)
+
+        self.review_messages = { 'accepted': self.text_summary, 'declined': self.text_summary }
 
         return ret
 
@@ -275,6 +297,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.session.add(abicheck)
             self.session.commit()
             self.logger.info("id %d"%abicheck.id)
+            if r.result:
+                self.text_summary += "%s seems to be ABI [compatible](%s/%d):\n\n"%(r.dst_package, WEB_URL, abicheck.id)
+            else:
+                self.text_summary += "Warning: %s may be ABI [**INCOMPATIBLE**](%s/%d):\n\n"%(r.dst_package, WEB_URL, abicheck.id)
             for lr in r.reports:
                 libreport = DB.LibReport(
                         abicheck = abicheck,
@@ -287,9 +313,23 @@ class ABIChecker(ReviewBot.ReviewBot):
                         result = lr.result,
                         )
                 self.session.add(libreport)
-            self.session.commit()
+                self.session.commit()
+                self.text_summary += "* %s: [%s](%s/%d/%d)\n"%(lr.dst_lib,
+                    "compatible" if lr.result else "***INCOMPATIBLE***",
+                    WEB_URL, abicheck.id, libreport.id)
 
         self.reports = []
+
+    def post_comment(self, req):
+        if not self.text_summary:
+            return
+
+        if self.dryrun:
+            self.logger.info("add comment %s"%self.text_summary)
+        else:
+            api = CommentAPI(self.apiurl)
+            api.delete_from_where_user(self.review_user, request_id = req.reqid)
+            api.add_comment(request_id = req.reqid, comment = self.text_summary)
 
     def run_abi_checker(self, libname, old, new, output):
         cmd = ['abi-compliance-checker',
@@ -669,6 +709,11 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
 
+    def get_optparser(self):
+        parser = ReviewBot.CommandLineInterface.get_optparser(self)
+        parser.add_option("--comments", action="store_true", help="post comments")
+        return parser
+
     def setup_checker(self):
 
         apiurl = osc.conf.config['apiurl']
@@ -680,6 +725,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         return ABIChecker(apiurl = apiurl, \
                 dryrun = self.options.dry, \
+                comments = self.options.comments, \
                 user = user, \
                 logger = self.logger)
 
