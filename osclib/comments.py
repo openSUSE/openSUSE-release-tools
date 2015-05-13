@@ -146,7 +146,6 @@ class CommentAPI(object):
         :param package_name: Package name where to remove comments.
         :return: Number of comments removed.
         """
-        user_re = re.compile(r'@%s\b')
-        for comment in self.comments(request_id, project_name, package_name):
-            if user_re.match(comment['comment']):
+        for comment in self.get_comments(request_id, project_name, package_name).values():
+            if comment['who'] == user:
                 self.delete(comment['id'])
