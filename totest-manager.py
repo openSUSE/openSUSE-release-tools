@@ -55,7 +55,7 @@ class ToTestBase(object):
         return 90
 
     def current_version(self):
-        return self.release_version
+        return self.release_version()
 
     def binaries_of_product(self, project, product):
         url = self.api.makeurl(['build', project, 'images', 'local', product])
