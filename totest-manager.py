@@ -93,7 +93,7 @@ class ToTestBase(object):
         raise Exception("can't find %s version" % self.project)
 
     def release_version(self):
-       url = self.api.makeurl(['build', 'openSUSE:%s' % project, 'standard', arch,
+       url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
                                '_product:openSUSE-release'])
        f = self.api.retried_GET(url)
        root = ET.parse(f).getroot()
@@ -103,7 +103,7 @@ class ToTestBase(object):
            if result:
               return result.group(1)
 
-       raise Exception("can't find %s version" % project)
+       raise Exception("can't find %s version" % self.project)
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
