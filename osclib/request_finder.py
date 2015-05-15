@@ -65,14 +65,14 @@ class RequestFinder(object):
         :param package: name of the package
         """
 
-        query = 'states=new,review,declined&project={}&view=collection&package={}'
+        query = 'states=new,review&project={}&view=collection&package={}'
         query = query.format(self.api.project, urllib2.quote(package))
         url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
 
         root = ET.parse(f).getroot()
 
-        last_rq = None
+        requests = []
         for sr in root.findall('request'):
             # Check the package matches - OBS is case insensitive
             rq_package = sr.find('action').find('target').get('package')
@@ -83,23 +83,15 @@ class RequestFinder(object):
             state = sr.find('state').get('name')
 
             self.srs[request] = {'project': self.api.project, 'state': state}
+            requests.append(request)
 
-            if last_rq:
-                if self.srs[last_rq]['state'] == 'declined':
-                    # ignore previous requests if they are declined
-                    # if they are the last one, it's fine to return them
-                    del self.srs[last_rq]
-                else:
-                    msg = 'There are multiple requests for package "{}": {} and {}'
-                    msg = msg.format(package, last_rq, request)
-                    raise oscerr.WrongArgs(msg)
+        if len(requests) > 1:
+            msg = 'There are multiple requests for package "{}": {}'
+            msg = msg.format(package, ', '.join(requests))
+            raise oscerr.WrongArgs(msg)
 
-            # Invariant of the loop: request is the max request ID searched so far
-            assert last_rq < request, 'Request ID do not increase monotonically'
-
-            last_rq = request
-
-        return last_rq
+        request = requests[0] if requests else None
+        return request
 
     def find_request_project(self, source_project):
         """
