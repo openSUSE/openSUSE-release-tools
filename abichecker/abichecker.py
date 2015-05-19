@@ -52,7 +52,7 @@ from xdg.BaseDirectory import save_cache_path
 
 import ReviewBot
 
-WEB_URL="http://127.0.0.1:5000/report"
+WEB_URL=None
 
 # Directory where download binary packages.
 BINCACHE = os.path.expanduser('~/co')
@@ -712,7 +712,18 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
         parser.add_option("--comments", action="store_true", help="post comments")
+        parser.add_option("--web-url", metavar="URL", help="URL of web service")
         return parser
+
+    def postoptparse(self):
+        ret = ReviewBot.CommandLineInterface.postoptparse(self)
+        if self.options.web_url is not None:
+            global WEB_URL
+            WEB_URL = self.options.web_url
+        else:
+            self.optparser.error("must specify --web-url")
+            ret = False
+        return ret
 
     def setup_checker(self):
 
