@@ -154,10 +154,13 @@ class ToTestBase(object):
 
         number_of_fails = 0
         in_progress = False
+        machines = []
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
             if job['result'] in ('failed', 'incomplete', 'skipped'):
                 jobname = job['name'] + '@' + job['settings']['MACHINE']
+                # Record machines we have tests for
+                machines.append(job['settings']['MACHINE'])
                 if jobname in self.known_failures:
                     self.known_failures.remove(jobname)
                     continue
@@ -181,8 +184,11 @@ class ToTestBase(object):
         if in_progress:
             return QA_INPROGRESS
 
-        if self.known_failures:
-            print 'Some are now passing', self.known_failures
+        machines = list(set(machines))
+        for item in machines:
+            for item2 in self.known_failures:
+                if item2.split('@')[1] == item:
+                    print 'now passing', item2
         return QA_PASSED
 
     def all_repos_done(self, project, codes=None):
