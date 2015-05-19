@@ -70,8 +70,9 @@ def libreport(report_id, libreport_id):
     return send_file(fn)
 
 
+application = app
 if __name__ == '__main__':
     Base.metadata.create_all(db_engine())
-    app.run(debug=True)
+    application.run(debug=True)
 
 # vim: sw=4 et
