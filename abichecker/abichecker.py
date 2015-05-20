@@ -92,6 +92,14 @@ class NotReadyYet(Exception):
     def __str__(self):
         return self.msg
 
+class MissingDebugInfo(Exception):
+    def __init__(self, missing_debuginfo):
+        Exception.__init__(self)
+        self.msg = 'debug information is missing for the following files, can\'t check:\n'
+        for i in missing_debuginfo:
+            self.msg += "%s/%s %s/%s %s %s\n"%i
+    def __str__(self):
+        return self.msg
 
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
@@ -188,6 +196,10 @@ class ABIChecker(ReviewBot.ReviewBot):
                 self.logger.error("%s/%s %s/%s: %s"%(dst_project, dst_package, mr.dstrepo, mr.arch, e))
                 ret = None # need to check again
                 continue
+            except MissingDebugInfo, e:
+                self.text_summary += str(e) + "\n"
+                ret = False
+                continue
 
             try:
                 src_libs = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
@@ -198,6 +210,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             except DistUrlMismatch, e:
                 self.logger.error("%s/%s %s/%s: %s"%(src_project, src_package, mr.srcrepo, mr.arch, e))
                 ret = None # need to check again
+                continue
+            except MissingDebugInfo, e:
+                self.text_summary += str(e) + "\n"
+                ret = False
                 continue
 
             # create reverse index for aliases in the source project
@@ -379,8 +395,9 @@ class ABIChecker(ReviewBot.ReviewBot):
             fetchlist, liblist = self.compute_fetchlist(project, package, srcinfo, repo, arch)
 
             if not fetchlist:
-                self.logger.info("nothing to fetch for %s/%s %s/%s"%(project, package, repo, arch))
-                # XXX record
+                msg = "nothing to fetch for %s/%s %s/%s"%(project, package, repo, arch)
+                self.logger.info(msg)
+                self.text_summary += msg +"\n"
                 return None
 
             # mtimes in cpio are not the original ones, so we need to fetch
@@ -699,6 +716,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         fetchlist = set()
         liblist = dict()
+        self.logger.debug("lib_packages %s"%pformat(lib_packages))
         # check whether debug info exists for each lib
         for pkgname in sorted(lib_packages.keys()):
             # 32bit debug packages have special names
@@ -729,7 +747,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         if missing_debuginfo:
             self.logger.error('missing debuginfo: %s'%pformat(missing_debuginfo))
-            return None
+            raise MissingDebugInfo(missing_debuginfo)
 
         return fetchlist, liblist
 
