@@ -78,12 +78,20 @@ class DistUrlMismatch(Exception):
     def __str__(self):
         return self.msg
 
-class NoBuildSuccessYet(Exception):
-    def __init__(self, project, package):
+class NoBuildSuccess(Exception):
+    def __init__(self, project, package, md5):
         Exception.__init__(self)
-        self.msg = '%s/%s had no successful build yet'%(project, package)
+        self.msg = '%s/%s(%s) had no successful build'%(project, package, md5)
     def __str__(self):
         return self.msg
+
+class NotReadyYet(Exception):
+    def __init__(self, project, package, reason):
+        Exception.__init__(self)
+        self.msg = '%s/%s not ready yet: %s'%(project, package, reason)
+    def __str__(self):
+        return self.msg
+
 
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
@@ -148,7 +156,10 @@ class ABIChecker(ReviewBot.ReviewBot):
         try:
             # compute list of common repos to find out what to compare
             myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
-        except NoBuildSuccessYet, e:
+        except NoBuildSuccess, e:
+            self.logger.info(e)
+            return False
+        except NotReadyYet, e:
             self.logger.info(e)
             return None
 
@@ -565,6 +576,31 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return repos
 
+    def ensure_settled(self, src_project, src_srcinfo, matchrepos):
+        """ make sure current build state is final so we're not
+        tricked with half finished results"""
+        results = osc.core.get_package_results(self.apiurl,
+                src_project, src_srcinfo.package,
+                repository = [ mr.srcrepo for mr in matchrepos],
+                arch = [ mr.arch for mr in matchrepos])
+        rmap = dict()
+        for i in results:
+            if not 'package' in i or i['package'] != src_srcinfo.package:
+                continue
+            rmap[(i['repository'], i['arch'])] = i
+
+        for mr in matchrepos:
+            if not (mr.srcrepo, mr.arch) in rmap:
+                self.logger.error("%s/%s had no build success"%(mr.srcrepo, arch))
+                raise NotReadyYet(src_project, src_srcinfo.package, "no result")
+            if rmap[(mr.srcrepo, mr.arch)]['dirty']:
+                self.logger.error("%s/%s dirty"%(mr.srcrepo, mr.arch))
+                raise NotReadyYet(src_project, src_srcinfo.package, "dirty")
+            code = rmap[(mr.srcrepo, mr.arch)]['code']
+            if code != 'succeeded':
+                self.logger.error("%s/%s not succeeded"%(mr.srcrepo, mr.arch))
+                raise NotReadyYet(src_project, src_srcinfo.package, code)
+
     def findrepos(self, src_project, src_srcinfo, dst_project, dst_srcinfo):
 
         # get target repos that had a successful build
@@ -604,14 +640,17 @@ class ABIChecker(ReviewBot.ReviewBot):
         else:
             self.logger.debug('matched repos %s', pformat(matchrepos))
 
+        # make sure it's not dirty
+        self.ensure_settled(src_project, src_srcinfo, matchrepos)
+
         # now check if all matched repos built successfully
         srcrepos = self.get_buildsuccess_repos(src_project, dst_project, src_srcinfo.package, src_srcinfo.verifymd5)
         if srcrepos is None:
-            raise NoBuildSuccessYet(src_project, src_srcinfo.package)
+            raise NoBuildSuccess(src_project, src_srcinfo.package, src_srcinfo.verifymd5)
         for mr in matchrepos:
             if not (mr.srcrepo, arch) in srcrepos:
                 self.logger.error("%s/%s had no build success"%(mr.srcrepo, arch))
-                raise NoBuildSuccessYet(src_project, src_srcinfo.package)
+                raise NoBuildSuccess(src_project, src_srcinfo.package, src_srcinfo.verifymd5)
 
         return matchrepos
 
