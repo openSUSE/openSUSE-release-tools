@@ -62,7 +62,7 @@ DOWNLOADS = os.path.join(BINCACHE, 'downloads')
 CACHEDIR = save_cache_path('opensuse-abi-checker')
 UNPACKDIR = os.path.join(CACHEDIR, 'unpacked')
 
-so_re = re.compile(r'^(?:/usr)/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
+so_re = re.compile(r'^(?:/usr)?/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
 debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
 disturl_re = re.compile(r'^obs://[^/]+/(?P<prj>[^/]+)/(?P<repo>[^/]+)/(?P<md5>[0-9a-f]{32})-(?P<pkg>.*)$')
 
