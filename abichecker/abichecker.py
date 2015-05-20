@@ -66,6 +66,8 @@ so_re = re.compile(r'^(?:/usr)?/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
 debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
 disturl_re = re.compile(r'^obs://[^/]+/(?P<prj>[^/]+)/(?P<repo>[^/]+)/(?P<md5>[0-9a-f]{32})-(?P<pkg>.*)$')
 
+comment_marker_re = re.compile(r'<!-- abichecker state=(?P<state>done|seen)(?: result=(?P<result>passed|failed))? -->')
+
 # report for source submissions. contains multiple libresult for each library
 Report = namedtuple('Report', ('src_project', 'src_package', 'src_rev', 'dst_project', 'dst_package', 'reports', 'result'))
 # report for a single library
@@ -106,10 +108,10 @@ class ABIChecker(ReviewBot.ReviewBot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.comments = False
-        if 'comments' in kwargs:
-            self.comments = True
-            del kwargs['comments']
+        self.no_review = False
+        if 'no_review' in kwargs:
+            self.no_review = True
+            del kwargs['no_review']
 
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
@@ -123,6 +125,8 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.text_summary = ''
 
         self.session = DB.db_session()
+
+        self.commentapi = CommentAPI(self.apiurl)
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         # default is to accept the review, just leave a note if
@@ -297,9 +301,23 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return ret
 
+    def find_abichecker_comment(self, req):
+        """Return previous comments (should be one)."""
+        comments = self.commentapi.get_comments(request_id=req.reqid)
+        for c in comments.values():
+            m = comment_marker_re.match(c['comment'])
+            if m:
+                return c['id'], m.group('state'), m.group('result')
+        return None, None, None
+
     def check_one_request(self, req):
 
         self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
+
+        commentid, status, result = self.find_abichecker_comment(req)
+        if status == 'done':
+            self.logger.debug("request %s already done, result: %s"%(req.reqid, result))
+            return
 
         self.reports = []
         self.text_summary = ''
@@ -307,10 +325,19 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.save_reports_to_db(req)
 
-        if self.comments:
-            self.post_comment(req)
+        result = None
+        state = 'seen'
+        if ret is not None:
+            state = 'done'
+            result = 'passed' if ret else 'failed'
+        if commentid:
+            self.commentapi.delete(commentid)
+        self.post_comment(req, state, result)
 
         self.review_messages = { 'accepted': self.text_summary, 'declined': self.text_summary }
+
+        if self.no_review:
+            ret = None
 
         return ret
 
@@ -351,16 +378,17 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.reports = []
 
-    def post_comment(self, req):
+    def post_comment(self, req, state, result):
         if not self.text_summary:
             return
 
         if self.dryrun:
             self.logger.info("add comment %s"%self.text_summary)
         else:
-            api = CommentAPI(self.apiurl)
-            api.delete_from_where_user(self.review_user, request_id = req.reqid)
-            api.add_comment(request_id = req.reqid, comment = self.text_summary)
+            #self.commentapi.delete_from_where_user(self.review_user, request_id = req.reqid)
+            msg = "<!-- abichecker state=%s%s -->\n"%(state, ' result=%s'%result if result else '')
+            msg += self.text_summary
+            self.commentapi.add_comment(request_id = req.reqid, comment = msg)
 
     def run_abi_checker(self, libname, old, new, output):
         cmd = ['abi-compliance-checker',
@@ -771,7 +799,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
-        parser.add_option("--comments", action="store_true", help="post comments")
+        parser.add_option("--no-review", action="store_true", help="don't actually accept or decline, just comment")
         parser.add_option("--web-url", metavar="URL", help="URL of web service")
         return parser
 
@@ -796,7 +824,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         return ABIChecker(apiurl = apiurl, \
                 dryrun = self.options.dry, \
-                comments = self.options.comments, \
+                no_review = self.options.no_review, \
                 user = user, \
                 logger = self.logger)
 
