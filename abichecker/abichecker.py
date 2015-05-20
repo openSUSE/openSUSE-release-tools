@@ -762,7 +762,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             else:
                 dpkgname = pkgname+'-debuginfo'
             if not dpkgname in pkgs:
-                missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
+                missing_debuginfo.add((prj, pkg, repo, arch, pkgname, None))
                 continue
 
             # check file list of debuginfo package
