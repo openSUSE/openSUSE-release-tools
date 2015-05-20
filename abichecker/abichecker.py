@@ -63,7 +63,7 @@ CACHEDIR = save_cache_path('opensuse-abi-checker')
 UNPACKDIR = os.path.join(CACHEDIR, 'unpacked')
 
 so_re = re.compile(r'^(?:/usr)?/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
-debugpkg_re = re.compile(r'-debug(?:source|info)(?:-32bit)?$')
+debugpkg_re = re.compile(r'-debug(?:source|info)(?:-(?:32|64)bit)?$')
 disturl_re = re.compile(r'^obs://[^/]+/(?P<prj>[^/]+)/(?P<repo>[^/]+)/(?P<md5>[0-9a-f]{32})-(?P<pkg>.*)$')
 
 comment_marker_re = re.compile(r'<!-- abichecker state=(?P<state>done|seen)(?: result=(?P<result>passed|failed))? -->')
@@ -759,6 +759,8 @@ class ABIChecker(ReviewBot.ReviewBot):
             # 32bit debug packages have special names
             if pkgname.endswith('-32bit'):
                 dpkgname = pkgname[:-len('-32bit')]+'-debuginfo-32bit'
+            elif pkgname.endswith('-64bit'):
+                dpkgname = pkgname[:-len('-64bit')]+'-debuginfo-64bit'
             else:
                 dpkgname = pkgname+'-debuginfo'
             if not dpkgname in pkgs:
