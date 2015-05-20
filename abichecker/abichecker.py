@@ -194,7 +194,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                     continue
             except DistUrlMismatch, e:
                 self.logger.error("%s/%s %s/%s: %s"%(dst_project, dst_package, mr.dstrepo, mr.arch, e))
-                ret = None # need to check again
+                if ret == True: # need to check again
+                    ret = None
                 continue
             except MissingDebugInfo, e:
                 self.text_summary += str(e) + "\n"
@@ -209,7 +210,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                     continue
             except DistUrlMismatch, e:
                 self.logger.error("%s/%s %s/%s: %s"%(src_project, src_package, mr.srcrepo, mr.arch, e))
-                ret = None # need to check again
+                if ret == True: # need to check again
+                    ret = None
                 continue
             except MissingDebugInfo, e:
                 self.text_summary += str(e) + "\n"
@@ -280,6 +282,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                 else:
                     self.logger.error('failed to compare %s <> %s'%(old,new))
                     self.text_summary += "**Error**: ABI check failed on %s vs %s\n\n"%(old, new)
+                    if ret == True: # need to check again
+                        ret = None
 
                 cleanup()
 
