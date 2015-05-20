@@ -720,7 +720,6 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         fetchlist = set()
         liblist = dict()
-        self.logger.debug("lib_packages %s"%pformat(lib_packages))
         # check whether debug info exists for each lib
         for pkgname in sorted(lib_packages.keys()):
             # 32bit debug packages have special names
