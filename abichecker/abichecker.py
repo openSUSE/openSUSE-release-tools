@@ -314,8 +314,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
 
-        commentid, status, result = self.find_abichecker_comment(req)
-        if status == 'done':
+        commentid, state, result = self.find_abichecker_comment(req)
+        if state == 'done':
             self.logger.debug("request %s already done, result: %s"%(req.reqid, result))
             return
 
@@ -326,10 +326,15 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.save_reports_to_db(req)
 
         result = None
-        state = 'seen'
         if ret is not None:
             state = 'done'
             result = 'passed' if ret else 'failed'
+        else:
+            # we probably don't want abichecker to spam here
+            # FIXME don't delete comment in this case
+            #if state is None and not self.text_summary:
+            #    self.text_summary = 'abichecker will take a look later'
+            state = 'seen'
         if commentid:
             self.commentapi.delete(commentid)
         self.post_comment(req, state, result)
