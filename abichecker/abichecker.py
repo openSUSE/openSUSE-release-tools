@@ -433,7 +433,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             fetchlist, liblist = self.compute_fetchlist(project, package, srcinfo, repo, arch)
 
             if not fetchlist:
-                msg = "nothing to fetch for %s/%s %s/%s"%(project, package, repo, arch)
+                msg = "no libraries found in %s/%s %s/%s"%(project, package, repo, arch)
                 self.logger.info(msg)
                 self.text_summary += msg +"\n"
                 return None
@@ -788,9 +788,9 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return fetchlist, liblist
 
-    def set_request_ids_project(self, project):
+    def set_request_ids_project(self, project, typename):
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
-            "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='submit')&withhistory=1"%project)
+            "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         for request in root.findall('request'):
@@ -839,8 +839,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         src_rev = opts.revision
         print self.checker.check_source_submission(src_project, src_package, src_rev, dst_project, dst_package)
 
-    def do_project(self, subcmd, opts, project):
-        self.checker.set_request_ids_project(project)
+    def do_project(self, subcmd, opts, project, typename):
+        self.checker.set_request_ids_project(project, typename)
         self.checker.check_requests()
 
 if __name__ == "__main__":
