@@ -55,6 +55,15 @@ import ReviewBot
 
 WEB_URL=None
 
+# some project have more repos than what we are interested in
+REPO_WHITELIST = {
+        'openSUSE:Factory':      'standard',
+        'openSUSE:13.1:Update':  'standard',
+        'openSUSE:13.2:Update':  'standard',
+
+        'SUSE:SLE-12:Update' :   'standard',
+        }
+
 # Directory where download binary packages.
 BINCACHE = os.path.expanduser('~/co')
 DOWNLOADS = os.path.join(BINCACHE, 'downloads')
@@ -658,10 +667,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         return repos
 
     def get_dstrepos(self, project):
-        # XXX: these are ugly
-        if re.match(r'^openSUSE:(?:Factory|\d\d\.\d:Update)', project):
-            return (('standard', 'x86_64'), ('standard', 'i586'))
-
         url = osc.core.makeurl(self.apiurl, ('source', project, '_meta'))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
@@ -671,6 +676,9 @@ class ABIChecker(ReviewBot.ReviewBot):
         repos = set()
         for repo in root.findall('repository'):
             name = repo.attrib['name']
+            if project in REPO_WHITELIST and name not in REPO_WHITELIST[project]:
+                continue
+
             for node in repo.findall('arch'):
                 repos.add((name, node.text))
 
