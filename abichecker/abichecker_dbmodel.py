@@ -35,15 +35,23 @@ class Request(Base):
     id = Column(Integer, primary_key=True)
     state = Column(String(32), nullable=False)
     result = Column(String(32), nullable=True)
-    log = Column(Text(), nullable=True)
 
     t_created = Column(DateTime, default=datetime.now)
     t_updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
+class Log(Base):
+    __tablename__ = 'log'
+    id = Column(Integer, primary_key=True)
+    request_id = Column(Integer, ForeignKey('request.id'), nullable=False)
+    request = relationship(Request, backref=backref('log', order_by=id, cascade="all, delete-orphan"))
+    line = Column(Text(), nullable=True)
+
+    t_created = Column(DateTime, default=datetime.now)
+
 class ABICheck(Base):
     __tablename__ = 'abicheck'
     id = Column(Integer, primary_key=True)
-    request_id = Column(Integer, ForeignKey('request.id'))
+    request_id = Column(Integer, ForeignKey('request.id'), nullable=False)
     request = relationship(Request, backref=backref('abichecks', order_by=id, cascade="all, delete-orphan"))
 
     src_project = Column(String(255), nullable=False)
@@ -59,7 +67,7 @@ class ABICheck(Base):
 class LibReport(Base):
     __tablename__ = 'libreport'
     id = Column(Integer, primary_key=True)
-    submission_id = Column(Integer, ForeignKey('abicheck.id'))
+    submission_id = Column(Integer, ForeignKey('abicheck.id'), nullable=False)
     abicheck = relationship(ABICheck, backref=backref('reports', order_by=id, cascade="all, delete-orphan"))
 
     src_repo = Column(String(255), nullable=False)

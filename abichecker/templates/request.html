@@ -42,6 +42,13 @@
                 </li>
             {% endfor %}
         </ul>
+        {% if request.log %}
+        <h2>Log</h2>
+        <pre>
+{% for entry in request.log %}
+{{ entry.t_created }} {{ entry.line }}{% endfor %}
+        </pre>
+        {% endif %}
 {% endblock %}
 
 <!-- vim: sw=4 et

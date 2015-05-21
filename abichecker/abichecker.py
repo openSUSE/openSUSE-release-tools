@@ -32,6 +32,7 @@ import subprocess
 import sys
 import time
 import abichecker_dbmodel as DB
+import sqlalchemy.orm.exc
 
 try:
     from xml.etree import cElementTree as ET
@@ -103,6 +104,17 @@ class MissingDebugInfo(Exception):
     def __str__(self):
         return self.msg
 
+class LogToDB(logging.Filter):
+    def __init__(self, session):
+        self.session = session
+        self.request_id = None
+
+    def filter(self, record):
+        if self.request_id is not None and record.levelno >= logging.INFO:
+            logentry = DB.Log(request_id = self.request_id, line = record.getMessage())
+            self.session.add(logentry)
+        return True
+
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
     """
@@ -123,9 +135,15 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         # reports of source submission
         self.reports = []
+        # textual report summary for use in accept/decline message
+        # or comments
         self.text_summary = ''
 
         self.session = DB.db_session()
+
+        self.dblogger = LogToDB(self.session)
+
+        self.logger.addFilter(self.dblogger)
 
         self.commentapi = CommentAPI(self.apiurl)
 
@@ -278,7 +296,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         reportfn = os.path.join(CACHEDIR, htmlreport)
                         r = self.run_abi_checker(m.group(1), old_dump, new_dump, reportfn)
                         if r is not None:
-                            self.logger.info('report saved to %s, compatible: %d', reportfn, r)
+                            self.logger.debug('report saved to %s, compatible: %d', reportfn, r)
                             libresults.append(LibResult(mr.srcrepo, os.path.basename(old), mr.dstrepo, os.path.basename(new), mr.arch, htmlreport, r))
                             if overall is None:
                                 overall = r
@@ -312,6 +330,8 @@ class ABIChecker(ReviewBot.ReviewBot):
         return None, None, None
 
     def check_one_request(self, req):
+
+        self.dblogger.request_id = req.reqid
 
         self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
 
@@ -347,18 +367,21 @@ class ABIChecker(ReviewBot.ReviewBot):
         if self.no_review:
             ret = None
 
+        self.dblogger.request_id = None
+
         return ret
 
     def save_reports_to_db(self, req, state, result):
-        request = self.session.query(DB.Request).filter(DB.Request.id == req.reqid).one()
-        if request:
-            self.session.query(DB.ABICheck).filter(DB.ABICheck.request_id == req.reqid).delete()
-        else:
+        try:
+            request = self.session.query(DB.Request).filter(DB.Request.id == req.reqid).one()
+            self.session.query(DB.ABICheck).filter(DB.ABICheck.request_id == request.id).delete()
+            self.session.flush()
+        except sqlalchemy.orm.exc.NoResultFound, e:
             request = DB.Request(id = req.reqid,
                     state = state,
                     result = result,
                     )
-        self.session.add(request)
+            self.session.add(request)
         self.session.commit()
         for r in self.reports:
             abicheck = DB.ABICheck(
@@ -372,7 +395,6 @@ class ABIChecker(ReviewBot.ReviewBot):
                     )
             self.session.add(abicheck)
             self.session.commit()
-            self.logger.info("id %d"%abicheck.id)
             if r.result:
                 self.text_summary += "%s seems to be ABI [compatible](%s/%d):\n\n"%(r.dst_package, WEB_URL, abicheck.id)
             else:
@@ -448,7 +470,6 @@ class ABIChecker(ReviewBot.ReviewBot):
             if not fetchlist:
                 msg = "no libraries found in %s/%s %s/%s"%(project, package, repo, arch)
                 self.logger.info(msg)
-                self.text_summary += msg +"\n"
                 return None
 
             # mtimes in cpio are not the original ones, so we need to fetch
