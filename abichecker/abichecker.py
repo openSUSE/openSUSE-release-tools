@@ -110,7 +110,8 @@ class ABIChecker(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
         self.no_review = False
         if 'no_review' in kwargs:
-            self.no_review = True
+            if kwargs['no_review'] == True:
+                self.no_review = True
             del kwargs['no_review']
 
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
