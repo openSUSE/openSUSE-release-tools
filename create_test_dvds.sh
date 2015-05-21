@@ -27,8 +27,11 @@ else
         elif [ "$arg" = "has_ring_0" ]; then
             has_ring_0='yes'
         elif [ "$arg" = "has_ring_1" ]; then
+            has_ring_0='yes'
             has_ring_1='yes'
         elif [ "$arg" = "has_ring_2" ]; then
+            has_ring_0='yes'
+            has_ring_1='yes'
             has_ring_2='yes'
         elif [ "$arg" = "has_staging" ]; then
             has_staging='yes'
@@ -112,6 +115,7 @@ function sync_prj() {
 }
 
 function start_creating() {
+    echo "Start checking $target $arch"
     for target in "$targets"; do
         # Rings part
         if [ "$has_ring_0" = "yes" ]; then
