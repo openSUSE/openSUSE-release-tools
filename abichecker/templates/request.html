@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}ABI Check results for request  {{ request.id }}{% endblock %}
+{% block body %}
+{{ super() }}
+<h1>ABI Check results for request <a href="https://build.opensuse.org/request/show/{{request.id}}">{{ request.id}}</a></h1>
+        <ul>
+            {% for check in request.abichecks %}
+                <li>
+                    {{ check.src_project }}/{{ check.src_package
+                    }}@{{ check.src_rev }} -&gt; {{
+                    check.dst_project }}/{{ check.dst_package }}:
+                    <span class="boolean_{{ check.result }}">{{ "compatible" if check.result else "INCOMPATIBLE" }}</span>
+                    {% for check in request.abichecks %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <td>Repo</td>
+                                    <td>Lib</td>
+                                    <td>Repo</td>
+                                    <td>Lib</td>
+                                    <td>Arch</td>
+                                    <td>Result</td>
+                                    <td>Created</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in check.reports %}
+                                <tr>
+                                    <td>{{ r.src_repo }}</td>
+                                    <td>{{ r.src_lib }}</td>
+                                    <td>{{ r.dst_repo }}</td>
+                                    <td>{{ r.dst_lib }}</td>
+                                    <td>{{ r.arch }}</td>
+                                    <td><a href="{{ url_for('report', report_id = r.id) }}">
+                                            <span class="boolean_{{ r.result }}">{{ "compatible" if r.result else "INCOMPATIBLE" }}</span></a></td>
+                                    <td>{{ r.t_created }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endfor %}
+                </li>
+            {% endfor %}
+        </ul>
+{% endblock %}
+
+<!-- vim: sw=4 et
+-->

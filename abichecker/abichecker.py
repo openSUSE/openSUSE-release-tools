@@ -325,8 +325,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.text_summary = ''
         ret = ReviewBot.ReviewBot.check_one_request(self, req)
 
-        self.save_reports_to_db(req)
-
         result = None
         if ret is not None:
             state = 'done'
@@ -337,6 +335,9 @@ class ABIChecker(ReviewBot.ReviewBot):
             #if state is None and not self.text_summary:
             #    self.text_summary = 'abichecker will take a look later'
             state = 'seen'
+
+        self.save_reports_to_db(req, state, result)
+
         if commentid:
             self.commentapi.delete(commentid)
         self.post_comment(req, state, result)
@@ -348,10 +349,20 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return ret
 
-    def save_reports_to_db(self, req):
+    def save_reports_to_db(self, req, state, result):
+        request = self.session.query(DB.Request).filter(DB.Request.id == req.reqid).one()
+        if request:
+            self.session.query(DB.ABICheck).filter(DB.ABICheck.request_id == req.reqid).delete()
+        else:
+            request = DB.Request(id = req.reqid,
+                    state = state,
+                    result = result,
+                    )
+        self.session.add(request)
+        self.session.commit()
         for r in self.reports:
             abicheck = DB.ABICheck(
-                    request_id = req.reqid,
+                    request = request,
                     src_project = r.src_project,
                     src_package = r.src_package,
                     src_rev = r.src_rev,
@@ -379,9 +390,9 @@ class ABIChecker(ReviewBot.ReviewBot):
                         )
                 self.session.add(libreport)
                 self.session.commit()
-                self.text_summary += "* %s: [%s](%s/%d/%d)\n"%(lr.dst_lib,
+                self.text_summary += "* %s: [%s](%s/report/%d)\n"%(lr.dst_lib,
                     "compatible" if lr.result else "***INCOMPATIBLE***",
-                    WEB_URL, abicheck.id, libreport.id)
+                    WEB_URL, libreport.id)
 
         self.reports = []
 

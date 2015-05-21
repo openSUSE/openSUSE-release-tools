@@ -40,30 +40,23 @@ app.config.from_object(__name__)
 @app.route('/')
 def list():
     session = db_session()
-    reports = session.query(ABICheck).all()
+    requests = session.query(Request).all()
 
-    return render_template('index.html', reports = reports)
+    return render_template('index.html', requests = requests)
 
 @app.route('/request/<int:request_id>')
 def request(request_id):
     session = db_session()
-    reports = session.query(ABICheck).filter(ABICheck.request_id == request_id)
+    request = session.query(Request).filter(Request.id == request_id).one()
 
-    return render_template('index.html', reports = reports)
+    return render_template('request.html', request = request)
 
 
 @app.route('/report/<int:report_id>')
-def show(report_id):
-    session = db_session()
-    report = session.query(ABICheck).filter(ABICheck.id == report_id).one()
-
-    return render_template('libreport.html', report = report)
-
-@app.route('/report/<int:report_id>/<int:libreport_id>')
-def libreport(report_id, libreport_id):
+def report(report_id):
     session = db_session()
 
-    report = session.query(LibReport).filter(LibReport.id == libreport_id).one()
+    report = session.query(LibReport).filter(LibReport.id == report_id).one()
 
     fn = os.path.join(CACHEDIR, report.htmlreport)
 
