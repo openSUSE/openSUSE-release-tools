@@ -3,6 +3,7 @@
 {% block body %}
 {{ super() }}
 <h1>ABI Check results for request <a href="https://build.opensuse.org/request/show/{{request.id}}">{{ request.id}}</a></h1>
+State: {{ request.state }}, Result: {{ request.result }}<p/>
         <ul>
             {% for check in request.abichecks %}
                 <li>
