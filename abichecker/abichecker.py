@@ -737,6 +737,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             if h['sourcepackage']:
                 continue
             pkgname = h['name']
+            if pkgname.endswith('-32bit') or pkgname.endswith('-64bit'):
+                # -32bit and -64bit packages are just repackaged, so
+                # we skip them and only check the original one.
+                continue
             self.logger.debug(pkgname)
             if not self.disturl_matches_md5(h['disturl'], srcinfo.srcmd5):
                 raise DistUrlMismatch(h['disturl'], srcinfo.srcmd5)
@@ -758,13 +762,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         liblist = dict()
         # check whether debug info exists for each lib
         for pkgname in sorted(lib_packages.keys()):
-            # 32bit debug packages have special names
-            if pkgname.endswith('-32bit'):
-                dpkgname = pkgname[:-len('-32bit')]+'-debuginfo-32bit'
-            elif pkgname.endswith('-64bit'):
-                dpkgname = pkgname[:-len('-64bit')]+'-debuginfo-64bit'
-            else:
-                dpkgname = pkgname+'-debuginfo'
+            dpkgname = pkgname+'-debuginfo'
             if not dpkgname in pkgs:
                 missing_debuginfo.add((prj, pkg, repo, arch, pkgname, None))
                 continue
