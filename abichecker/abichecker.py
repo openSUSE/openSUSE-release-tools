@@ -104,6 +104,13 @@ class MissingDebugInfo(Exception):
     def __str__(self):
         return self.msg
 
+class FetchError(Exception):
+    def __init__(self, msg):
+        Exception.__init__(self)
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
 class LogToDB(logging.Filter):
     def __init__(self, session):
         self.session = session
@@ -224,6 +231,11 @@ class ABIChecker(ReviewBot.ReviewBot):
                 self.text_summary += str(e) + "\n"
                 ret = False
                 continue
+            except FetchError, e:
+                self.logger.error(e)
+                if ret == True: # need to check again
+                    ret = None
+                continue
 
             try:
                 src_libs = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
@@ -239,6 +251,11 @@ class ABIChecker(ReviewBot.ReviewBot):
             except MissingDebugInfo, e:
                 self.text_summary += str(e) + "\n"
                 ret = False
+                continue
+            except FetchError, e:
+                self.logger.error(e)
+                if ret == True: # need to check again
+                    ret = None
                 continue
 
             # create reverse index for aliases in the source project
@@ -376,6 +393,8 @@ class ABIChecker(ReviewBot.ReviewBot):
             request = self.session.query(DB.Request).filter(DB.Request.id == req.reqid).one()
             self.session.query(DB.ABICheck).filter(DB.ABICheck.request_id == request.id).delete()
             self.session.flush()
+            request.state = state
+            request.result = result
         except sqlalchemy.orm.exc.NoResultFound, e:
             request = DB.Request(id = req.reqid,
                     state = state,
@@ -490,15 +509,11 @@ class ABIChecker(ReviewBot.ReviewBot):
                 self.logger.debug("extract %s"%fn)
                 with open(tmpfile, 'wb') as tmpfd:
                     if not fn in downloaded:
-                        self.logger.error("%s was not downloaded!"%fn)
-                        # XXX: record error
-                        continue
+                        raise FetchError("%s was not downloaded!"%fn)
                     self.logger.debug(downloaded[fn])
                     r = subprocess.call(['rpm2cpio', downloaded[fn]], stdout=tmpfd, close_fds=True)
                     if r != 0:
-                        self.logger.error("failed to extract %s!"%fn)
-                        # XXX: record error
-                        continue
+                        raise FetchError("failed to extract %s!"%fn)
                     tmpfd.close()
                     cpio = CpioRead(tmpfile)
                     cpio.read()
@@ -532,9 +547,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         downloaded = dict()
         for fn in filenames:
             if not fn in mtimes:
-                self.logger.error("missing mtime information for %s, can't check"% fn)
-                # XXX record error
-                continue
+                raise FetchError("missing mtime information for %s, can't check"% fn)
             repodir = os.path.join(DOWNLOADS, package, project, repo)
             if not os.path.exists(repodir):
                 os.makedirs(repodir)
@@ -580,8 +593,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         try:
             r = osc.core.http_GET(u)
         except urllib2.HTTPError, e:
-            self.logger.error('failed to fetch header information')
-            raise StopIteration
+            raise FetchError('failed to fetch header information: %s'%e)
         tmpfile = NamedTemporaryFile(prefix="cpio-", delete=False)
         for chunk in r:
             tmpfile.write(chunk)
@@ -599,8 +611,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 fh.seek(ch.dataoff, os.SEEK_SET)
                 h = self.readRpmHeaderFD(fh)
                 if h is None:
-                    self.logger.warn("failed to read rpm header for %s"%ch.filename)
-                    continue
+                    raise FetchError("failed to read rpm header for %s"%ch.filename)
                 m = rpm_re.match(ch.filename)
                 if m:
                     yield m.group(1), h
