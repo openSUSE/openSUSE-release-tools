@@ -12,10 +12,26 @@ fi
 if [ $# -eq 0 ]; then
     targets='Factory'
     arch='x86_64'
+    has_ring_0='yes'
+    has_ring_1='yes'
+    has_ring_2='yes'
+    has_staging='yes'
 else
     for arg in $@;do
         if [ "$arg" = "x86_64" -o "$arg" = "ppc64le" ]; then
             arch="$arg"
+        elif [ "$arg" = "has_ring_all" ]; then
+            has_ring_0='yes'
+            has_ring_1='yes'
+            has_ring_2='yes'
+        elif [ "$arg" = "has_ring_0" ]; then
+            has_ring_0='yes'
+        elif [ "$arg" = "has_ring_1" ]; then
+            has_ring_1='yes'
+        elif [ "$arg" = "has_ring_2" ]; then
+            has_ring_2='yes'
+        elif [ "$arg" = "has_staging" ]; then
+            has_staging='yes'
         else
             targets+="$arg"
         fi
@@ -98,43 +114,50 @@ function sync_prj() {
 function start_creating() {
     for target in "$targets"; do
         # Rings part
-        sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap-$arch $arch
-        sync_prj openSUSE:$target:Rings:1-MinimalX/standard $target-minimalx-$arch $arch
+        if [ "$has_ring_0" = "yes" ]; then
+            sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap-$arch $arch
+        fi
+        if [ "$has_ring_1" = "yes" ]; then
+            sync_prj openSUSE:$target:Rings:1-MinimalX/standard $target-minimalx-$arch $arch
+            regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap-$arch $target-minimalx-$arch $arch
+        fi
+        if [ "$has_ring_2" = "yes" ]; then
+            sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd-$arch $arch
+            regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap-$arch $target-minimalx-$arch $target-testdvd-$arch $arch
+            perl $SCRIPTDIR/rebuildpacs.pl openSUSE:$target:Rings:2-TestDVD standard $arch
+        fi
 
-        regenerate_pl openSUSE:$target:Rings:1-MinimalX $target 1 $target-bootstrap-$arch $target-minimalx-$arch $arch
+        # Staging Project part
+        if [ "$has_staging" = "yes" ]; then
+            projects=$(osc api "/search/project/id?match=starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
 
-        sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd-$arch $arch
-        regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap-$arch $target-minimalx-$arch $target-testdvd-$arch $arch
-
-        projects=$(osc api "/search/project/id?match=starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
-        projects+=" openSUSE:$target:Rings:2-TestDVD"
-
-        for prj in $projects; do
-            l=$(echo $prj | cut -d: -f4)
-            use_bc="staging_$target:$l-bc-$arch"
-            if [ "$l" = "A" -o "$l" = "B" ]; then
-                use_bc=
-            fi
-            if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
-
-                echo "Checking $target:$l-$arch"
-                if [ -n "$use_bc" ]; then
-                    sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc-$arch" $arch
+            for prj in $projects; do
+                l=$(echo $prj | cut -d: -f4)
+                use_bc="staging_$target:$l-bc-$arch"
+                if [ "$l" = "A" -o "$l" = "B" ]; then
+                    use_bc=
                 fi
-                sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l-$arch $arch
-                regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l-$arch $arch
-            fi
+                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
+                    echo "Checking $target:$l-$arch"
+                    if [ -n "$use_bc" ]; then
+                        sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc-$arch" $arch
+                    fi
+                    sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l-$arch $arch
+                    regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l-$arch $arch
+                fi
 
-            if [[ ( $prj =~ :DVD ) || ( $prj =~ Rings:2-TestDVD ) ]]; then
-                perl $SCRIPTDIR/rebuildpacs.pl $prj standard $arch
-            fi
+                if [[ $prj =~ :DVD ]]; then
+                    echo "Rebuildpacs $prj"
+                    perl $SCRIPTDIR/rebuildpacs.pl $prj standard $arch
+                fi
 
-            if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
-                echo "Checking $target:$l:DVD-$arch"
-                sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd-$arch" $arch
-                regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l-$arch "staging_$target:$l-dvd-$arch" $arch
-            fi
-        done
+                if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
+                    echo "Checking $target:$l:DVD-$arch"
+                    sync_prj openSUSE:$target:Staging:$l:DVD/standard "staging_$target:$l-dvd-$arch" $arch
+                    regenerate_pl "openSUSE:$target:Staging:$l:DVD" $target 2 $use_bc staging_$target:$l-$arch "staging_$target:$l-dvd-$arch" $arch
+                fi
+            done
+        fi
     done
 }
 
