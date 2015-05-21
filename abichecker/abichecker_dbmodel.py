@@ -48,7 +48,7 @@ class LibReport(Base):
     __tablename__ = 'libreport'
     id = Column(Integer, primary_key=True)
     submission_id = Column(Integer, ForeignKey('abicheck.id'))
-    abicheck = relationship(ABICheck, backref=backref('reports', order_by=id))
+    abicheck = relationship(ABICheck, backref=backref('reports', order_by=id, cascade="all, delete-orphan"))
 
     src_repo = Column(String(255), nullable=False)
     src_lib = Column(String(255), nullable=False)
