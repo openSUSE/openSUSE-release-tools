@@ -316,9 +316,10 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
 
         commentid, state, result = self.find_abichecker_comment(req)
-        if state == 'done':
-            self.logger.debug("request %s already done, result: %s"%(req.reqid, result))
-            return
+        if self.no_review:
+            if state == 'done':
+                self.logger.debug("request %s already done, result: %s"%(req.reqid, result))
+                return
 
         self.reports = []
         self.text_summary = ''
