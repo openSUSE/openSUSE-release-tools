@@ -28,6 +28,8 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
+from xdg.BaseDirectory import save_data_path
+
 Base = declarative_base()
 
 class Request(Base):
@@ -82,7 +84,7 @@ class LibReport(Base):
     t_updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 def db_engine():
-    return create_engine('sqlite:///abichecker.db')
+    return create_engine('sqlite:///%s/abichecker.db'%save_data_path('opensuse.org', 'abichecker'))
 
 def db_session():
     engine = db_engine()
