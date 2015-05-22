@@ -71,7 +71,7 @@ class ReviewBot(object):
             good = self.check_one_request(req)
 
             if good is None:
-                self.logger.info("ignoring")
+                self.logger.info("%s ignored"%req.reqid)
             elif good:
                 self.logger.info("%s is good"%req.reqid)
                 self._set_review(req, 'accepted')
