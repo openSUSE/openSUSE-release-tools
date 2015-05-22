@@ -944,9 +944,13 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         src_rev = opts.revision
         print self.checker.check_source_submission(src_project, src_package, src_rev, dst_project, dst_package)
 
+    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_project(self, subcmd, opts, project, typename):
-        self.checker.set_request_ids_project(project, typename)
-        self.checker.check_requests()
+        def work():
+            self.checker.set_request_ids_project(project, typename)
+            self.checker.check_requests()
+
+        self.runner(work, opts.interval)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
