@@ -448,9 +448,11 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.session.add(abicheck)
             self.session.commit()
             if r.result:
-                self.text_summary += "%s seems to be ABI [compatible](%s/%d):\n\n"%(r.dst_package, WEB_URL, abicheck.id)
+                self.text_summary += "Good news from ABI check, "
+                self.text_summary += "%s seems to be ABI [compatible](%s/request/%s):\n\n"%(r.dst_package, WEB_URL, req.reqid)
             else:
-                self.text_summary += "Warning: %s may be ABI [**INCOMPATIBLE**](%s/%d):\n\n"%(r.dst_package, WEB_URL, abicheck.id)
+                self.text_summary += "Warning: bad news from ABI check, "
+                self.text_summary += "%s may be ABI [**INCOMPATIBLE**](%s/request/%s):\n\n"%(r.dst_package, WEB_URL, req.reqid)
             for lr in r.reports:
                 libreport = DB.LibReport(
                         abicheck = abicheck,
@@ -464,7 +466,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         )
                 self.session.add(libreport)
                 self.session.commit()
-                self.text_summary += "* %s: [%s](%s/report/%d)\n"%(lr.dst_lib,
+                self.text_summary += "* %s (%s): [%s](%s/report/%d)\n"%(lr.dst_lib, lr.arch,
                     "compatible" if lr.result else "***INCOMPATIBLE***",
                     WEB_URL, libreport.id)
 
