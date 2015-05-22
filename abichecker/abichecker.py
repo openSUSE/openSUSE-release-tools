@@ -136,6 +136,7 @@ class LogToDB(logging.Filter):
         if self.request_id is not None and record.levelno >= logging.INFO:
             logentry = DB.Log(request_id = self.request_id, line = record.getMessage())
             self.session.add(logentry)
+            self.session.commit()
         return True
 
 class ABIChecker(ReviewBot.ReviewBot):
