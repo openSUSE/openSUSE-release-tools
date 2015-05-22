@@ -502,9 +502,8 @@ class ABIChecker(ReviewBot.ReviewBot):
         msg = "<!-- abichecker state=%s%s -->\n"%(state, ' result=%s'%result if result else '')
         msg += self.text_summary
 
-        if self.dryrun:
-            self.logger.info("add comment: %s"%msg)
-        else:
+        self.logger.info("add comment: %s"%msg)
+        if not self.dryrun:
             #self.commentapi.delete_from_where_user(self.review_user, request_id = req.reqid)
             self.commentapi.add_comment(request_id = req.reqid, comment = msg)
 
