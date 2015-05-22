@@ -137,10 +137,15 @@ class ABIChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         self.no_review = False
+        self.force = False
         if 'no_review' in kwargs:
             if kwargs['no_review'] == True:
                 self.no_review = True
             del kwargs['no_review']
+        if 'force' in kwargs:
+            if kwargs['force'] == True:
+                self.force = True
+            del kwargs['force']
 
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
@@ -357,15 +362,23 @@ class ABIChecker(ReviewBot.ReviewBot):
 
     def check_one_request(self, req):
 
-        self.dblogger.request_id = req.reqid
-
         self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
 
+        if self.no_review and not self.force and self.check_request_already_done(req.reqid):
+            self.logger.debug("skip request %s which is already done")
+            # TODO: check if the request was seen before and we
+            # didn't reach a final state for too long
+            return None
+
         commentid, state, result = self.find_abichecker_comment(req)
-        if self.no_review:
-            if state == 'done':
-                self.logger.debug("request %s already done, result: %s"%(req.reqid, result))
-                return
+## using comments instead of db would be an options for bots
+## that use no db
+#        if self.no_review:
+#            if state == 'done':
+#                self.logger.debug("request %s already done, result: %s"%(req.reqid, result))
+#                return
+
+        self.dblogger.request_id = req.reqid
 
         self.reports = []
         self.text_summary = ''
@@ -396,6 +409,16 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.dblogger.request_id = None
 
         return ret
+
+    def check_request_already_done(self, reqid):
+        try:
+            request = self.session.query(DB.Request).filter(DB.Request.id == reqid).one()
+            if request.state == 'done':
+                return True
+        except sqlalchemy.orm.exc.NoResultFound, e:
+            pass
+
+        return False
 
     def save_reports_to_db(self, req, state, result):
         try:
@@ -859,6 +882,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
+        parser.add_option("--force", action="store_true", help="recheck requests that are already considered done")
         parser.add_option("--no-review", action="store_true", help="don't actually accept or decline, just comment")
         parser.add_option("--web-url", metavar="URL", help="URL of web service")
         return parser
@@ -886,6 +910,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 dryrun = self.options.dry, \
                 no_review = self.options.no_review, \
                 user = user, \
+                force = self.options.force, \
                 logger = self.logger)
 
     @cmdln.option('-r', '--revision', metavar="number", type="int", help="revision number")
