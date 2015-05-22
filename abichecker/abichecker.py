@@ -49,7 +49,7 @@ from collections import namedtuple
 from osclib.pkgcache import PkgCache
 from osclib.comments import CommentAPI
 
-from xdg.BaseDirectory import save_cache_path
+from abichecker_common import CACHEDIR
 
 import ReviewBot
 
@@ -65,11 +65,11 @@ REPO_WHITELIST = {
         }
 
 # Directory where download binary packages.
+# TODO: move to CACHEDIR, just here for consistency with repochecker
 BINCACHE = os.path.expanduser('~/co')
 DOWNLOADS = os.path.join(BINCACHE, 'downloads')
 
 # Where the cache files are stored
-CACHEDIR = save_cache_path('opensuse-abi-checker')
 UNPACKDIR = os.path.join(CACHEDIR, 'unpacked')
 
 so_re = re.compile(r'^(?:/usr)?/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')

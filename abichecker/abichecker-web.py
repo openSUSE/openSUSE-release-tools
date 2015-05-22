@@ -22,9 +22,7 @@
 import os
 import sys
 from abichecker_dbmodel import *
-from xdg.BaseDirectory import save_cache_path
-
-CACHEDIR = save_cache_path('opensuse-abi-checker')
+from abichecker_common import CACHEDIR
 
 from flask import Flask, request, session, url_for, redirect, \
 render_template, send_file, abort, g, flash, _app_ctx_stack
