@@ -76,7 +76,7 @@ so_re = re.compile(r'^(?:/usr)?/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
 debugpkg_re = re.compile(r'-debug(?:source|info)(?:-(?:32|64)bit)?$')
 disturl_re = re.compile(r'^obs://[^/]+/(?P<prj>[^/]+)/(?P<repo>[^/]+)/(?P<md5>[0-9a-f]{32})-(?P<pkg>.*)$')
 
-comment_marker_re = re.compile(r'<!-- abichecker state=(?P<state>done|seen)(?: result=(?P<result>passed|failed))? -->')
+comment_marker_re = re.compile(r'<!-- abichecker state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined))? -->')
 
 # report for source submissions. contains multiple libresult for each library
 Report = namedtuple('Report', ('src_project', 'src_package', 'src_rev', 'dst_project', 'dst_package', 'reports', 'result'))
@@ -374,7 +374,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         result = None
         if ret is not None:
             state = 'done'
-            result = 'passed' if ret else 'failed'
+            result = 'accepted' if ret else 'declined'
         else:
             # we probably don't want abichecker to spam here
             # FIXME don't delete comment in this case
