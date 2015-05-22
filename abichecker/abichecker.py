@@ -90,6 +90,13 @@ class DistUrlMismatch(Exception):
     def __str__(self):
         return self.msg
 
+class SourceBroken(Exception):
+    def __init__(self, project, package):
+        Exception.__init__(self)
+        self.msg = '%s/%s has broken sources, needs rebase'%(project, package)
+    def __str__(self):
+        return self.msg
+
 class NoBuildSuccess(Exception):
     def __init__(self, project, package, md5):
         Exception.__init__(self)
@@ -214,6 +221,10 @@ class ABIChecker(ReviewBot.ReviewBot):
         except NotReadyYet, e:
             self.logger.info(e)
             return None
+        except SourceBroken, e:
+            self.logger.error(e)
+            self.text_summary += "**Error**: %s\n"%e
+            return False
 
         if not myrepos:
             self.text_summary += "**Error**: %s does not build against %s, can't check library ABIs\n\n"%(src_project, dst_project)
@@ -725,14 +736,16 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         for mr in matchrepos:
             if not (mr.srcrepo, mr.arch) in rmap:
-                self.logger.error("%s/%s had no build success"%(mr.srcrepo, arch))
+                self.logger.warn("%s/%s had no build success"%(mr.srcrepo, arch))
                 raise NotReadyYet(src_project, src_srcinfo.package, "no result")
             if rmap[(mr.srcrepo, mr.arch)]['dirty']:
-                self.logger.error("%s/%s dirty"%(mr.srcrepo, mr.arch))
+                self.logger.warn("%s/%s dirty"%(mr.srcrepo, mr.arch))
                 raise NotReadyYet(src_project, src_srcinfo.package, "dirty")
             code = rmap[(mr.srcrepo, mr.arch)]['code']
-            if code != 'succeeded':
-                self.logger.error("%s/%s not succeeded"%(mr.srcrepo, mr.arch))
+            if code == 'broken':
+                raise SourceBroken(src_project, src_srcinfo.package)
+            if code != 'succeeded' and code != 'excluded':
+                self.logger.warn("%s/%s not succeeded (%s)"%(mr.srcrepo, mr.arch, code))
                 raise NotReadyYet(src_project, src_srcinfo.package, code)
 
     def findrepos(self, src_project, src_srcinfo, dst_project, dst_srcinfo):
