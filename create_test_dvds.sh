@@ -115,8 +115,8 @@ function sync_prj() {
 }
 
 function start_creating() {
-    echo "Start checking $target $arch"
     for target in "$targets"; do
+        echo "Start checking $target $arch"
         # Rings part
         if [ "$has_ring_0" = "yes" ]; then
             sync_prj openSUSE:$target:Rings:0-Bootstrap/standard/ $target-bootstrap-$arch $arch
