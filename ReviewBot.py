@@ -26,6 +26,8 @@ from optparse import OptionParser
 import cmdln
 from collections import namedtuple
 from osclib.memoize import memoize
+import signal
+import datetime
 
 try:
     from xml.etree import cElementTree as ET
@@ -342,6 +344,35 @@ class CommandLineInterface(cmdln.Cmdln):
         self.checker.set_request_ids_search_review()
         self.checker.check_requests()
 
+    def runner(self, workfunc, interval):
+        """ runs the specified callback every <interval> minutes or
+        once if interval is None or 0
+        """
+        class ExTimeout(Exception):
+            """raised on timeout"""
+
+        if interval:
+            def alarm_called(nr, frame):
+                raise ExTimeout()
+            signal.signal(signal.SIGALRM, alarm_called)
+
+        while True:
+            try:
+                workfunc()
+            except Exception, e:
+                self.logger.error(e)
+
+            if interval:
+                self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
+                signal.alarm(interval*60)
+                try:
+                    raw_input()
+                except ExTimeout:
+                    pass
+                signal.alarm(0)
+                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                continue
+            break
 
 if __name__ == "__main__":
     app = CommandLineInterface()
