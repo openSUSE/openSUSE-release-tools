@@ -185,13 +185,17 @@ class ABIChecker(ReviewBot.ReviewBot):
         dst_srcinfo = self.get_sourceinfo(dst_project, dst_package)
         self.logger.debug('dest sourceinfo %s', pformat(dst_srcinfo))
         if dst_srcinfo is None:
-            self.logger.info("%s/%s does not exist, skip"%(dst_project, dst_package))
-            return None
+            msg = "%s/%s seems to be a new package, no need to review"%(dst_project, dst_package)
+            self.logger.info(msg)
+            self.text_summary += msg + "\n"
+            return True
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         self.logger.debug('src sourceinfo %s', pformat(src_srcinfo))
         if src_srcinfo is None:
-            self.logger.info("%s/%s@%s does not exist, skip"%(src_project, src_package, src_rev))
-            return None
+            msg = "%s/%s@s does not exist!? can't check"%(src_project, src_package, src_rev)
+            self.logger.error(msg)
+            self.text_summary += msg + "\n"
+            return False
 
         if os.path.exists(UNPACKDIR):
             shutil.rmtree(UNPACKDIR)
@@ -376,7 +380,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
 
         if self.no_review and not self.force and self.check_request_already_done(req.reqid):
-            self.logger.debug("skip request %s which is already done")
+            self.logger.debug("skip request %s which is already done", req.reqid)
             # TODO: check if the request was seen before and we
             # didn't reach a final state for too long
             return None
@@ -403,6 +407,8 @@ class ABIChecker(ReviewBot.ReviewBot):
         if ret is not None:
             state = 'done'
             result = 'accepted' if ret else 'declined'
+            if self.text_summary == '':
+                self.text_summary = "ABI checker result: %s"%result
         else:
             # we probably don't want abichecker to spam here
             # FIXME don't delete comment in this case
@@ -414,6 +420,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         if commentid:
             self.commentapi.delete(commentid)
+
         self.post_comment(req, state, result)
 
         self.review_messages = { 'accepted': self.text_summary, 'declined': self.text_summary }
