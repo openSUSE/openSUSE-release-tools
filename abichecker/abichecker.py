@@ -393,7 +393,11 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.reports = []
         self.text_summary = ''
-        ret = ReviewBot.ReviewBot.check_one_request(self, req)
+        try:
+            ret = ReviewBot.ReviewBot.check_one_request(self, req)
+        except Exception, e:
+            self.logger.error("unhandled exception in ABI checker: %s(%s)"%(type(e), e))
+            ret = None
 
         result = None
         if ret is not None:
