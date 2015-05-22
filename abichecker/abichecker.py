@@ -400,7 +400,8 @@ class ABIChecker(ReviewBot.ReviewBot):
     def save_reports_to_db(self, req, state, result):
         try:
             request = self.session.query(DB.Request).filter(DB.Request.id == req.reqid).one()
-            self.session.query(DB.ABICheck).filter(DB.ABICheck.request_id == request.id).delete()
+            for i in self.session.query(DB.ABICheck).filter(DB.ABICheck.request_id == request.id).all():
+                self.session.delete(i)
             self.session.flush()
             request.state = state
             request.result = result
