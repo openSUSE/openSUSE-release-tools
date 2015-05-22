@@ -40,7 +40,7 @@ app.config.from_object(__name__)
 @app.route('/')
 def list():
     session = db_session()
-    requests = session.query(Request).all()
+    requests = session.query(Request).order_by(Request.id.desc()).limit(200).all()
 
     return render_template('index.html', requests = requests)
 
