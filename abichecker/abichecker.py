@@ -421,7 +421,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.save_reports_to_db(req, state, result)
 
-        if commentid:
+        if commentid and not self.dryrun:
             self.commentapi.delete(commentid)
 
         self.post_comment(req, state, result)
