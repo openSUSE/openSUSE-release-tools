@@ -2,6 +2,8 @@
 Description=check ABI of submit requests
 
 [Service]
-ExecStart=/usr/share/osc-plugin-factory/abichecker/abichecker.py --no-review --verbose --interval 15 -A https://api.suse.de --web-url=http://abichecker.suse.de project SUSE:Maintenance maintenance_incident
+Type=simple
+ExecStart=/usr/bin/screen -DmS abichecker /usr/share/osc-plugin-factory/abichecker/abichecker.py --no-review --verbose -A https://api.suse.de --web-url=http://abichecker.suse.de project --interval 15 SUSE:Maintenance maintenance_incident
+ExecStop=/usr/bin/screen -S abichecker -X quit
 WorkingDirectory=/usr/share/osc-plugin-factory/abichecker
-User=_opensuse-abichecker
+User=_opensuse.org-abi-checker
