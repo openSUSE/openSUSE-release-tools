@@ -55,6 +55,9 @@ import ReviewBot
 
 WEB_URL=None
 
+# build mapping between source repos and target repos
+MR = namedtuple('MatchRepo', ('srcrepo', 'dstrepo', 'arch'))
+
 # some project have more repos than what we are interested in
 REPO_WHITELIST = {
         'openSUSE:Factory':      'standard',
@@ -204,22 +207,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         if os.path.exists(UNPACKDIR):
             shutil.rmtree(UNPACKDIR)
 
-        # check if target project is a project link where the
-        # source don't actually build (like openSUSE:...:Update).
-        originproject = self.get_originproject(dst_project, dst_package)
-        if originproject is not None:
-            self.logger.debug("origin project %s", originproject)
-            url = osc.core.makeurl(self.apiurl, ('build', dst_project, '_result'), { 'package': dst_package })
-            root = ET.parse(osc.core.http_GET(url)).getroot()
-            alldisabled = True
-            for node in root.findall('status'):
-                if node.get('code') != 'disabled':
-                    alldisabled = False
-            if alldisabled:
-                self.logger.debug("all repos disabled, using originproject %s"%originproject)
-            else:
-                originproject = None
-
         try:
             # compute list of common repos to find out what to compare
             myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
@@ -239,10 +226,41 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.logger.info("no matching repos, can't compare")
             return False
 
-        # can't do that earlier as the repo match must use original
-        # dst
+        # *** beware of nasty maintenance stuff ***
+        # if the destination is a maintained project we need to
+        # mangle our comparison target and the repo mapping
+        originproject, originpackage = self._maintenance_hack(dst_project, dst_package)
         if originproject is not None:
+            if originpackage is not None:
+                dst_package = originpackage
+
+            origin_srcinfo = self.get_sourceinfo(originproject, dst_package)
+            if origin_srcinfo is None:
+                msg = "%s/%s invalid"%(originproject, dst_package)
+                self.logger.error(msg)
+                self.text_summary += msg + "\n"
+                return False
+            originrepos = self.findrepos(originproject, origin_srcinfo, dst_project, dst_srcinfo)
+            mapped = dict()
+            for mr in originrepos:
+                mapped[(mr.dstrepo, mr.arch)] = mr
+
+            self.logger.debug("mapping: %s", pformat(mapped))
+
+            # set of source repo name, target repo name, arch
+            matchrepos = set()
+            for mr in myrepos:
+                if not (mr.dstrepo, mr.arch) in mapped:
+                    msg = "couldn't find repo %s/%s in %s/%s"(mr.dstrepo, mr.arch, originproject, dst_package)
+                    self.logger.error(msg)
+                    return False
+                matchrepos.add(MR(mr.srcrepo, mapped[(mr.dstrepo, mr.arch)].srcrepo, mr.arch))
+
+            myrepos = matchrepos
+            self.logger.debug("new repo map: %s", pformat(myrepos))
+
             dst_project = originproject
+            dst_srcinfo = origin_srcinfo
 
         notes = []
         libresults = []
@@ -369,6 +387,52 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return ret
 
+    def _maintenance_hack(self, prj, pkg):
+        originproject = None
+        originpackage = None
+
+        # find the maintenance project
+        url = osc.core.makeurl(self.apiurl, ('search', 'project', 'id'),
+            "match=(maintenance/maintains/@project='%s'+and+attribute/@name='%s')"%(prj, osc.conf.config['maintenance_attribute']))
+        root = ET.parse(osc.core.http_GET(url)).getroot()
+        if root is not None:
+            node = root.find('project')
+            if node is not None:
+                # check if target project is a project link where the
+                # sources don't actually build (like openSUSE:...:Update). That
+                # is the case if no update was released yet.
+                # XXX: TODO: do check for whether the package builds here first
+                originproject = self.get_originproject(prj, pkg)
+                if originproject is not None:
+                    self.logger.debug("origin project %s", originproject)
+                    url = osc.core.makeurl(self.apiurl, ('build', prj, '_result'), { 'package': pkg })
+                    root = ET.parse(osc.core.http_GET(url)).getroot()
+                    alldisabled = True
+                    for node in root.findall('status'):
+                        if node.get('code') != 'disabled':
+                            alldisabled = False
+                    if alldisabled:
+                        self.logger.debug("all repos disabled, using originproject %s"%originproject)
+                    else:
+                        originproject = None
+
+                else:
+                    mproject = node.attrib['name']
+                    # packages are only a link to packagename.incidentnr
+                    (linkprj, linkpkg) = self._get_linktarget(prj, pkg)
+                    if linkpkg is not None and linkprj == prj:
+                        self.logger.info("%s/%s links to %s"%(prj, pkg, linkpkg))
+                        m = re.match(r'.*\.(\d+)$', linkpkg)
+                        if m is None:
+                            raise FetchError("%s/%s is not a proper maintenance link %s"%(prj, pkg))
+                        incident = m.group(1)
+                        self.logger.info("is maintenance incident %s"%incident)
+                        originproject = "%s:%s"%(mproject, incident)
+                        originpackage = pkg+'.'+prj.replace(':', '_')
+
+        return (originproject, originpackage)
+
+
     def find_abichecker_comment(self, req):
         """Return previous comments (should be one)."""
         comments = self.commentapi.get_comments(request_id=req.reqid)
@@ -405,6 +469,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         except Exception, e:
             self.logger.error("unhandled exception in ABI checker: %s(%s)"%(type(e), e))
             ret = None
+            raise
 
         result = None
         if ret is not None:
@@ -776,9 +841,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         except urllib2.HTTPError:
             return None
 
-        # build mapping between source repos and target repos
-
-        MR = namedtuple('MatchRepo', ('srcrepo', 'dstrepo', 'arch'))
         # set of source repo name, target repo name, arch
         matchrepos = set()
         for repo in root.findall('repository'):
@@ -826,6 +888,18 @@ class ABIChecker(ReviewBot.ReviewBot):
             return False
         return True
 
+    # this is a bit magic. OBS allows to take the disturl md5 from the package
+    # and query the source info for that. We will then get the verify md5 that
+    # belongs to that md5.
+    def disturl_matches(self, disturl, prj, srcinfo):
+        md5 = self._md5_disturl(disturl)
+        info = self.get_sourceinfo(prj, srcinfo.package, rev = md5)
+        self.logger.debug(pformat(srcinfo))
+        self.logger.debug(pformat(info))
+        if info.verifymd5 == srcinfo.verifymd5:
+            return True
+        return False
+
     def compute_fetchlist(self, prj, pkg, srcinfo, repo, arch):
         """ scan binary rpms of the specified repo for libraries.
         Returns a set of packages to fetch and the libraries found
@@ -847,8 +921,8 @@ class ABIChecker(ReviewBot.ReviewBot):
                 # we skip them and only check the original one.
                 continue
             self.logger.debug(pkgname)
-            if not self.disturl_matches_md5(h['disturl'], srcinfo.srcmd5):
-                raise DistUrlMismatch(h['disturl'], srcinfo.srcmd5)
+            if not self.disturl_matches(h['disturl'], prj, srcinfo):
+                raise DistUrlMismatch(h['disturl'], srcinfo)
             pkgs[pkgname] = (rpmfn, h)
             if debugpkg_re.match(pkgname):
                 continue
