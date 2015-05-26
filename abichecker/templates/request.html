@@ -7,6 +7,7 @@ State: {{ request.state }}, Result: {{ request.result }}<p/>
             {% for check in request.abichecks %}
                 <h2>{{ check.src_project }}/{{ check.src_package }}@{{ check.src_rev }} -&gt; {{ check.dst_project }}/{{ check.dst_package }}</h2>
                     Overall: <span class="boolean_{{ check.result }}">{{ "compatible" if check.result else "INCOMPATIBLE" }}</span><p/>
+                    {% if request.abichecks[0].reports %}
                     {% for check in request.abichecks %}
                         <table>
                             <thead>
@@ -36,6 +37,7 @@ State: {{ request.state }}, Result: {{ request.result }}<p/>
                             </tbody>
                         </table>
                     {% endfor %}
+                    {% endif %}
             {% endfor %}
         {% if request.log %}
         <h2>Log</h2>

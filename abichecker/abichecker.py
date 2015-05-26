@@ -360,8 +360,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
                 cleanup()
 
-        if libresults != [] and overall is not None:
-            self.reports.append(Report(src_project, src_package, src_rev, dst_project, dst_package, libresults, overall))
+        self.reports.append(Report(src_project, src_package, src_rev, dst_project, dst_package, libresults, overall))
 
         # upload reports
 
@@ -469,11 +468,13 @@ class ABIChecker(ReviewBot.ReviewBot):
                     src_rev = r.src_rev,
                     dst_project = r.dst_project,
                     dst_package = r.dst_package,
-                    result = r.result,
+                    result = r.result if r.result != None else True, # XXX: workaround until we have migration
                     )
             self.session.add(abicheck)
             self.session.commit()
-            if r.result:
+            if r.result is None:
+                continue
+            elif r.result:
                 self.text_summary += "Good news from ABI check, "
                 self.text_summary += "%s seems to be ABI [compatible](%s/request/%s):\n\n"%(r.dst_package, WEB_URL, req.reqid)
             else:
