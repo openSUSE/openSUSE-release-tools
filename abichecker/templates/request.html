@@ -3,10 +3,47 @@
 {% block body %}
 {{ super() }}
 <h1>ABI Check results for request <a href="https://build.opensuse.org/request/show/{{request.id}}">{{ request.id}}</a></h1>
-State: {{ request.state }}, Result: {{ request.result }}<p/>
+    <table>
+        <tr>
+            <td>State</td>
+            <td>{{ request.state }}</td>
+        </tr>
+        <tr>
+            <td>Result</td>
+            <td>{{ request.result }}</td>
+        </tr>
+        <tr>
+            <td>First seen</td>
+            <td>{{ request.t_created }}</td>
+        </tr>
+        <tr>
+            <td>Last update</td>
+            <td>{{ request.t_updated }}</td>
+        </tr>
+    </table>
             {% for check in request.abichecks %}
-                <h2>{{ check.src_project }}/{{ check.src_package }}@{{ check.src_rev }} -&gt; {{ check.dst_project }}/{{ check.dst_package }}</h2>
-                    Overall: <span class="boolean_{{ check.result }}">{{ "compatible" if check.result else "INCOMPATIBLE" }}</span><p/>
+                <h2>{{ check.dst_project }}/{{ check.dst_package }}</h2>
+                    <table>
+                        <tr>
+                            <td>Source</td>
+                            <td>{{ check.src_project }}/{{ check.src_package }}</td>
+                        </tr>
+                        {% if check.src_rev %}
+                            <tr>
+                                <td>Revision</td>
+                                <td>{{ check.src_rev }}</td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <td>Target</td>
+                            <td>{{ check.dst_project }}/{{ check.dst_package }}<td/>
+                        </tr>
+                        <tr>
+                            <td>ABI</td>
+                            <td><span class="boolean_{{ check.result }}">{{ "compatible" if check.result else "INCOMPATIBLE" }}</span></td>
+                        </tr>
+                    </table>
+                    <h3>Detailed Reports</h3>
                     {% if request.abichecks[0].reports %}
                     {% for check in request.abichecks %}
                         <table>

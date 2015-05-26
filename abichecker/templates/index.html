@@ -7,6 +7,7 @@
             <thead>
                 <tr>
                     <td>ID</td>
+                    <td>Target</td>
                     <td>State</td>
                     <td>Result</td>
                     <td>Created</td>
@@ -20,6 +21,11 @@
                     <!--
                     <td><a href="https://build.opensuse.org/request/show/{{r.request_id}}">{{ r.request_id }}</a></td>
                     -->
+                    <td>
+                        {% for check in r.abichecks %}
+                            {{ check.dst_project }}/{{ check.dst_package }}<br/>
+                        {% endfor %}
+                    </td>
                     <td>{{ r.state }}</td>
                     <td>{{ r.result }}</td>
                     <td>{{ r.t_created }}</td>
