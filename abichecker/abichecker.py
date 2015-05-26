@@ -177,6 +177,9 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.commentapi = CommentAPI(self.apiurl)
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
+        # happens for maintenance incidents
+        if dst_project == None and src_package == 'patchinfo':
+            return None
         # default is to accept the review, just leave a note if
         # there were problems.
         ret = True
