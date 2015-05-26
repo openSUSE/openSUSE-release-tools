@@ -758,7 +758,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             code = rmap[(mr.srcrepo, mr.arch)]['code']
             if code == 'broken':
                 raise SourceBroken(src_project, src_srcinfo.package)
-            if code != 'succeeded' and code != 'excluded':
+            if code != 'succeeded' and code != 'locked' and code != 'excluded':
                 self.logger.warn("%s/%s not succeeded (%s)"%(mr.srcrepo, mr.arch, code))
                 raise NotReadyYet(src_project, src_srcinfo.package, code)
 
