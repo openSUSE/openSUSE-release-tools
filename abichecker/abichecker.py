@@ -130,6 +130,13 @@ class FetchError(Exception):
     def __str__(self):
         return self.msg
 
+class MaintenanceError(Exception):
+    def __init__(self, msg):
+        Exception.__init__(self)
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
 class LogToDB(logging.Filter):
     def __init__(self, session):
         self.session = session
@@ -180,6 +187,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.commentapi = CommentAPI(self.apiurl)
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
+
         # happens for maintenance incidents
         if dst_project == None and src_package == 'patchinfo':
             return None
@@ -199,7 +207,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         self.logger.debug('src sourceinfo %s', pformat(src_srcinfo))
         if src_srcinfo is None:
-            msg = "%s/%s@s does not exist!? can't check"%(src_project, src_package, src_rev)
+            msg = "%s/%s@%s does not exist!? can't check"%(src_project, src_package, src_rev)
             self.logger.error(msg)
             self.text_summary += msg + "\n"
             return False
@@ -229,38 +237,20 @@ class ABIChecker(ReviewBot.ReviewBot):
         # *** beware of nasty maintenance stuff ***
         # if the destination is a maintained project we need to
         # mangle our comparison target and the repo mapping
-        originproject, originpackage = self._maintenance_hack(dst_project, dst_package)
-        if originproject is not None:
+        try:
+            originproject, originpackage, origin_srcinfo, new_repo_map = self._maintenance_hack(dst_project, dst_srcinfo, myrepos)
+            if originproject is not None:
+                dst_project = originproject
             if originpackage is not None:
                 dst_package = originpackage
-
-            origin_srcinfo = self.get_sourceinfo(originproject, dst_package)
-            if origin_srcinfo is None:
-                msg = "%s/%s invalid"%(originproject, dst_package)
-                self.logger.error(msg)
-                self.text_summary += msg + "\n"
-                return False
-            originrepos = self.findrepos(originproject, origin_srcinfo, dst_project, dst_srcinfo)
-            mapped = dict()
-            for mr in originrepos:
-                mapped[(mr.dstrepo, mr.arch)] = mr
-
-            self.logger.debug("mapping: %s", pformat(mapped))
-
-            # set of source repo name, target repo name, arch
-            matchrepos = set()
-            for mr in myrepos:
-                if not (mr.dstrepo, mr.arch) in mapped:
-                    msg = "couldn't find repo %s/%s in %s/%s"(mr.dstrepo, mr.arch, originproject, dst_package)
-                    self.logger.error(msg)
-                    return False
-                matchrepos.add(MR(mr.srcrepo, mapped[(mr.dstrepo, mr.arch)].srcrepo, mr.arch))
-
-            myrepos = matchrepos
-            self.logger.debug("new repo map: %s", pformat(myrepos))
-
-            dst_project = originproject
-            dst_srcinfo = origin_srcinfo
+            if origin_srcinfo is not None:
+                dst_srcinfo = origin_srcinfo
+            if new_repo_map is not None:
+                myrepos = new_repo_map
+        except MaintenanceError, e:
+            self.text_summary += "**Error**: %s\n\n"%e
+            self.logger.error('%s', e)
+            return False
 
         notes = []
         libresults = []
@@ -387,13 +377,14 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return ret
 
-    def _maintenance_hack(self, prj, pkg):
+    def _maintenance_hack(self, dst_project, dst_srcinfo, myrepos):
+        pkg = dst_srcinfo.package
         originproject = None
         originpackage = None
 
         # find the maintenance project
         url = osc.core.makeurl(self.apiurl, ('search', 'project', 'id'),
-            "match=(maintenance/maintains/@project='%s'+and+attribute/@name='%s')"%(prj, osc.conf.config['maintenance_attribute']))
+            "match=(maintenance/maintains/@project='%s'+and+attribute/@name='%s')"%(dst_project, osc.conf.config['maintenance_attribute']))
         root = ET.parse(osc.core.http_GET(url)).getroot()
         if root is not None:
             node = root.find('project')
@@ -402,10 +393,10 @@ class ABIChecker(ReviewBot.ReviewBot):
                 # sources don't actually build (like openSUSE:...:Update). That
                 # is the case if no update was released yet.
                 # XXX: TODO: do check for whether the package builds here first
-                originproject = self.get_originproject(prj, pkg)
+                originproject = self.get_originproject(dst_project, pkg)
                 if originproject is not None:
                     self.logger.debug("origin project %s", originproject)
-                    url = osc.core.makeurl(self.apiurl, ('build', prj, '_result'), { 'package': pkg })
+                    url = osc.core.makeurl(self.apiurl, ('build', dst_project, '_result'), { 'package': pkg })
                     root = ET.parse(osc.core.http_GET(url)).getroot()
                     alldisabled = True
                     for node in root.findall('status'):
@@ -415,22 +406,45 @@ class ABIChecker(ReviewBot.ReviewBot):
                         self.logger.debug("all repos disabled, using originproject %s"%originproject)
                     else:
                         originproject = None
-
                 else:
                     mproject = node.attrib['name']
                     # packages are only a link to packagename.incidentnr
-                    (linkprj, linkpkg) = self._get_linktarget(prj, pkg)
-                    if linkpkg is not None and linkprj == prj:
-                        self.logger.info("%s/%s links to %s"%(prj, pkg, linkpkg))
+                    (linkprj, linkpkg) = self._get_linktarget(dst_project, pkg)
+                    if linkpkg is not None and linkprj == dst_project:
+                        self.logger.info("%s/%s links to %s"%(dst_project, pkg, linkpkg))
                         m = re.match(r'.*\.(\d+)$', linkpkg)
                         if m is None:
-                            raise FetchError("%s/%s is not a proper maintenance link %s"%(prj, pkg))
+                            raise MaintenanceError("%s/%s is not a proper maintenance link %s"%(dst_project, pkg))
                         incident = m.group(1)
                         self.logger.info("is maintenance incident %s"%incident)
-                        originproject = "%s:%s"%(mproject, incident)
-                        originpackage = pkg+'.'+prj.replace(':', '_')
 
-        return (originproject, originpackage)
+                        originproject = "%s:%s"%(mproject, incident)
+                        originpackage = pkg+'.'+dst_project.replace(':', '_')
+
+                        origin_srcinfo = self.get_sourceinfo(originproject, originpackage)
+                        if origin_srcinfo is None:
+                            raise MaintenanceError("%s/%s invalid"%(originproject, originpackage))
+
+                        # find the map of maintenance incident repos to destination repos
+                        originrepos = self.findrepos(originproject, origin_srcinfo, dst_project, dst_srcinfo)
+                        mapped = dict()
+                        for mr in originrepos:
+                            mapped[(mr.dstrepo, mr.arch)] = mr
+
+                        self.logger.debug("mapping: %s", pformat(mapped))
+
+                        # map the repos of the original request to the maintenance incident repos
+                        matchrepos = set()
+                        for mr in myrepos:
+                            if not (mr.dstrepo, mr.arch) in mapped:
+                                raise MaintenanceError("couldn't find repo %s/%s in %s/%s"(mr.dstrepo, mr.arch, originproject, originpackage))
+                            matchrepos.add(MR(mr.srcrepo, mapped[(mr.dstrepo, mr.arch)].srcrepo, mr.arch))
+
+                        myrepos = matchrepos
+                        dst_srcinfo = origin_srcinfo
+                        self.logger.debug("new repo map: %s", pformat(myrepos))
+
+        return (originproject, originpackage, dst_srcinfo, myrepos)
 
 
     def find_abichecker_comment(self, req):
@@ -467,9 +481,10 @@ class ABIChecker(ReviewBot.ReviewBot):
         try:
             ret = ReviewBot.ReviewBot.check_one_request(self, req)
         except Exception, e:
-            self.logger.error("unhandled exception in ABI checker: %s(%s)"%(type(e), e))
+            import traceback
+            self.logger.error("unhandled exception in ABI checker")
+            self.logger.error(traceback.format_exc())
             ret = None
-            raise
 
         result = None
         if ret is not None:
