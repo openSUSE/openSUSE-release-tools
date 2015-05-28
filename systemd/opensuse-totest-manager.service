@@ -2,6 +2,8 @@
 Description=openSUSE Factory ToTest Manager
 
 [Service]
-ExecStart=/usr/bin/osc totest
-User=_opensuse-totest-manager
-SyslogIdentifier=opensuse-totest-manager
+Type=simple
+ExecStart=/usr/bin/screen -DmS totest-manager /usr/share/osc-plugin-factory/totest-manager.py run --verbose --interval 15
+ExecStop=/usr/bin/screen -S totest-manager -X quit
+WorkingDirectory=/usr/share/osc-plugin-factory
+User=_opensuse.org-totest-manager
