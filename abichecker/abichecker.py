@@ -197,12 +197,15 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
+        report = Report(src_project, src_package, src_rev, dst_project, dst_package, [], None)
+
         dst_srcinfo = self.get_sourceinfo(dst_project, dst_package)
         self.logger.debug('dest sourceinfo %s', pformat(dst_srcinfo))
         if dst_srcinfo is None:
             msg = "%s/%s seems to be a new package, no need to review"%(dst_project, dst_package)
             self.logger.info(msg)
             self.text_summary += msg + "\n"
+            self.reports.append(report)
             return True
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         self.logger.debug('src sourceinfo %s', pformat(src_srcinfo))
@@ -210,6 +213,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             msg = "%s/%s@%s does not exist!? can't check"%(src_project, src_package, src_rev)
             self.logger.error(msg)
             self.text_summary += msg + "\n"
+            self.reports.append(report)
             return False
 
         if os.path.exists(UNPACKDIR):
@@ -220,18 +224,22 @@ class ABIChecker(ReviewBot.ReviewBot):
             myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
         except NoBuildSuccess, e:
             self.logger.info(e)
+            self.reports.append(report)
             return False
         except NotReadyYet, e:
             self.logger.info(e)
+            self.reports.append(report)
             return None
         except SourceBroken, e:
             self.logger.error(e)
             self.text_summary += "**Error**: %s\n"%e
+            self.reports.append(report)
             return False
 
         if not myrepos:
             self.text_summary += "**Error**: %s does not build against %s, can't check library ABIs\n\n"%(src_project, dst_project)
             self.logger.info("no matching repos, can't compare")
+            self.reports.append(report)
             return False
 
         # *** beware of nasty maintenance stuff ***
@@ -250,6 +258,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         except MaintenanceError, e:
             self.text_summary += "**Error**: %s\n\n"%e
             self.logger.error('%s', e)
+            self.reports.append(report)
             return False
 
         notes = []
@@ -368,7 +377,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
                 cleanup()
 
-        self.reports.append(Report(src_project, src_package, src_rev, dst_project, dst_package, libresults, overall))
+        self.reports.append(report._replace(result = overall, reports = libresults))
 
         # upload reports
 
@@ -411,12 +420,12 @@ class ABIChecker(ReviewBot.ReviewBot):
                     # packages are only a link to packagename.incidentnr
                     (linkprj, linkpkg) = self._get_linktarget(dst_project, pkg)
                     if linkpkg is not None and linkprj == dst_project:
-                        self.logger.info("%s/%s links to %s"%(dst_project, pkg, linkpkg))
+                        self.logger.debug("%s/%s links to %s"%(dst_project, pkg, linkpkg))
                         m = re.match(r'.*\.(\d+)$', linkpkg)
                         if m is None:
                             raise MaintenanceError("%s/%s is not a proper maintenance link %s"%(dst_project, pkg))
                         incident = m.group(1)
-                        self.logger.info("is maintenance incident %s"%incident)
+                        self.logger.debug("is maintenance incident %s"%incident)
 
                         originproject = "%s:%s"%(mproject, incident)
                         originpackage = pkg+'.'+dst_project.replace(':', '_')
@@ -461,7 +470,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.review_messages = ReviewBot.ReviewBot.DEFAULT_REVIEW_MESSAGES
 
         if self.no_review and not self.force and self.check_request_already_done(req.reqid):
-            self.logger.debug("skip request %s which is already done", req.reqid)
+            self.logger.info("skip request %s which is already done", req.reqid)
             # TODO: check if the request was seen before and we
             # didn't reach a final state for too long
             return None
@@ -529,6 +538,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         try:
             request = self.session.query(DB.Request).filter(DB.Request.id == req.reqid).one()
             for i in self.session.query(DB.ABICheck).filter(DB.ABICheck.request_id == request.id).all():
+                # yeah, we could be smarter here and update existing reports instead
                 self.session.delete(i)
             self.session.flush()
             request.state = state
@@ -548,7 +558,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     src_rev = r.src_rev,
                     dst_project = r.dst_project,
                     dst_package = r.dst_package,
-                    result = r.result if r.result != None else True, # XXX: workaround until we have migration
+                    result = r.result
                     )
             self.session.add(abicheck)
             self.session.commit()

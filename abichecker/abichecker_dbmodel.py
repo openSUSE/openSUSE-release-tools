@@ -61,7 +61,7 @@ class ABICheck(Base):
     src_rev = Column(String(255), nullable=True)
     dst_project = Column(String(255), nullable=False)
     dst_package = Column(String(255), nullable=False)
-    result = Column(Boolean(), nullable = False)
+    result = Column(Boolean(), nullable = True)
 
     t_created = Column(DateTime, default=datetime.now)
     t_updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)

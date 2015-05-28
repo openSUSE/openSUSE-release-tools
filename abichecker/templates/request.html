@@ -38,13 +38,15 @@
                             <td>Target</td>
                             <td>{{ check.dst_project }}/{{ check.dst_package }}<td/>
                         </tr>
-                        <tr>
-                            <td>ABI</td>
-                            <td><span class="boolean_{{ check.result }}">{{ "compatible" if check.result else "INCOMPATIBLE" }}</span></td>
-                        </tr>
+                        {% if check.result != None %}
+                            <tr>
+                                <td>ABI</td>
+                                <td><span class="boolean_{{ check.result }}">{{ "compatible" if check.result else "INCOMPATIBLE" }}</span></td>
+                            </tr>
+                        {% endif %}
                     </table>
-                    <h3>Detailed Reports</h3>
                     {% if request.abichecks[0].reports %}
+                    <h3>Detailed Reports</h3>
                     {% for check in request.abichecks %}
                         <table>
                             <thead>
