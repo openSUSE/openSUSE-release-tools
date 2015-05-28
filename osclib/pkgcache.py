@@ -88,7 +88,7 @@ class PkgCache(DictMixin):
             if last and last[:-1] == key[:-1]:
                 self.__delitem__(key=skeys[last], skey=True, index=_i)
                 last = key
-            elif now - key[-1] >= ttl:
+            elif now - int(key[-1]) >= ttl:
                 self.__delitem__(key=skeys[key], skey=True, index=_i)
             else:
                 last = key

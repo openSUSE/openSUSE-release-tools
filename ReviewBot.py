@@ -24,6 +24,10 @@ import os, sys, re
 import logging
 from optparse import OptionParser
 import cmdln
+from collections import namedtuple
+from osclib.memoize import memoize
+import signal
+import datetime
 
 try:
     from xml.etree import cElementTree as ET
@@ -43,6 +47,8 @@ class ReviewBot(object):
         return (None|True|False)
     """
 
+    DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
+
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
         self.dryrun = dryrun
@@ -50,7 +56,7 @@ class ReviewBot(object):
         self.review_user = user
         self.review_group = group
         self.requests = []
-        self.review_messages = { 'accepted' : 'ok', 'declined': 'review failed' }
+        self.review_messages = ReviewBot.DEFAULT_REVIEW_MESSAGES
 
     def set_request_ids(self, ids):
         for rqid in ids:
@@ -67,7 +73,7 @@ class ReviewBot(object):
             good = self.check_one_request(req)
 
             if good is None:
-                self.logger.info("ignoring")
+                self.logger.info("%s ignored"%req.reqid)
             elif good:
                 self.logger.info("%s is good"%req.reqid)
                 self._set_review(req, 'accepted')
@@ -146,8 +152,13 @@ class ReviewBot(object):
         return overall
 
     def check_action_maintenance_incident(self, req, a):
-        rev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-        return self.check_source_submission(a.src_project, a.src_package, rev, a.tgt_releaseproject, a.src_package)
+        dst_package = a.src_package
+        # dirty obs crap
+        if a.tgt_releaseproject is not None:
+            ugly_suffix = '.'+a.tgt_releaseproject.replace(':', '_')
+            if dst_package.endswith(ugly_suffix):
+                dst_package = dst_package[:-len(ugly_suffix)]
+        return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_releaseproject, dst_package)
 
     def check_action_maintenance_release(self, req, a):
         pkgname = a.src_package
@@ -164,32 +175,46 @@ class ReviewBot(object):
             return False
         else:
             pkgname = linkpkg
-        src_rev = self._get_verifymd5(a.src_project, a.src_package)
-        return self.check_source_submission(a.src_project, a.src_package, src_rev, a.tgt_project, pkgname)
+        return self.check_source_submission(a.src_project, a.src_package, None, a.tgt_project, pkgname)
 
     def check_action_submit(self, req, a):
-        rev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-        return self.check_source_submission(a.src_project, a.src_package, rev, a.tgt_project, a.tgt_package)
+        return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         return None
 
-    # XXX used in other modules
-    def _get_verifymd5(self, src_project, src_package, rev=None):
+    @staticmethod
+    @memoize(session=True)
+    def _get_sourceinfo(apiurl, project, package, rev=None):
         query = { 'view': 'info' }
-        if rev:
+        if rev is not None:
             query['rev'] = rev
-        url = osc.core.makeurl(self.apiurl, ('source', src_project, src_package), query=query)
+        url = osc.core.makeurl(apiurl, ('source', project, package), query=query)
         try:
-            root = ET.parse(osc.core.http_GET(url)).getroot()
+            return ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
             return None
 
-        if root is not None:
-            srcmd5 = root.get('verifymd5')
-            return srcmd5
+    def get_originproject(self, project, package, rev=None):
+        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
+        if root is None:
+            return None
+
+        originproject = root.find('originproject')
+        if originproject is not None:
+            return originproject.text
+
+        return None
+
+    def get_sourceinfo(self, project, package, rev=None):
+        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
+        if root is None:
+            return None
+
+        props = ('package', 'rev', 'vrev', 'srcmd5', 'lsrcmd5', 'verifymd5')
+        return namedtuple('SourceInfo', props)(*[ root.get(p) for p in props ])
 
     # TODO: what if there is more than _link?
     def _get_linktarget_self(self, src_project, src_package):
@@ -255,7 +280,7 @@ class CommandLineInterface(cmdln.Cmdln):
         cmdln.Cmdln.__init__(self, args, kwargs)
 
     def get_optparser(self):
-        parser = cmdln.CmdlnOptionParser(self)
+        parser = cmdln.Cmdln.get_optparser(self)
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
         parser.add_option("--user",  metavar="USER", help="reviewer user name")
         parser.add_option("--group",  metavar="GROUP", help="reviewer group name")
@@ -320,6 +345,35 @@ class CommandLineInterface(cmdln.Cmdln):
         self.checker.set_request_ids_search_review()
         self.checker.check_requests()
 
+    def runner(self, workfunc, interval):
+        """ runs the specified callback every <interval> minutes or
+        once if interval is None or 0
+        """
+        class ExTimeout(Exception):
+            """raised on timeout"""
+
+        if interval:
+            def alarm_called(nr, frame):
+                raise ExTimeout()
+            signal.signal(signal.SIGALRM, alarm_called)
+
+        while True:
+            try:
+                workfunc()
+            except Exception, e:
+                self.logger.error(e)
+
+            if interval:
+                self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
+                signal.alarm(interval*60)
+                try:
+                    raw_input()
+                except ExTimeout:
+                    pass
+                signal.alarm(0)
+                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                continue
+            break
 
 if __name__ == "__main__":
     app = CommandLineInterface()

@@ -53,13 +53,14 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
-        good = self._check_factory(src_rev, target_package)
+        src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
+        good = self._check_factory(src_srcinfo.verifymd5, target_package)
 
         if good:
             self.logger.info("%s is in Factory"%target_package)
             return good
 
-        good = self._check_requests(src_rev, target_package)
+        good = self._check_requests(src_srcinfo.verifymd5, target_package)
         if good:
             self.logger.info("%s already reviewed for Factory"%target_package)
 
@@ -68,11 +69,11 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def _check_factory(self, rev, package):
         """check if factory sources contain the package and revision. check head and history"""
         self.logger.debug("checking %s in %s"%(package, self.factory))
-        srcmd5 = self._get_verifymd5(self.factory, package)
-        if srcmd5 is None:
+        si = self.get_sourceinfo(self.factory, package)
+        if si is None:
             self.logger.debug("new package")
             return None
-        elif rev == srcmd5:
+        elif rev == si.verifymd5:
             self.logger.debug("srcmd5 matches")
             return True
 
@@ -102,9 +103,9 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         requests = osc.core.get_request_list(self.apiurl, self.factory, package, None, ['new', 'review'], 'submit')
         for req in requests:
             for a in req.actions:
-                rqrev = self._get_verifymd5(a.src_project, a.src_package, a.src_rev)
-                self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, rqrev))
-                if rqrev == rev:
+                si = self.get_sourceinfo(a.src_project, a.src_package, a.src_rev)
+                self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, si.verifymd5))
+                if si.verifymd5 == rev:
                     if req.state.name == 'new':
                         self.logger.debug("request ok")
                         return True
