@@ -23,6 +23,7 @@ import os
 import sys
 from abichecker_dbmodel import *
 from abichecker_common import CACHEDIR
+from abichecker_common import Config
 
 from flask import Flask, request, session, url_for, redirect, \
 render_template, send_file, abort, g, flash, _app_ctx_stack
@@ -46,8 +47,9 @@ def list():
 def request(request_id):
     session = db_session()
     request = session.query(Request).filter(Request.id == request_id).one()
+    config = Config(session)
 
-    return render_template('request.html', request = request)
+    return render_template('request.html', request = request, obsurl = config.get('obs-weburl', "https://build.opensuse.org/"))
 
 
 @app.route('/report/<int:report_id>')

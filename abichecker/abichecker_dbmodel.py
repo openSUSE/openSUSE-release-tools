@@ -83,6 +83,15 @@ class LibReport(Base):
     t_created = Column(DateTime, default=datetime.now)
     t_updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
+class Config(Base):
+    __tablename__ = 'config'
+    id = Column(Integer, primary_key=True)
+    key = Column(String(32), nullable=False, unique=True)
+    value = Column(String(255), nullable=False)
+
+    t_created = Column(DateTime, default=datetime.now)
+    t_updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
 def db_engine():
     return create_engine('sqlite:///%s/abi-checker.db'%DATADIR)
 
