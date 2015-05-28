@@ -277,7 +277,7 @@ class CommandLineInterface(cmdln.Cmdln):
         cmdln.Cmdln.__init__(self, args, kwargs)
 
     def get_optparser(self):
-        parser = cmdln.CmdlnOptionParser(self)
+        parser = cmdln.Cmdln.get_optparser(self)
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
         parser.add_option("--user",  metavar="USER", help="reviewer user name")
         parser.add_option("--group",  metavar="GROUP", help="reviewer group name")
