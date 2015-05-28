@@ -60,7 +60,7 @@ MR = namedtuple('MatchRepo', ('srcrepo', 'dstrepo', 'arch'))
 
 # some project have more repos than what we are interested in
 REPO_WHITELIST = {
-        'openSUSE:Factory':      'standard',
+        'openSUSE:Factory':      ('standard', 'snapshot'),
         'openSUSE:13.1:Update':  'standard',
         'openSUSE:13.2:Update':  'standard',
 
