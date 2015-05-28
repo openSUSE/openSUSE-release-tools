@@ -25,6 +25,7 @@ import logging
 from optparse import OptionParser
 import cmdln
 from collections import namedtuple
+from osclib.memoize import memoize
 
 try:
     from xml.etree import cElementTree as ET
@@ -174,17 +175,31 @@ class ReviewBot(object):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         return None
 
-    # TODO: cache?
-    def get_sourceinfo(self, project, package, rev=None):
+    @staticmethod
+    @memoize(session=True)
+    def _get_sourceinfo(apiurl, project, package, rev=None):
         query = { 'view': 'info' }
         if rev is not None:
             query['rev'] = rev
-        url = osc.core.makeurl(self.apiurl, ('source', project, package), query=query)
+        url = osc.core.makeurl(apiurl, ('source', project, package), query=query)
         try:
-            root = ET.parse(osc.core.http_GET(url)).getroot()
+            return ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
             return None
 
+    def get_originproject(self, project, package, rev=None):
+        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
+        if root is None:
+            return None
+
+        originproject = root.find('originproject')
+        if originproject is not None:
+            return originproject.text
+
+        return None
+
+    def get_sourceinfo(self, project, package, rev=None):
+        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
         if root is None:
             return None
 
