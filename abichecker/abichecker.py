@@ -999,6 +999,8 @@ class ABIChecker(ReviewBot.ReviewBot):
             "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
+        self.requests = []
+
         for request in root.findall('request'):
             req = osc.core.Request()
             req.read(request)
