@@ -872,6 +872,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             name = repo.attrib['name']
             path = repo.findall('path')
             if path is None or len(path) != 1:
+                self.logger.error("repo %s has more than one path"%name)
                 continue
             prj = path[0].attrib['project']
             if prj == 'openSUSE:Tumbleweed':
