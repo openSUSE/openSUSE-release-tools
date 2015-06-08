@@ -86,6 +86,21 @@ class BoilderPlate(cmdln.Cmdln):
         self.session.delete(request)
         self.session.commit()
 
+    def do_recheck(self, subcmd, opts, request_id):
+        """${cmd_name}: set request id to seen
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        request = self.session.query(DB.Request).filter(DB.Request.id == request_id).one()
+        logentry = DB.Log(request_id = request_id,
+            line = 'manually setting state to seen. previous state: %s (%s)'%(request.state, request.result))
+        request.state = 'seen'
+        request.result = None
+        self.session.add(logentry)
+        self.session.commit()
+
     @cmdln.option("--get", action="store_true", help="get some values")
     @cmdln.option("--set", action="store_true", help="set some values")
     @cmdln.option("--delete", action="store_true", help="delete some values")
