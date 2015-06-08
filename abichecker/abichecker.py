@@ -914,6 +914,8 @@ class ABIChecker(ReviewBot.ReviewBot):
         # now check if all matched repos built successfully
         srcrepos = self.get_buildsuccess_repos(src_project, dst_project, src_srcinfo.package, src_srcinfo.verifymd5)
         if srcrepos is None:
+            raise NotReadyYet(src_project, src_srcinfo.package, "no build success")
+        if not srcrepos:
             raise NoBuildSuccess(src_project, src_srcinfo.package, src_srcinfo.verifymd5)
         for mr in matchrepos:
             if not (mr.srcrepo, arch) in srcrepos:
