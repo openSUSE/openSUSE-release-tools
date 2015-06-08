@@ -637,7 +637,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 '-report-path', output 
                 ]
         self.logger.debug(cmd)
-        r = subprocess.call(cmd, close_fds=True)
+        r = subprocess.Popen(cmd, close_fds=True, cwd=CACHEDIR).wait()
         if not r in (0, 1):
             self.logger.error('abi-compliance-checker failed')
             # XXX: record error
@@ -653,7 +653,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         if os.path.exists(debuglib):
             cmd.append(debuglib)
         self.logger.debug(cmd)
-        r = subprocess.call(cmd, close_fds=True)
+        r = subprocess.Popen(cmd, close_fds=True, cwd=CACHEDIR).wait()
         if r != 0:
             self.logger.error("failed to dump %s!"%filename)
             # XXX: record error
