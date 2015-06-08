@@ -45,9 +45,8 @@
                             </tr>
                         {% endif %}
                     </table>
-                    {% if request.abichecks[0].reports %}
+                    {% if check.reports %}
                     <h3>Detailed Reports</h3>
-                    {% for check in request.abichecks %}
                         <table>
                             <thead>
                                 <tr>
@@ -75,7 +74,6 @@
                                 {% endfor %}
                             </tbody>
                         </table>
-                    {% endfor %}
                     {% endif %}
             {% endfor %}
         {% if request.log %}
