@@ -233,6 +233,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
         except NoBuildSuccess, e:
             self.logger.info(e)
+            self.text_summary += "**Error**: %s\n"%e
             self.reports.append(report)
             return False
         except NotReadyYet, e:
@@ -267,6 +268,20 @@ class ABIChecker(ReviewBot.ReviewBot):
         except MaintenanceError, e:
             self.text_summary += "**Error**: %s\n\n"%e
             self.logger.error('%s', e)
+            self.reports.append(report)
+            return False
+        except NoBuildSuccess, e:
+            self.logger.info(e)
+            self.text_summary += "**Error**: %s\n"%e
+            self.reports.append(report)
+            return False
+        except NotReadyYet, e:
+            self.logger.info(e)
+            self.reports.append(report)
+            return None
+        except SourceBroken, e:
+            self.logger.error(e)
+            self.text_summary += "**Error**: %s\n"%e
             self.reports.append(report)
             return False
 
