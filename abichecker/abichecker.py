@@ -122,9 +122,13 @@ class NotReadyYet(Exception):
 class MissingDebugInfo(Exception):
     def __init__(self, missing_debuginfo):
         Exception.__init__(self)
-        self.msg = 'debug information is missing for the following files, can\'t check:\n'
+        self.msg = 'debug information is missing for the following packages, can\'t check:\n<pre>'
         for i in missing_debuginfo:
-            self.msg += "%s/%s %s/%s %s %s\n"%i
+            if len(i) == 6:
+                self.msg += "%s/%s %s/%s %s %s\n"%i
+            elif len(i) == 5:
+                self.msg += "%s/%s %s/%s %s\n"%i
+        self.msg += '</pre>\nplease enable debug info in your project config.\n'
     def __str__(self):
         return self.msg
 
@@ -979,7 +983,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         for pkgname in sorted(lib_packages.keys()):
             dpkgname = pkgname+'-debuginfo'
             if not dpkgname in pkgs:
-                missing_debuginfo.add((prj, pkg, repo, arch, pkgname, None))
+                missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
                 continue
 
             # check file list of debuginfo package
