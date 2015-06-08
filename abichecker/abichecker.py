@@ -69,7 +69,7 @@ REPO_WHITELIST = {
 
 # same for arch
 ARCH_WHITELIST = {
-#        'SUSE:SLE-12:Update' :   ('i586', 'ppc64le', 's390', 's390x', 'x86_64'),
+        'SUSE:SLE-12:Update' :   ('i586', 'ppc64le', 's390', 's390x', 'x86_64'),
         }
 
 # Directory where download binary packages.
