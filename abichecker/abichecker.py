@@ -67,6 +67,11 @@ REPO_WHITELIST = {
         'SUSE:SLE-12:Update' :   'standard',
         }
 
+# same for arch
+ARCH_WHITELIST = {
+#        'SUSE:SLE-12:Update' :   ('i586', 'ppc64le', 's390', 's390x', 'x86_64'),
+        }
+
 # Directory where download binary packages.
 # TODO: move to CACHEDIR, just here for consistency with repochecker
 BINCACHE = os.path.expanduser('~/co')
@@ -822,7 +827,12 @@ class ABIChecker(ReviewBot.ReviewBot):
                 continue
 
             for node in repo.findall('arch'):
-                repos.add((name, node.text))
+                arch = node.text
+
+                if project in ARCH_WHITELIST and arch not in ARCH_WHITELIST[project]:
+                    continue
+
+                repos.add((name, arch))
 
         return repos
 
