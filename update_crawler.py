@@ -28,6 +28,7 @@ from xml.etree import cElementTree as ET
 
 import osc.conf
 import osc.core
+import rpm
 
 from osclib.memoize import memoize
 
@@ -59,12 +60,23 @@ class UpdateCrawler(object):
     def _get_source_package(self, project, package):
         return http_GET(makeurl(self.apiurl,
                                 ['source', project, package],
-                                {'view': 'info'})).read()
+                                {
+                                    'view': 'info',
+                                    'parse': 1,
+                                })).read()
 
     def get_source_verifymd5(self, project, package):
         """ Return the verifymd5 of a source package."""
         root = ET.fromstring(self._get_source_package(project, package))
         return root.get('verifymd5')
+
+    def get_source_version(self, project, package):
+        """ Return the version of a source package."""
+        root = ET.fromstring(self._get_source_package(project, package))
+        epoch = '0'
+        version = root.find('version').text
+        release = root.find('release').text
+        return (epoch, version, release)
 
     def get_update_candidates(self):
         """Get the grouped update list from `fron_prj` project.
@@ -122,7 +134,6 @@ class UpdateCrawler(object):
         msg = 'Automatic request from %s by UpdateCrawler' % src_project
         self._submitrequest(src_project, src_package, dst_project,
                             dst_package, msg)
-        raise Exception()
 
     def crawl(self):
         """Main method of the class that run the crawler."""
@@ -135,13 +146,26 @@ class UpdateCrawler(object):
                 logging.info('Package %s not found in %s' % (package, self.to_prj))
                 continue
 
+            # Compare version
+            version_from = self.get_source_version(self.from_prj, update)
+            version_to = self.get_source_version(self.to_prj, package)
+            if rpm.labelCompare(version_from, version_to) > 0:
+                logging.info('Package %s with version %s found in %s with '
+                             'version %s. Ignoring the package '
+                             '(comes from Factory?)' % (package, version_from,
+                                                        self.to_prj, version_to))
+                continue
+
+            # Compare verifymd5
             md5_from = self.get_source_verifymd5(self.from_prj, update)
             md5_to = self.get_source_verifymd5(self.to_prj, package)
-            if md5_from != md5_to:
-                to_update.append((package, update))
-                logging.info('Package %s marked for update' % package)
-            else:
+            if md5_from == md5_to:
                 logging.info('Package %s not marked for update' % package)
+                continue
+
+            # Mark the package for an update
+            to_update.append((package, update))
+            logging.info('Package %s marked for update' % package)
 
         for package, update in to_update:
             res = self.submitrequest(update, package)
