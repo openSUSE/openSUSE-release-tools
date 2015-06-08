@@ -122,13 +122,12 @@ class NotReadyYet(Exception):
 class MissingDebugInfo(Exception):
     def __init__(self, missing_debuginfo):
         Exception.__init__(self)
-        self.msg = 'debug information is missing for the following packages, can\'t check:\n<pre>'
+        self.msg = ''
         for i in missing_debuginfo:
             if len(i) == 6:
                 self.msg += "%s/%s %s/%s %s %s\n"%i
             elif len(i) == 5:
                 self.msg += "%s/%s %s/%s %s\n"%i
-        self.msg += '</pre>\nplease enable debug info in your project config.\n'
     def __str__(self):
         return self.msg
 
@@ -290,6 +289,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         overall = None
 
+        missing_debuginfo  = []
+
         for mr in myrepos:
             try:
                 dst_libs = self.extract(dst_project, dst_package, dst_srcinfo, mr.dstrepo, mr.arch)
@@ -302,7 +303,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     ret = None
                 continue
             except MissingDebugInfo, e:
-                self.text_summary += str(e) + "\n"
+                missing_debuginfo.append(str(e))
                 ret = False
                 continue
             except FetchError, e:
@@ -323,7 +324,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     ret = None
                 continue
             except MissingDebugInfo, e:
-                self.text_summary += str(e) + "\n"
+                missing_debuginfo.append(str(e))
                 ret = False
                 continue
             except FetchError, e:
@@ -400,6 +401,11 @@ class ABIChecker(ReviewBot.ReviewBot):
                         ret = None
 
                 cleanup()
+
+        if missing_debuginfo:
+            self.text_summary += 'debug information is missing for the following packages, can\'t check:\n<pre>'
+            self.text_summary += ''.join(missing_debuginfo)
+            self.text_summary += '</pre>\nplease enable debug info in your project config.\n'
 
         self.reports.append(report._replace(result = overall, reports = libresults))
 
