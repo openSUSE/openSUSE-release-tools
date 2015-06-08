@@ -455,7 +455,11 @@ class ABIChecker(ReviewBot.ReviewBot):
                         matchrepos = set()
                         for mr in myrepos:
                             if not (mr.dstrepo, mr.arch) in mapped:
-                                raise MaintenanceError("couldn't find repo %s/%s in %s/%s"(mr.dstrepo, mr.arch, originproject, originpackage))
+                                # sometimes a previously released maintenance
+                                # update didn't cover all architectures. We can
+                                # only ignore that then.
+                                self.logger.warn("couldn't find repo %s/%s in %s/%s"%(mr.dstrepo, mr.arch, originproject, originpackage))
+                                continue
                             matchrepos.add(MR(mr.srcrepo, mapped[(mr.dstrepo, mr.arch)].srcrepo, mr.arch))
 
                         myrepos = matchrepos
