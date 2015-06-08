@@ -527,8 +527,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         if ret is not None:
             state = 'done'
             result = 'accepted' if ret else 'declined'
-            if self.text_summary == '':
-                self.text_summary = "ABI checker result: %s"%result
         else:
             # we probably don't want abichecker to spam here
             # FIXME don't delete comment in this case
@@ -537,6 +535,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             state = 'seen'
 
         self.save_reports_to_db(req, state, result)
+        if ret is not None and self.text_summary == '':
+            # if for some reason save_reports_to_db didn't produce a
+            # summary we add one
+            self.text_summary = "ABI checker result: [%s](%s/request/%s)"%(result, WEB_URL, req.reqid)
 
         if commentid and not self.dryrun:
             self.commentapi.delete(commentid)
