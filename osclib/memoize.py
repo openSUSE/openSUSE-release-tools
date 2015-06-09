@@ -25,7 +25,16 @@ except:
     import pickle
 
 
-from xdg.BaseDirectory import save_cache_path
+try:
+    from xdg.BaseDirectory import save_cache_path
+except ImportError:
+    from xdg.BaseDirectory import xdg_cache_home
+    def save_cache_path(*name):
+        path = os.path.join(xdg_cache_home, *name)
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        return path
+
 # Where the cache files are stored
 CACHEDIR = save_cache_path('opensuse-repo-checker')
 
