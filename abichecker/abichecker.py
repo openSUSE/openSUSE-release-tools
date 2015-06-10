@@ -369,7 +369,6 @@ class ABIChecker(ReviewBot.ReviewBot):
                 new_dump = os.path.join(CACHEDIR, 'new.dump')
 
                 def cleanup():
-                    return
                     if os.path.exists(old_dump):
                         os.unlink(old_dump)
                     if os.path.exists(new_dump):
