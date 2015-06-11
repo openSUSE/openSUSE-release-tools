@@ -450,9 +450,10 @@ class ABIChecker(ReviewBot.ReviewBot):
                     (linkprj, linkpkg) = self._get_linktarget(dst_project, pkg)
                     if linkpkg is not None and linkprj == dst_project:
                         self.logger.debug("%s/%s links to %s"%(dst_project, pkg, linkpkg))
-                        m = re.match(r'.*\.(\d+)$', linkpkg)
+                        regex = re.compile(r'.*\.(\d+)$')
+                        m = regex.match(linkpkg)
                         if m is None:
-                            raise MaintenanceError("%s/%s is not a proper maintenance link %s"%(dst_project, pkg))
+                            raise MaintenanceError("%s/%s -> %s/%s is not a proper maintenance link (must match /%s/)"%(dst_project, pkg, linkprj, linkpkg, regex.pattern))
                         incident = m.group(1)
                         self.logger.debug("is maintenance incident %s"%incident)
 
