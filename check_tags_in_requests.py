@@ -32,6 +32,9 @@ import urllib2
 
 import ReviewBot
 
+import check_source_in_factory
+
+
 class TagChecker(ReviewBot.ReviewBot):
     """ simple bot that checks that a submit request has corrrect tags specified
     """
@@ -106,8 +109,34 @@ Note: there is no whitespace behind before or after the number sign
 
         return True
 
+    def isNewPackage(self, tgt_project, tgt_package):
+        try:
+            osc.core.show_devel_project(self.apiurl, tgt_project, tgt_package)
+        except HTTPError:
+            return True
+        return False
+
+    def checkTagNotRequired(self, req, a):
+        # A tag is not required only if the package is
+        # already in Factory with the same revision,
+        # and the package is being introduced, not updated
+        factory_checker = check_source_in_factory.FactorySourceChecker(apiurl=self.apiurl,
+                                                                       dryrun=self.dryrun,
+                                                                       logger=self.logger,
+                                                                       user=self.review_user,
+                                                                       group=self.review_group)
+        factory_ok = factory_checker.check_source_submission(a.src_project, a.src_package, a.src_rev,
+                                                             a.tgt_project, a.tgt_package)
+        is_new = self.isNewPackage(a.tgt_project, a.tgt_package)
+        return factory_ok and is_new
+
+    def checkTagNotRequiredOrInRequest(self, req, a):
+        if self.checkTagNotRequired(req, a):
+            return True
+        return self.checkTagInRequest(req, a)
+
     def check_action_submit(self, req, a):
-        return self.checkTagInRequest(req,a)
+        return self.checkTagNotRequiredOrInRequest(req, a)
 
     def check_action_maintenance_incident(self, req, a):
         return self.checkTagInRequest(req,a)
