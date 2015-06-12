@@ -30,6 +30,13 @@ import osc.conf
 import osc.core
 import urllib2
 
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
+
+
 import ReviewBot
 
 import check_source_in_factory
@@ -40,6 +47,12 @@ class TagChecker(ReviewBot.ReviewBot):
     """
 
     def __init__(self, *args, **kwargs):
+        self.factory = None
+        if 'factory' in kwargs:
+            self.factory = kwargs['factory']
+            del kwargs['factory']
+        if self.factory is None:
+            self.factory = "openSUSE:Factory"
         super(TagChecker, self).__init__(*args, **kwargs)
         needed_tags=[r'bnc#[0-9]+',r'cve-[0-9]{4}-[0-9]+',r'fate#[0-9]+',r'boo#[0-9]+',r'bsc#[0-9]+', r'bgo#[0-9]+']
         self.needed_tags_re=[ re.compile(tag, re.IGNORECASE) for tag in needed_tags ]
@@ -111,7 +124,7 @@ Note: there is no whitespace behind before or after the number sign
 
     def isNewPackage(self, tgt_project, tgt_package):
         try:
-            osc.core.show_devel_project(self.apiurl, tgt_project, tgt_package)
+            osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
         except HTTPError:
             return True
         return False
@@ -120,15 +133,18 @@ Note: there is no whitespace behind before or after the number sign
         # A tag is not required only if the package is
         # already in Factory with the same revision,
         # and the package is being introduced, not updated
+        is_new = self.isNewPackage(a.tgt_project, a.tgt_package)
+        if not is_new:
+            return False
         factory_checker = check_source_in_factory.FactorySourceChecker(apiurl=self.apiurl,
                                                                        dryrun=self.dryrun,
                                                                        logger=self.logger,
                                                                        user=self.review_user,
-                                                                       group=self.review_group)
+                                                                       group=self.review_group,
+                                                                       factory=self.factory)
         factory_ok = factory_checker.check_source_submission(a.src_project, a.src_package, a.src_rev,
                                                              a.tgt_project, a.tgt_package)
-        is_new = self.isNewPackage(a.tgt_project, a.tgt_package)
-        return factory_ok and is_new
+        return factory_ok
 
     def checkTagNotRequiredOrInRequest(self, req, a):
         if self.checkTagNotRequired(req, a):
@@ -149,6 +165,12 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
 
+    def get_optparser(self):
+        parser = ReviewBot.CommandLineInterface.get_optparser(self)
+        parser.add_option("--factory", metavar="project", help="the openSUSE Factory project")
+
+        return parser
+
     def setup_checker(self):
 
         apiurl = osc.conf.config['apiurl']
@@ -156,6 +178,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             raise osc.oscerr.ConfigError("missing apiurl")
 
         return TagChecker(apiurl = apiurl, \
+                factory = self.options.factory, \
                 dryrun = self.options.dry, \
                 group = self.options.group, \
                 logger = self.logger)
