@@ -1,11 +1,7 @@
-SUBDIRS = factory-package-news
+SUBDIRS = factory-package-news abichecker
 
-prefix=/usr
-datadir=$(prefix)/share
-sysconfdir=/etc
-unitdir=$(prefix)/lib/systemd/system
-pkgdatadir=$(datadir)/osc-plugin-factory
-oscplugindir=$(prefix)/lib/osc-plugins
+include Makefile.common
+
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy osclib $(wildcard *.pm *.testcase)

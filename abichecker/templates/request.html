@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}ABI Check results for request  {{ request.id }}{% endblock %}
+{% block body %}
+{{ super() }}
+<h1>ABI Check results for request <a href="{{ obsurl }}/request/show/{{request.id}}">{{ request.id}}</a></h1>
+    <table>
+        <tr>
+            <td>State</td>
+            <td>{{ request.state }}</td>
+        </tr>
+        <tr>
+            <td>Result</td>
+            <td>{{ request.result }}</td>
+        </tr>
+        <tr>
+            <td>First seen</td>
+            <td>{{ request.t_created }}</td>
+        </tr>
+        <tr>
+            <td>Last update</td>
+            <td>{{ request.t_updated }}</td>
+        </tr>
+    </table>
+            {% for check in request.abichecks %}
+                <h2>{{ check.dst_project }}/{{ check.dst_package }}</h2>
+                    <table>
+                        <tr>
+                            <td>Source</td>
+                            <td>{{ check.src_project }}/{{ check.src_package }}</td>
+                        </tr>
+                        {% if check.src_rev %}
+                            <tr>
+                                <td>Revision</td>
+                                <td>{{ check.src_rev }}</td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <td>Target</td>
+                            <td>{{ check.dst_project }}/{{ check.dst_package }}<td/>
+                        </tr>
+                        {% if check.result != None %}
+                            <tr>
+                                <td>ABI</td>
+                                <td><span class="boolean_{{ check.result }}">{{ "compatible" if check.result else "INCOMPATIBLE" }}</span></td>
+                            </tr>
+                        {% endif %}
+                    </table>
+                    {% if check.reports %}
+                    <h3>Detailed Reports</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <td>src repo</td>
+                                    <td>src lib</td>
+                                    <td>dst repo</td>
+                                    <td>dst lib</td>
+                                    <td>arch</td>
+                                    <td>result</td>
+                                    <td>created</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in check.reports %}
+                                <tr>
+                                    <td>{{ r.src_repo }}</td>
+                                    <td>{{ r.src_lib }}</td>
+                                    <td>{{ r.dst_repo }}</td>
+                                    <td>{{ r.dst_lib }}</td>
+                                    <td>{{ r.arch }}</td>
+                                    <td><a href="{{ url_for('report', report_id = r.id) }}">
+                                            <span class="boolean_{{ r.result }}">{{ "compatible" if r.result else "INCOMPATIBLE" }}</span></a></td>
+                                    <td>{{ r.t_created }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+            {% endfor %}
+        {% if request.log %}
+        <h2>Log</h2>
+        <pre>
+{% for entry in request.log %}
+{{ entry.t_created }} {{ entry.line }}{% endfor %}
+        </pre>
+        {% endif %}
+{% endblock %}
+
+<!-- vim: sw=4 et
+-->

@@ -1,0 +1,10 @@
+<VirtualHost *:80>
+    ServerName abichecker.suse.de
+
+    WSGIDaemonProcess opensuse-abi-checker user=_opensuse.org-abi-checker group=nogroup display-name=%{GROUP} home=/usr/share/osc-plugin-factory/abichecker
+    WSGIProcessGroup opensuse-abi-checker
+
+    WSGIScriptAlias / /usr/share/osc-plugin-factory/abichecker/abichecker-web.py
+</VirtualHost>
+
+# vim: syntax=apache sw=4 et

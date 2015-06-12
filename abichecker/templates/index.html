@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}ABI Check results{% endblock %}
+{% block body %}
+{{ super() }}
+        <h1>ABI Check results</h1>
+        <table>
+            <thead>
+                <tr>
+                    <td>ID</td>
+                    <td>Target</td>
+                    <td>State</td>
+                    <td>Result</td>
+                    <td>Created</td>
+                    <td>Updated</td>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                <tr>
+                    <td><a href="{{ url_for('request', request_id=r.id) }}">{{ r.id }}</a></td>
+                    <!--
+                    <td><a href="https://build.opensuse.org/request/show/{{r.request_id}}">{{ r.request_id }}</a></td>
+                    -->
+                    <td>
+                        {% for check in r.abichecks %}
+                            {{ check.dst_project }}/{{ check.dst_package }}<br/>
+                        {% endfor %}
+                    </td>
+                    <td>{{ r.state }}</td>
+                    <td>{{ r.result }}</td>
+                    <td>{{ r.t_created }}</td>
+                    <td>{{ r.t_updated }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+{% endblock %}
+
+<!-- vim: sw=4 et
+-->
