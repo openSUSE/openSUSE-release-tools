@@ -124,6 +124,7 @@ Note: there is no whitespace behind before or after the number sign
 
     def isNewPackage(self, tgt_project, tgt_package):
         try:
+            self.logger.debug("package_meta %s %s/%s" % (self.apiurl, tgt_project, tgt_package))
             osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
         except HTTPError:
             return True

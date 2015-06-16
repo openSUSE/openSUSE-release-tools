@@ -60,6 +60,16 @@ class TestTagChecker(unittest.TestCase):
 
     def run_test_1_changes_file(self, diffsupplement='', accept=False):
         httpretty.register_uri(httpretty.GET,
+                               osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
+                               match_querystring = True,
+                               body = """<package name="nano" project="openSUSE:Factory">
+  <title>Pico Editor Clone with Enhancements</title>
+  <description>GNU nano is a small and friendly text editor. It aims to emulate the
+Pico text editor while also offering a few enhancements.</description>
+  <devel project="editors" package="nano"/>
+</package>""")
+
+        httpretty.register_uri(httpretty.GET,
             APIURL + "/request/293129",
             match_querystring = True,
             body = """
@@ -468,6 +478,46 @@ other changes:
 
 
     def run_test_2_changes_files(self, diffsupplement1='', diffsupplement2='', accept=False):
+        httpretty.register_uri(httpretty.GET,
+                               osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "ant", '_meta'], {}),
+                               match_querystring = True,
+                               body = """<package name="ant" project="openSUSE:Factory">
+  <title>Antlr Task for ant</title>
+  <description>Apache Ant is a Java-based build tool. In theory, it is kind of like
+Make, but without Make's wrinkles.
+
+Why another build tool when there is already make, gnumake, nmake, jam,
+and others? Because all those tools have limitations that Ant's
+original author could not live with when developing software across
+multiple platforms. Make-like tools are inherently shell-based--they
+evaluate a set of dependencies then execute commands, not unlike what
+you would issue in a shell. This means that you can easily extend these
+tools by using or writing any program for the OS that you are working
+on. However, this also means that you limit yourself to the OS, or at
+least the OS type, such as Unix, that you are working on.
+
+Makefiles are inherently evil as well. Anybody who has worked on them
+for any time has run into the dreaded tab problem. "Is my command not
+executing because I have a space in front of my tab???" said the
+original author of Ant way too many times. Tools like Jam took care of
+this to a great degree, but still have yet another format to use and
+remember.
+
+Ant is different. Instead of a model where it is extended with
+shell-based commands, Ant is extended using Java classes. Instead of
+writing shell commands, the configuration files are XML-based, calling
+out a target tree where various tasks are executed. Each task is run by
+an object that implements a particular task interface.
+
+Granted, this removes some of the expressive power that is inherent by
+being able to construct a shell command such as `find . -name foo -exec
+rm {}`, but it gives you the ability to be cross-platform--to work
+anywhere and everywhere. If you really need to execute a shell command,
+Ant has an &lt;exec&gt; task that allows different commands to be executed
+based on the OS used.</description>
+  <devel project="Java:packages" package="ant"/>
+</package>""")
+
         httpretty.register_uri(httpretty.GET,
             APIURL + "/request/292589",
             match_querystring = True,
