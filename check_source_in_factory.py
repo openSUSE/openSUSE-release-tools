@@ -54,6 +54,11 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
+        if src_srcinfo is None:
+            # source package does not exist?
+            # handle here to avoid crashing on the next line
+            self.logger.info("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
+            return False
         good = self._check_factory(src_srcinfo.verifymd5, target_package)
 
         if good:
