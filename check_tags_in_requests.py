@@ -97,6 +97,11 @@ Note: there is no whitespace behind before or after the number sign
         return False
 
     def checkTagNotRequired(self, req, a):
+        # if there is no diff, no tag is required
+        diff = osc.core.request_diff(self.apiurl, req.reqid)
+        if not diff:
+            return True
+
         # A tag is not required only if the package is
         # already in Factory with the same revision,
         # and the package is being introduced, not updated
