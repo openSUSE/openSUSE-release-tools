@@ -20,22 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from pprint import pprint
-import os, sys, re
-import logging
-from optparse import OptionParser
-import cmdln
+import sys
+import re
 
 import osc.conf
 import osc.core
-import urllib2
+
+try:
+    from xml.etree import cElementTree as ET
+except ImportError:
+    import cElementTree as ET
 
 try:
     from urllib.error import HTTPError
 except ImportError:
-    #python 2.x
+    # python 2.x
     from urllib2 import HTTPError
-
 
 import ReviewBot
 
@@ -54,72 +54,38 @@ class TagChecker(ReviewBot.ReviewBot):
         if self.factory is None:
             self.factory = "openSUSE:Factory"
         super(TagChecker, self).__init__(*args, **kwargs)
-        needed_tags=[r'bnc#[0-9]+',r'cve-[0-9]{4}-[0-9]+',r'fate#[0-9]+',r'boo#[0-9]+',r'bsc#[0-9]+', r'bgo#[0-9]+']
-        self.needed_tags_re=[ re.compile(tag, re.IGNORECASE) for tag in needed_tags ]
-	self.review_messages['declined'] = \
-"""
+        needed_tags = [r'bnc#[0-9]+',
+                       r'cve-[0-9]{4}-[0-9]+',
+                       r'fate#[0-9]+',
+                       r'boo#[0-9]+',
+                       r'bsc#[0-9]+',
+                       r'bgo#[0-9]+']
+        self.needed_tags_re = [re.compile(tag, re.IGNORECASE) for tag in needed_tags]
+        self.review_messages['declined'] = """
 (This is a script running, so report bugs)
 
-We require a ID marked in .changes file to detect later if the changes 
+We require a ID marked in .changes file to detect later if the changes
 are also merged into openSUSE:Factory. We accept bnc#, cve#, fate#, boo#, bsc# and bgo# atm.
 
-Note: there is no whitespace behind before or after the number sign 
+Note: there is no whitespace behind before or after the number sign
 (compare with the packaging policies)
 """
 
-
-    def textMatchesAnyTag(self, text):
-        """
-        Returns if the text parameter contains any of the needed tags
-        """
-        for tag_re in self.needed_tags_re:
-            if tag_re.search(text):
-                return True
-
-        return False
-
-    def changesFilesDiffsFromRequest(self, reqid):
-        """
-        Returns an array of strings, each one of which contains the diff of one .changes file modified by request reqid.
-        This method should probably be moved to ReviewBot
-        """
-
-        diff = osc.core.request_diff(self.apiurl, reqid)
-        changesdiffs=[]
-        changesdiff=''
-        inchanges = False
-        for line in diff.split('\n'):
-            if re.match(r'^---.*\.changes', line):
-                if changesdiff:
-                    changesdiffs.append(changesdiff)
-                    changesdiff=''
-                inchanges = True
-            elif re.match(r'^---', line):
-                if changesdiff:
-                    changesdiffs.append(changesdiff)
-                    changesdiff=''
-                inchanges = False
-
-            if inchanges:
-                changesdiff+=line+'\n'
-
-        if changesdiff:
-            changesdiffs.append(changesdiff)
-        return changesdiffs
-
     def checkTagInRequest(self, req, a):
-        # First, we obtain the diff for each .changes file modified by the request
-        diffs = self.changesFilesDiffsFromRequest(req.reqid)
-
-        # If diffs is empty or just contains empty strings, there's no tag
-        if not filter(None, diffs): 
+        u = osc.core.makeurl(self.apiurl,
+                             ['source', a.tgt_project, a.tgt_package],
+                             {'cmd': 'diff',
+                              'onlyissues': '1',
+                              'view': 'xml',
+                              'opackage': a.src_package,
+                              'oproject': a.src_project,
+                              'orev': a.src_rev})
+        f = osc.core.http_POST(u)
+        xml = ET.parse(f)
+        has_changes = list(xml.findall('./issues/issue'))
+        if not has_changes:
+            self.logger.debug("reject: diff contains no tags")
             return False
-
-        for diff in diffs:
-            # each diff must contain at least one of the needed tags
-            if not self.textMatchesAnyTag(diff):
-               return False
-
         return True
 
     def isNewPackage(self, tgt_project, tgt_package):
@@ -156,10 +122,11 @@ Note: there is no whitespace behind before or after the number sign
         return self.checkTagNotRequiredOrInRequest(req, a)
 
     def check_action_maintenance_incident(self, req, a):
-        return self.checkTagInRequest(req,a)
+        return self.checkTagInRequest(req, a)
 
     def check_action_maintenance_release(self, req, a):
-        return self.checkTagInRequest(req,a)
+        return self.checkTagInRequest(req, a)
+
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
@@ -178,14 +145,14 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         if apiurl is None:
             raise osc.oscerr.ConfigError("missing apiurl")
 
-        return TagChecker(apiurl = apiurl, \
-                factory = self.options.factory, \
-                dryrun = self.options.dry, \
-                group = self.options.group, \
-                logger = self.logger)
+        return TagChecker(apiurl=apiurl,
+                          factory=self.options.factory,
+                          dryrun=self.options.dry,
+                          group=self.options.group,
+                          logger=self.logger)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit(app.main())
 
 # vim: sw=4 et
