@@ -519,7 +519,7 @@ class CommandlineInterface(cmdln.Cmdln):
 
         if project not in self.totest_class:
             msg = 'Project %s not recognized. Possible values [%s]' % (project, ', '.join(self.totest_class))
-            raise CmdlnUserError()
+            raise cmdln.CmdlnUserError(msg)
 
         return self.totest_class[project](project, self.options.dry)
 
