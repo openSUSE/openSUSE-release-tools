@@ -117,7 +117,7 @@ class UpdateCrawler(object):
                                                dst_package,
                                                req_type='submit',
                                                req_state=states)
-        res = None
+        res = 0
         if not reqs:
             res = osc.core.create_submit_request(self.apiurl,
                                                  src_project,
@@ -132,8 +132,8 @@ class UpdateCrawler(object):
         src_project = self.from_prj
         dst_project = self.to_prj
         msg = 'Automatic request from %s by UpdateCrawler' % src_project
-        self._submitrequest(src_project, src_package, dst_project,
-                            dst_package, msg)
+        return self._submitrequest(src_project, src_package, dst_project,
+                                   dst_package, msg)
 
     def crawl(self):
         """Main method of the class that run the crawler."""
@@ -149,7 +149,7 @@ class UpdateCrawler(object):
             # Compare version
             version_from = self.get_source_version(self.from_prj, update)
             version_to = self.get_source_version(self.to_prj, package)
-            if rpm.labelCompare(version_from, version_to) > 0:
+            if rpm.labelCompare(version_to, version_from) > 0:
                 logging.info('Package %s with version %s found in %s with '
                              'version %s. Ignoring the package '
                              '(comes from Factory?)' % (package, version_from,
@@ -171,7 +171,7 @@ class UpdateCrawler(object):
             res = self.submitrequest(update, package)
             if res:
                 logging.info('Created request %s for %s' % (res, package))
-            else:
+            elif res != 0:
                 logging.error('Error creating the request for %s' % package)
 
 
