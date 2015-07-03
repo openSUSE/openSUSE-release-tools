@@ -153,7 +153,8 @@ def do_staging(self, subcmd, opts, *args):
                     return
             cmd.accept_other_new()
             cmd.update_factory_version()
-            cmd.sync_buildfailures()
+            if api.item_exists(api.crebuild):
+                cmd.sync_buildfailures()
         elif cmd == 'unselect':
             UnselectCommand(api).perform(args[1:])
         elif cmd == 'select':
