@@ -174,7 +174,7 @@ class AcceptCommand(object):
         ports_prjs = ['PowerPC', 'ARM' ]
 
         for ports in ports_prjs:
-            project = project + ':' + ports
+            project = self.api.project + ':' + ports
             if self.api.item_exists(project):
                 baseurl = ['source', project, '_product']
                 url = self.api.makeurl(baseurl, query=service)
