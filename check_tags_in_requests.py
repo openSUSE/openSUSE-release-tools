@@ -37,6 +37,12 @@ except ImportError:
     # python 2.x
     from urllib2 import HTTPError
 
+try:
+    from urllib.error import URLError
+except ImportError:
+    # python 2.x
+    from urllib2 import URLError
+
 import ReviewBot
 
 import check_source_in_factory
@@ -88,26 +94,16 @@ Note: there is no whitespace behind before or after the number sign
             return False
         return True
 
-    def isNewPackage(self, tgt_project, tgt_package):
-        try:
-            self.logger.debug("package_meta %s %s/%s" % (self.apiurl, tgt_project, tgt_package))
-            osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
-        except HTTPError:
-            return True
-        return False
-
     def checkTagNotRequired(self, req, a):
         # if there is no diff, no tag is required
         diff = osc.core.request_diff(self.apiurl, req.reqid)
         if not diff:
             return True
 
-        # A tag is not required only if the package is
+        # 1) A tag is not required only if the package is
         # already in Factory with the same revision,
         # and the package is being introduced, not updated
-        is_new = self.isNewPackage(a.tgt_project, a.tgt_package)
-        if not is_new:
-            return False
+        # 2) A new package must be have a issue tag
         factory_checker = check_source_in_factory.FactorySourceChecker(apiurl=self.apiurl,
                                                                        dryrun=self.dryrun,
                                                                        logger=self.logger,
