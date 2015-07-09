@@ -825,7 +825,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             url = osc.core.makeurl(self.apiurl, ('build', src_project, '_result'), query)
             return ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError, e:
-            self.logger.error('ERROR in URL %s [%s]' % (url, e))
+            if e.code != 404:
+                self.logger.error('ERROR in URL %s [%s]' % (url, e))
+                raise
+            pass
         return None
 
     def get_buildsuccess_repos(self, src_project, tgt_project, src_package, rev):
