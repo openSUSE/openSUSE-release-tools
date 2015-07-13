@@ -158,7 +158,8 @@ Pico text editor while also offering a few enhancements.</description>
   <devel project="editors" package="nano"/>
 </package>"""
 
-    def _run_with_data(self, accept, issues_data):
+    def _run_with_data(self, accept, exists_in_factory, issues_data):
+        # exists_in_factory: whether the package is exists in factory
         httpretty.register_uri(httpretty.POST,
                                osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'cmd': 'diff',
                                                                                                  'onlyissues': '1',
@@ -169,9 +170,31 @@ Pico text editor while also offering a few enhancements.</description>
                                match_querystring=True,
                                body=issues_data)
         httpretty.register_uri(httpretty.GET,
-                               osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
+                               osc.core.makeurl(APIURL, ['source', "editors", "nano"], {'rev': '25', 'view': 'info'}),
                                match_querystring=True,
-                               body=self._nano_meta)
+                               body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b"><filename>nano.spec</filename><linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
+
+        if exists_in_factory is True:
+            httpretty.register_uri(httpretty.GET,
+                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
+                                   match_querystring=True,
+                                   body=self._nano_meta)
+            httpretty.register_uri(httpretty.GET,
+                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'view': 'info'}),
+                                   match_querystring=True,
+                                   body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b"><filename>nano.spec</filename><linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
+        else:
+            httpretty.register_uri(httpretty.GET,
+                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
+                                   status=404,
+                                   match_querystring=True,
+                                   body="")
+            httpretty.register_uri(httpretty.GET,
+                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'view': 'info'}),
+                                   status=404,
+                                   match_querystring=True,
+                                   body="")
+
         httpretty.register_uri(httpretty.GET,
                                APIURL + "/request/293129",
                                match_querystring=True,
@@ -201,7 +224,8 @@ Pico text editor while also offering a few enhancements.</description>
         self.assertEqual(result['state_accepted'], accept)
 
     def test_1_issue_accept(self):
-        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        # a new package and has issues
+        self._run_with_data(True, False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
@@ -211,7 +235,9 @@ Pico text editor while also offering a few enhancements.</description>
 </sourcediff>""")
 
     def test_3_issues_accept(self):
-        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        # not a new package and has issues
+        # changes already in Factory
+        self._run_with_data(True, True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
@@ -223,7 +249,8 @@ Pico text editor while also offering a few enhancements.</description>
 </sourcediff>""")
 
     def test_no_issues_decline(self):
-        self._run_with_data(False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        # a new package and has without issues
+        self._run_with_data(False, False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
@@ -231,76 +258,31 @@ Pico text editor while also offering a few enhancements.</description>
 </sourcediff>""")
 
     def test_no_issues_tag_decline(self):
-        self._run_with_data(False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        # a new package and has without issues tag
+        self._run_with_data(False, False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
 </sourcediff>""")
 
-    def test_no_issues_required(self):
-        accept = True
-        issues_data = """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+    def test_no_issues_accept(self):
+        # not a new package and has without issues
+        # changes already in Factory
+        self._run_with_data(True, True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
-</sourcediff>"""
-        httpretty.register_uri(httpretty.POST,
-                               osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'cmd': 'diff',
-                                                                                                 'onlyissues': '1',
-                                                                                                 'view': 'xml',
-                                                                                                 'opackage': 'nano',
-                                                                                                 'oproject': 'editors',
-                                                                                                 'orev': '25'}),
-                               match_querystring=True,
-                               body=issues_data)
-        httpretty.register_uri(httpretty.GET,
-                               osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
-                               status=404,
-                               match_querystring=True,
-                               body="")
-        httpretty.register_uri(httpretty.GET,
-                               osc.core.makeurl(APIURL, ['source', "editors", "nano"], {'rev': '25', 'view': 'info'}),
-                               match_querystring=True,
-                               body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b">
-  <filename>nano.spec</filename>
-  <linked project="openSUSE:Factory" package="nano" />
-                               </sourceinfo>""")
-        httpretty.register_uri(httpretty.GET,
-                               osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'view': 'info'}),
-                               match_querystring=True,
-                               body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b">
-  <filename>nano.spec</filename>
-  <linked project="openSUSE:Factory" package="nano" />
-                               </sourceinfo>""")
-        httpretty.register_uri(httpretty.GET,
-                               APIURL + "/request/293129",
-                               match_querystring=True,
-                               body=self._request_data)
-        httpretty.register_uri(httpretty.GET,
-                               APIURL + "/request/293129?withhistory=1",
-                               match_querystring=True,
-                               body=self._request_withhistory)
+  <issues/>
+</sourcediff>""")
 
-
-
-        result = {'state_accepted': None}
-
-        def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
-            if u.query == 'newstate=accepted&cmd=changereviewstate&by_user=maintbot':
-                result['state_accepted'] = True
-            elif u.query == 'newstate=declined&cmd=changereviewstate&by_user=maintbot':
-                result['state_accepted'] = False
-            return (200, headers, '<status code="ok"/>')
-
-        httpretty.register_uri(httpretty.POST,
-                               APIURL + "/request/293129",
-                               body=lambda method, uri, headers: change_request(result, method, uri, headers))
-
-        self.checker.set_request_ids(['293129'])
-        self.checker.check_requests()
-
-        self.assertEqual(result['state_accepted'], accept)
+    def test_no_issues_tag_accept(self):
+        # not a new package and has without issues tag
+        # changes already in Factory
+        self._run_with_data(True, True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+  <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
+  <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
+  <files />
+</sourcediff>""")
 
 
 if __name__ == '__main__':

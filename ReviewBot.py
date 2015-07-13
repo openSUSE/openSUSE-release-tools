@@ -194,7 +194,7 @@ class ReviewBot(object):
         url = osc.core.makeurl(apiurl, ('source', project, package), query=query)
         try:
             return ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError:
+        except (urllib2.HTTPError, urllib2.URLError):
             return None
 
     def get_originproject(self, project, package, rev=None):

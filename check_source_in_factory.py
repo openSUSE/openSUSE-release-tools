@@ -74,13 +74,18 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def _check_factory(self, rev, package):
         """check if factory sources contain the package and revision. check head and history"""
         self.logger.debug("checking %s in %s"%(package, self.factory))
-        si = self.get_sourceinfo(self.factory, package)
+        try:
+            si = osc.core.show_package_meta(self.apiurl, self.factory, package)
+        except (urllib2.HTTPError, urllib2.URLError):
+            si = None
         if si is None:
             self.logger.debug("new package")
             return None
-        elif rev == si.verifymd5:
-            self.logger.debug("srcmd5 matches")
-            return True
+        else:
+            si = self.get_sourceinfo(self.factory, package)
+            if rev == si.verifymd5:
+                self.logger.debug("srcmd5 matches")
+                return True
 
         self.logger.debug("%s not the latest version, checking history", rev)
         u = osc.core.makeurl(self.apiurl, [ 'source', self.factory, package, '_history' ], { 'limit': '5' })
@@ -105,7 +110,12 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
     def _check_requests(self, rev, package):
         self.logger.debug("checking requests")
-        requests = osc.core.get_request_list(self.apiurl, self.factory, package, None, ['new', 'review'], 'submit')
+        try:
+            requests = osc.core.get_request_list(self.apiurl, self.factory, package, None, ['new', 'review'], 'submit')
+        except (urllib2.HTTPError, urllib2.URLError):
+            self.logger.debug("none request")
+            return None
+
         for req in requests:
             for a in req.actions:
                 si = self.get_sourceinfo(a.src_project, a.src_package, a.src_rev)
