@@ -58,6 +58,14 @@ WEB_URL=None
 # build mapping between source repos and target repos
 MR = namedtuple('MatchRepo', ('srcrepo', 'dstrepo', 'arch'))
 
+# FIXME: use attribute instead
+PROJECT_BLACKLIST = {
+    'SUSE:SLE-11:Update'     : "abi-checker doesn't support SLE 11",
+    'SUSE:SLE-11-SP2:Update' : "abi-checker doesn't support SLE 11",
+    'SUSE:SLE-11-SP3:Update' : "abi-checker doesn't support SLE 11",
+    'SUSE:SLE-11-SP4:Update' : "abi-checker doesn't support SLE 11",
+    }
+
 # some project have more repos than what we are interested in
 REPO_WHITELIST = {
         'openSUSE:Factory':      ('standard', 'snapshot'),
@@ -199,6 +207,12 @@ class ABIChecker(ReviewBot.ReviewBot):
         # happens for maintenance incidents
         if dst_project == None and src_package == 'patchinfo':
             return None
+
+        if dst_project in PROJECT_BLACKLIST:
+            self.logger.info(PROJECT_BLACKLIST[dst_project])
+#            self.text_summary += PROJECT_BLACKLIST[dst_project] + "\n"
+            return True
+
         # default is to accept the review, just leave a note if
         # there were problems.
         ret = True
@@ -825,7 +839,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             url = osc.core.makeurl(self.apiurl, ('build', src_project, '_result'), query)
             return ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError, e:
-            self.logger.error('ERROR in URL %s [%s]' % (url, e))
+            if e.code != 404:
+                self.logger.error('ERROR in URL %s [%s]' % (url, e))
+                raise
+            pass
         return None
 
     def get_buildsuccess_repos(self, src_project, tgt_project, src_package, rev):
