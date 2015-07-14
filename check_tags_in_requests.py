@@ -77,7 +77,16 @@ Note: there is no whitespace behind before or after the number sign
 (compare with the packaging policies)
 """
 
+    def isNewPackage(self, tgt_project, tgt_package):
+        try:
+            self.logger.debug("package_meta %s %s/%s" % (self.apiurl, tgt_project, tgt_package))
+            osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
+        except (HTTPError, URLError):
+            return True
+        return False
+
     def checkTagInRequest(self, req, a):
+        is_new = False
         u = osc.core.makeurl(self.apiurl,
                              ['source', a.tgt_project, a.tgt_package],
                              {'cmd': 'diff',
@@ -86,7 +95,18 @@ Note: there is no whitespace behind before or after the number sign
                               'opackage': a.src_package,
                               'oproject': a.src_project,
                               'orev': a.src_rev})
-        f = osc.core.http_POST(u)
+        try:
+            f = osc.core.http_POST(u)
+        except (HTTPError, URLError):
+            is_new = self.isNewPackage(a.tgt_project, a.tgt_package)
+        
+        # in case the quest have not the matched revision in Factory
+        # and it is a new package to target project, then leave it to
+        # human review
+        if is_new:
+            self.logger.info("New package to %s and have not the matched revision in Factory"%a.tgt_project)
+            return True
+
         xml = ET.parse(f)
         has_changes = list(xml.findall('./issues/issue'))
         if not has_changes:
