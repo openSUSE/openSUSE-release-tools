@@ -16,6 +16,8 @@ class ListCommand:
         # Print out the left overs
         requests = self.api.get_open_requests()
 
+        non_ring_packages = []
+
         for request in requests:
             # Consolidate all data from request
             request_id = int(request.get('id'))
@@ -40,3 +42,8 @@ class ListCommand:
             # above anyway
             if ring:
                 print('Request({}): {} -> {}'.format(request_id, target_package, ring))
+            else:
+                non_ring_packages.append(target_package)
+
+        if len(non_ring_packages):
+            print "Not in a ring:", ' '.join(sorted(non_ring_packages))

@@ -60,6 +60,7 @@ class TestApiCalls(unittest.TestCase):
         }
         self.assertEqual(ring_packages, self.api.ring_packages)
 
+    @unittest.skip("no longer approving non-ring packages")
     def test_dispatch_open_requests(self):
         """
         Test dispatching and closure of non-ring packages
