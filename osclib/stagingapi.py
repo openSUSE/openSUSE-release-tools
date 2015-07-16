@@ -245,6 +245,15 @@ class StagingAPI(object):
             projects.append(val.get('name'))
         return projects
 
+    def get_adi_projects(self):
+        """
+        Get all current running ADI projects
+        :return list of known ADI projects
+        """
+
+        projects = [p for p in self.get_staging_project() if ':adi:' in p]
+        return projects
+
     def do_change_review_state(self, request_id, newstate, message=None,
                                by_group=None, by_user=None, by_project=None):
         """
@@ -778,6 +787,11 @@ class StagingAPI(object):
             return letter
         return '{}:{}'.format(self.cstaging, letter)
 
+    def adi_prj_from_number(self, number):
+        if ':' in str(number):
+            return number
+        return '{}:adi:{}'.format(self.cstaging, number)
+
     def list_requests_in_prj(self, project):
         where = "@by_project='%s'+and+@state='new'" % project
 
@@ -1073,3 +1087,40 @@ class StagingAPI(object):
             http_POST(u)
         except:
             print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)
+
+
+    def _candidate_adi_project(self):
+        """Decide a candidate name for an ADI project."""
+        adi_projects = sorted(self.get_adi_projects())
+        for i, project in enumerate(adi_projects):
+            if not project.endswith(i):
+                return self.adi_prj_from_number(i)
+
+    def create_adi_project(self, name):
+        """Create an ADI project."""
+        if not name:
+            name = self._candidate_adi_project()
+        else:
+            name = self.adi_prj_from_number(name)
+
+        adi_projects = self.get_adi_projects()
+        if name in adi_projects:
+            raise Exception('Project {} already exist'.format(name))
+
+        meta = """
+        <project name="{}">
+          <title></title>
+          <description></description>
+          <publish>
+            <disable/>
+          </publish>
+          <debuginfo>
+            <enable/>
+          </debuginfo>
+          <repository name="standard">
+            <path project="{}" repository="standard"/>
+            <arch>x86_64</arch>
+          </repository>
+        </project>""".format(name, self.project)
+        url = ""
+        http_PUT(url, data=meta)
