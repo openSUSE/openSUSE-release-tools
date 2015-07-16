@@ -14,9 +14,10 @@ MOVE = 'move'
 
 class SelectCommand(object):
 
-    def __init__(self, api):
+    def __init__(self, api, target_project):
         self.api = api
         self.affected_projects = set()
+        self.target_project = target_project
 
     def _package(self, request):
         """
@@ -118,7 +119,6 @@ class SelectCommand(object):
             print('Freeze the prj first')
             return False
             # FreezeCommand(self.api).perform(target_project)
-        self.target_project = target_project
 
         for request in RequestFinder.find_sr(requests, self.api):
             if not self.select_request(request, move, from_):

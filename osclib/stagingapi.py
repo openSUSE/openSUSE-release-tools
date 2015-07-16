@@ -245,13 +245,16 @@ class StagingAPI(object):
             projects.append(val.get('name'))
         return projects
 
+    def is_adi_project(self, p):
+        return ':adi:' in p
+
     def get_adi_projects(self):
         """
         Get all current running ADI projects
         :return list of known ADI projects
         """
 
-        projects = [p for p in self.get_staging_project() if ':adi:' in p]
+        projects = [p for p in self.get_staging_projects() if self.is_adi_project(p) ]
         return projects
 
     def do_change_review_state(self, request_id, newstate, message=None,
@@ -744,7 +747,7 @@ class StagingAPI(object):
         # The force_enable_build will avoid the
         # map_ring_package_to_subproject
         if not force_enable_build:
-            if self.crings and not self.ring_packages.get(tar_pkg):
+            if self.crings and not self.ring_packages.get(tar_pkg) and not self.is_adi_project(project):
                 disable_build = True
             else:
                 project = self.map_ring_package_to_subject(project, tar_pkg)
@@ -1092,9 +1095,13 @@ class StagingAPI(object):
     def _candidate_adi_project(self):
         """Decide a candidate name for an ADI project."""
         adi_projects = sorted(self.get_adi_projects())
+        adi_index = 1
         for i, project in enumerate(adi_projects):
-            if not project.endswith(i):
-                return self.adi_prj_from_number(i)
+            adi_index = i + 1
+            if not project.endswith(str(adi_index)):
+                return self.adi_prj_from_number(adi_index)
+            adi_index = i + 2
+        return self.adi_prj_from_number(adi_index)
 
     def create_adi_project(self, name):
         """Create an ADI project."""
@@ -1122,5 +1129,9 @@ class StagingAPI(object):
             <arch>x86_64</arch>
           </repository>
         </project>""".format(name, self.project)
-        url = ""
+        url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)
+        # put twice because on first put, the API adds useless maintainer
+        http_PUT(url, data=meta)
+
+        return name

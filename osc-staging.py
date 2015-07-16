@@ -35,6 +35,7 @@ from osclib.obslock import OBSLock
 from osclib.select_command import SelectCommand
 from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
+from osclib.adi_command import AdiCommand
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -121,7 +122,7 @@ def do_staging(self, subcmd, opts, *args):
             min_args = 2
     elif cmd == 'unselect':
         min_args, max_args = 1, None
-    elif cmd in ('list', 'cleanup_rings'):
+    elif cmd in ('adi', 'list', 'cleanup_rings'):
         min_args, max_args = 0, 0
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
@@ -162,9 +163,11 @@ def do_staging(self, subcmd, opts, *args):
             if opts.add:
                 api.mark_additional_packages(tprj, [opts.add])
             else:
-                SelectCommand(api).perform(tprj, args[2:], opts.move,
+                SelectCommand(api, tprj).perform(args[2:], opts.move,
                                            opts.from_, opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'list':
             ListCommand(api).perform()
+        elif cmd == 'adi':
+            AdiCommand(api).perform()
