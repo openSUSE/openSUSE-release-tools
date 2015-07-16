@@ -26,7 +26,7 @@ job install provides pattern() = rest_core_dvd
 
 job install name aaa_base-extras
 job install name branding-openSUSE
-job install name openSUSE-release-livecd-x11
+job install name openSUSE-release-dvd
 job install name sudo
 job install name xdelta
 job install name kate
