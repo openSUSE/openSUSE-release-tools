@@ -398,8 +398,8 @@ class StagingAPI(object):
         requests = self.get_open_requests()
         # check if we can reduce it down by accepting some
         for rq in requests:
-            if self.crings:
-                self.accept_non_ring_request(rq)
+            #if self.crings:
+            #    self.accept_non_ring_request(rq)
             self.update_superseded_request(rq)
 
     def get_prj_pseudometa(self, project):
