@@ -114,6 +114,9 @@ class SelectCommand(object):
         :param from_: location where from move the requests
         """
 
+        if self.api.is_adi_project(self.target_project):
+            no_freeze = True
+
         # If the project is not frozen enough yet freeze it
         if not (no_freeze or self.api.prj_frozen_enough(self.target_project)):
             print('Freeze the prj first')
