@@ -38,7 +38,7 @@ class TestSelect(unittest.TestCase):
     def test_old_frozen(self):
         self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
         # check it won't allow selecting
-        self.assertEqual(False, SelectCommand(self.api).perform('openSUSE:Factory:Staging:A', ['gcc']))
+        self.assertEqual(False, SelectCommand(self.api, 'openSUSE:Factory:Staging:A').perform(['gcc']))
 
     def test_select_comments(self):
         c_api = CommentAPI(self.api.apiurl)
@@ -46,7 +46,7 @@ class TestSelect(unittest.TestCase):
         comments = c_api.get_comments(project_name=staging_b)
 
         # First select
-        self.assertEqual(True, SelectCommand(self.api).perform(staging_b, ['gcc', 'wine']))
+        self.assertEqual(True, SelectCommand(self.api, staging_b).perform(['gcc', 'wine']))
         first_select_comments = c_api.get_comments(project_name=staging_b)
         last_id = sorted(first_select_comments.keys())[-1]
         first_select_comment = first_select_comments[last_id]
@@ -56,7 +56,7 @@ class TestSelect(unittest.TestCase):
         self.assertTrue('Request#123 for package gcc submitted by @Admin' in first_select_comment['comment'])
 
         # Second select
-        self.assertEqual(True, SelectCommand(self.api).perform(staging_b, ['puppet']))
+        self.assertEqual(True, SelectCommand(self.api, staging_b).perform(['puppet']))
         second_select_comments = c_api.get_comments(project_name=staging_b)
         last_id = sorted(second_select_comments.keys())[-1]
         second_select_comment = second_select_comments[last_id]
@@ -70,11 +70,11 @@ class TestSelect(unittest.TestCase):
     def test_no_matches(self):
         # search for requests
         with self.assertRaises(oscerr.WrongArgs) as cm:
-            SelectCommand(self.api).perform('openSUSE:Factory:Staging:B', ['bash'])
+            SelectCommand(self.api, 'openSUSE:Factory:Staging:B').perform(['bash'])
         self.assertEqual(str(cm.exception), "No SR# found for: bash")
 
     def test_selected(self):
         # make sure the project is frozen recently for other tests
 
-        ret = SelectCommand(self.api).perform('openSUSE:Factory:Staging:B', ['wine'])
+        ret = SelectCommand(self.api, 'openSUSE:Factory:Staging:B').perform(['wine'])
         self.assertEqual(True, ret)
