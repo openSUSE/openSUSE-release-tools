@@ -248,6 +248,10 @@ class StagingAPI(object):
     def is_adi_project(self, p):
         return ':adi:' in p
 
+    # this function will crash if given a non-adi project name
+    def extract_adi_number(self, p):
+        return int(p.split(':adi:')[1])
+
     def get_adi_projects(self):
         """
         Get all current running ADI projects
@@ -1094,7 +1098,8 @@ class StagingAPI(object):
 
     def _candidate_adi_project(self):
         """Decide a candidate name for an ADI project."""
-        adi_projects = sorted(self.get_adi_projects())
+        adi_projects = sorted(self.get_adi_projects(),
+                              key=lambda project: self.extract_adi_number(project))
         adi_index = 1
         for i, project in enumerate(adi_projects):
             adi_index = i + 1
