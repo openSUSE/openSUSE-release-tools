@@ -33,6 +33,7 @@ DEFAULT = {
     r'openSUSE:(?P<project>[-\w\d]+)': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': '%(project.lower)s-staging',
+        'staging-archs': 'i586 x86_64 ppc64le',
         'rings': 'openSUSE:%(project)s:Rings',
         'nonfree': 'openSUSE:%(project)s:NonFree',
         'rebuild': 'openSUSE:%(project)s:Rebuild',
@@ -44,6 +45,7 @@ DEFAULT = {
     r'SUSE:(?P<project>.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
         'staging-group': 'sle-staging-managers',  # '%(project.lower)s-staging',
+        'staging-archs': 'i586 x86_64',
         'rings': None,
         'nonfree': None,
         'rebuild': None,

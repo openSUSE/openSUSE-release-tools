@@ -51,12 +51,13 @@ class StagingAPI(object):
         # Store some prefix / data used in the code.
         self.cstaging = conf.config[project]['staging']
         self.cstaging_group = conf.config[project]['staging-group']
+        self.cstaging_archs = conf.config[project]['staging-archs'].split(' ')
         self.crings = conf.config[project]['rings']
         self.cnonfree = conf.config[project]['nonfree']
         self.crebuild = conf.config[project]['rebuild']
         self.cproduct = conf.config[project]['product']
         self.copenqa = conf.config[project]['openqa']
-
+        
         # If the project support rings, inititialize some variables.
         self.ring_packages = {}
         if self.crings:
