@@ -36,7 +36,6 @@ class AdiCommand:
             
     def check_adi_projects(self):
         for p in self.api.get_adi_projects():
-
             self.check_adi_project(p)
 
     def create_new_adi(self, wanted_requests):
@@ -66,7 +65,9 @@ class AdiCommand:
                 
         if len(non_ring_packages):
             print "Not in a ring:", ' '.join(sorted(non_ring_packages))
-            
+        else:
+            return
+        
         name = self.api.create_adi_project(None)
 
         sc = SelectCommand(self.api, name)
@@ -90,5 +91,5 @@ class AdiCommand:
                 requests.add(request)
             self.create_new_adi(requests)
         else:
+            self.check_adi_projects() 
             self.create_new_adi(())
-        #self.check_adi_projects()
