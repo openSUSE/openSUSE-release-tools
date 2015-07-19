@@ -259,7 +259,7 @@ class StagingAPI(object):
         """
 
         projects = [p for p in self.get_staging_projects() if self.is_adi_project(p) ]
-        return projects
+        return sorted(projects, key=lambda project: self.extract_adi_number(project))
 
     def do_change_review_state(self, request_id, newstate, message=None,
                                by_group=None, by_user=None, by_project=None):
@@ -1098,8 +1098,7 @@ class StagingAPI(object):
 
     def _candidate_adi_project(self):
         """Decide a candidate name for an ADI project."""
-        adi_projects = sorted(self.get_adi_projects(),
-                              key=lambda project: self.extract_adi_number(project))
+        adi_projects = self.get_adi_projects()
         adi_index = 1
         for i, project in enumerate(adi_projects):
             adi_index = i + 1

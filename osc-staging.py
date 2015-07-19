@@ -122,7 +122,9 @@ def do_staging(self, subcmd, opts, *args):
             min_args = 2
     elif cmd == 'unselect':
         min_args, max_args = 1, None
-    elif cmd in ('adi', 'list', 'cleanup_rings'):
+    elif cmd == 'adi':
+        min_args, max_args = None, None
+    elif cmd in ('list', 'cleanup_rings'):
         min_args, max_args = 0, 0
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
@@ -170,4 +172,4 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'list':
             ListCommand(api).perform()
         elif cmd == 'adi':
-            AdiCommand(api).perform()
+            AdiCommand(api).perform(args[1:])
