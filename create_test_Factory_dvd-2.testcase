@@ -57,3 +57,5 @@ job lock name systemtap
 job lock name esound-daemon
 job lock name gettext-runtime-mini
 
+job lock name yast2-nfs-client
+
