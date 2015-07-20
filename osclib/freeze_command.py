@@ -179,29 +179,24 @@ class FreezeCommand(object):
 
         r = ET.SubElement(root, 'repository', {'name': 'bootstrap_copy'})
         ET.SubElement(r, 'path', {'project': self.api.cstaging, 'repository': 'standard'})
-        a = ET.SubElement(r, 'arch')
-        a.text = 'i586'
-        a = ET.SubElement(r, 'arch')
-        a.text = 'x86_64'
-        a = ET.SubElement(r, 'arch')
-        a.text = 'ppc64le'
+        for arch in self.api.cstaging_archs:
+            a = ET.SubElement(r, 'arch')
+            a.text = arch
 
         r = ET.SubElement(root, 'repository', {'name': 'standard', 'linkedbuild': 'all', 'rebuild': 'direct'})
         ET.SubElement(r, 'path', {'project': prj, 'repository': 'bootstrap_copy'})
-        a = ET.SubElement(r, 'arch')
-        a.text = 'i586'
-        a = ET.SubElement(r, 'arch')
-        a.text = 'x86_64'
-        a = ET.SubElement(r, 'arch')
-        a.text = 'ppc64le'
+        for arch in self.api.cstaging_archs:
+            a = ET.SubElement(r, 'arch')
+            a.text = arch
 
         r = ET.SubElement(root, 'repository', {'name': 'images', 'linkedbuild': 'all', 'rebuild': 'direct'})
         ET.SubElement(r, 'path', {'project': prj, 'repository': 'standard'})
         a = ET.SubElement(r, 'arch')
         a.text = 'x86_64'
 
-        a = ET.SubElement(r, 'arch')
-        a.text = 'ppc64le'
+        if 'ppc64le' in self.api.cstaging_archs:
+            a = ET.SubElement(r, 'arch')
+            a.text = 'ppc64le'
 
         return ET.tostring(root)
 
