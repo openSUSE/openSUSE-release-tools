@@ -14,9 +14,10 @@ MOVE = 'move'
 
 class SelectCommand(object):
 
-    def __init__(self, api):
+    def __init__(self, api, target_project):
         self.api = api
         self.affected_projects = set()
+        self.target_project = target_project
 
     def _package(self, request):
         """
@@ -103,7 +104,7 @@ class SelectCommand(object):
         else:
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
-    def perform(self, target_project, requests, move=False,
+    def perform(self, requests, move=False,
                 from_=None, no_freeze=False):
         """
         Select package and move it accordingly by arguments
@@ -113,23 +114,25 @@ class SelectCommand(object):
         :param from_: location where from move the requests
         """
 
+        if self.api.is_adi_project(self.target_project):
+            no_freeze = True
+
         # If the project is not frozen enough yet freeze it
-        if not (no_freeze or self.api.prj_frozen_enough(target_project)):
+        if not (no_freeze or self.api.prj_frozen_enough(self.target_project)):
             print('Freeze the prj first')
             return False
-            # FreezeCommand(self.api).perform(target_project)
-        self.target_project = target_project
+            # FreezeCommand(self.api).perform(self.target_project)
 
         for request in RequestFinder.find_sr(requests, self.api):
             if not self.select_request(request, move, from_):
                 return False
 
         # Notify everybody about the changes
-        self.api.update_status_comments(target_project, 'select')
+        self.api.update_status_comments(self.target_project, 'select')
         for fprj in self.affected_projects:
             self.api.update_status_comments(fprj, 'select')
 
         # now make sure we enable the prj if the prj contains any ringed package
-        self.api.build_switch_staging_project(target_project)
+        self.api.build_switch_staging_project(self.target_project)
 
         return True
