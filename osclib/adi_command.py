@@ -56,10 +56,17 @@ class AdiCommand:
             # we care only about first action
             action = action[0]
 
+
             # Where are we targeting the package
-            source_project = action.find('source').get('project')
             if len(wanted_requests):
                 source_project = 'wanted'
+            else:
+                source = action.find('source')
+                if source is not None:
+                    source_project = source.get('project')
+                else:
+                    source_project = 'none'
+
             target_package = action.find('target').get('package')
 
             if not self.api.ring_packages.get(target_package):
