@@ -933,7 +933,10 @@ class StagingAPI(object):
         for request in meta['requests']:
             staged_requests.append(request['id'])
         target_flag = 'disable'
-        if not self.crings or self.check_ring_packages(target_project, staged_requests):
+        # for adi projects we always build
+        if self.is_adi_project(target_project):
+            target_flag = 'enable'
+        elif not self.crings or self.check_ring_packages(target_project, staged_requests):
             target_flag = 'enable'
         self.build_switch_prj(target_project, target_flag)
 
