@@ -74,9 +74,9 @@ class RequestFinder(object):
 
         requests = []
         for sr in root.findall('request'):
-            # Check the package matches - OBS is case insensitive
-            rq_package = sr.find('action').find('target').get('package')
-            if package.lower() != rq_package.lower():
+            # Check the target matches - OBS query is case insensitive, but OBS is not
+            rq_target = sr.find('action').find('target')
+            if package != rq_target.get('package') or self.api.project != rq_target.get('project'):
                 continue
 
             request = int(sr.get('id'))
