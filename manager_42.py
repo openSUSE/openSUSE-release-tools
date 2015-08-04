@@ -40,6 +40,7 @@ makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
 http_DELETE = osc.core.http_DELETE
 http_PUT = osc.core.http_PUT
+http_POST = osc.core.http_POST
 
 
 class UpdateCrawler(object):
@@ -125,7 +126,11 @@ class UpdateCrawler(object):
         root = ET.fromstring(self._get_source_package(sourceprj, sourcepkg, rev))
         srcmd5 = root.get('srcmd5')
         vrev = root.get('vrev')
-        link = "<link project='{}' package='{}' rev='{}' vrev='{}'/>"
+        if vrev is None:
+            vrev = ''
+        else:
+            vrev = " vrev='{}'".format(vrev)
+        link = "<link project='{}' package='{}' rev='{}'{}/>"
         return link.format(sourceprj, sourcepkg, srcmd5, vrev)
 
     def upload_link(self, project, package, link_string):
@@ -182,21 +187,88 @@ class UpdateCrawler(object):
 
         return left_packages
 
+    def check_factory_sources(self, package, verifymd5):
+        try:
+            his = http_GET(makeurl(self.apiurl,
+                                   ['source', 'openSUSE:Factory', package, '_history'])).read()
+        except urllib2.HTTPError:
+            return None
+        
+        his = ET.fromstring(his)
+        revs = list()
+        for rev in his.findall('revision'):
+            revs.append(rev.find('srcmd5').text)
+        revs.reverse()
+        for i in xrange(5): # check last 5 commits
+            srcmd5=revs.pop(0)
+            root = http_GET(makeurl(self.apiurl,
+                                    ['source', 'openSUSE:Factory', package], { 'rev': srcmd5, 'view': 'info'})).read()
+            root = ET.fromstring(root)
+            if root.get('verifymd5') == verifymd5:
+                return srcmd5
+        return None
+        
     def try_to_find_left_packages(self, packages):
         for package in packages:
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
-            print ET.tostring(root)
-            
+            linked = root.find('linked')
+            if not linked is None and linked.get('package') != package:
+                print "subpackage?"
+                continue
+            srcmd5 = self.check_factory_sources(package, root.get('verifymd5'))
+            if srcmd5:
+                self.link_packages([ package ], 'openSUSE:Factory', package, srcmd5, self.project_mapping['openSUSE:Factory'], package)
+
+    def check_link(self, project, package):
+        link = http_GET(makeurl(self.apiurl,
+                                ['source', project, package, '_link'])).read()
+        link = ET.fromstring(link)
+        rev = link.get('rev')
+        if rev and len(rev) > 5:
+            return True
+        if link.get('cicount'):
+            return True
+        opts = { 'view': 'info' }
+        if rev:
+            opts['rev'] = rev
+        root = http_GET(makeurl(self.apiurl,
+                                ['source', link.get('project'), link.get('package')], opts )).read()
+        root = ET.fromstring(root)
+        self.link_packages([package], link.get('project'), link.get('package'), root.get('srcmd5'), project, package)
+        
+    def find_invalid_links(self, prj):
+        packages = self.get_source_packages(prj)
+        for package in packages:
+            self.check_link(prj, package)
+
+    def check_dups(self):
+        mypackages = dict()
+        for project in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites', 'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+            for package in self.get_source_packages(project):
+                if package in mypackages:
+                    # TODO: detach only if actually a link to the deleted package
+                    url = makeurl(self.apiurl, ['source', 'openSUSE:42', package], { 'opackage': package, 'oproject': 'openSUSE:42', 'cmd': 'copy', 'expand': '1'} )
+                    try:
+                        http_POST(url)
+                    except urllib2.HTTPError:
+                        continue
+                    url = makeurl(self.apiurl, ['source', project, package])
+                    http_DELETE(url)
+                else:
+                    mypackages[package] = project
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
     uc = UpdateCrawler(args.from_prj)
+    uc.check_dups()
     #lp = uc.crawl()
-    lp = ['ant-antlr', 'ant-junit', 'antlr-bootstrap', 'bluez', 'cross-aarch64-binutils', 'cross-aarch64-gcc48-icecream-backend', 'cross-arm-binutils', 'cross-armv6hl-gcc48-icecream-backend', 'cross-armv7hl-gcc48-icecream-backend', 'cross-avr-binutils', 'cross-hppa-binutils', 'cross-hppa-gcc48-icecream-backend', 'cross-hppa64-binutils', 'cross-i386-binutils', 'cross-i386-gcc48-icecream-backend', 'cross-ia64-binutils', 'cross-ia64-gcc48-icecream-backend', 'cross-m68k-binutils', 'cross-mips-binutils', 'cross-ppc-binutils', 'cross-ppc-gcc48-icecream-backend', 'cross-ppc64-binutils', 'cross-ppc64-gcc48-icecream-backend', 'cross-ppc64le-binutils', 'cross-ppc64le-gcc48-icecream-backend', 'cross-s390-binutils', 'cross-s390-gcc48-icecream-backend', 'cross-s390x-binutils', 'cross-s390x-gcc48-icecream-backend', 'cross-sparc-binutils', 'cross-sparc64-binutils', 'cross-spu-binutils', 'cross-x86_64-binutils', 'cross-x86_64-gcc48-icecream-backend', 'gcc48-testresults', 'glibc-testsuite', 'glibc-utils', 'installation-images-openSUSE', 'iproute2-doc', 'java-1_7_0-openjdk-bootstrap', 'jython', 'kde-branding-openSUSE', 'kernel-debug', 'kernel-default', 'kernel-desktop', 'kernel-docs', 'kernel-ec2', 'kernel-lpae', 'kernel-obs-build', 'kernel-obs-qa', 'kernel-obs-qa-xen', 'kernel-pae', 'kernel-pv', 'kernel-source', 'kernel-syms', 'kernel-vanilla', 'kernel-xen', 'krb5-mini', 'libdbus-c++', 'libffi48', 'libgcj48', 'libsndfile-progs', 'lldb', 'log4j-mini', 'mozilla-nss', 'openssh-askpass-gnome', 'orc', 'patterns-openSUSE', 'pm-utils', 'polkit-default-privs', 'postgresql93-libs', 'python-base', 'python-doc', 'python-libxml2', 'python-magic', 'python-nose-doc', 'python3-gobject', 'python3-kde4', 'python3-py-doc', 'python3-rpm', 'rpm-python', 'rpmlint', 'rpmlint-mini', 'rpmlint-tests', 'systemd-mini', 'unzip-rcc', 'xml-commons-apis-bootstrap', 'xmlbeans', 'xmlbeans-mini', 'knewstuff', 'kmediaplayer', 'knotifyconfig', 'knotifications', 'kjobwidgets', 'kitemviews', 'kjsembed', 'kjs', 'libxcb', 'kparts', 'kpackage', 'kwayland', 'kwrited5', 'kio-extras5', 'kmenuedit5', 'libkdecoration2', 'libkscreen2', 'skelcd-control-openSUSE', 'xf86driproto', 'kglobalaccel', 'kguiaddons', 'khtml', 'ki18n', 'kiconthemes', 'kidletime', 'kimageformats', 'kinit', 'kio', 'kitemmodels', 'kapidox', 'milou5', 'libksysguard5', 'plasma5-mediacenter', 'kactivities5', 'plasma5-sdk', 'xf86-input-void', 'go-go-md2man', 'xf86-video-fbdev', 'xf86-video-intel', 'xf86-video-cirrus', 'xf86-video-dummy', 'xf86-video-nv', 'go', 'xf86-video-mga', 'xf86-video-nouveau', 'MozillaFirefox', 'xf86-video-sis', 'libxshmfence', 'xf86-input-wacom', 'docker', 'branding-openSUSE', 'kemoticons', 'kdoctools', 'kdnssd-framework', 'kdewebkit', 'kdesu', 'kdesignerplugin', 'kdelibs4support', 'kded', 'kdeclarative', 'kdbusaddons', 'xorg-x11-server', 'xf86-input-synaptics', 'gnome-shell', 'gdm', 'xf86-video-vmware', 'xf86-video-vesa', 'xf86dgaproto', 'xf86bigfontproto', 'xf86miscproto', 'frameworkintegration', 'xf86vidmodeproto', 'xf86rushproto', 'xineramaproto', 'evieproto', 'xf86-video-qxl', 'kde-gtk-config5', 'kfilemetadata5', 'kscreen5', 'ksshaskpass5', 'ksysguard5', 'xf86-video-r128', 'kcoreaddons', 'kcrash', 'kbookmarks', 'kcmutils', 'karchive', 'kauth', 'kconfig', 'kconfigwidgets', 'kcodecs', 'kcompletion', 'libXi', 'glu', 'libXfont', 'polkit-kde-agent-5', 'xf86-video-ati', 'baloo5', 'libqt5-qtbase', 'xf86-video-ast', 'dmxproto', 'dri2proto', 'compositeproto', 'damageproto', 'Mesa', 'bigreqsproto', 'skelcd-openSUSE', 'bluez-qt', 'attica-qt5', 'dri3proto', 'extra-cmake-modules', 'trapproto', 'scrnsaverproto', 'ant', 'slf4j', 'libQtWebKit4', 'plasma5-workspace-wallpapers', 'kbproto', 'inputproto', 'libepoxy', 'libdrm', 'fontcacheproto', 'fixesproto', 'glproto', 'fontsproto', 'ninja', 'llvm', 'xf86-input-evdev', 'python', 'docker-distribution', 'xtrans', 'xproxymngproto', 'xproto', 'usbutils', 'plasma5-openSUSE', 'plasma5-session', 'plasma5-addons', 'docker-compose', 'presentproto', 'printproto', 'pthread-stubs', 'python-Mako', 'python-MarkupSafe', 'python-nose', 'randrproto', 'recordproto', 'renderproto', 'resourceproto', 'plasma5-desktop', 'go-blackfriday', 'go-net', 'khotkeys5', 'kinfocenter5', 'kde-cli-tools5', 'powerdevil5', 'plasma5-workspace', 'khelpcenter5', 'go-text', 'bluedevil5', 'breeze', 'kcm_sddm', 'xmlgraphics-fop', 'ktexteditor', 'ktextwidgets', 'krunner', 'kservice', 'kpty', 'kross', 'kpeople5', 'kplotting', 'xextproto', 'xcmiscproto', 'xcb-proto', 'windowswmproto', 'videoproto', 'util-macros', 'kunitconversion', 'kwallet', 'kwin5', 'oxygen5', 'plasma-nm5', 'systemsettings5', 'threadweaver', 'sonnet', 'kxmlrpcclient5', 'kxmlgui', 'kwindowsystem', 'kwidgetsaddons', 'solid', 'plasma-framework', 'libKF5NetworkManagerQt', 'libKF5ModemManagerQt']
-    uc.try_to_find_left_packages(lp)
-
+    #uc.try_to_find_left_packages(lp)
+    #uc.find_invalid_links('openSUSE:42:SLE12-Picks')
+    uc.find_invalid_links('openSUSE:42:Factory-Copies')
+    
+    
 if __name__ == '__main__':
     description = 'Create SR from SLE to the new openSUSE:42 project for '\
                   'every new update.'
