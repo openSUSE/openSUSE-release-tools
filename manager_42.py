@@ -250,8 +250,8 @@ class UpdateCrawler(object):
                     url = makeurl(self.apiurl, ['source', 'openSUSE:42', package], { 'opackage': package, 'oproject': 'openSUSE:42', 'cmd': 'copy', 'expand': '1'} )
                     try:
                         http_POST(url)
-                    except urllib2.HTTPError:
-                        continue
+                    except urllib2.HTTPError, err:
+                        pass
                     url = makeurl(self.apiurl, ['source', project, package])
                     http_DELETE(url)
                 else:
@@ -266,7 +266,7 @@ def main(args):
     #lp = uc.crawl()
     #uc.try_to_find_left_packages(lp)
     #uc.find_invalid_links('openSUSE:42:SLE12-Picks')
-    uc.find_invalid_links('openSUSE:42:Factory-Copies')
+    #uc.find_invalid_links('openSUSE:42:Factory-Copies')
     
     
 if __name__ == '__main__':
