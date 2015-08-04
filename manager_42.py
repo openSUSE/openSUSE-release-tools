@@ -52,7 +52,10 @@ class UpdateCrawler(object):
         for prj in ['SUSE:SLE-12:Update', 'SUSE:SLE-12:GA']:
             self.project_mapping[prj] = 'openSUSE:42:SLE12-Picks'
         self.project_mapping['openSUSE:Factory'] = 'openSUSE:42:Factory-Copies'
-
+        self.packages = dict()
+        for project in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites', 'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+            self.packages[project] = self.get_source_packages(project)
+        
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
         query = {'expand': 1} if expand else {}
@@ -100,6 +103,7 @@ class UpdateCrawler(object):
             url = makeurl(self.apiurl, ['source', project, package])
             try:
                 http_DELETE(url)
+                self.packages[project].remove(package)
             except urllib2.HTTPError, err:
                 if err.code == 404:
                     # not existant package is ok, we delete them all
@@ -219,14 +223,31 @@ class UpdateCrawler(object):
             if srcmd5:
                 self.link_packages([ package ], 'openSUSE:Factory', package, srcmd5, self.project_mapping['openSUSE:Factory'], package)
 
+    def check_inner_link(self, project, package, link):
+        if not link.get('cicount'):
+            return
+        if link.get('package') not in self.packages[project]:
+            url = makeurl(self.apiurl, ['source', project, package])
+            http_DELETE(url)
+            self.packages[project].remove(package)
+
+    def get_link(self, project, package):
+        try:
+            link = http_GET(makeurl(self.apiurl,
+                                    ['source', project, package, '_link'])).read()
+        except urllib2.HTTPError:
+            return None
+        return ET.fromstring(link)
+        
     def check_link(self, project, package):
-        link = http_GET(makeurl(self.apiurl,
-                                ['source', project, package, '_link'])).read()
-        link = ET.fromstring(link)
+        link = self.get_link(project, package)
+        if link is None:
+            return
         rev = link.get('rev')
         if rev and len(rev) > 5:
             return True
-        if link.get('cicount'):
+        if not link.get('project'):
+            self.check_inner_link(project, package, link)
             return True
         opts = { 'view': 'info' }
         if rev:
@@ -237,14 +258,13 @@ class UpdateCrawler(object):
         self.link_packages([package], link.get('project'), link.get('package'), root.get('srcmd5'), project, package)
         
     def find_invalid_links(self, prj):
-        packages = self.get_source_packages(prj)
-        for package in packages:
+        for package in self.packages[prj]:
             self.check_link(prj, package)
 
     def check_dups(self):
         mypackages = dict()
         for project in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites', 'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
-            for package in self.get_source_packages(project):
+            for package in self.packages[project]:
                 if package in mypackages:
                     # TODO: detach only if actually a link to the deleted package
                     url = makeurl(self.apiurl, ['source', 'openSUSE:42', package], { 'opackage': package, 'oproject': 'openSUSE:42', 'cmd': 'copy', 'expand': '1'} )
@@ -254,8 +274,37 @@ class UpdateCrawler(object):
                         pass
                     url = makeurl(self.apiurl, ['source', project, package])
                     http_DELETE(url)
+                    self.packages[project].remove(package)
                 else:
                     mypackages[package] = project
+
+    def check_multiple_specs(self, project):
+        for package in self.packages[project]:
+            url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
+            root = ET.fromstring(http_GET(url).read())
+            files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
+            if len(files) == 1:
+                continue
+            mainpackage = None
+            for subpackage in files[:]:
+                link = self.get_link(project, subpackage)
+                if link is not None:
+                    if link.get('project') and link.get('project') != project:
+                        mainpackage = subpackage
+                        files.remove(subpackage)
+                    if link.get('cicount'):
+                        files.remove(subpackage)
+
+            for subpackage in files:
+                for prj in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites',
+                            'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+                    if subpackage in self.packages[prj]:
+                        self.remove_packages(prj, [ subpackage ])
+                
+                link = "<link cicount='copy' package='{}' />".format(mainpackage)
+                self.create_package_container(project, subpackage)
+                self.upload_link(project, subpackage, link)
+                
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
@@ -263,10 +312,14 @@ def main(args):
 
     uc = UpdateCrawler(args.from_prj)
     uc.check_dups()
-    #lp = uc.crawl()
-    #uc.try_to_find_left_packages(lp)
-    #uc.find_invalid_links('openSUSE:42:SLE12-Picks')
-    #uc.find_invalid_links('openSUSE:42:Factory-Copies')
+    uc.check_multiple_specs('openSUSE:42:Factory-Copies')
+    #uc.check_multiple_specs('openSUSE:42:SLE12-Picks')
+    return
+    lp = uc.crawl()
+    uc.try_to_find_left_packages(lp)
+    uc.find_invalid_links('openSUSE:42')
+    uc.find_invalid_links('openSUSE:42:SLE12-Picks')
+    uc.find_invalid_links('openSUSE:42:Factory-Copies')
     
     
 if __name__ == '__main__':
