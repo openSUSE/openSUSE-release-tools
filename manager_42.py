@@ -278,6 +278,29 @@ class UpdateCrawler(object):
                 else:
                     mypackages[package] = project
 
+    def freeze_candidates(self):
+        url = makeurl(self.apiurl, ['source', 'openSUSE:Factory'], { 'view': 'info' } )
+        root = ET.fromstring(http_GET(url).read())
+        flink = ET.Element('frozenlinks')
+        fl = ET.SubElement(flink, 'frozenlink', {'project': 'openSUSE:Factory'})
+        
+        for package in root.findall('sourceinfo'):
+            exists = False
+            if package.get('package').startswith('_product'):
+                continue
+            for prj in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites',
+                        'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+                if package.get('package') in self.packages[prj]:
+                    exists = True
+            if exists:
+                continue
+            ET.SubElement(fl, 'package', { 'name': package.get('package'),
+                                           'srcmd5': package.get('srcmd5'),
+                                           'vrev': package.get('vrev') })
+            
+        url = makeurl(self.apiurl, ['source', 'openSUSE:42:Factory-Candidates-Check', '_project', '_frozenlinks'], {'meta': '1'})
+        http_PUT(url, data=ET.tostring(flink))
+
     def check_multiple_specs(self, project):
         for package in self.packages[project]:
             url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
@@ -313,14 +336,13 @@ def main(args):
     uc = UpdateCrawler(args.from_prj)
     uc.check_dups()
     uc.check_multiple_specs('openSUSE:42:Factory-Copies')
-    #uc.check_multiple_specs('openSUSE:42:SLE12-Picks')
-    return
+    uc.check_multiple_specs('openSUSE:42:SLE12-Picks')
     lp = uc.crawl()
     uc.try_to_find_left_packages(lp)
     uc.find_invalid_links('openSUSE:42')
     uc.find_invalid_links('openSUSE:42:SLE12-Picks')
     uc.find_invalid_links('openSUSE:42:Factory-Copies')
-    
+    uc.freeze_candidates()    
     
 if __name__ == '__main__':
     description = 'Create SR from SLE to the new openSUSE:42 project for '\
