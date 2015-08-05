@@ -24,6 +24,7 @@ import argparse
 import itertools
 import logging
 import sys
+import urllib2
 from xml.etree import cElementTree as ET
 
 import osc.conf
@@ -109,7 +110,7 @@ class UpdateCrawler(object):
     def _submitrequest(self, src_project, src_package, dst_project,
                        dst_package, msg):
         """Create a submit request."""
-        states = ['new', 'review', 'declined']
+        states = ['new', 'review', 'declined', 'revoked']
         reqs = osc.core.get_exact_request_list(self.apiurl,
                                                src_project,
                                                dst_project,
@@ -134,6 +135,20 @@ class UpdateCrawler(object):
         msg = 'Automatic request from %s by UpdateCrawler' % src_project
         return self._submitrequest(src_project, src_package, dst_project,
                                    dst_package, msg)
+
+    def is_source_innerlink(self, project, package):
+        try:
+            root = ET.parse(
+                http_GET(makeurl(self.apiurl,
+                                 ['source', project, package, '_link']
+                ))).getroot()
+            if root.get('project') is None and root.get('cicount'):
+                return True
+        except urllib2.HTTPError, err:
+            # if there is no link, it can't be a link
+            if err.code == 404:
+                return False
+            raise
 
     def crawl(self):
         """Main method of the class that run the crawler."""
@@ -161,6 +176,10 @@ class UpdateCrawler(object):
             md5_to = self.get_source_verifymd5(self.to_prj, package)
             if md5_from == md5_to:
                 logging.info('Package %s not marked for update' % package)
+                continue
+
+            if self.is_source_innerlink(self.from_prj, update):
+                logging.info('Package %s sub-spec file' % package)
                 continue
 
             # Mark the package for an update
