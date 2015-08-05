@@ -35,6 +35,7 @@ from osc.core import http_POST
 from osc.core import http_PUT
 
 from osclib.comments import CommentAPI
+from osclib.memoize import memoize
 
 
 class StagingAPI(object):
@@ -57,7 +58,7 @@ class StagingAPI(object):
         self.crebuild = conf.config[project]['rebuild']
         self.cproduct = conf.config[project]['product']
         self.copenqa = conf.config[project]['openqa']
-        
+
         # If the project support rings, inititialize some variables.
         self.ring_packages = {}
         if self.crings:
@@ -259,7 +260,7 @@ class StagingAPI(object):
         :return list of known ADI projects
         """
 
-        projects = [p for p in self.get_staging_projects() if self.is_adi_project(p) ]
+        projects = [p for p in self.get_staging_projects() if self.is_adi_project(p)]
         return sorted(projects, key=lambda project: self.extract_adi_number(project))
 
     def do_change_review_state(self, request_id, newstate, message=None,
@@ -415,10 +416,11 @@ class StagingAPI(object):
         requests = self.get_open_requests()
         # check if we can reduce it down by accepting some
         for rq in requests:
-            #if self.crings:
-            #    self.accept_non_ring_request(rq)
+            # if self.crings:
+            #     self.accept_non_ring_request(rq)
             self.update_superseded_request(rq)
 
+    @memoize(ttl=60, session=True, is_method=True)
     def get_prj_pseudometa(self, project):
         """
         Gets project data from YAML in project description
@@ -469,6 +471,9 @@ class StagingAPI(object):
         # Write XML back
         url = make_meta_url('prj', project, self.apiurl, force=True)
         http_PUT(url, data=ET.tostring(root))
+
+        # Invalidate here the cache for this stating project
+        self._invalidate_get_prj_pseudometa(project)
 
     def _add_rq_to_prj_pseudometa(self, project, request_id, package):
         """

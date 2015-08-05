@@ -29,6 +29,7 @@ try:
     from xdg.BaseDirectory import save_cache_path
 except ImportError:
     from xdg.BaseDirectory import xdg_cache_home
+
     def save_cache_path(*name):
         path = os.path.join(xdg_cache_home, *name)
         if not os.path.isdir(path):
@@ -39,7 +40,7 @@ except ImportError:
 CACHEDIR = save_cache_path('opensuse-repo-checker')
 
 
-def memoize(ttl=None, session=False):
+def memoize(ttl=None, session=False, is_method=False):
     """Decorator function to implement a persistent cache.
 
     >>> @memoize()
@@ -100,9 +101,6 @@ def memoize(ttl=None, session=False):
     NCLEAN = 1024           # Number of slots to remove when limit reached
     TIMEOUT = 60*60*2       # Time to live for every cache slot (seconds)
 
-    # The session cache is only used when 'session' is True
-    session_cache = {}
-
     def _memoize(fn):
         # Implement a POSIX lock / unlock extension for shelves. Inspired
         # on ActiveState Code recipe #576591
@@ -116,13 +114,16 @@ def memoize(ttl=None, session=False):
             lckfile.close()
 
         def _open_cache(cache_name):
-            cache = session_cache
             if not session:
                 lckfile = _lock(cache_name)
                 cache = shelve.open(cache_name, protocol=-1)
                 # Store a reference to the lckfile to avoid to be
                 # closed by gc
                 cache.lckfile = lckfile
+            else:
+                if not hasattr(fn, '_memoize_session_cache'):
+                    fn._memoize_session_cache = {}
+                cache = fn._memoize_session_cache
             return cache
 
         def _close_cache(cache):
@@ -138,12 +139,43 @@ def memoize(ttl=None, session=False):
                 for key in keys_to_delete:
                     del cache[key]
 
+        def _key(obj):
+            # Pickle doesn't guarantee that there is a single
+            # representation for every serialization.  We can try to
+            # picke / depickle twice to have a canonical
+            # representation.
+            key = pickle.dumps(obj, protocol=-1)
+            key = pickle.dumps(pickle.loads(key), protocol=-1)
+            return key
+
+        def _invalidate(*args, **kwargs):
+            key = _key((args, kwargs))
+            cache = _open_cache(cache_name)
+            if key in cache:
+                del cache[key]
+
+        def _invalidate_all():
+            cache = _open_cache(cache_name)
+            cache.clear()
+
+        def _add_invalidate_method(_self):
+            name = '_invalidate_%s' % fn.__name__
+            if not hasattr(_self, name):
+                setattr(_self, name, _invalidate)
+
+            name = '_invalidate_all'
+            if not hasattr(_self, name):
+                setattr(_self, name, _invalidate_all)
+
         @wraps(fn)
         def _fn(*args, **kwargs):
             def total_seconds(td):
                 return (td.microseconds + (td.seconds + td.days * 24 * 3600.) * 10**6) / 10**6
             now = datetime.now()
-            key = pickle.dumps((args, kwargs), protocol=-1)
+            if is_method:
+                _self = args[0]
+                _add_invalidate_method(_self)
+            key = _key((args[1:], kwargs))
             updated = False
             cache = _open_cache(cache_name)
             if key in cache:

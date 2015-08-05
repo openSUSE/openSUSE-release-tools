@@ -46,6 +46,10 @@ class TestApiCalls(unittest.TestCase):
         Config('openSUSE:Factory')
         self.api = StagingAPI(APIURL, 'openSUSE:Factory')
 
+    def tearDown(self):
+        """Clean internal cache"""
+        self.api._invalidate_all()
+
     def test_ring_packages(self):
         """
         Validate the creation of the rings.
