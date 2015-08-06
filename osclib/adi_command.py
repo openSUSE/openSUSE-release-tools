@@ -103,4 +103,5 @@ class AdiCommand:
             self.create_new_adi(requests)
         else:
             self.check_adi_projects() 
-            self.create_new_adi(())
+            if self.api.is_user_member_of(self.api.user, 'factory-staging'):
+                self.create_new_adi(())

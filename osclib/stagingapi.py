@@ -27,6 +27,7 @@ from osc import conf
 from osc import oscerr
 from osc.core import change_review_state
 from osc.core import delete_package
+from osc.core import get_group
 from osc.core import get_request
 from osc.core import make_meta_url
 from osc.core import makeurl
@@ -58,6 +59,7 @@ class StagingAPI(object):
         self.crebuild = conf.config[project]['rebuild']
         self.cproduct = conf.config[project]['product']
         self.copenqa = conf.config[project]['openqa']
+        self.user = conf.get_apiurl_usr(apiurl)
 
         # If the project support rings, inititialize some variables.
         self.ring_packages = {}
@@ -1148,3 +1150,11 @@ class StagingAPI(object):
         http_PUT(url, data=meta)
 
         return name
+
+    def is_user_member_of(self, user, group):
+        root = ET.fromstring(get_group(self.apiurl, group))
+
+        if root.findall("./person/person[@userid='%s']" % user):
+            return True
+        else:
+            return False
