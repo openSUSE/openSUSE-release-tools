@@ -25,7 +25,7 @@ import httpretty
 import osc
 
 
-APIURL = 'https://localhost'
+APIURL = 'http://localhost'
 
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 
