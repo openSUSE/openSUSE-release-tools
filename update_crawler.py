@@ -47,67 +47,22 @@ class UpdateCrawler(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
 
-    def get_source_packages(self, project, expand=False):
-        """Return the list of packages in a project."""
-        query = {'expand': 1} if expand else {}
-        root = ET.parse(
-            http_GET(makeurl(self.apiurl,
-                             ['source', project],
-                             query=query))).getroot()
-        packages = [i.get('name') for i in root.findall('entry')]
-        return packages
-
     @memoize()
-    def _get_source_package(self, project, package):
+    def _get_source_infos(self, project):
         return http_GET(makeurl(self.apiurl,
-                                ['source', project, package],
+                                ['source', project],
                                 {
-                                    'view': 'info',
-                                    'parse': 1,
+                                    'view': 'info'
                                 })).read()
 
-    def get_source_verifymd5(self, project, package):
-        """ Return the verifymd5 of a source package."""
-        root = ET.fromstring(self._get_source_package(project, package))
-        return root.get('verifymd5')
+    def get_source_infos(self, project):
+        root = ET.fromstring(self._get_source_infos(project))
+        ret = dict()
+        for package in root.findall('sourceinfo'):
+            ret[package.get('package')] = package
+        return ret
 
-    def get_source_version(self, project, package):
-        """ Return the version of a source package."""
-        root = ET.fromstring(self._get_source_package(project, package))
-        epoch = '0'
-        version = root.find('version').text
-        release = root.find('release').text
-        return (epoch, version, release)
-
-    def get_update_candidates(self):
-        """Get the grouped update list from `fron_prj` project.
-
-        Return a list of updates for every package, including only the
-        last update for every package. Every element is a tuple, where
-        the first element is the name of the package and the second
-        one the most update version of the package:
-        [
-          ('DirectFB', 'DirectFB.577'),
-          ('MozillaFirefox', 'MozillaFirefox.544'),
-          ('PackageKit', 'PackageKit.103'),
-          ...,
-        ]
-
-        """
-        # From the list of packages, filter non-updates and the
-        # 'patchinfo'
-        packages = self.get_source_packages(self.from_prj)
-        packages = [i for i in packages
-                    if not i.startswith('patchinfo') and i.split('.')[-1].isdigit()]
-        # Group by package name and revert the order of updates
-        updates = [list(reversed(list(i)))
-                   for _, i in itertools.groupby(packages,
-                                                 lambda x: x.split('.')[0])]
-        # Get the last version of every package
-        updates = [(i[0].split('.')[0], i[0]) for i in updates]
-        return updates
-
-    def _submitrequest(self, src_project, src_package, dst_project,
+    def _submitrequest(self, src_project, src_package, rev, dst_project,
                        dst_package, msg):
         """Create a submit request."""
         states = ['new', 'review', 'declined', 'revoked']
@@ -120,20 +75,22 @@ class UpdateCrawler(object):
                                                req_state=states)
         res = 0
         if not reqs:
+            print "creating submit request", src_project, src_package, rev, dst_project, dst_package
+            #return 0
             res = osc.core.create_submit_request(self.apiurl,
                                                  src_project,
                                                  src_package,
                                                  dst_project,
                                                  dst_package,
+                                                 orev=rev,
                                                  message=msg)
         return res
 
-    def submitrequest(self, src_package, dst_package):
+    def submitrequest(self, src_project, src_package, rev, dst_package):
         """Create a submit request using the osc.commandline.Osc class."""
-        src_project = self.from_prj
         dst_project = self.to_prj
         msg = 'Automatic request from %s by UpdateCrawler' % src_project
-        return self._submitrequest(src_project, src_package, dst_project,
+        return self._submitrequest(src_project, src_package, rev, dst_project,
                                    dst_package, msg)
 
     def is_source_innerlink(self, project, package):
@@ -150,44 +107,73 @@ class UpdateCrawler(object):
                 return False
             raise
 
+    def filter_sle_packages(self, packages):
+        filtered = dict()
+        for package, sourceinfo in packages.items():
+            # directly in 42
+            if sourceinfo.find('originproject') is None:
+                continue
+            if sourceinfo.find('originproject').text == 'openSUSE:42:SLE12-Picks':
+                filtered[package] = sourceinfo
+        return filtered
+
+    def follow_link(self, project, package, rev, verifymd5):
+        #print "follow", project, package, rev
+        # verify it's still the same package
+        xml = ET.fromstring(http_GET(makeurl(self.apiurl,
+                                             ['source', project, package],
+                                             {
+                                                 'rev': rev,
+                                                 'view': 'info'
+                                             })).read())
+        if xml.get('verifymd5') != verifymd5:
+            return None
+        xml = ET.fromstring(http_GET(makeurl(self.apiurl,
+                                             ['source', project, package],
+                                             {
+                                                 'rev': rev
+                                             })).read())
+        linkinfo =  xml.find('linkinfo')
+        if not linkinfo is None:
+            ret = self.follow_link(linkinfo.get('project'), linkinfo.get('package'), linkinfo.get('srcmd5'), verifymd5)
+            if ret:
+                project, package, rev = ret
+        return (project, package, rev)
+                     
     def crawl(self):
         """Main method of the class that run the crawler."""
-        updates = self.get_update_candidates()
+        targets = self.filter_sle_packages(self.get_source_infos('openSUSE:42'))
+        sle_sources = self.get_source_infos('SUSE:SLE-12-SP1:Update')
 
-        packages = set(self.get_source_packages(self.to_prj, expand=True))
-        to_update = []
-        for package, update in updates:
-            if package not in packages:
-                logging.info('Package %s not found in %s' % (package, self.to_prj))
+        for package, sourceinfo in targets.items():
+            if not package in sle_sources:
+                logging.info('FATAL: Package %s not found in sle12' % (package))
                 continue
 
-            # Compare version
-            version_from = self.get_source_version(self.from_prj, update)
-            version_to = self.get_source_version(self.to_prj, package)
-            if rpm.labelCompare(version_to, version_from) > 0:
-                logging.info('Package %s with version %s found in %s with '
-                             'version %s. Ignoring the package '
-                             '(comes from Factory?)' % (package, version_from,
-                                                        self.to_prj, version_to))
-                continue
+            sle_source = sle_sources[package]
 
+            #if package != 'build-compare':
+            #    continue
+            
             # Compare verifymd5
-            md5_from = self.get_source_verifymd5(self.from_prj, update)
-            md5_to = self.get_source_verifymd5(self.to_prj, package)
+            md5_from = sle_source.get('verifymd5')
+            md5_to = sourceinfo.get('verifymd5')
             if md5_from == md5_to:
-                logging.info('Package %s not marked for update' % package)
+                #logging.info('Package %s not marked for update' % package)
                 continue
 
-            if self.is_source_innerlink(self.from_prj, update):
-                logging.info('Package %s sub-spec file' % package)
+            if self.is_source_innerlink('openSUSE:42', package):
+                logging.info('Package %s is sub package' % (package))
                 continue
 
-            # Mark the package for an update
-            to_update.append((package, update))
-            logging.info('Package %s marked for update' % package)
+            originproject = 'SUSE:SLE-12-SP1:Update'
+            if not sle_source.find('originproject') is None:
+                originproject = sle_source.find('originproject').text
 
-        for package, update in to_update:
-            res = self.submitrequest(update, package)
+            src_project, src_package, src_rev = self.follow_link(originproject, package,
+                                                                 sle_source.get('srcmd5'), sle_source.get('verifymd5'))
+
+            res = self.submitrequest(src_project, src_package, src_rev, package)
             if res:
                 logging.info('Created request %s for %s' % (res, package))
             elif res != 0:
