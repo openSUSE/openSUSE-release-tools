@@ -100,6 +100,8 @@ class UpdateCrawler(object):
 
     def remove_packages(self, project, packages):
         for package in packages:
+            if not package in self.packages[project]:
+                continue
             url = makeurl(self.apiurl, ['source', project, package])
             try:
                 http_DELETE(url)
