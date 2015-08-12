@@ -119,6 +119,7 @@ class UpdateCrawler(object):
         for package in packages:
             if not package in self.packages[project]:
                 continue
+            logging.info("deleting %s/%s", project, package)
             url = makeurl(self.apiurl, ['source', project, package])
             try:
                 http_DELETE(url)
@@ -255,9 +256,7 @@ class UpdateCrawler(object):
         if not link.get('cicount'):
             return
         if link.get('package') not in self.packages[project]:
-            url = makeurl(self.apiurl, ['source', project, package])
-            http_DELETE(url)
-            self.packages[project].remove(package)
+            self.remove_packages(project, [package])
 
     def get_link(self, project, package):
         try:
@@ -304,9 +303,7 @@ class UpdateCrawler(object):
 #                        http_POST(url)
 #                    except urllib2.HTTPError, err:
 #                        pass
-                    url = makeurl(self.apiurl, ['source', project, package])
-                    http_DELETE(url)
-                    self.packages[project].remove(package)
+                    self.remove_packages(project, [packages])
                 else:
                     mypackages[package] = project
 
@@ -351,8 +348,7 @@ class UpdateCrawler(object):
 
             for subpackage in files:
                 for prj in [self.from_prj] + self.subprojects:
-                    if subpackage in self.packages[prj]:
-                        self.remove_packages(prj, [ subpackage ])
+                    self.remove_packages(prj, self.packages[prj])
                 
                 link = "<link cicount='copy' package='{}' />".format(mainpackage)
                 self.create_package_container(project, subpackage)
