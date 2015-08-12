@@ -41,6 +41,9 @@ http_DELETE = osc.core.http_DELETE
 http_PUT = osc.core.http_PUT
 http_POST = osc.core.http_POST
 
+# TODO:
+# before deleting a package, search for it's links and delete them
+# as well. See build-service/src/api/app/models/package.rb -> find_linking_packages()
 
 class UpdateCrawler(object):
     def __init__(self, from_prj):
@@ -362,12 +365,14 @@ def main(args):
 
     uc = UpdateCrawler(args.from_prj)
     uc.check_dups()
-    for prj in uc.subprojects:
-        uc.check_multiple_specs(prj)
+    if not args.skip_sanity_checks:
+        for prj in uc.subprojects:
+            uc.check_multiple_specs(prj)
     lp = uc.crawl(args.package)
     uc.try_to_find_left_packages(lp)
-    for prj in [uc.from_prj] + uc.subprojects:
-        uc.find_invalid_links(prj)
+    if not args.skip_sanity_checks:
+        for prj in [uc.from_prj] + uc.subprojects:
+            uc.find_invalid_links(prj)
     uc.freeze_candidates()    
     
 if __name__ == '__main__':
@@ -379,6 +384,8 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
                         help='project where to get the updates (default: %s)' % OPENSUSE,
                         default=OPENSUSE)
+    parser.add_argument('--skip-sanity-checks', action='store_true',
+                        help='don\'t do slow check for broken links (only for testing)')
     parser.add_argument('-n', '--dry', action='store_true',
                         help='dry run, no POST, PUT, DELETE')
     parser.add_argument("package", nargs='*', help="package to check")
