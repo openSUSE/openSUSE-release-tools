@@ -159,11 +159,14 @@ class UpdateCrawler(object):
 
         self.remove_packages('openSUSE:42', packages)
 
-    def crawl(self):
+    def crawl(self, packages = []):
         """Main method of the class that run the crawler."""
 
-        packages = self.get_source_packages(self.from_prj, expand=False)
-        packages = [ p for p in packages if not p.startswith('_') ]
+        if packages:
+            packages = [p for p in packages if p in self.packages[self.from_prj]]
+        else:
+            packages = self.get_source_packages(self.from_prj, expand=False)
+            packages = [ p for p in packages if not p.startswith('_') ]
         requests = dict()
 
         left_packages = []
@@ -345,8 +348,7 @@ def main(args):
     uc.freeze_candidates()    
     
 if __name__ == '__main__':
-    description = 'Create SR from SLE to the new openSUSE:42 project for '\
-                  'every new update.'
+    description = 'maintain sort openSUSE:42 packages into subprojects'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
@@ -356,6 +358,7 @@ if __name__ == '__main__':
                         default=OPENSUSE)
     parser.add_argument('-n', '--dry', action='store_true',
                         help='dry run, no POST, PUT, DELETE')
+    parser.add_argument("package", nargs='*', help="package to check")
 
     args = parser.parse_args()
 
