@@ -49,7 +49,7 @@ class UpdateCrawler(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         self.project_mapping = {}
-        for prj in ['SUSE:SLE-12:Update', 'SUSE:SLE-12:GA']:
+        for prj in ['SUSE:SLE-12-SP1:Update', 'SUSE:SLE-12-SP1:GA', 'SUSE:SLE-12:Update', 'SUSE:SLE-12:GA']:
             self.project_mapping[prj] = 'openSUSE:42:SLE12-Picks'
         self.project_mapping['openSUSE:Factory'] = 'openSUSE:42:Factory-Copies'
         self.packages = dict()
