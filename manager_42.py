@@ -354,11 +354,21 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
                         help='project where to get the updates (default: %s)' % OPENSUSE,
                         default=OPENSUSE)
+    parser.add_argument('-n', '--dry', action='store_true',
+                        help='dry run, no POST, PUT, DELETE')
 
     args = parser.parse_args()
 
     # Set logging configuration
     logging.basicConfig(level=logging.DEBUG if args.debug
                         else logging.INFO)
+
+    if args.dry:
+        def dryrun(t, *args, **kwargs):
+            return lambda *args, **kwargs: logging.info("dryrun %s %s %s", t, args, str(kwargs)[:30])
+
+        http_POST = dryrun('POST')
+        http_PUT = dryrun('PUT')
+        http_DELETE = dryrun('DELETE')
 
     sys.exit(main(args))
