@@ -210,10 +210,10 @@ class UpdateCrawler(object):
 
         return left_packages
 
-    def check_factory_sources(self, package, verifymd5):
+    def check_source_in_project(self, project, package, verifymd5):
         try:
             his = http_GET(makeurl(self.apiurl,
-                                   ['source', 'openSUSE:Factory', package, '_history'])).read()
+                                   ['source', project, package, '_history'])).read()
         except urllib2.HTTPError:
             return None
         
@@ -225,12 +225,14 @@ class UpdateCrawler(object):
         for i in range(min(len(revs), 5)): # check last 5 commits
             srcmd5=revs.pop(0)
             root = http_GET(makeurl(self.apiurl,
-                                    ['source', 'openSUSE:Factory', package], { 'rev': srcmd5, 'view': 'info'})).read()
+                                    ['source', project, package], { 'rev': srcmd5, 'view': 'info'})).read()
             root = ET.fromstring(root)
             if root.get('verifymd5') == verifymd5:
                 return srcmd5
         return None
         
+    # check if we can find the srcmd5 in any of our underlay
+    # projects
     def try_to_find_left_packages(self, packages):
         for package in packages:
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
@@ -238,9 +240,13 @@ class UpdateCrawler(object):
             if not linked is None and linked.get('package') != package:
                 logging.warn("link mismatch: %s <> %s, subpackage?", linked.get('package'), package)
                 continue
-            srcmd5 = self.check_factory_sources(package, root.get('verifymd5'))
-            if srcmd5:
-                self.link_packages([ package ], 'openSUSE:Factory', package, srcmd5, self.project_mapping['openSUSE:Factory'], package)
+
+            for project in self.project_preference_order:
+                logging.debug("check whether %s came from %s", package, project)
+                srcmd5 = self.check_source_in_project(project, package, root.get('verifymd5'))
+                if srcmd5:
+                    self.link_packages([ package ], project, package, srcmd5, self.project_mapping[project], package)
+                    break
 
     def check_inner_link(self, project, package, link):
         if not link.get('cicount'):
