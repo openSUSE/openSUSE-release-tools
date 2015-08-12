@@ -34,7 +34,6 @@ import sys
 from osclib.memoize import memoize
 
 OPENSUSE = 'openSUSE:42'
-SLE = 'SUSE:SLE-12:Update'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -48,12 +47,27 @@ class UpdateCrawler(object):
         self.from_prj = from_prj
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
+        self.project_preference_order = [
+                'SUSE:SLE-12-SP1:Update',
+                'SUSE:SLE-12-SP1:GA',
+                'SUSE:SLE-12:Update',
+                'SUSE:SLE-12:GA',
+                'openSUSE:Factory',
+                ]
+        self.subprojects = [
+                self.from_prj + ':SLE-Pkgs-With-Overwrites',
+                self.from_prj + ':Factory-Copies',
+                self.from_prj + ':SLE12-Picks',
+                ]
         self.project_mapping = {}
-        for prj in ['SUSE:SLE-12-SP1:Update', 'SUSE:SLE-12-SP1:GA', 'SUSE:SLE-12:Update', 'SUSE:SLE-12:GA']:
-            self.project_mapping[prj] = 'openSUSE:42:SLE12-Picks'
-        self.project_mapping['openSUSE:Factory'] = 'openSUSE:42:Factory-Copies'
+        for prj in self.project_preference_order:
+            if prj.startswith('SUSE:'):
+                self.project_mapping[prj] = self.from_prj + ':SLE12-Picks'
+            else:
+                self.project_mapping[prj] = self.from_prj + ':Factory-Copies'
+
         self.packages = dict()
-        for project in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites', 'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+        for project in [self.from_prj] + self.subprojects:
             self.packages[project] = self.get_source_packages(project)
         
     def get_source_packages(self, project, expand=False):
@@ -159,7 +173,7 @@ class UpdateCrawler(object):
             self.create_package_container(targetprj, package)
             self.upload_link(targetprj, package, link)
 
-        self.remove_packages('openSUSE:42', packages)
+        self.remove_packages(self.from_prj, packages)
 
     def crawl(self, packages = []):
         """Main method of the class that run the crawler."""
@@ -268,8 +282,10 @@ class UpdateCrawler(object):
             self.check_link(prj, package)
 
     def check_dups(self):
+        """ walk through projects in order of preference and delete
+        duplicates in overlayed projects"""
         mypackages = dict()
-        for project in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites', 'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+        for project in [self.from_prj] + self.subprojects:
             for package in self.packages[project]:
                 if package in mypackages:
                      # XXX: why was this code here?
@@ -295,8 +311,7 @@ class UpdateCrawler(object):
             exists = False
             if package.get('package').startswith('_product'):
                 continue
-            for prj in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites',
-                        'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+            for prj in [self.from_prj] + self.subprojects:
                 if package.get('package') in self.packages[prj]:
                     exists = True
             if exists:
@@ -326,8 +341,7 @@ class UpdateCrawler(object):
                         files.remove(subpackage)
 
             for subpackage in files:
-                for prj in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites',
-                            'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
+                for prj in [self.from_prj] + self.subprojects:
                     if subpackage in self.packages[prj]:
                         self.remove_packages(prj, [ subpackage ])
                 
@@ -342,13 +356,12 @@ def main(args):
 
     uc = UpdateCrawler(args.from_prj)
     uc.check_dups()
-    uc.check_multiple_specs('openSUSE:42:Factory-Copies')
-    uc.check_multiple_specs('openSUSE:42:SLE12-Picks')
-    lp = uc.crawl()
+    for prj in uc.subprojects:
+        uc.check_multiple_specs(prj)
+    lp = uc.crawl(args.package)
     uc.try_to_find_left_packages(lp)
-    uc.find_invalid_links('openSUSE:42')
-    uc.find_invalid_links('openSUSE:42:SLE12-Picks')
-    uc.find_invalid_links('openSUSE:42:Factory-Copies')
+    for prj in [uc.from_prj] + uc.subprojects:
+        uc.find_invalid_links(prj)
     uc.freeze_candidates()    
     
 if __name__ == '__main__':
