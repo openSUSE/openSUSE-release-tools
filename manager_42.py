@@ -203,7 +203,7 @@ class UpdateCrawler(object):
         for rev in his.findall('revision'):
             revs.append(rev.find('srcmd5').text)
         revs.reverse()
-        for i in xrange(5): # check last 5 commits
+        for i in range(min(len(revs), 5)): # check last 5 commits
             srcmd5=revs.pop(0)
             root = http_GET(makeurl(self.apiurl,
                                     ['source', 'openSUSE:Factory', package], { 'rev': srcmd5, 'view': 'info'})).read()
