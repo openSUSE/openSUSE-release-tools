@@ -123,7 +123,7 @@ class UpdateCrawler(object):
         dst_meta = dst_meta.format(package)
 
         url = makeurl(self.apiurl, ['source', project, package, '_meta'])
-        print "PUT", url
+        logging.debug("create %s/%s", project, package)
         http_PUT(url, data=dst_meta)
 
     def _link_content(self, sourceprj, sourcepkg, rev):
@@ -139,11 +139,10 @@ class UpdateCrawler(object):
 
     def upload_link(self, project, package, link_string):
         url = makeurl(self.apiurl, ['source', project, package, '_link'])
-        print "PUT", url
         http_PUT(url, data=link_string)
 
     def link_packages(self, packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg):
-        print packages, sourceprj, sourcepkg, sourcerev, targetpkg
+        logging.info("update link %s/%s -> %s/%s@%s [%s]", targetprj, targetpkg, sourceprj, sourcepkg, sourcerev, ','.join(packages))
         self.remove_packages('openSUSE:42:SLE12-Picks', packages)
         self.remove_packages('openSUSE:42:Factory-Copies', packages)
         self.remove_packages('openSUSE:42:SLE-Pkgs-With-Overwrites', packages)
@@ -153,6 +152,7 @@ class UpdateCrawler(object):
         self.upload_link(targetprj, targetpkg, link)
 
         for package in [ p for p in packages if p != targetpkg ]:
+            logging.debug("linking %s -> %s", package, targetpkg)
             link = "<link cicount='copy' package='{}' />".format(targetpkg)
             self.create_package_container(targetprj, package)
             self.upload_link(targetprj, package, link)
@@ -174,7 +174,7 @@ class UpdateCrawler(object):
         for package in packages:
             requestid = self.get_latest_request(self.from_prj, package)
             if requestid is None:
-                print package, "is not from request"
+                logging.warn("%s is not from request", package)
                 left_packages.append(package)
                 continue
             if requestid in requests:
@@ -185,10 +185,10 @@ class UpdateCrawler(object):
         for request, packages in requests.items():
             sourceprj, sourcepkg, sourcerev, targetpkg = self.get_request_infos(request)
             if not sourceprj in self.project_mapping:
-                print "source", sourceprj
+                logging.warn("unrecognized source project %s for [%s] in request %s", sourceprj, packages, request)
                 left_packages = left_packages + packages
                 continue
-            print request, packages, sourceprj, sourcepkg, sourcerev, targetpkg
+            logging.debug(" ".join((request, ','.join(packages), sourceprj, sourcepkg, sourcerev, targetpkg)))
             targetprj = self.project_mapping[sourceprj]
             self.link_packages(packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg)
 
@@ -220,7 +220,7 @@ class UpdateCrawler(object):
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
             linked = root.find('linked')
             if not linked is None and linked.get('package') != package:
-                print "subpackage?"
+                logging.warn("link mismatch: %s <> %s, subpackage?", linked.get('package'), package)
                 continue
             srcmd5 = self.check_factory_sources(package, root.get('verifymd5'))
             if srcmd5:
@@ -247,6 +247,7 @@ class UpdateCrawler(object):
         if link is None:
             return
         rev = link.get('rev')
+        # XXX: magic number?
         if rev and len(rev) > 5:
             return True
         if not link.get('project'):
@@ -368,7 +369,7 @@ if __name__ == '__main__':
 
     if args.dry:
         def dryrun(t, *args, **kwargs):
-            return lambda *args, **kwargs: logging.info("dryrun %s %s %s", t, args, str(kwargs)[:30])
+            return lambda *args, **kwargs: logging.debug("dryrun %s %s %s", t, args, str(kwargs)[:30])
 
         http_POST = dryrun('POST')
         http_PUT = dryrun('PUT')
