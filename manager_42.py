@@ -272,12 +272,13 @@ class UpdateCrawler(object):
         for project in ['openSUSE:42', 'openSUSE:42:SLE-Pkgs-With-Overwrites', 'openSUSE:42:Factory-Copies', 'openSUSE:42:SLE12-Picks']:
             for package in self.packages[project]:
                 if package in mypackages:
-                    # TODO: detach only if actually a link to the deleted package
-                    url = makeurl(self.apiurl, ['source', 'openSUSE:42', package], { 'opackage': package, 'oproject': 'openSUSE:42', 'cmd': 'copy', 'expand': '1'} )
-                    try:
-                        http_POST(url)
-                    except urllib2.HTTPError, err:
-                        pass
+                     # XXX: why was this code here?
+#                    # TODO: detach only if actually a link to the deleted package
+#                    url = makeurl(self.apiurl, ['source', 'openSUSE:42', package], { 'opackage': package, 'oproject': 'openSUSE:42', 'cmd': 'copy', 'expand': '1'} )
+#                    try:
+#                        http_POST(url)
+#                    except urllib2.HTTPError, err:
+#                        pass
                     url = makeurl(self.apiurl, ['source', project, package])
                     http_DELETE(url)
                     self.packages[project].remove(package)
