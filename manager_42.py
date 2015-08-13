@@ -58,10 +58,12 @@ class UpdateCrawler(object):
                 'openSUSE:Factory',
                 ]
         self.subprojects = [
-                self.from_prj + ':SLE-Pkgs-With-Overwrites',
-                self.from_prj + ':Factory-Copies',
-                self.from_prj + ':SLE12-Picks',
+                '%s:SLE-Pkgs-With-Overwrites' % self.from_prj,
+                '%s:Factory-Copies' % self.from_prj,
+                '%s:SLE12-Picks' % self.from_prj,
                 ]
+        self.projects = [self.from_prj] + self.subprojects
+
         self.project_mapping = {}
         for prj in self.project_preference_order:
             if prj.startswith('SUSE:'):
@@ -70,9 +72,9 @@ class UpdateCrawler(object):
                 self.project_mapping[prj] = self.from_prj + ':Factory-Copies'
 
         self.packages = dict()
-        for project in [self.from_prj] + self.subprojects:
+        for project in self.projects:
             self.packages[project] = self.get_source_packages(project)
-        
+
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
         query = {'expand': 1} if expand else {}
@@ -90,7 +92,7 @@ class UpdateCrawler(object):
             opts['rev'] = revision
         return http_GET(makeurl(self.apiurl,
                                 ['source', project, package], opts)).read()
-    
+
     def get_latest_request(self, project, package):
         history = http_GET(makeurl(self.apiurl,
                                    ['source', project, package, '_history'])).read()
@@ -190,7 +192,7 @@ class UpdateCrawler(object):
         requests = dict()
 
         left_packages = []
-        
+
         for package in packages:
             requestid = self.get_latest_request(self.from_prj, package)
             if requestid is None:
@@ -220,7 +222,7 @@ class UpdateCrawler(object):
                                    ['source', project, package, '_history'])).read()
         except urllib2.HTTPError:
             return None
-        
+
         his = ET.fromstring(his)
         revs = list()
         for rev in his.findall('revision'):
@@ -234,7 +236,7 @@ class UpdateCrawler(object):
             if root.get('verifymd5') == verifymd5:
                 return srcmd5
         return None
-        
+
     # check if we can find the srcmd5 in any of our underlay
     # projects
     def try_to_find_left_packages(self, packages):
@@ -265,7 +267,7 @@ class UpdateCrawler(object):
         except urllib2.HTTPError:
             return None
         return ET.fromstring(link)
-        
+
     def check_link(self, project, package):
         link = self.get_link(project, package)
         if link is None:
@@ -284,7 +286,7 @@ class UpdateCrawler(object):
                                 ['source', link.get('project'), link.get('package')], opts )).read()
         root = ET.fromstring(root)
         self.link_packages([package], link.get('project'), link.get('package'), root.get('srcmd5'), project, package)
-        
+
     def find_invalid_links(self, prj):
         for package in self.packages[prj]:
             self.check_link(prj, package)
@@ -293,7 +295,7 @@ class UpdateCrawler(object):
         """ walk through projects in order of preference and delete
         duplicates in overlayed projects"""
         mypackages = dict()
-        for project in [self.from_prj] + self.subprojects:
+        for project in self.projects:
             for package in self.packages[project]:
                 if package in mypackages:
                      # XXX: why was this code here?
@@ -312,12 +314,12 @@ class UpdateCrawler(object):
         root = ET.fromstring(http_GET(url).read())
         flink = ET.Element('frozenlinks')
         fl = ET.SubElement(flink, 'frozenlink', {'project': 'openSUSE:Factory'})
-        
+
         for package in root.findall('sourceinfo'):
             exists = False
             if package.get('package').startswith('_product'):
                 continue
-            for prj in [self.from_prj] + self.subprojects:
+            for prj in self.projects:
                 if package.get('package') in self.packages[prj]:
                     exists = True
             if exists:
@@ -325,7 +327,7 @@ class UpdateCrawler(object):
             ET.SubElement(fl, 'package', { 'name': package.get('package'),
                                            'srcmd5': package.get('srcmd5'),
                                            'vrev': package.get('vrev') })
-            
+
         url = makeurl(self.apiurl, ['source', 'openSUSE:42:Factory-Candidates-Check', '_project', '_frozenlinks'], {'meta': '1'})
         http_PUT(url, data=ET.tostring(flink))
 
@@ -347,13 +349,13 @@ class UpdateCrawler(object):
                         files.remove(subpackage)
 
             for subpackage in files:
-                for prj in [self.from_prj] + self.subprojects:
+                for prj in self.projects:
                     self.remove_packages(prj, self.packages[prj])
-                
+
                 link = "<link cicount='copy' package='{}' />".format(mainpackage)
                 self.create_package_container(project, subpackage)
                 self.upload_link(project, subpackage, link)
-                
+
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
@@ -367,10 +369,10 @@ def main(args):
     lp = uc.crawl(args.package)
     uc.try_to_find_left_packages(lp)
     if not args.skip_sanity_checks:
-        for prj in [uc.from_prj] + uc.subprojects:
+        for prj in uc.projects:
             uc.find_invalid_links(prj)
     uc.freeze_candidates()    
-    
+
 if __name__ == '__main__':
     description = 'maintain sort openSUSE:42 packages into subprojects'
     parser = argparse.ArgumentParser(description=description)
