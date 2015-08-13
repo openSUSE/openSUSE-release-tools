@@ -303,7 +303,7 @@ class UpdateCrawler(object):
 #                        http_POST(url)
 #                    except urllib2.HTTPError, err:
 #                        pass
-                    self.remove_packages(project, [packages])
+                    self.remove_packages(project, [package])
                 else:
                     mypackages[package] = project
 
