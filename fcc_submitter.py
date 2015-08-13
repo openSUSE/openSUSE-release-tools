@@ -32,9 +32,7 @@ import osc.core
 
 from osclib.memoize import memoize
 
-#OPENSUSE = 'openSUSE:42'
-# TODO: remove after testing
-OPENSUSE = 'home:mlin7442'
+OPENSUSE = 'openSUSE:42'
 FCC = 'openSUSE:42:Factory-Candidates-Check'
 
 makeurl = osc.core.makeurl
@@ -93,6 +91,14 @@ class FccSubmitter(object):
                                              message=msg)
         return res
 
+    def check_multiple_specfiles(self, project, package):
+        url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
+        root = ET.fromstring(http_GET(url).read())
+        files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
+        if len(files) == 1:
+            return False
+        return True
+
     def crawl(self):
         """Main method"""
         succeeded_packages = []
@@ -105,11 +111,13 @@ class FccSubmitter(object):
         random.shuffle(succeeded_packages)
         # get souce packages from target
         target_packages = self.get_source_packages(self.to_prj)
-        # TODO: remove after testing
-        self.submit_limit = 3
-        # TODO: check multispec
         for i in range(0, min(self.submit_limit, len(succeeded_packages))):
             package = succeeded_packages[i]
+            multi_specs = check_multiple_specfiles(self.from_prj, package)
+            if multi_specs is True:
+                logging.info('%s in %s have multiple specs, skip for now and submit manually'%(package, self.from_prj))
+                continue
+
             # make sure the package non-exist in target yet ie. expand=False
             if package not in target_packages:
                 # make sure there is no request against same package
