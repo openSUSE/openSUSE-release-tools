@@ -179,7 +179,7 @@ class UpdateCrawler(object):
 
         self.remove_packages(self.from_prj, packages)
 
-    def crawl(self, packages = []):
+    def crawl(self, packages = None):
         """Main method of the class that run the crawler."""
 
         if packages:
