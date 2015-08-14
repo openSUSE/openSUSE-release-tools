@@ -43,7 +43,8 @@ class FccSubmitter(object):
     def __init__(self, from_prj, to_prj, submit_limit):
         self.from_prj = from_prj
         self.to_prj = to_prj
-        self.submit_limit = submit_limit
+        self.factory = 'openSUSE:Factory'
+        self.submit_limit = int(submit_limit)
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
 
@@ -80,7 +81,7 @@ class FccSubmitter(object):
 
     def create_submitrequest(self, package):
         """Create a submit request using the osc.commandline.Osc class."""
-        src_project = self.from_prj
+        src_project = self.factory # submit from Factory only
         dst_project = self.to_prj
         msg = 'Automatic request from %s by F-C-C Submitter' % src_project
         res = osc.core.create_submit_request(self.apiurl,
@@ -111,11 +112,12 @@ class FccSubmitter(object):
         random.shuffle(succeeded_packages)
         # get souce packages from target
         target_packages = self.get_source_packages(self.to_prj)
-        for i in range(0, min(self.submit_limit, len(succeeded_packages))):
+
+        for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]
-            multi_specs = check_multiple_specfiles(self.from_prj, package)
+            multi_specs = self.check_multiple_specfiles(self.factory, package)
             if multi_specs is True:
-                logging.info('%s in %s have multiple specs, skip for now and submit manually'%(package, self.from_prj))
+                logging.info('%s in %s have multiple specs, skip for now and submit manually'%(package, 'openSUSE:Factory'))
                 continue
 
             # make sure the package non-exist in target yet ie. expand=False
@@ -157,7 +159,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--to', dest='to_prj', metavar='PROJECT',
                         help='project where to submit the packages (default: %s)' % OPENSUSE,
                         default=OPENSUSE)
-    parser.add_argument('-l', '--limit', dest='submit_limit', metavar='NUMBERS', help='limit numbers packages to submit, default is 100', default=100)
+    parser.add_argument('-l', '--limit', dest='submit_limit', metavar='NUMBERS', help='limit numbers packages to submit (default: 100)', default=100)
 
     args = parser.parse_args()
 
