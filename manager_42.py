@@ -173,9 +173,9 @@ class UpdateCrawler(object):
 
     def link_packages(self, packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg):
         logging.info("update link %s/%s -> %s/%s@%s [%s]", targetprj, targetpkg, sourceprj, sourcepkg, sourcerev, ','.join(packages))
-        self.remove_packages('openSUSE:42:SLE12-Picks', packages)
-        self.remove_packages('openSUSE:42:Factory-Copies', packages)
-        self.remove_packages('openSUSE:42:SLE-Pkgs-With-Overwrites', packages)
+        self.remove_packages('%s:SLE12-Picks'%self.from_prj, packages)
+        self.remove_packages('%s:Factory-Copies'%self.from_prj, packages)
+        self.remove_packages('%s:SLE-Pkgs-With-Overwrites'%self.from_prj, packages)
 
         self.create_package_container(targetprj, targetpkg)
         link = self._link_content(sourceprj, sourcepkg, sourcerev)
@@ -347,8 +347,11 @@ class UpdateCrawler(object):
                                            'srcmd5': package.get('srcmd5'),
                                            'vrev': package.get('vrev') })
 
-        url = makeurl(self.apiurl, ['source', 'openSUSE:42:Factory-Candidates-Check', '_project', '_frozenlinks'], {'meta': '1'})
-        http_PUT(url, data=ET.tostring(flink))
+        url = makeurl(self.apiurl, ['source', '%s:Factory-Candidates-Check'%self.from_prj, '_project', '_frozenlinks'], {'meta': '1'})
+        try:
+            http_PUT(url, data=ET.tostring(flink))
+        except urllib2.HTTPError, err:
+            logging.error(err)
 
     def check_multiple_specs(self, project):
         for package in self.packages[project]:
