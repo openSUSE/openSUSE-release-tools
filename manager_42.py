@@ -393,7 +393,8 @@ def main(args):
     if not args.skip_sanity_checks:
         for prj in uc.projects:
             uc.find_invalid_links(prj)
-    uc.freeze_candidates()    
+    if args.no_update_candidates == False:
+        uc.freeze_candidates()
 
 if __name__ == '__main__':
     description = 'maintain sort openSUSE:42 packages into subprojects'
@@ -410,6 +411,8 @@ if __name__ == '__main__':
                         help='dry run, no POST, PUT, DELETE')
     parser.add_argument('--no-cache', action='store_false', default=True,
                         help='do not cache GET requests')
+    parser.add_argument('--no-update-candidates', action='store_true',
+                        help='don\'t update Factory candidates project')
     parser.add_argument("package", nargs='*', help="package to check")
 
     args = parser.parse_args()
