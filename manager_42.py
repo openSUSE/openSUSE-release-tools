@@ -373,8 +373,8 @@ class UpdateCrawler(object):
                         files.remove(subpackage)
 
             for subpackage in files:
-                for prj in self.projects:
-                    self.remove_packages(prj, self.packages[prj])
+                if subpackage in self.packages[project]:
+                    self.remove_packages(project, [subpackage])
 
                 link = "<link cicount='copy' package='{}' />".format(mainpackage)
                 self.create_package_container(project, subpackage)
