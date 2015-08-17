@@ -316,6 +316,7 @@ class UpdateCrawler(object):
         for project in self.projects:
             for package in self.packages[project]:
                 if package in mypackages:
+                    logging.debug("duplicate %s/%s, in %s", project, package, mypackages[package])
                     # TODO: detach only if actually a link to the deleted package
                     requestid = self.get_latest_request(self.from_prj, package)
                     if not requestid is None:
@@ -354,6 +355,7 @@ class UpdateCrawler(object):
             logging.error(err)
 
     def check_multiple_specs(self, project):
+        logging.debug("check for multiple specs in %s", project)
         for package in self.packages[project]:
             url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
             root = ET.fromstring(self.cached_GET(url))
