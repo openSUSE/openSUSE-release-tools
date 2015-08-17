@@ -185,20 +185,19 @@ class ReviewBot(object):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         return None
 
-    @staticmethod
     @memoize(session=True)
-    def _get_sourceinfo(apiurl, project, package, rev=None):
+    def _get_sourceinfo(self, project, package, rev=None):
         query = { 'view': 'info' }
         if rev is not None:
             query['rev'] = rev
-        url = osc.core.makeurl(apiurl, ('source', project, package), query=query)
+        url = osc.core.makeurl(self.apiurl, ('source', project, package), query=query)
         try:
             return ET.parse(osc.core.http_GET(url)).getroot()
         except (urllib2.HTTPError, urllib2.URLError):
             return None
 
     def get_originproject(self, project, package, rev=None):
-        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
+        root = self._get_sourceinfo(project, package, rev)
         if root is None:
             return None
 
@@ -209,7 +208,7 @@ class ReviewBot(object):
         return None
 
     def get_sourceinfo(self, project, package, rev=None):
-        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
+        root = self._get_sourceinfo(project, package, rev)
         if root is None:
             return None
 
