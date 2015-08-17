@@ -298,13 +298,14 @@ class UpdateCrawler(object):
         for project in self.projects:
             for package in self.packages[project]:
                 if package in mypackages:
-                     # XXX: why was this code here?
-#                    # TODO: detach only if actually a link to the deleted package
-#                    url = makeurl(self.apiurl, ['source', 'openSUSE:42', package], { 'opackage': package, 'oproject': 'openSUSE:42', 'cmd': 'copy', 'expand': '1'} )
-#                    try:
-#                        http_POST(url)
-#                    except urllib2.HTTPError, err:
-#                        pass
+                    # TODO: detach only if actually a link to the deleted package
+                    requestid = self.get_latest_request(self.from_prj, package)
+                    if not requestid is None:
+                        url = makeurl(self.apiurl, ['source', self.from_prj, package], { 'opackage': package, 'oproject': self.from_prj, 'cmd': 'copy', 'requestid': requestid, 'expand': '1'})
+                        try:
+                            http_POST(url)
+                        except urllib2.HTTPError, err:
+                            pass
                     self.remove_packages(project, [package])
                 else:
                     mypackages[package] = project
