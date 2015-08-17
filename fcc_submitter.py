@@ -30,6 +30,7 @@ from xml.etree import cElementTree as ET
 import osc.conf
 import osc.core
 
+from osc import oscerr
 from osclib.memoize import memoize
 
 OPENSUSE = 'openSUSE:42'
@@ -37,6 +38,7 @@ FCC = 'openSUSE:42:Factory-Candidates-Check'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
+http_POST = osc.core.http_POST
 
 
 class FccSubmitter(object):
@@ -79,10 +81,34 @@ class FccSubmitter(object):
 
         return pacs
 
+    def get_devel_project(self, package):
+        m = osc.core.show_package_meta(self.apiurl, self.factory, package)
+        node = ET.fromstring(''.join(m)).find('devel')
+        if node is None:
+            return None, None
+        else:
+            return node.get('project'), node.get('package', None)
+
+    def add_review(self, requestid, by_project=None, by_package=None, msg=None):
+        query = {}
+        query['by_project'] = by_project
+        query['by_package'] = by_package
+        if not msg:
+            msg = "Being evaluated by {}/{}. This is submitted by a tool to Leap, please review this change and decline it if Leap do not need this!"
+            msg = msg.format(by_project, by_package)
+
+        if not query:
+            raise oscerr.WrongArgs('We need a project')
+
+        query['cmd'] = 'addreview'
+        url = makeurl(self.apiurl, ['request', str(requestid)], query)
+        http_POST(url, data=msg)
+
     def create_submitrequest(self, package):
         """Create a submit request using the osc.commandline.Osc class."""
         src_project = self.factory # submit from Factory only
         dst_project = self.to_prj
+
         msg = 'Automatic request from %s by F-C-C Submitter' % src_project
         res = osc.core.create_submit_request(self.apiurl,
                                              src_project,
@@ -131,6 +157,10 @@ class FccSubmitter(object):
                     res = self.create_submitrequest(package)
                     if res:
                         logging.info('Created request %s for %s' % (res, package))
+                        # add review by package
+                        devel_prj, devel_pkg = self.get_devel_project(package)
+                        logging.info("adding review by %s/%s"%(devel_prj, devel_pkg))
+                        self.add_review(res, devel_prj, devel_pkg)
                     else:
                         logging.error('Error occurred when creating submit request')
             else:
