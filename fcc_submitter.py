@@ -85,6 +85,14 @@ class FccSubmitter(object):
 
         return pacs
 
+    def is_new_package(self, tgt_project, tgt_package):
+        try:
+            self.logger.debug("package_meta %s %s/%s" % (self.apiurl, tgt_project, tgt_package))
+            osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
+        except (urllib2.HTTPError, urllib2.URLError):
+            return True
+        return False
+
     def get_devel_project(self, package):
         m = osc.core.show_package_meta(self.apiurl, self.factory, package)
         node = ET.fromstring(''.join(m)).find('devel')
@@ -114,10 +122,12 @@ class FccSubmitter(object):
         dst_project = self.to_prj
 
         # do a rdiff before create SR, if return empty might be frozenlink not updated yet
-        diff = osc.core.server_diff(self.apiurl, src_project, package, None, dst_project, package, None)
-        if not diff:
-            logging.info("%s/%s have no diff with %s/%s, frozenlink not updated yet?"%(src_project, package, dst_project, package))
-            return None
+        new_pkg = self.is_new_package(dst_project, package)
+        if new_pkg is False:
+            diff = osc.core.server_diff(self.apiurl, src_project, package, None, dst_project, package, None)
+            if not diff:
+                logging.info("%s/%s have no diff with %s/%s, frozenlink not updated yet?"%(src_project, package, dst_project, package))
+                return None
 
         msg = 'Automatic request from %s by F-C-C Submitter' % src_project
         res = osc.core.create_submit_request(self.apiurl,
