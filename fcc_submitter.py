@@ -53,6 +53,7 @@ class FccSubmitter(object):
         self.skip_devel_project_list = [
                 'X11:Enlightenment:Factory',
                 ]
+        self.skip_pkgs_list = []
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -182,6 +183,10 @@ class FccSubmitter(object):
                     # check devel project does not in the skip list
                     if devel_prj in self.skip_devel_project_list:
                         logging.info('%s is in the skip list, do not submit.' % devel_prj)
+                        continue
+                    # check package does not in the skip list
+                    if devel_pkg in self.skip_pkgs_list:
+                        logging.info('%s is in the skip list, do not submit.' % devel_pkg)
                         continue
                     res = self.create_submitrequest(package)
                     if res and res is not None:
