@@ -50,7 +50,9 @@ class FccSubmitter(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         # the skip list against devel project
-        self.skip_devel_project_list = []
+        self.skip_devel_project_list = [
+                'X11:Enlightenment:Factory',
+                ]
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
