@@ -149,11 +149,14 @@ class FccSubmitter(object):
         # get souce packages from target
         target_packages = self.get_source_packages(self.to_prj)
 
+        ms_packages = [] # collect multi specs packages
+
         for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]
             multi_specs = self.check_multiple_specfiles(self.factory, package)
             if multi_specs is True:
                 logging.info('%s in %s have multiple specs, skip for now and submit manually'%(package, 'openSUSE:Factory'))
+                ms_packages.append(package)
                 continue
 
             # make sure the package non-exist in target yet ie. expand=False
@@ -180,6 +183,14 @@ class FccSubmitter(object):
                         logging.error('Error occurred when creating submit request')
             else:
                 logging.debug('%s is exist in %s, skip!'%(package, self.to_prj))
+
+        # dump multi specs packages
+        print("Multi-specs packages:")
+        if ms_packages:
+            for pkg in ms_packages:
+                print pkg
+        else:
+            print 'None'
 
 
 
