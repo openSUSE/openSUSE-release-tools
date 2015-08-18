@@ -87,7 +87,7 @@ class FccSubmitter(object):
 
     def is_new_package(self, tgt_project, tgt_package):
         try:
-            self.logger.debug("package_meta %s %s/%s" % (self.apiurl, tgt_project, tgt_package))
+            logging.debug("Gathering package_meta %s/%s" % (tgt_project, tgt_package))
             osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
         except (urllib2.HTTPError, urllib2.URLError):
             return True
