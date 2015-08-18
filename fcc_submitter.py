@@ -109,6 +109,12 @@ class FccSubmitter(object):
         src_project = self.factory # submit from Factory only
         dst_project = self.to_prj
 
+        # do a rdiff before create SR, if return empty might be frozenlink not updated yet
+        diff = osc.core.server_diff(self.apiurl, src_project, package, None, dst_project, package, None)
+        if not diff:
+            logging.info("%s/%s have no diff with %s/%s, frozenlink not updated yet?"%(src_project, package, dst_project, package))
+            return None
+
         msg = 'Automatic request from %s by F-C-C Submitter' % src_project
         res = osc.core.create_submit_request(self.apiurl,
                                              src_project,
@@ -155,7 +161,7 @@ class FccSubmitter(object):
                 else:
                     logging.info("%d - Preparing submit %s to %s"%(i, package, self.to_prj))
                     res = self.create_submitrequest(package)
-                    if res:
+                    if res and res is not None:
                         logging.info('Created request %s for %s' % (res, package))
                         # add review by package
                         devel_prj, devel_pkg = self.get_devel_project(package)
