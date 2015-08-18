@@ -49,6 +49,10 @@ class FccSubmitter(object):
         self.submit_limit = int(submit_limit)
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
+        # the skip list against devel project
+        self.skip_devel_project_list = [
+                'X11:Enlightenment:Factory',
+                ]
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -109,6 +113,12 @@ class FccSubmitter(object):
         src_project = self.factory # submit from Factory only
         dst_project = self.to_prj
 
+        # do a rdiff before create SR, if return empty might be frozenlink not updated yet
+        diff = osc.core.server_diff(self.apiurl, src_project, package, None, dst_project, package, None)
+        if not diff:
+            logging.info("%s/%s have no diff with %s/%s, frozenlink not updated yet?"%(src_project, package, dst_project, package))
+            return None
+
         msg = 'Automatic request from %s by F-C-C Submitter' % src_project
         res = osc.core.create_submit_request(self.apiurl,
                                              src_project,
@@ -139,11 +149,14 @@ class FccSubmitter(object):
         # get souce packages from target
         target_packages = self.get_source_packages(self.to_prj)
 
+        ms_packages = [] # collect multi specs packages
+
         for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]
             multi_specs = self.check_multiple_specfiles(self.factory, package)
             if multi_specs is True:
                 logging.info('%s in %s have multiple specs, skip for now and submit manually'%(package, 'openSUSE:Factory'))
+                ms_packages.append(package)
                 continue
 
             # make sure the package non-exist in target yet ie. expand=False
@@ -154,17 +167,30 @@ class FccSubmitter(object):
                     logging.debug("There is a request to %s / %s already, skip!"%(package, self.to_prj))
                 else:
                     logging.info("%d - Preparing submit %s to %s"%(i, package, self.to_prj))
+                    # get devel project
+                    devel_prj, devel_pkg = self.get_devel_project(package)
+                    # check devel project does not in the skip list
+                    if devel_prj in self.skip_devel_project_list:
+                        logging.info('%s is in the skip list, do not submit.' % devel_prj)
+                        continue
                     res = self.create_submitrequest(package)
-                    if res:
+                    if res and res is not None:
                         logging.info('Created request %s for %s' % (res, package))
                         # add review by package
-                        devel_prj, devel_pkg = self.get_devel_project(package)
-                        logging.info("adding review by %s/%s"%(devel_prj, devel_pkg))
+                        logging.info("Adding review by %s/%s"%(devel_prj, devel_pkg))
                         self.add_review(res, devel_prj, devel_pkg)
                     else:
                         logging.error('Error occurred when creating submit request')
             else:
                 logging.debug('%s is exist in %s, skip!'%(package, self.to_prj))
+
+        # dump multi specs packages
+        print("Multi-specs packages:")
+        if ms_packages:
+            for pkg in ms_packages:
+                print pkg
+        else:
+            print 'None'
 
 
 
