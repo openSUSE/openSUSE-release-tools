@@ -49,6 +49,8 @@ class FccSubmitter(object):
         self.submit_limit = int(submit_limit)
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
+        # the skip list against devel project
+        self.skip_devel_project_list = []
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -160,12 +162,17 @@ class FccSubmitter(object):
                     logging.debug("There is a request to %s / %s already, skip!"%(package, self.to_prj))
                 else:
                     logging.info("%d - Preparing submit %s to %s"%(i, package, self.to_prj))
+                    # get devel project
+                    devel_prj, devel_pkg = self.get_devel_project(package)
+                    # check devel project does not in the skip list
+                    if devel_prj in self.skip_devel_project_list:
+                        logging.info('%s is in the skip list, do not submit.' % devel_prj)
+                        continue
                     res = self.create_submitrequest(package)
                     if res and res is not None:
                         logging.info('Created request %s for %s' % (res, package))
                         # add review by package
-                        devel_prj, devel_pkg = self.get_devel_project(package)
-                        logging.info("adding review by %s/%s"%(devel_prj, devel_pkg))
+                        logging.info("Adding review by %s/%s"%(devel_prj, devel_pkg))
                         self.add_review(res, devel_prj, devel_pkg)
                     else:
                         logging.error('Error occurred when creating submit request')
