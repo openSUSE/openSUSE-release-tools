@@ -174,7 +174,7 @@ class UpdateCrawler(object):
         # make sure 'packages' covers all subpackages
         subpackages, mainpackage = self.get_specfiles(self.from_prj, targetpkg)
         if subpackages:
-            if mainpackage != targetpkg:
+            if mainpackage and mainpackage != targetpkg:
                 raise Exception("{} != {}".format(mainpackage, targetpkg))
 
             packages = list(set(packages) | set(subpackages))
@@ -184,7 +184,12 @@ class UpdateCrawler(object):
             if not targetpkg in self.packages[project]:
                 continue
             s, m = self.get_specfiles(project, targetpkg)
-            self.remove_packages(project, s + [m])
+            pkgs = []
+            if s:
+                pkgs += s
+            if m:
+                pkgs += [m]
+            self.remove_packages(project, pkgs)
 
         self.create_package_container(targetprj, targetpkg)
         link = self._link_content(sourceprj, sourcepkg, sourcerev)
