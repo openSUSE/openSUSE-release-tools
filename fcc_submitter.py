@@ -49,6 +49,11 @@ class FccSubmitter(object):
         self.submit_limit = int(submit_limit)
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
+        self.sle_base_prjs = [
+                'SUSE:SLE-12-SP1:GA',
+                'SUSE:SLE-12:Update',
+                'SUSE:SLE-12:GA',
+                ]
         # the skip list against devel project
         self.skip_devel_project_list = [
                 'X11:Enlightenment:Factory',
@@ -72,6 +77,13 @@ class FccSubmitter(object):
 
     def get_request_list(self, package):
         return osc.core.get_request_list(self.apiurl, self.to_prj, package, req_state=('new', 'review'))
+
+    def get_link(self, project, package):
+        try:
+            link = http_GET(makeurl(self.apiurl,['source', project, package, '_link']))
+        except (urllib2.HTTPError, urllib2.URLError):
+            return None
+        return ET.fromstring(link)
 
     def get_build_succeeded_packages(self, project):
         """Get the build succeeded packages from `from_prj` project.
@@ -153,6 +165,13 @@ class FccSubmitter(object):
             return False
         return True
 
+    def is_sle_base_pkgs(self, package):
+        link = self.get_link(self.to_prj, package)
+        if link is None or link.get('project') not in self.sle_base_prjs:
+            logging.debug("%s not from SLE base"%package)
+            return False
+        return True
+
     def crawl(self):
         """Main method"""
         succeeded_packages = []
@@ -170,6 +189,11 @@ class FccSubmitter(object):
 
         for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]
+
+            if self.is_sle_base_pkgs(package) is True:
+                logging.info('%s origin from SLE base, skip for now!'%package)
+                continue
+
             multi_specs = self.check_multiple_specfiles(self.factory, package)
             if multi_specs is True:
                 logging.info('%s in %s have multiple specs, skip for now and submit manually'%(package, 'openSUSE:Factory'))
