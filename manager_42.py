@@ -250,7 +250,8 @@ class UpdateCrawler(object):
 
             self.link_packages(packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg)
 
-        return left_packages
+        self.try_to_find_left_packages(left_packages)
+        self.cleanup_and_freeze_links(self.from_prj)
 
     def check_source_in_project(self, project, package, verifymd5):
         if not package in self.packages[project]:
@@ -286,7 +287,7 @@ class UpdateCrawler(object):
                 logging.warn("link mismatch: %s <> %s, subpackage?", linked.get('package'), package)
                 continue
 
-            logging.debug("check where %s came", package)
+            logging.debug("check where %s came from", package)
             foundit = False
             for project in self.project_preference_order:
                 srcmd5 = self.check_source_in_project(project, package, root.get('verifymd5'))
@@ -315,9 +316,8 @@ class UpdateCrawler(object):
         if rev and len(rev) > 5:
             return True
         if not link.get('project'):
-            if link.get('cicount') and link.get('package') not in self.packages[project]:
-                logging.error('invalid link %s/%s', project, package)
-                self.remove_packages(project, [package])
+            if link.get('package') not in self.packages[project]:
+                return False
             return True
         opts = { 'view': 'info' }
         if rev:
@@ -328,9 +328,16 @@ class UpdateCrawler(object):
         self.link_packages([package], link.get('project'), link.get('package'), root.get('srcmd5'), project, package)
         return True
 
-    def find_invalid_links(self, prj):
+    def cleanup_and_freeze_links(self, prj):
+        logging.debug("check for links to freeze in %s", prj)
         for package in self.packages[prj]:
-            self.freeze_link(prj, package)
+            try:
+                if self.freeze_link(prj, package) == False:
+                    logging.error('invalid link %s/%s', prj, package)
+                    self.remove_packages(prj, [package])
+            except urllib2.HTTPError, e:
+                logging.error("failed to freeze {}/{}: {}".format(prj, package, e))
+
 
     def check_dups(self):
         """ walk through projects in order of preference and warn about
@@ -382,7 +389,7 @@ class UpdateCrawler(object):
                     mainpackage = subpackage
                     files.remove(subpackage)
 
-        logging.debug("%s/%s subpackages: %s [%s]", project, package, mainpackage, ','.join(files))
+        logging.info("%s/%s subpackages: %s [%s]", project, package, mainpackage, ','.join(files))
 
         return files, mainpackage
 
@@ -393,11 +400,8 @@ def main(args):
 
     uc = UpdateCrawler(args.from_prj, caching = args.cache_requests )
     uc.check_dups()
-    lp = uc.crawl(args.package)
-    uc.try_to_find_left_packages(lp)
-    if not args.skip_sanity_checks:
-        for prj in uc.projects:
-            uc.find_invalid_links(prj)
+    uc.crawl(args.package)
+
     if args.no_update_candidates == False:
         uc.freeze_candidates()
 
