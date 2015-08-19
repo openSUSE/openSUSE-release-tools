@@ -213,14 +213,25 @@ class UpdateCrawler(object):
             else:
                 requests[requestid] = [package]
 
-        for request, packages in requests.items():
-            sourceprj, sourcepkg, sourcerev, targetpkg = self.get_request_infos(request)
+        for requestid, packages in requests.items():
+            logging.debug("processing request %s, packages %s", requestid, ','.join(packages))
+            sourceprj, sourcepkg, sourcerev, targetpkg = self.get_request_infos(requestid)
             if not sourceprj in self.project_mapping:
-                logging.warn("unrecognized source project %s for [%s] in request %s", sourceprj, packages, request)
+                logging.warn("unrecognized source project %s for [%s] in request %s", sourceprj, packages, requestid)
                 left_packages = left_packages + packages
                 continue
-            logging.debug(" ".join((request, ','.join(packages), sourceprj, sourcepkg, sourcerev, targetpkg)))
             targetprj = self.project_mapping[sourceprj]
+            logging.debug("%s/%s@%s -> %s/%s", sourceprj, sourcepkg, sourcerev, targetprj, targetpkg)
+            # TODO: detach only if actually a link to the deleted package
+            url = makeurl(self.apiurl, ['source', self.from_prj, package],
+                    { 'opackage': package, 'oproject': self.from_prj,
+                      'cmd': 'copy', 'requestid': requestid, 'expand': '1'})
+            try:
+                http_POST(url)
+            except urllib2.HTTPError, e:
+                logging.error("failed to detach link: %s", e)
+                pass
+
             self.link_packages(packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg)
 
         return left_packages
@@ -309,22 +320,13 @@ class UpdateCrawler(object):
             self.check_link(prj, package)
 
     def check_dups(self):
-        """ walk through projects in order of preference and delete
+        """ walk through projects in order of preference and warn about
         duplicates in overlayed projects"""
         mypackages = dict()
-        for project in self.projects:
+        for project in self.subprojects:
             for package in self.packages[project]:
                 if package in mypackages:
-                    logging.debug("duplicate %s/%s, in %s", project, package, mypackages[package])
-                    # TODO: detach only if actually a link to the deleted package
-                    requestid = self.get_latest_request(self.from_prj, package)
-                    if not requestid is None:
-                        url = makeurl(self.apiurl, ['source', self.from_prj, package], { 'opackage': package, 'oproject': self.from_prj, 'cmd': 'copy', 'requestid': requestid, 'expand': '1'})
-                        try:
-                            http_POST(url)
-                        except urllib2.HTTPError, err:
-                            pass
-                    self.remove_packages(project, [package])
+                    logging.warn("duplicate %s/%s, in %s", project, package, mypackages[package])
                 else:
                     mypackages[package] = project
 
