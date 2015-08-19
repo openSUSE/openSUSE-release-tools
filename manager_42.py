@@ -81,7 +81,7 @@ class UpdateCrawler(object):
 
     def cached_GET(self, url):
         if self.caching:
-            return _cached_GET(url)
+            return self._cached_GET(url)
         return http_GET(url).read()
 
     def get_source_packages(self, project, expand=False):
