@@ -81,7 +81,7 @@ class UpdateCrawler(object):
 
     def cached_GET(self, url):
         if self.caching:
-            return _cached_GET(url)
+            return self._cached_GET(url)
         return http_GET(url).read()
 
     def get_source_packages(self, project, expand=False):
@@ -385,7 +385,7 @@ def main(args):
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = UpdateCrawler(args.from_prj, caching = args.no_cache )
+    uc = UpdateCrawler(args.from_prj, caching = args.cache_requests )
     uc.check_dups()
     if not args.skip_sanity_checks:
         for prj in uc.subprojects:
@@ -411,8 +411,8 @@ if __name__ == '__main__':
                         help='don\'t do slow check for broken links (only for testing)')
     parser.add_argument('-n', '--dry', action='store_true',
                         help='dry run, no POST, PUT, DELETE')
-    parser.add_argument('--no-cache', action='store_false', default=True,
-                        help='do not cache GET requests')
+    parser.add_argument('--cache-requests', action='store_true', default=False,
+                        help='cache GET requests. Not recommended for daily use.')
     parser.add_argument('--no-update-candidates', action='store_true',
                         help='don\'t update Factory candidates project')
     parser.add_argument("package", nargs='*', help="package to check")
