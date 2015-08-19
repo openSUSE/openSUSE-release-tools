@@ -41,10 +41,6 @@ http_DELETE = osc.core.http_DELETE
 http_PUT = osc.core.http_PUT
 http_POST = osc.core.http_POST
 
-# TODO:
-# before deleting a package, search for it's links and delete them
-# as well. See build-service/src/api/app/models/package.rb -> find_linking_packages()
-
 class UpdateCrawler(object):
     def __init__(self, from_prj, caching = True):
         self.from_prj = from_prj
@@ -171,11 +167,24 @@ class UpdateCrawler(object):
         url = makeurl(self.apiurl, ['source', project, package, '_link'])
         http_PUT(url, data=link_string)
 
+    # TODO: get rid of packages parameter? we need to check subpackages anyways
     def link_packages(self, packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg):
         logging.info("update link %s/%s -> %s/%s@%s [%s]", targetprj, targetpkg, sourceprj, sourcepkg, sourcerev, ','.join(packages))
-        self.remove_packages('%s:SLE12-Picks'%self.from_prj, packages)
-        self.remove_packages('%s:Factory-Copies'%self.from_prj, packages)
-        self.remove_packages('%s:SLE-Pkgs-With-Overwrites'%self.from_prj, packages)
+
+        # make sure 'packages' covers all subpackages
+        subpackages, mainpackage = self.get_specfiles(self.from_prj, targetpkg)
+        if subpackages:
+            if mainpackage != targetpkg:
+                raise Exception("{} != {}".format(mainpackage, targetpkg))
+
+            packages = list(set(packages) | set(subpackages))
+
+        # remove targetpkg in all subprojects where it existed before
+        for project in self.subprojects:
+            if not targetpkg in self.packages[project]:
+                continue
+            s, m = self.get_specfiles(project, targetpkg)
+            self.remove_packages(project, s + [m])
 
         self.create_package_container(targetprj, targetpkg)
         link = self._link_content(sourceprj, sourcepkg, sourcerev)
@@ -223,14 +232,16 @@ class UpdateCrawler(object):
             targetprj = self.project_mapping[sourceprj]
             logging.debug("%s/%s@%s -> %s/%s", sourceprj, sourcepkg, sourcerev, targetprj, targetpkg)
             # TODO: detach only if actually a link to the deleted package
-            url = makeurl(self.apiurl, ['source', self.from_prj, package],
-                    { 'opackage': package, 'oproject': self.from_prj,
-                      'cmd': 'copy', 'requestid': requestid, 'expand': '1'})
-            try:
-                http_POST(url)
-            except urllib2.HTTPError, e:
-                logging.error("failed to detach link: %s", e)
-                pass
+            link = self.get_link(self.from_prj, targetpkg)
+            if link is not None and link.get('project') == targetprj:
+                url = makeurl(self.apiurl, ['source', self.from_prj, targetpkg],
+                        { 'opackage': targetpkg, 'oproject': self.from_prj,
+                          'cmd': 'copy', 'requestid': requestid, 'expand': '1'})
+                try:
+                    http_POST(url)
+                except urllib2.HTTPError, e:
+                    logging.error("failed to detach link: %s", e)
+                    pass
 
             self.link_packages(packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg)
 
@@ -282,12 +293,6 @@ class UpdateCrawler(object):
             if not foundit:
                 logging.debug('%s is a fork', package)
 
-    def check_inner_link(self, project, package, link):
-        if not link.get('cicount'):
-            return
-        if link.get('package') not in self.packages[project]:
-            self.remove_packages(project, [package])
-
     def get_link(self, project, package):
         try:
             link = self.cached_GET(makeurl(self.apiurl,
@@ -296,16 +301,18 @@ class UpdateCrawler(object):
             return None
         return ET.fromstring(link)
 
-    def check_link(self, project, package):
+    def freeze_link(self, project, package):
         link = self.get_link(project, package)
         if link is None:
-            return
+            return None
         rev = link.get('rev')
         # XXX: magic number?
         if rev and len(rev) > 5:
             return True
         if not link.get('project'):
-            self.check_inner_link(project, package, link)
+            if link.get('cicount') and link.get('package') not in self.packages[project]:
+                logging.error('invalid link %s/%s', project, package)
+                self.remove_packages(project, [package])
             return True
         opts = { 'view': 'info' }
         if rev:
@@ -314,10 +321,11 @@ class UpdateCrawler(object):
                                 ['source', link.get('project'), link.get('package')], opts ))
         root = ET.fromstring(root)
         self.link_packages([package], link.get('project'), link.get('package'), root.get('srcmd5'), project, package)
+        return True
 
     def find_invalid_links(self, prj):
         for package in self.packages[prj]:
-            self.check_link(prj, package)
+            self.freeze_link(prj, package)
 
     def check_dups(self):
         """ walk through projects in order of preference and warn about
@@ -355,31 +363,23 @@ class UpdateCrawler(object):
         except urllib2.HTTPError, err:
             logging.error(err)
 
-    def check_multiple_specs(self, project):
-        logging.debug("check for multiple specs in %s", project)
-        for package in self.packages[project]:
-            url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
-            root = ET.fromstring(self.cached_GET(url))
-            files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
-            if len(files) == 1:
-                continue
-            mainpackage = None
-            for subpackage in files[:]:
-                link = self.get_link(project, subpackage)
-                if link is not None:
-                    if link.get('project') and link.get('project') != project:
-                        mainpackage = subpackage
-                        files.remove(subpackage)
-                    if link.get('cicount'):
-                        files.remove(subpackage)
+    def get_specfiles(self, project, package):
+        url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
+        root = ET.fromstring(self.cached_GET(url))
+        files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
+        if len(files) == 1:
+            return None, None
+        mainpackage = None
+        for subpackage in files[:]:
+            link = self.get_link(project, subpackage)
+            if link is not None:
+                if link.get('project') and link.get('project') != project:
+                    mainpackage = subpackage
+                    files.remove(subpackage)
 
-            for subpackage in files:
-                if subpackage in self.packages[project]:
-                    self.remove_packages(project, [subpackage])
+        logging.debug("%s/%s subpackages: %s [%s]", project, package, mainpackage, ','.join(files))
 
-                link = "<link cicount='copy' package='{}' />".format(mainpackage)
-                self.create_package_container(project, subpackage)
-                self.upload_link(project, subpackage, link)
+        return files, mainpackage
 
 def main(args):
     # Configure OSC
@@ -388,9 +388,6 @@ def main(args):
 
     uc = UpdateCrawler(args.from_prj, caching = args.cache_requests )
     uc.check_dups()
-    if not args.skip_sanity_checks:
-        for prj in uc.subprojects:
-            uc.check_multiple_specs(prj)
     lp = uc.crawl(args.package)
     uc.try_to_find_left_packages(lp)
     if not args.skip_sanity_checks:
