@@ -197,8 +197,7 @@ class UpdateCrawler(object):
         if packages:
             packages = [p for p in packages if p in self.packages[self.from_prj]]
         else:
-            packages = self.get_source_packages(self.from_prj, expand=False)
-            packages = [ p for p in packages if not p.startswith('_') ]
+            packages = self.packages[self.from_prj]
         requests = dict()
 
         left_packages = []
