@@ -80,7 +80,7 @@ class FccSubmitter(object):
 
     def get_link(self, project, package):
         try:
-            link = http_GET(makeurl(self.apiurl,['source', project, package, '_link']))
+            link = http_GET(makeurl(self.apiurl,['source', project, package, '_link'])).read()
         except (urllib2.HTTPError, urllib2.URLError):
             return None
         return ET.fromstring(link)
