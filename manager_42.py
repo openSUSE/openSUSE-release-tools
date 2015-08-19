@@ -251,7 +251,7 @@ class UpdateCrawler(object):
             self.link_packages(packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg)
 
         self.try_to_find_left_packages(left_packages)
-        self.cleanup_and_freeze_links(self.from_prj)
+        self.cleanup_and_freeze_links(self.from_prj, packages)
 
     def check_source_in_project(self, project, package, verifymd5):
         if not package in self.packages[project]:
@@ -328,9 +328,9 @@ class UpdateCrawler(object):
         self.link_packages([package], link.get('project'), link.get('package'), root.get('srcmd5'), project, package)
         return True
 
-    def cleanup_and_freeze_links(self, prj):
+    def cleanup_and_freeze_links(self, prj, packages):
         logging.debug("check for links to freeze in %s", prj)
-        for package in self.packages[prj]:
+        for package in packages:
             try:
                 if self.freeze_link(prj, package) == False:
                     logging.error('invalid link %s/%s', prj, package)
