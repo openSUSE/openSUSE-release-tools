@@ -233,7 +233,7 @@ class FccSubmitter(object):
                     # check devel project does not in the skip list
                     if devel_prj in self.skip_devel_project_list:
                         # check the except packages list
-                        match = False
+                        match = None
                         for elem in self.except_pkgs_list:
                             m = re.search(elem, package)
                             if m is not None:
@@ -246,7 +246,7 @@ class FccSubmitter(object):
                             pass
 
                     # check package does not in the skip list
-                    match = False
+                    match = None
                     for elem in self.skip_pkgs_list:
                         m = re.search(elem, package)
                         if m is not None:
