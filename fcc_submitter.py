@@ -25,6 +25,7 @@ import logging
 import sys
 import urllib2
 import random
+import re
 from xml.etree import cElementTree as ET
 
 import osc.conf
@@ -57,13 +58,32 @@ class FccSubmitter(object):
         # the skip list against devel project
         self.skip_devel_project_list = [
                 'X11:Enlightenment:Factory',
+                'devel:languages:nodejs',
+                'devel:languages:go',
+                ]
+        # put the except packages from skip_devel_project_list, use regex in this list
+        self.except_pkgs_list = [
+                "^golang-x-(\w+)",
+                "^go$",
+                "^nodejs$",
                 ]
         self.skip_pkgs_list = [
-                'mozaddon-adblock_edge',
-                'gnome-python-desktop',
-                'compiz-manager',
-                'lua',
-                'lua52',
+                "^mozaddon-adblock_edge",
+                "^gnome-python-desktop",
+                "^compiz-manager",
+                "^lua$",
+                "^lua52$",
+                "^python-plaso",
+                "^pidgin-openfetion",
+                "^sobby",
+                "^conduit",
+                "^devilspie",
+                "^radiotray",
+                "^decibel-audio-player",
+                "^cttop",
+                "^kimtoy",
+                "^scim$",
+                "^scim-(\w+)",
                 ]
 
     def get_source_packages(self, project, expand=False):
@@ -212,12 +232,32 @@ class FccSubmitter(object):
                     devel_prj, devel_pkg = self.get_devel_project(package)
                     # check devel project does not in the skip list
                     if devel_prj in self.skip_devel_project_list:
-                        logging.info('%s is in the skip list, do not submit.' % devel_prj)
-                        continue
+                        # check the except packages list
+                        match = False
+                        for elem in self.except_pkgs_list:
+                            m = re.search(elem, package)
+                            if m is not None:
+                                match = True
+
+                        if match is not True:
+                            logging.info('%s/%s is in the skip list, do not submit.' % (devel_prj, package))
+                            continue
+                        else:
+                            pass
+
                     # check package does not in the skip list
-                    if package in self.skip_pkgs_list:
+                    match = False
+                    for elem in self.skip_pkgs_list:
+                        m = re.search(elem, package)
+                        if m is not None:
+                            match = True
+
+                    if match is True:
                         logging.info('%s is in the skip list, do not submit.' % package)
                         continue
+                    else:
+                        pass
+
                     res = self.create_submitrequest(package)
                     if res and res is not None:
                         logging.info('Created request %s for %s' % (res, package))
