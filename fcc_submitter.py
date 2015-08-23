@@ -60,6 +60,7 @@ class FccSubmitter(object):
                 'X11:Enlightenment:Factory',
                 'devel:languages:nodejs',
                 'devel:languages:go',
+                'mobile:synchronization:FACTORY',
                 ]
         # put the except packages from skip_devel_project_list, use regex in this list
         self.except_pkgs_list = [
@@ -84,6 +85,14 @@ class FccSubmitter(object):
                 "^kimtoy",
                 "^scim$",
                 "^scim-(\w+)",
+                "^freeradius-(\w+)",
+                "x-tile",
+                "imhangul",
+                "libgnomeuimm",
+                "guake",
+                "gstreamer-0_10-plugins-gl",
+                "python-jmespath",
+                "pybliographer",
                 ]
 
     def get_source_packages(self, project, expand=False):
