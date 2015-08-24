@@ -93,6 +93,11 @@ class FccSubmitter(object):
                 "gstreamer-0_10-plugins-gl",
                 "python-jmespath",
                 "pybliographer",
+                "scpm",
+                "ghc-asn1-data",
+                "novel-pinyin",
+                "xplatproviders",
+                "libu2f-host",
                 ]
 
     def get_source_packages(self, project, expand=False):
