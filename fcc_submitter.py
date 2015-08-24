@@ -60,6 +60,7 @@ class FccSubmitter(object):
                 'X11:Enlightenment:Factory',
                 'devel:languages:nodejs',
                 'devel:languages:go',
+                'mobile:synchronization:FACTORY',
                 ]
         # put the except packages from skip_devel_project_list, use regex in this list
         self.except_pkgs_list = [
@@ -84,6 +85,14 @@ class FccSubmitter(object):
                 "^kimtoy",
                 "^scim$",
                 "^scim-(\w+)",
+                "^freeradius-(\w+)",
+                "x-tile",
+                "imhangul",
+                "libgnomeuimm",
+                "guake",
+                "gstreamer-0_10-plugins-gl",
+                "python-jmespath",
+                "pybliographer",
                 ]
 
     def get_source_packages(self, project, expand=False):
@@ -160,14 +169,6 @@ class FccSubmitter(object):
         src_project = self.factory # submit from Factory only
         dst_project = self.to_prj
 
-        # do a rdiff before create SR, if return empty might be frozenlink not updated yet
-        new_pkg = self.is_new_package(dst_project, package)
-        if new_pkg is False:
-            diff = osc.core.server_diff(self.apiurl, src_project, package, None, dst_project, package, None)
-            if not diff:
-                logging.info("%s/%s have no diff with %s/%s, frozenlink not updated yet?"%(src_project, package, dst_project, package))
-                return None
-
         msg = 'Automatic request from %s by F-C-C Submitter' % src_project
         res = osc.core.create_submit_request(self.apiurl,
                                              src_project,
@@ -212,6 +213,12 @@ class FccSubmitter(object):
 
             if self.is_sle_base_pkgs(package) is True:
                 logging.info('%s origin from SLE base, skip for now!'%package)
+                continue
+
+            # make sure it is new package
+            new_pkg = self.is_new_package(self.to_prj, package)
+            if new_pkg is not True:
+                logging.info('%s is not a new package, do not submit.' % package)
                 continue
 
             multi_specs = self.check_multiple_specfiles(self.factory, package)
