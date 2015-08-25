@@ -56,7 +56,6 @@ class AdiCommand:
             # we care only about first action
             action = action[0]
 
-
             # Where are we targeting the package
             if len(wanted_requests):
                 source_project = 'wanted'
@@ -90,15 +89,24 @@ class AdiCommand:
 
             # Notify everybody about the changes
             self.api.update_status_comments(name, 'select')
-    
-    def perform(self, packages):
+
+    def perform(self, packages, move=False):
         """
         Perform the list command
         """
         if len(packages):
             requests = set()
-            for request, request_project in RequestFinder.find_sr(packages,
-                                                                  self.api).items():
+            if move:
+                items = RequestFinder.find_staged_sr(packages, self.api).items()
+                print items
+                for request, request_project in items:
+                    staging_project = request_project['staging']
+                    self.api.rm_from_prj(staging_project, request_id=request)
+                    self.api.add_review(request, by_group=self.api.cstaging_group, msg='Please recheck')
+            else:
+                items = RequestFinder.find_sr(packages, self.api).items()
+
+            for request, request_project in items:
                 requests.add(request)
             self.create_new_adi(requests)
         else:

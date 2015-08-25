@@ -172,4 +172,4 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'list':
             ListCommand(api).perform()
         elif cmd == 'adi':
-            AdiCommand(api).perform(args[1:])
+            AdiCommand(api).perform(args[1:], opts.move)
