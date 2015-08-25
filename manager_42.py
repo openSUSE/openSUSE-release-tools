@@ -30,6 +30,7 @@ import osc.conf
 import osc.core
 import urllib2
 import sys
+import time
 
 from osclib.memoize import memoize
 
@@ -377,7 +378,17 @@ class UpdateCrawler(object):
 
     def get_specfiles(self, project, package):
         url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
-        root = ET.fromstring(self.cached_GET(url))
+        root = None
+        while root is None:
+            try:
+                root = ET.fromstring(self.cached_GET(url))
+            except urllib2.HTTPError as e:
+                print "ERR", e.reason
+                # this can happen if the build service didn't yet work on the previous commit
+                if e.code == 400 and e.reason == 'service in progress':
+                    time.sleep(1)
+                    continue
+                raise
         files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
         if len(files) == 1:
             return None, None

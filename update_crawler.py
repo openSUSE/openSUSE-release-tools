@@ -34,7 +34,8 @@ import rpm
 from osclib.memoize import memoize
 
 OPENSUSE = 'openSUSE:42'
-SLE = 'SUSE:SLE-12:Update'
+FACTORY = 'openSUSE:Factory'
+SLE = 'SUSE:SLE-12-SP1:Update'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -107,15 +108,18 @@ class UpdateCrawler(object):
                 return False
             raise
 
-    def filter_sle_packages(self, packages):
-        filtered = dict()
+    def split_packages(self, packages):
+        filtered_sle = dict()
+        filtered_fac = dict()
         for package, sourceinfo in packages.items():
             # directly in 42
             if sourceinfo.find('originproject') is None:
                 continue
             if sourceinfo.find('originproject').text == 'openSUSE:42:SLE12-Picks':
-                filtered[package] = sourceinfo
-        return filtered
+                filtered_sle[package] = sourceinfo
+            elif sourceinfo.find('originproject').text == 'openSUSE:42:Factory-Copies':
+                filtered_fac[package] = sourceinfo
+        return filtered_sle, filtered_fac
 
     def follow_link(self, project, package, rev, verifymd5):
         #print "follow", project, package, rev
@@ -139,39 +143,35 @@ class UpdateCrawler(object):
             if ret:
                 project, package, rev = ret
         return (project, package, rev)
-                     
-    def crawl(self):
-        """Main method of the class that run the crawler."""
-        targets = self.filter_sle_packages(self.get_source_infos('openSUSE:42'))
-        sle_sources = self.get_source_infos('SUSE:SLE-12-SP1:Update')
 
+    def update_targets(self, targets, sources, default_origin):
         for package, sourceinfo in targets.items():
-            if not package in sle_sources:
-                logging.info('FATAL: Package %s not found in sle12' % (package))
+            if not package in sources:
+                logging.info('FATAL: Package %s not found in targets' % (package))
                 continue
 
-            sle_source = sle_sources[package]
+            source = sources[package]
 
             #if package != 'build-compare':
             #    continue
             
             # Compare verifymd5
-            md5_from = sle_source.get('verifymd5')
+            md5_from = source.get('verifymd5')
             md5_to = sourceinfo.get('verifymd5')
             if md5_from == md5_to:
                 #logging.info('Package %s not marked for update' % package)
                 continue
 
-            if self.is_source_innerlink('openSUSE:42', package):
+            if self.is_source_innerlink(OPENSUSE, package):
                 logging.info('Package %s is sub package' % (package))
                 continue
 
-            originproject = 'SUSE:SLE-12-SP1:Update'
-            if not sle_source.find('originproject') is None:
-                originproject = sle_source.find('originproject').text
+            originproject = default_origin
+            if not source.find('originproject') is None:
+                originproject = source.find('originproject').text
 
             src_project, src_package, src_rev = self.follow_link(originproject, package,
-                                                                 sle_source.get('srcmd5'), sle_source.get('verifymd5'))
+                                                                 source.get('srcmd5'), source.get('verifymd5'))
 
             res = self.submitrequest(src_project, src_package, src_rev, package)
             if res:
@@ -180,12 +180,19 @@ class UpdateCrawler(object):
                 logging.error('Error creating the request for %s' % package)
 
 
+    def crawl(self):
+        """Main method of the class that run the crawler."""
+        targets_sle, targets_fac = self.split_packages(self.get_source_infos(OPENSUSE))
+        self.update_targets(targets_sle, self.get_source_infos(SLE), SLE)
+        self.update_targets(targets_fac, self.get_source_infos(FACTORY), FACTORY)
+
+
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = UpdateCrawler(args.from_prj, args.to_prj)
+    uc = UpdateCrawler(SLE, OPENSUSE)
     uc.crawl()
 
 if __name__ == '__main__':
@@ -195,12 +202,6 @@ if __name__ == '__main__':
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print info useful for debuging')
-    parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
-                        help='project where to get the updates (default: %s)' % SLE,
-                        default=SLE)
-    parser.add_argument('-t', '--to', dest='to_prj', metavar='PROJECT',
-                        help='project where to submit the updates (default: %s)' % OPENSUSE,
-                        default=OPENSUSE)
 
     args = parser.parse_args()
 
