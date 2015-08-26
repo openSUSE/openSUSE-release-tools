@@ -71,6 +71,8 @@ class UpdateCrawler(object):
         self.packages = dict()
         for project in self.projects + self.project_preference_order:
             self.packages[project] = self.get_source_packages(project)
+        self.pending_requests = []
+        self.pending_requests = self.get_requests_list(self.from_prj)
 
     @memoize()
     def _cached_GET(self, url):
@@ -110,6 +112,21 @@ class UpdateCrawler(object):
         if requestid is None:
             return None
         return requestid.text
+
+    def get_requests_list(self, project):
+        """ Return package name of pending review requests """
+        requests = []
+        target = "action[target/@project='{}']".format(project)
+        query = "match=({})+and+({})".format("state/@name='new'+or+state/@name='review'", target)
+        url = makeurl(self.apiurl,['search', 'request'], query)
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        for rq in root.findall('request'):
+            action = rq.findall('action')
+            action = action[0] # take the first one only
+            requests.append(action.find('target').get('package'))
+
+        return requests
 
     def get_request_infos(self, requestid):
         request = self.cached_GET(makeurl(self.apiurl, ['request', requestid]))
@@ -171,6 +188,11 @@ class UpdateCrawler(object):
     # TODO: get rid of packages parameter? we need to check subpackages anyways
     def link_packages(self, packages, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg):
         logging.info("update link %s/%s -> %s/%s@%s [%s]", targetprj, targetpkg, sourceprj, sourcepkg, sourcerev, ','.join(packages))
+
+        # check do it have pending review request against this package
+        if targetpkg in self.pending_requests:
+            logging.info("There is a pending request to %s / %s, ignore!"%(self.from_prj, packages))
+            return
 
         # make sure 'packages' covers all subpackages
         subpackages, mainpackage = self.get_specfiles(self.from_prj, targetpkg)
