@@ -220,7 +220,7 @@ class UpdateCrawler(object):
 
         for package in [ p for p in packages if p != targetpkg ]:
             # FIXME: link packages from factory that override sle
-            # ones to different projecg
+            # ones to different project
             logging.debug("linking %s -> %s", package, targetpkg)
             link = "<link cicount='copy' package='{}' />".format(targetpkg)
             self.create_package_container(targetprj, package)
@@ -413,7 +413,7 @@ class UpdateCrawler(object):
                 raise
         files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
         if len(files) == 1:
-            return None, None
+            return None, files[0]
         mainpackage = None
         for subpackage in files[:]:
             link = self.get_link(project, subpackage)
