@@ -2,9 +2,11 @@ import json
 
 from osc import oscerr
 from osc.core import delete_project
+from osc.core import show_package_meta
         
 from osclib.select_command import SelectCommand
 from osclib.request_finder import RequestFinder
+from xml.etree import cElementTree as ET
 
 class AdiCommand:
     def __init__(self, api):
@@ -38,7 +40,15 @@ class AdiCommand:
         for p in self.api.get_adi_projects():
             self.check_adi_project(p)
 
-    def create_new_adi(self, wanted_requests):
+    def get_devel_project(self, project, package):
+        m = show_package_meta(self.api.apiurl, project, package)
+        node = ET.fromstring(''.join(m)).find('devel')
+        if node is None:
+            return None
+        else:
+            return node.get('project')
+
+    def create_new_adi(self, wanted_requests, by_dp=False):
         all_requests = self.api.get_open_requests()
 
         non_ring_packages = []
@@ -67,9 +77,14 @@ class AdiCommand:
                     source_project = 'none'
 
             target_package = action.find('target').get('package')
+            source_package = action.find('source').get('package')
 
             if not self.api.ring_packages.get(target_package):
                 non_ring_packages.append(target_package)
+                if by_dp is True:
+                    devel_project = self.get_devel_project(source_project, source_package)
+                    if devel_project is not None:
+                        source_project = devel_project
 
                 if not source_project in non_ring_requests:
                     non_ring_requests[source_project] = []
@@ -90,7 +105,7 @@ class AdiCommand:
             # Notify everybody about the changes
             self.api.update_status_comments(name, 'select')
 
-    def perform(self, packages, move=False):
+    def perform(self, packages, move=False, by_dp=False):
         """
         Perform the list command
         """
@@ -112,4 +127,4 @@ class AdiCommand:
         else:
             self.check_adi_projects() 
             if self.api.is_user_member_of(self.api.user, 'factory-staging'):
-                self.create_new_adi(())
+                self.create_new_adi((), by_dp)

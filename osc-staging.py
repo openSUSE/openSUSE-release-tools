@@ -64,6 +64,8 @@ def _full_project_name(self, project):
 
 @cmdln.option('--move', action='store_true',
               help='force the selection to become a move')
+@cmdln.option('--by-develproject', action='store_true',
+              help='sort the packages by devel project')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='manually specify different source project during request moving')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
@@ -172,4 +174,4 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'list':
             ListCommand(api).perform()
         elif cmd == 'adi':
-            AdiCommand(api).perform(args[1:], opts.move)
+            AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject)
