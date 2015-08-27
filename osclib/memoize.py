@@ -40,7 +40,7 @@ except ImportError:
 CACHEDIR = save_cache_path('opensuse-repo-checker')
 
 
-def memoize(ttl=None, session=False, is_method=False):
+def memoize(ttl=None, session=False, is_method=False, is_static=False):
     """Decorator function to implement a persistent cache.
 
     >>> @memoize()
@@ -175,7 +175,7 @@ def memoize(ttl=None, session=False, is_method=False):
             if is_method:
                 _self = args[0]
                 _add_invalidate_method(_self)
-            key = _key((args[1:], kwargs))
+            key = _key((args if is_static else args[1:], kwargs))
             updated = False
             cache = _open_cache(cache_name)
             if key in cache:
