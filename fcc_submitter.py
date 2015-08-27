@@ -98,6 +98,13 @@ class FccSubmitter(object):
                 "novel-pinyin",
                 "xplatproviders",
                 "libu2f-host",
+                "pycarddav",
+                "rubygem-json_pure-1_5",
+                "Crystalcursors",
+                "python-dfVFS",
+                "python-gcs-oauth2-boto-plugin",
+                "texinfo4",
+                "mozaddon-bugmenot",
                 ]
 
     def get_source_packages(self, project, expand=False):
