@@ -76,12 +76,22 @@ class UpdateCrawler(object):
 
     @memoize()
     def _cached_GET(self, url):
-        return http_GET(url).read()
+        return self.retried_GET(url).read()
 
     def cached_GET(self, url):
         if self.caching:
             return self._cached_GET(url)
-        return http_GET(url).read()
+        return self.retried_GET(url).read()
+
+    def retried_GET(self, url):
+        try:
+            return http_GET(url)
+        except urllib2.HTTPError, e:
+            if e.code / 100 == 5:
+                print 'Retrying {}'.format(url)
+                time.sleep(1)
+                return self.retried_GET(url)
+            raise e
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
