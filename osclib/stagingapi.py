@@ -422,7 +422,7 @@ class StagingAPI(object):
             #     self.accept_non_ring_request(rq)
             self.update_superseded_request(rq)
 
-    @memoize(ttl=60, session=True, is_method=True)
+    @memoize(ttl=60, session=True, add_invalidate=True)
     def get_prj_pseudometa(self, project):
         """
         Gets project data from YAML in project description
