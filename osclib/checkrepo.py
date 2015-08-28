@@ -296,16 +296,13 @@ class CheckRepo(object):
     def _last_build_success(self, src_project, tgt_project, src_package, rev):
         """Return the last build success XML document from OBS."""
         xml = ''
-        try:
-            url = makeurl(self.apiurl,
-                          ('build', src_project,
-                           '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s' % (
-                               quote_plus(src_package),
-                               quote_plus(tgt_project),
-                               rev)))
-            xml = http_GET(url).read()
-        except urllib2.HTTPError, e:
-            print('ERROR in URL %s [%s]' % (url, e))
+        url = makeurl(self.apiurl,
+                      ('build', src_project,
+                       '_result?lastsuccess&package=%s&pathproject=%s&srcmd5=%s' % (
+                           quote_plus(src_package),
+                           quote_plus(tgt_project),
+                           rev)))
+        xml = http_GET(url).read()
         return xml
 
     @memoize()
@@ -487,8 +484,9 @@ class CheckRepo(object):
                 rq.updated = True
                 continue
 
-            if (spec_info['project'] != rq.src_project
-               or spec_info['package'] != rq.src_package) and not rq.updated:
+            is_src_diff = (spec_info['project'] != rq.src_project or
+                           spec_info['package'] != rq.src_package)
+            if is_src_diff and not rq.updated:
                 msg = '%s/%s should _link to %s/%s' % (rq.src_project,
                                                        spec,
                                                        rq.src_project,
@@ -535,17 +533,18 @@ class CheckRepo(object):
         """
         repos_to_check = []
 
-        root_xml = self.last_build_success(request.shadow_src_project,
-                                           request.tgt_project,
-                                           request.src_package,
-                                           request.verifymd5)
+        try:
+            root_xml = self.last_build_success(request.shadow_src_project,
+                                               request.tgt_project,
+                                               request.src_package,
+                                               request.verifymd5)
+        except urllib2.HTTPError as e:
+            if 300 <= e.code <= 499:
+                print ' - The request is not built agains this project'
+                return repos_to_check
+            raise e
 
-        if root_xml:
-            root = ET.fromstring(root_xml)
-        else:
-            print ' - The request is not built agains this project'
-            return repos_to_check
-
+        root = ET.fromstring(root_xml)
         for repo in root.findall('repository'):
             intel_archs = [a for a in repo.findall('arch')
                            if a.attrib['arch'] in ('i586', 'x86_64')]
@@ -716,7 +715,17 @@ class CheckRepo(object):
 
         # If the request do not build properly in both Intel platforms,
         # return False.
-        repos_to_check = self.repositories_to_check(request)
+        try:
+            repos_to_check = self.repositories_to_check(request)
+        except urllib2.HTTPError as e:
+            if 500 <= e.code <= 599:
+                print ' - Temporal error in OBS: %s %s' % (e.code, e.msg)
+            else:
+                print ' - Unknown error in OBS: %s %s' % (e.code, e.msg)
+            # Ignore this request until OBS error dissapears
+            request.updated = True
+            return False
+
         if not repos_to_check:
             msg = 'Missing i586 and x86_64 in the repo list'
             print ' - %s' % msg
