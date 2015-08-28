@@ -879,6 +879,17 @@ class StagingAPI(object):
         self.do_change_review_state(request_id, state, by_project=project,
                                     message=msg)
 
+    def get_flag_in_prj(self, project, flag='build', repository=None, arch=None):
+        """Return the flag value in a project."""
+        url = self.makeurl(['source', project, '_meta'])
+        root = ET.parse(http_GET(url)).getroot()
+        section = root.find(flag)
+        for status in section:
+            is_repository = status.get('repository', None) == repository
+            is_arch = status.get('arch', None) == arch
+            if is_repository and is_arch:
+                return status.tag
+
     def switch_flag_in_prj(self, project, flag='build', state='disable', repository=None, arch=None):
         url = self.makeurl(['source', project, '_meta'])
         prjmeta = ET.parse(http_GET(url)).getroot()
