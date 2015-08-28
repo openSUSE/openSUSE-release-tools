@@ -122,6 +122,8 @@ class FreezeCommand(object):
 
         self.freeze_prjlinks()
 
+        build_status = self.api.get_flag_in_prj(prj, flag='build')
+
         # If there is not a bootstrap repository, there is not
         # anything more to do.
         if not self.is_bootstrap():
@@ -148,6 +150,9 @@ class FreezeCommand(object):
             version = self.api.package_version(prj, 'openSUSE-release')
             for arch in ['x86_64', 'ppc64le']:
                 self.update_product_version(prj + ':DVD', 'Test-DVD-' + arch, arch, version)
+
+        # Set the original build status for the project
+        self.api.build_switch_prj(prj, build_status)
 
     def update_product_version(self, project, product, arch, version):
         if not self.api.item_exists(project, product):
