@@ -85,7 +85,7 @@ class StagingAPI(object):
         try:
             return http_GET(url)
         except urllib2.HTTPError, e:
-            if e.code / 100 == 5:
+            if 500 <= e.code <= 599:
                 print 'Retrying {}'.format(url)
                 return self.retried_GET(url)
             raise e
