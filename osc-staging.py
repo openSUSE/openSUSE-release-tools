@@ -26,6 +26,7 @@ from osc import oscerr
 _plugin_dir = os.path.expanduser('~/.osc-plugins')
 sys.path.append(_plugin_dir)
 from osclib.accept_command import AcceptCommand
+from osclib.adi_command import AdiCommand
 from osclib.check_command import CheckCommand
 from osclib.cleanup_rings import CleanupRings
 from osclib.conf import Config
@@ -35,7 +36,6 @@ from osclib.obslock import OBSLock
 from osclib.select_command import SelectCommand
 from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
-from osclib.adi_command import AdiCommand
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -168,7 +168,7 @@ def do_staging(self, subcmd, opts, *args):
                 api.mark_additional_packages(tprj, [opts.add])
             else:
                 SelectCommand(api, tprj).perform(args[2:], opts.move,
-                                           opts.from_, opts.no_freeze)
+                                                 opts.from_, opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'list':
