@@ -25,6 +25,7 @@ import itertools
 import logging
 import sys
 import urllib2
+import time
 from xml.etree import cElementTree as ET
 
 import osc.conf
@@ -48,9 +49,19 @@ class UpdateCrawler(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
 
+    def retried_GET(self, url):
+        try:
+            return http_GET(url)
+        except urllib2.HTTPError, e:
+            if 500 <= e.code <= 599:
+                print 'Retrying {}'.format(url)
+                time.sleep(1)
+                return self.retried_GET(url)
+            raise e
+
     @memoize()
     def _get_source_infos(self, project):
-        return http_GET(makeurl(self.apiurl,
+        return self.retried_GET(makeurl(self.apiurl,
                                 ['source', project],
                                 {
                                     'view': 'info'
