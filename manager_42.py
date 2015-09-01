@@ -68,11 +68,14 @@ class UpdateCrawler(object):
             else:
                 self.project_mapping[prj] = self.from_prj + ':Factory-Copies'
 
+        self.reload_packages()
+        self.pending_requests = []
+        self.pending_requests = self.get_requests_list(self.from_prj)
+
+    def reload_packages(self):
         self.packages = dict()
         for project in self.projects + self.project_preference_order:
             self.packages[project] = self.get_source_packages(project)
-        self.pending_requests = []
-        self.pending_requests = self.get_requests_list(self.from_prj)
 
     @memoize()
     def _cached_GET(self, url):
@@ -167,6 +170,7 @@ class UpdateCrawler(object):
         url = makeurl(self.apiurl, ['source', project, package, '_meta'])
         logging.debug("create %s/%s", project, package)
         http_PUT(url, data=dst_meta)
+        self.packages[project].append(package)
 
     def _link_content(self, sourceprj, sourcepkg, rev):
         root = ET.fromstring(self._get_source_package(sourceprj, sourcepkg, rev))
@@ -227,17 +231,20 @@ class UpdateCrawler(object):
 
         self.remove_packages(self.from_prj, packages)
 
-    def crawl(self, packages = None):
+    def _filter_given_packages(self, packages):
+        if packages:
+            return [p for p in packages if p in self.packages[self.from_prj]]
+
+        return self.packages[self.from_prj][:]
+
+    def crawl(self, given_packages = None):
         """Main method of the class that run the crawler."""
 
-        if packages:
-            packages = [p for p in packages if p in self.packages[self.from_prj]]
-        else:
-            packages = self.packages[self.from_prj]
         requests = dict()
 
-        self.try_to_find_left_packages(packages)
-        self.cleanup_and_freeze_links(self.from_prj, packages)
+        self.try_to_find_left_packages(self._filter_given_packages(given_packages))
+        self.reload_packages()
+        self.cleanup_and_freeze_links(self.from_prj, self._filter_given_packages(given_packages))
 
     def check_source_in_project(self, project, package, verifymd5):
         if not package in self.packages[project]:
@@ -293,10 +300,31 @@ class UpdateCrawler(object):
             return None
         return ET.fromstring(link)
 
+    def detach_branch(self, project, package):
+        # copy to itself with expand
+        url = makeurl(self.apiurl, ['source', project, package], {
+            'opackage': package,
+            'oproject': project, 'cmd': 'copy', 'expand': '1'}
+        )
+        try:
+            http_POST(url)
+        except urllib2.HTTPError, err:
+            pass
+
     def freeze_link(self, project, package):
         link = self.get_link(project, package)
         if link is None:
             return None
+
+        if link.get('baserev'): # bad sign ahead!
+            self.detach_branch(project, package)
+            # remove targetpkg in all subprojects where it existed before
+            for sproject in self.subprojects:
+                if package in self.packages[sproject]:
+                    self.remove_packages(sproject, [package] )
+
+            return None
+
         rev = link.get('rev')
         # XXX: magic number?
         if rev and len(rev) > 5:
