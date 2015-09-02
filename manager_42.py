@@ -31,10 +31,11 @@ import osc.core
 import urllib2
 import sys
 import time
+import yaml
 
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:42'
+OPENSUSE = 'openSUSE:Leap:42.1'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -54,29 +55,40 @@ class UpdateCrawler(object):
                 'SUSE:SLE-12:GA',
                 'openSUSE:Factory',
                 ]
-        self.subprojects = [
-                '%s:SLE-Pkgs-With-Overwrites' % self.from_prj,
-                '%s:Factory-Copies' % self.from_prj,
-                '%s:SLE12-Picks' % self.from_prj,
-                ]
-        self.projects = [self.from_prj] + self.subprojects
 
-        self.project_mapping = {}
-        for prj in self.project_preference_order:
-            if prj.startswith('SUSE:'):
-                self.project_mapping[prj] = self.from_prj + ':SLE12-Picks'
-            else:
-                self.project_mapping[prj] = self.from_prj + ':Factory-Copies'
-
-        self.reload_packages()
-        self.pending_requests = []
-        self.pending_requests = self.get_requests_list(self.from_prj)
-
-    def reload_packages(self):
+        self.parse_lookup()
         self.packages = dict()
-        for project in self.projects + self.project_preference_order:
+        for project in [self.from_prj] + self.project_preference_order:
             self.packages[project] = self.get_source_packages(project)
 
+    def latest_packages(self):
+        data = self.cached_GET(makeurl(self.apiurl,
+                                       ['project', 'latest_commits', self.from_prj]))
+        lc = ET.fromstring(data)
+        packages = set()
+        for entry in lc.findall('{http://www.w3.org/2005/Atom}entry'):
+            title = entry.find('{http://www.w3.org/2005/Atom}title').text
+            if title.startswith('In '):
+                packages.add(title[3:].split(' ')[0])
+        return sorted(packages)
+            
+    def parse_lookup(self):
+        self.lookup = yaml.load(self._load_lookup_file())
+        self.lookup_changes = 0
+        
+    def _load_lookup_file(self):
+        return self.cached_GET(makeurl(self.apiurl,
+                                       ['source', self.from_prj, '00Meta', 'lookup.yml']))
+
+    def _put_lookup_file(self, data):
+        return http_PUT(makeurl(self.apiurl,
+                                ['source', self.from_prj, '00Meta', 'lookup.yml']), data=data)
+
+    def store_lookup(self):
+        data = yaml.dump(self.lookup, default_flow_style=False, explicit_start=True)
+        self._put_lookup_file(data)
+        self.lookup_changes = 0
+    
     @memoize()
     def _cached_GET(self, url):
         return self.retried_GET(url).read()
@@ -114,184 +126,82 @@ class UpdateCrawler(object):
                                 ['source', project, package], opts))
 
 
-    def get_requests_list(self, project):
-        """ Return package name of pending review requests """
-        requests = []
-        target = "action[target/@project='{}']".format(project)
-        query = "match=({})+and+({})".format("state/@name='new'+or+state/@name='review'", target)
-        url = makeurl(self.apiurl,['search', 'request'], query)
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
-        for rq in root.findall('request'):
-            action = rq.findall('action')
-            action = action[0] # take the first one only
-            requests.append(action.find('target').get('package'))
-
-        return requests
-
-    def get_request_infos(self, requestid):
-        request = self.cached_GET(makeurl(self.apiurl, ['request', requestid]))
-        root = ET.fromstring(request)
-        action = root.find('.//action')
-        source = action.find('source')
-        target = action.find('target')
-        project = source.get('project')
-        package = source.get('package')
-        rev = source.get('rev')
-        return ( project, package, rev, target.get('package') )
-
-    def remove_packages(self, project, packages):
-        for package in packages:
-            if not package in self.packages[project]:
-                continue
-            logging.info("deleting %s/%s", project, package)
-            url = makeurl(self.apiurl, ['source', project, package])
-            try:
-                http_DELETE(url)
-                self.packages[project].remove(package)
-            except urllib2.HTTPError, err:
-                if err.code == 404:
-                    # not existant package is ok, we delete them all
-                    pass
-                else:
-                    # If the package was there but could not be delete, raise the error
-                    raise
-
-    # copied from stagingapi - but the dependencies are too heavy
-    def create_package_container(self, project, package):
-        """
-        Creates a package container without any fields in project/package
-        :param project: project to create it
-        :param package: package name
-        """
-        dst_meta = '<package name="{}"><title/><description/></package>'
-        dst_meta = dst_meta.format(package)
-
-        url = makeurl(self.apiurl, ['source', project, package, '_meta'])
-        logging.debug("create %s/%s", project, package)
-        http_PUT(url, data=dst_meta)
-        self.packages[project].append(package)
-
-    def _link_content(self, sourceprj, sourcepkg, rev):
-        root = ET.fromstring(self._get_source_package(sourceprj, sourcepkg, rev))
-        srcmd5 = root.get('srcmd5')
-        vrev = root.get('vrev')
-        if vrev is None:
-            vrev = ''
-        else:
-            vrev = " vrev='{}'".format(vrev)
-        link = "<link project='{}' package='{}' rev='{}'{}/>"
-        return link.format(sourceprj, sourcepkg, srcmd5, vrev)
-
-    def upload_link(self, project, package, link_string):
-        url = makeurl(self.apiurl, ['source', project, package, '_link'])
-        http_PUT(url, data=link_string)
-
-    def link_packages(self, sourceprj, sourcepkg, sourcerev, targetprj, targetpkg):
-        logging.info("update link %s/%s -> %s/%s@%s", targetprj, targetpkg, sourceprj, sourcepkg, sourcerev)
-
-        # check do it have pending review request against this package
-        if targetpkg in self.pending_requests:
-            logging.info("There is a pending request to %s / %s, ignore!"%(self.from_prj, packages))
-            return
-
-        packages = [ targetpkg ]
-        
-        # make sure 'packages' covers all subpackages
-        subpackages, mainpackage = self.get_specfiles(self.from_prj, targetpkg)
-        if subpackages:
-            if mainpackage and mainpackage != targetpkg:
-                raise Exception("{} != {}".format(mainpackage, targetpkg))
-
-            packages = list(set([ mainpackage ] ) | set(subpackages))
-
-        # remove targetpkg in all subprojects where it existed before
-        for project in self.subprojects:
-            if not targetpkg in self.packages[project]:
-                continue
-            s, m = self.get_specfiles(project, targetpkg)
-            pkgs = []
-            if s:
-                pkgs += s
-            if m:
-                pkgs += [m]
-            self.remove_packages(project, pkgs)
-
-        self.create_package_container(targetprj, targetpkg)
-        link = self._link_content(sourceprj, sourcepkg, sourcerev)
-        self.upload_link(targetprj, targetpkg, link)
-
-        for package in [ p for p in packages if p != targetpkg ]:
-            # FIXME: link packages from factory that override sle
-            # ones to different project
-            logging.debug("linking %s -> %s", package, targetpkg)
-            link = "<link cicount='copy' package='{}' />".format(targetpkg)
-            self.create_package_container(targetprj, package)
-            self.upload_link(targetprj, package, link)
-
-        self.remove_packages(self.from_prj, packages)
-
-    def _filter_given_packages(self, packages):
-        if packages:
-            return [p for p in packages if p in self.packages[self.from_prj]]
-
-        return self.packages[self.from_prj][:]
-
     def crawl(self, given_packages = None):
         """Main method of the class that run the crawler."""
 
-        requests = dict()
-
-        self.try_to_find_left_packages(self._filter_given_packages(given_packages))
-        self.reload_packages()
-        self.cleanup_and_freeze_links(self.from_prj, self._filter_given_packages(given_packages))
-
+        self.try_to_find_left_packages(given_packages or self.packages[self.from_prj])
+        self.store_lookup()
+        
     def check_source_in_project(self, project, package, verifymd5):
         if not package in self.packages[project]:
-            return None
+            return None, None
 
         try:
             his = self.cached_GET(makeurl(self.apiurl,
                                    ['source', project, package, '_history']))
         except urllib2.HTTPError:
-            return None
+            return None, None
 
         his = ET.fromstring(his)
+        historyrevs = dict()
         revs = list()
         for rev in his.findall('revision'):
+            historyrevs[rev.find('srcmd5').text] = rev.get('rev')
             revs.append(rev.find('srcmd5').text)
         revs.reverse()
-        for i in range(min(len(revs), 5)): # check last 5 commits
+        for i in range(min(len(revs), 5)): # check last commits
             srcmd5=revs.pop(0)
             root = self.cached_GET(makeurl(self.apiurl,
                                     ['source', project, package], { 'rev': srcmd5, 'view': 'info'}))
             root = ET.fromstring(root)
             if root.get('verifymd5') == verifymd5:
-                return srcmd5
-        return None
+                return srcmd5, historyrevs[srcmd5]
+        return None, None
 
     # check if we can find the srcmd5 in any of our underlay
     # projects
     def try_to_find_left_packages(self, packages):
-        for package in packages:
+        for package in sorted(packages):
+
+            lproject = self.lookup.get(package, None)
+            if not package in self.packages[self.from_prj]:
+                print package, "does not exist"
+                continue
+            
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
+
             linked = root.find('linked')
             if not linked is None and linked.get('package') != package:
                 logging.warn("link mismatch: %s <> %s, subpackage?", linked.get('package'), package)
+                self.lookup[package] = 'subpackage of {}'.format(linked.get('package'))
+                self.lookup_changes += 1
                 continue
-
+            
+            if lproject and lproject != 'FORK':
+                srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
+                if srcmd5:
+                    print "Lookup is correct", package, lproject
+                    continue
+            
             logging.debug("check where %s came from", package)
             foundit = False
             for project in self.project_preference_order:
-                srcmd5 = self.check_source_in_project(project, package, root.get('verifymd5'))
+                srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
                 if srcmd5:
                     logging.debug('%s -> %s', package, project)
-                    self.link_packages(project, package, srcmd5, self.project_mapping[project], package)
+                    self.lookup[package] = project
+                    self.lookup_changes += 1
                     foundit = True
                     break
             if not foundit:
+                self.lookup[package] = 'FORK'
+                self.lookup_changes += 1
                 logging.debug('%s is a fork', package)
 
+            # avoid loosing too much work
+            if self.lookup_changes > 50:
+                self.store_lookup()
+                
     def get_link(self, project, package):
         try:
             link = self.cached_GET(makeurl(self.apiurl,
@@ -299,96 +209,6 @@ class UpdateCrawler(object):
         except urllib2.HTTPError:
             return None
         return ET.fromstring(link)
-
-    def detach_branch(self, project, package):
-        # copy to itself with expand
-        url = makeurl(self.apiurl, ['source', project, package], {
-            'opackage': package,
-            'oproject': project, 'cmd': 'copy', 'expand': '1'}
-        )
-        try:
-            http_POST(url)
-        except urllib2.HTTPError, err:
-            pass
-
-    def freeze_link(self, project, package):
-        link = self.get_link(project, package)
-        if link is None:
-            return None
-
-        if link.get('baserev'): # bad sign ahead!
-            self.detach_branch(project, package)
-            # remove targetpkg in all subprojects where it existed before
-            for sproject in self.subprojects:
-                if package in self.packages[sproject]:
-                    self.remove_packages(sproject, [package] )
-
-            return None
-
-        rev = link.get('rev')
-        # XXX: magic number?
-        if rev and len(rev) > 5:
-            return True
-        lpackage = link.get('package') or package
-        if not link.get('project'):
-            if lpackage not in self.packages[project]:
-                return False
-            return True
-        opts = { 'view': 'info' }
-        if rev:
-            opts['rev'] = rev
-        root = self.cached_GET(makeurl(self.apiurl,
-                                ['source', link.get('project'), lpackage], opts ))
-        root = ET.fromstring(root)
-        self.link_packages(link.get('project'), lpackage, root.get('srcmd5'), project, package)
-        return True
-
-    def cleanup_and_freeze_links(self, prj, packages):
-        logging.debug("check for links to freeze in %s", prj)
-        for package in packages:
-            try:
-                if self.freeze_link(prj, package) == False:
-                    logging.error('invalid link %s/%s', prj, package)
-                    self.remove_packages(prj, [package])
-            except urllib2.HTTPError, e:
-                logging.error("failed to freeze {}/{}: {}".format(prj, package, e))
-
-
-    def check_dups(self):
-        """ walk through projects in order of preference and warn about
-        duplicates in overlayed projects"""
-        mypackages = dict()
-        for project in self.subprojects:
-            for package in self.packages[project]:
-                if package in mypackages:
-                    logging.warn("duplicate %s/%s, in %s", project, package, mypackages[package])
-                else:
-                    mypackages[package] = project
-
-    def freeze_candidates(self):
-        url = makeurl(self.apiurl, ['source', 'openSUSE:Factory'], { 'view': 'info' } )
-        root = ET.fromstring(self.cached_GET(url))
-        flink = ET.Element('frozenlinks')
-        fl = ET.SubElement(flink, 'frozenlink', {'project': 'openSUSE:Factory'})
-
-        for package in root.findall('sourceinfo'):
-            exists = False
-            if package.get('package').startswith('_product'):
-                continue
-            for prj in self.projects:
-                if package.get('package') in self.packages[prj]:
-                    exists = True
-            if exists:
-                continue
-            ET.SubElement(fl, 'package', { 'name': package.get('package'),
-                                           'srcmd5': package.get('srcmd5'),
-                                           'vrev': package.get('vrev') })
-
-        url = makeurl(self.apiurl, ['source', '%s:Factory-Candidates-Check'%self.from_prj, '_project', '_frozenlinks'], {'meta': '1'})
-        try:
-            http_PUT(url, data=ET.tostring(flink))
-        except urllib2.HTTPError, err:
-            logging.error(err)
 
     def get_specfiles(self, project, package):
         url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
@@ -424,11 +244,10 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     uc = UpdateCrawler(args.from_prj, caching = args.cache_requests )
-    uc.check_dups()
-    uc.crawl(args.package)
-
-    if args.no_update_candidates == False:
-        uc.freeze_candidates()
+    given_packages = args.packages
+    if not given_packages:
+        given_packages = uc.latest_packages()
+    uc.crawl(given_packages)
 
 if __name__ == '__main__':
     description = 'maintain sort openSUSE:42 packages into subprojects'
@@ -439,15 +258,11 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
                         help='project where to get the updates (default: %s)' % OPENSUSE,
                         default=OPENSUSE)
-    parser.add_argument('--skip-sanity-checks', action='store_true',
-                        help='don\'t do slow check for broken links (only for testing)')
     parser.add_argument('-n', '--dry', action='store_true',
                         help='dry run, no POST, PUT, DELETE')
     parser.add_argument('--cache-requests', action='store_true', default=False,
                         help='cache GET requests. Not recommended for daily use.')
-    parser.add_argument('--no-update-candidates', action='store_true',
-                        help='don\'t update Factory candidates project')
-    parser.add_argument("package", nargs='*', help="package to check")
+    parser.add_argument("packages", nargs='*', help="packages to check")
 
     args = parser.parse_args()
 
@@ -457,7 +272,7 @@ if __name__ == '__main__':
 
     if args.dry:
         def dryrun(t, *args, **kwargs):
-            return lambda *args, **kwargs: logging.debug("dryrun %s %s %s", t, args, str(kwargs)[:30])
+            return lambda *args, **kwargs: logging.debug("dryrun %s %s %s", t, args, str(kwargs)[:200])
 
         http_POST = dryrun('POST')
         http_PUT = dryrun('PUT')
