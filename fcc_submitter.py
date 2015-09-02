@@ -108,6 +108,14 @@ class FccSubmitter(object):
                 "virt-utils",
                 "^kdelibs3",
                 "python-oslo.version",
+                "seed",
+                "gtk3-metatheme-sonar",
+                "metacity-themes",
+                "tuxcursors",
+                "yast2-fonts",
+                "python-ncclient",
+                "tweets2pdf",
+                "perl-Net-OpenID-Consumer",
                 ]
 
     def get_source_packages(self, project, expand=False):
