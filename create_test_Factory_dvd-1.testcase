@@ -18,6 +18,7 @@ job install name sudo
 job install name xdelta
 job install name screen
 job install name alsa-utils
+job install name yast2-nfs-client
 
 job lock name bash-completion
 job lock name bash-doc
@@ -44,4 +45,3 @@ job lock name readline-doc
 job lock name SuSEfirewall2
 job lock name vim-data
 job lock name gettext-runtime-mini
-job lock name yast2-nfs-client
