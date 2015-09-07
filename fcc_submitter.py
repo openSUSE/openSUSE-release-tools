@@ -116,6 +116,16 @@ class FccSubmitter(object):
                 "python-ncclient",
                 "tweets2pdf",
                 "perl-Net-OpenID-Consumer",
+                "bomberclone",
+                "chromium-bsu",
+                "ceferino",
+                "7kaa",
+                "atomiks",
+                "blobwars",
+                "asteroid",
+                "ski",
+                "pyspacewar",
+                "lostfeathers",
                 ]
 
     def get_source_packages(self, project, expand=False):
