@@ -46,7 +46,7 @@ open(SPEC, "$dir/$bname.spec");
 my $spec = join("", <SPEC>);
 close(SPEC);
 
-if ($spec !~ m/#\s+Copyright\s/) {
+if ($spec !~ m/#[*\s]+Copyright\s/) {
     print "$bname.spec does not appear to contain a Copyright comment. Please stick to the format\n\n";
     print "# Copyright (c) 2011 Stephan Kulow\n\n";
     print "or use osc service localrun format_spec_file\n";
