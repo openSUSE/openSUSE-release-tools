@@ -17,6 +17,7 @@ class ListCommand:
         requests = self.api.get_open_requests()
 
         non_ring_packages = []
+        change_devel_requests = {}
 
         for request in requests:
             # Consolidate all data from request
@@ -30,6 +31,11 @@ class ListCommand:
 
             # Where are we targeting the package
             target_package = action.find('target').get('package')
+
+            # handle change_devel requests
+            if action.get('type') == 'change_devel':
+                change_devel_requests[target_package] = request_id
+                continue
 
             # If the system have rings, we ask for the ring of the
             # package
@@ -47,3 +53,7 @@ class ListCommand:
 
         if len(non_ring_packages):
             print "Not in a ring:", ' '.join(sorted(non_ring_packages))
+        if len(change_devel_requests):
+            print "\nChange devel requests:"
+            for package, requestid in change_devel_requests.items():
+                print('Request({}): {}'.format(package, 'https://build.opensuse.org/request/show/'+str(requestid)))
