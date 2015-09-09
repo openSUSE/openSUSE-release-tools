@@ -76,6 +76,10 @@ class AdiCommand:
                 else:
                     source_project = 'none'
 
+            # do not process the rest request type than submit
+            if action.get('type') != 'submit':
+                continue
+
             target_package = action.find('target').get('package')
             source_package = action.find('source').get('package')
 
