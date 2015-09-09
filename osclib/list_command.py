@@ -44,6 +44,13 @@ class ListCommand:
             else:
                 ring = self.api.project
 
+            # list all deletereq as in-ring
+            if action.get('type') == 'delete':
+                if ring:
+                    ring = ring + " (delete request)"
+                else:
+                    ring = '{} is non-ring package (delete request)'.format(target_package)
+
             # This condition is quite moot as we dispatched stuff
             # above anyway
             if ring:
