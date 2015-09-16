@@ -19,6 +19,7 @@ job install name sudo
 job install name xdelta
 job install name screen
 job install name alsa-utils
+job install name yast2-nfs-client
 
 job lock name bash-completion
 job lock name bash-doc
