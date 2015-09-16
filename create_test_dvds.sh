@@ -136,7 +136,7 @@ function start_creating() {
             projects=$(osc api "/search/project/id?match=starts-with(@name,\"openSUSE:$target:Staging\")" | grep name | cut -d\' -f2)
 
             for prj in $projects; do
-                l=$(echo $prj | cut -d: -f4)
+                l=$(echo $prj | sed 's/^openSUSE.\+[:]Staging/Staging/g' | cut -d: -f2)
                 use_bc="staging_$target:$l-bc-$arch"
                 if [ "$l" = "A" -o "$l" = "B" ]; then
                     use_bc=
