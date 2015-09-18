@@ -31,10 +31,11 @@ from xml.etree import cElementTree as ET
 import osc.conf
 import osc.core
 import rpm
+import yaml
 
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:42'
+OPENSUSE = 'openSUSE:Leap:42.1'
 FACTORY = 'openSUSE:Factory'
 SLE = 'SUSE:SLE-12-SP1:Update'
 
@@ -48,6 +49,7 @@ class UpdateCrawler(object):
         self.to_prj = to_prj
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
+        self.parse_lookup()
 
     def retried_GET(self, url):
         try:
@@ -119,16 +121,20 @@ class UpdateCrawler(object):
                 return False
             raise
 
+    def parse_lookup(self):
+        self.lookup = yaml.load(self._load_lookup_file())
+
+    def _load_lookup_file(self):
+        return http_GET(makeurl(self.apiurl,
+                                ['source', self.to_prj, '00Meta', 'lookup.yml']))
+
     def split_packages(self, packages):
         filtered_sle = dict()
         filtered_fac = dict()
         for package, sourceinfo in packages.items():
-            # directly in 42
-            if sourceinfo.find('originproject') is None:
-                continue
-            if sourceinfo.find('originproject').text == 'openSUSE:42:SLE12-Picks':
+            if self.lookup.get(package).startswith('SUSE:SLE-12'):
                 filtered_sle[package] = sourceinfo
-            elif sourceinfo.find('originproject').text == 'openSUSE:42:Factory-Copies':
+            elif self.lookup.get(package) == 'openSUSE:Factory':
                 filtered_fac[package] = sourceinfo
         return filtered_sle, filtered_fac
 
@@ -207,8 +213,7 @@ def main(args):
     uc.crawl()
 
 if __name__ == '__main__':
-    description = 'Create SR from SLE to the new openSUSE:42 project for '\
-                  'every new update.'
+    description = 'Create update SRs for Leap.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
