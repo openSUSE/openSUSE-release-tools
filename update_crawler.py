@@ -132,9 +132,9 @@ class UpdateCrawler(object):
         filtered_sle = dict()
         filtered_fac = dict()
         for package, sourceinfo in packages.items():
-            if self.lookup.get(package).startswith('SUSE:SLE-12'):
+            if self.lookup.get(package, '').startswith('SUSE:SLE-12'):
                 filtered_sle[package] = sourceinfo
-            elif self.lookup.get(package) == 'openSUSE:Factory':
+            elif self.lookup.get(package, '') == 'openSUSE:Factory':
                 filtered_fac[package] = sourceinfo
         return filtered_sle, filtered_fac
 
