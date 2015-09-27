@@ -61,7 +61,6 @@ class UpdateCrawler(object):
                 return self.retried_GET(url)
             raise e
 
-    @memoize()
     def _get_source_infos(self, project):
         return self.retried_GET(makeurl(self.apiurl,
                                 ['source', project],
@@ -87,8 +86,13 @@ class UpdateCrawler(object):
                                                dst_package,
                                                req_type='submit',
                                                req_state=states)
+        foundrev = False
+        for r in reqs:
+            for a in r.actions:
+                if a.to_xml().find('source').get('rev') == rev:
+                    foundrev = True
         res = 0
-        if not reqs:
+        if not foundrev:
             print "creating submit request", src_project, src_package, rev, dst_project, dst_package
             #return 0
             res = osc.core.create_submit_request(self.apiurl,
@@ -169,7 +173,7 @@ class UpdateCrawler(object):
 
             source = sources[package]
 
-            #if package != 'build-compare':
+            #if package != 'openssl':
             #    continue
             
             # Compare verifymd5
