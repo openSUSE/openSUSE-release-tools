@@ -275,6 +275,18 @@ class ReviewBot(object):
             req.read(request)
             self.requests.append(req)
 
+    def set_request_ids_project(self, project, typename):
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'),
+            "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
+        root = ET.parse(osc.core.http_GET(url)).getroot()
+
+        self.requests = []
+
+        for request in root.findall('request'):
+            req = osc.core.Request()
+            req.read(request)
+            self.requests.append(req)
+
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
@@ -325,7 +337,7 @@ class CommandLineInterface(cmdln.Cmdln):
                 logger = self.logger)
 
     def do_id(self, subcmd, opts, *args):
-        """${cmd_name}: print the status of working copy files and directories
+        """${cmd_name}: check the specified request ids
 
         ${cmd_usage}
         ${cmd_option_list}
@@ -333,8 +345,9 @@ class CommandLineInterface(cmdln.Cmdln):
         self.checker.set_request_ids(args)
         self.checker.check_requests()
 
+    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_review(self, subcmd, opts, *args):
-        """${cmd_name}: print the status of working copy files and directories
+        """${cmd_name}: check requests that have the specified user or group as reviewer
 
         ${cmd_usage}
         ${cmd_option_list}
@@ -342,8 +355,25 @@ class CommandLineInterface(cmdln.Cmdln):
         if self.checker.review_user is None and self.checker.review_group is None:
             raise osc.oscerr.WrongArgs("missing reviewer (user or group)")
 
-        self.checker.set_request_ids_search_review()
-        self.checker.check_requests()
+        def work():
+            self.checker.set_request_ids_search_review()
+            self.checker.check_requests()
+
+        self.runner(work, opts.interval)
+
+    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
+    def do_project(self, subcmd, opts, project, typename):
+        """${cmd_name}: check all requests of specified type to specified
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        def work():
+            self.checker.set_request_ids_project(project, typename)
+            self.checker.check_requests()
+
+        self.runner(work, opts.interval)
 
     def runner(self, workfunc, interval):
         """ runs the specified callback every <interval> minutes or

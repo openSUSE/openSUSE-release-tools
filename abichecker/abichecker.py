@@ -1055,18 +1055,6 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         return fetchlist, liblist
 
-    def set_request_ids_project(self, project, typename):
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'),
-            "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
-        root = ET.parse(osc.core.http_GET(url)).getroot()
-
-        self.requests = []
-
-        for request in root.findall('request'):
-            req = osc.core.Request()
-            req.read(request)
-            self.requests.append(req)
-
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
@@ -1109,14 +1097,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def do_diff(self, subcmd, opts, src_project, src_package, dst_project, dst_package):
         src_rev = opts.revision
         print self.checker.check_source_submission(src_project, src_package, src_rev, dst_project, dst_package)
-
-    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
-    def do_project(self, subcmd, opts, project, typename):
-        def work():
-            self.checker.set_request_ids_project(project, typename)
-            self.checker.check_requests()
-
-        self.runner(work, opts.interval)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
