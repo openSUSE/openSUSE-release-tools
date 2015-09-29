@@ -68,7 +68,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ('search', 'owner'), query=query)
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
-        package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_package)
+        package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_project)
         for p in root.findall('./owner'):
             prj = p.get("project")
             pkg = p.get("package")
