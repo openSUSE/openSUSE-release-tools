@@ -120,7 +120,6 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         return True
 
     def check_action_submit(self, req, a):
-        known_maintainer = False
         author = req.get_creator()
         pkgname = a.tgt_package
 
