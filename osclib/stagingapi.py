@@ -614,7 +614,7 @@ class StagingAPI(object):
         url = self.makeurl(('project',  'staging_projects', self.project, project),
                            query=query)
         result = json.load(self.retried_GET(url))
-        return result['overall_state'] == 'acceptable'
+        return result and result['overall_state'] == 'acceptable'
 
     def days_since_last_freeze(self, project):
         """
