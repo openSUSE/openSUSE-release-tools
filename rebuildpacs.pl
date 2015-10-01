@@ -80,7 +80,8 @@ my %parents = (
           kiwi-config-openSUSE
           xfce4-branding-openSUSE
           kdebase4-openSUSE kde-branding-openSUSE
-          bundle-lang-kde installation-images-openSUSE)
+          bundle-lang-kde
+          openSUSE-images installation-images-openSUSE)
       ],
     "kdebase4-openSUSE" => [qw(bundle-lang-kde)],
   );
@@ -154,6 +155,7 @@ check_leaf_package("bundle-lang-common", \%torebuild);
 check_leaf_package("bundle-lang-kde", \%torebuild);
 check_leaf_package("bundle-lang-gnome", \%torebuild);
 check_leaf_package("installation-images-openSUSE", \%torebuild);
+check_leaf_package("openSUSE-images", \%torebuild);
 if (%torebuild) {
   my $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
   for my $package (sort keys %torebuild) {
