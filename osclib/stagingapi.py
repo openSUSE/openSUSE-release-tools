@@ -331,12 +331,16 @@ class StagingAPI(object):
             self.do_change_review_state(request_id, 'accepted', message=message,
                                         by_group=self.cstaging_group)
 
-    def supseded_request(self, request):
+    def supseded_request(self, request, target_pkgs=None):
         """
         Returns a staging info for a request or None
         :param request - a Request instance
         :return dict with 'prj' and 'rq_id' of the old request
         """
+
+        if not target_pkgs:
+            target_pkgs = []
+
         # Consolidate all data from request
         request_id = int(request.get('id'))
         action = request.findall('action')
@@ -356,20 +360,27 @@ class StagingAPI(object):
             msg = msg.format(request_id, action)
             logging.info(msg)
 
+        pkg_do_supersede = True
+        if target_pkgs:
+            if target_package not in target_pkgs:
+                pkg_do_supersede = False
+
         # If the package is currently tracked then we do the replacement
         stage_info = self.packages_staged.get(target_package, {'prj': '', 'rq_id': 0})
-        if stage_info['rq_id'] != 0 and int(stage_info['rq_id']) != request_id:
+        if pkg_do_supersede and int(stage_info['rq_id']) != 0 and int(stage_info['rq_id']) != request_id:
             return stage_info
         return None
 
-    def update_superseded_request(self, request):
+    def update_superseded_request(self, request, target_pkgs=None):
         """
         Replace superseded requests that are already in some
         staging prj
         :param request: request we are checking if it is fine
         """
+        if not target_pkgs:
+            target_pkgs = []
 
-        stage_info = self.supseded_request(request)
+        stage_info = self.supseded_request(request, target_pkgs)
         request_id = int(request.get('id'))
 
         if stage_info:
@@ -407,12 +418,15 @@ class StagingAPI(object):
             requests.append(rq)
         return requests
 
-    def dispatch_open_requests(self):
+    def dispatch_open_requests(self, packages=None):
         """
         Verify all requests and dispatch them to staging projects or
         approve them
 
         """
+
+        if not packages:
+            packages = []
 
         # get all current pending requests
         requests = self.get_open_requests()
@@ -420,7 +434,7 @@ class StagingAPI(object):
         for rq in requests:
             # if self.crings:
             #     self.accept_non_ring_request(rq)
-            self.update_superseded_request(rq)
+            self.update_superseded_request(rq, packages)
 
     @memoize(ttl=60, session=True, add_invalidate=True)
     def get_prj_pseudometa(self, project):
