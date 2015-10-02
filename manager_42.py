@@ -57,6 +57,7 @@ class UpdateCrawler(object):
                 ]
 
         self.parse_lookup()
+        self.fill_package_meta()
         self.packages = dict()
         for project in [self.from_prj] + self.project_preference_order:
             self.packages[project] = self.get_source_packages(project)
@@ -133,6 +134,9 @@ class UpdateCrawler(object):
         self.store_lookup()
         
     def check_source_in_project(self, project, package, verifymd5):
+        if project not in self.packages:
+            self.packages[project] = self.get_source_packages(project)
+
         if not package in self.packages[project]:
             return None, None
 
@@ -166,9 +170,24 @@ class UpdateCrawler(object):
             lproject = self.lookup.get(package, None)
             if not package in self.packages[self.from_prj]:
                 print package, "does not exist"
+                del self.lookup[package]
+                self.lookup_changes += 1
                 continue
-            
+
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
+            pm = self.package_metas[package]
+            devel = pm.find('devel')
+            if devel is not None:
+                srcmd5, rev = self.check_source_in_project(devel.get('project'), devel.get('package'),
+                                                           root.get('verifymd5'))
+                if srcmd5:
+                    lstring = 'Devel;{};{}'.format(devel.get('project'), devel.get('package'))
+                    if lstring != self.lookup[package]:
+                        self.lookup[package] = lstring
+                        self.lookup_changes += 1
+                    else:
+                        print "Lookup is correct", package, devel.get('project'), devel.get('package')
+                    continue
 
             linked = root.find('linked')
             if not linked is None and linked.get('package') != package:
@@ -210,33 +229,14 @@ class UpdateCrawler(object):
             return None
         return ET.fromstring(link)
 
-    def get_specfiles(self, project, package):
-        url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
-        root = None
-        while root is None:
-            try:
-                root = ET.fromstring(self.cached_GET(url))
-            except urllib2.HTTPError as e:
-                print "ERR", e.reason
-                # this can happen if the build service didn't yet work on the previous commit
-                if e.code == 400 and e.reason == 'service in progress':
-                    time.sleep(1)
-                    continue
-                raise
-        files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
-        if len(files) == 1:
-            return None, files[0]
-        mainpackage = None
-        for subpackage in files[:]:
-            link = self.get_link(project, subpackage)
-            if link is not None:
-                if link.get('project') and link.get('project') != project:
-                    mainpackage = subpackage
-                    files.remove(subpackage)
+    def fill_package_meta(self):
+        self.package_metas = dict()
+        url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % self.from_prj)
+        root = ET.parse(http_GET(url)).getroot()
+        for p in root.findall('package'):
+            name = p.attrib['name']
+            self.package_metas[name] = p
 
-        logging.info("%s/%s subpackages: %s [%s]", project, package, mainpackage, ','.join(files))
-
-        return files, mainpackage
 
 def main(args):
     # Configure OSC
@@ -245,7 +245,7 @@ def main(args):
 
     uc = UpdateCrawler(args.from_prj, caching = args.cache_requests )
     given_packages = args.packages
-    if not given_packages:
+    if not args.all and not given_packages:
         given_packages = uc.latest_packages()
     uc.crawl(given_packages)
 
@@ -255,6 +255,8 @@ if __name__ == '__main__':
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print info useful for debuging')
+    parser.add_argument('-a', '--all', action='store_true',
+                        help='check all packages')
     parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
                         help='project where to get the updates (default: %s)' % OPENSUSE,
                         default=OPENSUSE)
