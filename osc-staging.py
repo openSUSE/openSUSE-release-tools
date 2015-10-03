@@ -66,6 +66,8 @@ def _full_project_name(self, project):
               help='force the selection to become a move')
 @cmdln.option('--by-develproject', action='store_true',
               help='sort the packages by devel project')
+@cmdln.option('--supersede', action='store_true',
+              help='superseding requests. please make sure you have staging permissions')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='manually specify different source project during request moving')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
@@ -126,7 +128,9 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, None
     elif cmd == 'adi':
         min_args, max_args = None, None
-    elif cmd in ('list', 'cleanup_rings'):
+    elif cmd == 'list':
+        min_args, max_args = 0, None
+    elif cmd == 'cleanup_rings':
         min_args, max_args = 0, 0
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
@@ -172,6 +176,6 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'list':
-            ListCommand(api).perform()
+            ListCommand(api).perform(args[1:], supersede=opts.supersede)
         elif cmd == 'adi':
             AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject)

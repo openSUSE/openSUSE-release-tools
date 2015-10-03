@@ -5,13 +5,20 @@ class ListCommand:
     def __init__(self, api):
         self.api = api
 
-    def perform(self):
+    def perform(self, packages=None, supersede=False):
         """
         Perform the list command
         """
 
-        # First dispatch all possible requests
-        self.api.dispatch_open_requests()
+        if not packages:
+            packages = []
+
+        if supersede:
+            if packages:
+                self.api.dispatch_open_requests(packages)
+            else:
+                # First dispatch all possible requests
+                self.api.dispatch_open_requests()
 
         # Print out the left overs
         requests = self.api.get_open_requests()
