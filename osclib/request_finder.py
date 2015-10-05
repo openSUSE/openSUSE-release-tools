@@ -79,7 +79,7 @@ class RequestFinder(object):
             if package != rq_target.get('package') or self.api.project != rq_target.get('project'):
                 continue
 
-            request = int(sr.get('id'))
+            request = sr.get('id')
             state = sr.find('state').get('name')
 
             self.srs[request] = {'project': self.api.project, 'state': state}
@@ -90,7 +90,7 @@ class RequestFinder(object):
             msg = msg.format(package, ', '.join(requests))
             raise oscerr.WrongArgs(msg)
 
-        request = requests[0] if requests else None
+        request = int(requests[0]) if requests else None
         return request
 
     def find_request_project(self, source_project):
