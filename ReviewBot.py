@@ -270,6 +270,8 @@ class ReviewBot(object):
         url = osc.core.makeurl(self.apiurl, ('search', 'request'), "match=state/@name='review'+and+review[%s]&withhistory=1"%review)
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
+        self.requests = []
+
         for request in root.findall('request'):
             req = osc.core.Request()
             req.read(request)

@@ -73,7 +73,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             prj = p.get("project")
             pkg = p.get("package")
             if ((prj, pkg) in package_reviews):
-                # there already is a review for this project/package
+                self.logger.debug("%s/%s already is a reviewer, not adding again" % (prj, pkg))
                 continue
             self.add_review(req, by_project = prj, by_package = pkg,
                     msg = "Submission by someone who is not maintainer in the devel project. Please review")
@@ -94,7 +94,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                         self.logger.debug("found %s as reviewer"%r.by_user)
                         known_maintainer = True
             if not known_maintainer:
-                self.logger.info("author: %s, maintainers: %s => need review"%(author, ','.join(maintainers)))
+                self.logger.debug("author: %s, maintainers: %s => need review"%(author, ','.join(maintainers)))
                 self.needs_maintainer_review.add(pkgname)
         else:
             self.logger.warning("%s doesn't have maintainers"%pkgname)
@@ -133,6 +133,14 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         self.needs_maintainer_review = set()
 
         ret = ReviewBot.ReviewBot.check_one_request(self, req)
+
+        # check if factory-source is already a reviewer
+        if self.add_factory_source:
+            for r in req.reviews:
+                if r.by_user == 'factory-source':
+                    self.add_factory_source = False
+                    self.logger.debug("factory-source already is a reviewer")
+                    break
 
         if self.add_factory_source:
             self.logger.debug("%s needs review by factory-source"%req.reqid)
