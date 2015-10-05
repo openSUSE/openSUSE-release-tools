@@ -68,7 +68,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ('search', 'owner'), query=query)
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
-        package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_package)
+        package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_project)
         for p in root.findall('./owner'):
             prj = p.get("project")
             pkg = p.get("package")
@@ -78,21 +78,12 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             self.add_review(req, by_project = prj, by_package = pkg,
                     msg = "Submission by someone who is not maintainer in the devel project. Please review")
 
-    def check_action_maintenance_incident(self, req, a):
-        known_maintainer = False
-        author = req.get_creator()
-        # check if there is a link and use that or the real package
-        # name as src_packge may end with something like
-        # .openSUSE_XX.Y_Update
-        pkgname = a.src_package
-        (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
-        if linkpkg is not None:
-            pkgname = linkpkg
-        if pkgname == 'patchinfo':
-            return None
-
+    # check if pkgname was submitted by the correct maintainer. If not, set
+    # self.needs_maintainer_review
+    def _check_maintainer_review_needed(self, req, pkgname, author):
         maintainers = set(self._maintainers(pkgname))
         if maintainers:
+            known_maintainer = False
             for m in maintainers:
                 if author == m:
                     self.logger.debug("%s is maintainer"%author)
@@ -109,10 +100,33 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             self.logger.warning("%s doesn't have maintainers"%pkgname)
             self.needs_maintainer_review.add(pkgname)
 
+    def check_action_maintenance_incident(self, req, a):
+        author = req.get_creator()
+        # check if there is a link and use that or the real package
+        # name as src_packge may end with something like
+        # .openSUSE_XX.Y_Update
+        pkgname = a.src_package
+        (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
+        if linkpkg is not None:
+            pkgname = linkpkg
+        if pkgname == 'patchinfo':
+            return None
+
+        self._check_maintainer_review_needed(req, pkgname, author)
+
         if a.tgt_releaseproject == "openSUSE:Backports:SLE-12":
             self.add_factory_source = True
 
         return True
+
+    def check_action_submit(self, req, a):
+        author = req.get_creator()
+        pkgname = a.tgt_package
+
+        self._check_maintainer_review_needed(req, pkgname, author)
+
+        return True
+
 
     def check_one_request(self, req):
         self.add_factory_source = False
