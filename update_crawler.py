@@ -205,7 +205,7 @@ class UpdateCrawler(object):
         """Main method of the class that run the crawler."""
         targets_sle, targets_fac = self.split_packages(self.get_source_infos(OPENSUSE))
         self.update_targets(targets_sle, self.get_source_infos(SLE), SLE)
-        self.update_targets(targets_fac, self.get_source_infos(FACTORY), FACTORY)
+        #self.update_targets(targets_fac, self.get_source_infos(FACTORY), FACTORY)
 
 
 def main(args):
