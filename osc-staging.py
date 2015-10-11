@@ -101,7 +101,7 @@ def do_staging(self, subcmd, opts, *args):
     "unselect" will remove from the project - pushing them back to the backlog
 
     Usage:
-        osc staging accept LETTER
+        osc staging accept [LETTER...]
         osc staging check [--old] REPO
         osc staging cleanup_rings
         osc staging freeze PROJECT...
@@ -116,7 +116,7 @@ def do_staging(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
-    if cmd in ('accept', 'freeze'):
+    if cmd == 'freeze':
         min_args, max_args = 1, None
     elif cmd == 'check':
         min_args, max_args = 0, 2
@@ -128,7 +128,7 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, None
     elif cmd == 'adi':
         min_args, max_args = None, None
-    elif cmd == 'list':
+    elif cmd in ('list', 'accept'):
         min_args, max_args = 0, None
     elif cmd == 'cleanup_rings':
         min_args, max_args = 0, 0
