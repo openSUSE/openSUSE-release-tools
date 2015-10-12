@@ -450,7 +450,8 @@ class ToTestFactoryPowerPC(ToTestBase):
         return 4
 
 class ToTestFactoryARM(ToTestFactory):
-    main_products = [ '_product:openSUSE-cd-mini-aarch64']
+    main_products = [ '_product:openSUSE-cd-mini-aarch64',
+                      '_product:openSUSE-dvd5-dvd-aarch64' ]
 
     ftp_products = [ '_product:openSUSE-ftp-ftp-aarch64' ]
 
