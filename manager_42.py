@@ -179,6 +179,7 @@ class UpdateCrawler(object):
             pm = self.package_metas[package]
             devel = pm.find('devel')
             if devel is not None:
+                lproject = devel.get('project')
                 srcmd5, rev = self.check_source_in_project(devel.get('project'), devel.get('package'),
                                                            root.get('verifymd5'))
                 if srcmd5:
