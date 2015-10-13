@@ -170,8 +170,9 @@ class UpdateCrawler(object):
             lproject = self.lookup.get(package, None)
             if not package in self.packages[self.from_prj]:
                 print package, "does not exist"
-                del self.lookup[package]
-                self.lookup_changes += 1
+                if self.lookup.get(package):
+                    del self.lookup[package]
+                    self.lookup_changes += 1
                 continue
 
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
