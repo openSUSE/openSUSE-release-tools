@@ -82,7 +82,7 @@ class RequestFinder(object):
             request = sr.get('id')
             state = sr.find('state').get('name')
 
-            self.srs[request] = {'project': self.api.project, 'state': state}
+            self.srs[int(request)] = {'project': self.api.project, 'state': state}
             requests.append(request)
 
         if len(requests) > 1:
