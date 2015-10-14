@@ -32,14 +32,11 @@ job lock name udev-mini
 job lock name libudev1-mini
 #ifdef __x86_64__
 job install name openSUSE-release-livecd-x11
-job install name kernel-desktop
-job lock name kernel-default
+job lock name kernel-desktop
 job lock name libgcc_s1-32bit
 job lock name nss-mdns-32bit
 #endif
-#ifdef __ppc64le__
 job install name kernel-default
-#endif
 job lock name patterns-openSUSE-enhanced_base_opt
 job lock name patterns-openSUSE-fonts_opt
 job lock name patterns-openSUSE-x11_opt
