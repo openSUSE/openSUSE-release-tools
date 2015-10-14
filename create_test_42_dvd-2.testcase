@@ -41,7 +41,6 @@ job lock name kdelibs4-branding-upstream
 job lock name sddm-branding-upstream
 job lock name plasma5-desktop-branding-upstream
 job lock name plasma5-workspace-branding-upstream
-job lock name libreoffice-branding-upstream
 job lock name readline-doc
 #ifdef __x86_64__
 job install provides pattern() = laptop
