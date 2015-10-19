@@ -61,6 +61,7 @@ MR = namedtuple('MatchRepo', ('srcrepo', 'dstrepo', 'arch'))
 # FIXME: use attribute instead
 PROJECT_BLACKLIST = {
     'SUSE:SLE-11:Update'     : "abi-checker doesn't support SLE 11",
+    'SUSE:SLE-11-SP1:Update' : "abi-checker doesn't support SLE 11",
     'SUSE:SLE-11-SP2:Update' : "abi-checker doesn't support SLE 11",
     'SUSE:SLE-11-SP3:Update' : "abi-checker doesn't support SLE 11",
     'SUSE:SLE-11-SP4:Update' : "abi-checker doesn't support SLE 11",
