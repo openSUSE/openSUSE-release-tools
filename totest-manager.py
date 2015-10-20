@@ -52,7 +52,7 @@ class ToTestBase(object):
         return self.project
 
     def jobs_num(self):
-        return 90
+        return 70
 
     def current_version(self):
         return self.release_version()
