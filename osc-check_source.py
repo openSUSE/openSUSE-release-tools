@@ -253,6 +253,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['Novell:NTS'] = 'support'
             self._devel_projects['Apache:Shibboleth/'] = 'Shibboleth'
             self._devel_projects['devel:languages:erlang/'] = 'erlang'
+            self._devel_projects['systemsmanagement:machinery/'] = 'machinery'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
