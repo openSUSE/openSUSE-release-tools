@@ -147,6 +147,11 @@ Note: there is no whitespace behind before or after the number sign
         # accept delete request automatically
         return True
 
+    def check_action_add_role(self, req, a):
+        self.logger.info("add_role request %s, accepting..."%req.reqid)
+        # accept add_role request automatically
+        return True
+
     def check_action_maintenance_incident(self, req, a):
         return self.checkTagInRequest(req, a)
 
