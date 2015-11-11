@@ -27,7 +27,6 @@ job lock name ghostscript
 job lock name graphviz
 job lock name gtk2-branding-upstream
 job lock name gtk3-branding-upstream
-job lock name icewm-default
 job lock name udev-mini
 job lock name libudev1-mini
 #ifdef __x86_64__
