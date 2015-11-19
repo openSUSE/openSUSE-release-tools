@@ -318,7 +318,6 @@ class ToTestBase(object):
         print 'Updating snapshot %s' % snapshot
         if not self.dryrun:
             self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
-            self.write_version_to_dashboard("totest", new_snapshot)
 
         for product in self.ftp_products:
             self.release_package('openSUSE:%s' % self.project, product)
@@ -333,7 +332,6 @@ class ToTestBase(object):
         print 'Publish ToTest'
         if not self.dryrun:
             self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='enable')
-            self.write_version_to_dashboard("snapshot", current_snapshot)
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
@@ -376,10 +374,12 @@ class ToTestBase(object):
 
         if can_publish:
             self.publish_factory_totest()
+            self.write_version_to_dashboard("snapshot", current_snapshot)
             can_release = False  # we have to wait
 
         if can_release:
             self.update_totest(new_snapshot)
+            self.write_version_to_dashboard("totest", new_snapshot)
 
     def release(self):
         new_snapshot = self.current_version()
@@ -400,8 +400,9 @@ class ToTestBase(object):
         return known_failures
 
     def write_version_to_dashboard(self, target, version):
-        url = self.api.makeurl(['source', 'openSUSE:%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
-        http_PUT(url + '?comment=Update+version', data=version)
+        if not self.dryrun:
+            url = self.api.makeurl(['source', 'openSUSE:%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
+            http_PUT(url + '?comment=Update+version', data=version)
 
 class ToTestFactory(ToTestBase):
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
