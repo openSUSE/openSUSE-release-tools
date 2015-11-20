@@ -391,6 +391,8 @@ class StagingAPI(object):
                              review='declined')
             # Add the new one that should be replacing it
             self.rq_to_prj(request_id, stage_info['prj'])
+            return True
+        return False
 
     def get_open_requests(self):
         """

@@ -84,6 +84,10 @@ class AdiCommand:
             source_package = action.find('source').get('package')
 
             if not self.api.ring_packages.get(target_package):
+                # Auto-superseding request in adi command
+                if self.api.update_superseded_request(request):
+                    continue
+
                 non_ring_packages.append(target_package)
                 if by_dp is True:
                     devel_project = self.get_devel_project(source_project, source_package)
