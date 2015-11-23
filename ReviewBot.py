@@ -306,12 +306,14 @@ class CommandLineInterface(cmdln.Cmdln):
         return parser
 
     def postoptparse(self):
-        logging.basicConfig()
-        self.logger = logging.getLogger(self.optparser.prog)
+        level = None
         if (self.options.debug):
-            self.logger.setLevel(logging.DEBUG)
+            level = logging.DEBUG
         elif (self.options.verbose):
-            self.logger.setLevel(logging.INFO)
+            level = logging.INFO
+
+        logging.basicConfig(level=level)
+        self.logger = logging.getLogger(self.optparser.prog)
 
         osc.conf.get_config(override_apiurl = self.options.apiurl)
 
