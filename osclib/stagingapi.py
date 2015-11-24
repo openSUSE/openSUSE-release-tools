@@ -697,7 +697,11 @@ class StagingAPI(object):
 
         ring_dvd = '{}:2-TestDVD'.format(self.crings)
         if self.ring_packages.get(pkg) == ring_dvd:
-            return project + ":DVD"
+            if not self.item_exists(project + ":DVD") and self.item_exists(project, pkg):
+                # assuming it is in adi staging, workaround for https://progress.opensuse.org/issues/9646
+                return project
+            else:
+                return project + ":DVD"
 
         return project
 
