@@ -289,6 +289,18 @@ class ReviewBot(object):
             req.read(request)
             self.requests.append(req)
 
+    def set_request_ids_project(self, project, typename):
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'),
+            "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
+        root = ET.parse(osc.core.http_GET(url)).getroot()
+
+        self.requests = []
+
+        for request in root.findall('request'):
+            req = osc.core.Request()
+            req.read(request)
+            self.requests.append(req)
+
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
@@ -306,12 +318,14 @@ class CommandLineInterface(cmdln.Cmdln):
         return parser
 
     def postoptparse(self):
-        logging.basicConfig()
-        self.logger = logging.getLogger(self.optparser.prog)
+        level = None
         if (self.options.debug):
-            self.logger.setLevel(logging.DEBUG)
+            level = logging.DEBUG
         elif (self.options.verbose):
-            self.logger.setLevel(logging.INFO)
+            level = logging.INFO
+
+        logging.basicConfig(level=level)
+        self.logger = logging.getLogger(self.optparser.prog)
 
         osc.conf.get_config(override_apiurl = self.options.apiurl)
 
@@ -371,6 +385,14 @@ class CommandLineInterface(cmdln.Cmdln):
         ${cmd_option_list}
         """
 
+        def work():
+            self.checker.set_request_ids_project(project, typename)
+            self.checker.check_requests()
+
+        self.runner(work, opts.interval)
+
+    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
+    def do_project(self, subcmd, opts, project, typename):
         def work():
             self.checker.set_request_ids_project(project, typename)
             self.checker.check_requests()

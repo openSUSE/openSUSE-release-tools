@@ -33,6 +33,9 @@ except ImportError:
 import osc.conf
 import osc.core
 import urllib2
+import yaml
+
+from osclib.memoize import memoize
 
 import ReviewBot
 
@@ -78,6 +81,17 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             self.add_review(req, by_project = prj, by_package = pkg,
                     msg = "Submission by someone who is not maintainer in the devel project. Please review")
 
+    @staticmethod
+    @memoize(session=True)
+    def _get_lookup_yml(apiurl, project):
+        """ return a dictionary with package -> project mapping
+        """
+        url = osc.core.makeurl(apiurl, ('source', project, '00Meta', 'lookup.yml'))
+        try:
+            return yaml.safe_load(osc.core.http_GET(url))
+        except (urllib2.HTTPError, urllib2.URLError):
+            return None
+
     # check if pkgname was submitted by the correct maintainer. If not, set
     # self.needs_maintainer_review
     def _check_maintainer_review_needed(self, req, pkgname, author):
@@ -112,7 +126,22 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         if pkgname == 'patchinfo':
             return None
 
-        self._check_maintainer_review_needed(req, pkgname, author)
+        skip_maintainer_review = False
+        if a.tgt_releaseproject.startswith('openSUSE:Leap:'):
+            mapping = MaintenanceChecker._get_lookup_yml(self.apiurl, a.tgt_releaseproject)
+            if mapping is None:
+                self.logger.error("error loading mapping for {}".format(a.tgt_releaseproject))
+            elif not pkgname in mapping:
+                self.logger.error("{} not tracked".format(pkgname))
+            else:
+                origin = mapping[pkgname]
+                self.logger.debug("{} comes from {}, submitted from {}".format(pkgname, origin, a.src_project))
+                if origin.startswith('SUSE:SLE-12') and origin == a.src_project:
+                    skip_maintainer_review = True
+                    self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
+
+        if not skip_maintainer_review:
+            self._check_maintainer_review_needed(req, pkgname, author)
 
         if a.tgt_releaseproject == "openSUSE:Backports:SLE-12":
             self.add_factory_source = True
