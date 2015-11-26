@@ -212,11 +212,11 @@ class ChangeLogger(cmdln.Cmdln):
                 print v2changelogs[srpm]['changelogtext'][i2]
 
         print "\n\n\n"
-        print "Removed packages:"
+        print "Packages removed from medium:"
         group = self._get_packages_grouped(v1pkgs, p1-p2)
         print "  "+"\n  ".join(["\n   > ".join(sorted(group[s])) for s in sorted(group.keys()) ])
         print "\n"
-        print "Added packages:"
+        print "Packages added to medium:"
         group = self._get_packages_grouped(v2pkgs, p2-p1)
         print "  "+"\n  ".join(["\n   > ".join(sorted(group[s])) for s in sorted(group.keys()) ])
 
