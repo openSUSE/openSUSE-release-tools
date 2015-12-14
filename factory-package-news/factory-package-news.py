@@ -27,6 +27,9 @@ from optparse import OptionParser
 import rpm
 import pickle
 import cmdln
+import re
+
+SRPM_RE = re.compile(r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+\.(?:no)?src\.rpm)')
 
 data_version = 3
 
@@ -180,11 +183,14 @@ class ChangeLogger(cmdln.Cmdln):
         p1 = set(v1pkgs.keys())
         p2 = set(v2pkgs.keys())
 
-        print "Changed packages:"
+        print "Summary of the x86_64 DVD"
+        print
+        print "Packages changed on medium:"
         group = self._get_packages_grouped(v2pkgs, p1&p2)
 #        pprint(p1&p2)
 #        pprint(group)
 #        print "  "+"\n  ".join(["\n   * ".join(sorted(group[s])) for s in sorted(group.keys()) ])
+        details = ''
         for srpm in sorted(group.keys()):
             srpm1 = v1pkgs[group[srpm][0]]['sourcerpm']
             #print group[srpm], srpm, srpm1
@@ -195,21 +201,30 @@ class ChangeLogger(cmdln.Cmdln):
             except IndexError:
                 print >>sys.stderr, srpm1, "doesn't have a changelog"
                 continue
-            #print t1
+            m = SRPM_RE.match(srpm)
+            if m:
+                name = m.group('name')
+            else:
+                name = srpm
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
                 continue # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
-            print "\n==== %s ===="%pkgs[0]
+            details += "\n\n==== %s ====\n"%name
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:
-                print "Version update (%s -> %s)"%(v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
+                print "  %s (%s -> %s)"%(name, v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
+                details += "Version update (%s -> %s)\n"%(v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
+            else:
+                print "  %s"%name
             if len(pkgs) > 1:
-                print "Subpackages:", " ".join(pkgs[1:])
-            print
+                details += "Subpackages: %s\n"%" ".join([p for p in pkgs if p != name])
+            details += '\n'
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
                 if t2 == t1:
                     break
-                #print "+++ ",t2
-                print v2changelogs[srpm]['changelogtext'][i2]
+                details += v2changelogs[srpm]['changelogtext'][i2]
+
+        print "\n=== Details ==="
+        print details
 
         print "\n\n\n"
         print "Packages removed from medium:"
