@@ -29,7 +29,7 @@ import pickle
 import cmdln
 import re
 
-SRPM_RE = re.compile(r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+\.(?:no)?src\.rpm)')
+SRPM_RE = re.compile(r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
 
 data_version = 3
 
@@ -71,18 +71,42 @@ class ChangeLogger(cmdln.Cmdln):
         changelogs = dict()
 
         def _getdata(h):
+            srpm = h['sourcerpm']
+
             evr = dict()
             for tag in ['name', 'version', 'release', 'sourcerpm']:
                 evr[tag] = h[tag]
             pkgdata[h['name']] = evr
 
-            if h['sourcerpm'] in changelogs:
-                changelogs[h['sourcerpm']]['packages'].append(h['name'])
+            # dirty hack to reduce kernel spam
+            m = SRPM_RE.match(srpm)
+            if m and m.group('name') in (
+                'kernel-debug',
+                'kernel-default',
+                'kernel-desktop',
+                'kernel-docs',
+                'kernel-ec2',
+                'kernel-lpae',
+                'kernel-obs-build',
+                'kernel-obs-qa-xen',
+                'kernel-obs-qa',
+                'kernel-pae',
+                'kernel-pv',
+                'kernel-syms',
+                'kernel-vanilla',
+                'kernel-xen',
+                ):
+                srpm = '%s-%s-%s.src.rpm'%('kernel-source', m.group('version'), m.group('release'))
+                pkgdata[h['name']]['sourcerpm'] = srpm
+                print "%s -> %s"%(h['sourcerpm'], srpm)
+
+            if srpm in changelogs:
+                changelogs[srpm]['packages'].append(h['name'])
             else:
                 data = { 'packages': [ h['name'] ] }
                 for tag in ['changelogtime', 'changelogtext']:
                     data[tag] = h[tag]
-                changelogs[h['sourcerpm']] = data
+                changelogs[srpm] = data
 
         for arg in args:
             if arg.endswith('.iso'):
