@@ -207,9 +207,7 @@ class ChangeLogger(cmdln.Cmdln):
         p1 = set(v1pkgs.keys())
         p2 = set(v2pkgs.keys())
 
-        print "Summary of the x86_64 DVD"
-        print
-        print "Packages changed on medium:"
+        print "Packages changed:"
         group = self._get_packages_grouped(v2pkgs, p1&p2)
 #        pprint(p1&p2)
 #        pprint(group)
@@ -251,11 +249,11 @@ class ChangeLogger(cmdln.Cmdln):
         print details
 
         print "\n\n\n"
-        print "Packages removed from medium:"
+        print "Packages removed:"
         group = self._get_packages_grouped(v1pkgs, p1-p2)
         print "  "+"\n  ".join(["\n   > ".join(sorted(group[s])) for s in sorted(group.keys()) ])
         print "\n"
-        print "Packages added to medium:"
+        print "Packages added:"
         group = self._get_packages_grouped(v2pkgs, p2-p1)
         print "  "+"\n  ".join(["\n   > ".join(sorted(group[s])) for s in sorted(group.keys()) ])
 
