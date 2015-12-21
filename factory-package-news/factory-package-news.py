@@ -231,7 +231,7 @@ class ChangeLogger(cmdln.Cmdln):
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
                 continue # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
-            details += "\n\n==== %s ====\n"%name
+            details += "\n==== %s ====\n"%name
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:
                 print "  %s (%s -> %s)"%(name, v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
                 details += "Version update (%s -> %s)\n"%(v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
@@ -244,18 +244,10 @@ class ChangeLogger(cmdln.Cmdln):
                 if t2 == t1:
                     break
                 details += v2changelogs[srpm]['changelogtext'][i2]
+            details += '\n'
 
         print "\n=== Details ==="
         print details
-
-        print "\n\n\n"
-        print "Packages removed:"
-        group = self._get_packages_grouped(v1pkgs, p1-p2)
-        print "  "+"\n  ".join(["\n   > ".join(sorted(group[s])) for s in sorted(group.keys()) ])
-        print "\n"
-        print "Packages added:"
-        group = self._get_packages_grouped(v2pkgs, p2-p1)
-        print "  "+"\n  ".join(["\n   > ".join(sorted(group[s])) for s in sorted(group.keys()) ])
 
     def get_optparser(self):
         parser = cmdln.CmdlnOptionParser(self)
