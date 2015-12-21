@@ -156,14 +156,21 @@ def do_staging(self, subcmd, opts, *args):
             for prj in args[1:]:
                 FreezeCommand(api).perform(api.prj_from_letter(prj))
         elif cmd == 'accept':
-            cmd = AcceptCommand(api)
-            for prj in args[1:]:
-                if not cmd.perform(api.prj_from_letter(prj)):
-                    return
-            cmd.accept_other_new()
-            cmd.update_factory_version()
-            if api.item_exists(api.crebuild):
-                cmd.sync_buildfailures()
+            # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
+            version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
+            version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
+            totest_dirty   = api.is_repo_dirty(api.project, 'totest')
+            if version_openqa == version_totest and not totest_dirty:
+                cmd = AcceptCommand(api)
+                for prj in args[1:]:
+                    if not cmd.perform(api.prj_from_letter(prj)):
+                        return
+                cmd.accept_other_new()
+                cmd.update_factory_version()
+                if api.item_exists(api.crebuild):
+                    cmd.sync_buildfailures()
+            else:
+                print "Not safe to accept: /totest is not yet synced"
         elif cmd == 'unselect':
             UnselectCommand(api).perform(args[1:])
         elif cmd == 'select':

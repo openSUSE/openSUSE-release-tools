@@ -1018,6 +1018,13 @@ class StagingAPI(object):
                 pass
         return version
 
+    def get_binary_version(self, project, rpm, repository='standard', arch='x86_64'):
+        """
+        Return the version of a built rpm file
+        """
+        url = self.makeurl(['build', project, repository, arch, '_repository', "%s?view=fileinfo" % rpm])
+        return ET.parse(http_GET(url)).getroot().find('version').text
+
     def load_file_content(self, project, package, filename):
         """
         Load the content of a file and return the content as data. If the package is a link, it will be expanded
@@ -1105,6 +1112,15 @@ class StagingAPI(object):
                 results.append(pkg.attrib['package'])
 
         return results
+
+    def is_repo_dirty(self, project, repository):
+        url = self.makeurl(['build', project, '_result?code=broken&repository=%s' % repository])
+        root = ET.parse(http_GET(url)).getroot()
+        for repo in root.findall('result'):
+            repostate = repo.get('state', 'missing')
+            if repostate not in ['unpublished', 'published'] or repo.get('dirty', 'false') == 'true':
+                return True
+        return False
 
     def check_pkgs(self, rebuild_list):
         url = self.makeurl(['source', self.project])
