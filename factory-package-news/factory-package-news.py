@@ -173,6 +173,18 @@ class ChangeLogger(cmdln.Cmdln):
         """
         pprint(self.readChangeLogs(dirs))
 
+    def do_inspect(self, subcmd, opts, filename, package):
+        """${cmd_name}: pprint the package changelog information
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        f = open(filename, 'rb')
+        (v, (pkgs, changelogs)) = pickle.load(f)
+        pprint(pkgs[package])
+        pprint(changelogs[pkgs[package]['sourcerpm']])
+
+
     def _get_packages_grouped(self, pkgs, names):
         group = dict()
         for pkg in names:
@@ -228,6 +240,9 @@ class ChangeLogger(cmdln.Cmdln):
                 name = m.group('name')
             else:
                 name = srpm
+            if len(v2changelogs[srpm]['changelogtime']) == 0:
+                print "  %s ERROR: no changelog"%name
+                continue
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
                 continue # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
