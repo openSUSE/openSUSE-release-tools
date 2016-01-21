@@ -100,7 +100,7 @@ function sync_prj() {
     dir=$2
     arch=$3
     mkdir -p $dir
-    perl $SCRIPTDIR/bs_mirrorfull --nodebug https://build.opensuse.org/build/$prj/$arch $dir
+    perl $SCRIPTDIR/bs_mirrorfull --nodebug https://api.opensuse.org/public/build/$prj/$arch $dir
     if [ "$dir" -nt "$dir.solv" ]; then
         rpms=($dir/*.rpm)
         if [ "${#rpms[@]}" -gt 0 ]; then
