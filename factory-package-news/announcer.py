@@ -22,7 +22,7 @@
 
 import httplib
 import re
-from urlparse import urlparse
+from urlparse import urlparse, urljoin
 import smtplib
 from email.mime.text import MIMEText
 import os
@@ -57,7 +57,7 @@ The full online repo contains too many changes to be listed here.
 current_fn = os.path.join(os.path.dirname(__file__), "announcer-current-version")
 
 if not options.version:
-    u = urlparse(url+iso)
+    u = urlparse(urljoin(url, iso))
     conn = httplib.HTTPConnection(u.hostname, 80)
     conn.request('HEAD', u.path)
     res = conn.getresponse()
@@ -85,7 +85,7 @@ if os.path.lexists(current_fn):
             print "version unchanged, exit"
         sys.exit(0)
 
-u = urlparse(url+changes%version)
+u = urlparse(urljoin(url, changes%version))
 conn = httplib.HTTPConnection(u.hostname, 80)
 conn.request('HEAD', u.path)
 res = conn.getresponse()
