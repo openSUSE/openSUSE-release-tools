@@ -177,7 +177,7 @@ sub mirror_repo($$$) {
   mkdir($repodir);
 
   system(
-    "$script_dir/bs_mirrorfull --nodebug https://build.opensuse.org/build/$project/$repo/$arch/ $repodir"
+    "$script_dir/bs_mirrorfull --nodebug https://api.opensuse.org/public/build/$project/$repo/$arch/ $repodir"
   );
   return $repodir;
 }
