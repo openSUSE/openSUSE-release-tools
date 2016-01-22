@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # Copyright (c) 2014 SUSE Linux Products GmbH
+# Copyright (c) 2015, 2016 SUSE Linux GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +22,7 @@
 
 import httplib
 import re
-from urlparse import urlparse
+from urlparse import urlparse, urljoin
 import smtplib
 from email.mime.text import MIMEText
 import os
@@ -35,6 +36,7 @@ parser.add_option("--verbose", action="store_true", help="verbose")
 parser.add_option("--from", dest='sender', metavar="EMAIL", help="sender email address")
 parser.add_option("--to", metavar="EMAIL", help="recepient email address")
 parser.add_option("--relay", metavar="RELAY", help="SMTP relay server address")
+parser.add_option("--version", metavar="VERSION", help="announce specific version")
 
 (options, args) = parser.parse_args()
 
@@ -54,24 +56,27 @@ The full online repo contains too many changes to be listed here.
 
 current_fn = os.path.join(os.path.dirname(__file__), "announcer-current-version")
 
-u = urlparse(url+iso)
-conn = httplib.HTTPConnection(u.hostname, 80)
-conn.request('HEAD', u.path)
-res = conn.getresponse()
-if res.status != 302:
-    raise Exception("http fail: %s %s"%(res.status, res.reason))
+if not options.version:
+    u = urlparse(urljoin(url, iso))
+    conn = httplib.HTTPConnection(u.hostname, 80)
+    conn.request('HEAD', u.path)
+    res = conn.getresponse()
+    if res.status != 302:
+        raise Exception("http fail: %s %s"%(res.status, res.reason))
 
-loc = res.getheader('location')
-if loc is None:
-    raise Exception("empty location!")
+    loc = res.getheader('location')
+    if loc is None:
+        raise Exception("empty location!")
 
-m = re.search('Snapshot(\d+)-Media', loc)
-if m is None:
-    raise Exception("invalid location")
+    m = re.search('Snapshot(\d+)-Media', loc)
+    if m is None:
+        raise Exception("invalid location")
 
-version = m.group(1)
-if options.verbose:
-    print "found version", version
+    version = m.group(1)
+    if options.verbose:
+        print "found version", version
+else:
+    version = options.version
 
 if os.path.lexists(current_fn):
     prev = os.readlink(current_fn)
@@ -80,7 +85,7 @@ if os.path.lexists(current_fn):
             print "version unchanged, exit"
         sys.exit(0)
 
-u = urlparse(url+changes%version)
+u = urlparse(urljoin(url, changes%version))
 conn = httplib.HTTPConnection(u.hostname, 80)
 conn.request('HEAD', u.path)
 res = conn.getresponse()

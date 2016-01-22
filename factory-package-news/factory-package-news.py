@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # Copyright (c) 2014 SUSE Linux Products GmbH
+# Copyright (c) 2015, 2016 SUSE Linux GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -254,11 +255,10 @@ class ChangeLogger(cmdln.Cmdln):
                 print "  %s"%name
             if len(pkgs) > 1:
                 details += "Subpackages: %s\n"%" ".join([p for p in pkgs if p != name])
-            details += '\n'
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
                 if t2 == t1:
                     break
-                details += v2changelogs[srpm]['changelogtext'][i2]
+                details += "\n" + v2changelogs[srpm]['changelogtext'][i2]
             details += '\n'
 
         print "\n=== Details ==="
