@@ -420,7 +420,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
 
 def _mirror_full(self, plugin_dir, repo_dir):
     """Call bs_mirrorfull script to mirror packages."""
-    url = 'https://build.opensuse.org/build/%s/%s/x86_64' % (self.checkrepo.project, 'standard')
+    url = 'https://api.opensuse.org/public/build/%s/%s/x86_64' % (self.checkrepo.project, 'standard')
 
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
