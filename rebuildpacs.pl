@@ -80,7 +80,7 @@ my %parents = (
           kiwi-config-openSUSE
           xfce4-branding-openSUSE
           kdebase4-openSUSE kde-branding-openSUSE
-          bundle-lang-kde
+          bundle-lang-kde bundle-lang-common
           openSUSE-images installation-images-openSUSE)
       ],
     "kdebase4-openSUSE" => [qw(bundle-lang-kde)],
