@@ -74,6 +74,8 @@ def _full_project_name(self, project):
               help='select a different project instead of openSUSE:Factory')
 @cmdln.option('--add', dest='add', metavar='PACKAGE',
               help='mark additional packages to be checked by repo checker')
+@cmdln.option('--force', action='store_true', 
+              help='Force action, overruling internal checks (CAUTION)')
 @cmdln.option('-o', '--old', action='store_true',
               help='use the old check algorithm')
 @cmdln.option('-v', '--version', action='store_true',
@@ -85,6 +87,11 @@ def do_staging(self, subcmd, opts, *args):
 
     "accept" will accept all requests in
         openSUSE:Factory:Staging:<LETTER> (into Factory)
+
+    "acheck" will check if it's safe to accept new staging projects
+        As openSUSE:Factory is syncing the right package versions between
+        /standard, /totest and /snapshot, it's important that the projects
+        are clean prior to a checkin round.
 
     "check" will check if all packages are links without changes
 
@@ -101,7 +108,7 @@ def do_staging(self, subcmd, opts, *args):
     "unselect" will remove from the project - pushing them back to the backlog
 
     Usage:
-        osc staging accept [LETTER...]
+        osc staging accept [--force] [LETTER...]
         osc staging check [--old] REPO
         osc staging cleanup_rings
         osc staging freeze PROJECT...
@@ -130,7 +137,7 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = None, None
     elif cmd in ('list', 'accept'):
         min_args, max_args = 0, None
-    elif cmd == 'cleanup_rings':
+    elif cmd in ('cleanup_rings', 'acheck'):
         min_args, max_args = 0, 0
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
@@ -155,12 +162,18 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'freeze':
             for prj in args[1:]:
                 FreezeCommand(api).perform(api.prj_from_letter(prj))
+        elif cmd == 'acheck':
+            # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
+            version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
+            version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
+            totest_dirty = api.is_repo_dirty(api.project, 'totest')
+            print "version_openqa: %s / version_totest: %s / totest_dirty: %s\n" % (version_openqa, version_totest, totest_dirty)
         elif cmd == 'accept':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
             totest_dirty   = api.is_repo_dirty(api.project, 'totest')
-            if version_openqa == version_totest and not totest_dirty:
+            if (version_openqa == version_totest and not totest_dirty) or opts.force:
                 cmd = AcceptCommand(api)
                 for prj in args[1:]:
                     if not cmd.perform(api.prj_from_letter(prj)):
