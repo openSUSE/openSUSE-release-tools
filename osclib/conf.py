@@ -51,8 +51,8 @@ DEFAULT = {
         'rebuild': None,
         'product': None,
         'openqa': None,
-        'lock': None,
-        'lock-ns': 'OBS',
+        'lock': 'SUSE:%(project)s:Staging',
+        'lock-ns': 'SUSE',
     },
 }
 
