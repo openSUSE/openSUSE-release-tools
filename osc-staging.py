@@ -85,6 +85,8 @@ def _full_project_name(self, project):
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
+    ${cmd_option_list}
+
     "accept" will accept all requests in
         openSUSE:Factory:Staging:<LETTER> (into Factory)
 
