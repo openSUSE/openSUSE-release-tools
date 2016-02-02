@@ -254,6 +254,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['Apache:Shibboleth/'] = 'Shibboleth'
             self._devel_projects['devel:languages:erlang/'] = 'erlang'
             self._devel_projects['systemsmanagement:machinery/'] = 'machinery'
+            self._devel_projects['filesystems:ceph/'] = 'ceph-deploy'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
