@@ -81,35 +81,30 @@ class StagingAPI(object):
         query = [] if not query else query
         return makeurl(self.apiurl, l, query)
 
+    def _retried_request(self, url, func):
+        retry_sleep_seconds = 1
+        while True:
+            try:
+                return func(url)
+            except urllib2.HTTPError, e:
+                if 500 <= e.code <= 599:
+                    print 'Error {}, retrying {} in {}s'.format(e.code, url, retry_sleep_seconds)
+                    time.sleep(retry_sleep_seconds)
+                    # increase sleep time up to one minute to avoid hammering
+                    # the server in case of real problems
+                    if (retry_sleep_seconds % 60):
+                        retry_sleep_seconds += 1
+                else:
+                    raise e
+
     def retried_GET(self, url):
-        try:
-            return http_GET(url)
-        except urllib2.HTTPError, e:
-            if 500 <= e.code <= 599:
-                print 'Retrying {}'.format(url)
-                return self.retried_GET(url)
-            raise e
+        return self._retried_request(url, http_GET)
 
     def retried_POST(self, url):
-        try:
-            return http_POST(url)
-        except urllib2.HTTPError, e:
-            if e.code == 504:
-                print 'Timeout on {}'.format(url)
-                return '<status code="timeout"/>'
-            if e.code / 100 == 5:
-                print 'Retrying {}'.format(url)
-                return self.retried_POST(url)
-            raise e
+        return self._retried_request(url, http_POST)
 
     def retried_PUT(self, url, data):
-        try:
-            return http_PUT(url, data=data)
-        except urllib2.HTTPError, e:
-            if e.code / 100 == 5:
-                print 'Retrying {}'.format(url)
-                return self.retried_PUT(url, data)
-            raise e
+        return self._retried_request(url, http_PUT)
 
     def _generate_ring_packages(self):
         """
