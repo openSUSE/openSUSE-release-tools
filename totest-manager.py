@@ -197,6 +197,8 @@ class ToTestBase(object):
 
         """
 
+        # coolo's experience says that 'finished' won't be
+        # sufficient here, so don't try to add it :-)
         codes = ['published', 'unpublished'] if not codes else codes
 
         url = self.api.makeurl(['build', project, '_result'], {'code': 'failed'})
@@ -206,7 +208,7 @@ class ToTestBase(object):
         for repo in root.findall('result'):
             # ignore ports. 'factory' is used by arm for repos that are not
             # meant to use the totest manager.
-            if repo.get('repository') in ('ports', 'factory'):
+            if repo.get('repository') in ('ports', 'factory', 'images_staging'):
                 continue
             # ignore 32bit for now. We're only interesed in aarch64 here
             if repo.get('arch') in ('armv6l', 'armv7l'):
