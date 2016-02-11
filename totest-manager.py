@@ -436,7 +436,7 @@ class ToTestFactoryPowerPC(ToTestBase):
                      '_product:openSUSE-cd-mini-ppc64',
                      '_product:openSUSE-cd-mini-ppc64le']
 
-    ftp_products = [ '_product:openSUSE-ftp-ftp-ppc_ppc64_ppc64le' ]
+    ftp_products = [ '_product:openSUSE-ftp-ftp-ppc64_ppc64le' ]
 
     livecd_products = []
 
