@@ -307,6 +307,9 @@ class ToTestBase(object):
 
         if set_release:
             query['setrelease'] = set_release
+        # FIXME: make configurable. openSUSE:Factory:ARM currently has multiple
+        # repos with release targets, so obs needs to know which one to release
+        query['repository'] = 'images'
 
         baseurl = ['source', project, package]
 
