@@ -103,6 +103,8 @@ def do_staging(self, subcmd, opts, *args):
     "freeze" will freeze the sources of the project's links (not
         affecting the packages actually in)
 
+    "frozenage" will show when the respective staging project was last frozen
+
     "list" will pick the requests not in rings
 
     "select" will add requests to the project
@@ -114,6 +116,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging check [--old] REPO
         osc staging cleanup_rings
         osc staging freeze PROJECT...
+        osc staging frozenage PROJECT...
         osc staging list [--supersede]
         osc staging select [--no-freeze] [--move [--from PROJECT]] LETTER REQUEST...
         osc staging unselect REQUEST...
@@ -125,7 +128,7 @@ def do_staging(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
-    if cmd == 'freeze':
+    if cmd in ('freeze', 'frozenage'):
         min_args, max_args = 1, None
     elif cmd == 'check':
         min_args, max_args = 0, 2
@@ -164,6 +167,9 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'freeze':
             for prj in args[1:]:
                 FreezeCommand(api).perform(api.prj_from_letter(prj))
+        elif cmd == 'frozenage':
+            for prj in args[1:]:
+                print "%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj)))
         elif cmd == 'acheck':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
