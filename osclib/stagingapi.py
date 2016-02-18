@@ -81,10 +81,12 @@ class StagingAPI(object):
         query = [] if not query else query
         return makeurl(self.apiurl, l, query)
 
-    def _retried_request(self, url, func):
+    def _retried_request(self, url, func, data=None):
         retry_sleep_seconds = 1
         while True:
             try:
+                if data is not None:
+                    return func(url, data=data)
                 return func(url)
             except urllib2.HTTPError, e:
                 if 500 <= e.code <= 599:
@@ -104,7 +106,7 @@ class StagingAPI(object):
         return self._retried_request(url, http_POST)
 
     def retried_PUT(self, url, data):
-        return self._retried_request(url, http_PUT)
+        return self._retried_request(url, http_PUT, data)
 
     def _generate_ring_packages(self):
         """
