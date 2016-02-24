@@ -796,6 +796,11 @@ class CheckRepo(object):
             if missings:
                 request.missings[repo_name] = missings
 
+        # Need to return if result is True at this point
+        # Otherwise, it will returned False at some point, eg. an unknown status
+        if result:
+            return True
+
         if alldisabled:
             msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
             print 'DECLINED', msg
@@ -821,8 +826,7 @@ class CheckRepo(object):
             request.updated = True
             return False
 
-        # No idea why it was return True in the past, it should return True only when result is True, otherwise False
-        return result
+        return False
 
     def get_package_list_from_repository(self, project, repository, arch, package):
         url = makeurl(self.apiurl, ('build', project, repository, arch, package))
