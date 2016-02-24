@@ -45,9 +45,11 @@ def _check_repo_download(self, request):
     toignore = set()
     request.downloads = defaultdict(list)
 
-    # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
-    if request.build_excluded:
+    # return if no goodrepos
+    if not request.goodrepos:
         return set()
+
+    # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
     arch = 'x86_64'
     # if not request.build_excluded:
     #     arch = 'x86_64'
@@ -118,7 +120,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
     # XXX TODO - If the requests comes from command line, the group is
     # still not there.
 
-    # Do not continue if any of the packages do not successfully buid.
+    # Do not continue if any of the packages do not successfully build.
     if not all(self.checkrepo.is_buildsuccess(r) for r in requests if r.action_type != 'delete'):
         return
 

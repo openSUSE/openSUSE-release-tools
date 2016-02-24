@@ -63,7 +63,6 @@ class Request(object):
 
         self.updated = False
         self.error = None
-        self.build_excluded = False
         self.action_type = 'submit'  # assume default
         self.downloads = []
         self.is_shadow_devel = False
@@ -750,6 +749,11 @@ class CheckRepo(object):
             for arch in repository.findall('arch'):
                 if arch.attrib['arch'] not in ('i586', 'x86_64'):
                     continue
+                if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
+                    # Just do not check the excluded repository
+                    # and marked the repository is not good
+                    isgood = False
+                    continue
                 if 'missing' in arch.attrib:
                     for package in arch.attrib['missing'].split(','):
                         if not self.is_binary(
@@ -760,8 +764,6 @@ class CheckRepo(object):
                             missings.append(package)
                 if arch.attrib['result'] not in ('succeeded', 'excluded'):
                     isgood = False
-                if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
-                    request.build_excluded = True
                 if arch.attrib['result'] == 'disabled':
                     founddisabled = True
                 if arch.attrib['result'] == 'failed' or arch.attrib['result'] == 'unknown':
@@ -794,9 +796,6 @@ class CheckRepo(object):
             if missings:
                 request.missings[repo_name] = missings
 
-        if result:
-            return True
-
         if alldisabled:
             msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
             print 'DECLINED', msg
@@ -822,7 +821,8 @@ class CheckRepo(object):
             request.updated = True
             return False
 
-        return True
+        # No idea why it was return True in the past, it should return True only when result is True, otherwise False
+        return result
 
     def get_package_list_from_repository(self, project, repository, arch, package):
         url = makeurl(self.apiurl, ('build', project, repository, arch, package))
