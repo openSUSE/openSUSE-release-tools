@@ -45,8 +45,8 @@ def _check_repo_download(self, request):
     toignore = set()
     request.downloads = defaultdict(list)
 
-    # return if no goodrepos
-    if not request.goodrepos:
+    # do not check package lists if the repository was excluded
+    if request.build_excluded:
         return set()
 
     # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
