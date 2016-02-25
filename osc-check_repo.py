@@ -45,8 +45,8 @@ def _check_repo_download(self, request):
     toignore = set()
     request.downloads = defaultdict(list)
 
-    # return if no goodrepos
-    if not request.goodrepos:
+    # do not check package lists if the repository was excluded
+    if request.build_excluded:
         return set()
 
     # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
@@ -411,6 +411,11 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
 
     for rq in requests:
         if updated.get(rq.request_id, False) or rq.updated:
+            continue
+        if not hasattr(rq, 'goodrepo'):
+            msg = 'Can not find a good repo for %s' % rq.str_compact()
+            print 'NOT ACCEPTED - ', msg
+            print 'Perhaps this request is not against i586/x86_64 build or i586 build only. For human to check!'
             continue
         msg = 'Builds for repo %s' % rq.goodrepo
         print 'ACCEPTED', msg

@@ -63,6 +63,7 @@ class Request(object):
 
         self.updated = False
         self.error = None
+        self.build_excluded = False
         self.action_type = 'submit'  # assume default
         self.downloads = []
         self.is_shadow_devel = False
@@ -545,8 +546,21 @@ class CheckRepo(object):
 
         root = ET.fromstring(root_xml)
         for repo in root.findall('repository'):
-            intel_archs = [a for a in repo.findall('arch')
-                           if a.attrib['arch'] in ('i586', 'x86_64')]
+            valid_intel_repo = True
+            intel_archs = []
+
+            for a in repo.findall('arch'):
+                if a.attrib['arch'] not in ('i586', 'x86_64'):
+                    # It is not a common Factory i586/x86_64 build repository
+                    # probably builds on ARM, PPC or images
+                    valid_intel_repo = False
+                else:
+                    # We assume it is standard Factory i586/x86_64 build repository
+                    intel_archs.append(a)
+
+            if not valid_intel_repo:
+                continue
+
             if len(intel_archs) == 2:
                 repos_to_check.append(repo)
 
@@ -750,10 +764,7 @@ class CheckRepo(object):
                 if arch.attrib['arch'] not in ('i586', 'x86_64'):
                     continue
                 if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
-                    # Just do not check the excluded repository
-                    # and marked the repository is not good
-                    isgood = False
-                    continue
+                    request.build_excluded = True
                 if 'missing' in arch.attrib:
                     for package in arch.attrib['missing'].split(','):
                         if not self.is_binary(
