@@ -69,7 +69,7 @@ class ReviewBot(object):
     @review_mode.setter
     def review_mode(self, value):
         if value not in REVIEW_CHOICES:
-            raise Exception("invalid review option: %s", value)
+            raise Exception("invalid review option: %s"%value)
         self._review_mode = value
 
     def set_request_ids(self, ids):
@@ -83,8 +83,8 @@ class ReviewBot(object):
 
     def check_requests(self):
 
-        by_user = self.fallback_user if self.fallback_user else None
-        by_group = self.fallback_group if self.fallback_group else None
+        by_user = self.fallback_user
+        by_group = self.fallback_group
 
         for req in self.requests:
             self.logger.debug("checking %s"%req.reqid)
