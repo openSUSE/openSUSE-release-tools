@@ -68,7 +68,7 @@ class ReviewBot(object):
 
     @review_mode.setter
     def review_mode(self, value):
-        if value not in REVIEW_CHOICES:
+        if value not in self.REVIEW_CHOICES:
             raise Exception("invalid review option: %s"%value)
         self._review_mode = value
 
@@ -365,6 +365,15 @@ class CommandLineInterface(cmdln.Cmdln):
 
         self.checker = self.setup_checker()
 
+        if self.options.review_mode:
+            self.checker.review_mode = self.options.review_mode
+
+        if self.options.fallback_user:
+            self.checker.fallback_user = self.options.fallback_user
+
+        if self.options.fallback_group:
+            self.checker.fallback_group = self.options.fallback_group
+
     def setup_checker(self):
         """ reimplement this """
 
@@ -377,22 +386,11 @@ class CommandLineInterface(cmdln.Cmdln):
         if user is None and group is None:
             user = osc.conf.get_apiurl_usr(apiurl)
 
-        bot = ReviewBot(apiurl = apiurl, \
+        return ReviewBot(apiurl = apiurl, \
                 dryrun = self.options.dry, \
                 user = user, \
                 group = group, \
                 logger = self.logger)
-
-        if self.options.review_mode:
-            bot.review_mode = self.options.review_mode
-
-        if self.options.fallback_user:
-            bot.fallback_user = self.options.fallback_user
-
-        if self.options.fallback_group:
-            bot.fallback_group = self.options.fallback_group
-
-        return bot
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids
