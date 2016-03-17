@@ -392,7 +392,7 @@ class ToTestBase(object):
 
     def known_failures_from_dashboard(self, project):
         known_failures = []
-        if self.project in ("Factory:PowerPC", "Factory:ARM"):
+        if self.project == "Factory:PowerPC":
             project = "Factory"
         else:
             project = self.project
