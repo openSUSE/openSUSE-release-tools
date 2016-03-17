@@ -48,6 +48,7 @@ class ReviewBot(object):
     """
 
     DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
+    REVIEW_CHOICES = ('normal', 'no', 'accept', 'fallback-onfail', 'fallback-always')
 
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
@@ -57,6 +58,19 @@ class ReviewBot(object):
         self.review_group = group
         self.requests = []
         self.review_messages = ReviewBot.DEFAULT_REVIEW_MESSAGES
+        self._review_mode = 'normal'
+        self.fallback_user = None
+        self.fallback_group = None
+
+    @property
+    def review_mode(self):
+        return self._review_mode
+
+    @review_mode.setter
+    def review_mode(self, value):
+        if value not in self.REVIEW_CHOICES:
+            raise Exception("invalid review option: %s"%value)
+        self._review_mode = value
 
     def set_request_ids(self, ids):
         for rqid in ids:
@@ -68,9 +82,18 @@ class ReviewBot(object):
             self.requests.append(req)
 
     def check_requests(self):
+
+        by_user = self.fallback_user
+        by_group = self.fallback_group
+
         for req in self.requests:
             self.logger.debug("checking %s"%req.reqid)
             good = self.check_one_request(req)
+
+            if self.review_mode == 'no':
+                good = None
+            elif self.review_mode == 'accept':
+                good = True
 
             if good is None:
                 self.logger.info("%s ignored"%req.reqid)
@@ -78,8 +101,13 @@ class ReviewBot(object):
                 self.logger.info("%s is good"%req.reqid)
                 self._set_review(req, 'accepted')
             else:
-                self.logger.info("%s is not acceptable"%req.reqid)
-                self._set_review(req, 'declined')
+                if self.review_mode == 'fallback-onfail':
+                    self.logger.info("%s needs fallback reviewer"%req.reqid)
+                    self.add_review(req, by_group=by_group, by_user=by_user)
+                    self._set_review(req, 'accepted')
+                else:
+                    self.logger.info("%s is not acceptable"%req.reqid)
+                    self._set_review(req, 'declined')
 
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
@@ -314,6 +342,9 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")
         parser.add_option("--verbose", action="store_true", help="verbose")
+        parser.add_option("--review-mode", dest='review_mode', choices=ReviewBot.REVIEW_CHOICES, help="review behavior")
+        parser.add_option("--fallback-user", dest='fallback_user', metavar='USER', help="fallback review user")
+        parser.add_option("--fallback-group", dest='fallback_group', metavar='GROUP', help="fallback review group")
 
         return parser
 
@@ -333,6 +364,15 @@ class CommandLineInterface(cmdln.Cmdln):
             osc.conf.config['debug'] = 1
 
         self.checker = self.setup_checker()
+
+        if self.options.review_mode:
+            self.checker.review_mode = self.options.review_mode
+
+        if self.options.fallback_user:
+            self.checker.fallback_user = self.options.fallback_user
+
+        if self.options.fallback_group:
+            self.checker.fallback_group = self.options.fallback_group
 
     def setup_checker(self):
         """ reimplement this """
