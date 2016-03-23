@@ -532,6 +532,7 @@ class CheckRepo(object):
 
         """
         repos_to_check = []
+        more_repo_candidates = []
 
         try:
             root_xml = self.last_build_success(request.shadow_src_project,
@@ -559,10 +560,23 @@ class CheckRepo(object):
                     intel_archs.append(a)
 
             if not valid_intel_repo:
-                continue
+                if len(intel_archs) == 2:
+                    # the possible repo candidate ie. complex build repos layout includes i586 and x86_64
+                    more_repo_candidates.append(repo)
+                else:
+                    continue
 
             if len(intel_archs) == 2:
                 repos_to_check.append(repo)
+
+        if more_repo_candidates:
+            for repo in more_repo_candidates:
+                rpms = []
+                # check if x86_64 package is exist
+                rpms = self.get_package_list_from_repository(request.shadow_src_project, repo.attrib['name'], 'x86_64', request.src_package)
+                if rpms:
+                    # valid candidate
+                    repos_to_check.append(repo)
 
         return repos_to_check
 
