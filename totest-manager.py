@@ -115,7 +115,7 @@ class ToTestBase(object):
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
-            if job['clone_id']:
+            if job['clone_id'] or job['result'] == 'obsoleted':
                 continue
             job['name'] = job['name'].replace(snapshot, '')
             jobs.append(job)
