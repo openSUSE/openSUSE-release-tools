@@ -563,8 +563,7 @@ class CheckRepo(object):
                 if len(intel_archs) == 2:
                     # the possible repo candidate ie. complex build repos layout includes i586 and x86_64
                     more_repo_candidates.append(repo)
-                else:
-                    continue
+                continue
 
             if len(intel_archs) == 2:
                 repos_to_check.append(repo)
