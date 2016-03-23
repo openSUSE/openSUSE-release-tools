@@ -356,6 +356,7 @@ class ToTestBase(object):
         new_snapshot = self.current_version()
 
         current_result = self.overall_result(current_snapshot)
+        current_qa_version = self.api.load_file_content("%s:Staging" % self.api.project, "dashboard", "version_totest")
 
         print 'current_snapshot', current_snapshot, self._result2str(current_result)
 
@@ -375,9 +376,15 @@ class ToTestBase(object):
             can_publish = False
 
         if can_publish:
-            self.publish_factory_totest()
-            self.write_version_to_dashboard("snapshot", current_snapshot)
-            can_release = False  # we have to wait
+            if current_qa_version == current_snapshot:
+                self.publish_factory_totest()
+                self.write_version_to_dashboard("snapshot", current_snapshot)
+                can_release = False  # we have to wait
+            else:
+                # We reached a very bad status: openQA testing is 'done', but not of the same version
+                # currently in :ToTest. This can happen when 'releasing' the product failed
+                raise Exception("Publishing stopped: tested version (%s) does not match :ToTest version (%s)" 
+                    % (current_qa_version, current_snapshot))
 
         if can_release:
             self.update_totest(new_snapshot)
