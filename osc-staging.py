@@ -192,10 +192,20 @@ def do_staging(self, subcmd, opts, *args):
                 # SLE don't have totest repository and openSUSE-release.rpm
                 skip_totest = api.item_exists(api.project, "release-notes-sles")
 
-            if not skip_totest:
+            if skip_totest or opt.force:
+                # Nor version_openqa or totest_dirty
+                cmd = AcceptCommand(api)
+                for prj in args[1:]:
+                    if not cmd.perform(api.prj_from_letter(prj)):
+                        return
+                cmd.accept_other_new()
+                cmd.update_factory_version()
+                if api.item_exists(api.crebuild):
+                    cmd.sync_buildfailures()
+            else:
                 version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
                 totest_dirty   = api.is_repo_dirty(api.project, 'totest')
-                if (version_openqa == version_totest and not totest_dirty) or opts.force:
+                if version_openqa == version_totest and not totest_dirty:
                     cmd = AcceptCommand(api)
                     for prj in args[1:]:
                         if not cmd.perform(api.prj_from_letter(prj)):
@@ -206,8 +216,6 @@ def do_staging(self, subcmd, opts, *args):
                         cmd.sync_buildfailures()
                 else:
                     print "Not safe to accept: /totest is not yet synced"
-            else:
-                print "checking totest is unavailable in %s!\n" % (api.project)
         elif cmd == 'unselect':
             UnselectCommand(api).perform(args[1:])
         elif cmd == 'select':
