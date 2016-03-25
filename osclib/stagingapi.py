@@ -1020,7 +1020,10 @@ class StagingAPI(object):
         Return the version of a built rpm file
         """
         url = self.makeurl(['build', project, repository, arch, '_repository', "%s?view=fileinfo" % rpm])
-        return ET.parse(http_GET(url)).getroot().find('version').text
+        try:
+            return ET.parse(http_GET(url)).getroot().find('version').text
+        except urllib2.HTTPError:
+            return None
 
     def load_file_content(self, project, package, filename):
         """
