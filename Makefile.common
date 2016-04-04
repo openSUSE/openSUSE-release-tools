@@ -5,3 +5,4 @@ unitdir=$(prefix)/lib/systemd/system
 pkgdatadir=$(datadir)/osc-plugin-factory
 oscplugindir=$(prefix)/lib/osc-plugins
 apachevhostsdir=$(sysconfdir)/apache2/vhosts.d
+tmpfilesdir=$(prefix)/lib/tmpfiles.d
