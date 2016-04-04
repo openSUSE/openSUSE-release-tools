@@ -192,7 +192,7 @@ def do_staging(self, subcmd, opts, *args):
                 # SLE don't have totest repository and openSUSE-release.rpm
                 skip_totest = api.item_exists(api.project, "release-notes-sles")
 
-            if skip_totest or opt.force:
+            if skip_totest or opts.force:
                 # Nor version_openqa or totest_dirty
                 cmd = AcceptCommand(api)
                 for prj in args[1:]:
