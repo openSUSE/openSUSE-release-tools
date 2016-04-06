@@ -5,6 +5,19 @@
     WSGIProcessGroup opensuse-abi-checker
 
     WSGIScriptAlias / /usr/share/osc-plugin-factory/abichecker/abichecker-web.py
+
+    <Directory "/usr/share/osc-plugin-factory/abichecker">
+        <Files abichecker-web.py>
+            <IfModule !mod_access_compat.c>
+                Require all granted
+            </IfModule>
+            <IfModule mod_access_compat.c>
+                Order allow,deny
+                Allow from all
+            </IfModule>
+        </Files>
+    </Directory>
+
 </VirtualHost>
 
 # vim: syntax=apache sw=4 et
