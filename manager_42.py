@@ -35,7 +35,7 @@ import yaml
 
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:Leap:42.1'
+OPENSUSE = 'openSUSE:Leap:42.2'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -74,7 +74,7 @@ class UpdateCrawler(object):
         return sorted(packages)
             
     def parse_lookup(self):
-        self.lookup = yaml.load(self._load_lookup_file())
+        self.lookup = yaml.safe_load(self._load_lookup_file())
         self.lookup_changes = 0
         
     def _load_lookup_file(self):
@@ -86,6 +86,9 @@ class UpdateCrawler(object):
                                 ['source', self.from_prj, '00Meta', 'lookup.yml']), data=data)
 
     def store_lookup(self):
+        if self.lookup_changes == 0:
+            logging.info('no change to lookup.yml')
+            return
         data = yaml.dump(self.lookup, default_flow_style=False, explicit_start=True)
         self._put_lookup_file(data)
         self.lookup_changes = 0
@@ -104,7 +107,7 @@ class UpdateCrawler(object):
             return http_GET(url)
         except urllib2.HTTPError, e:
             if 500 <= e.code <= 599:
-                print 'Retrying {}'.format(url)
+                logging.warn('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -169,7 +172,7 @@ class UpdateCrawler(object):
 
             lproject = self.lookup.get(package, None)
             if not package in self.packages[self.from_prj]:
-                print package, "does not exist"
+                logging.info("{} vanished".format(package))
                 if self.lookup.get(package):
                     del self.lookup[package]
                     self.lookup_changes += 1
@@ -178,30 +181,42 @@ class UpdateCrawler(object):
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
             pm = self.package_metas[package]
             devel = pm.find('devel')
-            if devel is not None:
-                lproject = devel.get('project')
-                srcmd5, rev = self.check_source_in_project(devel.get('project'), devel.get('package'),
+            if devel is not None or lproject.startswith('Devel;'):
+                develprj = None
+                develpkg = None
+                if devel is None:
+                    (dummy, develprj, develpkg) = lproject.split(';')
+                    logging.warn('{} lacks devel project setting {}/{}'.format(package, develprj, develpkg))
+                else:
+                    develprj = devel.get('project')
+                    develpkg = devel.get('package')
+                srcmd5, rev = self.check_source_in_project(develprj, develpkg,
                                                            root.get('verifymd5'))
                 if srcmd5:
-                    lstring = 'Devel;{};{}'.format(devel.get('project'), devel.get('package'))
+                    lstring = 'Devel;{};{}'.format(develprj, develpkg)
                     if lstring != self.lookup[package]:
+                        logging.debug("{} from devel {}/{} (was {})".format(package, develprj, develpkg, lproject))
                         self.lookup[package] = lstring
                         self.lookup_changes += 1
                     else:
-                        print "Lookup is correct", package, devel.get('project'), devel.get('package')
+                        logging.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
                     continue
 
             linked = root.find('linked')
             if not linked is None and linked.get('package') != package:
-                logging.warn("link mismatch: %s <> %s, subpackage?", linked.get('package'), package)
-                self.lookup[package] = 'subpackage of {}'.format(linked.get('package'))
-                self.lookup_changes += 1
+                lstring = 'subpackage of {}'.format(linked.get('package'))
+                if lstring != lproject:
+                    logging.warn("link mismatch: %s <> %s, subpackage? (was {})", linked.get('package'), package, lproject)
+                    self.lookup[package] = lstring
+                    self.lookup_changes += 1
+                else:
+                    logging.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
                 continue
             
             if lproject and lproject != 'FORK':
                 srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
                 if srcmd5:
-                    print "Lookup is correct", package, lproject
+                    logging.debug("{} lookup from {} is correct".format(package, lproject))
                     continue
             
             logging.debug("check where %s came from", package)
@@ -209,15 +224,18 @@ class UpdateCrawler(object):
             for project in self.project_preference_order:
                 srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
                 if srcmd5:
-                    logging.debug('%s -> %s', package, project)
+                    logging.info('{} -> {} (was {})'.format(package, project, lproject))
                     self.lookup[package] = project
                     self.lookup_changes += 1
                     foundit = True
                     break
             if not foundit:
-                self.lookup[package] = 'FORK'
-                self.lookup_changes += 1
-                logging.debug('%s is a fork', package)
+                if lproject == 'FORK':
+                    logging.debug("{}: lookup is correctly marked as fork".format(package))
+                else:
+                    logging.info('{} is a fork (was {})'.format(package, lproject))
+                    self.lookup[package] = 'FORK'
+                    self.lookup_changes += 1
 
             # avoid loosing too much work
             if self.lookup_changes > 50:
@@ -234,7 +252,7 @@ class UpdateCrawler(object):
     def fill_package_meta(self):
         self.package_metas = dict()
         url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % self.from_prj)
-        root = ET.parse(http_GET(url)).getroot()
+        root = ET.fromstring(self.cached_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
             self.package_metas[name] = p
@@ -252,7 +270,7 @@ def main(args):
     uc.crawl(given_packages)
 
 if __name__ == '__main__':
-    description = 'maintain sort openSUSE:42 packages into subprojects'
+    description = 'maintain %s/00Meta/lookup.yml' % OPENSUSE
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
