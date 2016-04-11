@@ -135,18 +135,28 @@ class UpdateCrawler(object):
 
         self.try_to_find_left_packages(given_packages or self.packages[self.from_prj])
         self.store_lookup()
+
+    def get_package_history(self, project, package, deleted = False):
+        try:
+            query = {}
+            if deleted:
+                query['deleted'] = 1
+            return self.cached_GET(makeurl(self.apiurl,
+                                   ['source', project, package, '_history'], query))
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                return None
+            raise
         
-    def check_source_in_project(self, project, package, verifymd5):
+    def check_source_in_project(self, project, package, verifymd5, deleted=False):
         if project not in self.packages:
             self.packages[project] = self.get_source_packages(project)
 
-        if not package in self.packages[project]:
+        if not deleted and not package in self.packages[project]:
             return None, None
 
-        try:
-            his = self.cached_GET(makeurl(self.apiurl,
-                                   ['source', project, package, '_history']))
-        except urllib2.HTTPError:
+        his = self.get_package_history(project, package, deleted)
+        if his is None:
             return None, None
 
         his = ET.fromstring(his)
@@ -218,6 +228,11 @@ class UpdateCrawler(object):
                 if srcmd5:
                     logging.debug("{} lookup from {} is correct".format(package, lproject))
                     continue
+                if lproject == 'openSUSE:Factory':
+                    his = self.get_package_history(lproject, package, deleted=True)
+                    if his:
+                        logging.debug("{} got dropped from {}".format(package, lproject))
+                        continue
             
             logging.debug("check where %s came from", package)
             foundit = False
@@ -229,6 +244,7 @@ class UpdateCrawler(object):
                     self.lookup_changes += 1
                     foundit = True
                     break
+
             if not foundit:
                 if lproject == 'FORK':
                     logging.debug("{}: lookup is correctly marked as fork".format(package))
