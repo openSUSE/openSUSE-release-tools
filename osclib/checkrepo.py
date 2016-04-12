@@ -798,7 +798,7 @@ class CheckRepo(object):
                 if arch.attrib['result'] == 'building':
                     r_foundbuilding = repo_name
                 if arch.attrib['result'] == 'outdated':
-                    msg = "%s's sources were changed after submissions and the old sources never built. Please resubmit" % request.src_package
+                    msg = "%s's sources were changed after submission: the relevant binaries are not available (never built or binaries replaced). Please resubmit" % request.src_package
                     print 'DECLINED', msg
                     self.change_review_state(request.request_id, 'declined', message=msg)
                     # Next line is not needed, but for documentation
