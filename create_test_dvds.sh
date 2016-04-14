@@ -8,6 +8,8 @@ if ! test -d co; then
 	exit 1
 fi
 
+dryrun=
+
 # give it target Factory by default then will not breaks current operation
 if [ $# -eq 0 ]; then
     targets='Factory'
@@ -35,6 +37,8 @@ else
             has_ring_2='yes'
         elif [ "$arg" = "has_staging" ]; then
             has_staging='yes'
+        elif [ "$arg" = "dryrun" ]; then
+	    dryrun='yes'
         else
             targets+="$arg"
         fi
@@ -90,7 +94,11 @@ function regenerate_pl() {
     rm $p $out
     pushd $tdir > /dev/null
     if ! cmp -s .osc/PRODUCT-$arch.kiwi PRODUCT-$arch.kiwi; then
-      osc ci -m "auto update"
+	if [ "$dryrun" = 'yes' ]; then
+	    diff -u .osc/PRODUCT-$arch.kiwi PRODUCT-$arch.kiwi || :
+	else
+	    osc ci -m "auto update"
+	fi
     fi
     popd > /dev/null
 }
@@ -128,7 +136,9 @@ function start_creating() {
         if [ "$has_ring_2" = "yes" ]; then
             sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd-$arch $arch
             regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap-$arch $target-minimalx-$arch $target-testdvd-$arch $arch
-            perl $SCRIPTDIR/rebuildpacs.pl openSUSE:$target:Rings:2-TestDVD standard $arch
+	    if [ "$dryrun" != 'yes' ]; then
+		perl $SCRIPTDIR/rebuildpacs.pl openSUSE:$target:Rings:2-TestDVD standard $arch
+	    fi
         fi
 
         # Staging Project part
@@ -152,7 +162,9 @@ function start_creating() {
 
                 if [[ $prj =~ :DVD ]]; then
                     echo "Rebuildpacs $prj"
-                    perl $SCRIPTDIR/rebuildpacs.pl $prj standard $arch
+		    if [ "$dryrun" != 'yes' ]; then
+			perl $SCRIPTDIR/rebuildpacs.pl $prj standard $arch
+		    fi
                 fi
 
                 if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
