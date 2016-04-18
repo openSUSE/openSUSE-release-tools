@@ -36,6 +36,7 @@ from osclib.obslock import OBSLock
 from osclib.select_command import SelectCommand
 from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
+from osclib.repair_command import RepairCommand
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -120,6 +121,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging list [--supersede]
         osc staging select [--no-freeze] [--move [--from PROJECT]] LETTER REQUEST...
         osc staging unselect REQUEST...
+        osc staging repair REQUEST...
     """
     if opts.version:
         self._print_version()
@@ -128,7 +130,7 @@ def do_staging(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
-    if cmd in ('freeze', 'frozenage'):
+    if cmd in ('freeze', 'frozenage', 'repair'):
         min_args, max_args = 1, None
     elif cmd == 'check':
         min_args, max_args = 0, 2
@@ -231,3 +233,5 @@ def do_staging(self, subcmd, opts, *args):
             ListCommand(api).perform(args[1:], supersede=opts.supersede)
         elif cmd == 'adi':
             AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject)
+        elif cmd == 'repair':
+            RepairCommand(api).perform(args[1:])
