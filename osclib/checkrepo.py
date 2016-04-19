@@ -399,7 +399,7 @@ class CheckRepo(object):
         actions = request.findall('action')
         if len(actions) > 1:
             msg = 'Only one action per request is supported'
-            print('DECLINED', msg)
+            print('[DECLINED]', msg)
             self.change_review_state(request_id, 'declined', message=msg)
             return requests
 
@@ -447,7 +447,7 @@ class CheckRepo(object):
         else:
             msg = 'The name of the SPEC files %s do not match with the name of the package (%s)'
             msg = msg % (specs, rq.src_package)
-            print('DECLINED', msg)
+            print('[DECLINED]', msg)
             self.change_review_state(request_id, 'declined', message=msg)
             rq.updated = True
             return requests
@@ -491,7 +491,7 @@ class CheckRepo(object):
                                                        spec,
                                                        rq.src_project,
                                                        rq.src_package)
-                print 'DECLINED', msg
+                print '[DECLINED]', msg
                 self.change_review_state(rq.request_id, 'declined', message=msg)
                 rq.updated = True
 
@@ -715,6 +715,9 @@ class CheckRepo(object):
         # This is true for packages in the devel project.
         if md5_disturl == request.srcmd5:
             return True
+        else:
+            msg = '%s is no longer the submitted version in %s, please resubmit HEAD' % (request.src_package, request.src_project)
+            print '[DECLINED] CHECK MANUALLY', msg
 
         vrev_local = self._get_verifymd5(request, md5_disturl)
 
@@ -799,7 +802,7 @@ class CheckRepo(object):
                     r_foundbuilding = repo_name
                 if arch.attrib['result'] == 'outdated':
                     msg = "%s's sources were changed after submission: the relevant binaries are not available (never built or binaries replaced). Please resubmit" % request.src_package
-                    print 'DECLINED', msg
+                    print '[DECLINED]', msg
                     self.change_review_state(request.request_id, 'declined', message=msg)
                     # Next line is not needed, but for documentation
                     request.updated = True
@@ -827,7 +830,7 @@ class CheckRepo(object):
 
         if alldisabled:
             msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
-            print 'DECLINED', msg
+            print '[DECLINED]', msg
             self.change_review_state(request.request_id, 'declined', message=msg)
             # Next line not needed, but for documentation
             request.updated = True
