@@ -67,6 +67,7 @@ class Request(object):
         self.action_type = 'submit'  # assume default
         self.downloads = []
         self.is_shadow_devel = False
+        self.i686_only = ['glibc.i686']
 
         if element:
             self.load(element)
@@ -439,6 +440,12 @@ class CheckRepo(object):
         specs = [en.attrib['name'][:-5] for en in root.findall('entry')
                  if en.attrib['name'].endswith('.spec')]
 
+        # special case for glibc.i686, it have not the relevant specfile for glibc.i686
+        # but must be add it to requests list as a dummy request, otherwise the state
+        # has not be check and won't download it's binaries.
+        if 'glibc' in specs:
+            specs.append('glibc.i686')
+
         # source checker already validated it
         if rq.src_package in specs:
             specs.remove(rq.src_package)
@@ -772,8 +779,10 @@ class CheckRepo(object):
             for arch in repository.findall('arch'):
                 if arch.attrib['arch'] not in ('i586', 'x86_64'):
                     continue
-                if arch.attrib['result'] == 'excluded' and arch.attrib['arch'] == 'x86_64':
-                    request.build_excluded = True
+                if arch.attrib['result'] == 'excluded':
+                    if ((arch.attrib['arch'] == 'x86_64' and request.src_package not in request.i686_only) or
+                       (arch.attrib['arch'] == 'i586' and request.src_package in request.i686_only)):
+                        request.build_excluded = True
                 if 'missing' in arch.attrib:
                     for package in arch.attrib['missing'].split(','):
                         if not self.is_binary(

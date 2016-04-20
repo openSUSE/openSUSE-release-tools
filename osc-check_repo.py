@@ -51,6 +51,15 @@ def _check_repo_download(self, request):
 
     # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
     arch = 'x86_64'
+
+    if request.src_package in request.i686_only:
+        # Use imported binaries from x86_64 to check the requirements is fine,
+        # but we can not get rpmlint.log from x86_64 repo if it was excluded,
+        # i586 repo should be are build succeeded already as we have check it
+        # in repositories_to_check(). Therefore, we have to download binary
+        # binary files from i586 repo.
+        arch = 'i586'
+
     # if not request.build_excluded:
     #     arch = 'x86_64'
     # else:
