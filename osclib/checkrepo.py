@@ -717,6 +717,11 @@ class CheckRepo(object):
         if not filename and not md5_disturl:
             raise ValueError('Please, procide filename or md5_disturl')
 
+        # ugly workaround here, glibc.i686 had a topadd block in _link, and looks like
+        # it causes the disturl won't consistently with glibc even with the same srcmd5
+        if request.src_package == 'glibc.i686':
+            return True
+
         md5_disturl = md5_disturl if md5_disturl else self._md5_disturl(self._disturl(filename))
         vrev_local = self._get_verifymd5(request, md5_disturl)
 
@@ -802,6 +807,15 @@ class CheckRepo(object):
                     r_foundfailed = repo_name
                 if arch.attrib['result'] == 'building':
                     r_foundbuilding = repo_name
+
+                # ugly workaround here, glibc.i686 had a topadd block in _link, and looks like
+                # it causes the disturl won't consistently with glibc even with the same srcmd5.
+                # and the build state per srcmd5 was outdated also.
+                if request.src_package == 'glibc.i686':
+                    if ((arch.attrib['arch'] == 'i586' and arch.attrib['result'] == 'outdated') or
+                       (arch.attrib['arch'] == 'x86_64' and arch.attrib['result'] == 'excluded')):
+                        isgood = True
+                        continue
                 if arch.attrib['result'] == 'outdated':
                     msg = "%s's sources were changed after submission: the relevant binaries are not available (never built or binaries replaced). Please resubmit" % request.src_package
                     print '[DECLINED]', msg
