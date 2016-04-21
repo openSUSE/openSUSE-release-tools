@@ -506,7 +506,7 @@ class CheckRepo(object):
                         rq.src_package)
                 else:
                     msg = '%s is no longer the submitted version, please resubmit HEAD' % spec
-                print '[DECLINED] CHECK MANUALLY', msg
+                print '[WARNING] CHECK MANUALLY', msg
                 # self.change_review_state(id_, 'declined', message=msg)
                 rq.updated = True
 
@@ -711,23 +711,16 @@ class CheckRepo(object):
             raise ValueError('Please, procide filename or md5_disturl')
 
         md5_disturl = md5_disturl if md5_disturl else self._md5_disturl(self._disturl(filename))
-
-        # This is true for packages in the devel project.
-        if md5_disturl == request.srcmd5:
-            return True
-        else:
-            msg = '%s is no longer the submitted version in %s, please resubmit HEAD' % (request.src_package, request.src_project)
-            print '[DECLINED] CHECK MANUALLY', msg
-
         vrev_local = self._get_verifymd5(request, md5_disturl)
 
-        # For the kernel (maybe because is not linked)
-        if vrev_local == request.srcmd5:
+        # md5_disturl == request.srcmd5 is true for packages in the devel project.
+        # vrev_local == request.srcmd5 is true for kernel submission
+        # vrev_local == request.verifymd5 is ture for packages from different projects
+        if md5_disturl == request.srcmd5 or vrev_local in (request.srcmd5, request.verifymd5):
             return True
-
-        # For packages from different projects (devel and staging)
-        if vrev_local == request.verifymd5:
-            return True
+        else:
+            msg = '%s is no longer the submitted version in %s, please recheck!' % (request.src_package, request.src_project)
+            print '[WARNING] CHECK MANUALLY', msg
 
         return False
 
