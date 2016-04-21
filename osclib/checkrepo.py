@@ -717,11 +717,6 @@ class CheckRepo(object):
         if not filename and not md5_disturl:
             raise ValueError('Please, procide filename or md5_disturl')
 
-        # ugly workaround here, glibc.i686 had a topadd block in _link, and looks like
-        # it causes the disturl won't consistently with glibc even with the same srcmd5
-        if request.src_package == 'glibc.i686':
-            return True
-
         md5_disturl = md5_disturl if md5_disturl else self._md5_disturl(self._disturl(filename))
         vrev_local = self._get_verifymd5(request, md5_disturl)
 
@@ -797,11 +792,6 @@ class CheckRepo(object):
                                 package):
                             missings.append(package)
                 if arch.attrib['result'] not in ('succeeded', 'excluded'):
-                    # ugly workaround here, glibc.i686 had a topadd block in _link, and looks like
-                    # it causes the disturl won't consistently with glibc even with the same srcmd5.
-                    # and the build state per srcmd5 was outdated also.
-                    if request.src_package == 'glibc.i686':
-                        return True
                     isgood = False
                 if arch.attrib['result'] == 'disabled':
                     founddisabled = True
@@ -813,11 +803,6 @@ class CheckRepo(object):
                 if arch.attrib['result'] == 'building':
                     r_foundbuilding = repo_name
                 if arch.attrib['result'] == 'outdated':
-                    # ugly workaround here, glibc.i686 had a topadd block in _link, and looks like
-                    # it causes the disturl won't consistently with glibc even with the same srcmd5.
-                    # and the build state per srcmd5 was outdated also.
-                    if request.src_package == 'glibc.i686':
-                        return True
                     msg = "%s's sources were changed after submission: the relevant binaries are not available (never built or binaries replaced). Please resubmit" % request.src_package
                     print '[DECLINED]', msg
                     self.change_review_state(request.request_id, 'declined', message=msg)
