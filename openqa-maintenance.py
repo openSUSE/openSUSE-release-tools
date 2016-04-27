@@ -332,7 +332,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.logger.debug("adding comment to %s, state %s result %s", req.reqid, state, result)
         self.logger.debug("message: %s", msg)
         if not self.dryrun:
-            self.commentapi.add_comment(request_id=req.reqid, comment=comment)
+            self.commentapi.add_comment(request_id=req.reqid, comment=str(comment))
 
     def openqa_overview_url_from_settings(self, settings):
         return osc.core.makeurl(self.openqa.baseurl, ['tests'], {'match': settings['BUILD']})
@@ -396,7 +396,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                 for job in jobs:
                     modules = self.find_failed_modules(job)
                     if modules != []:
-                        msg += '\n* [%s](%s) failed %s in %s' % (
+                        msg += '\n- [%s](%s) failed %s in %s' % (
                             job['id'],
                             osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])]),
                             job['settings']['TEST'], ','.join(modules))
