@@ -58,7 +58,7 @@ comment_marker_re = re.compile(r'<!-- openqa state=(?P<state>done|seen)(?: resul
 
 logger = None
 
-request_name_cache = dict()
+request_name_cache = {}
 
 # old stuff, for reference
 #    def filterchannel(self, apiurl, prj, packages):
@@ -91,32 +91,28 @@ class Update(object):
 
 
 class SUSEUpdate(Update):
-    def __init__(self, settings):
-        Update.__init__(self, settings)
-
     # take the first package name we find - often enough correct
     def request_name(self, req):
-        if request_name_cache.get(req.reqid):
-            return request_name_cache[req.reqid]
+        if req.reqid not in request_name_cache:
+            request_name_cache[req.reqid] = self._request_name(req)
+        return request_name_cache[req.reqid]
 
-        request_name_cache[req.reqid] = 'unknown'
+    def _request_name(self, req):
         for action in  req.get_actions('maintenance_release'):
             if action.tgt_package.startswith('patchinfo'):
                 continue
-            print action.src_package
             url = osc.core.makeurl(
                 req.apiurl,
                 ('source', action.src_project, action.src_package, '_link'))
             root = ET.parse(osc.core.http_GET(url)).getroot()
             if root.attrib.get('cicount'):
                 continue
-            request_name_cache[req.reqid] = action.tgt_package
-            break
+            return action.tgt_package
 
-        return request_name_cache[req.reqid]
+        return 'unknown'
 
     def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = Update.settings(self, src_prj, dst_prj, packages, req)
+        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
 
         # start with a colon so it looks cool behind 'Build' :/
         settings['BUILD'] = ':' + req.reqid + '.' + self.request_name(req)
@@ -128,11 +124,8 @@ class SUSEUpdate(Update):
 
 class openSUSEUpdate(Update):
 
-    def __init__(self, settings):
-        Update.__init__(self, settings)
-
     def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = Update.settings(self, src_prj, dst_prj, packages, req)
+        settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
 
         settings['BUILD'] = src_prj
         if req:
@@ -164,11 +157,8 @@ class openSUSEUpdate(Update):
 
 class TestUpdate(openSUSEUpdate):
 
-    def __init__(self, settings):
-        openSUSEUpdate.__init__(self, settings)
-
     def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = openSUSEUpdate.settings(self, src_prj, dst_prj, packages, req)
+        settings = super(TestUpdate, self).settings(src_prj, dst_prj, packages, req)
 
         settings['IMPORT_GPG_KEYS'] = 'testkey'
 
