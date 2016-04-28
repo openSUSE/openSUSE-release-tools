@@ -58,6 +58,8 @@ comment_marker_re = re.compile(r'<!-- openqa state=(?P<state>done|seen)(?: resul
 
 logger = None
 
+request_name_cache = {}
+
 # old stuff, for reference
 #    def filterchannel(self, apiurl, prj, packages):
 #        """ filter list of package objects to only include those actually released into prj"""
@@ -88,13 +90,42 @@ class Update(object):
         return self._settings.copy()
 
 
-class openSUSEUpdate(Update):
+class SUSEUpdate(Update):
+    # take the first package name we find - often enough correct
+    def request_name(self, req):
+        if req.reqid not in request_name_cache:
+            request_name_cache[req.reqid] = self._request_name(req)
+        return request_name_cache[req.reqid]
 
-    def __init__(self, settings):
-        Update.__init__(self, settings)
+    def _request_name(self, req):
+        for action in  req.get_actions('maintenance_release'):
+            if action.tgt_package.startswith('patchinfo'):
+                continue
+            url = osc.core.makeurl(
+                req.apiurl,
+                ('source', action.src_project, action.src_package, '_link'))
+            root = ET.parse(osc.core.http_GET(url)).getroot()
+            if root.attrib.get('cicount'):
+                continue
+            return action.tgt_package
+
+        return 'unknown'
 
     def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = Update.settings(self, src_prj, dst_prj, packages, req)
+        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
+
+        # start with a colon so it looks cool behind 'Build' :/
+        settings['BUILD'] = ':' + req.reqid + '.' + self.request_name(req)
+
+        repo = 'http://download.suse.de/ibs/%s/%s/' % (src_prj.replace(':', ':/'), dst_prj.replace(':', '_'))
+        settings['MINIMAL_TEST_REPO'] = repo
+
+        return settings
+
+class openSUSEUpdate(Update):
+
+    def settings(self, src_prj, dst_prj, packages, req=None):
+        settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
 
         settings['BUILD'] = src_prj
         if req:
@@ -126,11 +157,8 @@ class openSUSEUpdate(Update):
 
 class TestUpdate(openSUSEUpdate):
 
-    def __init__(self, settings):
-        openSUSEUpdate.__init__(self, settings)
-
     def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = openSUSEUpdate.settings(self, src_prj, dst_prj, packages, req)
+        settings = super(TestUpdate, self).settings(src_prj, dst_prj, packages, req)
 
         settings['IMPORT_GPG_KEYS'] = 'testkey'
 
@@ -152,6 +180,60 @@ PROJECT_OPENQA_SETTINGS = {
                 'VERSION': '13.2',
                 'FLAVOR': 'Maintenance',
                 'ARCH': 'i586',
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12:x86_64': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 'x86_64'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12:ppc64le': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 'ppc64le'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12:s390x': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 's390x'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12-SP1:x86_64': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP1',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 'x86_64'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12-SP1:ppc64le': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP1',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 'ppc64le'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12-SP1:s390x': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP1',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 's390x'
             }),
     ],
     'openSUSE:Leap:42.1:Update': [
@@ -259,13 +341,13 @@ class OpenQABot(ReviewBot.ReviewBot):
             src_prjs = set([a.src_project for a in req.actions])
             if len(src_prjs) != 1:
                 raise Exception("can't handle maintenance_release from different incidents")
-            build = src_prjs.pop() + ':' + req.reqid
+            build = src_prjs.pop()
             tgt_prjs = set([a.tgt_project for a in req.actions])
             ret = []
             for prj in tgt_prjs:
                 if prj in PROJECT_OPENQA_SETTINGS:
                     for u in PROJECT_OPENQA_SETTINGS[prj]:
-                        s = u.settings(build, prj, [])
+                        s = u.settings(build, prj, [], req=req)
                         ret += self.openqa.openqa_request(
                             'GET', 'jobs',
                             {
@@ -441,13 +523,14 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         apiurl = osc.conf.config['apiurl']
         if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
+            raise osc.oscerr.WrongArgs("missing apiurl")
         user = self.options.user
-        if user is None:
+        group = self.options.group
+        if user is None and group is None:
             user = osc.conf.get_apiurl_usr(apiurl)
 
         if not self.options.openqa:
-            raise osc.oscerr.ConfigError("missing openqa url")
+            raise osc.oscerr.WrongArgs("missing openqa url")
 
         global logger
         logger = self.logger
@@ -456,6 +539,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             apiurl=apiurl,
             dryrun=self.options.dry,
             user=user,
+            group=group,
             do_comments=self.options.comment,
             openqa=self.options.openqa,
             force=self.options.force,
