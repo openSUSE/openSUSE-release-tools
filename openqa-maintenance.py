@@ -441,13 +441,14 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         apiurl = osc.conf.config['apiurl']
         if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
+            raise osc.oscerr.WrongArgs("missing apiurl")
         user = self.options.user
-        if user is None:
+        group = self.options.group
+        if user is None and group is None:
             user = osc.conf.get_apiurl_usr(apiurl)
 
         if not self.options.openqa:
-            raise osc.oscerr.ConfigError("missing openqa url")
+            raise osc.oscerr.WrongArgs("missing openqa url")
 
         global logger
         logger = self.logger
@@ -456,6 +457,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             apiurl=apiurl,
             dryrun=self.options.dry,
             user=user,
+            group=group,
             do_comments=self.options.comment,
             openqa=self.options.openqa,
             force=self.options.force,
