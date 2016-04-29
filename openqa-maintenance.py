@@ -403,17 +403,23 @@ class OpenQABot(ReviewBot.ReviewBot):
         if not self.do_comments:
             return
 
-        (comment_id, comment_state, comment_result) = self.find_obs_request_comment(req, state)
-        if comment_id is not None:
-            self.logger.debug("found comment %s, state %s", comment_id, comment_state)
-            return
-
         comment = "<!-- openqa state=%s%s -->\n" % (state, ' result=%s' % result if result else '')
         comment += "\n" + msg
+
+        (comment_id, comment_state, comment_result, comment_text) = self.find_obs_request_comment(req, state)
+
+        if comment_id is not None and state == comment_state:
+            lines_before = len(comment_text.split('\n'))
+            lines_after = len(comment.split('\n'))
+            if lines_before == lines_after:
+                self.logger.debug("not worth the update, previous comment %s is state %s", comment_id, comment_state)
+                return
 
         self.logger.debug("adding comment to %s, state %s result %s", req.reqid, state, result)
         self.logger.debug("message: %s", msg)
         if not self.dryrun:
+            if comment_id is not None:
+                self.commentapi.delete(comment_id)
             self.commentapi.add_comment(request_id=req.reqid, comment=str(comment))
 
     def openqa_overview_url_from_settings(self, settings):
@@ -448,7 +454,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
                 if self.force:
                     # make sure to delete previous comments if we're forcing
-                    (comment_id, comment_state, comment_result) = self.find_obs_request_comment(req)
+                    (comment_id, comment_state, comment_result, comment_text) = self.find_obs_request_comment(req)
                     if comment_id is not None:
                         self.logger.debug("deleting old comment %s", comment_id)
                         if not self.dryrun:
@@ -503,8 +509,8 @@ class OpenQABot(ReviewBot.ReviewBot):
             for c in comments.values():
                 m = comment_marker_re.match(c['comment'])
                 if m and (state is None or state == m.group('state')):
-                    return c['id'], m.group('state'), m.group('result')
-        return None, None, None
+                    return c['id'], m.group('state'), m.group('result'), c['comment']
+        return None, None, None, None
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
