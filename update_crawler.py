@@ -164,39 +164,40 @@ class UpdateCrawler(object):
         return (project, package, rev)
 
     def update_targets(self, targets, sources):
-        for package, sourceinfo in targets.items():
+        for package, sourceinfo in sources.items():
             if self.filter_lookup and not self.lookup.get(package, '') in self.filter_lookup:
                 continue
 
-            if not package in sources:
-                logging.info('FATAL: Package %s not found in sources' % (package))
+            if not package in targets:
+                logging.debug('Package %s not found in targets' % (package))
                 continue
 
-            source = sources[package]
+            targetinfo = targets[package]
 
             #if package != 'openssl':
             #    continue
 
             # Compare verifymd5
-            md5_from = source.get('verifymd5')
-            md5_to = sourceinfo.get('verifymd5')
+            md5_from = sourceinfo.get('verifymd5')
+            md5_to = targetinfo.get('verifymd5')
             if md5_from == md5_to:
                 #logging.info('Package %s not marked for update' % package)
                 continue
 
             if self.is_source_innerlink(self.to_prj, package):
-                logging.info('Package %s is sub package' % (package))
+                logging.debug('Package %s is sub package' % (package))
                 continue
 
 #            this makes only sense if we look at the expanded view
 #            and want to submit from proper project
 #            originproject = default_origin
-#            if not source.find('originproject') is None:
-#                originproject = source.find('originproject').text
+#            if not sourceinfo.find('originproject') is None:
+#                originproject = sourceinfo.find('originproject').text
 #                logging.warn('changed originproject for {} to {}'.format(package, originproject))
 
             src_project, src_package, src_rev = self.follow_link(self.from_prj, package,
-                                                                 source.get('srcmd5'), source.get('verifymd5'))
+                                                                 sourceinfo.get('srcmd5'),
+                                                                 sourceinfo.get('verifymd5'))
 
             res = self.submitrequest(src_project, src_package, src_rev, package)
             if res:
