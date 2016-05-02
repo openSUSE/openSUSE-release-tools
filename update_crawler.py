@@ -33,6 +33,7 @@ import osc.conf
 import osc.core
 import rpm
 import yaml
+from urllib import quote_plus
 
 from osclib.memoize import memoize
 
@@ -43,6 +44,12 @@ SLE = 'SUSE:SLE-12-SP1:Update'
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
 
+# http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l.
+    """
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]
 
 class UpdateCrawler(object):
     def __init__(self, from_prj, to_prj):
@@ -50,8 +57,32 @@ class UpdateCrawler(object):
         self.to_prj = to_prj
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
-        self.parse_lookup()
         self.filter_lookup = set()
+        self.caching = False
+        self.dryrun = False
+
+        self.parse_lookup()
+
+    # FIXME: duplicated from manager_42
+    def latest_packages(self):
+        data = self.cached_GET(makeurl(self.apiurl,
+                                       ['project', 'latest_commits', self.from_prj]))
+        lc = ET.fromstring(data)
+        packages = set()
+        for entry in lc.findall('{http://www.w3.org/2005/Atom}entry'):
+            title = entry.find('{http://www.w3.org/2005/Atom}title').text
+            if title.startswith('In '):
+                packages.add(title[3:].split(' ')[0])
+        return sorted(packages)
+
+    @memoize()
+    def _cached_GET(self, url):
+        return self.retried_GET(url).read()
+
+    def cached_GET(self, url):
+        if self.caching:
+            return self._cached_GET(url)
+        return self.retried_GET(url).read()
 
     def retried_GET(self, url):
         try:
@@ -63,22 +94,38 @@ class UpdateCrawler(object):
                 return self.retried_GET(url)
             raise e
 
-    def _get_source_infos(self, project):
-        return self.retried_GET(makeurl(self.apiurl,
-                                ['source', project],
-                                {
-                                    'view': 'info'
-                                })).read()
+    def _meta_get_packagelist(self, prj, deleted=None, expand=False):
 
-    def get_source_infos(self, project):
-        root = ET.fromstring(self._get_source_infos(project))
+        query = {}
+        if deleted:
+            query['deleted'] = 1
+        if expand:
+            query['expand'] = 1
+
+        u = osc.core.makeurl(self.apiurl, ['source', prj], query)
+        return self.cached_GET(u)
+
+    def meta_get_packagelist(self, prj, deleted=None, expand=False):
+        root = ET.fromstring(self._meta_get_packagelist(prj, deleted, expand))
+        return [ node.get('name') for node in root.findall('entry') if not node.get('name') == '_product' and not node.get('name').startswith('_product:') and not node.get('name').startswith('patchinfo.') ]
+
+    def _get_source_infos(self, project, packages):
+        query = [ 'view=info' ]
+        if packages:
+            query += [ 'package=%s'%quote_plus(p) for p in packages ]
+
+        return self.cached_GET(makeurl(self.apiurl,
+                                ['source', project],
+                                query))
+
+    def get_source_infos(self, project, packages):
         ret = dict()
-        for package in root.findall('sourceinfo'):
-            # skip packages that come via project link
-            # FIXME: OBS needs to implement expand=0 for view=info
-            if not package.find('originproject') is None:
-                continue
-            ret[package.get('package')] = package
+        for pkg_chunks in chunks(sorted(packages), 50):
+            root = ET.fromstring(self._get_source_infos(project, pkg_chunks))
+            for package in root.findall('sourceinfo'):
+                if package.findall('error'):
+                    continue
+                ret[package.get('package')] = package
         return ret
 
     def _submitrequest(self, src_project, src_package, rev, dst_project,
@@ -96,20 +143,19 @@ class UpdateCrawler(object):
         for r in reqs:
             for a in r.actions:
                 if a.to_xml().find('source').get('rev') == rev:
-                    logging.debug('found existing request {}'.format(r.req_id))
+                    logging.debug('{}: found existing request {}'.format(dst_package, r.reqid))
                     foundrev = True
         res = 0
         if not foundrev:
             print "creating submit request", src_project, src_package, rev, dst_project, dst_package
-            # XXX
-            return 0
-            res = osc.core.create_submit_request(self.apiurl,
-                                                 src_project,
-                                                 src_package,
-                                                 dst_project,
-                                                 dst_package,
-                                                 orev=rev,
-                                                 message=msg)
+            if not self.dryrun:
+                res = osc.core.create_submit_request(self.apiurl,
+                                                     src_project,
+                                                     src_package,
+                                                     dst_project,
+                                                     dst_package,
+                                                     orev=rev,
+                                                     message=msg)
         return res
 
     def submitrequest(self, src_project, src_package, rev, dst_package):
@@ -134,10 +180,10 @@ class UpdateCrawler(object):
             raise
 
     def parse_lookup(self):
-        self.lookup = yaml.load(self._load_lookup_file())
+        self.lookup = yaml.safe_load(self._load_lookup_file())
 
     def _load_lookup_file(self):
-        return http_GET(makeurl(self.apiurl,
+        return self.cached_GET(makeurl(self.apiurl,
                                 ['source', self.to_prj, '00Meta', 'lookup.yml']))
 
     def follow_link(self, project, package, rev, verifymd5):
@@ -165,6 +211,9 @@ class UpdateCrawler(object):
 
     def update_targets(self, targets, sources):
         for package, sourceinfo in sources.items():
+            if package.startswith('patchinfo.'):
+                continue
+
             if self.filter_lookup and not self.lookup.get(package, '') in self.filter_lookup:
                 continue
 
@@ -206,10 +255,10 @@ class UpdateCrawler(object):
                 logging.error('Error creating the request for %s' % package)
 
 
-    def crawl(self):
+    def crawl(self, packages):
         """Main method of the class that run the crawler."""
-        targets = self.get_source_infos(self.to_prj)
-        sources = self.get_source_infos(self.from_prj)
+        targets = self.get_source_infos(self.to_prj, packages)
+        sources = self.get_source_infos(self.from_prj, packages)
         self.update_targets(targets, sources)
 
 
@@ -219,10 +268,18 @@ def main(args):
     osc.conf.config['debug'] = args.osc_debug
 
     uc = UpdateCrawler(args.from_prj, args.to_prj)
+    uc.caching = args.cache_requests
+    uc.dryrun = args.dry
     if args.only_from:
         uc.filter_lookup.add(args.only_from)
 
-    uc.crawl()
+    given_packages = args.packages
+    if not given_packages:
+        if args.all:
+            given_packages = uc.meta_get_packagelist(args.from_prj)
+        else:
+            given_packages = uc.latest_packages()
+    uc.crawl(given_packages)
 
 if __name__ == '__main__':
     description = 'Create update SRs for Leap.'
@@ -230,6 +287,8 @@ if __name__ == '__main__':
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print info useful for debuging')
+    parser.add_argument('-a', '--all', action='store_true',
+                        help='check all packages')
     parser.add_argument('-n', '--dry', action='store_true',
                         help='dry run, no POST, PUT, DELETE')
     parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
@@ -241,6 +300,9 @@ if __name__ == '__main__':
     parser.add_argument('--only-from', dest='only_from', metavar='PROJECT',
                         help='only submit packages that came from PROJECT')
     parser.add_argument("--osc-debug", action="store_true", help="osc debug output")
+    parser.add_argument('--cache-requests', action='store_true', default=False,
+                        help='cache GET requests. Not recommended for daily use.')
+    parser.add_argument("packages", nargs='*', help="packages to check")
 
     args = parser.parse_args()
 
@@ -257,3 +319,5 @@ if __name__ == '__main__':
         http_DELETE = dryrun('DELETE')
 
     sys.exit(main(args))
+
+# vim: sw=4 et
