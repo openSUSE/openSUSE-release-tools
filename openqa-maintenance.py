@@ -473,7 +473,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                 url = self.openqa_overview_url_from_settings(jobs[0]['settings'])
                 if qa_state == QA_PASSED:
                     self.logger.debug("request %s passed", req.reqid)
-                    msg = "openQA test [passed](%s)" % url
+                    msg = "openQA test [passed](%s)\n" % url
                     state = 'accepted'
                     ret = True
                 else:
