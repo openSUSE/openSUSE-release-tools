@@ -30,8 +30,9 @@ class CleanupRings(object):
         for si in root.findall('sourceinfo'):
             linked = si.find('linked')
             if linked is not None and linked.get('project') != self.api.project:
+                # XXX: why allow linking to :Rings?
                 if not linked.get('project').startswith(self.api.crings):
-                    print "#not linking to base: ", self.api.crings, linked.get('project')
+                    print "#{} not linking to base {} but {}".format(si.get('package'), self.api.project, linked.get('project'))
                 self.links[linked.get('package')] = si.get('package')
 
     def fill_pkgdeps(self, prj, repo, arch):
@@ -58,7 +59,8 @@ class CleanupRings(object):
             source = package.find('source').text
             for pkg in package.findall('pkgdep'):
                 if pkg.text not in self.bin2src:
-                    print('Package {} not found in place'.format(pkg.text))
+                    if not pkg.text.startswith('texlive-'): # XXX: texlive bullshit packaging
+                        print('Package {} not found in place'.format(pkg.text))
                     continue
                 b = self.bin2src[pkg.text]
                 self.pkgdeps[b] = source
@@ -78,7 +80,7 @@ class CleanupRings(object):
                     return False
 
         self.find_inner_ring_links(prj)
-        for arch in [ 'x86_64', 'ppc64le' ]:
+        for arch in self.api.cstaging_dvd_archs:
             self.fill_pkgdeps(prj, 'standard', arch)
 
             if prj == '{}:1-MinimalX'.format(self.api.crings):
@@ -117,6 +119,8 @@ class CleanupRings(object):
 
         for source in self.sources:
             if source not in self.pkgdeps and source not in self.links:
+                if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
+                    continue
                 print('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
                     print('osc linkpac {} {} {}').format(self.api.project, source, nextprj)
