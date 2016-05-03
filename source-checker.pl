@@ -249,7 +249,7 @@ foreach my $rpmlint (glob("$dir/*rpmlintrc")) {
 exit($ret) if $ret;
 
 # now check if the change is small enough to warrent a review-by-mail
-exit(0) unless -d '_old';
+exit(0) unless -d $old;
 
 sub prepare_package($) {
 
