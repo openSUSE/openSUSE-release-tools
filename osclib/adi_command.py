@@ -32,8 +32,8 @@ class AdiCommand:
             return
         print project, "is ready"
         for req in info['selected_requests']:
-            print "%s [%s]"%(req['package'], req['id'])
-            self.api.rm_from_prj(project, request_id=req['id'], msg='ready to accept')
+            print "%s [%s]"%(req['package'], req['number'])
+            self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
         delete_project(self.api.apiurl, project)
             
     def check_adi_projects(self):
