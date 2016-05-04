@@ -35,8 +35,11 @@ class OpenQAReport(object):
         self.comment = CommentAPI(api.apiurl)
 
     def _package_url(self, package):
-        link = 'https://build.opensuse.org/package/live_build_log/%s/%s/%s/%s' % (
-            package['project'], package['package'], package['repository'], package['arch'])
+        link = 'https://build.opensuse.org/package/live_build_log/%s/%s/%s/%s'
+        link = link % (package['project'],
+                       package['package'],
+                       package['repository'],
+                       package['arch'])
         text = '[%s](%s)' % (package['arch'], link)
         return text
 

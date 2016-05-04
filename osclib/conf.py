@@ -30,7 +30,7 @@ from osc import conf
 #   the project.
 
 DEFAULT = {
-    r'openSUSE:(?P<project>[-\w\d]+)': {
+    r'openSUSE:(?P<project>[-\w\d:.]+)': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': '%(project.lower)s-staging',
         'staging-archs': 'i586 x86_64 ppc64le',
