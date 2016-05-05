@@ -25,8 +25,8 @@ if (-f "$dir/_service") {
         print "Services are only allowed if they are mode='localonly'. Please change the mode of $name and use osc service localrun\n";
         $ret = 1;
     }
-    # now remove it to have full service from source validator
-    unlink("$dir/_service");
+    # move it away to have full service from source validator
+    rename("$dir/_service", "$dir/_service.bak") || die "rename failed";
 }
 
 if (!-f "$dir/$bname.changes") {
@@ -249,7 +249,7 @@ foreach my $rpmlint (glob("$dir/*rpmlintrc")) {
 exit($ret) if $ret;
 
 # now check if the change is small enough to warrent a review-by-mail
-exit(0) unless -d '_old';
+exit(0) unless -d $old;
 
 sub prepare_package($) {
 
@@ -307,6 +307,11 @@ sub prepare_package($) {
         }
     }
     return $diffcount;
+}
+
+# move it back so we also diff the service file
+if (-f "$dir/_service.bak") {
+    rename("$dir/_service.bak", "$dir/_service") || die "rename failed";
 }
 
 my %files;
