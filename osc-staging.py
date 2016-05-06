@@ -200,10 +200,11 @@ def do_staging(self, subcmd, opts, *args):
                 for prj in args[1:]:
                     if not cmd.perform(api.prj_from_letter(prj)):
                         return
-                cmd.accept_other_new()
-                cmd.update_factory_version()
-                if api.item_exists(api.crebuild):
-                    cmd.sync_buildfailures()
+                if opts.project.startswith('openSUSE:'):
+                    cmd.accept_other_new()
+                    cmd.update_factory_version()
+                    if api.item_exists(api.crebuild):
+                        cmd.sync_buildfailures()
             else:
                 version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
                 totest_dirty   = api.is_repo_dirty(api.project, 'totest')
