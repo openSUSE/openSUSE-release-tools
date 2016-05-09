@@ -193,7 +193,7 @@ class Manager42(object):
             root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
             pm = self.package_metas[package]
             devel = pm.find('devel')
-            if devel is not None or lproject.startswith('Devel;'):
+            if devel is not None or (lproject is not None and lproject.startswith('Devel;')):
                 develprj = None
                 develpkg = None
                 if devel is None:
