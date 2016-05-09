@@ -43,7 +43,7 @@ http_DELETE = osc.core.http_DELETE
 http_PUT = osc.core.http_PUT
 http_POST = osc.core.http_POST
 
-class UpdateCrawler(object):
+class Manager42(object):
     def __init__(self, from_prj, caching = True):
         self.from_prj = from_prj
         self.caching = caching
@@ -281,7 +281,7 @@ def main(args):
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = UpdateCrawler(args.from_prj, caching = args.cache_requests )
+    uc = Manager42(args.from_prj, caching = args.cache_requests )
     given_packages = args.packages
     if not args.all and not given_packages:
         given_packages = uc.latest_packages()
