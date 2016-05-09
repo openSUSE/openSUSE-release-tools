@@ -74,11 +74,11 @@ class Manager42(object):
             if title.startswith('In '):
                 packages.add(title[3:].split(' ')[0])
         return sorted(packages)
-            
+
     def parse_lookup(self):
         self.lookup = yaml.safe_load(self._load_lookup_file())
         self.lookup_changes = 0
-        
+
     def _load_lookup_file(self):
         return self.cached_GET(makeurl(self.apiurl,
                                        ['source', self.from_prj, '00Meta', 'lookup.yml']))
@@ -94,7 +94,7 @@ class Manager42(object):
         data = yaml.dump(self.lookup, default_flow_style=False, explicit_start=True)
         self._put_lookup_file(data)
         self.lookup_changes = 0
-    
+
     @memoize()
     def _cached_GET(self, url):
         return self.retried_GET(url).read()
@@ -133,10 +133,23 @@ class Manager42(object):
 
 
     def crawl(self, given_packages = None):
-        """Main method of the class that run the crawler."""
+        """Main method of the class that runs the crawler."""
 
-        self.try_to_find_left_packages(given_packages or self.packages[self.from_prj])
-        self.store_lookup()
+        packages = given_packages or self.packages[self.from_prj]
+
+        for package in sorted(packages):
+            try:
+                self.check_one_package(package)
+            except urllib2.HTTPError, e:
+                logging.error("Failed to check {}: {}".format(package, e))
+                pass
+
+            # avoid loosing too much work
+            if self.lookup_changes > 50:
+                self.store_lookup()
+
+        if self.lookup_changes:
+            self.store_lookup()
 
     def get_package_history(self, project, package, deleted = False):
         try:
@@ -149,7 +162,7 @@ class Manager42(object):
             if e.code == 404:
                 return None
             raise
-        
+
     def check_source_in_project(self, project, package, verifymd5, deleted=False):
         if project not in self.packages:
             self.packages[project] = self.get_source_packages(project)
@@ -177,88 +190,83 @@ class Manager42(object):
                 return srcmd5, historyrevs[srcmd5]
         return None, None
 
+
     # check if we can find the srcmd5 in any of our underlay
     # projects
-    def try_to_find_left_packages(self, packages):
-        for package in sorted(packages):
+    def check_one_package(self, package):
+        lproject = self.lookup.get(package, None)
+        if not package in self.packages[self.from_prj]:
+            logging.info("{} vanished".format(package))
+            if self.lookup.get(package):
+                del self.lookup[package]
+                self.lookup_changes += 1
+            return
 
-            lproject = self.lookup.get(package, None)
-            if not package in self.packages[self.from_prj]:
-                logging.info("{} vanished".format(package))
-                if self.lookup.get(package):
-                    del self.lookup[package]
-                    self.lookup_changes += 1
-                continue
-
-            root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
-            pm = self.package_metas[package]
-            devel = pm.find('devel')
-            if devel is not None or (lproject is not None and lproject.startswith('Devel;')):
-                develprj = None
-                develpkg = None
-                if devel is None:
-                    (dummy, develprj, develpkg) = lproject.split(';')
-                    logging.warn('{} lacks devel project setting {}/{}'.format(package, develprj, develpkg))
-                else:
-                    develprj = devel.get('project')
-                    develpkg = devel.get('package')
-                srcmd5, rev = self.check_source_in_project(develprj, develpkg,
-                                                           root.get('verifymd5'))
-                if srcmd5:
-                    lstring = 'Devel;{};{}'.format(develprj, develpkg)
-                    if lstring != self.lookup[package]:
-                        logging.debug("{} from devel {}/{} (was {})".format(package, develprj, develpkg, lproject))
-                        self.lookup[package] = lstring
-                        self.lookup_changes += 1
-                    else:
-                        logging.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
-                    continue
-
-            linked = root.find('linked')
-            if not linked is None and linked.get('package') != package:
-                lstring = 'subpackage of {}'.format(linked.get('package'))
-                if lstring != lproject:
-                    logging.warn("link mismatch: %s <> %s, subpackage? (was {})", linked.get('package'), package, lproject)
+        root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
+        pm = self.package_metas[package]
+        devel = pm.find('devel')
+        if devel is not None or (lproject is not None and lproject.startswith('Devel;')):
+            develprj = None
+            develpkg = None
+            if devel is None:
+                (dummy, develprj, develpkg) = lproject.split(';')
+                logging.warn('{} lacks devel project setting {}/{}'.format(package, develprj, develpkg))
+            else:
+                develprj = devel.get('project')
+                develpkg = devel.get('package')
+            srcmd5, rev = self.check_source_in_project(develprj, develpkg,
+                                                       root.get('verifymd5'))
+            if srcmd5:
+                lstring = 'Devel;{};{}'.format(develprj, develpkg)
+                if lstring != self.lookup[package]:
+                    logging.debug("{} from devel {}/{} (was {})".format(package, develprj, develpkg, lproject))
                     self.lookup[package] = lstring
                     self.lookup_changes += 1
                 else:
-                    logging.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
-                continue
-            
-            if lproject and lproject != 'FORK':
-                srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
-                if srcmd5:
-                    logging.debug("{} lookup from {} is correct".format(package, lproject))
-                    continue
-                if lproject == 'openSUSE:Factory':
-                    his = self.get_package_history(lproject, package, deleted=True)
-                    if his:
-                        logging.debug("{} got dropped from {}".format(package, lproject))
-                        continue
-            
-            logging.debug("check where %s came from", package)
-            foundit = False
-            for project in self.project_preference_order:
-                srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
-                if srcmd5:
-                    logging.info('{} -> {} (was {})'.format(package, project, lproject))
-                    self.lookup[package] = project
-                    self.lookup_changes += 1
-                    foundit = True
-                    break
+                    logging.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
+                return
 
-            if not foundit:
-                if lproject == 'FORK':
-                    logging.debug("{}: lookup is correctly marked as fork".format(package))
-                else:
-                    logging.info('{} is a fork (was {})'.format(package, lproject))
-                    self.lookup[package] = 'FORK'
-                    self.lookup_changes += 1
+        linked = root.find('linked')
+        if not linked is None and linked.get('package') != package:
+            lstring = 'subpackage of {}'.format(linked.get('package'))
+            if lstring != lproject:
+                logging.warn("link mismatch: %s <> %s, subpackage? (was {})", linked.get('package'), package, lproject)
+                self.lookup[package] = lstring
+                self.lookup_changes += 1
+            else:
+                logging.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
+            return
 
-            # avoid loosing too much work
-            if self.lookup_changes > 50:
-                self.store_lookup()
-                
+        if lproject and lproject != 'FORK':
+            srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
+            if srcmd5:
+                logging.debug("{} lookup from {} is correct".format(package, lproject))
+                return
+            if lproject == 'openSUSE:Factory':
+                his = self.get_package_history(lproject, package, deleted=True)
+                if his:
+                    logging.debug("{} got dropped from {}".format(package, lproject))
+                    return
+
+        logging.debug("check where %s came from", package)
+        foundit = False
+        for project in self.project_preference_order:
+            srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
+            if srcmd5:
+                logging.info('{} -> {} (was {})'.format(package, project, lproject))
+                self.lookup[package] = project
+                self.lookup_changes += 1
+                foundit = True
+                break
+
+        if not foundit:
+            if lproject == 'FORK':
+                logging.debug("{}: lookup is correctly marked as fork".format(package))
+            else:
+                logging.info('{} is a fork (was {})'.format(package, lproject))
+                self.lookup[package] = 'FORK'
+                self.lookup_changes += 1
+
     def get_link(self, project, package):
         try:
             link = self.cached_GET(makeurl(self.apiurl,
