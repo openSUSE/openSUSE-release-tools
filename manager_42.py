@@ -35,6 +35,8 @@ import yaml
 
 from osclib.memoize import memoize
 
+logger = logging.getLogger()
+
 OPENSUSE = 'openSUSE:Leap:42.2'
 
 makeurl = osc.core.makeurl
@@ -89,7 +91,7 @@ class Manager42(object):
 
     def store_lookup(self):
         if self.lookup_changes == 0:
-            logging.info('no change to lookup.yml')
+            logger.info('no change to lookup.yml')
             return
         data = yaml.dump(self.lookup, default_flow_style=False, explicit_start=True)
         self._put_lookup_file(data)
@@ -109,7 +111,7 @@ class Manager42(object):
             return http_GET(url)
         except urllib2.HTTPError, e:
             if 500 <= e.code <= 599:
-                logging.warn('Retrying {}'.format(url))
+                logger.warn('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -141,7 +143,7 @@ class Manager42(object):
             try:
                 self.check_one_package(package)
             except urllib2.HTTPError, e:
-                logging.error("Failed to check {}: {}".format(package, e))
+                logger.error("Failed to check {}: {}".format(package, e))
                 pass
 
             # avoid loosing too much work
@@ -196,7 +198,7 @@ class Manager42(object):
     def check_one_package(self, package):
         lproject = self.lookup.get(package, None)
         if not package in self.packages[self.from_prj]:
-            logging.info("{} vanished".format(package))
+            logger.info("{} vanished".format(package))
             if self.lookup.get(package):
                 del self.lookup[package]
                 self.lookup_changes += 1
@@ -210,7 +212,7 @@ class Manager42(object):
             develpkg = None
             if devel is None:
                 (dummy, develprj, develpkg) = lproject.split(';')
-                logging.warn('{} lacks devel project setting {}/{}'.format(package, develprj, develpkg))
+                logger.warn('{} lacks devel project setting {}/{}'.format(package, develprj, develpkg))
             else:
                 develprj = devel.get('project')
                 develpkg = devel.get('package')
@@ -219,41 +221,41 @@ class Manager42(object):
             if srcmd5:
                 lstring = 'Devel;{};{}'.format(develprj, develpkg)
                 if lstring != self.lookup[package]:
-                    logging.debug("{} from devel {}/{} (was {})".format(package, develprj, develpkg, lproject))
+                    logger.debug("{} from devel {}/{} (was {})".format(package, develprj, develpkg, lproject))
                     self.lookup[package] = lstring
                     self.lookup_changes += 1
                 else:
-                    logging.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
+                    logger.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
                 return
 
         linked = root.find('linked')
         if not linked is None and linked.get('package') != package:
             lstring = 'subpackage of {}'.format(linked.get('package'))
             if lstring != lproject:
-                logging.warn("link mismatch: %s <> %s, subpackage? (was {})", linked.get('package'), package, lproject)
+                logger.warn("link mismatch: %s <> %s, subpackage? (was %s)", linked.get('package'), package, lproject)
                 self.lookup[package] = lstring
                 self.lookup_changes += 1
             else:
-                logging.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
+                logger.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
             return
 
         if lproject and lproject != 'FORK' and not lproject.startswith('subpackage '):
             srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
             if srcmd5:
-                logging.debug("{} lookup from {} is correct".format(package, lproject))
+                logger.debug("{} lookup from {} is correct".format(package, lproject))
                 return
             if lproject == 'openSUSE:Factory':
                 his = self.get_package_history(lproject, package, deleted=True)
                 if his:
-                    logging.debug("{} got dropped from {}".format(package, lproject))
+                    logger.debug("{} got dropped from {}".format(package, lproject))
                     return
 
-        logging.debug("check where %s came from", package)
+        logger.debug("check where %s came from", package)
         foundit = False
         for project in self.project_preference_order:
             srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
             if srcmd5:
-                logging.info('{} -> {} (was {})'.format(package, project, lproject))
+                logger.info('{} -> {} (was {})'.format(package, project, lproject))
                 self.lookup[package] = project
                 self.lookup_changes += 1
                 foundit = True
@@ -261,9 +263,9 @@ class Manager42(object):
 
         if not foundit:
             if lproject == 'FORK':
-                logging.debug("{}: lookup is correctly marked as fork".format(package))
+                logger.debug("{}: lookup is correctly marked as fork".format(package))
             else:
-                logging.info('{} is a fork (was {})'.format(package, lproject))
+                logger.info('{} is a fork (was {})'.format(package, lproject))
                 self.lookup[package] = 'FORK'
                 self.lookup_changes += 1
 
@@ -316,11 +318,12 @@ if __name__ == '__main__':
 
     # Set logging configuration
     logging.basicConfig(level=logging.DEBUG if args.debug
-                        else logging.INFO)
+                        else logging.INFO,
+                        format='%(asctime)s - %(module)s:%(lineno)d - %(levelname)s - %(message)s')
 
     if args.dry:
         def dryrun(t, *args, **kwargs):
-            return lambda *args, **kwargs: logging.debug("dryrun %s %s %s", t, args, str(kwargs)[:200])
+            return lambda *args, **kwargs: logger.debug("dryrun %s %s %s", t, args, str(kwargs)[:200])
 
         http_POST = dryrun('POST')
         http_PUT = dryrun('PUT')
