@@ -53,6 +53,8 @@ class UpdateCrawler(object):
                 'SUSE:SLE-12-SP1:GA',
                 'SUSE:SLE-12:Update',
                 'SUSE:SLE-12:GA',
+                'openSUSE:Leap:42.1:Update',
+                'openSUSE:Leap:42.1',
                 'openSUSE:Factory',
                 ]
 
