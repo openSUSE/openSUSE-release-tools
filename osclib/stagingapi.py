@@ -60,18 +60,41 @@ class StagingAPI(object):
         self.cproduct = conf.config[project]['product']
         self.copenqa = conf.config[project]['openqa']
         self.user = conf.get_apiurl_usr(apiurl)
+        self._ring_packages = None
+        self._packages_staged = None
 
         # If the project support rings, inititialize some variables.
-        self.ring_packages = {}
         if self.crings:
             self.rings = (
                 '{}:0-Bootstrap'.format(self.crings),
                 '{}:1-MinimalX'.format(self.crings),
                 '{}:2-TestDVD'.format(self.crings)
             )
-            self.ring_packages = self._generate_ring_packages()
+        else:
+            self.rings = []
 
-        self.packages_staged = self._get_staged_requests()
+
+    @property
+    def ring_packages(self):
+        if self._ring_packages is None:
+            self._ring_packages = self._generate_ring_packages()
+
+        return self._ring_packages
+
+    @ring_packages.setter
+    def ring_packages(self, value):
+        raise Exception("setting ring_packages is not allowed")
+
+    @property
+    def packages_staged(self):
+        if self._packages_staged is None:
+            self._packages_staged = self._get_staged_requests()
+
+        return self._packages_staged
+
+    @packages_staged.setter
+    def packages_staged(self, value):
+        raise Exception("setting packages_staged is not allowed")
 
     def makeurl(self, l, query=None):
         """
