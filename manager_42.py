@@ -237,7 +237,7 @@ class Manager42(object):
                 logging.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
             return
 
-        if lproject and lproject != 'FORK':
+        if lproject and lproject != 'FORK' and not lproject.startswith('subpackage '):
             srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
             if srcmd5:
                 logging.debug("{} lookup from {} is correct".format(package, lproject))
