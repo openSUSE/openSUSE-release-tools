@@ -256,7 +256,10 @@ class FreezeCommand(object):
                 # print(package, linked.get('package'), linked.get('project'))
                 f = self.api.retried_GET(url)
                 proot = ET.parse(f).getroot()
-                ET.SubElement(flink, 'package', {'name': package, 'srcmd5': proot.get('lsrcmd5'), 'vrev': si.get('vrev')})
+                lsrcmd5 = proot.get('lsrcmd5')
+                if lsrcmd5 is None:
+                    raise Exception("{}/{} is not a link but we expected one".format(self.api.project, package))
+                ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
                 return package
         if package in ['rpmlint-mini-AGGR']:
             return package  # we should not freeze aggregates
