@@ -48,7 +48,8 @@ class TestApiCalls(unittest.TestCase):
 
     def tearDown(self):
         """Clean internal cache"""
-        self.api._invalidate_all()
+        if hasattr(self.api, '_invalidate_all'):
+            self.api._invalidate_all()
 
     def test_ring_packages(self):
         """
