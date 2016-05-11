@@ -101,6 +101,8 @@ class SelectCommand(object):
                 msg = msg.format(fprj, self.target_project)
             print(msg)
             return True
+        elif supersede:
+            print('"{} ({}) supersedes {}'.format(request, supersede[1], supersede[0]))
         else:
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
