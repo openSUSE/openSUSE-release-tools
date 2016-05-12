@@ -87,6 +87,8 @@ def _full_project_name(self, project):
               help='force the select command ignoring the time from the last freeze')
 @cmdln.option('--no-cleanup', dest='no_cleanup', action='store_true',
               help='do not cleanup remaining packages in staging projects after accept')
+@cmdln.option('--no-bootstrap', dest='bootstrap', action='store_false', default=True,
+              help='do not update bootstrap-copy when freezing')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -120,7 +122,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging accept [--force] [LETTER...]
         osc staging check [--old] REPO
         osc staging cleanup_rings
-        osc staging freeze PROJECT...
+        osc staging freeze [--no-boostrap] PROJECT...
         osc staging frozenage PROJECT...
         osc staging list [--supersede]
         osc staging select [--no-freeze] [--move [--from PROJECT]] LETTER REQUEST...
@@ -172,7 +174,7 @@ def do_staging(self, subcmd, opts, *args):
             CheckCommand(api).perform(prj, opts.old)
         elif cmd == 'freeze':
             for prj in args[1:]:
-                FreezeCommand(api).perform(api.prj_from_letter(prj))
+                FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap )
         elif cmd == 'frozenage':
             for prj in args[1:]:
                 print "%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj)))
