@@ -116,7 +116,7 @@ class FreezeCommand(object):
                     return False
         return True
 
-    def perform(self, prj):
+    def perform(self, prj, copy_bootstrap=True):
         self.prj = prj
         self.set_links()
 
@@ -129,16 +129,17 @@ class FreezeCommand(object):
         if not self.is_bootstrap():
             return
 
-        self.set_bootstrap_copy()
-        self.create_bootstrap_aggregate()
-        print("waiting for scheduler to disable...")
-        while not self.verify_bootstrap_copy_codes(['disabled']):
-            time.sleep(1)
-        self.build_switch_bootstrap_copy('enable')
-        print("waiting for scheduler to copy...")
-        while not self.verify_bootstrap_copy_codes(['finished', 'succeeded']):
-            time.sleep(1)
-        self.build_switch_bootstrap_copy('disable')
+        if copy_bootstrap:
+            self.set_bootstrap_copy()
+            self.create_bootstrap_aggregate()
+            print("waiting for scheduler to disable...")
+            while not self.verify_bootstrap_copy_codes(['disabled']):
+                time.sleep(1)
+            self.build_switch_bootstrap_copy('enable')
+            print("waiting for scheduler to copy...")
+            while not self.verify_bootstrap_copy_codes(['finished', 'succeeded']):
+                time.sleep(1)
+            self.build_switch_bootstrap_copy('disable')
 
         # Update the version information found in the Test-DVD package, to match openSUSE-release
         if self.api.item_exists(prj, "openSUSE-release"):
