@@ -91,6 +91,11 @@ class AdiCommand:
                 non_ring_packages.append(target_package)
                 if by_dp is True:
                     devel_project = self.get_devel_project(source_project, source_package)
+                    # try target pacakge in Factory
+                    # this is a bit against Leap development in case submissions is from Update,
+                    # or any other project than Factory
+                    if devel_project is None and self.api.project.startswith('openSUSE:'):
+                        devel_project = self.get_devel_project('openSUSE:Factory', target_package)
                     if devel_project is not None:
                         source_project = devel_project
 
