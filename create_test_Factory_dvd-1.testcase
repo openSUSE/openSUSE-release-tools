@@ -19,6 +19,8 @@ job install name xdelta
 job install name screen
 job install name alsa-utils
 job install name yast2-nfs-client
+job install name kexec-tools
+job install name mokutil
 
 job lock name bash-completion
 job lock name bash-doc
