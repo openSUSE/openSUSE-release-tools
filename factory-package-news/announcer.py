@@ -27,6 +27,7 @@ import smtplib
 from email.mime.text import MIMEText
 import os
 import sys
+import email.utils
 from optparse import OptionParser
 
 parser = OptionParser()
@@ -116,6 +117,8 @@ msg['Subject'] = 'New Tumbleweed snapshot %s released!'%version
 msg['From'] = options.sender
 msg['To'] = options.to
 msg['Mail-Followup-To'] = options.to
+msg['Date'] = email.utils.formatdate(localtime = 1)
+msg['Message-ID'] = email.utils.make_msgid()
 
 if options.dry:
     print "sending ..."
