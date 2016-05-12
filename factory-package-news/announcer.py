@@ -66,7 +66,7 @@ if not options.version:
     conn.request('HEAD', u.path)
     res = conn.getresponse()
     if res.status != 302:
-        raise Exception("http fail: %s %s"%(res.status, res.reason))
+        raise Exception("http fail: %s %s" % (res.status, res.reason))
 
     loc = res.getheader('location')
     if loc is None:
@@ -89,7 +89,7 @@ if os.path.lexists(current_fn):
             print "version unchanged, exit"
         sys.exit(0)
 
-u = urlparse(urljoin(url, changes%version))
+u = urlparse(urljoin(url, changes % version))
 conn = httplib.HTTPConnection(u.hostname, 80)
 conn.request('HEAD', u.path)
 res = conn.getresponse()
@@ -97,27 +97,27 @@ if res.status == 302:
 
     loc = res.getheader('location')
     if loc is None:
-	raise Exception("empty location!")
+        raise Exception("empty location!")
     u = urlparse(loc)
 
 conn = httplib.HTTPConnection(u.hostname, 80)
 conn.request('GET', u.path)
 res = conn.getresponse()
 if res.status != 200:
-    raise Exception("http fail: %s %s"%(res.status, res.reason))
+    raise Exception("http fail: %s %s" % (res.status, res.reason))
 
 txt = res.read()
-if not "====" in txt:
+if "====" not in txt:
     if options.verbose:
         print >>sys.stderr, "no changes or file corrupt? not sending anything"
     sys.exit(1)
 
 msg = MIMEText(intro.format(version) + txt)
-msg['Subject'] = 'New Tumbleweed snapshot %s released!'%version
+msg['Subject'] = 'New Tumbleweed snapshot %s released!' % version
 msg['From'] = options.sender
 msg['To'] = options.to
 msg['Mail-Followup-To'] = options.to
-msg['Date'] = email.utils.formatdate(localtime = 1)
+msg['Date'] = email.utils.formatdate(localtime=1)
 msg['Message-ID'] = email.utils.make_msgid()
 
 if options.dry:
