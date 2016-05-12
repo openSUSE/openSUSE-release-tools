@@ -21,6 +21,7 @@ from xml.etree import cElementTree as ET
 
 import osc
 
+logger = logging.getLogger()
 
 # Expand sys.path to search modules inside the pluging directory
 PLUGINDIR = os.path.expanduser(os.path.dirname(os.path.realpath(__file__)))
@@ -39,7 +40,7 @@ QA_PASSED = 3
 class ToTestBase(object):
     """Base class to store the basic interface"""
 
-    def __init__(self, project, dryrun):
+    def __init__(self, project, dryrun = False):
         self.project = project
         self.dryrun = dryrun
         self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
@@ -138,7 +139,7 @@ class ToTestBase(object):
             if 'fatal' in flags or 'important' in flags:
                 return module['name']
                 break
-            print module['name'], module['result'], module['flags']
+            logger.info('%s %s %s'%(module['name'], module['result'], module['flags']))
 
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
@@ -149,7 +150,7 @@ class ToTestBase(object):
         jobs = self.find_openqa_results(snapshot)
 
         if len(jobs) < self.jobs_num():  # not yet scheduled
-            print 'we have only %s jobs' % len(jobs)
+            logger.warning('we have only %s jobs' % len(jobs))
             return QA_INPROGRESS
 
         number_of_fails = 0
@@ -168,7 +169,7 @@ class ToTestBase(object):
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
                 failedmodule = self.find_failed_module(job['modules'])
                 url = 'https://openqa.opensuse.org/tests/%s' % job['id']
-                print jobname, url, failedmodule, job['retry_avbl']
+                logger.info("%s %s %s %s"%(jobname, url, failedmodule, job['retry_avbl']))
                 # if number_of_fails < 3: continue
             elif job['result'] == 'passed':
                 continue
@@ -188,7 +189,7 @@ class ToTestBase(object):
         for item in machines:
             for item2 in self.known_failures:
                 if item2.split('@')[1] == item:
-                    print 'now passing', item2
+                    logger.info('now passing %s'%item2)
         return QA_PASSED
 
     def all_repos_done(self, project, codes=None):
@@ -214,10 +215,10 @@ class ToTestBase(object):
             if repo.get('arch') in ('armv6l', 'armv7l'):
                 continue
             if repo.get('dirty', '') == 'true':
-                print repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'
+                logger.info('%s %s %s -> %s'%(repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'))
                 ready = False
             if repo.get('code') not in codes:
-                print repo.get('project'), repo.get('repository'), repo.get('arch'), repo.get('code')
+                logger.info('%s %s %s -> %s'%(repo.get('project'), repo.get('repository'), repo.get('arch'), repo.get('code')))
                 ready = False
         return ready
 
@@ -258,7 +259,7 @@ class ToTestBase(object):
         for repo in root.findall('result'):
             status = repo.find('status')
             if status.get('code') != 'succeeded':
-                print project, package, repository, arch, status.get('code')
+                logger.info('%s %s %s %s -> %s'%(project, package, repository, arch, status.get('code')))
                 return False
 
         maxsize = self.maxsize_for_package(package)
@@ -273,7 +274,7 @@ class ToTestBase(object):
                 continue
             isosize = int(binary.get('size', 0))
             if isosize > maxsize:
-                print project, package, repository, arch, 'too large by %s bytes' % (isosize-maxsize)
+                logger.error('%s %s %s %s: %s'%(project, package, repository, arch, 'too large by %s bytes' % (isosize-maxsize)))
                 return False
 
         return True
@@ -308,16 +309,21 @@ class ToTestBase(object):
         if set_release:
             query['setrelease'] = set_release
 
+        # FIXME: make configurable. openSUSE:Factory:ARM currently has multiple
+        # repos with release targets, so obs needs to know which one to release
+        if project == 'openSUSE:Factory:ARM':
+            query['repository'] = 'images'
+
         baseurl = ['source', project, package]
 
         url = self.api.makeurl(baseurl, query=query)
         if self.dryrun:
-            print "release %s/%s (%s)"%(project, package, set_release)
+            logger.info("release %s/%s (%s)"%(project, package, set_release))
         else:
             self.api.retried_POST(url)
 
     def update_totest(self, snapshot):
-        print 'Updating snapshot %s' % snapshot
+        logger.info('Updating snapshot %s' % snapshot)
         if not self.dryrun:
             self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
 
@@ -331,7 +337,7 @@ class ToTestBase(object):
             self.release_package('openSUSE:%s' % self.project, cd, set_release='Snapshot%s' % snapshot)
 
     def publish_factory_totest(self):
-        print 'Publish ToTest'
+        logger.info('Publish ToTest')
         if not self.dryrun:
             self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='enable')
 
@@ -358,14 +364,19 @@ class ToTestBase(object):
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.api.load_file_content("%s:Staging" % self.api.project, "dashboard", "version_totest")
 
-        print 'current_snapshot', current_snapshot, self._result2str(current_result)
+        logger.info('current_snapshot %s: %s'%(current_snapshot, self._result2str(current_result)))
+        logger.debug('new_snapshot %s', new_snapshot)
 
-        can_release = (current_result != QA_INPROGRESS and self.factory_snapshottable())
+        snapshotable = self.factory_snapshottable()
+        logger.debug("snapshotable: %s", snapshotable)
+        can_release = (current_result != QA_INPROGRESS and snapshotable)
 
         # not overwriting
         if new_snapshot == current_snapshot:
+            logger.debug("no change in snapshot version")
             can_release = False
         elif not self.all_repos_done('openSUSE:%s:ToTest' % self.project):
+            logger.debug("not all repos done, can't release")
             # the repos have to be done, otherwise we better not touch them with a new release
             can_release = False
 
@@ -373,6 +384,7 @@ class ToTestBase(object):
 
         # already published
         if self.totest_is_publishing():
+            logger.debug("totest already publishing")
             can_publish = False
 
         if can_publish:
@@ -426,8 +438,8 @@ class ToTestFactory(ToTestBase):
                        'kiwi-image-livecd-gnome',
                        'kiwi-image-livecd-x11']
 
-    def __init__(self, project, dryrun):
-        ToTestBase.__init__(self, project, dryrun)
+    def __init__(self, *args, **kwargs):
+        ToTestBase.__init__(self, *args, **kwargs)
 
     def openqa_group(self):
         return 'openSUSE Tumbleweed'
@@ -449,8 +461,8 @@ class ToTestFactoryPowerPC(ToTestBase):
 
     livecd_products = []
 
-    def __init__(self, project, dryrun):
-        ToTestBase.__init__(self, project, dryrun)
+    def __init__(self, *args, **kwargs):
+        ToTestBase.__init__(self, *args, **kwargs)
 
     def openqa_group(self):
         return 'openSUSE Tumbleweed PowerPC'
@@ -472,8 +484,8 @@ class ToTestFactoryARM(ToTestFactory):
 
     livecd_products = []
 
-    def __init__(self, project, dryrun):
-        ToTestFactory.__init__(self, project, dryrun)
+    def __init__(self, *args, **kwargs):
+        ToTestFactory.__init__(self, *args, **kwargs)
 
     def openqa_group(self):
         return 'openSUSE Tumbleweed AArch64'
@@ -519,12 +531,12 @@ class CommandlineInterface(cmdln.Cmdln):
         return parser
 
     def postoptparse(self):
-        logging.basicConfig()
-        self.logger = logging.getLogger(self.optparser.prog)
+        level = None
         if (self.options.debug):
-            self.logger.setLevel(logging.DEBUG)
+            level = logging.DEBUG
         elif (self.options.verbose):
-            self.logger.setLevel(logging.INFO)
+            level = logging.INFO
+        logging.basicConfig(level=level, format='%(asctime)s - %(module)s:%(lineno)d - %(levelname)s - %(message)s')
 
         osc.conf.get_config()
         if (self.options.osc_debug):
@@ -560,17 +572,17 @@ class CommandlineInterface(cmdln.Cmdln):
                 totest = self._setup_totest(project)
                 totest.totest()
             except Exception, e:
-                self.logger.error(e)
+                logger.error(e)
 
             if opts.interval:
-                self.logger.info("sleeping %d minutes. Press enter to check now ..."%opts.interval)
+                logger.info("sleeping %d minutes. Press enter to check now ..."%opts.interval)
                 signal.alarm(opts.interval*60)
                 try:
                     raw_input()
                 except ExTimeout:
                     pass
                 signal.alarm(0)
-                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                logger.info("recheck at %s"%datetime.datetime.now().isoformat())
                 continue
             break
 
