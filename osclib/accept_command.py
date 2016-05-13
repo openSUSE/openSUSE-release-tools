@@ -34,7 +34,7 @@ class AcceptCommand(object):
             rqs.append({'id': int(rq.get('id')), 'packages': pkgs})
         return rqs
 
-    def perform(self, project):
+    def perform(self, project, force=False):
         """Accept the staging project for review and submit to Factory /
         openSUSE 13.2 ...
 
@@ -47,7 +47,8 @@ class AcceptCommand(object):
 
         if not status:
             print('The project "{}" is not yet acceptable.'.format(project))
-            return False
+            if not force:
+                return False
 
         meta = self.api.get_prj_pseudometa(project)
         requests = []
