@@ -33,7 +33,6 @@ job install name kate
 job install name sddm
 job install name gnome-music
 job install name kexec-tools
-job install name mokutil
 
 job lock name gtk2-branding-upstream
 job lock name gdm-branding-upstream
@@ -50,6 +49,7 @@ job install provides pattern() = laptop
 job install provides pattern() = office
 job install name MozillaThunderbird
 job install name libreoffice
+job install name mokutil
 job lock name libgcc_s1-32bit
 job install provides virtualbox-guest-kmp
 #endif
