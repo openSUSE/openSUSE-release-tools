@@ -151,7 +151,11 @@ function start_creating() {
                 if [ "$l" = "A" -o "$l" = "B" ]; then
                     use_bc=
                 fi
-                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
+                # special case for Gcc6
+                if [ "$l" = "Gcc6" ]; then
+                    use_bc=
+                fi
+                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]] || [[ $prj =~ ^openSUSE.+:Gcc6$ ]]; then
                     echo "Checking $target:$l-$arch"
                     if [ -n "$use_bc" ]; then
                         sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc-$arch" $arch
