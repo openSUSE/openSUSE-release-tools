@@ -94,6 +94,14 @@ class UpdateCrawler(object):
                 return self.retried_GET(url)
             raise e
 
+    def get_project_meta(self, prj):
+        url = makeurl(self.apiurl, ['source', prj, '_meta'])
+        return self.cached_GET(url)
+
+    def is_maintenance_project(self, prj):
+        root = ET.fromstring(self.get_project_meta(prj))
+        return root.get('kind', None) == 'maintenance_release'
+
     def _meta_get_packagelist(self, prj, deleted=None, expand=False):
 
         query = {}
@@ -167,10 +175,10 @@ class UpdateCrawler(object):
 
     def is_source_innerlink(self, project, package):
         try:
-            root = ET.parse(
-                http_GET(makeurl(self.apiurl,
+            root = ET.fromstring(
+                self.cached_GET(makeurl(self.apiurl,
                                  ['source', project, package, '_link']
-                ))).getroot()
+                )))
             if root.get('project') is None and root.get('cicount'):
                 return True
         except urllib2.HTTPError, err:
@@ -210,15 +218,28 @@ class UpdateCrawler(object):
         return (project, package, rev)
 
     def update_targets(self, targets, sources):
+
+        # special case maintenance project. Only consider main
+        # package names. The code later follows the link in the
+        # source project then.
+        if self.is_maintenance_project(self.from_prj):
+            mainpacks = set()
+            for package, sourceinfo in sources.items():
+                if package.startswith('patchinfo.'):
+                    continue
+                files = set([node.text for node in sourceinfo.findall('filename')])
+                if '{}.spec'.format(package) in files:
+                    mainpacks.add(package)
+
+            sources = { package: sourceinfo for package, sourceinfo in sources.iteritems() if package in mainpacks }
+
         for package, sourceinfo in sources.items():
-            if package.startswith('patchinfo.'):
-                continue
 
             if self.filter_lookup and not self.lookup.get(package, '') in self.filter_lookup:
                 continue
 
             if not package in targets:
-                logging.debug('Package %s not found in targets' % (package))
+                logging.info('Package %s not found in targets' % (package))
                 continue
 
             targetinfo = targets[package]
