@@ -181,12 +181,7 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'acheck':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
-            skip_totest = False
-            if not version_totest:
-                # SLE don't have totest repository and openSUSE-release.rpm
-                skip_totest = api.item_exists(api.project, "release-notes-sles")
-
-            if not skip_totest:
+            if version_totest:
                 version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
                 totest_dirty = api.is_repo_dirty(api.project, 'totest')
                 print "version_openqa: %s / version_totest: %s / totest_dirty: %s\n" % (version_openqa, version_totest, totest_dirty)
@@ -195,12 +190,8 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'accept':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
-            skip_totest = False
-            if not version_totest:
-                # SLE don't have totest repository and openSUSE-release.rpm
-                skip_totest = api.item_exists(api.project, "release-notes-sles")
 
-            if skip_totest or opts.force:
+            if version_totest or opts.force:
                 # SLE does not have a totest_version or openqa_version - ignore it
                 version_openqa = version_totest
                 totest_dirty   = False
@@ -211,7 +202,7 @@ def do_staging(self, subcmd, opts, *args):
             if version_openqa == version_totest and not totest_dirty:
                 cmd = AcceptCommand(api)
                 for prj in args[1:]:
-                    if not cmd.perform(api.prj_from_letter(prj)):
+                    if not cmd.perform(api.prj_from_letter(prj), opts.force):
                         return
                     if not opts.no_cleanup:
                         if api.item_exists(api.prj_from_letter(prj)):
