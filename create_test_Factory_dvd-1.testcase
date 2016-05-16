@@ -20,7 +20,6 @@ job install name screen
 job install name alsa-utils
 job install name yast2-nfs-client
 job install name kexec-tools
-job install name mokutil
 
 job lock name bash-completion
 job lock name bash-doc
@@ -33,6 +32,7 @@ job lock name udev-mini
 job lock name libudev1-mini
 #ifdef __x86_64__
 job install name openSUSE-release-livecd-x11
+job install name mokutil
 job lock name kernel-desktop
 job lock name libgcc_s1-32bit
 job lock name nss-mdns-32bit
