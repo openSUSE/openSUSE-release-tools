@@ -191,8 +191,11 @@ class UpdateCrawler(object):
         self.lookup = yaml.safe_load(self._load_lookup_file())
 
     def _load_lookup_file(self):
+        prj = self.to_prj
+        if prj.endswith(':NonFree'):
+            prj = prj[:-len(':NonFree')]
         return self.cached_GET(makeurl(self.apiurl,
-                                ['source', self.to_prj, '00Meta', 'lookup.yml']))
+                                ['source', prj, '00Meta', 'lookup.yml']))
 
     def follow_link(self, project, package, rev, verifymd5):
         #print "follow", project, package, rev
