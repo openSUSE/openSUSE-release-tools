@@ -336,8 +336,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         ret = None
         types = set([a.type for a in req.actions])
         if 'maintenance_release' in types:
-            if len(types) != 1:
-                raise Exception("can't handle types mixed with maintenance_release")
             src_prjs = set([a.src_project for a in req.actions])
             if len(src_prjs) != 1:
                 raise Exception("can't handle maintenance_release from different incidents")
