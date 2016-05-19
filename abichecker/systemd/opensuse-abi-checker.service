@@ -2,8 +2,8 @@
 Description=check ABI of submit requests
 
 [Service]
-Type=simple
-ExecStart=/usr/bin/screen -DmS abichecker /usr/share/osc-plugin-factory/abichecker/abichecker.py --no-review --verbose -A https://api.suse.de --web-url=http://abichecker.suse.de project --interval 15 SUSE:Maintenance maintenance_incident
-ExecStop=/usr/bin/screen -S abichecker -X quit
+Type=forking
+ExecStart=/usr/bin/tmux new-session -P -d -s abichecker -n bot /usr/share/osc-plugin-factory/abichecker/abichecker.py --no-review --verbose -A https://api.suse.de --web-url=http://abichecker.suse.de project --interval 15 SUSE:Maintenance maintenance_incident
+ExecStop=/usr/bin/tmux kill-session -t abichecker
 WorkingDirectory=/usr/share/osc-plugin-factory/abichecker
 User=_opensuse.org-abi-checker
