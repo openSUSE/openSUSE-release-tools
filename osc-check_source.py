@@ -255,6 +255,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['devel:languages:erlang/'] = 'erlang'
             self._devel_projects['systemsmanagement:machinery/'] = 'machinery'
             self._devel_projects['filesystems:ceph/'] = 'ceph-deploy'
+            self._devel_projects['Virtualization:Appliances:Builder/' = 'python3-kiwi'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
