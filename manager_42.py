@@ -51,6 +51,8 @@ class Manager42(object):
         self.caching = caching
         self.apiurl = osc.conf.config['apiurl']
         self.project_preference_order = [
+                #'SUSE:SLE-12-SP2:Update',
+                'SUSE:SLE-12-SP2:GA',
                 'SUSE:SLE-12-SP1:Update',
                 'SUSE:SLE-12-SP1:GA',
                 'SUSE:SLE-12:Update',
@@ -58,6 +60,7 @@ class Manager42(object):
                 'openSUSE:Leap:42.1:Update',
                 'openSUSE:Leap:42.1',
                 'openSUSE:Factory',
+                'openSUSE:Leap:42.2:SLE-workarounds'
                 ]
 
         self.parse_lookup()
