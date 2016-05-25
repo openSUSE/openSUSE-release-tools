@@ -246,8 +246,10 @@ class Manager42(object):
             srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
             if srcmd5:
                 logger.debug("{} lookup from {} is correct".format(package, lproject))
-                return
-            if lproject == 'openSUSE:Factory':
+                # if it's from Factory we check if the package can be found elsewhere meanwhile
+                if lproject != 'openSUSE:Factory':
+                    return
+            elif lproject == 'openSUSE:Factory':
                 his = self.get_package_history(lproject, package, deleted=True)
                 if his:
                     logger.debug("{} got dropped from {}".format(package, lproject))
@@ -258,9 +260,12 @@ class Manager42(object):
         for project in self.project_preference_order:
             srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
             if srcmd5:
-                logger.info('{} -> {} (was {})'.format(package, project, lproject))
-                self.lookup[package] = project
-                self.lookup_changes += 1
+                if project != lproject:
+                    logger.info('{} -> {} (was {})'.format(package, project, lproject))
+                    self.lookup[package] = project
+                    self.lookup_changes += 1
+                else:
+                    logger.info('{} still coming from {}'.format(package, project))
                 foundit = True
                 break
 
