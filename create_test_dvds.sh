@@ -136,9 +136,9 @@ function start_creating() {
         if [ "$has_ring_2" = "yes" ]; then
             sync_prj openSUSE:$target:Rings:2-TestDVD/standard $target-testdvd-$arch $arch
             regenerate_pl openSUSE:$target:Rings:2-TestDVD $target 2 $target-bootstrap-$arch $target-minimalx-$arch $target-testdvd-$arch $arch
-	    if [ "$dryrun" != 'yes' ]; then
-		perl $SCRIPTDIR/rebuildpacs.pl openSUSE:$target:Rings:2-TestDVD standard $arch
-	    fi
+            if [ "$dryrun" != 'yes' ]; then
+                perl $SCRIPTDIR/rebuildpacs.pl openSUSE:$target:Rings:2-TestDVD standard $arch
+            fi
         fi
 
         # Staging Project part
@@ -147,28 +147,28 @@ function start_creating() {
 
             for prj in $projects; do
                 l=$(echo $prj | sed 's/^openSUSE.\+[:]Staging/Staging/g' | cut -d: -f2)
-                use_bc="staging_$target:$l-bc-$arch"
-                if [ "$l" = "A" -o "$l" = "B" ]; then
-                    use_bc=
-                fi
-                # special case for Gcc6
-                if [ "$l" = "Gcc6" ]; then
-                    use_bc=
-                fi
                 if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]] || [[ $prj =~ ^openSUSE.+:Gcc6$ ]]; then
                     echo "Checking $target:$l-$arch"
+
+                    meta=$(mktemp)
+                    use_bc="staging_$target:$l-bc-$arch"
+                    osc meta prj $prj > $meta
+                    if grep -q 0-Bootstrap $meta ; then
+                        use_bc=
+                    fi
                     if [ -n "$use_bc" ]; then
                         sync_prj openSUSE:$target:Staging:$l/bootstrap_copy "staging_$target:$l-bc-$arch" $arch
                     fi
                     sync_prj openSUSE:$target:Staging:$l/standard staging_$target:$l-$arch $arch
                     regenerate_pl "openSUSE:$target:Staging:$l" $target 1 $use_bc staging_$target:$l-$arch $arch
+                    rm $meta
                 fi
 
                 if [[ $prj =~ :DVD ]]; then
                     echo "Rebuildpacs $prj"
-		    if [ "$dryrun" != 'yes' ]; then
-			perl $SCRIPTDIR/rebuildpacs.pl $prj standard $arch
-		    fi
+                    if [ "$dryrun" != 'yes' ]; then
+                        perl $SCRIPTDIR/rebuildpacs.pl $prj standard $arch
+                    fi
                 fi
 
                 if [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
