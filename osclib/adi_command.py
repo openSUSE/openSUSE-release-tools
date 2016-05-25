@@ -41,6 +41,9 @@ class AdiCommand:
             self.check_adi_project(p)
 
     def get_devel_project(self, project, package):
+        if not self.api.item_exists(project, package):
+            return None
+
         m = show_package_meta(self.api.apiurl, project, package)
         node = ET.fromstring(''.join(m)).find('devel')
         if node is None:
