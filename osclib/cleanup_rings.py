@@ -55,7 +55,7 @@ class CleanupRings(object):
                             print "osc linkpac {}/{} {}/{}".format(mainprj, mainpkg, prj, mainpkg)
                         else:
                             if pkg != 'glibc.i686': # FIXME: ugly exception
-                                print "osc linkpac {}/{} {}/{}".format(destring, mainpkg, prj, pkg)
+                                print "osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg)
                                 self.links[mainpkg] = pkg
 
 
