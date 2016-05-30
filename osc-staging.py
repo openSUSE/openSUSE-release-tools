@@ -67,6 +67,8 @@ def _full_project_name(self, project):
               help='force the selection to become a move')
 @cmdln.option('--by-develproject', action='store_true',
               help='sort the packages by devel project')
+@cmdln.option('--split', action='store_true',
+              help='splits each package to different adi staging')
 @cmdln.option('--supersede', action='store_true',
               help='superseding requests. please make sure you have staging permissions')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
@@ -233,6 +235,6 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'list':
             ListCommand(api).perform(args[1:], supersede=opts.supersede)
         elif cmd == 'adi':
-            AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject)
+            AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split)
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:])
