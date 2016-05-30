@@ -143,7 +143,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         if not skip_maintainer_review:
             self._check_maintainer_review_needed(req, pkgname, author)
 
-        if a.tgt_releaseproject == "openSUSE:Backports:SLE-12":
+        if a.tgt_releaseproject.startswith("openSUSE:Backports:"):
             self.add_factory_source = True
 
         return True
