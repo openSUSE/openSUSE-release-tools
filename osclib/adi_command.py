@@ -93,7 +93,7 @@ class AdiCommand:
                     # request_id pretended to be index of non_ring_requests
                     non_ring_requests[request_id] = [request_id]
                 else:
-                    if by_dp is True:
+                    if by_dp:
                         devel_project = self.get_devel_project(source_project, source_package)
                         # try target pacakge in Factory
                         # this is a bit against Leap development in case submissions is from Update,
@@ -103,7 +103,7 @@ class AdiCommand:
                         if devel_project is not None:
                             source_project = devel_project
 
-                    if not source_project in non_ring_requests:
+                    if source_project not in non_ring_requests:
                         non_ring_requests[source_project] = []
                     non_ring_requests[source_project].append(request_id)
                 
@@ -144,4 +144,4 @@ class AdiCommand:
         else:
             self.check_adi_projects() 
             if self.api.is_user_member_of(self.api.user, 'factory-staging'):
-                self.create_new_adi((), by_dp, split=split)
+                self.create_new_adi((), by_dp=by_dp, split=split)
