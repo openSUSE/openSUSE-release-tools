@@ -1183,19 +1183,19 @@ class StagingAPI(object):
                 return True
         return False
 
-    def check_pkgs(self, rebuild_list):
-        url = self.makeurl(['source', self.project])
+    def list_packages(self, project):
+        url = self.makeurl(['source', project])
         pkglist = []
 
         root = ET.parse(http_GET(url)).getroot()
-
         xmllines = root.findall("./entry")
-
         for pkg in xmllines:
-            if pkg.attrib['name'] in rebuild_list:
-                pkglist.append(pkg.attrib['name'])
+            pkglist.append(pkg.attrib['name'])
 
         return pkglist
+
+    def check_pkgs(self, rebuild_list):
+        return list(set(rebuild_list) & set(self.list_packages(self.project)))
 
     def rebuild_pkg(self, package, prj, arch, code=None):
         query = {
