@@ -36,11 +36,11 @@ class CheckCommand(object):
         report = []
 
         # Check for superseded requests
-        report.extend('   - Request %s is superseded by %s' % (r['id'], r['superseded_by_id'])
+        report.extend('   - Request %s is superseded by %s' % (r['number'], r['superseded_by_id'])
                       for r in project['obsolete_requests'] if r['state'] == 'superseded')
 
         # Untracked requests
-        report.extend('   - Request %s is no tracked but is open for the project' % r['id']
+        report.extend('   - Request %s is no tracked but is open for the project' % r['number']
                       for r in project['untracked_requests'])
 
         # Status of obsolete requests
