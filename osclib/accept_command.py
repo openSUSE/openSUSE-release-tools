@@ -5,6 +5,7 @@ from xml.etree import cElementTree as ET
 
 from osc.core import change_request_state
 from osc.core import http_GET, http_PUT, http_DELETE
+from osc.core import delete_package
 from datetime import date
 from osclib.comments import CommentAPI
 
@@ -84,6 +85,16 @@ class AcceptCommand(object):
         if self.api.item_exists(project + ':DVD'):
             self.api.build_switch_prj(project + ':DVD', 'disable')
 
+        return True
+
+    def cleanup(self, project):
+        pkgs_to_keep = ['Test-DVD-x86_64', 'Test-DVD-ppc64le', 'bootstrap-copy']
+        pkglist = self.api.list_packages(project)
+        clean_list = set(pkglist) - set(pkgs_to_keep)
+
+        for package in clean_list:
+            print "[cleanup] deleted %s/%s" % (project, package)
+            delete_package(self.api.apiurl, project, package, force=True, msg="autocleanup")
         return True
 
     def accept_other_new(self):

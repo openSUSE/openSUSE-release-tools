@@ -85,6 +85,8 @@ def _full_project_name(self, project):
               help='show version of the plugin')
 @cmdln.option('--no-freeze', dest='no_freeze', action='store_true',
               help='force the select command ignoring the time from the last freeze')
+@cmdln.option('--no-cleanup', dest='no_cleanup', action='store_true',
+              help='do not cleanup remaining packages in staging projects after accept')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -215,6 +217,9 @@ def do_staging(self, subcmd, opts, *args):
                     for prj in args[1:]:
                         if not cmd.perform(api.prj_from_letter(prj)):
                             return
+                        if not opts.no_cleanup:
+                            cmd.cleanup(api.prj_from_letter(prj))
+                            cmd.cleanup("%s:DVD" % api.prj_from_letter(prj))
                     cmd.accept_other_new()
                     cmd.update_factory_version()
                     if api.item_exists(api.crebuild):
