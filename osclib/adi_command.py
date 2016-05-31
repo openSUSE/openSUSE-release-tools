@@ -48,7 +48,7 @@ class AdiCommand:
         else:
             return node.get('project')
 
-    def create_new_adi(self, wanted_requests, by_dp=False):
+    def create_new_adi(self, wanted_requests, by_dp=False, split=False):
         all_requests = self.api.get_open_requests()
 
         non_ring_packages = []
@@ -89,19 +89,23 @@ class AdiCommand:
                     continue
 
                 non_ring_packages.append(target_package)
-                if by_dp is True:
-                    devel_project = self.get_devel_project(source_project, source_package)
-                    # try target pacakge in Factory
-                    # this is a bit against Leap development in case submissions is from Update,
-                    # or any other project than Factory
-                    if devel_project is None and self.api.project.startswith('openSUSE:'):
-                        devel_project = self.get_devel_project('openSUSE:Factory', target_package)
-                    if devel_project is not None:
-                        source_project = devel_project
+                if split:
+                    # request_id pretended to be index of non_ring_requests
+                    non_ring_requests[request_id] = [request_id]
+                else:
+                    if by_dp:
+                        devel_project = self.get_devel_project(source_project, source_package)
+                        # try target pacakge in Factory
+                        # this is a bit against Leap development in case submissions is from Update,
+                        # or any other project than Factory
+                        if devel_project is None and self.api.project.startswith('openSUSE:'):
+                            devel_project = self.get_devel_project('openSUSE:Factory', target_package)
+                        if devel_project is not None:
+                            source_project = devel_project
 
-                if not source_project in non_ring_requests:
-                    non_ring_requests[source_project] = []
-                non_ring_requests[source_project].append(request_id)
+                    if source_project not in non_ring_requests:
+                        non_ring_requests[source_project] = []
+                    non_ring_requests[source_project].append(request_id)
                 
         if len(non_ring_packages):
             print "Not in a ring:", ' '.join(sorted(non_ring_packages))
@@ -118,7 +122,7 @@ class AdiCommand:
             # Notify everybody about the changes
             self.api.update_status_comments(name, 'select')
 
-    def perform(self, packages, move=False, by_dp=False):
+    def perform(self, packages, move=False, by_dp=False, split=False):
         """
         Perform the list command
         """
@@ -136,8 +140,8 @@ class AdiCommand:
 
             for request, request_project in items:
                 requests.add(request)
-            self.create_new_adi(requests)
+            self.create_new_adi(requests, split=split)
         else:
             self.check_adi_projects() 
             if self.api.is_user_member_of(self.api.user, 'factory-staging'):
-                self.create_new_adi((), by_dp)
+                self.create_new_adi((), by_dp=by_dp, split=split)
