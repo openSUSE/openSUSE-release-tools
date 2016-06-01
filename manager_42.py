@@ -249,11 +249,10 @@ class Manager42(object):
                 # if it's from Factory we check if the package can be found elsewhere meanwhile
                 if lproject != 'openSUSE:Factory':
                     return
-            elif lproject == 'openSUSE:Factory':
+            elif lproject == 'openSUSE:Factory' and not package in self.packages[lproject]:
                 his = self.get_package_history(lproject, package, deleted=True)
                 if his:
                     logger.debug("{} got dropped from {}".format(package, lproject))
-                    return
 
         logger.debug("check where %s came from", package)
         foundit = False
@@ -265,7 +264,7 @@ class Manager42(object):
                     self.lookup[package] = project
                     self.lookup_changes += 1
                 else:
-                    logger.info('{} still coming from {}'.format(package, project))
+                    logger.debug('{} still coming from {}'.format(package, project))
                 foundit = True
                 break
 
