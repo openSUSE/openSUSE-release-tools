@@ -170,11 +170,9 @@ class ReviewBot(object):
         for a in req.actions:
             fn = 'check_action_%s'%a.type
             if not hasattr(self, fn):
-                self.logger.error("unhandled request type %s"%a.type)
-                ret = None
-            else:
-                func = getattr(self, fn)
-                ret = func(req, a)
+                fn = 'check_action__default'
+            func = getattr(self, fn)
+            ret = func(req, a)
             if ret == False or overall is None and ret is not None:
                 overall = ret
         return overall
@@ -207,6 +205,10 @@ class ReviewBot(object):
 
     def check_action_submit(self, req, a):
         return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
+
+    def check_action__default(self, req, a):
+        self.logger.error("unhandled request type %s"%a.type)
+        ret = None
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """
