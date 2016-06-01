@@ -803,6 +803,7 @@ class StagingAPI(object):
         if not force_enable_build:
             if self.crings and not self.ring_packages.get(tar_pkg) and not self.is_adi_project(project):
                 disable_build = True
+                logging.warning("{}/{} not in ring, build disabled".format(project, tar_pkg))
             else:
                 project = self.map_ring_package_to_subject(project, tar_pkg)
 
