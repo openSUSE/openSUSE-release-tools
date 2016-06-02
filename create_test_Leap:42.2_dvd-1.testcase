@@ -21,6 +21,11 @@ job install name screen
 job install name alsa-utils
 job install name yast2-nfs-client
 job install name kernel-default
+job install name kexec-tools
+
+#ifdef __x86_64__
+job install name mokutil
+#endif
 
 job lock name bash-completion
 job lock name bash-doc
