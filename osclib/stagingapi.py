@@ -53,8 +53,8 @@ class StagingAPI(object):
         # Store some prefix / data used in the code.
         self.cstaging = conf.config[project]['staging']
         self.cstaging_group = conf.config[project]['staging-group']
-        self.cstaging_archs = conf.config[project]['staging-archs'].split(' ')
-        self.cstaging_dvd_archs = conf.config[project]['staging-dvd-archs'].split(' ')
+        self.cstaging_archs = conf.config[project]['staging-archs'].split()
+        self.cstaging_dvd_archs = conf.config[project]['staging-dvd-archs'].split()
         self.cstaging_nocleanup = conf.config[project]['nocleanup-packages'].split()
         self.crings = conf.config[project]['rings']
         self.cnonfree = conf.config[project]['nonfree']
