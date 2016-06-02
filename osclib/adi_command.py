@@ -40,17 +40,6 @@ class AdiCommand:
         for p in self.api.get_adi_projects():
             self.check_adi_project(p)
 
-    def get_devel_project(self, project, package):
-        if not self.api.item_exists(project, package):
-            return None
-
-        m = show_package_meta(self.api.apiurl, project, package)
-        node = ET.fromstring(''.join(m)).find('devel')
-        if node is None:
-            return None
-        else:
-            return node.get('project')
-
     def create_new_adi(self, wanted_requests, by_dp=False, split=False):
         all_requests = self.api.get_open_requests()
 
@@ -97,12 +86,12 @@ class AdiCommand:
                     non_ring_requests[request_id] = [request_id]
                 else:
                     if by_dp:
-                        devel_project = self.get_devel_project(source_project, source_package)
+                        devel_project = self.api.get_devel_project(source_project, source_package)
                         # try target pacakge in Factory
                         # this is a bit against Leap development in case submissions is from Update,
                         # or any other project than Factory
                         if devel_project is None and self.api.project.startswith('openSUSE:'):
-                            devel_project = self.get_devel_project('openSUSE:Factory', target_package)
+                            devel_project = self.api.get_devel_project('openSUSE:Factory', target_package)
                         if devel_project is not None:
                             source_project = devel_project
 

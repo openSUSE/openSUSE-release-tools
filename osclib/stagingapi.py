@@ -64,6 +64,7 @@ class StagingAPI(object):
         self.user = conf.get_apiurl_usr(apiurl)
         self._ring_packages = None
         self._packages_staged = None
+        self._package_metas = dict()
 
         # If the project support rings, inititialize some variables.
         if self.crings:
@@ -1231,3 +1232,24 @@ class StagingAPI(object):
             return True
         else:
             return False
+
+    # from manager_42
+    def _fill_package_meta(self, project):
+        url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
+        root = ET.parse(self.retried_GET(url))
+        for p in root.findall('package'):
+            name = p.attrib['name']
+            self._package_metas.setdefault(project, {})[name] = p
+
+    def get_devel_project(self, project, package):
+        if not project in self._package_metas:
+            self._fill_package_meta(project)
+
+        if not package in self._package_metas[project]:
+            return None
+
+        node = self._package_metas[project][package].find('devel')
+        if node is None:
+            return None
+
+        return node.get('project')
