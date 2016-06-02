@@ -1,3 +1,9 @@
-<directory count='1'>
-  <entry name="elem-ring-0"/>
-</directory>
+<sourceinfolist>
+  <sourceinfo package="elem-ring-0" rev="2" vrev="13" srcmd5="1ca04ad54e7de2612ec1f01f46bbc763" lsrcmd5="b4f289282eb01f5812a4ead909215ecf" verifymd5="d4e1ef121637c87f0b6cb6afbeba5758">
+    <linked project="openSUSE:Factory" package="elem-ring-0" />
+  </sourceinfo>
+  <sourceinfo package="elem-ring-mini" rev="2" vrev="13" srcmd5="1ca04ad54e7de2612ec1f01f46bbc763" lsrcmd5="b4f289282eb01f5812a4ead909215ecf" verifymd5="d4e1ef121637c87f0b6cb6afbeba5758">
+    <linked project="openSUSE:Factory:Rings:1-MinimalX" package="elem-ring-1" />
+    <linked project="openSUSE:Factory" package="elem-ring-1" />
+  </sourceinfo>
+</sourceinfolist>
