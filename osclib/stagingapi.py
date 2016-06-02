@@ -1149,10 +1149,11 @@ class StagingAPI(object):
         url = self.makeurl(['source', project])
         pkglist = []
 
-        root = ET.parse(http_GET(url)).getroot()
-        xmllines = root.findall("./entry")
-        for pkg in xmllines:
-            pkglist.append(pkg.attrib['name'])
+        if self.item_exists(project):
+            root = ET.parse(http_GET(url)).getroot()
+            xmllines = root.findall("./entry")
+            for pkg in xmllines:
+                pkglist.append(pkg.attrib['name'])
 
         return pkglist
 
