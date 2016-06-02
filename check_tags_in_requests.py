@@ -142,21 +142,18 @@ Note: there is no whitespace behind before or after the number sign
     def check_action_submit(self, req, a):
         return self.checkTagNotRequiredOrInRequest(req, a)
 
-    def check_action_delete(self, req, a):
-        self.logger.info("Delete package %s/%s"%(a.tgt_package, req.reqid))
-        # accept delete request automatically
-        return True
-
-    def check_action_add_role(self, req, a):
-        self.logger.info("add_role request %s, accepting..."%req.reqid)
-        # accept add_role request automatically
-        return True
-
     def check_action_maintenance_incident(self, req, a):
         return self.checkTagInRequest(req, a)
 
     def check_action_maintenance_release(self, req, a):
         return self.checkTagInRequest(req, a)
+
+    def check_action__default(self, req, a):
+        # accept all other requests
+        self.logger.debug("auto accept request type %s"%a.type)
+        return True
+
+
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
