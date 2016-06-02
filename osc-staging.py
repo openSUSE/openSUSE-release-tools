@@ -199,33 +199,30 @@ def do_staging(self, subcmd, opts, *args):
                 skip_totest = api.item_exists(api.project, "release-notes-sles")
 
             if skip_totest or opts.force:
-                # Nor version_openqa or totest_dirty
+                # SLE does not have a totest_version or openqa_version - ignore it
+                version_openqa = version_totest
+                totest_dirty   = False
+            else:
+                version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
+                totest_dirty   = api.is_repo_dirty(api.project, 'totest')
+
+            if version_openqa == version_totest and not totest_dirty:
                 cmd = AcceptCommand(api)
                 for prj in args[1:]:
                     if not cmd.perform(api.prj_from_letter(prj)):
                         return
+                    if not opts.no_cleanup:
+                        if api.item_exists(api.prj_from_letter(prj)):
+                            cmd.cleanup(api.prj_from_letter(prj))
+                        if api.item_exists("%s:DVD" % api.prj_from_letter(prj)):
+                            cmd.cleanup("%s:DVD" % api.prj_from_letter(prj))
                 if opts.project.startswith('openSUSE:'):
                     cmd.accept_other_new()
                     cmd.update_factory_version()
                     if api.item_exists(api.crebuild):
                         cmd.sync_buildfailures()
             else:
-                version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
-                totest_dirty   = api.is_repo_dirty(api.project, 'totest')
-                if version_openqa == version_totest and not totest_dirty:
-                    cmd = AcceptCommand(api)
-                    for prj in args[1:]:
-                        if not cmd.perform(api.prj_from_letter(prj)):
-                            return
-                        if not opts.no_cleanup:
-                            cmd.cleanup(api.prj_from_letter(prj))
-                            cmd.cleanup("%s:DVD" % api.prj_from_letter(prj))
-                    cmd.accept_other_new()
-                    cmd.update_factory_version()
-                    if api.item_exists(api.crebuild):
-                        cmd.sync_buildfailures()
-                else:
-                    print "Not safe to accept: /totest is not yet synced"
+                print "Not safe to accept: /totest is not yet synced"
         elif cmd == 'unselect':
             UnselectCommand(api).perform(args[1:])
         elif cmd == 'select':
