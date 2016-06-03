@@ -366,6 +366,7 @@ class ToTestBase(object):
 
         logger.info('current_snapshot %s: %s'%(current_snapshot, self._result2str(current_result)))
         logger.debug('new_snapshot %s', new_snapshot)
+        logger.debug('current_qa_version %s', current_qa_version)
 
         snapshotable = self.factory_snapshottable()
         logger.debug("snapshotable: %s", snapshotable)
