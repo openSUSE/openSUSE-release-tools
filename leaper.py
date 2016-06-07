@@ -54,6 +54,12 @@ class Leaper(ReviewBot.ReviewBot):
     def check_one_request(self, req):
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
 
+        if len(req.actions) != 1:
+            msg = "only one action per request please"
+            self.review_messages['accepted'] = msg
+            self.review_messages['declined'] = msg
+            return False
+
         # if the fallback reviewer created the request she probably
         # knows what she does :-)
         if self.fallback_user and req.get_creator() == self.fallback_user:
