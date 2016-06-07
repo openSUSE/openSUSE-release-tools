@@ -83,9 +83,6 @@ class ReviewBot(object):
 
     def check_requests(self):
 
-        by_user = self.fallback_user
-        by_group = self.fallback_group
-
         for req in self.requests:
             self.logger.debug("checking %s"%req.reqid)
             good = self.check_one_request(req)
@@ -98,28 +95,36 @@ class ReviewBot(object):
             if good is None:
                 self.logger.info("%s ignored"%req.reqid)
             elif good:
-                self.logger.info("%s is good"%req.reqid)
                 self._set_review(req, 'accepted')
             else:
-                if self.review_mode == 'fallback-onfail':
-                    self.logger.info("%s needs fallback reviewer"%req.reqid)
-                    self.add_review(req, by_group=by_group, by_user=by_user)
-                    self._set_review(req, 'accepted')
-                else:
-                    self.logger.info("%s is not acceptable"%req.reqid)
-                    self._set_review(req, 'declined')
+                self._set_review(req, 'declined')
 
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
         if doit is None:
            self.logger.info("can't change state, %s does not have the reviewer"%(req.reqid))
 
+        newstate = state
+
+        by_user = self.fallback_user
+        by_group = self.fallback_group
+
+        if state == 'declined':
+            if self.review_mode == 'fallback-onfail':
+                self.logger.info("%s needs fallback reviewer"%req.reqid)
+                self.add_review(req, by_group=by_group, by_user=by_user)
+                newstate = 'accepted'
+        elif self.review_mode == 'fallback-always':
+            self.add_review(req, by_group=by_group, by_user=by_user)
+
+        self.logger.info("%s %s"%(req.reqid, state))
+
         if doit == True:
             self.logger.debug("setting %s to %s"%(req.reqid, state))
             if not self.dryrun:
                 msg = self.review_messages[state] if state in self.review_messages else state
                 osc.core.change_review_state(apiurl = self.apiurl,
-                        reqid = req.reqid, newstate = state, 
+                        reqid = req.reqid, newstate = newstate,
                         by_group=self.review_group,
                         by_user=self.review_user, message=msg)
         else:

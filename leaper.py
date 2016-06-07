@@ -56,7 +56,6 @@ class Leaper(ReviewBot.ReviewBot):
 
         if len(req.actions) != 1:
             msg = "only one action per request please"
-            self.review_messages['accepted'] = msg
             self.review_messages['declined'] = msg
             return False
 
@@ -77,10 +76,10 @@ class Leaper(ReviewBot.ReviewBot):
 
         if has_upstream_sources != True or has_correct_maintainer != True:
             if has_upstream_sources != True:
-                self.review_messages['accepted'] += '\nOrigin project changed'
+                self.review_messages['declined'] += '\nOrigin project changed'
             # shouldn't happen actually
             if has_correct_maintainer != True:
-                self.review_messages['accepted'] += '\nMaintainer check failed'
+                self.review_messages['declined'] += '\nMaintainer check failed'
             return False
 
         return True
