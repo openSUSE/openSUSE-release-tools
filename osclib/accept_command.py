@@ -88,9 +88,11 @@ class AcceptCommand(object):
         return True
 
     def cleanup(self, project):
-        pkgs_to_keep = ['Test-DVD-x86_64', 'Test-DVD-ppc64le', 'bootstrap-copy']
+        if not self.api.item_exists(project):
+            return False
+
         pkglist = self.api.list_packages(project)
-        clean_list = set(pkglist) - set(pkgs_to_keep)
+        clean_list = set(pkglist) - set(self.api.cstaging_nocleanup)
 
         for package in clean_list:
             print "[cleanup] deleted %s/%s" % (project, package)
