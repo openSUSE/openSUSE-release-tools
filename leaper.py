@@ -54,6 +54,12 @@ class Leaper(ReviewBot.ReviewBot):
     def check_one_request(self, req):
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
 
+        # if the fallback reviewer created the request she probably
+        # knows what she does :-)
+        if self.fallback_user and req.get_creator() == self.fallback_user:
+            self.logger.debug("skip fallback review")
+            return True
+
         has_upstream_sources = ReviewBot.ReviewBot.check_one_request(self, req)
         has_correct_maintainer = self.maintbot.check_one_request(req)
 
