@@ -62,6 +62,7 @@ class StagingAPI(object):
         self.copenqa = conf.config[project]['openqa']
         self.user = conf.get_apiurl_usr(apiurl)
         self._ring_packages = None
+        self._ring_packages_for_links = None
         self._packages_staged = None
 
         # If the project support rings, inititialize some variables.
@@ -85,6 +86,17 @@ class StagingAPI(object):
     @ring_packages.setter
     def ring_packages(self, value):
         raise Exception("setting ring_packages is not allowed")
+
+    @property
+    def ring_packages_for_links(self):
+        if self._ring_packages_for_links is None:
+            self._ring_packages_for_links = self._generate_ring_packages(checklinks=True)
+
+        return self._ring_packages_for_links
+
+    @ring_packages_for_links.setter
+    def ring_packages_for_links(self, value):
+        raise Exception("setting ring_packages_path is not allowed")
 
     @property
     def packages_staged(self):
@@ -132,23 +144,49 @@ class StagingAPI(object):
     def retried_PUT(self, url, data):
         return self._retried_request(url, http_PUT, data)
 
-    def _generate_ring_packages(self):
+    def _generate_ring_packages(self, checklinks=False):
         """
         Generate dictionary with names of the rings
+        :param checklinks: return dictionary with ring names and the proper ring path for list only
         :return dictionary with ring names
         """
 
         ret = {}
+        # puts except packages and it's origin project path
+        except_pkgs = {}
+
         for prj in self.rings:
-            url = self.makeurl(['source', prj])
+            query = {
+                'view': 'info',
+                'nofilename': '1'
+            }
+
+            url = self.makeurl(['source', prj], query)
             root = http_GET(url)
-            for entry in ET.parse(root).getroot().findall('entry'):
-                pkg = entry.attrib['name']
+
+            for si in ET.parse(root).getroot().findall('sourceinfo'):
+                pkg = si.get('package')
                 # XXX TODO - Test-DVD-x86_64 is hardcoded here
                 if pkg in ret and not pkg.startswith('Test-DVD-'):
                     msg = '{} is defined in two projects ({} and {})'
-                    raise Exception(msg.format(pkg, ret[pkg], prj))
-                ret[pkg] = prj
+                    if checklinks and pkg in except_pkgs and prj == except_pkgs[pkg]:
+                        msg = ''
+                    if len(msg):
+                        raise Exception(msg.format(pkg, ret[pkg], prj))
+                if pkg not in ret:
+                    ret[pkg] = prj
+
+                # put the ring1 package to ring0 list if it was linked from ring0 subpacakge
+                if checklinks:
+                    if not prj.endswith('0-Bootstrap'):
+                        continue
+                    for linked in si.findall('linked'):
+                        linked_prj = linked.get('project')
+                        linked_pkg = linked.get('package')
+                        if linked_prj != self.project and pkg != linked_pkg:
+                            if linked_pkg not in ret:
+                                except_pkgs[linked_pkg] = linked_prj
+                                ret[linked_pkg] = prj
         return ret
 
     def _get_staged_requests(self):
