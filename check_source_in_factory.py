@@ -33,7 +33,9 @@ except ImportError:
 import osc.conf
 import osc.core
 import urllib2
+import yaml
 import ReviewBot
+
 
 class FactorySourceChecker(ReviewBot.ReviewBot):
     """ this review bot checks if the sources of a submission are
@@ -50,6 +52,16 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             self.factory = "openSUSE:Factory"
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
+        self.lookup = None
+
+    def parse_lookup(self, project):
+        self.lookup = yaml.safe_load(self._load_lookup_file(project))
+
+    def _load_lookup_file(self, prj):
+        if prj.endswith(':NonFree'):
+            prj = prj[:-len(':NonFree')]
+        return osc.core.http_GET(osc.core.makeurl(self.apiurl,
+                                ['source', prj, '00Meta', 'lookup.yml']))
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
@@ -71,24 +83,35 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
         return good
 
+    def _package_get_upstream_project(self, package):
+        """ return project where the specified pacakge is supposed to come
+        from. Either by lookup table or self.factory """
+        if self.lookup and package in self.lookup:
+            return self.lookup[package]
+
+        return self.factory
+
     def _check_factory(self, rev, package):
         """check if factory sources contain the package and revision. check head and history"""
-        self.logger.debug("checking %s in %s"%(package, self.factory))
+        project = self._package_get_upstream_project(package)
+        if project is None:
+            return False
+        self.logger.debug("checking %s in %s"%(package, project))
         try:
-            si = osc.core.show_package_meta(self.apiurl, self.factory, package)
+            si = osc.core.show_package_meta(self.apiurl, project, package)
         except (urllib2.HTTPError, urllib2.URLError):
             si = None
         if si is None:
             self.logger.debug("new package")
             return None
         else:
-            si = self.get_sourceinfo(self.factory, package)
+            si = self.get_sourceinfo(project, package)
             if rev == si.verifymd5:
                 self.logger.debug("srcmd5 matches")
                 return True
 
         self.logger.debug("%s not the latest version, checking history", rev)
-        u = osc.core.makeurl(self.apiurl, [ 'source', self.factory, package, '_history' ], { 'limit': '5' })
+        u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': '5' })
         try:
             r = osc.core.http_GET(u)
         except urllib2.HTTPError, e:
@@ -111,7 +134,11 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def _check_requests(self, rev, package):
         self.logger.debug("checking requests")
         try:
-            requests = osc.core.get_request_list(self.apiurl, self.factory, package, None, ['new', 'review'], 'submit')
+            project = self._package_get_upstream_project(package)
+            if project is None:
+                self.logger.error("no upstream project found for {}, can't check requests".format(package))
+                return None
+            requests = osc.core.get_request_list(self.apiurl, project, package, None, ['new', 'review'], 'submit')
         except (urllib2.HTTPError, urllib2.URLError):
             self.logger.debug("none request")
             return None
@@ -125,7 +152,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                         self.logger.debug("request ok")
                         return True
                     elif req.state.name == 'review':
-                        self.logger.debug("request still in review")
+                        self.logger.info("request still in review")
                         return None
                     else:
                         self.logger.error("request in state %s not expected"%req.state.name)
@@ -140,6 +167,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
         parser.add_option("--factory", metavar="project", help="the openSUSE Factory project")
+        parser.add_option("--lookup", metavar="project", help="use lookup file")
 
         return parser
 
@@ -152,11 +180,16 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         if user is None:
             user = osc.conf.get_apiurl_usr(apiurl)
 
-        return FactorySourceChecker(apiurl = apiurl, \
+        bot = FactorySourceChecker(apiurl = apiurl, \
                 factory = self.options.factory, \
                 dryrun = self.options.dry, \
                 user = user, \
                 logger = self.logger)
+
+        if self.options.lookup:
+            bot.parse_lookup(self.options.lookup)
+
+        return bot
 
 if __name__ == "__main__":
     app = CommandLineInterface()

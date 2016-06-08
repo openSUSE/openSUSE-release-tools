@@ -51,6 +51,8 @@ class Manager42(object):
         self.caching = caching
         self.apiurl = osc.conf.config['apiurl']
         self.project_preference_order = [
+                #'SUSE:SLE-12-SP2:Update',
+                'SUSE:SLE-12-SP2:GA',
                 'SUSE:SLE-12-SP1:Update',
                 'SUSE:SLE-12-SP1:GA',
                 'SUSE:SLE-12:Update',
@@ -58,6 +60,7 @@ class Manager42(object):
                 'openSUSE:Leap:42.1:Update',
                 'openSUSE:Leap:42.1',
                 'openSUSE:Factory',
+                'openSUSE:Leap:42.2:SLE-workarounds'
                 ]
 
         self.parse_lookup()
@@ -243,21 +246,25 @@ class Manager42(object):
             srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
             if srcmd5:
                 logger.debug("{} lookup from {} is correct".format(package, lproject))
-                return
-            if lproject == 'openSUSE:Factory':
+                # if it's from Factory we check if the package can be found elsewhere meanwhile
+                if lproject != 'openSUSE:Factory':
+                    return
+            elif lproject == 'openSUSE:Factory' and not package in self.packages[lproject]:
                 his = self.get_package_history(lproject, package, deleted=True)
                 if his:
                     logger.debug("{} got dropped from {}".format(package, lproject))
-                    return
 
         logger.debug("check where %s came from", package)
         foundit = False
         for project in self.project_preference_order:
             srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
             if srcmd5:
-                logger.info('{} -> {} (was {})'.format(package, project, lproject))
-                self.lookup[package] = project
-                self.lookup_changes += 1
+                if project != lproject:
+                    logger.info('{} -> {} (was {})'.format(package, project, lproject))
+                    self.lookup[package] = project
+                    self.lookup_changes += 1
+                else:
+                    logger.debug('{} still coming from {}'.format(package, project))
                 foundit = True
                 break
 

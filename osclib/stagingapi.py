@@ -53,7 +53,8 @@ class StagingAPI(object):
         # Store some prefix / data used in the code.
         self.cstaging = conf.config[project]['staging']
         self.cstaging_group = conf.config[project]['staging-group']
-        self.cstaging_archs = conf.config[project]['staging-archs'].split(' ')
+        self.cstaging_archs = conf.config[project]['staging-archs'].split()
+        self.cstaging_dvd_archs = conf.config[project]['staging-dvd-archs'].split()
         self.cstaging_nocleanup = conf.config[project]['nocleanup-packages'].split()
         self.crings = conf.config[project]['rings']
         self.cnonfree = conf.config[project]['nonfree']
@@ -63,6 +64,7 @@ class StagingAPI(object):
         self.user = conf.get_apiurl_usr(apiurl)
         self._ring_packages = None
         self._packages_staged = None
+        self._package_metas = dict()
 
         # If the project support rings, inititialize some variables.
         if self.crings:
@@ -802,6 +804,7 @@ class StagingAPI(object):
         if not force_enable_build:
             if self.crings and not self.ring_packages.get(tar_pkg) and not self.is_adi_project(project):
                 disable_build = True
+                logging.warning("{}/{} not in ring, build disabled".format(project, tar_pkg))
             else:
                 project = self.map_ring_package_to_subject(project, tar_pkg)
 
@@ -1229,3 +1232,24 @@ class StagingAPI(object):
             return True
         else:
             return False
+
+    # from manager_42
+    def _fill_package_meta(self, project):
+        url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
+        root = ET.parse(self.retried_GET(url))
+        for p in root.findall('package'):
+            name = p.attrib['name']
+            self._package_metas.setdefault(project, {})[name] = p
+
+    def get_devel_project(self, project, package):
+        if not project in self._package_metas:
+            self._fill_package_meta(project)
+
+        if not package in self._package_metas[project]:
+            return None
+
+        node = self._package_metas[project][package].find('devel')
+        if node is None:
+            return None
+
+        return node.get('project')

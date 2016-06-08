@@ -28,11 +28,36 @@ class CleanupRings(object):
         f = http_GET(url)
         root = ET.parse(f).getroot()
         for si in root.findall('sourceinfo'):
-            linked = si.find('linked')
-            if linked is not None and linked.get('project') != self.api.project:
-                if not linked.get('project').startswith(self.api.crings):
-                    print "#not linking to base: ", self.api.crings, linked.get('project')
-                self.links[linked.get('package')] = si.get('package')
+            links = si.findall('linked')
+            pkg = si.get('package')
+            if links is None or len(links) == 0:
+                print '# {} not a link'.format(pkg)
+            else:
+                linked = links[0]
+                dprj = linked.get('project')
+                dpkg = linked.get('package')
+                if dprj != self.api.project:
+                    if not dprj.startswith(self.api.crings):
+                        print "#{} not linking to base {} but {}".format(pkg, self.api.project, dprj)
+                    self.links[dpkg] = pkg
+                # multi spec package must link to ring
+                elif len(links) > 1:
+                    mainpkg = links[1].get('package')
+                    mainprj = links[1].get('project')
+                    if mainprj != self.api.project:
+                        print '# FIXME: {} links to {}'.format(pkg, mainprj)
+                    else:
+                        destring = None
+                        if mainpkg in self.api.ring_packages:
+                            destring = self.api.ring_packages[mainpkg]
+                        if not destring:
+                            print '# {} links to {} but is not in a ring'.format(pkg, mainpkg)
+                            print "osc linkpac {}/{} {}/{}".format(mainprj, mainpkg, prj, mainpkg)
+                        else:
+                            if pkg != 'glibc.i686': # FIXME: ugly exception
+                                print "osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg)
+                                self.links[mainpkg] = pkg
+
 
     def fill_pkgdeps(self, prj, repo, arch):
         url = makeurl(self.api.apiurl, ['build', prj, repo, arch, '_builddepinfo'])
@@ -58,7 +83,8 @@ class CleanupRings(object):
             source = package.find('source').text
             for pkg in package.findall('pkgdep'):
                 if pkg.text not in self.bin2src:
-                    print('Package {} not found in place'.format(pkg.text))
+                    if not pkg.text.startswith('texlive-'): # XXX: texlive bullshit packaging
+                        print('Package {} not found in place'.format(pkg.text))
                     continue
                 b = self.bin2src[pkg.text]
                 self.pkgdeps[b] = source
@@ -78,7 +104,7 @@ class CleanupRings(object):
                     return False
 
         self.find_inner_ring_links(prj)
-        for arch in [ 'x86_64', 'ppc64le' ]:
+        for arch in self.api.cstaging_dvd_archs:
             self.fill_pkgdeps(prj, 'standard', arch)
 
             if prj == '{}:1-MinimalX'.format(self.api.crings):
@@ -117,6 +143,8 @@ class CleanupRings(object):
 
         for source in self.sources:
             if source not in self.pkgdeps and source not in self.links:
+                if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
+                    continue
                 print('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
                     print('osc linkpac {} {} {}').format(self.api.project, source, nextprj)

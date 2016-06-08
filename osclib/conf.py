@@ -32,8 +32,9 @@ from osc import conf
 DEFAULT = {
     r'openSUSE:(?P<project>[-\w\d:.]+)': {
         'staging': 'openSUSE:%(project)s:Staging',
-        'staging-group': '%(project.lower)s-staging',
+        'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64 ppc64le',
+        'staging-dvd-archs': 'x86_64 ppc64le',
         'nocleanup-packages': 'Test-DVD-x86_64 Test-DVD-ppc64le bootstrap-copy',
         'rings': 'openSUSE:%(project)s:Rings',
         'nonfree': 'openSUSE:%(project)s:NonFree',
@@ -47,6 +48,7 @@ DEFAULT = {
         'staging': 'SUSE:%(project)s:Staging',
         'staging-group': 'sle-staging-managers',  # '%(project.lower)s-staging',
         'staging-archs': 'i586 x86_64',
+        'staging-dvd-archs': 'x86_64',
         'nocleanup-packages': 'Test-DVD-x86_64 sles-release',
         'rings': None,
         'nonfree': None,
@@ -110,7 +112,7 @@ class Config(object):
         params = [set(d) for d in DEFAULT.values()]
         params = reduce(operator.__and__, params)
         if not all(p in conf.config[self.project] for p in params):
-            msg = 'Please, add [%s] section in %s' % (self.project, self.conf_file)
+            msg = 'Please, add [%s] section in %s, see %s for details' % (self.project, self.conf_file, __file__)
             raise Exception(msg)
 
     def read_section(self, section, defaults):

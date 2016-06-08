@@ -94,7 +94,37 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
     # check if pkgname was submitted by the correct maintainer. If not, set
     # self.needs_maintainer_review
-    def _check_maintainer_review_needed(self, req, pkgname, author):
+    def _check_maintainer_review_needed(self, req, a):
+        author = req.get_creator()
+        if a.type == 'maintenance_incident':
+            # check if there is a link and use that or the real package
+            # name as src_packge may end with something like
+            # .openSUSE_XX.Y_Update
+            pkgname = a.src_package
+            (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
+            if linkpkg is not None:
+                pkgname = linkpkg
+            if pkgname == 'patchinfo':
+                return None
+
+            project = a.tgt_releaseproject
+        else:
+            pkgname = a.tgt_package
+            project = a.tgt_project
+
+        if project.startswith('openSUSE:Leap:'):
+            mapping = MaintenanceChecker._get_lookup_yml(self.apiurl, project)
+            if mapping is None:
+                self.logger.error("error loading mapping for {}".format(project))
+            elif not pkgname in mapping:
+                self.logger.debug("{} not tracked".format(pkgname))
+            else:
+                origin = mapping[pkgname]
+                self.logger.debug("{} comes from {}, submitted from {}".format(pkgname, origin, a.src_project))
+                if origin.startswith('SUSE:SLE-12') and a.src_project.startswith('SUSE:SLE-12'):
+                    self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
+                    return
+
         maintainers = set(self._maintainers(pkgname))
         if maintainers:
             known_maintainer = False
@@ -115,33 +145,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             self.needs_maintainer_review.add(pkgname)
 
     def check_action_maintenance_incident(self, req, a):
-        author = req.get_creator()
-        # check if there is a link and use that or the real package
-        # name as src_packge may end with something like
-        # .openSUSE_XX.Y_Update
-        pkgname = a.src_package
-        (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
-        if linkpkg is not None:
-            pkgname = linkpkg
-        if pkgname == 'patchinfo':
-            return None
 
-        skip_maintainer_review = False
-        if a.tgt_releaseproject.startswith('openSUSE:Leap:'):
-            mapping = MaintenanceChecker._get_lookup_yml(self.apiurl, a.tgt_releaseproject)
-            if mapping is None:
-                self.logger.error("error loading mapping for {}".format(a.tgt_releaseproject))
-            elif not pkgname in mapping:
-                self.logger.error("{} not tracked".format(pkgname))
-            else:
-                origin = mapping[pkgname]
-                self.logger.debug("{} comes from {}, submitted from {}".format(pkgname, origin, a.src_project))
-                if origin.startswith('SUSE:SLE-12') and origin == a.src_project:
-                    skip_maintainer_review = True
-                    self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
-
-        if not skip_maintainer_review:
-            self._check_maintainer_review_needed(req, pkgname, author)
+        self._check_maintainer_review_needed(req, a)
 
         if a.tgt_releaseproject.startswith("openSUSE:Backports:"):
             self.add_factory_source = True
@@ -149,10 +154,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         return True
 
     def check_action_submit(self, req, a):
-        author = req.get_creator()
-        pkgname = a.tgt_package
 
-        self._check_maintainer_review_needed(req, pkgname, author)
+        self._check_maintainer_review_needed(req, a)
 
         return True
 
