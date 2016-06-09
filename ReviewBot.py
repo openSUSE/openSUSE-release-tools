@@ -117,12 +117,12 @@ class ReviewBot(object):
         elif self.review_mode == 'fallback-always':
             self.add_review(req, by_group=by_group, by_user=by_user)
 
-        self.logger.info("%s %s"%(req.reqid, state))
+        msg = self.review_messages[state] if state in self.review_messages else state
+        self.logger.info("%s %s: %s"%(req.reqid, state, msg))
 
         if doit == True:
             self.logger.debug("setting %s to %s"%(req.reqid, state))
             if not self.dryrun:
-                msg = self.review_messages[state] if state in self.review_messages else state
                 osc.core.change_review_state(apiurl = self.apiurl,
                         reqid = req.reqid, newstate = newstate,
                         by_group=self.review_group,
