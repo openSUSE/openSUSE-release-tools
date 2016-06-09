@@ -52,14 +52,12 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             self.factory = "openSUSE:Factory"
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
-        self.lookup = None
+        self.lookup = {}
 
     def parse_lookup(self, project):
-        self.lookup = yaml.safe_load(self._load_lookup_file(project))
+        self.lookup.update(yaml.safe_load(self._load_lookup_file(project)))
 
     def _load_lookup_file(self, prj):
-        if prj.endswith(':NonFree'):
-            prj = prj[:-len(':NonFree')]
         return osc.core.http_GET(osc.core.makeurl(self.apiurl,
                                 ['source', prj, '00Meta', 'lookup.yml']))
 
@@ -71,15 +69,19 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             # handle here to avoid crashing on the next line
             self.logger.info("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
             return False
-        good = self._check_factory(src_srcinfo.verifymd5, target_package)
+        project = self._package_get_upstream_project(target_package)
+        if project is None:
+            self.logger.error("no upstream project found for {}, can't check".format(package))
+            return False
 
+        good = self._check_project(project, target_package, src_srcinfo.verifymd5)
         if good:
-            self.logger.info("%s is in Factory"%target_package)
+            self.logger.info("{} is in {}".format(target_package, project))
             return good
 
-        good = self._check_requests(src_srcinfo.verifymd5, target_package)
+        good = self._check_requests(project, target_package, src_srcinfo.verifymd5)
         if good:
-            self.logger.info("%s already reviewed for Factory"%target_package)
+            self.logger.info("{} already reviewed for {}".format(target_package, project))
 
         return good
 
@@ -91,11 +93,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
         return self.factory
 
-    def _check_factory(self, rev, package):
+    def _check_project(self, project, package, rev):
         """check if factory sources contain the package and revision. check head and history"""
-        project = self._package_get_upstream_project(package)
-        if project is None:
-            return False
         self.logger.debug("checking %s in %s"%(package, project))
         try:
             si = osc.core.show_package_meta(self.apiurl, project, package)
@@ -131,13 +130,9 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         self.logger.debug("srcmd5 not found in history either")
         return False
 
-    def _check_requests(self, rev, package):
+    def _check_requests(self, project, package, rev):
         self.logger.debug("checking requests")
         try:
-            project = self._package_get_upstream_project(package)
-            if project is None:
-                self.logger.error("no upstream project found for {}, can't check requests".format(package))
-                return None
             requests = osc.core.get_request_list(self.apiurl, project, package, None, ['new', 'review'], 'submit')
         except (urllib2.HTTPError, urllib2.URLError):
             self.logger.debug("none request")

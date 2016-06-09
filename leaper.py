@@ -45,11 +45,16 @@ class Leaper(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.maintbot = MaintenanceChecker(*args, **kwargs)
         # for FactorySourceChecker
+        self.lookup_checker = FactorySourceChecker(*args, **kwargs)
+        self.lookup_checker.parse_lookup('openSUSE:Leap:42.2')
+        self.lookup_checker.parse_lookup('openSUSE:Leap:42.2:NonFree')
         self.factory = FactorySourceChecker(*args, **kwargs)
-        self.factory.parse_lookup('openSUSE:Leap:42.2')
+        # XXX: FactorySourceChecker should be able to handle that itself
+        self.factory_nonfree = FactorySourceChecker(*args, **kwargs)
+        self.factory_nonfree.factory = 'openSUSE:Factory:NonFree'
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
-        return self.factory.check_source_submission(src_project, src_package, src_rev, target_project, target_package)
+        return self.lookup_checker.check_source_submission(src_project, src_package, src_rev, target_project, target_package)
 
     def check_one_request(self, req):
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
@@ -77,6 +82,14 @@ class Leaper(ReviewBot.ReviewBot):
         if has_upstream_sources != True or has_correct_maintainer != True:
             if has_upstream_sources != True:
                 self.review_messages['declined'] += '\nOrigin project changed'
+                pkg = req.actions[0].tgt_package
+                prj = self.lookup_checker._package_get_upstream_project(pkg)
+                if prj:
+                    self.review_messages['declined'] += '(was {})'.format(prj)
+                if self.factory.check_one_request(req):
+                    self.review_messages['declined'] += '\nsource is in Factory though'
+                elif self.factory_nonfree.check_one_request(req):
+                    self.review_messages['declined'] += '\nsource is in Factory:NonFree though'
             # shouldn't happen actually
             if has_correct_maintainer != True:
                 self.review_messages['declined'] += '\nMaintainer check failed'

@@ -59,11 +59,14 @@ class Manager42(object):
                 'SUSE:SLE-12:GA',
                 'openSUSE:Leap:42.1:Update',
                 'openSUSE:Leap:42.1',
+                'openSUSE:Leap:42.1:NonFree:Update',
+                'openSUSE:Leap:42.1:NonFree',
                 'openSUSE:Factory',
+                'openSUSE:Factory:NonFree',
                 'openSUSE:Leap:42.2:SLE-workarounds'
                 ]
 
-        self.parse_lookup()
+        self.parse_lookup(self.from_prj)
         self.fill_package_meta()
         self.packages = dict()
         for project in [self.from_prj] + self.project_preference_order:
@@ -80,24 +83,29 @@ class Manager42(object):
                 packages.add(title[3:].split(' ')[0])
         return sorted(packages)
 
-    def parse_lookup(self):
-        self.lookup = yaml.safe_load(self._load_lookup_file())
+    def parse_lookup(self, project):
         self.lookup_changes = 0
+        self.lookup = {}
+        try:
+            self.lookup = yaml.safe_load(self._load_lookup_file(project))
+        except urllib2.HTTPError, e:
+            if e.code != 404:
+                raise
 
-    def _load_lookup_file(self):
+    def _load_lookup_file(self, prj):
         return self.cached_GET(makeurl(self.apiurl,
-                                       ['source', self.from_prj, '00Meta', 'lookup.yml']))
+                                       ['source', prj, '00Meta', 'lookup.yml']))
 
-    def _put_lookup_file(self, data):
+    def _put_lookup_file(self, prj, data):
         return http_PUT(makeurl(self.apiurl,
-                                ['source', self.from_prj, '00Meta', 'lookup.yml']), data=data)
+                                ['source', prj, '00Meta', 'lookup.yml']), data=data)
 
     def store_lookup(self):
         if self.lookup_changes == 0:
             logger.info('no change to lookup.yml')
             return
         data = yaml.dump(self.lookup, default_flow_style=False, explicit_start=True)
-        self._put_lookup_file(data)
+        self._put_lookup_file(self.from_prj, data)
         self.lookup_changes = 0
 
     @memoize()
