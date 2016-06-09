@@ -191,7 +191,7 @@ def do_staging(self, subcmd, opts, *args):
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
 
-            if version_totest or opts.force:
+            if version_totest is None or opts.force:
                 # SLE does not have a totest_version or openqa_version - ignore it
                 version_openqa = version_totest
                 totest_dirty   = False
