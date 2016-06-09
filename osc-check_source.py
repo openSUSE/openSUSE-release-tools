@@ -256,6 +256,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['systemsmanagement:machinery/'] = 'machinery'
             self._devel_projects['filesystems:ceph/'] = 'ceph-deploy'
             self._devel_projects['Virtualization:Appliances:Builder/'] = 'python3-kiwi'
+            self._devel_projects['isv:ownCloud:desktop'] = 'owncloud-client'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
