@@ -1049,8 +1049,10 @@ class StagingAPI(object):
         url = self.makeurl(['build', project, repository, arch, '_repository', "%s?view=fileinfo" % rpm])
         try:
             return ET.parse(http_GET(url)).getroot().find('version').text
-        except urllib2.HTTPError:
-            return None
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                return None
+            raise
 
     def load_file_content(self, project, package, filename):
         """
