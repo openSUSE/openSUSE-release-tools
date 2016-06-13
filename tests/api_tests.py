@@ -56,9 +56,22 @@ class TestApiCalls(unittest.TestCase):
         Validate the creation of the rings.
         """
         # our content in the XML files
+        # test content for listonly ie. list command
+        ring_packages = {
+            'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'elem-ring-1': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'elem-ring-2': 'openSUSE:Factory:Rings:2-TestDVD',
+            'git': 'openSUSE:Factory:Rings:2-TestDVD',
+            'wine': 'openSUSE:Factory:Rings:1-MinimalX',
+        }
+        self.assertEqual(ring_packages, self.api.ring_packages_for_links)
+
+        # test content for real usage
         ring_packages = {
             'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX',
+            'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-2': 'openSUSE:Factory:Rings:2-TestDVD',
             'git': 'openSUSE:Factory:Rings:2-TestDVD',
             'wine': 'openSUSE:Factory:Rings:1-MinimalX',
