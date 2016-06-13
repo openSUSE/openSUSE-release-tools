@@ -1,4 +1,8 @@
-<directory count='1'>
-  <entry name="elem-ring-2"/>
-  <entry name="git"/>
-</directory>
+<sourceinfolist>
+  <sourceinfo package="elem-ring-2" rev="2" vrev="13" srcmd5="1ca04ad54e7de2612ec1f01f46bbc763" lsrcmd5="b4f289282eb01f5812a4ead909215ecf" verifymd5="d4e1ef121637c87f0b6cb6afbeba5758">
+    <linked project="openSUSE:Factory" package="elem-ring-2" />
+  </sourceinfo>
+  <sourceinfo package="git" rev="2" vrev="13" srcmd5="1ca04ad54e7de2612ec1f01f46bbc763" lsrcmd5="b4f289282eb01f5812a4ead909215ecf" verifymd5="d4e1ef121637c87f0b6cb6afbeba5758">
+    <linked project="openSUSE:Factory" package="git" />
+  </sourceinfo>
+</sourceinfolist>
