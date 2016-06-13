@@ -423,7 +423,7 @@ class StagingAPI(object):
 
         pkg_do_supersede = True
         if target_pkgs:
-            if target_package not in target_pkgs:
+            if action.get('type') not in ['submit', 'delete'] or target_package not in target_pkgs:
                 pkg_do_supersede = False
 
         # If the package is currently tracked then we do the replacement
