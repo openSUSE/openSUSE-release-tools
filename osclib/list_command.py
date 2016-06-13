@@ -48,7 +48,7 @@ class ListCommand:
             # If the system have rings, we ask for the ring of the
             # package
             if self.api.crings:
-                ring = self.api.ring_packages.get(target_package)
+                ring = self.api.ring_packages_for_links.get(target_package)
                 if ring:
                     # cut off *:Rings: prefix
                     ring = ring[len(self.api.crings)+1:]
