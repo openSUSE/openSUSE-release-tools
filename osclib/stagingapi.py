@@ -1237,11 +1237,12 @@ class StagingAPI(object):
 
     # from manager_42
     def _fill_package_meta(self, project):
+        self._package_metas.setdefault(project, {})
         url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
         root = ET.parse(self.retried_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
-            self._package_metas.setdefault(project, {})[name] = p
+            self._package_metas[project][name] = p
 
     def get_devel_project(self, project, package):
         if not project in self._package_metas:
