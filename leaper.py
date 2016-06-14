@@ -86,10 +86,19 @@ class Leaper(ReviewBot.ReviewBot):
                 prj = self.lookup_checker._package_get_upstream_project(pkg)
                 if prj:
                     self.review_messages['declined'] += '(was {})'.format(prj)
-                if self.factory.check_one_request(req):
+                r = self.factory.check_one_request(req)
+                if r == True:
                     self.review_messages['declined'] += '\nsource is in Factory though'
-                elif self.factory_nonfree.check_one_request(req):
-                    self.review_messages['declined'] += '\nsource is in Factory:NonFree though'
+                elif r == None:
+                    self.logger.info("waiting for review")
+                    return None
+                else:
+                    r = self.factory_nonfree.check_one_request(req)
+                    if r == True:
+                        self.review_messages['declined'] += '\nsource is in Factory:NonFree though'
+                    elif r == None:
+                        self.logger.info("waiting for review")
+                        return None
             # shouldn't happen actually
             if has_correct_maintainer != True:
                 self.review_messages['declined'] += '\nMaintainer check failed'
