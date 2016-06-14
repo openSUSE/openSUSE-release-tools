@@ -888,15 +888,16 @@ class ABIChecker(ReviewBot.ReviewBot):
     def ensure_settled(self, src_project, src_srcinfo, matchrepos):
         """ make sure current build state is final so we're not
         tricked with half finished results"""
+        rmap = dict()
         results = osc.core.get_package_results(self.apiurl,
                 src_project, src_srcinfo.package,
                 repository = [ mr.srcrepo for mr in matchrepos],
                 arch = [ mr.arch for mr in matchrepos])
-        rmap = dict()
-        for i in results:
-            if not 'package' in i or i['package'] != src_srcinfo.package:
-                continue
-            rmap[(i['repository'], i['arch'])] = i
+        for result in results:
+            for res in osc.core.result_xml_to_dicts(result):
+                if not 'package' in res or res['package'] != src_srcinfo.package:
+                    continue
+                rmap[(res['repository'], res['arch'])] = res
 
         for mr in matchrepos:
             if not (mr.srcrepo, mr.arch) in rmap:
