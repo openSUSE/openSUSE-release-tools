@@ -1285,7 +1285,7 @@ class StagingAPI(object):
         if not project in self._package_metas:
             self._fill_package_meta(project)
 
-        if not package in self._package_metas[project]:
+        if not package in self._package_metas.get('project', []):
             return None
 
         node = self._package_metas[project][package].find('devel')
