@@ -462,7 +462,7 @@ class CommandLineInterface(cmdln.Cmdln):
             try:
                 workfunc()
             except Exception, e:
-                self.logger.error(e)
+                self.logger.exception(e)
 
             if interval:
                 self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
