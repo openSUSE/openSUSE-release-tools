@@ -148,7 +148,7 @@ class AcceptCommand(object):
                                      r'\1{}'.format(package),
                                      origmeta)
                     newmeta = re.sub(r'<devel.*>',
-                                     r'<devel package=\'{}\'/>'.format(pkgname),
+                                     r'<devel package="{}"/>'.format(pkgname),
                                      newmeta)
                     newmeta = re.sub(r'<bcntsynctag>.*</bcntsynctag>',
                                      r'',
