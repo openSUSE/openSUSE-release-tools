@@ -45,19 +45,150 @@ class Leaper(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.maintbot = MaintenanceChecker(*args, **kwargs)
         # for FactorySourceChecker
-        self.lookup_checker = FactorySourceChecker(*args, **kwargs)
-        self.lookup_checker.parse_lookup('openSUSE:Leap:42.2')
-        self.lookup_checker.parse_lookup('openSUSE:Leap:42.2:NonFree')
         self.factory = FactorySourceChecker(*args, **kwargs)
-        # XXX: FactorySourceChecker should be able to handle that itself
-        self.factory_nonfree = FactorySourceChecker(*args, **kwargs)
-        self.factory_nonfree.factory = 'openSUSE:Factory:NonFree'
+        self.factory.parse_lookup('openSUSE:Leap:42.2')
+        self.factory.parse_lookup('openSUSE:Leap:42.2:NonFree')
+        self.lookup_422 = self.factory.lookup.copy()
+        self.factory.lookup = {}
+        self.factory.parse_lookup('openSUSE:Leap:42.1:Update')
+        self.lookup_421 = self.factory.lookup.copy()
+        self.factory.lookup = {}
+
+        self.needs_reviewteam = False
+        self.pending_factory_submission = False
+        self.source_in_factory = False
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
-        return self.lookup_checker.check_source_submission(src_project, src_package, src_rev, target_project, target_package)
+        self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
+        src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
+        package = target_package
+
+        if src_srcinfo is None:
+            # source package does not exist?
+            # handle here to avoid crashing on the next line
+            self.logger.warn("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
+            return False
+
+        origin = None
+        if package in self.lookup_422:
+            origin = self.lookup_422[package]
+
+        if origin:
+            self.logger.debug("origin {}".format(origin))
+            if origin.startswith('Devel;'):
+                self.needs_reviewteam = True
+                (dummy, origin, dummy) = origin.split(';')
+            if origin == src_project:
+                self.logger.debug("exact match")
+                return True
+            elif origin.startswith('openSUSE:Factory'):
+                return self._check_factory(target_package, src_srcinfo)
+            elif origin.startswith('openSUSE:Leap:42.1'):
+                # submitted from :Update
+                if src_project.startswith(origin):
+                    self.logger.debug("match 42.1")
+                    return True
+                # submitted from elsewhere but is in :Update
+                else:
+                    good = self.factory._check_project('openSUSE:Leap:42.1:Update', target_package, src_srcinfo.verifymd5)
+                    if good:
+                        self.logger.info("submission found in 42.1")
+                        return good
+                    # check release requests too
+                    good = self.factory._check_requests('openSUSE:Leap:42.1:Update', target_package, src_srcinfo.verifymd5)
+                    if good or good == None:
+                        self.logger.debug("found request")
+                        return good
+                # let's see where it came from before
+                if package in self.lookup_421:
+                    oldorigin = self.lookup_421[package]
+                    self.logger.debug("oldorigin {}".format(oldorigin))
+                    # Factory. So it's ok to keep upgrading it to Factory
+                    # TODO: whitelist packages where this is ok and block others?
+                    if oldorigin.startswith('openSUSE:Factory'):
+                        if src_project == oldorigin:
+                            self.logger.debug("Upgrade to Factory again. Submitted from Factory")
+                            return True
+                        good = self._check_factory(target_package, src_srcinfo)
+                        if good or good == None:
+                            self.logger.debug("Upgrade to Factory again. It's in Factory")
+                            return good
+                        # or maybe in SP2?
+                        good = self.factory._check_project('SUSE:SLE-12-SP2:GA', target_package, src_srcinfo.verifymd5)
+                        if good:
+                            self.logger.debug("hope it's ok to change to SP2")
+                            return good
+                    else: # other project or fork
+                        good = self._check_factory(target_package, src_srcinfo)
+                        if good:
+                            self.source_in_factory = True
+                        elif good is None:
+                            self.pending_factory_submission = True
+                        else:
+                            self.needs_reviewteam = True
+
+                        return False
+
+            elif origin.startswith('SUSE:SLE-12'):
+                # submitted from :Update
+                if src_project.startswith(origin):
+                    self.logger.debug("match sle")
+                    return True
+                # submitted from higher SP
+                if origin.startswith('SUSE:SLE-12'):
+                    if src_project.startswith('SUSE:SLE-12-SP1') \
+                        or src_project.startswith('SUSE:SLE-12-SP2'):
+                            self.logger.debug("higher service pack ok")
+                            return True
+            else: # other project or FORK
+                good = self._check_factory(target_package, src_srcinfo)
+                if good:
+                    self.source_in_factory = True
+                elif good is None:
+                    self.pending_factory_submission = True
+                else:
+                    self.needs_reviewteam = True
+
+                return False
+
+        else: # no origin
+            # SLE and Factory are ok
+            if src_project.startswith('SUSE:SLE-12') \
+                or src_project.startswith('openSUSE:Factory'):
+                return True
+            # submitted from elsewhere, check it's in Factory
+            good = self._check_factory(target_package, src_srcinfo)
+            if good or good == None:
+                return good
+            # or maybe in SP2?
+            good = self.factory._check_project('SUSE:SLE-12-SP2:GA', target_package, src_srcinfo.verifymd5)
+            if good:
+                return good
+
+        return False
+
+    def _check_factory(self, target_package, src_srcinfo):
+            good = self.factory._check_project('openSUSE:Factory', target_package, src_srcinfo.verifymd5)
+            if good:
+                return good
+            good = self.factory._check_requests('openSUSE:Factory', target_package, src_srcinfo.verifymd5)
+            if good or good == None:
+                self.logger.debug("found request to Factory")
+                return good
+            good = self.factory._check_project('openSUSE:Factory:NonFree', target_package, src_srcinfo.verifymd5)
+            if good:
+                return good
+            good = self.factory._check_requests('openSUSE:Factory:NonFree', target_package, src_srcinfo.verifymd5)
+            if good or good == None:
+                self.logger.debug("found request to Factory:NonFree")
+                return good
+            return False
 
     def check_one_request(self, req):
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
+        self.needs_reviewteam = False
+        self.pending_factory_submission = False
+        self.source_in_factory = False
 
         if len(req.actions) != 1:
             msg = "only one action per request please"
@@ -79,32 +210,40 @@ class Leaper(ReviewBot.ReviewBot):
 
         self.logger.debug("upstream sources: {}, maintainer ok: {}".format(has_upstream_sources, has_correct_maintainer))
 
+        if self.needs_reviewteam:
+            add_review = True
+            self.logger.debug("%s needs review by opensuse-review-team"%req.reqid)
+            for r in req.reviews:
+                if r.by_group == 'opensuse-review-team':
+                    self.add_review = False
+                    self.logger.debug("opensuse-review-team already is a reviewer")
+                    break
+            if add_review:
+                if self.add_review(req, by_group = "opensuse-review-team") != True:
+                    self.review_messages['declined'] += '\nadding opensuse-review-team failed'
+                    return False
+
         if has_upstream_sources != True or has_correct_maintainer != True:
             if has_upstream_sources != True:
                 self.review_messages['declined'] += '\nOrigin project changed'
                 pkg = req.actions[0].tgt_package
-                prj = self.lookup_checker._package_get_upstream_project(pkg)
-                if prj:
-                    self.review_messages['declined'] += '(was {})'.format(prj)
-                r = self.factory.check_one_request(req)
-                if r == True:
-                    self.review_messages['declined'] += '\nsource is in Factory though'
-                elif r == None:
-                    self.logger.info("waiting for review")
-                    return None
-                else:
-                    r = self.factory_nonfree.check_one_request(req)
-                    if r == True:
-                        self.review_messages['declined'] += '\nsource is in Factory:NonFree though'
-                    elif r == None:
-                        self.logger.info("waiting for review")
-                        return None
+                if pkg in self.lookup_422:
+                    self.review_messages['declined'] += '(was {})'.format(self.lookup_422[pkg])
+                if self.source_in_factory:
+                    self.review_messages['declined'] += '\nsource is in Factory'
+                if self.pending_factory_submission:
+                    self.review_messages['declined'] += '\na submission to Factory is pending'
             # shouldn't happen actually
             if has_correct_maintainer != True:
                 self.review_messages['declined'] += '\nMaintainer check failed'
             return False
 
         return True
+
+    def check_action__default(self, req, a):
+        # decline all other requests for fallback reviewer
+        self.logger.debug("auto decline request type %s"%a.type)
+        return False
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
