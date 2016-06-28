@@ -90,7 +90,7 @@ class ReviewBot(object):
         # give implementations a chance to do something before single requests
         self.prepare_review()
         for req in self.requests:
-            self.logger.debug("checking %s"%req.reqid)
+            self.logger.info("checking %s"%req.reqid)
             good = self.check_one_request(req)
 
             if self.review_mode == 'no':
