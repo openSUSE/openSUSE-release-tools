@@ -93,10 +93,11 @@ class RequestFinder(object):
         request = int(requests[0]) if requests else None
         return request
 
-    def find_request_project(self, source_project):
+    def find_request_project(self, source_project, newcand):
         """
         Look up the source project by its name and return the SR#(s)
         :param source_project: name of the source project
+        :param newcand: the review state of staging-group must be new
         """
 
         query = 'states=new,review&project={}&view=collection'.format(self.api.project)
@@ -106,6 +107,11 @@ class RequestFinder(object):
 
         ret = None
         for sr in root.findall('request'):
+            # ensure staging tool don't picks the processed request again
+            if newcand:
+                staging_group_states = [review.get('state') for review in root.findall('review') if review.get('by_group') == self.cstaging_group]
+                if 'new' not in staging_group_states:
+                    continue
             for act in sr.findall('action'):
                 src = act.find('source')
                 if src is not None and src.get('project') == source_project:
@@ -116,10 +122,11 @@ class RequestFinder(object):
 
         return ret
 
-    def find(self, pkgs):
+    def find(self, pkgs, newcand):
         """
         Search for all various mutations and return list of SR#s
         :param pkgs: mesh of argumets to search for
+        :param newcand: the review state of staging-group must be new
 
         This function is only called for its side effect.
         """
@@ -128,7 +135,7 @@ class RequestFinder(object):
                 continue
             if self.find_request_id(p):
                 continue
-            if self.find_request_project(p):
+            if self.find_request_project(p, newcand):
                 continue
             raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
@@ -159,14 +166,15 @@ class RequestFinder(object):
                 raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
     @classmethod
-    def find_sr(cls, pkgs, api):
+    def find_sr(cls, pkgs, api, newcand=False):
         """
         Search for all various mutations and return list of SR#s
         :param pkgs: mesh of argumets to search for
         :param api: StagingAPI instance
+        :param newcand: the review state of staging-group must be new
         """
         finder = cls(api)
-        finder.find(pkgs)
+        finder.find(pkgs, newcand)
         return finder.srs
 
     @classmethod
