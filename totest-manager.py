@@ -169,7 +169,7 @@ class ToTestBase(object):
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
                 failedmodule = self.find_failed_module(job['modules'])
                 url = 'https://openqa.opensuse.org/tests/%s' % job['id']
-                logger.info("%s %s %s %s"%(jobname, url, failedmodule, job['retry_avbl']))
+                print (jobname, url, failedmodule, job['retry_avbl'])
                 # if number_of_fails < 3: continue
             elif job['result'] == 'passed':
                 continue
