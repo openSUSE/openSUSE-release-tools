@@ -56,6 +56,10 @@ The full online repo contains too many changes to be listed here.
 Please check the known defects of this snapshot before upgrading:
 https://openqa.opensuse.org/tests/overview?distri=opensuse&groupid=1&version=Tumbleweed&build={}
 
+When you reply to report some issues, make sure to change the subject.
+It is not helpful to keep the release announcement subject in a thread
+while discussing a specific problem.
+
 """
 
 current_fn = os.path.join(os.path.dirname(__file__), "announcer-current-version")
