@@ -125,7 +125,11 @@ class SelectCommand(object):
             return False
             # FreezeCommand(self.api).perform(self.target_project)
 
-        for request in RequestFinder.find_sr(requests, self.api):
+        # picks new candidate requests only if it's not to move requests
+        # ie. the review state of staging-project must be new if newcand is True
+        newcand = not move
+
+        for request in RequestFinder.find_sr(requests, self.api, newcand):
             if not self.select_request(request, move, from_):
                 return False
 
