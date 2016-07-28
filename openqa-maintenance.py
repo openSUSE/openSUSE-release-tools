@@ -27,6 +27,8 @@ import os
 import re
 import sys
 import time
+from datetime import date
+import md5
 from simplejson import JSONDecodeError
 from collections import namedtuple
 try:
@@ -164,6 +166,60 @@ class TestUpdate(openSUSEUpdate):
 
         return settings
 
+TARGET_REPO_SETTINGS = {
+    'SUSE:Updates:SLE-SERVER:12:x86_64': {
+        'repos': [
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12:/x86_64/update',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/'
+        ],
+        'settings': {
+            'DISTRI': 'sle',
+            'VERSION': '12',
+            'FLAVOR': 'Server-DVD-UpdateTest',
+            'ARCH': 'x86_64',
+        },
+        'test': 'qam-gnome'
+    },
+    'SUSE:Updates:SLE-SERVER:12-SP1:x86_64': {
+        'repos' : [
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP1:/x86_64/update',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP1:/x86_64/update/'
+        ],
+        'settings': {
+            'DISTRI': 'sle',
+            'VERSION': '12-SP1',
+            'FLAVOR': 'Server-DVD-UpdateTest',
+            'ARCH': 'x86_64'
+        },
+        'test': 'qam-gnome'
+    },
+    'SUSE:Updates:SLE-DESKTOP:12:x86_64': {
+        'repos': [
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12:/x86_64/update',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/'
+        ],
+        'settings': {
+            'DISTRI': 'sle',
+            'VERSION': '12',
+            'FLAVOR': 'Desktop-DVD-UpdateTest',
+            'ARCH': 'x86_64',
+        },
+        'test': 'qam-gnome'
+    },
+    'SUSE:Updates:SLE-DESKTOP:12-SP1:x86_64': {
+        'repos': [
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP1:/x86_64/update',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/'
+        ],
+        'settings': {
+            'DISTRI': 'sle',
+            'VERSION': '12-SP1',
+            'FLAVOR': 'Desktop-DVD-UpdateTest',
+            'ARCH': 'x86_64',
+        },
+        'test': 'qam-gnome'
+    },
+}
 
 PROJECT_OPENQA_SETTINGS = {
     'openSUSE:13.2:Update': [
@@ -328,8 +384,67 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         return None
 
-    def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
+    # check a set of repos for their primary checksums
+    def calculate_repo_hash(self, repos):
+        m = md5.new()
+        # if you want to force it, increase this number
+        m.update('2')
+        for url in repos:
+            url += '/repodata/repomd.xml'
+            root = ET.parse(osc.core.http_GET(url)).getroot()
+            cs = root.find('.//{http://linux.duke.edu/metadata/repo}data[@type="primary"]/{http://linux.duke.edu/metadata/repo}checksum')
+            m.update(cs.text)
+        return m.hexdigest()
 
+    # we don't know the current BUILD and querying all jobs is too expensive
+    # so we need to check for one known TEST first
+    # if that job doesn't contain the proper hash, we trigger a new one
+    # and then we know the build
+    def detect_build_for_target(self, u):
+        today=date.today().strftime("%Y%m%d")
+        repohash=self.calculate_repo_hash(u['repos'])
+        s = u['settings']
+        j = self.openqa.openqa_request(
+            'GET', 'jobs',
+        {
+            'distri': s['DISTRI'],
+            'version': s['VERSION'],
+            'arch': s['ARCH'],
+            'flavor': s['FLAVOR'],
+            'test': u['test'],
+            'latest': '1',
+        })['jobs']
+        buildnr = None
+        for job in j:
+            if job['settings'].get('REPOHASH', '') == repohash:
+                # take the last in the row - it shouldn't matter though
+                buildnr = job['settings']['BUILD']
+        if buildnr:
+            return buildnr
+
+        # not found, then check for the next free build nr
+        for job in j:
+                build = job['settings']['BUILD']
+                if build and build.startswith(today):
+                    try:
+                        nr = int(build.split('-')[1])
+                    except:
+                        continue
+                    if nr > buildnr:
+                        buildnr = nr
+
+        if buildnr:
+            buildnr = today + "-%d" % (buildnr + 1)
+        else:
+            buildnr = today + "-1"
+
+        # now schedule it for real
+        s['BUILD'] = buildnr
+        s['REPOHASH'] = repohash
+        self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+        return buildnr
+
+    def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
     def request_get_openqa_jobs(self, req):
@@ -351,12 +466,24 @@ class OpenQABot(ReviewBot.ReviewBot):
                             {
                                 'distri': s['DISTRI'],
                                 'version': s['VERSION'],
-                                'arch': s['ARCH'],  # FIXME: no supported by API
+                                'arch': s['ARCH'],
                                 'flavor': s['FLAVOR'],
                                 'build': s['BUILD'],
                                 'scope': 'relevant',
                             })['jobs']
-
+                if prj in TARGET_REPO_SETTINGS:
+                    u = TARGET_REPO_SETTINGS[prj]
+                    s = u['settings']
+                    ret += self.openqa.openqa_request(
+                        'GET', 'jobs',
+                        {
+                            'distri': s['DISTRI'],
+                            'version': s['VERSION'],
+                            'arch': s['ARCH'],
+                            'flavor': s['FLAVOR'],
+                            'build':  self.detect_build_for_target(u),
+                            'scope': 'relevant',
+                        })['jobs']
         return ret
 
     def calculate_qa_status(self, jobs=None):
@@ -422,11 +549,6 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def openqa_overview_url_from_settings(self, settings):
         return osc.core.makeurl(self.openqa.baseurl, ['tests'], {'match': settings['BUILD']})
-#        return osc.core.makeurl( self.openqa.baseurl, ['tests', 'overview'], {
-#                'distri': settings['DISTRI'],
-#                'version': settings['VERSION'],
-#                'build': settings['BUILD'],
-#            }) #.replace('&', "%26")
 
     def find_failed_modules(self, job):
         failed = []
