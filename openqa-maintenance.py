@@ -567,6 +567,10 @@ class OpenQABot(ReviewBot.ReviewBot):
             failed.append(module['name'])
         return failed
 
+    # escape markdown
+    def emd(self, str):
+        return str.replace('_', '\_')
+
     def check_one_request(self, req):
         ret = None
 
@@ -610,13 +614,36 @@ class OpenQABot(ReviewBot.ReviewBot):
                     msg = "openQA test *[FAILED](%s)*\n" % url
                     state = 'declined'
                     ret = False
+                groups = dict()
                 for job in jobs:
                     modules = self.find_failed_modules(job)
                     if modules != []:
-                        msg += '\n- [%s](%s) failed %s in %s' % (
-                            job['id'],
+                        modstrings = []
+                        for mod in modules:
+                            modurl = osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])])
+                            modstrings.append("[%s](%s#step/%s/1)" % (self.emd(mod), modurl, mod))
+
+                        gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
+                        if not gl in groups:
+                            groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview' ],
+                                                        { 'version': job['settings']['VERSION'],
+                                                          'groupid': job['group_id'],
+                                                          'flavor': job['settings']['FLAVOR'],
+                                                          'distri': job['settings']['DISTRI'],
+                                                          'build': job['settings']['BUILD'],
+                                                        })
+                            gmsg = "__Group [%s](%s)__\n" % (gl, groupurl)
+                        else:
+                            gmsg = groups[gl]
+                        gmsg += '\n- [%s](%s) failed in %s' % (
+                            self.emd(job['settings']['TEST']),
                             osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])]),
-                            job['settings']['TEST'], ','.join(modules))
+                            ','.join(modstrings))
+                        groups[gl] = gmsg
+
+                for group in sorted(groups.keys()):
+                    msg += "\n\n" + groups[group]
+
                 self.add_comment(req, msg, 'done', state)
             elif qa_state == QA_INPROGRESS:
                 self.logger.debug("request %s still in progress", req.reqid)
