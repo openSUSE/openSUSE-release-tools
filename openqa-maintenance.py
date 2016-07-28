@@ -425,7 +425,10 @@ class OpenQABot(ReviewBot.ReviewBot):
                 # take the last in the row
                 buildnr = job['settings']['BUILD']
         self.update_test_builds[prj] = buildnr
-        if buildnr:
+        # ignore old build numbers, we want a fresh run every day
+        # to find regressions in the tests and to get data about
+        # randomly failing tests
+        if buildnr and buildnr.startswith(today):
             return
 
         # not found, then check for the next free build nr
