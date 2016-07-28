@@ -329,6 +329,11 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.logger.debug(self.do_comments)
 
         self.commentapi = CommentAPI(self.apiurl)
+        self.update_test_builds = dict()
+
+    def prepare_review(self):
+        for prj, u in TARGET_REPO_SETTINGS.items():
+            self.trigger_build_for_target(prj, u)
 
     def check_action_maintenance_release(self, req, a):
         # we only look at the binaries of the patchinfo
@@ -400,7 +405,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     # so we need to check for one known TEST first
     # if that job doesn't contain the proper hash, we trigger a new one
     # and then we know the build
-    def detect_build_for_target(self, u):
+    def trigger_build_for_target(self, prj, u):
         today=date.today().strftime("%Y%m%d")
         repohash=self.calculate_repo_hash(u['repos'])
         s = u['settings']
@@ -417,10 +422,11 @@ class OpenQABot(ReviewBot.ReviewBot):
         buildnr = None
         for job in j:
             if job['settings'].get('REPOHASH', '') == repohash:
-                # take the last in the row - it shouldn't matter though
+                # take the last in the row
                 buildnr = job['settings']['BUILD']
+        self.update_test_builds[prj] = buildnr
         if buildnr:
-            return buildnr
+            return
 
         # not found, then check for the next free build nr
         for job in j:
@@ -442,7 +448,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         s['BUILD'] = buildnr
         s['REPOHASH'] = repohash
         self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
-        return buildnr
+        self.update_test_builds[prj] = buildnr
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
@@ -481,7 +487,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                             'version': s['VERSION'],
                             'arch': s['ARCH'],
                             'flavor': s['FLAVOR'],
-                            'build':  self.detect_build_for_target(u),
+                            'build':  self.update_test_builds[prj],
                             'scope': 'relevant',
                         })['jobs']
         return ret

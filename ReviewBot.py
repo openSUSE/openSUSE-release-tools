@@ -81,8 +81,14 @@ class ReviewBot(object):
             req.read(root)
             self.requests.append(req)
 
+    # function called before requests are reviewed
+    def prepare_review(self):
+        pass
+
     def check_requests(self):
 
+        # give implementations a chance to do something before single requests
+        self.prepare_review()
         for req in self.requests:
             self.logger.debug("checking %s"%req.reqid)
             good = self.check_one_request(req)
