@@ -118,16 +118,7 @@ class Leaper(ReviewBot.ReviewBot):
                         if good:
                             self.logger.debug("hope it's ok to change to SP2")
                             return good
-                    else: # other project or fork
-                        good = self._check_factory(target_package, src_srcinfo)
-                        if good:
-                            self.source_in_factory = True
-                        elif good is None:
-                            self.pending_factory_submission = True
-                        else:
-                            self.needs_reviewteam = True
-
-                        return False
+                # else other project or FORK, fall through
 
             elif origin.startswith('SUSE:SLE-12'):
                 # submitted from :Update
@@ -140,16 +131,17 @@ class Leaper(ReviewBot.ReviewBot):
                         or src_project.startswith('SUSE:SLE-12-SP2'):
                             self.logger.debug("higher service pack ok")
                             return True
-            else: # other project or FORK
-                good = self._check_factory(target_package, src_srcinfo)
-                if good:
-                    self.source_in_factory = True
-                elif good is None:
-                    self.pending_factory_submission = True
-                else:
-                    self.needs_reviewteam = True
+            # else other project or FORK, fall through
 
-                return False
+            # we came here because none of the above checks find it good, so
+            # let's see if the package is in Factory at least
+            is_in_factory = self._check_factory(target_package, src_srcinfo)
+            if is_in_factory:
+                self.source_in_factory = True
+            elif is_in_factory is None:
+                self.pending_factory_submission = True
+            else:
+                self.needs_reviewteam = True
 
         else: # no origin
             # SLE and Factory are ok
@@ -158,7 +150,11 @@ class Leaper(ReviewBot.ReviewBot):
                 return True
             # submitted from elsewhere, check it's in Factory
             good = self._check_factory(target_package, src_srcinfo)
-            if good or good == None:
+            if good:
+                self.source_in_factory = True
+                return True
+            elif good == None:
+                self.pending_factory_submission = True
                 return good
             # or maybe in SP2?
             good = self.factory._check_project('SUSE:SLE-12-SP2:GA', target_package, src_srcinfo.verifymd5)
