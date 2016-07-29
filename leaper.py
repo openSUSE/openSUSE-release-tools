@@ -145,7 +145,8 @@ class Leaper(ReviewBot.ReviewBot):
             elif is_in_factory is None:
                 self.pending_factory_submission = True
             else:
-                self.needs_reviewteam = True
+                if not src_project.startswith('SUSE:SLE-12'):
+                    self.needs_reviewteam = True
 
         else: # no origin
             # SLE and Factory are ok
