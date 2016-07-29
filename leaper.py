@@ -46,6 +46,14 @@ class Leaper(ReviewBot.ReviewBot):
         self.maintbot = MaintenanceChecker(*args, **kwargs)
         # for FactorySourceChecker
         self.factory = FactorySourceChecker(*args, **kwargs)
+
+        self.needs_reviewteam = False
+        self.pending_factory_submission = False
+        self.source_in_factory = False
+
+    def prepare_review(self):
+
+        # update lookup information on every run
         self.factory.parse_lookup('openSUSE:Leap:42.2')
         self.factory.parse_lookup('openSUSE:Leap:42.2:NonFree')
         self.lookup_422 = self.factory.lookup.copy()
@@ -53,10 +61,6 @@ class Leaper(ReviewBot.ReviewBot):
         self.factory.parse_lookup('openSUSE:Leap:42.1:Update')
         self.lookup_421 = self.factory.lookup.copy()
         self.factory.lookup = {}
-
-        self.needs_reviewteam = False
-        self.pending_factory_submission = False
-        self.source_in_factory = False
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
