@@ -431,6 +431,8 @@ class OpenQABot(ReviewBot.ReviewBot):
         if buildnr and buildnr.startswith(today):
             return
 
+        buildnr = 0
+
         # not found, then check for the next free build nr
         for job in j:
                 build = job['settings']['BUILD']
@@ -442,10 +444,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     if nr > buildnr:
                         buildnr = nr
 
-        if buildnr:
-            buildnr = today + "-%d" % (buildnr + 1)
-        else:
-            buildnr = today + "-1"
+        buildnr = "%s-%d" % (today, buildnr + 1)
 
         # now schedule it for real
         s['BUILD'] = buildnr
