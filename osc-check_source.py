@@ -259,6 +259,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['isv:ownCloud:desktop/'] = 'owncloud-client'
             self._devel_projects['system:snappy/'] = 'snappy'
             self._devel_projects['devel:languages:rust/'] = 'rustc'
+            self._devel_projects['Application:ERP:Tryton:Factory/'] = 'tryton'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
