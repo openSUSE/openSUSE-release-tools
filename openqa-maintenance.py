@@ -490,7 +490,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
-    def request_get_openqa_jobs(self, req):
+    def request_get_openqa_jobs(self, req, incident=True, test_repo=False):
         ret = None
         types = set([a.type for a in req.actions])
         if 'maintenance_release' in types:
@@ -501,7 +501,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             tgt_prjs = set([a.tgt_project for a in req.actions])
             ret = []
             for prj in tgt_prjs:
-                if prj in PROJECT_OPENQA_SETTINGS:
+                if incident and prj in PROJECT_OPENQA_SETTINGS:
                     for u in PROJECT_OPENQA_SETTINGS[prj]:
                         s = u.settings(build, prj, [], req=req)
                         ret += self.openqa.openqa_request(
@@ -515,7 +515,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                                 'scope': 'relevant',
                             })['jobs']
                 repo_settings = TARGET_REPO_SETTINGS.get(self.openqa.baseurl, {})
-                if prj in repo_settings:
+                if test_repo and prj in repo_settings:
                     u = repo_settings[prj]
                     for s in u['settings']:
                         ret += self.openqa.openqa_request(
@@ -548,7 +548,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             if job['state'] not in ('cancelled', 'done'):
                 in_progress = True
             else:
-                if job['result'] != 'passed':
+                if job['result'] != 'passed' and job['result'] != 'softfailed':
                     has_failed = True
 
         if not j:
@@ -639,6 +639,12 @@ class OpenQABot(ReviewBot.ReviewBot):
                     self.add_comment(req, msg, 'seen')
             elif qa_state == QA_FAILED or qa_state == QA_PASSED:
                 url = self.openqa_overview_url_from_settings(jobs[0]['settings'])
+                # don't take test repo results into the calculation of total
+                # this is for humans to decide which incident broke the test repo
+                jobs += self.request_get_openqa_jobs(req, incident=False, test_repo=True)
+                if self.calculate_qa_status(jobs) == QA_INPROGRESS:
+                    self.logger.debug("incident tests for request %s are done, but need to wait for test repo", req.reqid)
+                    return
                 if qa_state == QA_PASSED:
                     self.logger.debug("request %s passed", req.reqid)
                     msg = "openQA test [passed](%s)\n" % url
