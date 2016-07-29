@@ -233,6 +233,10 @@ class Leaper(ReviewBot.ReviewBot):
                     self.review_messages['declined'] += '\nsource is in Factory'
                 if self.pending_factory_submission:
                     self.review_messages['declined'] += '\na submission to Factory is pending'
+                    self.logger.debug("origin changed but waiting for Factory submission to complete")
+                    # FXIME: we should add the human reviewer here
+                    # and leave a comment
+                    return None
             # shouldn't happen actually
             if has_correct_maintainer != True:
                 self.review_messages['declined'] += '\nMaintainer check failed'
