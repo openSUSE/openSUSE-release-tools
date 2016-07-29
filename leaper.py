@@ -215,7 +215,7 @@ class Leaper(ReviewBot.ReviewBot):
             self.logger.debug("%s needs review by opensuse-review-team"%req.reqid)
             for r in req.reviews:
                 if r.by_group == 'opensuse-review-team':
-                    self.add_review = False
+                    add_review = False
                     self.logger.debug("opensuse-review-team already is a reviewer")
                     break
             if add_review:
