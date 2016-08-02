@@ -152,6 +152,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                     else:
                         self.logger.error("request in state %s not expected"%req.state.name)
                         return None
+                else:
+                    self.logger.debug("submission has different sources")
         return False
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):

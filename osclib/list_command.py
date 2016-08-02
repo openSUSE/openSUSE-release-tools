@@ -68,7 +68,20 @@ class ListCommand:
                 devel = self.api.get_devel_project("openSUSE:Factory", target_package)
                 if devel is None:
                     devel = '00'
-                result.setdefault(devel, []).append('sr#{}: {:<30} -> {}'.format(request_id, target_package, ring))
+                result.setdefault(devel, []).append('sr#{}: {:<30} -> {:<12}'.format(request_id, target_package, ring))
+                # show origin of request
+                if self.api.project != "openSUSE:Factory" and action.find('source') != None:
+                    source_prj = action.find('source').get('project')
+                    if source_prj.startswith('SUSE:SLE-12:') \
+                        or source_prj.startswith('SUSE:SLE-12-'):
+                        source_prj = source_prj[len('SUSE:SLE-12:'):]
+                    elif source_prj.startswith('openSUSE:'):
+                        source_prj = source_prj[len('openSUSE:'):]
+                        if source_prj.startswith('Leap:'):
+                            source_prj = source_prj[len('Leap:'):]
+                    elif source_prj.startswith('home:'):
+                        source_prj = '~' + source_prj[len('home:'):]
+                    result[devel][-1] += ' ({})'.format(source_prj)
             else:
                 non_ring_packages.append(target_package)
 
