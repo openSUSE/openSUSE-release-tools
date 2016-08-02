@@ -412,6 +412,12 @@ class CheckRepo(object):
             self.change_review_state(request_id, 'accepted', message=msg)
             return requests
 
+        if rq.src_project == 'devel:languages:haskell':
+            msg = 'I give up, Haskell is too hard for me'
+            print 'ACCEPTED', request_id, msg
+            self.change_review_state(request_id, 'accepted', message=msg)
+            return requests
+
         rq.group = self.grouped.get(request_id, request_id)
         requests.append(rq)
 

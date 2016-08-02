@@ -446,6 +446,8 @@ def _mirror_full(self, plugin_dir, repo_dir):
 
 
 def _print_request_and_specs(self, request_and_specs):
+    if not request_and_specs:
+        return
     print request_and_specs[0]
     for spec in request_and_specs[1:]:
         print ' *', spec
