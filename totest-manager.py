@@ -171,7 +171,7 @@ class ToTestBase(object):
                 url = 'https://openqa.opensuse.org/tests/%s' % job['id']
                 print (jobname, url, failedmodule, job['retry_avbl'])
                 # if number_of_fails < 3: continue
-            elif job['result'] == 'passed':
+            elif job['result'] == 'passed' or job['result'] == 'softfailed':
                 continue
             elif job['result'] == 'none':
                 if job['state'] != 'cancelled':
