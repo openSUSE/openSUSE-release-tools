@@ -170,8 +170,10 @@ TARGET_REPO_SETTINGS = {
     'https://openqa.suse.de' : {
     'SUSE:Updates:SLE-SERVER:12:x86_64': {
         'repos': [
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP1/x86_64/update/',
             'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/'
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12/x86_64/update/',
         ],
         'settings': [ {
             'DISTRI': 'sle',
@@ -183,8 +185,10 @@ TARGET_REPO_SETTINGS = {
     },
     'SUSE:Updates:SLE-SERVER:12-SP1:x86_64': {
         'repos' : [
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP1/x86_64/update/',
             'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP1:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP1:/x86_64/update/'
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP1:/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP1/x86_64/update/',
         ],
         'settings': [ {
             'DISTRI': 'sle',
@@ -196,8 +200,10 @@ TARGET_REPO_SETTINGS = {
     },
     'SUSE:Updates:SLE-DESKTOP:12:x86_64': {
         'repos': [
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12/x86_64/update/',
             'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/'
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12/x86_64/update/',
         ],
         'settings': [ {
             'DISTRI': 'sle',
@@ -209,8 +215,10 @@ TARGET_REPO_SETTINGS = {
     },
     'SUSE:Updates:SLE-DESKTOP:12-SP1:x86_64': {
         'repos': [
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12-SP1/x86_64/update/',
             'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP1:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/'
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP1/x86_64/update/',
         ],
         'settings': [ {
             'DISTRI': 'sle',
