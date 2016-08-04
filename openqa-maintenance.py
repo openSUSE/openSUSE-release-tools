@@ -88,11 +88,18 @@ class Update(object):
         self._settings = settings
         self._settings['_NOOBSOLETEBUILD'] = '1'
 
-    def settings(self, src_prj, dst_prj, packages, req=None):
-        return self._settings.copy()
+    def settings(self, src_prj, dst_prj, packages, req):
+        s = self._settings.copy()
 
+        # start with a colon so it looks cool behind 'Build' :/
+        s['BUILD'] = ':' + req.reqid + '.' + self.request_name(req)
 
-class SUSEUpdate(Update):
+        return s
+
+    def calculate_lastest_good_updates(self, openqa, settings):
+        # not touching anything by default
+        pass
+
     # take the first package name we find - often enough correct
     def request_name(self, req):
         if req.reqid not in request_name_cache:
@@ -113,11 +120,10 @@ class SUSEUpdate(Update):
 
         return 'unknown'
 
+class SUSEUpdate(Update):
+
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
-
-        # start with a colon so it looks cool behind 'Build' :/
-        settings['BUILD'] = ':' + req.reqid + '.' + self.request_name(req)
 
         repo = 'http://download.suse.de/ibs/%s/%s/' % (src_prj.replace(':', ':/'), dst_prj.replace(':', '_'))
         settings['MINIMAL_TEST_REPO'] = repo
@@ -126,12 +132,48 @@ class SUSEUpdate(Update):
 
 class openSUSEUpdate(Update):
 
+    def calculate_lastest_good_updates(self, openqa, settings):
+        j = openqa.openqa_request(
+            'GET', 'jobs',
+        {
+            'distri': settings['DISTRI'],
+            'version': settings['VERSION'],
+            'arch': settings['ARCH'],
+            'flavor': 'Updates',
+            'scope': 'current',
+            'limit': 100 # this needs increasing if we ever get *monster* coverage for released updates
+        })['jobs']
+        # check all publishing jobs per build and reject incomplete builds
+        builds = dict()
+        for job in j:
+            if not 'PUBLISH_HDD_1' in job['settings']:
+                continue
+            if job['result'] == 'passed' or job['result'] == 'softfailed':
+                builds.setdefault(job['settings']['BUILD'], 'passed')
+            else:
+                builds[job['settings']['BUILD']] = 'failed'
+
+        # take the last one passing completely
+        lastgood_prefix = 0
+        lastgood_suffix = 0
+        for build, status in builds.items():
+            if status == 'passed':
+                try:
+                    prefix = int(build.split('-')[0])
+                    suffix = int(build.split('-')[1])
+                    if prefix > lastgood_prefix:
+                        lastgood_prefix = prefix
+                        lastgood_suffix = suffix
+                    elif prefix == lastgood_prefix and suffix > lastgood_suffix:
+                        lastgood_suffix = suffix
+                except:
+                    continue
+
+        if lastgood_prefix:
+            settings['LATEST_GOOD_UPDATES_BUILD'] = "%d-%d" % (lastgood_prefix, lastgood_suffix)
+
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
-
-        settings['BUILD'] = src_prj
-        if req:
-            settings['BUILD'] += ':' + req.reqid
 
         # openSUSE:Maintenance key
         settings['IMPORT_GPG_KEYS'] = 'gpg-pubkey-b3fd7e48-5549fd0f'
@@ -409,6 +451,8 @@ class OpenQABot(ReviewBot.ReviewBot):
         for update in PROJECT_OPENQA_SETTINGS[a.tgt_project]:
             settings = update.settings(a.src_project, a.tgt_project, packages, req)
             if settings is not None:
+                update.calculate_lastest_good_updates(self.openqa, settings)
+
                 self.logger.info("posting %s %s %s", settings['VERSION'], settings['ARCH'], settings['BUILD'])
                 self.logger.debug('\n'.join(["  %s=%s" % i for i in settings.items()]))
                 if not self.dryrun:
@@ -440,6 +484,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     # if that job doesn't contain the proper hash, we trigger a new one
     # and then we know the build
     def trigger_build_for_target(self, prj, u):
+
         today=date.today().strftime("%Y%m%d")
         repohash=self.calculate_repo_hash(u['repos'])
         s = u['settings'][0]
