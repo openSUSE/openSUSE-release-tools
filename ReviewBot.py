@@ -190,6 +190,10 @@ class ReviewBot(object):
 
     def check_action_maintenance_incident(self, req, a):
         dst_package = a.src_package
+        # Ignoring patchinfo package for checking
+        if a.src_package == 'patchinfo':
+          self.logger.info("package is patchinfo, ignoring")
+          return None
         # dirty obs crap
         if a.tgt_releaseproject is not None:
             ugly_suffix = '.'+a.tgt_releaseproject.replace(':', '_')
