@@ -34,13 +34,88 @@ import osc.core
 from osc import oscerr
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:42'
+OPENSUSE = 'openSUSE:Leap:42.2'
 FCC = 'openSUSE:42:Factory-Candidates-Check'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
+http_PUT = osc.core.http_PUT
 
+class FccFreezer(object):
+    def __init__(self):
+        self.factory = 'openSUSE:Factory'
+        self.apiurl = osc.conf.config['apiurl']
+        self.debug = osc.conf.config['debug']
+
+    def list_packages(self, project):
+        url = makeurl(self.apiurl, ['source', project])
+        pkglist = []
+
+        root = ET.parse(http_GET(url)).getroot()
+        xmllines = root.findall("./entry")
+        for pkg in xmllines:
+            pkglist.append(pkg.attrib['name'])
+
+        return set(pkglist)
+
+    def check_one_source(self, flink, si, pkglist):
+        package = si.get('package')
+        logging.debug("Processing %s" % (package))
+
+        # If the package is an internal one (e.g _product)
+        if package.startswith('_') or package.startswith('Test-DVD'):
+            return None
+
+        for linked in si.findall('linked'):
+            if linked.get('project') == self.factory:
+                if linked.get('package') in pkglist:
+                    return package
+                url = makeurl(self.apiurl, ['source', self.factory, package], {'view': 'info', 'nofilename': '1'})
+                # print(package, linked.get('package'), linked.get('project'))
+                f = http_GET(url)
+                proot = ET.parse(f).getroot()
+                lsrcmd5 = proot.get('lsrcmd5')
+                if lsrcmd5 is None:
+                    raise Exception("{}/{} is not a link but we expected one".format(self.factory, package))
+                ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
+                return package
+
+        if package in pkglist:
+            return package
+
+        if package in ['rpmlint-mini-AGGR']:
+            return package  # we should not freeze aggregates
+
+        ET.SubElement(flink, 'package', {'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
+        return package
+
+    def receive_sources(self, flink, sources):
+        pkglist = self.list_packages(OPENSUSE)
+
+        url = makeurl(self.apiurl, ['source', self.factory], {'view': 'info', 'nofilename': '1'})
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+
+        for si in root.findall('sourceinfo'):
+            package = self.check_one_source(flink, si, pkglist)
+            sources[package] = 1
+        return sources
+
+    def freeze(self):
+        """Main method"""
+        sources = {}
+        flink = ET.Element('frozenlinks')
+
+        fl = ET.SubElement(flink, 'frozenlink', {'project': self.factory})
+        sources = self.receive_sources(fl, sources)
+
+        url = makeurl(self.apiurl, ['source', FCC, '_project', '_frozenlinks'], {'meta': '1'})
+        l = ET.tostring(flink)
+        try:
+            http_PUT(url, data=l)
+        except urllib2.HTTPError, e:
+            raise e
 
 class FccSubmitter(object):
     def __init__(self, from_prj, to_prj, submit_limit):
@@ -51,82 +126,18 @@ class FccSubmitter(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         self.sle_base_prjs = [
+                'SUSE:SLE-12-SP2:GA',
+                'SUSE:SLE-12-SP1:Update',
                 'SUSE:SLE-12-SP1:GA',
                 'SUSE:SLE-12:Update',
                 'SUSE:SLE-12:GA',
                 ]
         # the skip list against devel project
-        self.skip_devel_project_list = [
-                'X11:Enlightenment:Factory',
-                'devel:languages:nodejs',
-                'devel:languages:go',
-                'mobile:synchronization:FACTORY',
-                ]
-        # put the except packages from skip_devel_project_list, use regex in this list
-        self.except_pkgs_list = [
-                "^golang-x-(\w+)",
-                "^go$",
-                "^nodejs$",
-                ]
-        self.skip_pkgs_list = [
-                "^mozaddon-adblock_edge",
-                "^gnome-python-desktop",
-                "^compiz-manager",
-                "^lua$",
-                "^lua52$",
-                "^python-plaso",
-                "^pidgin-openfetion",
-                "^sobby",
-                "^conduit",
-                "^devilspie",
-                "^radiotray",
-                "^decibel-audio-player",
-                "^cttop",
-                "^kimtoy",
-                "^scim$",
-                "^scim-(\w+)",
-                "^freeradius-(\w+)",
-                "x-tile",
-                "imhangul",
-                "libgnomeuimm",
-                "guake",
-                "gstreamer-0_10-plugins-gl",
-                "python-jmespath",
-                "pybliographer",
-                "scpm",
-                "ghc-asn1-data",
-                "novel-pinyin",
-                "xplatproviders",
-                "libu2f-host",
-                "pycarddav",
-                "rubygem-json_pure-1_5",
-                "Crystalcursors",
-                "python-dfVFS",
-                "python-gcs-oauth2-boto-plugin",
-                "texinfo4",
-                "mozaddon-bugmenot",
-                "virt-utils",
-                "^kdelibs3",
-                "python-oslo.version",
-                "seed",
-                "gtk3-metatheme-sonar",
-                "metacity-themes",
-                "tuxcursors",
-                "yast2-fonts",
-                "python-ncclient",
-                "tweets2pdf",
-                "perl-Net-OpenID-Consumer",
-                "bomberclone",
-                "chromium-bsu",
-                "ceferino",
-                "7kaa",
-                "atomiks",
-                "blobwars",
-                "asteroid",
-                "ski",
-                "pyspacewar",
-                "lostfeathers",
-                ]
+        self.skip_devel_project_list = []
+        # put the except packages from skip_devel_project_list, use regex in this list, eg. "^golang-x-(\w+)", "^nodejs$"
+        self.except_pkgs_list = []
+        # put the exact package name here
+        self.skip_pkgs_list = []
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -226,6 +237,22 @@ class FccSubmitter(object):
             return False
         return True
 
+    def list_pkgs(self):
+        """List build succeeded packages"""
+        succeeded_packages = []
+        succeeded_packages = self.get_build_succeeded_packages(self.from_prj)
+        if not len(succeeded_packages) > 0:
+            logging.info('No build succeeded package in %s'%self.from_prj)
+            return
+
+        print 'Build succeeded packages:'
+        print '-------------------------------------'
+        for pkg in succeeded_packages:
+           print pkg
+
+        print '-------------------------------------'
+        print "Found {} build succeded packages".format(len(succeeded_packages))
+
     def crawl(self):
         """Main method"""
         succeeded_packages = []
@@ -324,12 +351,20 @@ def main(args):
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = FccSubmitter(args.from_prj, args.to_prj, args.submit_limit)
-    uc.crawl()
+    if args.freeze:
+        print "freezing {}".format(FCC)
+        freezer = FccFreezer()
+        freezer.freeze()
+    else:
+        uc = FccSubmitter(args.from_prj, args.to_prj, args.submit_limit)
+        if args.list_packages:
+            uc.list_pkgs()
+        else:
+            uc.crawl()
 
 if __name__ == '__main__':
-    description = 'Create SR from openSUSE:42:Factory-Candidates-Check to the '\
-                  'new openSUSE:42 project for every new build succeded package.'
+    description = 'Create SR from openSUSE:42:Factory-Candidates-Check to '\
+                  'openSUSE:Leap:42.2 project for new build succeded packages.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
@@ -340,6 +375,8 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--to', dest='to_prj', metavar='PROJECT',
                         help='project where to submit the packages (default: %s)' % OPENSUSE,
                         default=OPENSUSE)
+    parser.add_argument('-r', '--freeze', dest='freeze', action='store_true', help='rebase FCC project')
+    parser.add_argument('-s', '--list', dest='list_packages', action='store_true', help='list build succeeded packages')
     parser.add_argument('-l', '--limit', dest='submit_limit', metavar='NUMBERS', help='limit numbers packages to submit (default: 100)', default=100)
 
     args = parser.parse_args()
