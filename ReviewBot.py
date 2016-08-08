@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2014 SUSE Linux Products GmbH
+# Copyright (c) 2014-2016 SUSE LLC
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@ class ReviewBot(object):
     """
 
     DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
-    REVIEW_CHOICES = ('normal', 'no', 'accept', 'fallback-onfail', 'fallback-always')
+    REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
@@ -102,7 +102,7 @@ class ReviewBot(object):
                 self.logger.info("%s ignored"%req.reqid)
             elif good:
                 self._set_review(req, 'accepted')
-            else:
+            elif self.review_mode != 'accept-onpass':
                 self._set_review(req, 'declined')
 
     def _set_review(self, req, state):
