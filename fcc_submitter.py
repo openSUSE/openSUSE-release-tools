@@ -225,10 +225,12 @@ class FccSubmitter(object):
     def check_multiple_specfiles(self, project, package):
         url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
         root = ET.fromstring(http_GET(url).read())
+        linkinfo = root.find('linkinfo')
         files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
-        if len(files) == 1:
-            return False
-        return True
+        if linkinfo is not None and len(files) > 1:
+            return linkinfo.attrib['package']
+        else:
+            return
 
     def is_sle_base_pkgs(self, package):
         link = self.get_link(self.to_prj, package)
@@ -282,8 +284,8 @@ class FccSubmitter(object):
                 continue
 
             multi_specs = self.check_multiple_specfiles(self.factory, package)
-            if multi_specs is True:
-                logging.info('%s in %s have multiple specs, skip for now and submit manually'%(package, 'openSUSE:Factory'))
+            if multi_specs:
+                logging.info('%s in %s have multiple specs, it is linked to %s, skip it!'%(package, 'openSUSE:Factory', multi_specs))
                 ms_packages.append(package)
                 continue
 
@@ -337,7 +339,7 @@ class FccSubmitter(object):
                 logging.debug('%s is exist in %s, skip!'%(package, self.to_prj))
 
         # dump multi specs packages
-        print("Multi-specs packages:")
+        print("Multi-specfile packages:")
         if ms_packages:
             for pkg in ms_packages:
                 print pkg
