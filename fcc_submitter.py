@@ -137,7 +137,23 @@ class FccSubmitter(object):
         # put the except packages from skip_devel_project_list, use regex in this list, eg. "^golang-x-(\w+)", "^nodejs$"
         self.except_pkgs_list = []
         # put the exact package name here
-        self.skip_pkgs_list = []
+        self.skip_pkgs_list = [
+                'python-pypuppetdb',
+                'smbtad',
+                'mdds-1_2',
+                'e17-theme-a-os-vision-v3',
+                'e17-branding-openSUSE',
+                'e17-theme-a-os-miguel-v3',
+                'shellementary',
+                'e17-theme-a-os-agust-v3',
+                'e17-theme-openSUSE',
+                'aer-inject',
+                'xplatproviders',
+                'tulip'
+                ]
+        self.check_later = [
+                'tulip'
+                ]
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -213,7 +229,7 @@ class FccSubmitter(object):
         src_project = self.factory # submit from Factory only
         dst_project = self.to_prj
 
-        msg = 'Automatic request from %s by F-C-C Submitter' % src_project
+        msg = 'Automatic request from %s by F-C-C Submitter. Please review this change and decline it if Leap do not need it.' % src_project
         res = osc.core.create_submit_request(self.apiurl,
                                              src_project,
                                              package,
@@ -331,8 +347,8 @@ class FccSubmitter(object):
                     if res and res is not None:
                         logging.info('Created request %s for %s' % (res, package))
                         # add review by package
-                        logging.info("Adding review by %s/%s"%(devel_prj, devel_pkg))
-                        self.add_review(res, devel_prj, devel_pkg)
+                        #logging.info("Adding review by %s/%s"%(devel_prj, devel_pkg))
+                        #self.add_review(res, devel_prj, devel_pkg)
                     else:
                         logging.error('Error occurred when creating submit request')
             else:
