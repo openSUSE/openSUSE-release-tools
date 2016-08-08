@@ -216,6 +216,17 @@ class Manager42(object):
             return
 
         root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
+        linked = root.find('linked')
+        if not linked is None and linked.get('package') != package:
+            lstring = 'subpackage of {}'.format(linked.get('package'))
+            if lstring != lproject:
+                logger.warn("{} links to {} (was {})".format(package, linked.get('package'), lproject))
+                self.lookup[package] = lstring
+                self.lookup_changes += 1
+            else:
+                logger.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
+            return
+
         pm = self.package_metas[package]
         devel = pm.find('devel')
         if devel is not None or (lproject is not None and lproject.startswith('Devel;')):
@@ -231,24 +242,13 @@ class Manager42(object):
                                                        root.get('verifymd5'))
             if srcmd5:
                 lstring = 'Devel;{};{}'.format(develprj, develpkg)
-                if lstring != self.lookup[package]:
+                if not package in self.lookup or lstring != self.lookup[package]:
                     logger.debug("{} from devel {}/{} (was {})".format(package, develprj, develpkg, lproject))
                     self.lookup[package] = lstring
                     self.lookup_changes += 1
                 else:
                     logger.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
                 return
-
-        linked = root.find('linked')
-        if not linked is None and linked.get('package') != package:
-            lstring = 'subpackage of {}'.format(linked.get('package'))
-            if lstring != lproject:
-                logger.warn("link mismatch: %s <> %s, subpackage? (was %s)", linked.get('package'), package, lproject)
-                self.lookup[package] = lstring
-                self.lookup_changes += 1
-            else:
-                logger.debug("{} correctly marked as subpackage of {}".format(package, linked.get('package')))
-            return
 
         if lproject and lproject != 'FORK' and not lproject.startswith('subpackage '):
             srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
