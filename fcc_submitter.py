@@ -138,7 +138,7 @@ class FccSubmitter(object):
         self.except_pkgs_list = []
         # put the exact package name here
         self.skip_pkgs_list = [
-                'python-pypuppetdb',
+                'python-pypuppetdb$',
                 'smbtad',
                 'mdds-1_2',
                 'e17-theme-a-os-vision-v3',
@@ -149,7 +149,29 @@ class FccSubmitter(object):
                 'e17-theme-openSUSE',
                 'aer-inject',
                 'xplatproviders',
-                'tulip'
+                'newlib',
+                'openttd-openmsx',
+                'tulip',
+                'guake',
+                'mlterm',
+                'uim',
+                '^libxml',
+                'w3m-el',
+                'scim$',
+                'gstreamer-0_10-plugins-gl',
+                'libgdamm',
+                'gtk3-metatheme-sonar',
+                'gstreamer-0_10-plugin-crystalhd',
+                'grisbi',
+                'heroes-tron',
+                'specto',
+                'wayland-protocols',
+                'gsf-sharp',
+                'hal-flash',
+                'kdelibs3',
+                'qca-sasl',
+                'mozaddon-gnotifier',
+                'kiwi-config-openSUSE'
                 ]
         self.check_later = [
                 'tulip'
@@ -239,14 +261,19 @@ class FccSubmitter(object):
         return res
 
     def check_multiple_specfiles(self, project, package):
-        url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
+        try:
+            url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                return None
+            raise e
         root = ET.fromstring(http_GET(url).read())
         linkinfo = root.find('linkinfo')
         files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
         if linkinfo is not None and len(files) > 1:
             return linkinfo.attrib['package']
         else:
-            return
+            return False
 
     def is_sle_base_pkgs(self, package):
         link = self.get_link(self.to_prj, package)
@@ -300,6 +327,10 @@ class FccSubmitter(object):
                 continue
 
             multi_specs = self.check_multiple_specfiles(self.factory, package)
+            if multi_specs is None:
+                logging.info('%s does not exist in %s'%(package, 'openSUSE:Factory'))
+                continue
+
             if multi_specs:
                 logging.info('%s in %s have multiple specs, it is linked to %s, skip it!'%(package, 'openSUSE:Factory', multi_specs))
                 ms_packages.append(package)
