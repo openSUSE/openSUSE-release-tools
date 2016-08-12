@@ -298,6 +298,20 @@ class FccSubmitter(object):
         print '-------------------------------------'
         print "Found {} build succeded packages".format(len(succeeded_packages))
 
+    def get_deleted_packages(self, project):
+        query = 'states=accepted&types=delete&project={}&view=collection'
+        query = query.format(project)
+        url = makeurl(self.apiurl, ['request'], query)
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+
+        pkgs = []
+        for sr in root.findall('request'):
+            tgt_package = sr.find('action').find('target').get('package')
+            pkgs.append(tgt_package)
+
+        return pkgs
+
     def crawl(self):
         """Main method"""
         succeeded_packages = []
@@ -310,11 +324,16 @@ class FccSubmitter(object):
         random.shuffle(succeeded_packages)
         # get souce packages from target
         target_packages = self.get_source_packages(self.to_prj)
+        deleted_packages = self.get_deleted_packages(self.to_prj)
 
         ms_packages = [] # collect multi specs packages
 
         for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]
+
+            if package in deleted_packages:
+                logging.info('%s has been dropped from %s, ignore it!'%(package, self.to_prj))
+                continue
 
             if self.is_sle_base_pkgs(package) is True:
                 logging.info('%s origin from SLE base, skip for now!'%package)
