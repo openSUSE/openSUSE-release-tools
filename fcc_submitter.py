@@ -133,7 +133,9 @@ class FccSubmitter(object):
                 'SUSE:SLE-12:GA',
                 ]
         # the skip list against devel project
-        self.skip_devel_project_list = []
+        self.skip_devel_project_list = [
+                'mobile:synchronization:FACTORY'
+                ]
         # put the except packages from skip_devel_project_list, use regex in this list, eg. "^golang-x-(\w+)", "^nodejs$"
         self.except_pkgs_list = []
         # put the exact package name here
@@ -141,12 +143,8 @@ class FccSubmitter(object):
                 'python-pypuppetdb$',
                 'smbtad',
                 'mdds-1_2',
-                'e17-theme-a-os-vision-v3',
-                'e17-branding-openSUSE',
-                'e17-theme-a-os-miguel-v3',
+                '^e17',
                 'shellementary',
-                'e17-theme-a-os-agust-v3',
-                'e17-theme-openSUSE',
                 'aer-inject',
                 'xplatproviders',
                 'newlib',
@@ -158,6 +156,7 @@ class FccSubmitter(object):
                 '^libxml',
                 'w3m-el',
                 'scim$',
+                '^scim-(\w+)',
                 'gstreamer-0_10-plugins-gl',
                 'libgdamm',
                 'gtk3-metatheme-sonar',
@@ -171,10 +170,24 @@ class FccSubmitter(object):
                 'kdelibs3',
                 'qca-sasl',
                 'mozaddon-gnotifier',
+                'khunphan',
+                'lxcfs',
+                'containerd',
+                'docker-bench-security',
+                '0ad-data',
+                'python-plaso',
+                'gnome-news',
+                'wdm',
+                'nuntius',
+                'gobby04',
+                'jamin',
+                '^bundle-lang',
+                'docker-image-migrator',
                 'kiwi-config-openSUSE'
                 ]
         self.check_later = [
-                'tulip'
+                'tulip',
+                'khunphan',
                 ]
 
     def get_source_packages(self, project, expand=False):
