@@ -152,8 +152,9 @@ def main(args):
                     bug = RemindedLoaded[package["name"]]["bug"]
             Reminded[package["name"]] = RemindedPackage(package["firstfail"], reminded, remindCount, bug)
 
-    with open('%s.reminded.json'%project, 'w') as json_result:
-        json.dump(Reminded, json_result, default=jdefault)
+    if not args.dry:
+        with open('%s.reminded.json'%project, 'w') as json_result:
+            json.dump(Reminded, json_result, default=jdefault)
 
     for package in Reminded:
         # Now we check on all the packages if we have to perform any reminder actions...
