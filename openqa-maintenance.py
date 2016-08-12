@@ -93,6 +93,7 @@ class Update(object):
 
         # start with a colon so it looks cool behind 'Build' :/
         s['BUILD'] = ':' + req.reqid + '.' + self.request_name(req)
+        s['INCIDENT_REPO'] = '%s/%s/%s/' % (self.repo_prefix(), src_prj.replace(':', ':/'), dst_prj.replace(':', '_'))
 
         return s
 
@@ -122,11 +123,14 @@ class Update(object):
 
 class SUSEUpdate(Update):
 
+    def repo_prefix(self):
+        return 'http://download.suse.de/ibs'
+
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
 
-        repo = 'http://download.suse.de/ibs/%s/%s/' % (src_prj.replace(':', ':/'), dst_prj.replace(':', '_'))
-        settings['MINIMAL_TEST_REPO'] = repo
+        # backward compat
+        settings['MINIMAL_TEST_REPO'] = settings['INCIDENT_REPO']
 
         return settings
 
@@ -172,6 +176,9 @@ class openSUSEUpdate(Update):
         if lastgood_prefix:
             settings['LATEST_GOOD_UPDATES_BUILD'] = "%d-%d" % (lastgood_prefix, lastgood_suffix)
 
+    def repo_prefix(self):
+        return 'http://download.opensuse.org/repositories'
+
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
 
@@ -188,8 +195,8 @@ class openSUSEUpdate(Update):
             settings['INSTALL_PACKAGES'] = ' '.join(set([p.name for p in packages]))
             settings['VERIFY_PACKAGE_VERSIONS'] = ' '.join(['{} {}-{}'.format(p.name, p.version, p.release) for p in packages])
 
-        settings['ZYPPER_ADD_REPOS'] = 'http://download.opensuse.org/repositories/%s/%s/' % (src_prj.replace(':', ':/'), dst_prj.replace(':', '_'))
-        settings['ADDONURL'] = settings['ZYPPER_ADD_REPOS']
+        settings['ZYPPER_ADD_REPOS'] = settings['INCIDENT_REPO']
+        settings['ADDONURL'] = settings['INCIDENT_REPO']
 
         settings['ISO'] = 'openSUSE-Leap-42.1-DVD-x86_64.iso'
 
@@ -408,6 +415,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.update_test_builds = dict()
 
     def prepare_review(self):
+        return
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
             self.trigger_build_for_target(prj, u)
 
@@ -421,6 +429,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             return None
 
         packages = []
+        patch_id = None
         # patchinfo collects the binaries and is build for an
         # unpredictable architecture so we need iterate over all
         url = osc.core.makeurl(
@@ -442,14 +451,21 @@ class OpenQABot(ReviewBot.ReviewBot):
                     # can't use arch here as the patchinfo mixes all
                     # archs
                     packages.append(Package(m.group('name'), m.group('version'), m.group('release')))
+                elif binary.attrib['filename'] == 'updateinfo.xml':
+                    url = osc.core.makeurl(
+                        self.apiurl,
+                        ('build', a.src_project, a.tgt_project.replace(':', '_'), arch, a.src_package, 'updateinfo.xml'))
+                    ui = ET.parse(osc.core.http_GET(url)).getroot()
+                    patch_id = ui.find('.//id').text
 
         if not packages:
             raise Exception("no packages found")
 
-        self.logger.debug('found packages %s', ' '.join(set([p.name for p in packages])))
+        self.logger.debug('found packages %s and patch id %s', ' '.join(set([p.name for p in packages])), patch_id)
 
         for update in PROJECT_OPENQA_SETTINGS[a.tgt_project]:
             settings = update.settings(a.src_project, a.tgt_project, packages, req)
+            settings['INCIDENT_PATCH'] = patch_id
             if settings is not None:
                 update.calculate_lastest_good_updates(self.openqa, settings)
 
@@ -570,7 +586,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                                 'version': s['VERSION'],
                                 'arch': s['ARCH'],
                                 'flavor': s['FLAVOR'],
-                                'build':  self.update_test_builds[prj],
+                                'build':  self.update_test_builds.get(prj, 'UNKNOWN'),
                                 'scope': 'relevant',
                             })['jobs']
         return ret
