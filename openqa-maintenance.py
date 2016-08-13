@@ -415,7 +415,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.update_test_builds = dict()
 
     def prepare_review(self):
-        return
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
             self.trigger_build_for_target(prj, u)
 
