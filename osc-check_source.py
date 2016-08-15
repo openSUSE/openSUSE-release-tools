@@ -251,15 +251,11 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['network:mail:zarafa/'] = 'x2go'
             self._devel_projects['devel:languages:D/'] = 'd'
             self._devel_projects['Novell:NTS'] = 'support'
-            self._devel_projects['Apache:Shibboleth/'] = 'Shibboleth'
-            self._devel_projects['devel:languages:erlang/'] = 'erlang'
-            self._devel_projects['systemsmanagement:machinery/'] = 'machinery'
-            self._devel_projects['filesystems:ceph/'] = 'ceph-deploy'
             self._devel_projects['Virtualization:Appliances:Builder/'] = 'python3-kiwi'
             self._devel_projects['isv:ownCloud:desktop/'] = 'owncloud-client'
             self._devel_projects['system:snappy/'] = 'snappy'
-            self._devel_projects['devel:languages:rust/'] = 'rustc'
             self._devel_projects['Application:ERP:Tryton:Factory/'] = 'tryton'
+            self._devel_projects['devel:languages:pascal/'] = 'fpc'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
