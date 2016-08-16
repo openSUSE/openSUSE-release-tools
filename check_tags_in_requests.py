@@ -60,14 +60,14 @@ class TagChecker(ReviewBot.ReviewBot):
         if self.factory is None:
             self.factory = "openSUSE:Factory"
         super(TagChecker, self).__init__(*args, **kwargs)
-        # try to keep in sync (same sorting ) with
+        # try to keep in sync (same sorting) with
         # https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_set_of_abbreviations
         needed_tags = [r'boo#[0-9]+',
                        r'pr#[0-9]+',
                        r'boost#[0-9]+',
                        r'ceph#[0-9]+',
                        r'claws#[0-9]+',
-                       r'cve-[0-9]{4}-[0-9]+',
+                       r'cve-[0-9]{4}-[0-9]{4,}',
                        r'RT#[0-9]+',
                        r'deb#[0-9]+',
                        r'beo#[0-9]+',
@@ -108,7 +108,7 @@ class TagChecker(ReviewBot.ReviewBot):
 (This is a script running, so report bugs)
 
 We require a ID marked in .changes file to detect later if the changes
-are also merged into openSUSE:Factory. We accept tags known in
+are also merged into openSUSE:Factory. We accept tags listed in
 https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_set_of_abbreviations
 
 Note: there is no whitespace behind before or after the number sign
