@@ -60,18 +60,56 @@ class TagChecker(ReviewBot.ReviewBot):
         if self.factory is None:
             self.factory = "openSUSE:Factory"
         super(TagChecker, self).__init__(*args, **kwargs)
-        needed_tags = [r'bnc#[0-9]+',
+        # try to keep in sync (same sorting ) with
+        # https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_set_of_abbreviations
+        needed_tags = [r'boo#[0-9]+',
+                       r'pr#[0-9]+',
+                       r'boost#[0-9]+',
+                       r'ceph#[0-9]+',
+                       r'claws#[0-9]+',
                        r'cve-[0-9]{4}-[0-9]+',
+                       r'RT#[0-9]+',
+                       r'deb#[0-9]+',
+                       r'beo#[0-9]+',
                        r'fate#[0-9]+',
-                       r'boo#[0-9]+',
+                       r'fdo#[0-9]+',
+                       r'gnu#[0-9]+',
+                       r'GCC#[0-9]+',
+                       r'gh#[a-zA-Z0-9]+',
+                       r'bgo#[0-9]+',
+                       r'gvz#[0-9]+',
+                       r'bio#[0-9]+',
+                       r'jenk#[0-9]+',
+                       r'kde#[0-9]+',
+                       r'bko#[0-9]+',
+                       r'lp#[0-9]+',
+                       r'lf#[0-9]+',
+                       r'MeeGo#[0-9]+',
+                       r'Mono#[0-9]+',
+                       r'bmo#[0-9]+',
+                       r'bnc#[0-9]+',
                        r'bsc#[0-9]+',
-                       r'bgo#[0-9]+']
+                       r'ITS#[0-9]+',
+                       r'i#[0-9]+',
+                       r'n#[0-9]+',
+                       r'os-edu#[0-9]+',
+                       r'pidgin.im#[0-9]+',
+                       r'rh#[0-9]+',
+                       r'bso#[0-9]+',
+                       r'sf#[0-9]+',
+                       r'swo#[0-9]+',
+                       r't3#[0-9]+',
+                       r'webkit#[0-9]+',
+                       r'Ximian#[0-9]+',
+                       r'bxo#[0-9]+',
+                       r'bxc#[0-9]+']
         self.needed_tags_re = [re.compile(tag, re.IGNORECASE) for tag in needed_tags]
         self.review_messages['declined'] = """
 (This is a script running, so report bugs)
 
 We require a ID marked in .changes file to detect later if the changes
-are also merged into openSUSE:Factory. We accept bnc#, cve#, fate#, boo#, bsc# and bgo# atm.
+are also merged into openSUSE:Factory. We accept tags known in
+https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_set_of_abbreviations
 
 Note: there is no whitespace behind before or after the number sign
 (compare with the packaging policies)
