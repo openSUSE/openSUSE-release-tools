@@ -148,7 +148,17 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                         return True
                     elif req.state.name == 'review':
                         self.logger.info("request still in review")
-                        return None
+                        if not req.reviews:
+                            self.logger.error("request in state review but no reviews?")
+                            return False
+                        for r in req.reviews:
+                            if r.by_project and r.state == 'new' and r.by_project.startswith('openSUSE:Factory:Staging:'):
+                                self.logger.info("%s review by %s ok", r.state, r.by_project)
+                                continue
+                            if r.state != 'accepted':
+                                self.logger.debug("review %s/%s/%s in state %s", r.by_user, r.by_group, r.by_package, r.state)
+                                return None
+                        return True
                     else:
                         self.logger.error("request in state %s not expected"%req.state.name)
                         return None
