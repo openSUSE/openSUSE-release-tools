@@ -256,7 +256,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['system:snappy/'] = 'snappy'
             self._devel_projects['Application:ERP:Tryton:Factory/'] = 'tryton'
             self._devel_projects['devel:languages:pascal/'] = 'fpc'
-            self._devel_projects['server:messaging/'] = 'libgloox'
+            self._devel_projects['server:messaging/'] = 'gloox'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
