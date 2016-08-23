@@ -40,6 +40,10 @@ class ListCommand:
             # Where are we targeting the package
             target_package = action.find('target').get('package')
 
+            # ignore add_role requests
+            if action.get('type') == 'add_role':
+                continue
+
             # handle change_devel requests
             if action.get('type') == 'change_devel':
                 change_devel_requests[target_package] = request_id
