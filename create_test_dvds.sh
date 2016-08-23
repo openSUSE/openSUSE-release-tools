@@ -71,8 +71,10 @@ function regenerate_pl() {
 
     out=$(mktemp)
     testsolv -r $tcfile > $out
+    ERRPKG=""
     if grep ^problem $out ; then
-         return
+         # invalidate the kiwi file - ensuring it is not being built while we can't calculate it
+         ERRPKG="CREATE_TEST_DVD_PROBLEM"
     fi
     sed -i -e 's,^install \(.*\)-[^-]*-[^-]*\.[^-\.]*@.*,\1,' $out
     
@@ -86,7 +88,7 @@ function regenerate_pl() {
     osc up
     popd > /dev/null
     sed -n -e '1,/BEGIN-PACKAGELIST/p' $tdir/PRODUCT-$arch.kiwi > $p
-    for i in $(cat $out); do
+    for i in $(cat $out) $ERRPKG; do
 	echo "<repopackage name='$i'/>" >> $p
     done
     sed -n -e '/END-PACKAGELIST/,$p' $tdir/PRODUCT-$arch.kiwi >> $p
