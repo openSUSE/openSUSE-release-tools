@@ -149,7 +149,7 @@ function start_creating() {
 
             for prj in $projects; do
                 l=$(echo $prj | sed 's/^openSUSE.\+[:]Staging/Staging/g' | cut -d: -f2)
-                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]] || [[ $prj =~ ^openSUSE.+:Gcc6$ ]]; then
+                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
                     echo "Checking $target:$l-$arch"
 
                     meta=$(mktemp)
