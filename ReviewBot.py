@@ -118,6 +118,7 @@ class ReviewBot(object):
         if state == 'declined':
             if self.review_mode == 'fallback-onfail':
                 self.logger.info("%s needs fallback reviewer"%req.reqid)
+                # don't check duplicates, in case review was re-opened
                 self.add_review(req, by_group=by_group, by_user=by_user)
                 newstate = 'accepted'
         elif self.review_mode == 'fallback-always':
@@ -136,6 +137,7 @@ class ReviewBot(object):
         else:
             self.logger.debug("%s review not changed"%(req.reqid))
 
+    # note we intentionally don't check for duplicate review here!
     def add_review(self, req, by_group=None, by_user=None, by_project = None, by_package = None, msg=None):
         query = {
             'cmd': 'addreview'
