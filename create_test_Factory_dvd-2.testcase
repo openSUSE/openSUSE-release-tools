@@ -30,6 +30,7 @@ job install name openSUSE-release-livecd-x11
 job install name sudo
 job install name xdelta
 job install name kate
+job install name inkscape
 job install name sddm
 job install name gnome-music
 job install name kexec-tools
