@@ -126,15 +126,19 @@ class Leaper(ReviewBot.ReviewBot):
 
             elif origin.startswith('SUSE:SLE-12'):
                 # submitted from :Update
-                if src_project.startswith(origin):
-                    self.logger.debug("match sle")
+                if origin.endswith(':GA') \
+                    and src_project == origin[:-2]+'Update':
+                    self.logger.debug("sle update submission")
                     return True
                 # submitted from higher SP
-                if origin.startswith('SUSE:SLE-12'):
-                    if src_project.startswith('SUSE:SLE-12-SP1') \
-                        or src_project.startswith('SUSE:SLE-12-SP2'):
+                if origin.startswith('SUSE:SLE-12:'):
+                    if src_project.startswith('SUSE:SLE-12-SP1:') \
+                        or src_project.startswith('SUSE:SLE-12-SP2:'):
                             self.logger.debug("higher service pack ok")
                             return True
+                elif origin.startswith('SUSE:SLE-12-SP1:'):
+                    if src_project.startswith('SUSE:SLE-12-SP2:'):
+                        self.logger.debug("higher service pack ok")
             # else other project or FORK, fall through
 
             # we came here because none of the above checks find it good, so
