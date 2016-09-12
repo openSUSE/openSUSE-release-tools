@@ -124,6 +124,9 @@ class TestFactorySourceAccept(unittest.TestCase):
                         <state name="review" who="factory-auto" when="2014-10-08T11:55:56">
                           <comment>...</comment>
                         </state>
+                        <review state="new" by_group="opensuse-review-team">
+                          <comment/>
+                        </review>
                         <description> ... </description>
                       </request>
                     </collection>
@@ -150,6 +153,8 @@ class TestFactorySourceAccept(unittest.TestCase):
             u = urlparse.urlparse(uri)
             if u.query == 'newstate=accepted&cmd=changereviewstate&by_user=factory-source':
                 result['status'] = True
+            else:
+                result['status'] = 'ERROR'
             return (200, headers, '<status code="blah"/>')
 
         httpretty.register_uri(httpretty.POST,
