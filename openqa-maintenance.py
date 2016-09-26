@@ -198,8 +198,6 @@ class openSUSEUpdate(Update):
         settings['ZYPPER_ADD_REPOS'] = settings['INCIDENT_REPO']
         settings['ADDONURL'] = settings['INCIDENT_REPO']
 
-        settings['ISO'] = 'openSUSE-Leap-42.1-DVD-x86_64.iso'
-
         settings['WITH_MAIN_REPO'] = 1
         settings['WITH_UPDATE_REPO'] = 1
 
@@ -301,6 +299,29 @@ TARGET_REPO_SETTINGS = {
             ],
             'test': 'kde'
         },
+        'openSUSE:Leap:42.2:Update': {
+            'repos': [
+                'http://download.opensuse.org/update/leap/42.2-test/',
+                'http://download.opensuse.org/update/leap/42.2/oss/',
+                'http://download.opensuse.org/update/leap/42.2/non-oss/',
+            ],
+            'settings': [
+                {
+                    'DISTRI': 'opensuse',
+                    'VERSION': '42.2',
+                    'FLAVOR': 'UpdateTest',
+                    'ARCH': 'x86_64',
+                },
+                {
+                    'DISTRI': 'opensuse',
+                    'VERSION': '42.2',
+                    'FLAVOR': 'Updates',
+                    'ARCH': 'x86_64',
+                },
+            ],
+            'test': 'kde'
+        },
+
     }
 }
 
@@ -382,6 +403,17 @@ PROJECT_OPENQA_SETTINGS = {
                 'VERSION': '42.1',
                 'FLAVOR': 'Maintenance',
                 'ARCH': 'x86_64',
+                'ISO': 'openSUSE-Leap-42.1-DVD-x86_64.iso',
+            }),
+    ],
+    'openSUSE:Leap:42.2:Update': [
+        openSUSEUpdate(
+            {
+                'DISTRI': 'opensuse',
+                'VERSION': '42.2',
+                'FLAVOR': 'Maintenance',
+                'ARCH': 'x86_64',
+                'ISO': 'openSUSE-Leap-42.2-DVD-x86_64.iso',
             }),
     ],
 }
