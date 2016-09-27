@@ -78,6 +78,9 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             if ((prj, pkg) in package_reviews):
                 self.logger.debug("%s/%s already is a reviewer, not adding again" % (prj, pkg))
                 continue
+            if prj == 'openSUSE:13.1:Update':
+                self.logger.debug("Package dropped from Factory, not adding review for %s/%s" % (prj, pkg))
+                continue
             self.add_review(req, by_project = prj, by_package = pkg,
                     msg = "Submission by someone who is not maintainer in the devel project. Please review")
 
