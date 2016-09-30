@@ -144,34 +144,34 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                 self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, si.verifymd5))
                 if si.verifymd5 == rev:
                     if req.state.name == 'new':
-                        self.logger.info("request %s ok", req.reqid)
+                        self.logger.info("sr#%s ok", req.reqid)
                         return True
                     elif req.state.name == 'review':
-                        self.logger.debug("request %s still in review", req.reqid)
+                        self.logger.debug("sr#%s still in review", req.reqid)
                         if not req.reviews:
-                            self.logger.error("request %s in state review but no reviews?", req.reqid)
+                            self.logger.error("sr#%s in state review but no reviews?", req.reqid)
                             return False
                         for r in req.reviews:
                             if r.by_project and r.state == 'new' and r.by_project.startswith('openSUSE:Factory:Staging:'):
-                                self.logger.info("request %s review by %s ok", req.reqid, r.by_project)
+                                self.logger.info("sr#%s review by %s ok", req.reqid, r.by_project)
                                 continue
                             if r.state != 'accepted':
                                 if r.by_user:
-                                    self.logger.info("request %s waiting for review by %s", req.reqid, r.by_user)
+                                    self.logger.info("sr#%s waiting for review by %s", req.reqid, r.by_user)
                                 elif r.by_group:
-                                    self.logger.info("request %s waiting for review by %s", req.reqid, r.by_group)
+                                    self.logger.info("sr#%s waiting for review by %s", req.reqid, r.by_group)
                                 elif r.by_project:
                                     if r.by_package:
-                                        self.logger.info("request %s waiting for review by %s/%s", req.reqid, r.by_project, r.by_package)
+                                        self.logger.info("sr#%s waiting for review by %s/%s", req.reqid, r.by_project, r.by_package)
                                     else:
-                                        self.logger.info("request %s waiting for review by %s", req.reqid, r.by_project)
+                                        self.logger.info("sr#%s waiting for review by %s", req.reqid, r.by_project)
                                 return None
                         return True
                     else:
-                        self.logger.error("request %s in state %s not expected", req.reqid, req.state.name)
+                        self.logger.error("sr#%s in state %s not expected", req.reqid, req.state.name)
                         return None
                 else:
-                    self.logger.info("request %s has different sources", req.reqid)
+                    self.logger.info("sr#%s has different sources", req.reqid)
         return False
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
