@@ -215,10 +215,10 @@ class TestUpdate(openSUSEUpdate):
 
 TARGET_REPO_SETTINGS = {
     'https://openqa.suse.de' : {
-    'SUSE:Updates:SLE-SERVER:12:x86_64': {
+    'SUSE:Updates:SLE-SERVER:12-LTSS:x86_64': {
         'repos': [
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP1/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12:/x86_64/update',
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-LTSS/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-LTSS:/x86_64/update',
             'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/',
             'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12/x86_64/update/',
         ],
@@ -242,21 +242,6 @@ TARGET_REPO_SETTINGS = {
             'VERSION': '12-SP1',
             'FLAVOR': 'Server-DVD-UpdateTest',
             'ARCH': 'x86_64'
-        } ],
-        'test': 'qam-gnome'
-    },
-    'SUSE:Updates:SLE-DESKTOP:12:x86_64': {
-        'repos': [
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12/x86_64/update/',
-        ],
-        'settings': [ {
-            'DISTRI': 'sle',
-            'VERSION': '12',
-            'FLAVOR': 'Desktop-DVD-UpdateTest',
-            'ARCH': 'x86_64',
         } ],
         'test': 'qam-gnome'
     },
@@ -342,7 +327,7 @@ PROJECT_OPENQA_SETTINGS = {
                 'ARCH': 'i586',
             }),
     ],
-    'SUSE:Updates:SLE-SERVER:12:x86_64': [
+    'SUSE:Updates:SLE-SERVER:12-LTSS:x86_64': [
         SUSEUpdate(
             {
                 'DISTRI': 'sle',
@@ -351,7 +336,7 @@ PROJECT_OPENQA_SETTINGS = {
                 'ARCH': 'x86_64'
             }),
     ],
-    'SUSE:Updates:SLE-SERVER:12:ppc64le': [
+    'SUSE:Updates:SLE-SERVER:12-LTSS:ppc64le': [
         SUSEUpdate(
             {
                 'DISTRI': 'sle',
@@ -360,7 +345,7 @@ PROJECT_OPENQA_SETTINGS = {
                 'ARCH': 'ppc64le'
             }),
     ],
-    'SUSE:Updates:SLE-SERVER:12:s390x': [
+    'SUSE:Updates:SLE-SERVER:12-LTSS:s390x': [
         SUSEUpdate(
             {
                 'DISTRI': 'sle',
