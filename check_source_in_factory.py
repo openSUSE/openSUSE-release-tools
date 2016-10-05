@@ -139,6 +139,9 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             return None
 
         for req in requests:
+            # XXX: hack due to osc caching problem. search result used by
+            # get_request_list may be outdated
+            req = osc.core.get_request(self.apiurl, req.reqid)
             for a in req.actions:
                 si = self.get_sourceinfo(a.src_project, a.src_package, a.src_rev)
                 self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, si.verifymd5))
