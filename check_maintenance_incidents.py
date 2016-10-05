@@ -125,7 +125,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             else:
                 origin = mapping[pkgname]
                 self.logger.debug("{} comes from {}, submitted from {}".format(pkgname, origin, a.src_project))
-                if origin.startswith('SUSE:SLE-12') and a.src_project.startswith('SUSE:SLE-12'):
+                if origin.startswith('SUSE:SLE-12') and a.src_project.startswith('SUSE:SLE-12') \
+                    or origin.startswith('openSUSE:Leap') and a.src_project.startswith('openSUSE:Leap'):
                     self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
                     return
 
