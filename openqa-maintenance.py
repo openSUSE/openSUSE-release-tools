@@ -729,21 +729,13 @@ class OpenQABot(ReviewBot.ReviewBot):
                 if self.calculate_qa_status(jobs) == QA_INPROGRESS:
                     self.logger.debug("incident tests for request %s are done, but need to wait for test repo", req.reqid)
                     return
-                if qa_state == QA_PASSED:
-                    self.logger.debug("request %s passed", req.reqid)
-                    msg = "openQA test [passed](%s)\n" % url
-                    state = 'accepted'
-                    ret = True
-                else:
-                    self.logger.debug("request %s failed", req.reqid)
-                    msg = "openQA test *[FAILED](%s)*\n" % url
-                    state = 'declined'
-                    ret = False
                 groups = dict()
                 for job in jobs:
                     job_summary = self.summarize_one_openqa_job(job)
                     if not len(job_summary):
                         continue
+                    # if there is something to report, hold the request
+                    qa_state = QA_FAILED
                     gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
                     if not gl in groups:
                         groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview' ],
@@ -757,6 +749,17 @@ class OpenQABot(ReviewBot.ReviewBot):
                     else:
                         gmsg = groups[gl]
                     groups[gl] = gmsg + job_summary
+
+                if qa_state == QA_PASSED:
+                    self.logger.debug("request %s passed", req.reqid)
+                    msg = "openQA test [passed](%s)\n" % url
+                    state = 'accepted'
+                    ret = True
+                else:
+                    self.logger.debug("request %s failed", req.reqid)
+                    msg = "openQA test *[FAILED](%s)*\n" % url
+                    state = 'declined'
+                    ret = False
 
                 for group in sorted(groups.keys()):
                     msg += "\n\n" + groups[group]
