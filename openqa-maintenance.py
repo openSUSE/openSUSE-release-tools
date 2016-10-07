@@ -503,7 +503,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     def calculate_repo_hash(self, repos):
         m = md5.new()
         # if you want to force it, increase this number
-        m.update('9')
+        m.update('b')
         for url in repos:
             url += '/repodata/repomd.xml'
             root = ET.parse(osc.core.http_GET(url)).getroot()
@@ -671,17 +671,24 @@ class OpenQABot(ReviewBot.ReviewBot):
     def openqa_overview_url_from_settings(self, settings):
         return osc.core.makeurl(self.openqa.baseurl, ['tests'], {'match': settings['BUILD']})
 
-    def find_failed_modules(self, job):
-        failed = []
-        for module in job['modules']:
-            if module['result'] != 'failed':
-                continue
-            failed.append(module['name'])
-        return failed
-
     # escape markdown
     def emd(self, str):
         return str.replace('_', '\_')
+
+    def summarize_one_openqa_job(self, job):
+        testurl = osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])])
+        if not job['result'] in ['passed', 'failed', 'softfailed']:
+            return '\n- [%s](%s) is %s' % (self.emd(job['settings']['TEST']), testurl, job['result'])
+
+        modstrings = []
+        for module in job['modules']:
+            if module['result'] != 'failed':
+                continue
+            modstrings.append("[%s](%s#step/%s/1)" % (self.emd(module['name']), testurl, module['name']))
+
+        if len(modstrings):
+            return '\n- [%s](%s) failed in %s' % (self.emd(job['settings']['TEST']), testurl, ','.join(modstrings))
+        return ''
 
     def check_one_request(self, req):
         ret = None
@@ -722,6 +729,27 @@ class OpenQABot(ReviewBot.ReviewBot):
                 if self.calculate_qa_status(jobs) == QA_INPROGRESS:
                     self.logger.debug("incident tests for request %s are done, but need to wait for test repo", req.reqid)
                     return
+                groups = dict()
+                for job in jobs:
+                    job_summary = self.summarize_one_openqa_job(job)
+                    if not len(job_summary):
+                        continue
+                    # if there is something to report, hold the request
+                    qa_state = QA_FAILED
+                    gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
+                    if not gl in groups:
+                        groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview' ],
+                                                    { 'version': job['settings']['VERSION'],
+                                                      'groupid': job['group_id'],
+                                                      'flavor': job['settings']['FLAVOR'],
+                                                      'distri': job['settings']['DISTRI'],
+                                                      'build': job['settings']['BUILD'],
+                                                    })
+                        gmsg = "__Group [%s](%s)__\n" % (gl, groupurl)
+                    else:
+                        gmsg = groups[gl]
+                    groups[gl] = gmsg + job_summary
+
                 if qa_state == QA_PASSED:
                     self.logger.debug("request %s passed", req.reqid)
                     msg = "openQA test [passed](%s)\n" % url
@@ -732,32 +760,6 @@ class OpenQABot(ReviewBot.ReviewBot):
                     msg = "openQA test *[FAILED](%s)*\n" % url
                     state = 'declined'
                     ret = False
-                groups = dict()
-                for job in jobs:
-                    modules = self.find_failed_modules(job)
-                    if modules != []:
-                        modstrings = []
-                        for mod in modules:
-                            modurl = osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])])
-                            modstrings.append("[%s](%s#step/%s/1)" % (self.emd(mod), modurl, mod))
-
-                        gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
-                        if not gl in groups:
-                            groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview' ],
-                                                        { 'version': job['settings']['VERSION'],
-                                                          'groupid': job['group_id'],
-                                                          'flavor': job['settings']['FLAVOR'],
-                                                          'distri': job['settings']['DISTRI'],
-                                                          'build': job['settings']['BUILD'],
-                                                        })
-                            gmsg = "__Group [%s](%s)__\n" % (gl, groupurl)
-                        else:
-                            gmsg = groups[gl]
-                        gmsg += '\n- [%s](%s) failed in %s' % (
-                            self.emd(job['settings']['TEST']),
-                            osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])]),
-                            ','.join(modstrings))
-                        groups[gl] = gmsg
 
                 for group in sorted(groups.keys()):
                     msg += "\n\n" + groups[group]
