@@ -431,9 +431,43 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.commentapi = CommentAPI(self.apiurl)
         self.update_test_builds = dict()
 
-    def prepare_review(self):
+    # reimplemention from baseclass
+    def check_requests(self):
+
+        # first calculate the latest build number for current jobs
+        for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
+            buildnr = 0
+            for j in self.jobs_for_target(u):
+                buildnr = j['settings']['BUILD']
+            self.update_test_builds[prj] = buildnr
+
+        started = []
+        all_done = True
+        # then check progress on running incidents
+        for req in self.requests:
+            # just patch apiurl in to avoid having to pass it around
+            req.apiurl = self.apiurl
+            jobs = self.request_get_openqa_jobs(req, incident=True, test_repo=True)
+            ret = self.calculate_qa_status(jobs)
+            if ret != QA_UNKNOWN:
+                started.append(req)
+                if ret == QA_INPROGRESS:
+                    all_done = False
+
+        all_requests = self.requests
+        self.requests = started
+        ReviewBot.ReviewBot.check_requests(self)
+
+        if not all_done:
+            return
+
+        self.requests = all_requests
+
+        # now make sure the jobs are for current repo
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
             self.trigger_build_for_target(prj, u)
+
+        ReviewBot.ReviewBot.check_requests(self)
 
     def check_action_maintenance_release(self, req, a):
         # we only look at the binaries of the patchinfo
@@ -511,16 +545,9 @@ class OpenQABot(ReviewBot.ReviewBot):
             m.update(cs.text)
         return m.hexdigest()
 
-    # we don't know the current BUILD and querying all jobs is too expensive
-    # so we need to check for one known TEST first
-    # if that job doesn't contain the proper hash, we trigger a new one
-    # and then we know the build
-    def trigger_build_for_target(self, prj, u):
-
-        today=date.today().strftime("%Y%m%d")
-        repohash=self.calculate_repo_hash(u['repos'])
+    def jobs_for_target(self, u):
         s = u['settings'][0]
-        j = self.openqa.openqa_request(
+        return self.openqa.openqa_request(
             'GET', 'jobs',
         {
             'distri': s['DISTRI'],
@@ -530,7 +557,17 @@ class OpenQABot(ReviewBot.ReviewBot):
             'test': u['test'],
             'latest': '1',
         })['jobs']
+
+    # we don't know the current BUILD and querying all jobs is too expensive
+    # so we need to check for one known TEST first
+    # if that job doesn't contain the proper hash, we trigger a new one
+    # and then we know the build
+    def trigger_build_for_target(self, prj, u):
+
+        today=date.today().strftime("%Y%m%d")
+        repohash=self.calculate_repo_hash(u['repos'])
         buildnr = None
+        j = self.jobs_for_target(u)
         for job in j:
             if job['settings'].get('REPOHASH', '') == repohash:
                 # take the last in the row
@@ -693,8 +730,6 @@ class OpenQABot(ReviewBot.ReviewBot):
     def check_one_request(self, req):
         ret = None
 
-        # just patch apiurl in to avoid having to pass it around
-        req.apiurl = self.apiurl
         try:
             jobs = self.request_get_openqa_jobs(req)
             qa_state = self.calculate_qa_status(jobs)
