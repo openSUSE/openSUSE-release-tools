@@ -725,6 +725,8 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         if len(modstrings):
             return '\n- [%s](%s) failed in %s' % (self.emd(job['settings']['TEST']), testurl, ','.join(modstrings))
+        elif job['result'] == 'failed': # rare case: fail without module fails
+            return '\n- [%s](%s) failed' % (self.emd(job['settings']['TEST']), testurl)
         return ''
 
     def check_one_request(self, req):
