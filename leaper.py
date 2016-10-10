@@ -74,6 +74,8 @@ class Leaper(ReviewBot.ReviewBot):
         self.source_in_factory = None
         self.needs_release_manager = False
         self.release_manager_group = 'leap-reviewers'
+        self.must_approve_version_updates = False
+        self.must_approve_maintenance_updates = False
 
         self.comment_marker_re = re.compile(r'<!-- leaper state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined))? -->')
 
@@ -118,12 +120,16 @@ class Leaper(ReviewBot.ReviewBot):
                     return False
                 is_fine_if_factory = True
                 not_in_factory_okish = True
+                if self.must_approve_version_updates:
+                    self.needs_release_manager = True
                 # fall through to check history and requests
             elif origin.startswith('openSUSE:Factory'):
                 if origin == src_project:
                     self.source_in_factory = True
                     return True
                 is_fine_if_factory = True
+                if self.must_approve_version_updates:
+                    self.needs_release_manager = True
                 # fall through to check history and requests
             elif origin == 'FORK':
                 is_fine_if_factory = True
@@ -131,6 +137,8 @@ class Leaper(ReviewBot.ReviewBot):
                 self.needs_release_manager = True
                 # fall through to check history and requests
             elif origin.startswith('openSUSE:Leap:42.1'):
+                if self.must_approve_maintenance_updates:
+                    self.needs_release_manager = True
                 # submitted from :Update
                 if src_project.startswith(origin):
                     self.logger.debug("submission from 42.1 ok")
@@ -165,6 +173,8 @@ class Leaper(ReviewBot.ReviewBot):
                 self.needs_release_manager = True
 
             elif origin.startswith('SUSE:SLE-12'):
+                if self.must_approve_maintenance_updates:
+                    self.needs_release_manager = True
                 # submitted from :Update
                 if origin == src_project:
                     self.logger.debug("submission origin ok")
@@ -378,6 +388,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
         parser.add_option("--no-comment", dest='comment', action="store_false", default=True, help="don't actually post comments to obs")
+        parser.add_option("--manual-version-updates", action="store_true", help="release manager must approve version updates")
+        parser.add_option("--manual-maintenance-updates", action="store_true", help="release manager must approve maintenance updates")
 
         return parser
 
@@ -398,6 +410,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 group = group, \
                 logger = self.logger)
 
+        if self.options.manual_version_updates:
+            bot.must_approve_version_updates = True
+        if self.options.manual_maintenance_updates:
+            bot.must_approve_maintenance_updates = True
         bot.do_comments = self.options.comment
 
         return bot
