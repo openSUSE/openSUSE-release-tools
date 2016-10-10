@@ -25,6 +25,7 @@ import yaml
 
 from osc import conf
 from osc import oscerr
+from osc.core import show_package_meta
 from osc.core import change_review_state
 from osc.core import delete_package
 from osc.core import get_group
@@ -1282,7 +1283,24 @@ class StagingAPI(object):
             name = p.attrib['name']
             self._package_metas[project][name] = p
 
+
+    def _get_devel_project(self, project, package):
+        """ get devel project for a single project"""
+        if not self.item_exists(project, package):
+            return None
+
+        m = show_package_meta(self.apiurl, project, package)
+        node = ET.fromstring(''.join(m)).find('devel')
+        if node is None:
+            return None
+        else:
+            return node.get('project')
+
     def get_devel_project(self, project, package):
+        # if _package_metas is None we force individual queries
+        if self._package_metas is None:
+            return self._get_devel_project(project,package)
+
         if not project in self._package_metas:
             self._fill_package_meta(project)
 
