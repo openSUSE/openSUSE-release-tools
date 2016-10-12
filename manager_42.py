@@ -268,9 +268,12 @@ class Manager42(object):
             srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
             if srcmd5:
                 if project != lproject:
-                    logger.info('{} -> {} (was {})'.format(package, project, lproject))
-                    self.lookup[package] = project
-                    self.lookup_changes += 1
+                    if project == 'openSUSE:Leap:42.2:SLE-workarounds':
+                        logger.info('{} is from {} but should come from {}'.format(package, project, lproject))
+                    else:
+                        logger.info('{} -> {} (was {})'.format(package, project, lproject))
+                        self.lookup[package] = project
+                        self.lookup_changes += 1
                 else:
                     logger.debug('{} still coming from {}'.format(package, project))
                 foundit = True
