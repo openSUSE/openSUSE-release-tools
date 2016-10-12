@@ -227,6 +227,7 @@ class Leaper(ReviewBot.ReviewBot):
                 self.needs_reviewteam = False
             else:
                 self.needs_reviewteam = True
+            self.source_in_factory = False
 
         if is_fine_if_factory:
             if self.source_in_factory:
