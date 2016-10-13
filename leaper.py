@@ -124,12 +124,12 @@ class Leaper(ReviewBot.ReviewBot):
                     self.needs_release_manager = True
                 # fall through to check history and requests
             elif origin.startswith('openSUSE:Factory'):
+                if self.must_approve_version_updates:
+                    self.needs_release_manager = True
                 if origin == src_project:
                     self.source_in_factory = True
                     return True
                 is_fine_if_factory = True
-                if self.must_approve_version_updates:
-                    self.needs_release_manager = True
                 # fall through to check history and requests
             elif origin == 'FORK':
                 is_fine_if_factory = True
