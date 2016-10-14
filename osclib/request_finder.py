@@ -155,13 +155,13 @@ class RequestFinder(object):
                 if _is_int(p) and self.api.get_package_for_request_id(staging, p):
                     self.srs[int(p)] = {'staging': staging}
                     found = True
-                    continue
+                    break
                 else:
                     rq = self.api.get_request_id_for_package(staging, p)
                     if rq:
                         self.srs[rq] = {'staging': staging}
                         found = True
-                        continue
+                        break
             if not found:
                 raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
