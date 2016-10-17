@@ -259,6 +259,7 @@ def _checker_one_request(self, rq, opts):
             self._devel_projects['server:messaging/'] = 'libgloox'
             self._devel_projects['Application:Dochazka/'] = 'perl-App-Dochazka-Common'
             self._devel_projects['security:Stunnel/'] = 'stunnel'
+            self._devel_projects['network:cluster/' ] = 'cluster'
             if dpkg:
                 [dprj, dpkg] = dpkg.split('/')
             else:
