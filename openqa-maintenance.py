@@ -19,14 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from optparse import OptionParser
-from pprint import pformat, pprint
-import cmdln
-import logging
-import os
 import re
 import sys
-import time
 from datetime import date
 import md5
 from simplejson import JSONDecodeError
@@ -803,7 +797,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             else:
                 raise Exception("unknown QA state %d", qa_state)
 
-        except Exception, e:
+        except Exception:
             import traceback
             self.logger.error("unhandled exception in openQA Bot")
             self.logger.error(traceback.format_exc())
