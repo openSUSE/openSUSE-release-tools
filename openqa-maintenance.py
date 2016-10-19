@@ -128,10 +128,6 @@ class SUSEUpdate(Update):
 
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
-
-        # backward compat
-        settings['MINIMAL_TEST_REPO'] = settings['INCIDENT_REPO']
-
         return settings
 
 class openSUSEUpdate(Update):
