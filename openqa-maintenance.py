@@ -126,8 +126,31 @@ class SUSEUpdate(Update):
     def repo_prefix(self):
         return 'http://download.suse.de/ibs'
 
+    # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
+    def kgraft_target(self, req):
+        if req:
+            for a in req.actions:
+                match = re.match(r"kgraft-patch-([^.]+)\.", a.src_package)
+                if match:
+                    return match.group(1), a
+        return None, None
+
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
+
+        # special handling for kgraft incidents
+        kgraft_target, action = self.kgraft_target(req)
+        # ignore kgraft patches without defined target
+        # they are actually only the base for kgraft
+        if kgraft_target and kgraft_target in KGRAFT_SETTINGS:
+            incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
+            settings.update(KGRAFT_SETTINGS[kgraft_target])
+            settings['FLAVOR'] = 'KGraft'
+            settings['BUILD'] = ':' + req.reqid + '.kgraft.' + incident_id
+            settings['MAINT_UPDATE_RRID'] = action.src_project + ':' + req.reqid
+
+            # backward compat
+            settings['KGRAFT_TEST_REPO'] = settings['INCIDENT_REPO']
         return settings
 
 class openSUSEUpdate(Update):
@@ -209,7 +232,7 @@ class TestUpdate(openSUSEUpdate):
 
         return settings
 
-KRAFT_SETTINGS = {
+KGRAFT_SETTINGS = {
     'SLE12_Update_9' : { 'VIRSH_GUESTNAME': 'kGraft09',
                          'WORKER_CLASS': 'svirt-perseus',
                          'VIRSH_INSTANCE': 12009 - 5900 },
@@ -475,15 +498,18 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.commentapi = CommentAPI(self.apiurl)
         self.update_test_builds = dict()
 
-    # reimplemention from baseclass
-    def check_requests(self):
-
-        # first calculate the latest build number for current jobs
+    def gather_test_builds(self):
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
             buildnr = 0
             for j in self.jobs_for_target(u):
                 buildnr = j['settings']['BUILD']
             self.update_test_builds[prj] = buildnr
+
+    # reimplemention from baseclass
+    def check_requests(self):
+
+        # first calculate the latest build number for current jobs
+        self.gather_test_builds()
 
         started = []
         all_done = True
