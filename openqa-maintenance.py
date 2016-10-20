@@ -653,14 +653,14 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         # not found, then check for the next free build nr
         for job in j:
-                build = job['settings']['BUILD']
-                if build and build.startswith(today):
-                    try:
-                        nr = int(build.split('-')[1])
-                    except:
-                        continue
+            build = job['settings']['BUILD']
+            if build and build.startswith(today):
+                try:
+                    nr = int(build.split('-')[1])
                     if nr > buildnr:
                         buildnr = nr
+                except:
+                    continue
 
         buildnr = "%s-%d" % (today, buildnr + 1)
 
