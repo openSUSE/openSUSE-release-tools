@@ -448,6 +448,15 @@ PROJECT_OPENQA_SETTINGS = {
                 'ARCH': 's390x'
             }),
     ],
+    'SUSE:Updates:SLE-Live-Patching:12:x86_64': [
+          SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP1',
+                'FLAVOR': 'KGraft',
+                'ARCH': 'x86_64'
+            }),
+    ],
     'openSUSE:Leap:42.1:Update': [
         openSUSEUpdate(
             {
