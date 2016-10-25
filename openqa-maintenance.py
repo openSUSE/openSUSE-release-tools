@@ -120,8 +120,31 @@ class SUSEUpdate(Update):
     def repo_prefix(self):
         return 'http://download.suse.de/ibs'
 
+    # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
+    def kgraft_target(self, req):
+        if req:
+            for a in req.actions:
+                match = re.match(r"kgraft-patch-([^.]+)\.", a.src_package)
+                if match:
+                    return match.group(1), a
+        return None, None
+
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
+
+        # special handling for kgraft incidents
+        kgraft_target, action = self.kgraft_target(req)
+        # ignore kgraft patches without defined target
+        # they are actually only the base for kgraft
+        if kgraft_target and kgraft_target in KGRAFT_SETTINGS:
+            incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
+            settings.update(KGRAFT_SETTINGS[kgraft_target])
+            settings['FLAVOR'] = 'KGraft'
+            settings['BUILD'] = ':' + req.reqid + '.kgraft.' + incident_id
+            settings['MAINT_UPDATE_RRID'] = action.src_project + ':' + req.reqid
+
+            # backward compat
+            settings['KGRAFT_TEST_REPO'] = settings['INCIDENT_REPO']
         return settings
 
 class openSUSEUpdate(Update):
@@ -202,6 +225,54 @@ class TestUpdate(openSUSEUpdate):
         settings['IMPORT_GPG_KEYS'] = 'testkey'
 
         return settings
+
+KGRAFT_SETTINGS = {
+    'SLE12_Update_9' : { 'VIRSH_GUESTNAME': 'kGraft09',
+                         'WORKER_CLASS': 'svirt-perseus',
+                         'VIRSH_INSTANCE': 12009 - 5900 },
+    'SLE12_Update_10' : { 'VIRSH_GUESTNAME': 'kGraft0a',
+                          'WORKER_CLASS': 'svirt-perseus',
+                          'VIRSH_INSTANCE': 12010 - 5900 },
+    'SLE12_Update_11' : { 'VIRSH_GUESTNAME': 'kGraft0b',
+                          'WORKER_CLASS': 'svirt-perseus',
+                          'VIRSH_INSTANCE': 12011 - 5900 },
+    'SLE12_Update_12' : { 'VIRSH_GUESTNAME': 'kGraft0c',
+                          'WORKER_CLASS': 'svirt-perseus',
+                          'VIRSH_INSTANCE': 12012 - 5900 },
+    'SLE12_Update_13' : { 'VIRSH_GUESTNAME': 'kGraft0d',
+                          'WORKER_CLASS': 'svirt-pegasus',
+                          'VIRSH_INSTANCE': 12013 - 5900 },
+    'SLE12_Update_14' : { 'VIRSH_GUESTNAME': 'kGraft0e',
+                          'WORKER_CLASS': 'svirt-pegasus',
+                          'VIRSH_INSTANCE': 12014 - 5900 },
+    'SLE12_Update_15' : { 'VIRSH_GUESTNAME': 'kGraft0f',
+                          'WORKER_CLASS': 'svirt-pegasus',
+                          'VIRSH_INSTANCE': 12015 - 5900 },
+    'SLE12-SP1_Update_0' : { 'VIRSH_GUESTNAME': 'kGraft11',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12101 - 5900 },
+    'SLE12-SP1_Update_1' : { 'VIRSH_GUESTNAME': 'kGraft12',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12102 - 5900 },
+    'SLE12-SP1_Update_2' : { 'VIRSH_GUESTNAME': 'kGraft13',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12103 - 5900 },
+    'SLE12-SP1_Update_3' : { 'VIRSH_GUESTNAME': 'kGraft14',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12104 - 5900 },
+    'SLE12-SP1_Update_4' : { 'VIRSH_GUESTNAME': 'kGraft15',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12105 - 5900 },
+    'SLE12-SP1_Update_5' : { 'VIRSH_GUESTNAME': 'kGraft16',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12106 - 5900 },
+    'SLE12-SP1_Update_6' : { 'VIRSH_GUESTNAME': 'kGraft17',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12107 - 5900 },
+    'SLE12-SP1_Update_7' : { 'VIRSH_GUESTNAME': 'kGraft18',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12108 - 5900 },
+}
 
 TARGET_REPO_SETTINGS = {
     'https://openqa.suse.de' : {
@@ -371,6 +442,15 @@ PROJECT_OPENQA_SETTINGS = {
                 'ARCH': 's390x'
             }),
     ],
+    'SUSE:Updates:SLE-Live-Patching:12:x86_64': [
+          SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP1',
+                'FLAVOR': 'KGraft',
+                'ARCH': 'x86_64'
+            }),
+    ],
     'openSUSE:Leap:42.1:Update': [
         openSUSEUpdate(
             {
@@ -421,15 +501,18 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.commentapi = CommentAPI(self.apiurl)
         self.update_test_builds = dict()
 
-    # reimplemention from baseclass
-    def check_requests(self):
-
-        # first calculate the latest build number for current jobs
+    def gather_test_builds(self):
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
             buildnr = 0
             for j in self.jobs_for_target(u):
                 buildnr = j['settings']['BUILD']
             self.update_test_builds[prj] = buildnr
+
+    # reimplemention from baseclass
+    def check_requests(self):
+
+        # first calculate the latest build number for current jobs
+        self.gather_test_builds()
 
         started = []
         all_done = True
@@ -573,14 +656,14 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         # not found, then check for the next free build nr
         for job in j:
-                build = job['settings']['BUILD']
-                if build and build.startswith(today):
-                    try:
-                        nr = int(build.split('-')[1])
-                    except:
-                        continue
+            build = job['settings']['BUILD']
+            if build and build.startswith(today):
+                try:
+                    nr = int(build.split('-')[1])
                     if nr > buildnr:
                         buildnr = nr
+                except:
+                    continue
 
         buildnr = "%s-%d" % (today, buildnr + 1)
 
