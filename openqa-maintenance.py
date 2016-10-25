@@ -25,6 +25,7 @@ from datetime import date
 import md5
 from simplejson import JSONDecodeError
 from collections import namedtuple
+from pprint import pformat
 try:
     from xml.etree import cElementTree as ET
 except ImportError:
