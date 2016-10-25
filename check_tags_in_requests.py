@@ -60,13 +60,6 @@ class TagChecker(ReviewBot.ReviewBot):
         if self.factory is None:
             self.factory = "openSUSE:Factory"
         super(TagChecker, self).__init__(*args, **kwargs)
-        needed_tags = [r'bnc#[0-9]+',
-                       r'cve-[0-9]{4}-[0-9]+',
-                       r'fate#[0-9]+',
-                       r'boo#[0-9]+',
-                       r'bsc#[0-9]+',
-                       r'bgo#[0-9]+']
-        self.needed_tags_re = [re.compile(tag, re.IGNORECASE) for tag in needed_tags]
         self.review_messages['declined'] = """
 (This is a script running, so report bugs)
 
