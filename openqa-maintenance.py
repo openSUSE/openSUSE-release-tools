@@ -270,7 +270,7 @@ KGRAFT_SETTINGS = {
                              'WORKER_CLASS': 'svirt-perseus',
                              'VIRSH_INSTANCE': 12107 - 5900 },
     'SLE12-SP1_Update_7' : { 'VIRSH_GUESTNAME': 'kGraft18',
-                             'WORKER_CLASS': 'svirt-perseus',
+                             'WORKER_CLASS': 'svirt-pegasus',
                              'VIRSH_INSTANCE': 12108 - 5900 },
 }
 
