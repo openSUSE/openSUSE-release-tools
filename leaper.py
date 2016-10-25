@@ -21,7 +21,9 @@
 # SOFTWARE.
 
 from pprint import pprint
-import os, sys, re
+import os
+import sys
+import re
 import logging
 from optparse import OptionParser
 import cmdln
@@ -39,17 +41,47 @@ import ReviewBot
 from check_maintenance_incidents import MaintenanceChecker
 from check_source_in_factory import FactorySourceChecker
 
+from osclib.comments import CommentAPI
+
+class LogToString(logging.Filter):
+    def __init__(self, obj, propname):
+        self.obj = obj
+        self.propname = propname
+
+    def filter(self, record):
+        if record.levelno >= logging.INFO:
+            line = record.getMessage()
+            comment_log = getattr(self.obj, self.propname)
+            if comment_log is not None:
+                comment_log.append(line)
+            setattr(self.obj, self.propname, comment_log)
+        return True
+
 class Leaper(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
+
+        self.do_comments = True
+        self.commentapi = CommentAPI(self.apiurl)
+
         self.maintbot = MaintenanceChecker(*args, **kwargs)
         # for FactorySourceChecker
         self.factory = FactorySourceChecker(*args, **kwargs)
 
         self.needs_reviewteam = False
         self.pending_factory_submission = False
-        self.source_in_factory = False
+        self.source_in_factory = None
+        self.needs_release_manager = False
+        self.release_manager_group = 'leap-reviewers'
+        self.must_approve_version_updates = False
+        self.must_approve_maintenance_updates = False
+
+        self.comment_marker_re = re.compile(r'<!-- leaper state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined))? -->')
+
+        self.comment_log = None
+        self.commentlogger = LogToString(self, 'comment_log')
+        self.logger.addFilter(self.commentlogger)
 
     def prepare_review(self):
 
@@ -77,20 +109,39 @@ class Leaper(ReviewBot.ReviewBot):
         if package in self.lookup_422:
             origin = self.lookup_422[package]
 
+        is_fine_if_factory = False
+        not_in_factory_okish = False
         if origin:
-            self.logger.debug("origin {}".format(origin))
+            self.logger.info("expected origin is '%s'", origin)
             if origin.startswith('Devel;'):
-                self.needs_reviewteam = True
                 (dummy, origin, dummy) = origin.split(';')
-            if origin == src_project:
-                self.logger.debug("exact match")
-                return True
+                if origin != src_project:
+                    self.logger.debug("not submitted from devel project")
+                    return False
+                is_fine_if_factory = True
+                not_in_factory_okish = True
+                if self.must_approve_version_updates:
+                    self.needs_release_manager = True
+                # fall through to check history and requests
             elif origin.startswith('openSUSE:Factory'):
-                return self._check_factory(target_package, src_srcinfo)
+                if self.must_approve_version_updates:
+                    self.needs_release_manager = True
+                if origin == src_project:
+                    self.source_in_factory = True
+                    return True
+                is_fine_if_factory = True
+                # fall through to check history and requests
+            elif origin == 'FORK':
+                is_fine_if_factory = True
+                not_in_factory_okish = True
+                self.needs_release_manager = True
+                # fall through to check history and requests
             elif origin.startswith('openSUSE:Leap:42.1'):
+                if self.must_approve_maintenance_updates:
+                    self.needs_release_manager = True
                 # submitted from :Update
                 if src_project.startswith(origin):
-                    self.logger.debug("match 42.1")
+                    self.logger.debug("submission from 42.1 ok")
                     return True
                 # submitted from elsewhere but is in :Update
                 else:
@@ -110,23 +161,25 @@ class Leaper(ReviewBot.ReviewBot):
                     # Factory. So it's ok to keep upgrading it to Factory
                     # TODO: whitelist packages where this is ok and block others?
                     if oldorigin.startswith('openSUSE:Factory'):
-                        if src_project == oldorigin:
-                            self.logger.debug("Upgrade to Factory again. Submitted from Factory")
-                            return True
-                        good = self._check_factory(target_package, src_srcinfo)
-                        if good or good == None:
-                            self.logger.debug("Upgrade to Factory again. It's in Factory")
-                            return good
-                        # or maybe in SP2?
+                        self.logger.info("Package was from Factory in 42.1")
+                        # check if an attempt to switch to SLE package is made
                         good = self.factory._check_project('SUSE:SLE-12-SP2:GA', target_package, src_srcinfo.verifymd5)
                         if good:
-                            self.logger.debug("hope it's ok to change to SP2")
+                            self.logger.info("request sources come from SLE")
+                            self.needs_release_manager = True
                             return good
-                # else other project or FORK, fall through
+                # the release manager needs to review attempts to upgrade to Factory
+                is_fine_if_factory = True
+                self.needs_release_manager = True
 
             elif origin.startswith('SUSE:SLE-12'):
+                if self.must_approve_maintenance_updates:
+                    self.needs_release_manager = True
                 # submitted from :Update
-                if origin.endswith(':GA') \
+                if origin == src_project:
+                    self.logger.debug("submission origin ok")
+                    return True
+                elif origin.endswith(':GA') \
                     and src_project == origin[:-2]+'Update':
                     self.logger.debug("sle update submission")
                     return True
@@ -134,41 +187,56 @@ class Leaper(ReviewBot.ReviewBot):
                 if origin.startswith('SUSE:SLE-12:'):
                     if src_project.startswith('SUSE:SLE-12-SP1:') \
                         or src_project.startswith('SUSE:SLE-12-SP2:'):
-                            self.logger.debug("higher service pack ok")
+                            self.logger.info("submission from service pack ok")
                             return True
                 elif origin.startswith('SUSE:SLE-12-SP1:'):
                     if src_project.startswith('SUSE:SLE-12-SP2:'):
-                        self.logger.debug("higher service pack ok")
-            # else other project or FORK, fall through
+                        self.logger.info("submission from service pack ok")
+                        return True
 
-            # we came here because none of the above checks find it good, so
-            # let's see if the package is in Factory at least
-            is_in_factory = self._check_factory(target_package, src_srcinfo)
-            if is_in_factory:
-                self.source_in_factory = True
-            elif is_in_factory is None:
-                self.pending_factory_submission = True
+                self.needs_release_manager = True
+                good = self._check_project_and_request('openSUSE:Leap:42.2:SLE-workarounds', target_package, src_srcinfo)
+                if good or good == None:
+                    self.logger.info("found sources in SLE-workarounds")
+                    return good
+                # the release manager needs to review attempts to upgrade to Factory
+                is_fine_if_factory = True
             else:
-                if not src_project.startswith('SUSE:SLE-12'):
-                    self.needs_reviewteam = True
-
+                self.logger.error("unhandled origin %s", origin)
+                return False
         else: # no origin
-            # SLE and Factory are ok
+            # submission from SLE is ok
+            if src_project.startswith('SUSE:SLE-12'):
+                return True
+
+            is_fine_if_factory = True
+            self.needs_release_manager = True
+
+        # we came here because none of the above checks find it good, so
+        # let's see if the package is in Factory at least
+        is_in_factory = self._check_factory(target_package, src_srcinfo)
+        if is_in_factory:
+            self.source_in_factory = True
+            self.needs_reviewteam = False
+        elif is_in_factory is None:
+            self.pending_factory_submission = True
+            self.needs_reviewteam = False
+        else:
             if src_project.startswith('SUSE:SLE-12') \
-                or src_project.startswith('openSUSE:Factory'):
+                or src_project.startswith('openSUSE:Leap:42.'):
+                self.needs_reviewteam = False
+            else:
+                self.needs_reviewteam = True
+            self.source_in_factory = False
+
+        if is_fine_if_factory:
+            if self.source_in_factory:
                 return True
-            # submitted from elsewhere, check it's in Factory
-            good = self._check_factory(target_package, src_srcinfo)
-            if good:
-                self.source_in_factory = True
+            elif self.pending_factory_submission:
+                return None
+            elif not_in_factory_okish:
+                self.needs_reviewteam = True
                 return True
-            elif good == None:
-                self.pending_factory_submission = True
-                return good
-            # or maybe in SP2?
-            good = self.factory._check_project('SUSE:SLE-12-SP2:GA', target_package, src_srcinfo.verifymd5)
-            if good:
-                return good
 
         return False
 
@@ -189,35 +257,73 @@ class Leaper(ReviewBot.ReviewBot):
                 return good
             return False
 
+    def _check_project_and_request(self, project, target_package, src_srcinfo):
+        good = self.factory._check_project(project, target_package, src_srcinfo.verifymd5)
+        if good:
+            return good
+        good = self.factory._check_requests(project, target_package, src_srcinfo.verifymd5)
+        if good or good == None:
+            return good
+        return False
+
     def check_one_request(self, req):
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
         self.needs_reviewteam = False
+        self.needs_release_manager = False
         self.pending_factory_submission = False
-        self.source_in_factory = False
+        self.source_in_factory = None
+        self.comment_log = []
 
         if len(req.actions) != 1:
             msg = "only one action per request please"
             self.review_messages['declined'] = msg
             return False
 
-        # if the fallback reviewer created the request she probably
-        # knows what she does :-)
-        if self.fallback_user and req.get_creator() == self.fallback_user:
-            self.logger.debug("skip fallback review")
-            return True
-
-        has_upstream_sources = ReviewBot.ReviewBot.check_one_request(self, req)
+        request_ok = ReviewBot.ReviewBot.check_one_request(self, req)
         has_correct_maintainer = self.maintbot.check_one_request(req)
 
-        # not reviewed yet?
-        if has_upstream_sources is None:
-            return None
+        self.logger.debug("review result: %s", request_ok)
+        self.logger.debug("has_correct_maintainer: %s", has_correct_maintainer)
+        if self.pending_factory_submission:
+            self.logger.info("submission is waiting for a Factory request to complete")
+        elif self.source_in_factory:
+            self.logger.info("the submitted sources are in or accepted for Factory")
+        elif self.source_in_factory == False:
+            self.logger.info("the submitted sources are NOT in Factory")
 
-        self.logger.debug("upstream sources: {}, maintainer ok: {}".format(has_upstream_sources, has_correct_maintainer))
+        if request_ok == False:
+            self.logger.info("NOTE: if you think the automated review was wrong here, please talk to the release team before reopening the request")
+        elif self.needs_release_manager:
+            self.logger.info("request needs review by release management")
+
+        if self.comment_log:
+            result = None
+            if request_ok is None:
+                state = 'seen'
+            elif request_ok:
+                state = 'done'
+                result = 'accepted'
+            else:
+                state = 'done'
+                result = 'declined'
+            self.add_comment(req, '\n\n'.join(self.comment_log), state)
+        self.comment_log = None
+
+        if self.needs_release_manager:
+            add_review = True
+            for r in req.reviews:
+                if r.by_group == self.release_manager_group and (r.state == 'new' or r.state == 'accepted'):
+                    add_review = False
+                    self.logger.debug("%s already is a reviewer", self.release_manager_group)
+                    break
+            if add_review:
+                if self.add_review(req, by_group = self.release_manager_group) != True:
+                    self.review_messages['declined'] += '\nadding %s failed' % self.release_manager_group
+                    return False
 
         if self.needs_reviewteam:
             add_review = True
-            self.logger.debug("%s needs review by opensuse-review-team"%req.reqid)
+            self.logger.info("%s needs review by opensuse-review-team"%req.reqid)
             for r in req.reviews:
                 if r.by_group == 'opensuse-review-team':
                     add_review = False
@@ -228,31 +334,51 @@ class Leaper(ReviewBot.ReviewBot):
                     self.review_messages['declined'] += '\nadding opensuse-review-team failed'
                     return False
 
-        if has_upstream_sources != True or has_correct_maintainer != True:
-            if has_upstream_sources != True:
-                self.review_messages['declined'] += '\nOrigin project changed'
-                pkg = req.actions[0].tgt_package
-                if pkg in self.lookup_422:
-                    self.review_messages['declined'] += '(was {})'.format(self.lookup_422[pkg])
-                if self.source_in_factory:
-                    self.review_messages['declined'] += '\nsource is in Factory'
-                if self.pending_factory_submission:
-                    self.review_messages['declined'] += '\na submission to Factory is pending'
-                    self.logger.debug("origin changed but waiting for Factory submission to complete")
-                    # FXIME: we should add the human reviewer here
-                    # and leave a comment
-                    return None
-            # shouldn't happen actually
-            if has_correct_maintainer != True:
-                self.review_messages['declined'] += '\nMaintainer check failed'
-            return False
-
-        return True
+        return request_ok
 
     def check_action__default(self, req, a):
         # decline all other requests for fallback reviewer
         self.logger.debug("auto decline request type %s"%a.type)
         return False
+
+    # TODO: make generic, move to Reviewbot. Used by multiple bots
+    def add_comment(self, req, msg, state, result=None):
+        if not self.do_comments:
+            return
+
+        comment = "<!-- leaper state=%s%s -->\n" % (state, ' result=%s' % result if result else '')
+        comment += "\n" + msg
+
+        (comment_id, comment_state, comment_result, comment_text) = self.find_obs_request_comment(req, state)
+
+        if comment_id is not None and state == comment_state:
+            # count number of lines as aproximation to avoid spamming requests
+            # for slight wording changes in the code
+            if len(comment_text.split('\n')) == len(comment.split('\n')):
+                self.logger.debug("not worth the update, previous comment %s is state %s", comment_id, comment_state)
+                return
+
+        self.logger.debug("adding comment to %s, state %s result %s", req.reqid, state, result)
+        self.logger.debug("message: %s", msg)
+        if not self.dryrun:
+            if comment_id is not None:
+                self.commentapi.delete(comment_id)
+            self.commentapi.add_comment(request_id=req.reqid, comment=str(comment))
+
+    def find_obs_request_comment(self, req, state=None):
+        """Return previous comments (should be one)."""
+        if self.do_comments:
+            comments = self.commentapi.get_comments(request_id=req.reqid)
+            for c in comments.values():
+                m = self.comment_marker_re.match(c['comment'])
+                if m and (state is None or state == m.group('state')):
+                    return c['id'], m.group('state'), m.group('result'), c['comment']
+        return None, None, None, None
+
+    def check_action__default(self, req, a):
+        self.logger.info("unhandled request type %s"%a.type)
+        self.needs_release_manager = True
+        return True
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
@@ -261,6 +387,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
+
+        parser.add_option("--no-comment", dest='comment', action="store_false", default=True, help="don't actually post comments to obs")
+        parser.add_option("--manual-version-updates", action="store_true", help="release manager must approve version updates")
+        parser.add_option("--manual-maintenance-updates", action="store_true", help="release manager must approve maintenance updates")
 
         return parser
 
@@ -280,6 +410,12 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 user = user, \
                 group = group, \
                 logger = self.logger)
+
+        if self.options.manual_version_updates:
+            bot.must_approve_version_updates = True
+        if self.options.manual_maintenance_updates:
+            bot.must_approve_maintenance_updates = True
+        bot.do_comments = self.options.comment
 
         return bot
 

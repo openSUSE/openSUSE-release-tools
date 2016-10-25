@@ -75,6 +75,10 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         for p in root.findall('./owner'):
             prj = p.get("project")
             pkg = p.get("package")
+            # packages dropped from Factory sometimes point to maintained distros
+            if prj.startswith('openSUSE:Leap') or prj.startswith('openSUSE:1'):
+                self.logger.debug("%s looks wrong as maintainer, skipped", prj)
+                continue
             if ((prj, pkg) in package_reviews):
                 self.logger.debug("%s/%s already is a reviewer, not adding again" % (prj, pkg))
                 continue
@@ -121,7 +125,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             else:
                 origin = mapping[pkgname]
                 self.logger.debug("{} comes from {}, submitted from {}".format(pkgname, origin, a.src_project))
-                if origin.startswith('SUSE:SLE-12') and a.src_project.startswith('SUSE:SLE-12'):
+                if origin.startswith('SUSE:SLE-12') and a.src_project.startswith('SUSE:SLE-12') \
+                    or origin.startswith('openSUSE:Leap') and a.src_project.startswith('openSUSE:Leap'):
                     self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
                     return
 
