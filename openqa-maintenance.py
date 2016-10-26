@@ -273,6 +273,9 @@ KGRAFT_SETTINGS = {
     'SLE12-SP1_Update_7' : { 'VIRSH_GUESTNAME': 'kGraft18',
                              'WORKER_CLASS': 'svirt-pegasus',
                              'VIRSH_INSTANCE': 12108 - 5900 },
+    'SLE12-SP1_Update_8' : { 'VIRSH_GUESTNAME': 'kGraft19',
+                             'WORKER_CLASS': 'svirt-pegasus',
+                             'VIRSH_INSTANCE': 12109 - 5900 },
 }
 
 TARGET_REPO_SETTINGS = {
