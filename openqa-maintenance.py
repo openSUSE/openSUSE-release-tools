@@ -290,7 +290,7 @@ TARGET_REPO_SETTINGS = {
         'settings': [ {
             'DISTRI': 'sle',
             'VERSION': '12',
-            'FLAVOR': 'Server-DVD-UpdateTest',
+            'FLAVOR': 'Server-DVD-Updates',
             'ARCH': 'x86_64',
         } ],
         'test': 'qam-gnome'
@@ -305,7 +305,7 @@ TARGET_REPO_SETTINGS = {
         'settings': [ {
             'DISTRI': 'sle',
             'VERSION': '12-SP1',
-            'FLAVOR': 'Server-DVD-UpdateTest',
+            'FLAVOR': 'Server-DVD-Updates',
             'ARCH': 'x86_64'
         } ],
         'test': 'qam-gnome'
@@ -314,13 +314,43 @@ TARGET_REPO_SETTINGS = {
         'repos': [
             'http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12-SP1/x86_64/update/',
             'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP1:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP1:/x86_64/update/',
             'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP1/x86_64/update/',
         ],
         'settings': [ {
             'DISTRI': 'sle',
             'VERSION': '12-SP1',
-            'FLAVOR': 'Desktop-DVD-UpdateTest',
+            'FLAVOR': 'Desktop-DVD-Updates',
+            'ARCH': 'x86_64',
+        } ],
+        'test': 'qam-gnome'
+    },
+    'SUSE:Updates:SLE-SERVER:12-SP2:x86_64': {
+        'repos' : [
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP2/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP2:/x86_64/update',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/',
+        ],
+        'settings': [ {
+            'DISTRI': 'sle',
+            'VERSION': '12-SP2',
+            'FLAVOR': 'Server-DVD-Updates',
+            'ARCH': 'x86_64'
+        } ],
+        'test': 'qam-gnome'
+    },
+    'SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64': {
+        'repos': [
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12-SP2/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP2:/x86_64/update',
+            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/',
+            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/',
+        ],
+        'settings': [ {
+            'DISTRI': 'sle',
+            'VERSION': '12-SP2',
+            'FLAVOR': 'Desktop-DVD-Updates',
             'ARCH': 'x86_64',
         } ],
         'test': 'qam-gnome'
@@ -446,11 +476,47 @@ PROJECT_OPENQA_SETTINGS = {
                 'ARCH': 's390x'
             }),
     ],
+    'SUSE:Updates:SLE-SERVER:12-SP2:x86_64': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP2',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 'x86_64'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12-SP2:ppc64le': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP2',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 'ppc64le'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12-SP2:s390x': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP2',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 's390x'
+            }),
+    ],
+    'SUSE:Updates:SLE-SERVER:12-SP2:aarch64': [
+        SUSEUpdate(
+            {
+                'DISTRI': 'sle',
+                'VERSION': '12-SP2',
+                'FLAVOR': 'Server-DVD-Incidents',
+                'ARCH': 'aarch64'
+            }),
+    ],
     'SUSE:Updates:SLE-Live-Patching:12:x86_64': [
           SUSEUpdate(
             {
                 'DISTRI': 'sle',
-                'VERSION': '12-SP1',
+                'VERSION': '12',
                 'FLAVOR': 'KGraft',
                 'ARCH': 'x86_64'
             }),
