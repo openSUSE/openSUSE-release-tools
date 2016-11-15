@@ -98,6 +98,31 @@ class AcceptCommand(object):
         for package in clean_list:
             print "[cleanup] deleted %s/%s" % (project, package)
             delete_package(self.api.apiurl, project, package, force=True, msg="autocleanup")
+
+        # wipe Test-DVD binaries and breaks kiwi build
+        if project.startswith('openSUSE:'):
+            for package in pkglist:
+                if package.startswith('Test-DVD-'):
+                    # intend to break the kiwi file
+                    arch = package.split('-')[-1]
+                    fakepkgname = 'I-am-breaks-kiwi-build'
+                    oldkiwifile = self.api.load_file_content(project, package, 'PRODUCT-'+arch+'.kiwi')
+                    if oldkiwifile is not None:
+                        newkiwifile = re.sub(r'<repopackage name="openSUSE-release"/>', '<repopackage name=%s/>' % fakepkgname, oldkiwifile)
+                        self.api.save_file_content(project, package, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
+
+                    # do wipe binary now
+                    query = { 'cmd': 'wipe' }
+                    query['package'] = package
+                    query['repository'] = 'images'
+
+                    url = self.api.makeurl(['build', project], query)
+                    try:
+                        http_POST(url)
+                    except urllib2.HTTPError, err:
+                        # failed to wipe isos but we can just continue
+                        pass
+
         return True
 
     def accept_other_new(self):
