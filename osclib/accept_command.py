@@ -4,7 +4,7 @@ import warnings
 from xml.etree import cElementTree as ET
 
 from osc.core import change_request_state
-from osc.core import http_GET, http_PUT, http_DELETE
+from osc.core import http_GET, http_PUT, http_DELETE, http_POST
 from osc.core import delete_package
 from datetime import date
 from osclib.comments import CommentAPI
@@ -108,7 +108,7 @@ class AcceptCommand(object):
                     fakepkgname = 'I-am-breaks-kiwi-build'
                     oldkiwifile = self.api.load_file_content(project, package, 'PRODUCT-'+arch+'.kiwi')
                     if oldkiwifile is not None:
-                        newkiwifile = re.sub(r'<repopackage name="openSUSE-release"/>', '<repopackage name=%s/>' % fakepkgname, oldkiwifile)
+                        newkiwifile = re.sub(r'<repopackage name="openSUSE-release"/>', '<repopackage name="%s"/>' % fakepkgname, oldkiwifile)
                         self.api.save_file_content(project, package, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
 
                     # do wipe binary now
