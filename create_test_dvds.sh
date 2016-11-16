@@ -149,14 +149,16 @@ function start_creating() {
 
             for prj in $projects; do
                 l=$(echo $prj | sed 's/^openSUSE.\+[:]Staging/Staging/g' | cut -d: -f2)
-
-                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
+                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]] || [[ $prj =~ ^openSUSE.+:[A-Z]:DVD$ ]]; then
                     # if the testdvd build is disabled, do not regenerate the pacakges list and go to next staging project
                     testdvd_disabled=$(osc api "/build/openSUSE:$target:Staging:$l/_result?view=summary&package=Test-DVD-$arch&repository=images" | grep 'statuscount code="disabled"' || true)
                     if [ -n "$testdvd_disabled" ]; then
+                        echo "Skips openSUSE:$target:Staging:$l due to the testdvd build is disabled"
                         continue
                     fi
+                fi
 
+                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
                     echo "Checking $target:$l-$arch"
 
                     meta=$(mktemp)
