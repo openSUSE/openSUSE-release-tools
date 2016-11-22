@@ -42,15 +42,24 @@ class BiArchTool(ToolBase.ToolBase):
         ToolBase.ToolBase.__init__(self)
         self.project = project
         self.biarch_packages = None
+        self.packages = []
 
     def _init_biarch_packages(self):
         if self.biarch_packages is None:
             self.biarch_packages = set(self.meta_get_packagelist("%s:Rings:0-Bootstrap"%self.project))
             self.biarch_packages |= set(self.meta_get_packagelist("%s:Rings:1-MinimalX"%self.project))
 
-    def enable_baselibs_packages(self, packages, force=False):
+    def select_packages(self, packages):
+        if packages == '__all__':
+            self.packages = self.meta_get_packagelist(self.project)
+        elif packages == '__latest__':
+            self.packages = self.latest_packages(self.project)
+        else:
+            self.packages = packages
+
+    def enable_baselibs_packages(self, force=False):
         self._init_biarch_packages()
-        for pkg in packages:
+        for pkg in self.packages:
             logger.debug("processing %s", pkg)
             pkgmetaurl = makeurl(self.apiurl, ['source', self.project, pkg, '_meta'])
             pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
@@ -119,14 +128,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         tool = BiArchTool(self.options.project)
         return tool
 
-    def _packages(self, all, packages):
-        if not packages:
-            if all:
-                packages = self.tool.meta_get_packagelist(self.tool.project)
-            else:
-                packages = self.tool.latest_packages(self.tool.project)
-
-        return packages
+    def _select_packages(self, all, packages):
+        if packages:
+            self.tool.select_packages(packages)
+        elif all:
+            self.tool.select_packages('__all__')
+        else:
+            self.tool.select_packages('__latest__')
 
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     @cmdln.option('-a', '--all', action='store_true', help='process all packages')
@@ -139,7 +147,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
         def work():
-            self.tool.enable_baselibs_packages(self._packages(opts.all, packages), opts.force)
+            self._select_packages(opts.all, packages)
+            self.tool.enable_baselibs_packages(force=opts.force)
 
         self.runner(work, opts.interval)
 
