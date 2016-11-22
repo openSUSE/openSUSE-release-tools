@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2015 SUSE Linux GmbH
+# Copyright (c) 2015,2016 SUSE Linux GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -60,21 +60,17 @@ class TagChecker(ReviewBot.ReviewBot):
         if self.factory is None:
             self.factory = "openSUSE:Factory"
         super(TagChecker, self).__init__(*args, **kwargs)
-        needed_tags = [r'bnc#[0-9]+',
-                       r'cve-[0-9]{4}-[0-9]+',
-                       r'fate#[0-9]+',
-                       r'boo#[0-9]+',
-                       r'bsc#[0-9]+',
-                       r'bgo#[0-9]+']
-        self.needed_tags_re = [re.compile(tag, re.IGNORECASE) for tag in needed_tags]
         self.review_messages['declined'] = """
 (This is a script running, so report bugs)
 
-We require a ID marked in .changes file to detect later if the changes
-are also merged into openSUSE:Factory. We accept bnc#, cve#, fate#, boo#, bsc# and bgo# atm.
+The project you submitted to requires a bug tracker ID marked in the
+.changes file. OBS supports several patterns, see
+$ osc api /issue_trackers
 
-Note: there is no whitespace behind before or after the number sign
-(compare with the packaging policies)
+See also https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_set_of_abbreviations
+
+Note that not necessarily all of the tags listed there are supported
+by OBS on which this bot relies on.
 """
 
     def isNewPackage(self, tgt_project, tgt_package):
