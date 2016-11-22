@@ -43,6 +43,7 @@ class BiArchTool(ToolBase.ToolBase):
         self.project = project
         self.biarch_packages = None
         self.packages = []
+        self.arch = 'i586'
 
     def _init_biarch_packages(self):
         if self.biarch_packages is None:
@@ -72,10 +73,10 @@ class BiArchTool(ToolBase.ToolBase):
             if force:
                 must_enable = True
 
-            for n in pkgmeta.findall("./build/enable[@arch='i586']"):
+            for n in pkgmeta.findall("./build/enable[@arch='{}']".format(self.arch)):
                 is_enabled = True
                 break
-            for n in pkgmeta.findall("./build/disable[@arch='i586']"):
+            for n in pkgmeta.findall("./build/disable[@arch='{}']".format(self.arch)):
                 is_disabled = True
                 break
             if pkg in self.biarch_packages:
@@ -98,7 +99,7 @@ class BiArchTool(ToolBase.ToolBase):
                     bn = pkgmeta.find('build')
                     if bn is None:
                         bn = ET.SubElement(pkgmeta, 'build')
-                    ET.SubElement(bn, 'enable', { 'arch' : 'i586' })
+                    ET.SubElement(bn, 'enable', { 'arch' : self.arch })
                     changed = True
             else:
                 if is_enabled:
