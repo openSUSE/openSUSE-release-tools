@@ -23,6 +23,8 @@ import re
 import sys
 from datetime import date
 import md5
+import json
+import urllib
 from simplejson import JSONDecodeError
 from collections import namedtuple
 from pprint import pformat
@@ -858,6 +860,13 @@ class OpenQABot(ReviewBot.ReviewBot):
     def emd(self, str):
         return str.replace('_', '\_')
 
+    def get_step_url(self, testurl, modulename):
+        failurl = testurl + '/modules/%s/fails' % modulename
+        # use urllib as osc.core dislikes using different SSL certificates than OBS
+        fails = json.load(urllib.urlopen(failurl))
+        failed_step = fails.get('first_failed_step', 1)
+        return "[%s](%s#step/%s/%d)" % (self.emd(modulename), testurl, modulename, failed_step)
+
     def summarize_one_openqa_job(self, job):
         testurl = osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])])
         if not job['result'] in ['passed', 'failed', 'softfailed']:
@@ -867,7 +876,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         for module in job['modules']:
             if module['result'] != 'failed':
                 continue
-            modstrings.append("[%s](%s#step/%s/1)" % (self.emd(module['name']), testurl, module['name']))
+            modstrings.append(self.get_step_url(testurl, module['name']))
 
         if len(modstrings):
             return '\n- [%s](%s) failed in %s' % (self.emd(job['settings']['TEST']), testurl, ','.join(modstrings))
