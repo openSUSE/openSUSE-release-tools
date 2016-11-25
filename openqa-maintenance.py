@@ -24,7 +24,7 @@ import sys
 from datetime import date
 import md5
 import json
-import urllib
+import requests
 from simplejson import JSONDecodeError
 from collections import namedtuple
 from pprint import pformat
@@ -862,8 +862,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def get_step_url(self, testurl, modulename):
         failurl = testurl + '/modules/%s/fails' % modulename
-        # use urllib as osc.core dislikes using different SSL certificates than OBS
-        fails = json.load(urllib.urlopen(failurl))
+        fails = requests.get(failurl).json()
         failed_step = fails.get('first_failed_step', 1)
         return "[%s](%s#step/%s/%d)" % (self.emd(modulename), testurl, modulename, failed_step)
 
