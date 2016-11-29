@@ -342,6 +342,48 @@ def _checker_one_request(self, rq, opts):
             if self._checker_accept_request(opts, id_, msg, diff=diff):
                 continue
 
+        elif _type == "add_role":
+            tprj = act.find('target').get('project')
+            tpkg = act.find('target').get('package')
+            # decline add_role request to Factory
+            if tpkg is None:
+                msg = "Roles to packages are granted in the devel project, not in openSUSE:Factory."
+            else:
+                dpkg = self._checker_check_devel_package(opts, tprj, tpkg)
+                [dprj, dpkg] = dpkg.split('/')
+                msg = "Roles to packages are granted in the devel project, not in openSUSE:Factory. Please send this request to %s/%s" % (dprj, dpkg)
+
+            self._checker_change_review_state(opts, id_, 'declined',
+                                              by_group='factory-auto',
+                                              message=msg)
+        elif _type == "delete":
+            tprj = act.find('target').get('project')
+            tpkg = act.find('target').get('package')
+            query = {
+                'view': 'info',
+                'nofilename': '1',
+            }
+            url = makeurl(opts.apiurl, ('source', tprj, tpkg), query=query)
+            try:
+                root = ET.parse(http_GET(url)).getroot()
+            except urllib2.HTTPError:
+                return
+
+            # decline the delete request against linked package
+            for si in root.findall('sourceinfo'):
+                links = si.findall('linked')
+                if links is None or len(links) == 0:
+                    self._checker_change_review_state(opts, id_, 'accepted',
+                                                  by_group='factory-auto',
+                                                  message="Unchecked request type %s" % _type)
+                else:
+                    linked = links[0]
+                    lprj = linked.get('project')
+                    lpkg = linked.get('package')
+                    msg = "This is an incorrect request, it's a linked package to %s/%s" % (lprj, lpkg)
+                    self._checker_change_review_state(opts, id_, 'declined',
+                                                  by_group='factory-auto',
+                                                  message=msg)
         else:
             self._checker_change_review_state(opts, id_, 'accepted',
                                               by_group='factory-auto',
