@@ -37,9 +37,9 @@ from urllib import quote_plus
 
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:Leap:42.2'
+OPENSUSE = 'openSUSE:Leap:42.3'
 FACTORY = 'openSUSE:Factory'
-SLE = 'SUSE:SLE-12-SP1:Update'
+SLE = 'SUSE:SLE-12-SP2:Update'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
