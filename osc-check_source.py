@@ -370,20 +370,19 @@ def _checker_one_request(self, rq, opts):
                 return
 
             # decline the delete request against linked package
-            for si in root.findall('sourceinfo'):
-                links = si.findall('linked')
-                if links is None or len(links) == 0:
-                    self._checker_change_review_state(opts, id_, 'accepted',
-                                                  by_group='factory-auto',
-                                                  message="Unchecked request type %s" % _type)
-                else:
-                    linked = links[0]
-                    lprj = linked.get('project')
-                    lpkg = linked.get('package')
-                    msg = "This is an incorrect request, it's a linked package to %s/%s" % (lprj, lpkg)
-                    self._checker_change_review_state(opts, id_, 'declined',
-                                                  by_group='factory-auto',
-                                                  message=msg)
+            links = root.findall('linked')
+            if links is None or len(links) == 0:
+                self._checker_change_review_state(opts, id_, 'accepted',
+                                              by_group='factory-auto',
+                                              message="Unchecked request type %s" % _type)
+            else:
+                linked = links[0]
+                lprj = linked.get('project')
+                lpkg = linked.get('package')
+                msg = "This is an incorrect request, it's a linked package to %s/%s" % (lprj, lpkg)
+                self._checker_change_review_state(opts, id_, 'declined',
+                                              by_group='factory-auto',
+                                              message=msg)
         else:
             self._checker_change_review_state(opts, id_, 'accepted',
                                               by_group='factory-auto',
