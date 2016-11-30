@@ -37,7 +37,7 @@ from osclib.memoize import memoize
 
 logger = logging.getLogger()
 
-OPENSUSE = 'openSUSE:Leap:42.2'
+OPENSUSE = 'openSUSE:Leap:42.3'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -51,19 +51,23 @@ class Manager42(object):
         self.caching = caching
         self.apiurl = osc.conf.config['apiurl']
         self.project_preference_order = [
-                #'SUSE:SLE-12-SP2:Update',
+                'SUSE:SLE-12-SP3:GA',
+                'SUSE:SLE-12-SP2:Update',
                 'SUSE:SLE-12-SP2:GA',
                 'SUSE:SLE-12-SP1:Update',
                 'SUSE:SLE-12-SP1:GA',
                 'SUSE:SLE-12:Update',
                 'SUSE:SLE-12:GA',
+                'openSUSE:Leap:42.2:Update',
+                'openSUSE:Leap:42.2',
+                'openSUSE:Leap:42.2:NonFree:Update',
+                'openSUSE:Leap:42.2:NonFree',
                 'openSUSE:Leap:42.1:Update',
                 'openSUSE:Leap:42.1',
                 'openSUSE:Leap:42.1:NonFree:Update',
                 'openSUSE:Leap:42.1:NonFree',
                 'openSUSE:Factory',
                 'openSUSE:Factory:NonFree',
-                'openSUSE:Leap:42.2:SLE-workarounds'
                 ]
 
         self.parse_lookup(self.from_prj)
