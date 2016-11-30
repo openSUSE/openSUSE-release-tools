@@ -58,6 +58,74 @@ class BiArchTool(ToolBase.ToolBase):
         else:
             self.packages = packages
 
+    def remove_explicit_enable(self):
+
+        self._init_biarch_packages()
+
+        resulturl = makeurl(self.apiurl, ['build', self.project, '_result'])
+        result = ET.fromstring(self.cached_GET(resulturl))
+
+        packages = set()
+
+        for n in result.findall("./result[@arch='{}']/status".format(self.arch)):
+            if n.get('code') not in ('disabled', 'excluded'):
+                #logger.debug('%s %s', n.get('package'), n.get('code'))
+                packages.add(n.get('package'))
+
+        for pkg in sorted(packages):
+            changed = False
+
+            logger.debug("processing %s", pkg)
+            pkgmetaurl = makeurl(self.apiurl, ['source', self.project, pkg, '_meta'])
+            pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
+
+            for build in pkgmeta.findall("./build"):
+                for n in build.findall("./enable[@arch='{}']".format(self.arch)):
+                    logger.debug("disable %s", pkg)
+                    build.remove(n)
+                    changed = True
+
+            if changed:
+                try:
+                    self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
+                    if self.caching:
+                        self._invalidate__cached_GET(pkgmetaurl)
+                except urllib2.HTTPError, e:
+                    logger.error('failed to update %s: %s', pkg, e)
+
+    def add_explicit_disable(self):
+
+        self._init_biarch_packages()
+
+        resulturl = makeurl(self.apiurl, ['source', self.project])
+        result = ET.fromstring(self.cached_GET(resulturl))
+
+        for pkg in self.packages:
+
+            changed = False
+
+            logger.debug("processing %s", pkg)
+            pkgmetaurl = makeurl(self.apiurl, ['source', self.project, pkg, '_meta'])
+            pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
+
+            build = pkgmeta.findall("./build")
+            if not build:
+                logger.debug('disable %s for %s', pkg, self.arch)
+                bn = pkgmeta.find('build')
+                if bn is None:
+                    bn = ET.SubElement(pkgmeta, 'build')
+                ET.SubElement(bn, 'disable', { 'arch' : self.arch })
+                changed = True
+
+            if changed:
+                try:
+                    self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
+                    if self.caching:
+                        self._invalidate__cached_GET(pkgmetaurl)
+                except urllib2.HTTPError, e:
+                    logger.error('failed to update %s: %s', pkg, e)
+
+
     def enable_baselibs_packages(self, force=False):
         self._init_biarch_packages()
         for pkg in self.packages:
@@ -150,6 +218,31 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         def work():
             self._select_packages(opts.all, packages)
             self.tool.enable_baselibs_packages(force=opts.force)
+
+        self.runner(work, opts.interval)
+
+    @cmdln.option('-a', '--all', action='store_true', help='process all packages')
+    def do_remove_explicit_enable(self, subcmd, opts, *packages):
+        """${cmd_name}: remove all explicit enable tags from packages
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        self.tool.remove_explicit_enable()
+
+    @cmdln.option('-a', '--all', action='store_true', help='process all packages')
+    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
+    def do_add_explicit_disable(self, subcmd, opts, *packages):
+        """${cmd_name}: add explicit disable to all packages
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        def work():
+            self._select_packages(opts.all, packages)
+            self.tool.add_explicit_disable()
 
         self.runner(work, opts.interval)
 
