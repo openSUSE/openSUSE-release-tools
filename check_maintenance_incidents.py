@@ -83,7 +83,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                 self.logger.debug("%s/%s already is a reviewer, not adding again" % (prj, pkg))
                 continue
             self.add_review(req, by_project = prj, by_package = pkg,
-                    msg = "Submission by someone who is not maintainer in the devel project. Please review")
+                    msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj) )
 
     @staticmethod
     @memoize(session=True)
