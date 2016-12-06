@@ -54,6 +54,9 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
         self.lookup = {}
 
+    def reset_lookup(self):
+        self.lookup = {}
+
     def parse_lookup(self, project):
         self.lookup.update(yaml.safe_load(self._load_lookup_file(project)))
 
