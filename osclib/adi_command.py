@@ -19,22 +19,28 @@ class AdiCommand:
                                 query_project), query=query)
         info = json.load(self.api.retried_GET(url))
         if len(info['building_repositories']):
-            print project, "still building"
+            print query_project, "still building"
+            return
+        if len(info['untracked_requests']):
+	    print query_project, "untracked:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['untracked_requests']])
+	    return
+        if len(info['obsolete_requests']):
+	    print query_project, "obsolete:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['obsolete_requests']])
             return
         if len(info['broken_packages']):
-            print "https://build.opensuse.org/project/show/{}".format(project), "has broken packages"
+	    print query_project, "broken:", ', '.join([p['package'] for p in info['broken_packages']])
             return
         for review in info['missing_reviews']:
-            print project, "has at least one missing review by", review['by'], "in", review['request']
+            print query_project, "missing review by {} for {}[{}]".format(review['by'], review['package'], review['request'])
             return
-        if len(info['untracked_requests']) or len(info['obsolete_requests']):
-            print project, "has inconsistent requests"
-            return
-        print project, "is ready"
-        for req in info['selected_requests']:
-            print "%s [%s]"%(req['package'], req['number'])
-            self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
-        delete_project(self.api.apiurl, project)
+	if self.api.is_user_member_of(self.api.user, 'factory-staging'):
+	    print query_project, "is ready"
+	    for req in info['selected_requests']:
+		print " - %s [%s]"%(req['package'], req['number'])
+		self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
+	    delete_project(self.api.apiurl, project)
+	else:
+	    print query_project, "ready:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['selected_requests']])
             
     def check_adi_projects(self):
         for p in self.api.get_adi_projects():
