@@ -30,12 +30,26 @@ from osc import conf
 #   the project.
 
 DEFAULT = {
-    r'openSUSE:(?P<project>[-\w\d:.]+)': {
+    r'openSUSE:(?P<project>Factory)': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64 ppc64le',
         'staging-dvd-archs': 'x86_64 ppc64le',
         'nocleanup-packages': 'Test-DVD-x86_64 Test-DVD-ppc64le bootstrap-copy',
+        'rings': 'openSUSE:%(project)s:Rings',
+        'nonfree': 'openSUSE:%(project)s:NonFree',
+        'rebuild': 'openSUSE:%(project)s:Rebuild',
+        'product': 'openSUSE.product',
+        'openqa': 'https://openqa.opensuse.org',
+        'lock': 'openSUSE:%(project)s:Staging',
+        'lock-ns': 'openSUSE',
+    },
+    r'openSUSE:(?P<project>Leap:[\d.]+)': {
+        'staging': 'openSUSE:%(project)s:Staging',
+        'staging-group': 'factory-staging',
+        'staging-archs': 'i586 x86_64',
+        'staging-dvd-archs': 'x86_64',
+        'nocleanup-packages': 'Test-DVD-x86_64 bootstrap-copy',
         'rings': 'openSUSE:%(project)s:Rings',
         'nonfree': 'openSUSE:%(project)s:NonFree',
         'rebuild': 'openSUSE:%(project)s:Rebuild',
