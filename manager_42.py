@@ -68,6 +68,8 @@ class Manager42(object):
                 'openSUSE:Leap:42.1:NonFree',
                 'openSUSE:Factory',
                 'openSUSE:Factory:NonFree',
+                'openSUSE:Leap:42.3:SLE-workarounds',
+                'openSUSE:Leap:42.2:SLE-workarounds',
                 ]
 
         self.parse_lookup(self.from_prj)
@@ -272,7 +274,7 @@ class Manager42(object):
             srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
             if srcmd5:
                 if project != lproject:
-                    if project == 'openSUSE:Leap:42.2:SLE-workarounds':
+                    if project.endswith(':SLE-workarounds'):
                         logger.info('{} is from {} but should come from {}'.format(package, project, lproject))
                     else:
                         logger.info('{} -> {} (was {})'.format(package, project, lproject))
