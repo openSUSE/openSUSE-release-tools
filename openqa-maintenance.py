@@ -200,7 +200,6 @@ class openSUSEUpdate(Update):
 
         # openSUSE:Maintenance key
         settings['IMPORT_GPG_KEYS'] = 'gpg-pubkey-b3fd7e48-5549fd0f'
-
         settings['ZYPPER_ADD_REPO_PREFIX'] = 'incident'
 
         if packages:
@@ -866,10 +865,13 @@ class OpenQABot(ReviewBot.ReviewBot):
         failed_step = fails.get('first_failed_step', 1)
         return "[%s](%s#step/%s/%d)" % (self.emd(modulename), testurl, modulename, failed_step)
 
+    def job_test_name(self, job):
+        return "%s@%s" % (self.emd(job['settings']['TEST']), self.emd(job['settings']['MACHINE']))
+
     def summarize_one_openqa_job(self, job):
         testurl = osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])])
         if not job['result'] in ['passed', 'failed', 'softfailed']:
-            return '\n- [%s](%s) is %s' % (self.emd(job['settings']['TEST']), testurl, job['result'])
+            return '\n- [%s](%s) is %s' % (self.job_test_name(job), testurl, job['result'])
 
         modstrings = []
         for module in job['modules']:
@@ -878,9 +880,9 @@ class OpenQABot(ReviewBot.ReviewBot):
             modstrings.append(self.get_step_url(testurl, module['name']))
 
         if len(modstrings):
-            return '\n- [%s](%s) failed in %s' % (self.emd(job['settings']['TEST']), testurl, ','.join(modstrings))
+            return '\n- [%s](%s) failed in %s' % (self.job_test_name(job), testurl, ','.join(modstrings))
         elif job['result'] == 'failed': # rare case: fail without module fails
-            return '\n- [%s](%s) failed' % (self.emd(job['settings']['TEST']), testurl)
+            return '\n- [%s](%s) failed' % (self.job_test_name(job), testurl)
         return ''
 
     def check_one_request(self, req):
@@ -922,11 +924,6 @@ class OpenQABot(ReviewBot.ReviewBot):
                     return
                 groups = dict()
                 for job in jobs:
-                    job_summary = self.summarize_one_openqa_job(job)
-                    if not len(job_summary):
-                        continue
-                    # if there is something to report, hold the request
-                    qa_state = QA_FAILED
                     gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
                     if not gl in groups:
                         groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview' ],
@@ -936,24 +933,34 @@ class OpenQABot(ReviewBot.ReviewBot):
                                                       'distri': job['settings']['DISTRI'],
                                                       'build': job['settings']['BUILD'],
                                                     })
-                        gmsg = "__Group [%s](%s)__\n" % (gl, groupurl)
-                    else:
-                        gmsg = groups[gl]
-                    groups[gl] = gmsg + job_summary
+                        groups[gl] = { 'title': "__Group [%s](%s)__\n" % (gl, groupurl),
+                                       'passed': 0, 'failed': [] }
+
+                    job_summary = self.summarize_one_openqa_job(job)
+                    if not len(job_summary):
+                        groups[gl]['passed'] = groups[gl]['passed'] + 1
+                        continue
+                    # if there is something to report, hold the request
+                    qa_state = QA_FAILED
+                    gmsg = groups[gl]
+                    groups[gl]['failed'].append(job_summary)
 
                 if qa_state == QA_PASSED:
                     self.logger.debug("request %s passed", req.reqid)
-                    msg = "openQA test [passed](%s)\n" % url
+                    msg = "openQA tests passed\n"
                     state = 'accepted'
                     ret = True
                 else:
                     self.logger.debug("request %s failed", req.reqid)
-                    msg = "openQA test *[FAILED](%s)*\n" % url
+                    msg = "openQA tests problematic\n"
                     state = 'declined'
                     ret = False
 
                 for group in sorted(groups.keys()):
-                    msg += "\n\n" + groups[group]
+                    msg += "\n\n" + groups[group]['title']
+                    msg += "(%d tests passed, %d failed)\n" % (groups[group]['passed'], len(groups[group]['failed']))
+                    for fail in groups[group]['failed']:
+                        msg += fail
 
                 self.add_comment(req, msg, 'done', state)
             elif qa_state == QA_INPROGRESS:
