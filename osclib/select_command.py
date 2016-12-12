@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from xml.etree import cElementTree as ET
 
 from osc import oscerr
@@ -129,7 +131,10 @@ class SelectCommand(object):
         # ie. the review state of staging-project must be new if newcand is True
         newcand = not move
 
-        for request in RequestFinder.find_sr(requests, self.api, newcand):
+        requests = RequestFinder.find_sr(requests, self.api, newcand)
+        requests_count = len(requests)
+        for index, request in enumerate(requests, start=1):
+            print('({}/{}) '.format(index, requests_count), end='')
             if not self.select_request(request, move, from_):
                 return False
 
