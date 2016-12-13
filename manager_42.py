@@ -136,11 +136,18 @@ class Manager42(object):
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
         query = {'expand': 1} if expand else {}
-        root = ET.fromstring(
-            self.cached_GET(makeurl(self.apiurl,
-                             ['source', project],
-                             query=query)))
-        packages = [i.get('name') for i in root.findall('entry')]
+        try:
+            root = ET.fromstring(
+                self.cached_GET(makeurl(self.apiurl,
+                                 ['source', project],
+                                 query=query)))
+            packages = [i.get('name') for i in root.findall('entry')]
+
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                logger.error("{}: {}".format(project, e))
+                packages = []
+
         return packages
 
     def _get_source_package(self, project, package, revision):
