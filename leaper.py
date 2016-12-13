@@ -63,7 +63,7 @@ class Leaper(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         self.do_comments = True
-        self.commentapi = CommentAPI(self.apiurl)
+        self.commentapi = CommentAPI(self.apiurl())
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
         # for FactorySourceChecker
@@ -89,6 +89,13 @@ class Leaper(ReviewBot.ReviewBot):
     def prepare_review(self):
 
         # update lookup information on every run
+        if self.ibs:
+            self.factory.parse_lookup('SUSE:SLE-12-SP2:Update')
+            self.lookup_sle_12SP2 = self.factory.lookup.copy()
+            self.factory.reset_lookup()
+            self.factory.parse_lookup('SUSE:SLE-11-SP4:Update')
+            self.lookup_sle_11SP4 = self.factory.lookup.copy()
+            self.factory.reset_lookup()
         self.factory.parse_lookup('openSUSE:Leap:42.3')
         self.factory.parse_lookup('openSUSE:Leap:42.3:NonFree')
         self.lookup_423 = self.factory.lookup.copy()
@@ -104,7 +111,7 @@ class Leaper(ReviewBot.ReviewBot):
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
         query = {'expand': 1} if expand else {}
-        root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl,['source', project],
+        root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl(project),['source', project],
                                  query=query))).getroot()
         packages = [i.get('name') for i in root.findall('entry')]
 
@@ -127,8 +134,13 @@ class Leaper(ReviewBot.ReviewBot):
             return False
 
         origin = None
-        if package in self.lookup_423:
-            origin = self.lookup_423[package]
+        # Check current active project lookup based on IBS mode.
+        if self.ibs:
+            if package in self.lookup_sle_12SP2:
+                origin = self.lookup_sle_12SP2[package]
+        else:
+            if package in self.lookup_423:
+                origin = self.lookup_423[package]
 
         is_fine_if_factory = False
         not_in_factory_okish = False
@@ -232,6 +244,7 @@ class Leaper(ReviewBot.ReviewBot):
                 self.needs_release_manager = True
                 # the release manager needs to review attempts to upgrade to Factory
                 is_fine_if_factory = True
+
             else:
                 self.logger.error("unhandled origin %s", origin)
                 return False
@@ -441,7 +454,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 dryrun = self.options.dry, \
                 user = user, \
                 group = group, \
-                logger = self.logger)
+                logger = self.logger, \
+                apiurl_default = self.apiurl_default)
 
         if self.options.manual_version_updates:
             bot.must_approve_version_updates = True

@@ -53,12 +53,12 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         query = {
             'binary': package,
         }
-        url = osc.core.makeurl(self.apiurl, ('search', 'owner'), query=query)
+        url = osc.core.makeurl(self.apiurl(), ('search', 'owner'), query=query)
         root = ET.parse(osc.core.http_GET(url)).getroot()
         maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
         if not maintainers:
             for group in [p.get('name') for p in root.findall('.//group') if p.get('role') == 'maintainer']:
-                url = osc.core.makeurl(self.apiurl, ('group', group))
+                url = osc.core.makeurl(self.apiurl(), ('group', group))
                 root = ET.parse(osc.core.http_GET(url)).getroot()
                 maintainers = maintainers + [p.get('userid') for p in root.findall('./person/person')]
         return maintainers
@@ -68,7 +68,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         query = {
             'binary': package,
         }
-        url = osc.core.makeurl(self.apiurl, ('search', 'owner'), query=query)
+        url = osc.core.makeurl(self.apiurl(), ('search', 'owner'), query=query)
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_project)
@@ -117,7 +117,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             project = a.tgt_project
 
         if project.startswith('openSUSE:Leap:'):
-            mapping = MaintenanceChecker._get_lookup_yml(self.apiurl, project)
+            mapping = MaintenanceChecker._get_lookup_yml(self.apiurl(project), project)
             if mapping is None:
                 self.logger.error("error loading mapping for {}".format(project))
             elif not pkgname in mapping:
@@ -210,7 +210,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         return MaintenanceChecker(apiurl = apiurl, \
                 dryrun = self.options.dry, \
                 user = user, \
-                logger = self.logger)
+                logger = self.logger, \
+                apiurl_default = self.apiurl_default)
 
 if __name__ == "__main__":
     app = CommandLineInterface()

@@ -75,15 +75,15 @@ by OBS on which this bot relies on.
 
     def isNewPackage(self, tgt_project, tgt_package):
         try:
-            self.logger.debug("package_meta %s %s/%s" % (self.apiurl, tgt_project, tgt_package))
-            osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
+            self.logger.debug("package_meta %s %s/%s" % (self.apiurl(tgt_project), tgt_project, tgt_package))
+            osc.core.show_package_meta(self.apiurl(tgt_project), tgt_project, tgt_package)
         except (HTTPError, URLError):
             return True
         return False
 
     def checkTagInRequest(self, req, a):
         is_new = False
-        u = osc.core.makeurl(self.apiurl,
+        u = osc.core.makeurl(self.apiurl(a.tgt_project),
                              ['source', a.tgt_project, a.tgt_package],
                              {'cmd': 'diff',
                               'onlyissues': '1',
@@ -112,7 +112,7 @@ by OBS on which this bot relies on.
 
     def checkTagNotRequired(self, req, a):
         # if there is no diff, no tag is required
-        diff = osc.core.request_diff(self.apiurl, req.reqid)
+        diff = osc.core.request_diff(self.apiurl(), req.reqid)
         if not diff:
             return True
 
@@ -120,12 +120,13 @@ by OBS on which this bot relies on.
         # already in Factory with the same revision,
         # and the package is being introduced, not updated
         # 2) A new package must be have a issue tag
-        factory_checker = check_source_in_factory.FactorySourceChecker(apiurl=self.apiurl,
+        factory_checker = check_source_in_factory.FactorySourceChecker(apiurl=self._apiurl,
                                                                        dryrun=self.dryrun,
                                                                        logger=self.logger,
                                                                        user=self.review_user,
                                                                        group=self.review_group,
-                                                                       factory=self.factory)
+                                                                       factory=self.factory,
+                                                                       apiurl_default=self._apiurl_default)
         factory_ok = factory_checker.check_source_submission(a.src_project, a.src_package, a.src_rev,
                                                              a.tgt_project, a.tgt_package)
         return factory_ok
@@ -173,7 +174,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                           factory=self.options.factory,
                           dryrun=self.options.dry,
                           group=self.options.group,
-                          logger=self.logger)
+                          logger=self.logger, \
+                          apiurl_default = self.apiurl_default)
 
 if __name__ == "__main__":
     app = CommandLineInterface()

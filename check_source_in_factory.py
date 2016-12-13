@@ -61,8 +61,13 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         self.lookup.update(yaml.safe_load(self._load_lookup_file(project)))
 
     def _load_lookup_file(self, prj):
-        return osc.core.http_GET(osc.core.makeurl(self.apiurl,
-                                ['source', prj, '00Meta', 'lookup.yml']))
+        # handle missing lookup.yml
+        try:
+            return osc.core.http_GET(osc.core.makeurl(self.apiurl(prj),
+                                    ['source', prj, '00Meta', 'lookup.yml']))
+        except urllib2.HTTPError:
+            self.logger.debug("no lookup.yml found for {}".format(prj))
+            return "_: _"
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
@@ -100,7 +105,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         """check if factory sources contain the package and revision. check head and history"""
         self.logger.debug("checking %s in %s"%(package, project))
         try:
-            si = osc.core.show_package_meta(self.apiurl, project, package)
+            si = osc.core.show_package_meta(self.apiurl(project), project, package)
         except (urllib2.HTTPError, urllib2.URLError):
             si = None
         if si is None:
@@ -113,7 +118,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                 return True
 
         self.logger.debug("%s not the latest version, checking history", rev)
-        u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': '5' })
+        u = osc.core.makeurl(self.apiurl(project), [ 'source', project, package, '_history' ], { 'limit': '5' })
         try:
             r = osc.core.http_GET(u)
         except urllib2.HTTPError, e:
@@ -136,7 +141,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def _check_requests(self, project, package, rev):
         self.logger.debug("checking requests")
         try:
-            requests = osc.core.get_request_list(self.apiurl, project, package, None, ['new', 'review'], 'submit')
+            requests = osc.core.get_request_list(self.apiurl(project), project, package, None, ['new', 'review'], 'submit')
         except (urllib2.HTTPError, urllib2.URLError):
             self.logger.error("caught exception while checking %s/%s", project, package)
             return None
@@ -202,7 +207,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 factory = self.options.factory, \
                 dryrun = self.options.dry, \
                 user = user, \
-                logger = self.logger)
+                logger = self.logger, \
+                apiurl_default = self.apiurl_default)
 
         if self.options.lookup:
             bot.parse_lookup(self.options.lookup)
