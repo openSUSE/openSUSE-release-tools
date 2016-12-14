@@ -33,6 +33,7 @@ import osc.conf
 import osc.core
 import rpm
 import yaml
+import re
 from urllib import quote_plus
 
 from osclib.memoize import memoize
@@ -138,6 +139,13 @@ class UpdateCrawler(object):
                 ret[package.get('package')] = package
         return ret
 
+    def _get_source_package(self, project, package, revision):
+        opts = { 'view': 'info' }
+        if revision:
+            opts['rev'] = revision
+        return self.cached_GET(makeurl(self.apiurl,
+                                ['source', project, package], opts))
+
     def _find_existing_request(self, src_project, src_package, rev, dst_project,
                        dst_package):
         """Create a submit request."""
@@ -152,7 +160,13 @@ class UpdateCrawler(object):
         foundrev = False
         for r in reqs:
             for a in r.actions:
-                if a.to_xml().find('source').get('rev') == rev:
+                srcrev = a.src_rev
+                # sometimes requests only contain the decimal revision
+                if re.match(r'^\d+$', srcrev) is not None:
+                    xml = ET.fromstring(self._get_source_package(src_project,src_package, srcrev))
+                    srcrev = xml.get('verifymd5')
+                logging.debug('rev {}'.format(srcrev))
+                if srcrev == rev:
                     logging.debug('{}: found existing request {}'.format(dst_package, r.reqid))
                     foundrev = True
         return foundrev
@@ -205,19 +219,14 @@ class UpdateCrawler(object):
     def follow_link(self, project, package, rev, verifymd5):
         #print "follow", project, package, rev
         # verify it's still the same package
-        xml = ET.fromstring(http_GET(makeurl(self.apiurl,
-                                             ['source', project, package],
-                                             {
-                                                 'rev': rev,
-                                                 'view': 'info'
-                                             })).read())
+        xml = ET.fromstring(self._get_source_package(project, package, rev))
         if xml.get('verifymd5') != verifymd5:
             return None
-        xml = ET.fromstring(http_GET(makeurl(self.apiurl,
+        xml = ET.fromstring(self.cached_GET(makeurl(self.apiurl,
                                              ['source', project, package],
                                              {
                                                  'rev': rev
-                                             })).read())
+                                             })))
         linkinfo =  xml.find('linkinfo')
         if not linkinfo is None:
             ret = self.follow_link(linkinfo.get('project'), linkinfo.get('package'), linkinfo.get('srcmd5'), verifymd5)
