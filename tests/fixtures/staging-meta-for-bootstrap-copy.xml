@@ -10,7 +10,7 @@
     <disable/>
   </publish>
   <debuginfo>
-    <enable/>
+    <disable/>
   </debuginfo>
   <repository name="bootstrap_copy">
      <path project="openSUSE:Factory:Staging" repository="standard"/>
