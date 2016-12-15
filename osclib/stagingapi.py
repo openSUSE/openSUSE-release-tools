@@ -1252,7 +1252,7 @@ class StagingAPI(object):
             <disable/>
           </publish>
           <debuginfo>
-            <enable/>
+            <disable/>
           </debuginfo>
           <repository name="standard">
             <path project="{}" repository="standard"/>
