@@ -250,6 +250,9 @@ KGRAFT_SETTINGS = {
     'SLE12_Update_15' : { 'VIRSH_GUESTNAME': 'kGraft0f',
                           'WORKER_CLASS': 'svirt-pegasus',
                           'VIRSH_INSTANCE': 12015 - 5900 },
+    'SLE12_Update_16' : { 'VIRSH_GUESTNAME': 'kGraft0g',
+                          'WORKER_CLASS': 'svirt-pegasus',
+                          'VIRSH_INSTANCE': 12016 - 5900 },
     'SLE12-SP1_Update_0' : { 'VIRSH_GUESTNAME': 'kGraft11',
                              'WORKER_CLASS': 'svirt-perseus',
                              'VIRSH_INSTANCE': 12101 - 5900 },
@@ -277,9 +280,15 @@ KGRAFT_SETTINGS = {
     'SLE12-SP1_Update_8' : { 'VIRSH_GUESTNAME': 'kGraft19',
                              'WORKER_CLASS': 'svirt-pegasus',
                              'VIRSH_INSTANCE': 12109 - 5900 },
+    'SLE12-SP1_Update_9' : { 'VIRSH_GUESTNAME': 'kGraft1a',
+                             'WORKER_CLASS': 'svirt-pegasus',
+                             'VIRSH_INSTANCE': 12110 - 5900 },
     'SLE12-SP2_Update_0' : { 'VIRSH_GUESTNAME': 'kGraft20',
                              'WORKER_CLASS': 'svirt-perseus',
                              'VIRSH_INSTANCE': 12200 - 5900}
+    'SLE12-SP2_Update_1' : { 'VIRSH_GUESTNAME': 'kGraft21',
+                             'WORKER_CLASS': 'svirt-perseus',
+                             'VIRSH_INSTANCE': 12201 - 5900}
 }
 
 TARGET_REPO_SETTINGS = {
