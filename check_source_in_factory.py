@@ -130,16 +130,25 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
     def _check_requests(self, project, package, rev):
         self.logger.debug("checking requests")
+        prjprefix = ''
         try:
-            requests = osc.core.get_request_list(self.apiurl, project, package, None, ['new', 'review'], 'submit')
+            apiurl = self.apiurl
+            if self.config.project_namespace_api_map:
+                for prefix, url in self.config.project_namespace_api_map:
+                    if project.startswith(prefix):
+                        apiurl = url
+                        prjprefix = prefix
+                        project = project[len(prefix):]
+                        break
+            requests = osc.core.get_request_list(apiurl, project, package, None, ['new', 'review'], 'submit')
         except (urllib2.HTTPError, urllib2.URLError):
             self.logger.error("caught exception while checking %s/%s", project, package)
             return None
 
         for req in requests:
             for a in req.actions:
-                si = self.get_sourceinfo(a.src_project, a.src_package, a.src_rev)
-                self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, a.src_project, a.src_package, si.verifymd5))
+                si = self.get_sourceinfo(prjprefix + a.src_project, a.src_package, a.src_rev)
+                self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, prjprefix + a.src_project, a.src_package, si.verifymd5))
                 if si.verifymd5 == rev:
                     if req.state.name == 'new':
                         self.logger.info("sr#%s ok", req.reqid)
