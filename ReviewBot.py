@@ -450,14 +450,6 @@ class CommandLineInterface(cmdln.Cmdln):
 
         self.runner(work, opts.interval)
 
-    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
-    def do_project(self, subcmd, opts, project, typename):
-        def work():
-            self.checker.set_request_ids_project(project, typename)
-            self.checker.check_requests()
-
-        self.runner(work, opts.interval)
-
     def runner(self, workfunc, interval):
         """ runs the specified callback every <interval> minutes or
         once if interval is None or 0
