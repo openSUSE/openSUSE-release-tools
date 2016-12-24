@@ -39,6 +39,13 @@ import osc.conf
 import osc.core
 import urllib2
 
+def _request_read(self, root):
+    osc.core.Request._read(self, root)
+
+    for action in self.actions:
+        action.src_project = ReviewBot.strip_project_namespace(action.src_project)
+
+
 class ReviewBot(object):
     """
     A generic obs request reviewer
@@ -50,6 +57,15 @@ class ReviewBot(object):
 
     DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
+
+    config_defaults = {
+        # list of tuples (prefix, apiurl)
+        # set this if the obs instance maps another instance into it's
+        # namespace
+        'project_namespace_api_map' : [
+            ('openSUSE.org:', 'https://api.opensuse.org'),
+            ],
+        }
 
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None, apiurl_default = None):
         self._apiurl = apiurl
@@ -67,30 +83,41 @@ class ReviewBot(object):
         self.fallback_user = None
         self.fallback_group = None
 
-        # map of default config entries
-        self.config_defaults = {
-                # list of tuples (prefix, apiurl)
-                # set this if the obs instance maps another instance into it's
-                # namespace
-                'project_namespace_api_map' : [
-                    ('openSUSE.org:', 'https://api.opensuse.org'),
-                    ],
-                }
+        if not hasattr(ReviewBot, 'config'):
+            ReviewBot.load_config()
 
-        self.load_config()
+            # Override the request read() method to handle replacing the project
+            # link namespace to ensure the followup requests are sent directly
+            # to the relevant OBS instance.
+            osc.core.Request._read = osc.core.Request.read
+            osc.core.Request.read = _request_read
 
-    def _load_config(self, handle = None):
-        d = self.config_defaults
+    @staticmethod
+    #def _load_config(self, handle = None):
+    def _load_config(handle = None):
+        d = ReviewBot.config_defaults
         y = yaml.safe_load(handle) if handle is not None else {}
         return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
 
-    def load_config(self, filename = None):
+    @staticmethod
+    #def load_config(self, filename = None):
+    def load_config(filename = None):
         if filename:
             fh = open(filename, 'r')
-            self.config = self._load_config(fh)
+            ReviewBot.config = ReviewBot._load_config(fh)
             close(fh)
         else:
-            self.config = self._load_config()
+            ReviewBot.config = ReviewBot._load_config()
+
+    @staticmethod
+    def strip_project_namespace(project):
+        if ReviewBot.config.project_namespace_api_map:
+            for prefix, url in ReviewBot.config.project_namespace_api_map:
+                if project.startswith(prefix):
+                    project = project[len(prefix):]
+
+        return project
+
 
     def apiurl(self, project = None):
         # Use base URL except when evaluating against multiple API endpoints and
