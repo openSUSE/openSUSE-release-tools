@@ -285,7 +285,7 @@ KGRAFT_SETTINGS = {
                              'VIRSH_INSTANCE': 12110 - 5900 },
     'SLE12-SP2_Update_0' : { 'VIRSH_GUESTNAME': 'kGraft20',
                              'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12200 - 5900}
+                             'VIRSH_INSTANCE': 12200 - 5900},
     'SLE12-SP2_Update_1' : { 'VIRSH_GUESTNAME': 'kGraft21',
                              'WORKER_CLASS': 'svirt-perseus',
                              'VIRSH_INSTANCE': 12201 - 5900}
