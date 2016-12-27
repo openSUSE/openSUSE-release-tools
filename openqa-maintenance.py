@@ -581,7 +581,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         self.logger.debug(self.do_comments)
 
-        self.commentapi = CommentAPI(self.apiurl)
+        self.commentapi = CommentAPI(self.apiurl())
         self.update_test_builds = dict()
 
     def gather_test_builds(self):
@@ -602,7 +602,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         # then check progress on running incidents
         for req in self.requests:
             # just patch apiurl in to avoid having to pass it around
-            req.apiurl = self.apiurl
+            req.apiurl = self.apiurl()
             jobs = self.request_get_openqa_jobs(req, incident=True, test_repo=True)
             ret = self.calculate_qa_status(jobs)
             if ret != QA_UNKNOWN:
@@ -639,13 +639,13 @@ class OpenQABot(ReviewBot.ReviewBot):
         # patchinfo collects the binaries and is build for an
         # unpredictable architecture so we need iterate over all
         url = osc.core.makeurl(
-            self.apiurl,
+            self.apiurl(a.src_project),
             ('build', a.src_project, a.tgt_project.replace(':', '_')))
         root = ET.parse(osc.core.http_GET(url)).getroot()
         for arch in [n.attrib['name'] for n in root.findall('entry')]:
             query = {'nosource': 1}
             url = osc.core.makeurl(
-                self.apiurl,
+                self.apiurl(a.src_project),
                 ('build', a.src_project, a.tgt_project.replace(':', '_'), arch, a.src_package),
                 query=query)
 
@@ -659,7 +659,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     packages.append(Package(m.group('name'), m.group('version'), m.group('release')))
                 elif binary.attrib['filename'] == 'updateinfo.xml':
                     url = osc.core.makeurl(
-                        self.apiurl,
+                        self.apiurl(a.src_project),
                         ('build', a.src_project, a.tgt_project.replace(':', '_'), arch, a.src_package, 'updateinfo.xml'))
                     ui = ET.parse(osc.core.http_GET(url)).getroot()
                     patch_id = ui.find('.//id').text
@@ -831,7 +831,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         return QA_PASSED
 
     def check_publish_enabled(self, project):
-        url = osc.core.makeurl(self.apiurl, ('source', project, '_meta'))
+        url = osc.core.makeurl(self.apiurl(project), ('source', project, '_meta'))
         root = ET.parse(osc.core.http_GET(url)).getroot()
         node = root.find('publish')
         if node is not None and node.find('disable') is not None:
@@ -1032,7 +1032,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             do_comments=self.options.comment,
             openqa=self.options.openqa,
             force=self.options.force,
-            logger=self.logger)
+            logger=self.logger,
+            apiurl_default = self.apiurl_default)
 
 if __name__ == "__main__":
     app = CommandLineInterface()

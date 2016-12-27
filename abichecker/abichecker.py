@@ -201,7 +201,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.logger.addFilter(self.dblogger)
 
-        self.commentapi = CommentAPI(self.apiurl)
+        self.commentapi = CommentAPI(self.apiurl())
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
 
@@ -436,7 +436,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         originpackage = None
 
         # find the maintenance project
-        url = osc.core.makeurl(self.apiurl, ('search', 'project', 'id'),
+        url = osc.core.makeurl(self.apiurl(project), ('search', 'project', 'id'),
             "match=(maintenance/maintains/@project='%s'+and+attribute/@name='%s')"%(dst_project, osc.conf.config['maintenance_attribute']))
         root = ET.parse(osc.core.http_GET(url)).getroot()
         if root is not None:
@@ -449,7 +449,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 originproject = self.get_originproject(dst_project, pkg)
                 if originproject is not None:
                     self.logger.debug("origin project %s", originproject)
-                    url = osc.core.makeurl(self.apiurl, ('build', dst_project, '_result'), { 'package': pkg })
+                    url = osc.core.makeurl(self.apiurl(dst_project), ('build', dst_project, '_result'), { 'package': pkg })
                     root = ET.parse(osc.core.http_GET(url)).getroot()
                     alldisabled = True
                     for node in root.findall('status'):
@@ -770,7 +770,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 pass
             self.pkgcache.linkto(key, target)
         else:
-            osc.core.get_binary_file(self.apiurl, project, repository, arch,
+            osc.core.get_binary_file(self.apiurl(project), project, repository, arch,
                             filename, package=package,
                             target_filename=target)
             self.pkgcache[key] = target
@@ -790,7 +790,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         return h
 
     def _fetchcpioheaders(self, project, package, repo, arch):
-        u = osc.core.makeurl(self.apiurl, [ 'build', project, repo, arch, package ],
+        u = osc.core.makeurl(self.apiurl(project), [ 'build', project, repo, arch, package ],
             [ 'view=cpioheaders' ])
         try:
             r = osc.core.http_GET(u)
@@ -821,7 +821,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
     def _getmtimes(self, prj, pkg, repo, arch):
         """ returns a dict of filename: mtime """
-        url = osc.core.makeurl(self.apiurl, ('build', prj, repo, arch, pkg))
+        url = osc.core.makeurl(self.apiurl(prj), ('build', prj, repo, arch, pkg))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
@@ -837,7 +837,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     'package' : src_package,
                     'pathproject' : tgt_project,
                     'srcmd5' : rev }
-            url = osc.core.makeurl(self.apiurl, ('build', src_project, '_result'), query)
+            url = osc.core.makeurl(self.apiurl(src_project), ('build', src_project, '_result'), query)
             return ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError, e:
             if e.code != 404:
@@ -863,7 +863,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         return repos
 
     def get_dstrepos(self, project):
-        url = osc.core.makeurl(self.apiurl, ('source', project, '_meta'))
+        url = osc.core.makeurl(self.apiurl(project), ('source', project, '_meta'))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
@@ -889,7 +889,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         """ make sure current build state is final so we're not
         tricked with half finished results"""
         rmap = dict()
-        results = osc.core.get_package_results(self.apiurl,
+        results = osc.core.get_package_results(self.apiurl(src_project),
                 src_project, src_srcinfo.package,
                 repository = [ mr.srcrepo for mr in matchrepos],
                 arch = [ mr.arch for mr in matchrepos])
@@ -920,7 +920,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         if dstrepos is None:
             return None
 
-        url = osc.core.makeurl(self.apiurl, ('source', src_project, '_meta'))
+        url = osc.core.makeurl(self.apiurl(src_project), ('source', src_project, '_meta'))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
@@ -1093,7 +1093,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 no_review = self.options.no_review, \
                 user = user, \
                 force = self.options.force, \
-                logger = self.logger)
+                logger = self.logger, \
+                apiurl_default = self.apiurl_default)
 
     @cmdln.option('-r', '--revision', metavar="number", type="int", help="revision number")
     def do_diff(self, subcmd, opts, src_project, src_package, dst_project, dst_package):

@@ -46,10 +46,14 @@ http_PUT = osc.core.http_PUT
 http_POST = osc.core.http_POST
 
 class Manager42(object):
-    def __init__(self, from_prj, caching = True):
+    def __init__(self, from_prj, caching = True, apiurl_default = None):
         self.from_prj = from_prj
         self.caching = caching
-        self.apiurl = osc.conf.config['apiurl']
+        self._apiurl = osc.conf.config['apiurl']
+        self._apiurl_default = apiurl_default
+        self._apiurl_multi = apiurl_default is not None and self._apiurl != apiurl_default
+        self.projects = None
+        self.ibs = self._apiurl.startswith("https://api.suse.de")
         self.project_preference_order = [
                 'SUSE:SLE-12-SP3:GA',
                 'SUSE:SLE-12-SP2:Update',
@@ -78,8 +82,28 @@ class Manager42(object):
         for project in [self.from_prj] + self.project_preference_order:
             self.packages[project] = self.get_source_packages(project)
 
+    def apiurl(self, project = None):
+        # Use base URL except when evaluating against multiple API endpoints and
+        # the project context is available. If the project is not  available on
+        # the base endpoint then switch to the default endpoint which is assumed
+        # to contain the project. This could be extended to handle a list of API
+        # endpoints by tracking the projects of each.
+        if self._apiurl_multi:
+            if self.projects is None:
+                logger.debug("requesting project list")
+                self.projects = osc.core.meta_get_project_list(self._apiurl)
+
+            if project is not None and project not in self.projects:
+                logger.debug("apiurl = default ({}); project = {}".format(self._apiurl_default, project))
+                return self._apiurl_default
+
+            # Only print debug message if in multi mode.
+            logger.debug("apiurl = base ({}); project = {}".format(self._apiurl, project))
+
+        return self._apiurl
+
     def latest_packages(self):
-        data = self.cached_GET(makeurl(self.apiurl,
+        data = self.cached_GET(makeurl(self.apiurl(self.from_prj),
                                        ['project', 'latest_commits', self.from_prj]))
         lc = ET.fromstring(data)
         packages = set()
@@ -99,11 +123,11 @@ class Manager42(object):
                 raise
 
     def _load_lookup_file(self, prj):
-        return self.cached_GET(makeurl(self.apiurl,
+        return self.cached_GET(makeurl(self.apiurl(prj),
                                        ['source', prj, '00Meta', 'lookup.yml']))
 
     def _put_lookup_file(self, prj, data):
-        return http_PUT(makeurl(self.apiurl,
+        return http_PUT(makeurl(self.apiurl(prj),
                                 ['source', prj, '00Meta', 'lookup.yml']), data=data)
 
     def store_lookup(self):
@@ -138,7 +162,7 @@ class Manager42(object):
         query = {'expand': 1} if expand else {}
         try:
             root = ET.fromstring(
-                self.cached_GET(makeurl(self.apiurl,
+                self.cached_GET(makeurl(self.apiurl(project),
                                  ['source', project],
                                  query=query)))
             packages = [i.get('name') for i in root.findall('entry')]
@@ -154,7 +178,7 @@ class Manager42(object):
         opts = { 'view': 'info' }
         if revision:
             opts['rev'] = revision
-        return self.cached_GET(makeurl(self.apiurl,
+        return self.cached_GET(makeurl(self.apiurl(project),
                                 ['source', project, package], opts))
 
 
@@ -182,7 +206,7 @@ class Manager42(object):
             query = {}
             if deleted:
                 query['deleted'] = 1
-            return self.cached_GET(makeurl(self.apiurl,
+            return self.cached_GET(makeurl(self.apiurl(project),
                                    ['source', project, package, '_history'], query))
         except urllib2.HTTPError, e:
             if e.code == 404:
@@ -209,7 +233,7 @@ class Manager42(object):
         revs.reverse()
         for i in range(min(len(revs), 5)): # check last commits
             srcmd5=revs.pop(0)
-            root = self.cached_GET(makeurl(self.apiurl,
+            root = self.cached_GET(makeurl(self.apiurl(project),
                                     ['source', project, package], { 'rev': srcmd5, 'view': 'info'}))
             root = ET.fromstring(root)
             if root.get('verifymd5') == verifymd5:
@@ -302,7 +326,7 @@ class Manager42(object):
 
     def get_link(self, project, package):
         try:
-            link = self.cached_GET(makeurl(self.apiurl,
+            link = self.cached_GET(makeurl(self.apiurl(project),
                                     ['source', project, package, '_link']))
         except urllib2.HTTPError:
             return None
@@ -310,7 +334,7 @@ class Manager42(object):
 
     def fill_package_meta(self):
         self.package_metas = dict()
-        url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % self.from_prj)
+        url = makeurl(self.apiurl(self.from_prj), ['search', 'package'], "match=[@project='%s']" % self.from_prj)
         root = ET.fromstring(self.cached_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
@@ -319,10 +343,17 @@ class Manager42(object):
 
 def main(args):
     # Configure OSC
+    # Store the default apiurl in addition to the overriden url if the
+    # option was set and thus overrides the default config value.
+    if args.apiurl is not None:
+        osc.conf.get_config()
+        apiurl_default = osc.conf.config['apiurl']
+    else:
+        apiurl_default = None
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = Manager42(args.from_prj, caching = args.cache_requests )
+    uc = Manager42(args.from_prj, caching = args.cache_requests, apiurl_default = apiurl_default)
     given_packages = args.packages
     if not args.all and not given_packages:
         given_packages = uc.latest_packages()

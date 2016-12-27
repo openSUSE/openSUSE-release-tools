@@ -28,6 +28,7 @@ from collections import namedtuple
 from osclib.memoize import memoize
 import signal
 import datetime
+from collections import namedtuple
 
 try:
     from xml.etree import cElementTree as ET
@@ -37,6 +38,13 @@ except ImportError:
 import osc.conf
 import osc.core
 import urllib2
+
+def _request_read(self, root):
+    osc.core.Request._read(self, root)
+
+    for action in self.actions:
+        action.src_project = ReviewBot.strip_project_namespace(action.src_project)
+
 
 class ReviewBot(object):
     """
@@ -50,8 +58,21 @@ class ReviewBot(object):
     DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
-    def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
-        self.apiurl = apiurl
+    config_defaults = {
+        # list of tuples (prefix, apiurl)
+        # set this if the obs instance maps another instance into it's
+        # namespace
+        'project_namespace_api_map' : [
+            ('openSUSE.org:', 'https://api.opensuse.org'),
+            ],
+        }
+
+    def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None, apiurl_default = None):
+        self._apiurl = apiurl
+        self._apiurl_default = apiurl_default
+        self._apiurl_multi = apiurl_default is not None and apiurl != apiurl_default
+        self.projects = None
+        self.ibs = apiurl.startswith("https://api.suse.de")
         self.dryrun = dryrun
         self.logger = logger
         self.review_user = user
@@ -61,6 +82,62 @@ class ReviewBot(object):
         self._review_mode = 'normal'
         self.fallback_user = None
         self.fallback_group = None
+
+        if not hasattr(ReviewBot, 'config'):
+            ReviewBot.load_config()
+
+            # Override the request read() method to handle replacing the project
+            # link namespace to ensure the followup requests are sent directly
+            # to the relevant OBS instance.
+            osc.core.Request._read = osc.core.Request.read
+            osc.core.Request.read = _request_read
+
+    @staticmethod
+    #def _load_config(self, handle = None):
+    def _load_config(handle = None):
+        d = ReviewBot.config_defaults
+        y = yaml.safe_load(handle) if handle is not None else {}
+        return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
+
+    @staticmethod
+    #def load_config(self, filename = None):
+    def load_config(filename = None):
+        if filename:
+            fh = open(filename, 'r')
+            ReviewBot.config = ReviewBot._load_config(fh)
+            close(fh)
+        else:
+            ReviewBot.config = ReviewBot._load_config()
+
+    @staticmethod
+    def strip_project_namespace(project):
+        if ReviewBot.config.project_namespace_api_map:
+            for prefix, url in ReviewBot.config.project_namespace_api_map:
+                if project.startswith(prefix):
+                    project = project[len(prefix):]
+
+        return project
+
+
+    def apiurl(self, project = None):
+        # Use base URL except when evaluating against multiple API endpoints and
+        # the project context is available. If the project is not  available on
+        # the base endpoint then switch to the default endpoint which is assumed
+        # to contain the project. This could be extended to handle a list of API
+        # endpoints by tracking the projects of each.
+        if self._apiurl_multi:
+            if self.projects is None:
+                self.logger.debug("requesting project list")
+                self.projects = osc.core.meta_get_project_list(self._apiurl)
+
+            if project is not None and project not in self.projects:
+                self.logger.debug("apiurl = default ({}); project = {}".format(self._apiurl_default, project))
+                return self._apiurl_default
+
+            # Only print debug message if in multi mode.
+            self.logger.debug("apiurl = base ({}); project = {}".format(self._apiurl, project))
+
+        return self._apiurl
 
     @property
     def review_mode(self):
@@ -74,7 +151,7 @@ class ReviewBot(object):
 
     def set_request_ids(self, ids):
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withhistory' : '1' })
+            u = osc.core.makeurl(self.apiurl(), [ 'request', rqid ], { 'withhistory' : '1' })
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
             req = osc.core.Request()
@@ -130,7 +207,7 @@ class ReviewBot(object):
         if doit == True:
             self.logger.debug("setting %s to %s"%(req.reqid, state))
             if not self.dryrun:
-                osc.core.change_review_state(apiurl = self.apiurl,
+                osc.core.change_review_state(apiurl = self.apiurl(),
                         reqid = req.reqid, newstate = newstate,
                         by_group=self.review_group,
                         by_user=self.review_user, message=msg)
@@ -153,7 +230,7 @@ class ReviewBot(object):
         else:
             raise osc.oscerr.WrongArgs("missing by_*")
 
-        u = osc.core.makeurl(self.apiurl, ['request', req.reqid], query)
+        u = osc.core.makeurl(self.apiurl(), ['request', req.reqid], query)
         if self.dryrun:
             self.logger.info('POST %s' % u)
             return True
@@ -245,7 +322,7 @@ class ReviewBot(object):
             return None
 
     def get_originproject(self, project, package, rev=None):
-        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
+        root = ReviewBot._get_sourceinfo(self.apiurl(project), project, package, rev)
         if root is None:
             return None
 
@@ -256,7 +333,7 @@ class ReviewBot(object):
         return None
 
     def get_sourceinfo(self, project, package, rev=None):
-        root = ReviewBot._get_sourceinfo(self.apiurl, project, package, rev)
+        root = ReviewBot._get_sourceinfo(self.apiurl(project), project, package, rev)
         if root is None:
             return None
 
@@ -273,7 +350,7 @@ class ReviewBot(object):
     def _get_linktarget(self, src_project, src_package):
 
         query = {}
-        url = osc.core.makeurl(self.apiurl, ('source', src_project, src_package), query=query)
+        url = osc.core.makeurl(self.apiurl(src_project), ('source', src_project, src_package), query=query)
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
         except urllib2.HTTPError:
@@ -289,7 +366,7 @@ class ReviewBot(object):
     def can_accept_review(self, request_id):
         """return True if there is a new review for the specified reviewer"""
         states = set()
-        url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
+        url = osc.core.makeurl(self.apiurl(), ('request', str(request_id)))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
             if self.review_user:
@@ -314,7 +391,7 @@ class ReviewBot(object):
            review = "@by_user='%s'+and+@state='new'"%self.review_user
         else:
            review = "@by_group='%s'+and+@state='new'"%self.review_group
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'), "match=state/@name='review'+and+review[%s]&withhistory=1"%review)
+        url = osc.core.makeurl(self.apiurl(), ('search', 'request'), "match=state/@name='review'+and+review[%s]&withhistory=1"%review)
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -325,7 +402,7 @@ class ReviewBot(object):
             self.requests.append(req)
 
     def set_request_ids_project(self, project, typename):
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'),
+        url = osc.core.makeurl(self.apiurl(project), ('search', 'request'),
             "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
@@ -337,7 +414,7 @@ class ReviewBot(object):
             self.requests.append(req)
 
     def set_request_ids_project(self, project, typename):
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'),
+        url = osc.core.makeurl(self.apiurl(project), ('search', 'request'),
             "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
@@ -364,6 +441,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--review-mode", dest='review_mode', choices=ReviewBot.REVIEW_CHOICES, help="review behavior")
         parser.add_option("--fallback-user", dest='fallback_user', metavar='USER', help="fallback review user")
         parser.add_option("--fallback-group", dest='fallback_group', metavar='GROUP', help="fallback review group")
+        parser.add_option('-c', '--config', dest='config', metavar='FILE', help='read config file FILE')
 
         return parser
 
@@ -377,12 +455,21 @@ class CommandLineInterface(cmdln.Cmdln):
         logging.basicConfig(level=level)
         self.logger = logging.getLogger(self.optparser.prog)
 
+        # Store the default apiurl in addition to the overriden url if the
+        # option was set and thus overrides the default config value.
+        if self.options.apiurl is not None:
+            osc.conf.get_config()
+            self.apiurl_default = osc.conf.config['apiurl']
+        else:
+            self.apiurl_default = None
         osc.conf.get_config(override_apiurl = self.options.apiurl)
 
         if (self.options.osc_debug):
             osc.conf.config['debug'] = 1
 
         self.checker = self.setup_checker()
+        if self.options.config:
+            self.checker.load_config(self.options.config)
 
         if self.options.review_mode:
             self.checker.review_mode = self.options.review_mode
@@ -399,6 +486,8 @@ class CommandLineInterface(cmdln.Cmdln):
         apiurl = osc.conf.config['apiurl']
         if apiurl is None:
             raise osc.oscerr.ConfigError("missing apiurl")
+        if self.options.apiurl is not None and self.apiurl_default is None:
+            raise osc.oscerr.ConfigError("missing default apiurl")
         user = self.options.user
         group = self.options.group
         # if no args are given, use the current oscrc "owner"
@@ -409,7 +498,8 @@ class CommandLineInterface(cmdln.Cmdln):
                 dryrun = self.options.dry, \
                 user = user, \
                 group = group, \
-                logger = self.logger)
+                logger = self.logger, \
+                apiurl_default = self.apiurl_default)
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids
