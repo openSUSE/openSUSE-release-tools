@@ -171,18 +171,10 @@ class ABIChecker(ReviewBot.ReviewBot):
     """
 
     def __init__(self, *args, **kwargs):
+        ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
+
         self.no_review = False
         self.force = False
-        if 'no_review' in kwargs:
-            if kwargs['no_review'] == True:
-                self.no_review = True
-            del kwargs['no_review']
-        if 'force' in kwargs:
-            if kwargs['force'] == True:
-                self.force = True
-            del kwargs['force']
-
-        ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         self.ts = rpm.TransactionSet()
         self.ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
@@ -1061,6 +1053,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
+        self.clazz = ABIChecker
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
@@ -1080,20 +1073,14 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         return ret
 
     def setup_checker(self):
+        bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
-        apiurl = osc.conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
-        user = self.options.user
-        if user is None:
-            user = osc.conf.get_apiurl_usr(apiurl)
+        if self.options.no_review:
+            bot.no_review = True
+        if self.options.force:
+            bot.force = True
 
-        return ABIChecker(apiurl = apiurl, \
-                dryrun = self.options.dry, \
-                no_review = self.options.no_review, \
-                user = user, \
-                force = self.options.force, \
-                logger = self.logger)
+        return bot
 
     @cmdln.option('-r', '--revision', metavar="number", type="int", help="revision number")
     def do_diff(self, subcmd, opts, src_project, src_package, dst_project, dst_package):

@@ -562,22 +562,11 @@ class OpenQABot(ReviewBot.ReviewBot):
     """
 
     def __init__(self, *args, **kwargs):
+        ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
+
         self.force = False
         self.openqa = None
         self.do_comments = True
-        if 'force' in kwargs:
-            if kwargs['force'] is True:
-                self.force = True
-            del kwargs['force']
-        if 'openqa' in kwargs:
-            self.openqa = OpenQA_Client(server=kwargs['openqa'])
-            del kwargs['openqa']
-        if 'do_comments' in kwargs:
-            if kwargs['do_comments'] is not None:
-                self.do_comments = kwargs['do_comments']
-            del kwargs['do_comments']
-
-        ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         self.logger.debug(self.do_comments)
 
@@ -1000,6 +989,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
+        self.clazz = OpenQABot
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
@@ -1009,30 +999,19 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         return parser
 
     def setup_checker(self):
+        bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
-        apiurl = osc.conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.WrongArgs("missing apiurl")
-        user = self.options.user
-        group = self.options.group
-        if user is None and group is None:
-            user = osc.conf.get_apiurl_usr(apiurl)
-
+        if self.options.force:
+            bot.force = True
+        bot.do_comments = self.options.comment
         if not self.options.openqa:
             raise osc.oscerr.WrongArgs("missing openqa url")
+        bot.openqa = OpenQA_Client(server=self.options.openqa)
 
         global logger
         logger = self.logger
 
-        return OpenQABot(
-            apiurl=apiurl,
-            dryrun=self.options.dry,
-            user=user,
-            group=group,
-            do_comments=self.options.comment,
-            openqa=self.options.openqa,
-            force=self.options.force,
-            logger=self.logger)
+        return bot
 
 if __name__ == "__main__":
     app = CommandLineInterface()
