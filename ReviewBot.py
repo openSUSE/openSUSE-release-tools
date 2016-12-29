@@ -91,6 +91,7 @@ class ReviewBot(object):
         self.prepare_review()
         for req in self.requests:
             self.logger.info("checking %s"%req.reqid)
+            self.request = req
             good = self.check_one_request(req)
 
             if self.review_mode == 'no':
@@ -285,6 +286,16 @@ class ReviewBot(object):
                 return (linkinfo.get('project'), linkinfo.get('package'))
 
         return (None, None)
+
+    def get_devel_project(self, project, package):
+        try:
+            m = osc.core.show_package_meta(self.apiurl, project, package)
+            node = ET.fromstring(''.join(m)).find('devel')
+            if node is not None:
+                return node.get('project'), node.get('package', None)
+        except urllib2.HTTPError:
+            pass
+        return None, None
 
     def can_accept_review(self, request_id):
         """return True if there is a new review for the specified reviewer"""

@@ -76,6 +76,8 @@ class Leaper(ReviewBot.ReviewBot):
         self.release_manager_group = 'leap-reviewers'
         self.must_approve_version_updates = False
         self.must_approve_maintenance_updates = False
+        self.needs_check_source = False
+        self.check_source_group = None
 
         self.comment_marker_re = re.compile(r'<!-- leaper state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined))? -->')
 
@@ -156,6 +158,7 @@ class Leaper(ReviewBot.ReviewBot):
                 is_fine_if_factory = True
                 not_in_factory_okish = True
                 self.needs_release_manager = True
+                self.needs_check_source = True
                 # fall through to check history and requests
             elif origin.startswith('openSUSE:Leap:42.2'):
                 if self.must_approve_maintenance_updates:
@@ -366,6 +369,19 @@ class Leaper(ReviewBot.ReviewBot):
                     self.review_messages['declined'] += '\nadding opensuse-review-team failed'
                     return False
 
+        if self.needs_check_source and self.check_source_group is not None:
+            add_review = True
+            self.logger.info("%s needs review by %s" % (req.reqid, self.check_source_group))
+            for r in req.reviews:
+                if r.by_group == self.check_source_group:
+                    add_review = False
+                    self.logger.debug("%s already is a reviewer", self.check_source_group)
+                    break
+            if add_review:
+                if self.add_review(req, by_group = self.check_source_group) != True:
+                    self.review_messages['declined'] += '\nadding %s failed' % self.check_source_group
+                    return False
+
         return request_ok
 
     def check_action__default(self, req, a):
@@ -424,6 +440,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser.add_option("--no-comment", dest='comment', action="store_false", default=True, help="don't actually post comments to obs")
         parser.add_option("--manual-version-updates", action="store_true", help="release manager must approve version updates")
         parser.add_option("--manual-maintenance-updates", action="store_true", help="release manager must approve maintenance updates")
+        parser.add_option("--check-source-group", dest="check_source_group", metavar="GROUP", help="group used by check_source.py bot which will be added as a reviewer should leaper checks pass")
 
         return parser
 
@@ -434,6 +451,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.must_approve_version_updates = True
         if self.options.manual_maintenance_updates:
             bot.must_approve_maintenance_updates = True
+        if self.options.check_source_group:
+            bot.check_source_group = self.options.check_source_group
         bot.do_comments = self.options.comment
 
         return bot

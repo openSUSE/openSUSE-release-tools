@@ -1,0 +1,13 @@
+Application:Dochazka
+Application:ERP:Tryton:Factory
+Novell:NTS
+Virtualization:Appliances:Builder
+devel:languages:D
+devel:languages:pascal
+isv:ownCloud:desktop
+network:cluster
+network:mail:zarafa
+science:HPC
+security:Stunnel
+server:messaging
+system:snappy
