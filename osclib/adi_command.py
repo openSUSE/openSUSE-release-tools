@@ -3,7 +3,7 @@ import json
 from osc import oscerr
 from osc.core import delete_project
 from osc.core import show_package_meta
-        
+
 from osclib.select_command import SelectCommand
 from osclib.request_finder import RequestFinder
 from xml.etree import cElementTree as ET
@@ -22,26 +22,26 @@ class AdiCommand:
             print query_project, "still building"
             return
         if len(info['untracked_requests']):
-	    print query_project, "untracked:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['untracked_requests']])
-	    return
+            print query_project, "untracked:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['untracked_requests']])
+            return
         if len(info['obsolete_requests']):
-	    print query_project, "obsolete:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['obsolete_requests']])
+            print query_project, "obsolete:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['obsolete_requests']])
             return
         if len(info['broken_packages']):
-	    print query_project, "broken:", ', '.join([p['package'] for p in info['broken_packages']])
+            print query_project, "broken:", ', '.join([p['package'] for p in info['broken_packages']])
             return
         for review in info['missing_reviews']:
             print query_project, "missing review by {} for {}[{}]".format(review['by'], review['package'], review['request'])
             return
-	if self.api.is_user_member_of(self.api.user, 'factory-staging'):
-	    print query_project, "is ready"
-	    for req in info['selected_requests']:
-		print " - %s [%s]"%(req['package'], req['number'])
-		self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
-	    delete_project(self.api.apiurl, project)
-	else:
-	    print query_project, "ready:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['selected_requests']])
-            
+        if self.api.is_user_member_of(self.api.user, 'factory-staging'):
+            print query_project, "is ready"
+            for req in info['selected_requests']:
+                print " - %s [%s]"%(req['package'], req['number'])
+                self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
+            delete_project(self.api.apiurl, project)
+        else:
+            print query_project, "ready:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['selected_requests']])
+
     def check_adi_projects(self):
         for p in self.api.get_adi_projects():
             self.check_adi_project(p)
@@ -51,7 +51,7 @@ class AdiCommand:
 
         non_ring_packages = []
         non_ring_requests = dict()
-        
+
         for request in all_requests:
             # Consolidate all data from request
             request_id = int(request.get('id'))
@@ -104,7 +104,7 @@ class AdiCommand:
                     if source_project not in non_ring_requests:
                         non_ring_requests[source_project] = []
                     non_ring_requests[source_project].append(request_id)
-                
+
         if len(non_ring_packages):
             print "Not in a ring:", ' '.join(sorted(non_ring_packages))
         else:
