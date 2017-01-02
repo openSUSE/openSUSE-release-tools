@@ -336,18 +336,6 @@ class ReviewBot(object):
             req.read(request)
             self.requests.append(req)
 
-    def set_request_ids_project(self, project, typename):
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'),
-            "match=(state/@name='review'+or+state/@name='new')+and+(action/target/@project='%s'+and+action/@type='%s')&withhistory=1"%(project, typename))
-        root = ET.parse(osc.core.http_GET(url)).getroot()
-
-        self.requests = []
-
-        for request in root.findall('request'):
-            req = osc.core.Request()
-            req.read(request)
-            self.requests.append(req)
-
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
