@@ -44,13 +44,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     request is reviewed positive."""
 
     def __init__(self, *args, **kwargs):
-        self.factory = None
-        if 'factory' in kwargs:
-            self.factory = kwargs['factory']
-            del kwargs['factory']
-        if self.factory is None:
-            self.factory = "openSUSE:Factory"
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
+        self.factory = "openSUSE:Factory"
         self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
         self.lookup = {}
 
@@ -181,6 +176,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
+        self.clazz = FactorySourceChecker
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
@@ -190,20 +186,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         return parser
 
     def setup_checker(self):
+        bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
-        apiurl = osc.conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
-        user = self.options.user
-        if user is None:
-            user = osc.conf.get_apiurl_usr(apiurl)
-
-        bot = FactorySourceChecker(apiurl = apiurl, \
-                factory = self.options.factory, \
-                dryrun = self.options.dry, \
-                user = user, \
-                logger = self.logger)
-
+        if self.options.factory:
+            bot.factory = self.options.factory
         if self.options.lookup:
             bot.parse_lookup(self.options.lookup)
 

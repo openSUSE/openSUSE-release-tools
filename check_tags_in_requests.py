@@ -53,13 +53,8 @@ class TagChecker(ReviewBot.ReviewBot):
     """
 
     def __init__(self, *args, **kwargs):
-        self.factory = None
-        if 'factory' in kwargs:
-            self.factory = kwargs['factory']
-            del kwargs['factory']
-        if self.factory is None:
-            self.factory = "openSUSE:Factory"
         super(TagChecker, self).__init__(*args, **kwargs)
+        self.factory = "openSUSE:Factory"
         self.review_messages['declined'] = """
 (This is a script running, so report bugs)
 
@@ -124,8 +119,8 @@ by OBS on which this bot relies on.
                                                                        dryrun=self.dryrun,
                                                                        logger=self.logger,
                                                                        user=self.review_user,
-                                                                       group=self.review_group,
-                                                                       factory=self.factory)
+                                                                       group=self.review_group)
+        factory_checker.factory = self.factory
         factory_ok = factory_checker.check_source_submission(a.src_project, a.src_package, a.src_rev,
                                                              a.tgt_project, a.tgt_package)
         return factory_ok
@@ -156,6 +151,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
+        self.clazz = TagChecker
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
@@ -164,16 +160,12 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         return parser
 
     def setup_checker(self):
+        bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
-        apiurl = osc.conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
+        if self.options.factory:
+            bot.factory = self.options.factory
 
-        return TagChecker(apiurl=apiurl,
-                          factory=self.options.factory,
-                          dryrun=self.options.dry,
-                          group=self.options.group,
-                          logger=self.logger)
+        return bot
 
 if __name__ == "__main__":
     app = CommandLineInterface()

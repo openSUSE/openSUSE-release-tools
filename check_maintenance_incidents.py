@@ -193,27 +193,9 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         return ret
 
-class CommandLineInterface(ReviewBot.CommandLineInterface):
-
-    def __init__(self, *args, **kwargs):
-        ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
-
-    def setup_checker(self):
-
-        apiurl = osc.conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
-        user = self.options.user
-        if user is None:
-            user = osc.conf.get_apiurl_usr(apiurl)
-
-        return MaintenanceChecker(apiurl = apiurl, \
-                dryrun = self.options.dry, \
-                user = user, \
-                logger = self.logger)
-
 if __name__ == "__main__":
-    app = CommandLineInterface()
+    app = ReviewBot.CommandLineInterface()
+    app.clazz = MaintenanceChecker
     sys.exit( app.main() )
 
 # vim: sw=4 et

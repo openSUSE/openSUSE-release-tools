@@ -339,6 +339,7 @@ class ReviewBot(object):
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
+        self.clazz = ReviewBot
 
     def get_optparser(self):
         parser = cmdln.Cmdln.get_optparser(self)
@@ -383,7 +384,6 @@ class CommandLineInterface(cmdln.Cmdln):
 
     def setup_checker(self):
         """ reimplement this """
-
         apiurl = osc.conf.config['apiurl']
         if apiurl is None:
             raise osc.oscerr.ConfigError("missing apiurl")
@@ -393,7 +393,7 @@ class CommandLineInterface(cmdln.Cmdln):
         if user is None and group is None:
             user = osc.conf.get_apiurl_usr(apiurl)
 
-        return ReviewBot(apiurl = apiurl, \
+        return self.clazz(apiurl = apiurl, \
                 dryrun = self.options.dry, \
                 user = user, \
                 group = group, \

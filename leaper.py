@@ -416,6 +416,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
+        self.clazz = Leaper
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
@@ -427,21 +428,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         return parser
 
     def setup_checker(self):
-
-        apiurl = osc.conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
-        user = self.options.user
-        group = self.options.group
-        # if no args are given, use the current oscrc "owner"
-        if user is None and group is None:
-            user = osc.conf.get_apiurl_usr(apiurl)
-
-        bot = Leaper(apiurl = apiurl, \
-                dryrun = self.options.dry, \
-                user = user, \
-                group = group, \
-                logger = self.logger)
+        bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
         if self.options.manual_version_updates:
             bot.must_approve_version_updates = True
