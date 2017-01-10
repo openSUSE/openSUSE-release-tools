@@ -459,6 +459,16 @@ class StagingAPI(object):
             return True
         return False
 
+    def get_ignored_requests(self):
+        ignore = self.load_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests')
+        if ignore is None:
+            return {}
+        return yaml.safe_load(ignore)
+
+    def set_ignored_requests(self, ignore_requests):
+        ignore = yaml.dump(ignore_requests, default_flow_style=False)
+        self.save_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests', ignore)
+
     def get_open_requests(self):
         """
         Get all requests with open review for staging project
@@ -746,6 +756,14 @@ class StagingAPI(object):
         self.do_change_review_state(request_id, 'accepted',
                                     by_group=self.cstaging_group,
                                     message='Picked {}'.format(project))
+
+        # unignore a request selected to a project
+        requests_ignored = self.get_ignored_requests()
+        request_id = int(request_id)
+        if request_id in requests_ignored:
+            del requests_ignored[request_id]
+            self.set_ignored_requests(requests_ignored)
+
         return True
 
     def map_ring_package_to_subject(self, project, pkg):
