@@ -23,6 +23,7 @@ import xml.etree.cElementTree as ET
 
 import httpretty
 import osc
+from osclib.cache import Cache
 
 
 APIURL = 'http://localhost'
@@ -107,6 +108,7 @@ class OBS(object):
         if not OBS._self:
             OBS._self = super(OBS, cls).__new__(cls, *args, **kwargs)
 
+        Cache.delete_all()
         httpretty.reset()
         httpretty.enable()
 
@@ -121,6 +123,9 @@ class OBS(object):
         """Instance constructor."""
         self.fixtures = fixtures
 
+        if not hasattr(Cache, '_CACHE_DIR'):
+            Cache._CACHE_DIR = True
+            Cache.CACHE_DIR += '-test'
         httpretty.enable()
 
         oscrc = os.path.join(fixtures, 'oscrc')

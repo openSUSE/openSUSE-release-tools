@@ -21,6 +21,7 @@ import httpretty
 import osc
 import re
 import urlparse
+from osclib.cache import Cache
 
 from check_source_in_factory import FactorySourceChecker
 
@@ -39,6 +40,7 @@ class TestFactorySourceAccept(unittest.TestCase):
         Initialize the configuration
         """
 
+        Cache.last_updated[APIURL] = {'__oldest': '2016-12-18T11:49:37Z'}
         httpretty.reset()
         httpretty.enable()
 

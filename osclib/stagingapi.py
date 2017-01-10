@@ -36,6 +36,7 @@ from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
 
+from osclib.cache import Cache
 from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 
@@ -77,6 +78,8 @@ class StagingAPI(object):
             )
         else:
             self.rings = []
+
+        Cache.init()
 
 
     @property
