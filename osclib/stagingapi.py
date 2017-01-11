@@ -16,6 +16,7 @@
 
 import json
 import logging
+import os
 import urllib2
 import time
 import re
@@ -32,12 +33,77 @@ from osc.core import get_group
 from osc.core import get_request
 from osc.core import make_meta_url
 from osc.core import makeurl
-from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
+from osc.core import http_request
 
 from osclib.comments import CommentAPI
 from osclib.memoize import memoize
+
+class HTTPCache(object):
+    CACHE_DIR = os.path.expanduser('~/.cache/oscstaging')
+    cache = False
+
+    def __init__(self, cache=True):
+        self.cache = cache
+
+    def __enter__(self):
+        HTTPCache.cache = self.cache
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        HTTPCache.cache = False
+
+    @staticmethod
+    def http_request(method, url, headers={}, data=None, file=None, cache=False):
+        """
+        Wraps osc.core.http_request() to provide GET request caching via optional
+        parameter cache.
+        """
+
+        if not cache and HTTPCache.cache:
+            cache = HTTPCache.cache
+
+        if cache and method == 'GET':
+            import hashlib
+            import io
+            from time import time
+            from StringIO import StringIO
+            from osc.core import urlopen
+
+            if cache is True:
+                # No max cache age was specified so default to 24 hours.
+                cache = 24 * 60 * 60
+
+            if not os.path.exists(HTTPCache.CACHE_DIR):
+                os.makedirs(HTTPCache.CACHE_DIR)
+
+            sha1 = hashlib.sha1(url).hexdigest()
+            cache_file = os.path.join(HTTPCache.CACHE_DIR, sha1)
+            if os.path.exists(cache_file) and time() - os.path.getmtime(cache_file) <= cache:
+                if conf.config['debug']:
+                    print('%s [CACHED] %s' % (method, url))
+                return urlopen('file://' + cache_file)
+
+        ret = http_request(method, url, headers, data, file)
+
+        if cache and method == 'GET':
+            # Since urlopen does not return a seekable stream it cannot be reset
+            # after writing to cache. As such a wrapper must be used.
+            text = ret.read()
+            ret = StringIO(text)
+
+            f = open(cache_file,'w')
+            f.write(text)
+            f.close()
+
+        return ret
+
+    @staticmethod
+    def wipe():
+        from shutil import rmtree
+        rmtree(HTTPCache.CACHE_DIR)
+
+def http_GET(*args, **kwargs): return HTTPCache.http_request('GET', *args, **kwargs)
 
 
 class StagingAPI(object):
@@ -165,7 +231,7 @@ class StagingAPI(object):
             }
 
             url = self.makeurl(['source', prj], query)
-            root = http_GET(url)
+            root = http_GET(url, cache=True)
 
             for si in ET.parse(root).getroot().findall('sourceinfo'):
                 pkg = si.get('package')
@@ -1278,7 +1344,8 @@ class StagingAPI(object):
     def _fill_package_meta(self, project):
         self._package_metas.setdefault(project, {})
         url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
-        root = ET.parse(self.retried_GET(url))
+        with HTTPCache():
+            root = ET.parse(self.retried_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
             self._package_metas[project][name] = p

@@ -35,6 +35,7 @@ from osclib.list_command import ListCommand
 from osclib.obslock import OBSLock
 from osclib.select_command import SelectCommand
 from osclib.stagingapi import StagingAPI
+from osclib.stagingapi import HTTPCache
 from osclib.unselect_command import UnselectCommand
 from osclib.repair_command import RepairCommand
 
@@ -89,6 +90,8 @@ def _full_project_name(self, project):
               help='do not cleanup remaining packages in staging projects after accept')
 @cmdln.option('--no-bootstrap', dest='bootstrap', action='store_false', default=True,
               help='do not update bootstrap-copy when freezing')
+@cmdln.option('--wipe-cache', dest='wipe_cache', action='store_true', default=False,
+              help='wipe GET request cache before executing')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -164,6 +167,9 @@ def do_staging(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
     opts.verbose = False
     Config(opts.project)
+
+    if opts.wipe_cache:
+        HTTPCache.wipe()
 
     with OBSLock(opts.apiurl, opts.project):
         api = StagingAPI(opts.apiurl, opts.project)
