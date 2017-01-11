@@ -26,6 +26,7 @@ import httpretty
 import osc
 import urlparse
 import sys
+from osclib.cache import Cache
 sys.path.append(".")
 
 from check_tags_in_requests import TagChecker
@@ -41,6 +42,7 @@ class TestTagChecker(unittest.TestCase):
         Initialize the configuration
         """
 
+        Cache.last_updated[APIURL] = {'__oldest': '2016-12-18T11:49:37Z'}
         httpretty.reset()
         httpretty.enable()
 
