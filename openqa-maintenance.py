@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2015,2016 SUSE LLC
+# Copyright (c) 2015-2017 SUSE LLC
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@ import sys
 from datetime import date
 import md5
 import json
+import logging
 import requests
 from simplejson import JSONDecodeError
 from collections import namedtuple
@@ -581,10 +582,6 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         self.force = False
         self.openqa = None
-        self.do_comments = True
-
-        self.logger.debug(self.do_comments)
-
         self.commentapi = CommentAPI(self.apiurl)
         self.update_test_builds = dict()
 
@@ -818,7 +815,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             if name in j and int(job['id']) < int(j[name]['id']):
                 continue
             j[name] = job
-            self.logger.debug('job %s in openQA: %s %s %s %s', job['id'], job['settings']['VERSION'], job['settings']['TEST'], job['state'], job['result'])
+            #self.logger.debug('job %s in openQA: %s %s %s %s', job['id'], job['settings']['VERSION'], job['settings']['TEST'], job['state'], job['result'])
             if job['state'] not in ('cancelled', 'done'):
                 in_progress = True
             else:
@@ -1009,7 +1006,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
         parser.add_option("--force", action="store_true", help="recheck requests that are already considered done")
-        parser.add_option("--no-comment", dest='comment', action="store_false", help="don't actually post comments to obs")
+        parser.add_option("--no-comment", dest='comment', action="store_false", default=True, help="don't actually post comments to obs")
         parser.add_option("--openqa", metavar='HOST', help="openqa api host")
         return parser
 
@@ -1029,6 +1026,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         return bot
 
 if __name__ == "__main__":
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(logging.WARNING)
+    requests_log.propagate = False
+
     app = CommandLineInterface()
     sys.exit(app.main())
 
