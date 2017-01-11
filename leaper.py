@@ -135,7 +135,9 @@ class Leaper(ReviewBot.ReviewBot):
         is_fine_if_factory = False
         not_in_factory_okish = False
         if origin:
-            self.logger.info("expected origin is '%s'", origin)
+            origin_same = src_project.startswith(origin)
+            self.logger.info("expected origin is '%s' (%s)", origin,
+                             "unchanged" if origin_same else "changed")
             if origin.startswith('Devel;'):
                 (dummy, origin, dummy) = origin.split(';')
                 if origin != src_project:
@@ -164,7 +166,7 @@ class Leaper(ReviewBot.ReviewBot):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
                 # submitted from :Update
-                if src_project.startswith(origin):
+                if origin_same:
                     self.logger.debug("submission from 42.2 ok")
                     return True
                 # switching to sle package might make sense
