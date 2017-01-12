@@ -51,6 +51,7 @@ class AdiCommand:
 
         non_ring_packages = []
         non_ring_requests = dict()
+        non_ring_requests_ignored = []
 
         for request in all_requests:
             # Consolidate all data from request
@@ -86,6 +87,10 @@ class AdiCommand:
                 if self.api.update_superseded_request(request):
                     continue
 
+                if not len(wanted_requests) and request_id in self.requests_ignored:
+                    non_ring_requests_ignored.append(request_id)
+                    continue
+
                 non_ring_packages.append(target_package)
                 if split:
                     # request_id pretended to be index of non_ring_requests
@@ -105,6 +110,10 @@ class AdiCommand:
                         non_ring_requests[source_project] = []
                     non_ring_requests[source_project].append(request_id)
 
+        if len(non_ring_requests_ignored):
+            print "Not in a ring, but ignored:"
+            for request_id in non_ring_requests_ignored:
+                print "- sr#{}: {}".format(request_id, requests_ignored[request_id])
         if len(non_ring_packages):
             print "Not in a ring:", ' '.join(sorted(non_ring_packages))
         else:
@@ -124,6 +133,7 @@ class AdiCommand:
         """
         Perform the list command
         """
+        self.requests_ignored = self.api.get_ignored_requests()
         if len(packages):
             requests = set()
             if move:

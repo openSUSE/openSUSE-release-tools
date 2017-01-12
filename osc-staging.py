@@ -31,6 +31,8 @@ from osclib.check_command import CheckCommand
 from osclib.cleanup_rings import CleanupRings
 from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
+from osclib.ignore_command import IgnoreCommand
+from osclib.unignore_command import UnignoreCommand
 from osclib.list_command import ListCommand
 from osclib.obslock import OBSLock
 from osclib.select_command import SelectCommand
@@ -92,6 +94,7 @@ def _full_project_name(self, project):
               help='do not update bootstrap-copy when freezing')
 @cmdln.option('--wipe-cache', dest='wipe_cache', action='store_true', default=False,
               help='wipe GET request cache before executing')
+@cmdln.option('-m', '--message', help='message used by ignore command')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -115,6 +118,10 @@ def do_staging(self, subcmd, opts, *args):
 
     "frozenage" will show when the respective staging project was last frozen
 
+    "ignore" will ignore a request from "list" and "adi" commands until unignored
+
+    "unignore" will remove from ignore list
+
     "list" will pick the requests not in rings
 
     "select" will add requests to the project
@@ -127,6 +134,8 @@ def do_staging(self, subcmd, opts, *args):
         osc staging cleanup_rings
         osc staging freeze [--no-boostrap] PROJECT...
         osc staging frozenage PROJECT...
+        osc staging ignore [-m MESSAGE] REQUEST...
+        osc staging unignore REQUEST...|all
         osc staging list [--supersede]
         osc staging select [--no-freeze] [--move [--from PROJECT]] LETTER REQUEST...
         osc staging unselect REQUEST...
@@ -151,6 +160,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, None
     elif cmd == 'adi':
         min_args, max_args = None, None
+    elif cmd in ('ignore', 'unignore'):
+        min_args, max_args = 1, None
     elif cmd in ('list', 'accept'):
         min_args, max_args = 0, None
     elif cmd in ('cleanup_rings', 'acheck'):
@@ -233,6 +244,10 @@ def do_staging(self, subcmd, opts, *args):
                                                  opts.from_, opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
+        elif cmd == 'ignore':
+            IgnoreCommand(api).perform(args[1:], opts.message)
+        elif cmd == 'unignore':
+            UnignoreCommand(api).perform(args[1:])
         elif cmd == 'list':
             ListCommand(api).perform(args[1:], supersede=opts.supersede)
         elif cmd == 'adi':

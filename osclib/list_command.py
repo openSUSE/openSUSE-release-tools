@@ -22,6 +22,7 @@ class ListCommand:
 
         # Print out the left overs
         requests = self.api.get_open_requests()
+        requests_ignored = self.api.get_ignored_requests()
 
         non_ring_packages = []
         change_devel_requests = {}
@@ -86,13 +87,15 @@ class ListCommand:
                     elif source_prj.startswith('home:'):
                         source_prj = '~' + source_prj[len('home:'):]
                     result[devel][-1] += ' ({})'.format(source_prj)
+                    if request_id in requests_ignored:
+                        result[devel][-1] += '\nignored: ' + requests_ignored[request_id]
             else:
                 non_ring_packages.append(target_package)
 
         for prj in sorted(result.keys()):
             print prj
             for line in result[prj]:
-                print ' ', line
+                print ' ', line.replace('\n', '\n    ')
 
         if len(non_ring_packages):
             print "Not in a ring:", ' '.join(sorted(non_ring_packages))
