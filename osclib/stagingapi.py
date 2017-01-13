@@ -314,6 +314,34 @@ class StagingAPI(object):
             projects.append(val.get('name'))
         return projects
 
+    def extract_staging_short(self, p):
+        if not ':' in p:
+            return p
+        prefix = len(self.cstaging) + 1
+        if p.endswith(':DVD'):
+            p = p[:-4]
+        return p[prefix:]
+
+    def prj_from_short(self, name):
+        if name.startswith(self.cstaging):
+            return name
+        return '{}:{}'.format(self.cstaging, name)
+
+    def get_staging_projects_short(self, adi=False):
+        """
+        Get list of staging project by short-hand names.
+        :param adi: True for only adi stagings, False for only non-adi stagings,
+                    and None for both.
+        """
+        prefix = len(self.cstaging) + 1
+        projects = []
+        for project in self.get_staging_projects():
+            if project.endswith(':DVD') or \
+               (adi is not None and self.is_adi_project(project) != adi):
+                continue
+            projects.append(self.extract_staging_short(project))
+        return projects
+
     def is_adi_project(self, p):
         return ':adi:' in p
 
