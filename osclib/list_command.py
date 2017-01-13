@@ -87,8 +87,8 @@ class ListCommand:
                     elif source_prj.startswith('home:'):
                         source_prj = '~' + source_prj[len('home:'):]
                     result[devel][-1] += ' ({})'.format(source_prj)
-                    if request_id in requests_ignored:
-                        result[devel][-1] += '\nignored: ' + requests_ignored[request_id]
+                if request_id in requests_ignored:
+                    result[devel][-1] += '\nignored: ' + requests_ignored[request_id]
             else:
                 non_ring_packages.append(target_package)
 
