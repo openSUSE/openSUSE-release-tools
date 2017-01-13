@@ -47,14 +47,20 @@ class CompareList(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
 
-    def get_source_packages(self, project, expand=False):
+    def get_source_packages(self, project):
         """Return the list of packages in a project."""
-        query = {'expand': 1} if expand else {}
+        query = {'expand': 1}
         root = ET.parse(http_GET(makeurl(self.apiurl,['source', project],
                                  query=query))).getroot()
         packages = [i.get('name') for i in root.findall('entry')]
         
         return packages
+
+    def is_linked_package(self, project, package):
+        u = makeurl(self.apiurl,['source', project, package])
+        root = ET.parse(http_GET(u)).getroot()
+        linked = root.find('linkinfo')
+        return linked
 
     def check_diff(self, package, old_prj, new_prj):
         logging.debug('checking %s ...' % package)
@@ -88,6 +94,11 @@ class CompareList(object):
             if pkg not in new_packages:
                 logging.debug('%s is not in %s' % (pkg, self.new_prj))
             else:
+                # ignore the second specfile package
+                linked = self.is_linked_package(self.old_prj, pkg)
+                if linked is not None:
+                    continue
+
                 diff = self.check_diff(pkg, self.old_prj, self.new_prj)
                 if diff is not False:
                     print '%s/%s has different source than %s' % (self.new_prj, pkg, self.old_prj)
