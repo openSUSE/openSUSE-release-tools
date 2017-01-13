@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2015 SUSE Linux GmbH
+# Copyright (c) 2015-2017 SUSE Linux GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,12 +32,11 @@ import urllib2
 import sys
 import time
 import yaml
+from collections import namedtuple
 
 from osclib.memoize import memoize
 
 logger = logging.getLogger()
-
-OPENSUSE = 'openSUSE:Leap:42.3'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -46,41 +45,34 @@ http_PUT = osc.core.http_PUT
 http_POST = osc.core.http_POST
 
 class Manager42(object):
-    def __init__(self, from_prj, caching = True):
-        self.from_prj = from_prj
+
+    config_defaults = {
+        'project_preference_order' : [],
+        'from_prj' : 'openSUSE:Leap:42.3',
+        'factory' : 'openSUSE:Factory',
+        }
+
+    def __init__(self, caching = True, configfh = None):
         self.caching = caching
         self.apiurl = osc.conf.config['apiurl']
-        self.project_preference_order = [
-                'SUSE:SLE-12-SP3:GA',
-                'SUSE:SLE-12-SP2:Update',
-                'SUSE:SLE-12-SP2:GA',
-                'SUSE:SLE-12-SP1:Update',
-                'SUSE:SLE-12-SP1:GA',
-                'SUSE:SLE-12:Update',
-                'SUSE:SLE-12:GA',
-                'openSUSE:Leap:42.2:Update',
-                'openSUSE:Leap:42.2',
-                'openSUSE:Leap:42.2:NonFree:Update',
-                'openSUSE:Leap:42.2:NonFree',
-                'openSUSE:Leap:42.1:Update',
-                'openSUSE:Leap:42.1',
-                'openSUSE:Leap:42.1:NonFree:Update',
-                'openSUSE:Leap:42.1:NonFree',
-                'openSUSE:Factory',
-                'openSUSE:Factory:NonFree',
-                'openSUSE:Leap:42.3:SLE-workarounds',
-                'openSUSE:Leap:42.2:SLE-workarounds',
-                ]
+        self.config = self._load_config(configfh)
 
-        self.parse_lookup(self.from_prj)
+        self.parse_lookup(self.config.from_prj)
         self.fill_package_meta()
         self.packages = dict()
-        for project in [self.from_prj] + self.project_preference_order:
+        for project in [self.config.from_prj] + self.config.project_preference_order:
             self.packages[project] = self.get_source_packages(project)
+
+    # FIXME: add to ToolBase and rebase Manager42 on that
+    def _load_config(self, handle = None):
+        d = self.__class__.config_defaults
+        y = yaml.safe_load(handle) if handle is not None else {}
+        return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
 
     def latest_packages(self):
         data = self.cached_GET(makeurl(self.apiurl,
-                                       ['project', 'latest_commits', self.from_prj]))
+                                       ['project', 'latest_commits',
+                                           self.config.from_prj]))
         lc = ET.fromstring(data)
         packages = set()
         for entry in lc.findall('{http://www.w3.org/2005/Atom}entry'):
@@ -111,7 +103,7 @@ class Manager42(object):
             logger.info('no change to lookup.yml')
             return
         data = yaml.dump(self.lookup, default_flow_style=False, explicit_start=True)
-        self._put_lookup_file(self.from_prj, data)
+        self._put_lookup_file(self.config.from_prj, data)
         self.lookup_changes = 0
 
     @memoize()
@@ -161,7 +153,7 @@ class Manager42(object):
     def crawl(self, given_packages = None):
         """Main method of the class that runs the crawler."""
 
-        packages = given_packages or self.packages[self.from_prj]
+        packages = given_packages or self.packages[self.config.from_prj]
 
         for package in sorted(packages):
             try:
@@ -221,14 +213,14 @@ class Manager42(object):
     # projects
     def check_one_package(self, package):
         lproject = self.lookup.get(package, None)
-        if not package in self.packages[self.from_prj]:
+        if not package in self.packages[self.config.from_prj]:
             logger.info("{} vanished".format(package))
             if self.lookup.get(package):
                 del self.lookup[package]
                 self.lookup_changes += 1
             return
 
-        root = ET.fromstring(self._get_source_package(self.from_prj, package, None))
+        root = ET.fromstring(self._get_source_package(self.config.from_prj, package, None))
         linked = root.find('linked')
         if not linked is None and linked.get('package') != package:
             lstring = 'subpackage of {}'.format(linked.get('package'))
@@ -268,16 +260,16 @@ class Manager42(object):
             if srcmd5:
                 logger.debug("{} lookup from {} is correct".format(package, lproject))
                 # if it's from Factory we check if the package can be found elsewhere meanwhile
-                if lproject != 'openSUSE:Factory':
+                if lproject != self.config.factory:
                     return
-            elif lproject == 'openSUSE:Factory' and not package in self.packages[lproject]:
+            elif lproject == self.config.factory and not package in self.packages[lproject]:
                 his = self.get_package_history(lproject, package, deleted=True)
                 if his:
                     logger.debug("{} got dropped from {}".format(package, lproject))
 
         logger.debug("check where %s came from", package)
         foundit = False
-        for project in self.project_preference_order:
+        for project in self.config.project_preference_order:
             srcmd5, rev = self.check_source_in_project(project, package, root.get('verifymd5'))
             if srcmd5:
                 if project != lproject:
@@ -310,7 +302,8 @@ class Manager42(object):
 
     def fill_package_meta(self):
         self.package_metas = dict()
-        url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % self.from_prj)
+        url = makeurl(self.apiurl, ['search', 'package'],
+                "match=[@project='%s']" % self.config.from_prj)
         root = ET.fromstring(self.cached_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
@@ -322,23 +315,23 @@ def main(args):
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = Manager42(args.from_prj, caching = args.cache_requests )
+    uc = Manager42(caching = args.cache_requests, configfh = args.config )
     given_packages = args.packages
     if not args.all and not given_packages:
         given_packages = uc.latest_packages()
     uc.crawl(given_packages)
 
 if __name__ == '__main__':
-    description = 'maintain %s/00Meta/lookup.yml' % OPENSUSE
+    description = 'maintain 00Meta/lookup.yml'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print info useful for debuging')
     parser.add_argument('-a', '--all', action='store_true',
                         help='check all packages')
-    parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
-                        help='project where to get the updates (default: %s)' % OPENSUSE,
-                        default=OPENSUSE)
+    parser.add_argument('-c', '--config', dest='config', metavar='FILE',
+                        type=argparse.FileType('r'), required = True,
+                        help='read config file FILE')
     parser.add_argument('-n', '--dry', action='store_true',
                         help='dry run, no POST, PUT, DELETE')
     parser.add_argument('--cache-requests', action='store_true', default=False,
