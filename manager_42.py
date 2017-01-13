@@ -45,16 +45,16 @@ http_PUT = osc.core.http_PUT
 http_POST = osc.core.http_POST
 
 class Manager42(object):
+
+    config_defaults = {
+        'project_preference_order' : [],
+        'from_prj' : 'openSUSE:Leap:42.3',
+        'factory' : 'openSUSE:Factory',
+        }
+
     def __init__(self, caching = True, configfh = None):
         self.caching = caching
         self.apiurl = osc.conf.config['apiurl']
-
-        self.config_defaults = {
-            'project_preference_order' : [],
-            'from_prj' : 'openSUSE:Leap:42.3',
-            'factory' : 'openSUSE:Factory',
-            }
-
         self.config = self._load_config(configfh)
 
         self.parse_lookup(self.config.from_prj)
@@ -65,7 +65,7 @@ class Manager42(object):
 
     # FIXME: add to ToolBase and rebase Manager42 on that
     def _load_config(self, handle = None):
-        d = self.config_defaults
+        d = self.__class__.config_defaults
         y = yaml.safe_load(handle) if handle is not None else {}
         return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
 
