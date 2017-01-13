@@ -541,6 +541,11 @@ class StagingAPI(object):
             #     self.accept_non_ring_request(rq)
             self.update_superseded_request(rq, packages)
 
+    def get_prj_meta(self, project):
+        url = make_meta_url('prj', project, self.apiurl)
+        f = http_GET(url)
+        return ET.parse(f).getroot()
+
     @memoize(ttl=60, session=True, add_invalidate=True)
     def get_prj_pseudometa(self, project):
         """
@@ -549,9 +554,7 @@ class StagingAPI(object):
         :return structured object with metadata
         """
 
-        url = make_meta_url('prj', project, self.apiurl)
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
+        root = self.get_prj_meta(project)
         description = root.find('description')
         # If YAML parsing fails, load default
         # FIXME: Better handling of errors
