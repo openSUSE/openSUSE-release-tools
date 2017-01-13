@@ -194,16 +194,16 @@ def do_staging(self, subcmd, opts, *args):
                 FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap )
         elif cmd == 'frozenage':
             for prj in args[1:]:
-                print "%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj)))
+                print("%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj))))
         elif cmd == 'acheck':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
             if version_totest:
                 version_openqa = api.load_file_content("%s:Staging" % api.project, "dashboard", "version_totest")
                 totest_dirty = api.is_repo_dirty(api.project, 'totest')
-                print "version_openqa: %s / version_totest: %s / totest_dirty: %s\n" % (version_openqa, version_totest, totest_dirty)
+                print("version_openqa: %s / version_totest: %s / totest_dirty: %s\n" % (version_openqa, version_totest, totest_dirty))
             else:
-                print "acheck is unavailable in %s!\n" % (api.project)
+                print("acheck is unavailable in %s!\n" % (api.project))
         elif cmd == 'accept':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
@@ -232,7 +232,7 @@ def do_staging(self, subcmd, opts, *args):
                     if api.item_exists(api.crebuild):
                         cmd.sync_buildfailures()
             else:
-                print "Not safe to accept: /totest is not yet synced"
+                print("Not safe to accept: /totest is not yet synced")
         elif cmd == 'unselect':
             UnselectCommand(api).perform(args[1:])
         elif cmd == 'select':
