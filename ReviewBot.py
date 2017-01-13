@@ -51,6 +51,16 @@ class ReviewBot(object):
     DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
+    # map of default config entries
+    config_defaults = {
+            # list of tuples (prefix, apiurl)
+            # set this if the obs instance maps another instance into it's
+            # namespace
+            'project_namespace_api_map' : [
+                ('openSUSE.org:', 'https://api.opensuse.org'),
+                ],
+            }
+
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
         self.dryrun = dryrun
@@ -63,20 +73,10 @@ class ReviewBot(object):
         self.fallback_user = None
         self.fallback_group = None
 
-        # map of default config entries
-        self.config_defaults = {
-                # list of tuples (prefix, apiurl)
-                # set this if the obs instance maps another instance into it's
-                # namespace
-                'project_namespace_api_map' : [
-                    ('openSUSE.org:', 'https://api.opensuse.org'),
-                    ],
-                }
-
         self.load_config()
 
     def _load_config(self, handle = None):
-        d = self.config_defaults
+        d = self.__class__.config_defaults
         y = yaml.safe_load(handle) if handle is not None else {}
         return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
 
