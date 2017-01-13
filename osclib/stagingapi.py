@@ -19,7 +19,7 @@ import logging
 import urllib2
 import time
 import re
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import yaml
 
