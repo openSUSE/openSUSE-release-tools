@@ -10,19 +10,19 @@ Introduction
 
 In the current Factory model,
 https://build.opensuse.org/project/show/openSUSE:Factory:ToTest[Factory:ToTest]
-represent the project that store several Factory Snapshots that are
+represents the project that stores several Factory Snapshots that are
 candidates to be released if the measured quality (according to
 openQA) is good enough.
 
-This plugin encapsulate several conditions that are needed to decide
+This plugin encapsulates several conditions that are needed to decide
 if a snapshot can be published or not:
 
 * Check if the overall status of openQA is green.
 
 * Check if all the repositories in openSUSE:Factory can be published.
 
-If Factory meet both criteria, this plugin will publish a new version
-of the project openSUSE:Factory:ToTest, if the version if different
+If Factory meets both criteria, this plugin will publish a new version
+of the project openSUSE:Factory:ToTest, if the version is different
 from the current Factory.
 
 
@@ -48,5 +48,5 @@ Command line
 ------------
 [id="cli"]
 
-This plugin do not have any parameters, and need to be executed with
+This plugin does not have any parameters, and needs to be executed with
 the proper permissions in OBS.
