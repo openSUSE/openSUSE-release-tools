@@ -115,21 +115,22 @@ class ReviewBot(object):
 
         by_user = self.fallback_user
         by_group = self.fallback_group
+        msg = self.review_messages.get(state, state)
 
         if state == 'declined':
             if self.review_mode == 'fallback-onfail':
                 self.logger.info("%s needs fallback reviewer"%req.reqid)
                 # don't check duplicates, in case review was re-opened
-                self.add_review(req, by_group=by_group, by_user=by_user)
-                newstate = 'accepted'
+                msg = self.review_messages.get('fallback', 'ReviewBot Failed. Please Review')
+                self.add_review(req, by_group=by_group, by_user=by_user, msg=msg)
+                doit = None
         elif self.review_mode == 'fallback-always':
             self.add_review(req, by_group=by_group, by_user=by_user)
 
-        msg = self.review_messages[state] if state in self.review_messages else state
         self.logger.info("%s %s: %s"%(req.reqid, state, msg))
 
         if doit == True:
-            self.logger.debug("setting %s to %s"%(req.reqid, state))
+            self.logger.debug("setting %s to %s"%(req.reqid, newstate))
             if not self.dryrun:
                 osc.core.change_review_state(apiurl = self.apiurl,
                         reqid = req.reqid, newstate = newstate,
