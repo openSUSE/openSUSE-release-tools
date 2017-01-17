@@ -28,6 +28,7 @@ from collections import namedtuple
 from osclib.memoize import memoize
 import signal
 import datetime
+from collections import namedtuple
 
 try:
     from xml.etree import cElementTree as ET
@@ -50,6 +51,16 @@ class ReviewBot(object):
     DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
+    # map of default config entries
+    config_defaults = {
+            # list of tuples (prefix, apiurl)
+            # set this if the obs instance maps another instance into it's
+            # namespace
+            'project_namespace_api_map' : [
+                ('openSUSE.org:', 'https://api.opensuse.org'),
+                ],
+            }
+
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
         self.dryrun = dryrun
@@ -61,6 +72,21 @@ class ReviewBot(object):
         self._review_mode = 'normal'
         self.fallback_user = None
         self.fallback_group = None
+
+        self.load_config()
+
+    def _load_config(self, handle = None):
+        d = self.__class__.config_defaults
+        y = yaml.safe_load(handle) if handle is not None else {}
+        return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
+
+    def load_config(self, filename = None):
+        if filename:
+            fh = open(filename, 'r')
+            self.config = self._load_config(fh)
+            close(fh)
+        else:
+            self.config = self._load_config()
 
     @property
     def review_mode(self):
@@ -364,6 +390,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--review-mode", dest='review_mode', choices=ReviewBot.REVIEW_CHOICES, help="review behavior")
         parser.add_option("--fallback-user", dest='fallback_user', metavar='USER', help="fallback review user")
         parser.add_option("--fallback-group", dest='fallback_group', metavar='GROUP', help="fallback review group")
+        parser.add_option('-c', '--config', dest='config', metavar='FILE', help='read config file FILE')
 
         return parser
 
@@ -383,6 +410,8 @@ class CommandLineInterface(cmdln.Cmdln):
             osc.conf.config['debug'] = 1
 
         self.checker = self.setup_checker()
+        if self.options.config:
+            self.checker.load_config(self.options.config)
 
         if self.options.review_mode:
             self.checker.review_mode = self.options.review_mode
