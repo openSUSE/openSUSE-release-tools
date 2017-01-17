@@ -48,6 +48,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         self.factory = "openSUSE:Factory"
         self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
         self.lookup = {}
+        self.history_limit = 5
 
     def reset_lookup(self):
         self.lookup = {}
@@ -108,7 +109,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                 return True
 
         self.logger.debug("%s not the latest version, checking history", rev)
-        u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': '5' })
+        u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': self.history_limit })
         try:
             r = osc.core.http_GET(u)
         except urllib2.HTTPError, e:
@@ -182,6 +183,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
         parser.add_option("--factory", metavar="project", help="the openSUSE Factory project")
         parser.add_option("--lookup", metavar="project", help="use lookup file")
+        parser.add_option("--limit", metavar="limit", help="how many revisions back to check. [default: 5]")
 
         return parser
 
@@ -192,6 +194,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.factory = self.options.factory
         if self.options.lookup:
             bot.parse_lookup(self.options.lookup)
+        if self.options.limit:
+            bot.history_limit = self.options.limit
 
         return bot
 
