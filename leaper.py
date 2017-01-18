@@ -89,6 +89,9 @@ class Leaper(ReviewBot.ReviewBot):
         self.packages = {}
 
     def prepare_review(self):
+        # SLE workflow is not concerned with origin.
+        if self.ibs:
+            return
 
         # update lookup information on every run
         self.factory.parse_lookup('openSUSE:Leap:42.3')
