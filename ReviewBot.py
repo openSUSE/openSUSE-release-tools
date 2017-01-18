@@ -63,6 +63,7 @@ class ReviewBot(object):
 
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl
+        self.ibs = apiurl.startswith('https://api.suse.de')
         self.dryrun = dryrun
         self.logger = logger
         self.review_user = user
