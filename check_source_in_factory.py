@@ -35,6 +35,7 @@ import osc.core
 import urllib2
 import yaml
 import ReviewBot
+from itertools import count
 
 
 class FactorySourceChecker(ReviewBot.ReviewBot):
@@ -117,7 +118,10 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             return None
 
         root = ET.parse(r).getroot()
-        for revision in root.findall('revision'):
+        # we need this complicated construct as obs doesn't honor
+        # the 'limit' parameter use above for obs interconnect:
+        # https://github.com/openSUSE/open-build-service/issues/2545
+        for revision, i in zip(reversed(root.findall('revision')), count()):
             node = revision.find('srcmd5')
             if node is None:
                 continue
@@ -125,6 +129,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             if node.text == rev:
                 self.logger.debug("got it, rev %s"%revision.get('rev'))
                 return True
+            if i == self.history_limit:
+                break
 
         self.logger.debug("srcmd5 not found in history either")
         return False
