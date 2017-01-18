@@ -89,11 +89,13 @@ class Leaper(ReviewBot.ReviewBot):
         self.packages = {}
 
     def prepare_review(self):
-        # SLE workflow is not concerned with origin.
+        # update lookup information on every run
+
         if self.ibs:
+            self.factory.parse_lookup('SUSE:SLE-12-SP3:GA')
+            self.lookup_sp3 = self.factory.lookup.copy()
             return
 
-        # update lookup information on every run
         self.factory.parse_lookup('openSUSE:Leap:42.3')
         self.factory.parse_lookup('openSUSE:Leap:42.3:NonFree')
         self.lookup_423 = self.factory.lookup.copy()
@@ -125,6 +127,8 @@ class Leaper(ReviewBot.ReviewBot):
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         package = target_package
 
+        origin = None
+
         if src_srcinfo is None:
             # source package does not exist?
             # handle here to avoid crashing on the next line
@@ -132,28 +136,40 @@ class Leaper(ReviewBot.ReviewBot):
             return False
 
         if self.ibs and target_project.startswith('SUSE:SLE'):
+            if package in self.lookup_sp3:
+                origin = self.lookup_sp3[package]
+
+            origin_same = True
+            if origin:
+                origin_same = True if origin == 'FORK' else src_project.startswith(origin)
+                self.logger.info("expected origin is '%s' (%s)", origin,
+                                 "unchanged" if origin_same else "changed")
+
             # True or None (open request) are acceptable for SLE.
-            if self._check_factory(target_package, src_srcinfo, 'openSUSE.org:openSUSE:Factory') is not False:
-                self.logger.info('found package in openSUSE.org:openSUSE:Factory')
-                return True
+            self.source_in_factory = self._check_factory(package, src_srcinfo, 'openSUSE.org:openSUSE:Factory')
+            if self.source_in_factory is None:
+                self.pending_factory_submission = True
+            if self.source_in_factory is not False:
+                return self.source_in_factory
 
-            if self._check_factory(target_package, src_srcinfo, 'openSUSE.org:openSUSE:Leap:42.2') is not False:
+            if self._check_factory(package, src_srcinfo, 'openSUSE.org:openSUSE:Leap:42.2') is True:
                 self.logger.info('found package in openSUSE.org:openSUSE:Leap:42.2')
-                return True
 
-            devel_project, devel_package = self.get_devel_project('openSUSE.org:openSUSE:Factory', target_package)
-            if devel_project is not None and devel_package is not None:
-                if self._check_factory(devel_package, src_srcinfo, devel_project) is not False:
+            devel_project, devel_package = self.get_devel_project('openSUSE.org:openSUSE:Factory', package)
+            if devel_project is not None:
+                # specifying devel package is optional
+                if devel_package is None:
+                    devel_package = package
+                if self.factory._check_project(devel_project, devel_package, src_srcinfo.verifymd5) == True:
                     self.logger.info('found package in {}/{}'.format(devel_project, devel_package))
                     return True
             else:
-                self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', target_package))
+                self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', package))
 
             self.logger.info('sources not found in Factory, Leap:42.2, or devel project')
 
-            return False
+            return origin_same
 
-        origin = None
         if package in self.lookup_423:
             origin = self.lookup_423[package]
 
@@ -343,10 +359,11 @@ class Leaper(ReviewBot.ReviewBot):
             return False
 
         request_ok = ReviewBot.ReviewBot.check_one_request(self, req)
-        has_correct_maintainer = self.maintbot.check_one_request(req)
+        if not self.ibs:
+            has_correct_maintainer = self.maintbot.check_one_request(req)
+            self.logger.debug("has_correct_maintainer: %s", has_correct_maintainer)
 
         self.logger.debug("review result: %s", request_ok)
-        self.logger.debug("has_correct_maintainer: %s", has_correct_maintainer)
         if self.pending_factory_submission:
             self.logger.info("submission is waiting for a Factory request to complete")
         elif self.source_in_factory:
