@@ -131,6 +131,28 @@ class Leaper(ReviewBot.ReviewBot):
             self.logger.warn("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
             return False
 
+        if self.ibs and target_project.startswith('SUSE:SLE'):
+            # True or None (open request) are acceptable for SLE.
+            if self._check_factory(target_package, src_srcinfo, 'openSUSE.org:openSUSE:Factory') is not False:
+                self.logger.info('found package in openSUSE.org:openSUSE:Factory')
+                return True
+
+            if self._check_factory(target_package, src_srcinfo, 'openSUSE.org:openSUSE:Leap:42.2') is not False:
+                self.logger.info('found package in openSUSE.org:openSUSE:Leap:42.2')
+                return True
+
+            devel_project, devel_package = self.get_devel_project('openSUSE.org:openSUSE:Factory', target_package)
+            if devel_project is not None and devel_package is not None:
+                if self._check_factory(devel_package, src_srcinfo, devel_project) is not False:
+                    self.logger.info('found package in {}/{}'.format(devel_project, devel_package))
+                    return True
+            else:
+                self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', target_package))
+
+            self.logger.info('sources not found in Factory, Leap:42.2, or devel project')
+
+            return False
+
         origin = None
         if package in self.lookup_423:
             origin = self.lookup_423[package]
@@ -279,20 +301,21 @@ class Leaper(ReviewBot.ReviewBot):
 
         return False
 
-    def _check_factory(self, target_package, src_srcinfo):
-            good = self.factory._check_project('openSUSE:Factory', target_package, src_srcinfo.verifymd5)
+    def _check_factory(self, target_package, src_srcinfo, target_project='openSUSE:Factory'):
+            good = self.factory._check_project(target_project, target_package, src_srcinfo.verifymd5)
             if good:
                 return good
-            good = self.factory._check_requests('openSUSE:Factory', target_package, src_srcinfo.verifymd5)
+            good = self.factory._check_requests(target_project, target_package, src_srcinfo.verifymd5)
             if good or good == None:
                 self.logger.debug("found request to Factory")
                 return good
-            good = self.factory._check_project('openSUSE:Factory:NonFree', target_package, src_srcinfo.verifymd5)
+            target_project_nonfree = '{}:NonFree'.format(target_project)
+            good = self.factory._check_project(target_project_nonfree, target_package, src_srcinfo.verifymd5)
             if good:
                 return good
-            good = self.factory._check_requests('openSUSE:Factory:NonFree', target_package, src_srcinfo.verifymd5)
+            good = self.factory._check_requests(target_project_nonfree, target_package, src_srcinfo.verifymd5)
             if good or good == None:
-                self.logger.debug("found request to Factory:NonFree")
+                self.logger.debug('found request to {}'.format(target_project_nonfree))
                 return good
             return False
 
