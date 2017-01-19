@@ -1030,7 +1030,7 @@ class StagingAPI(object):
         prjmeta = ET.parse(http_GET(url)).getroot()
 
         flagxml = prjmeta.find(flag)
-        if not flagxml:  # appending is fine
+        if flagxml is None:
             flagxml = ET.SubElement(prjmeta, flag)
 
         foundone = False
