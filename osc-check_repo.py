@@ -36,9 +36,13 @@ sys.path.append(PLUGINDIR)
 from osclib.conf import Config
 from osclib.checkrepo import CheckRepo
 from osclib.checkrepo import BINCACHE, DOWNLOADS
+from osclib.cache import Cache
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
+from osclib.memoize import save_cache_path
 from osclib.request_finder import RequestFinder
+
+Cache.CACHE_DIR = save_cache_path('opensuse-repo-checker-http')
 
 
 def _check_repo_download(self, request):
