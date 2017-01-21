@@ -1,4 +1,6 @@
 import json
+import os
+import subprocess
 
 from osc import oscerr
 from osc.core import delete_project
@@ -13,7 +15,7 @@ class AdiCommand:
     def __init__(self, api):
         self.api = api
 
-    def check_adi_project(self, project):
+    def check_adi_project(self, project, open_review_by):
         query_project = 'adi:' + project.split(':adi:')[1]
         query = {'format': 'json'}
         url = self.api.makeurl(('project', 'staging_projects', self.api.project,
@@ -33,7 +35,22 @@ class AdiCommand:
             return
         for review in info['missing_reviews']:
             print query_project, "missing review by {} for {}[{}]".format(review['by'], review['package'], review['request'])
-            return
+            # Note that this only works if the desired group is alphabetically
+            # after groups expected to be blocking, Providing a list of blocking
+            # groups makes this a bit cumbersome to use until a workflow
+            # configuration mechanism exists. Since leaper => leap-reviewers,
+            # and factory-auto => opensuse-review-team happen to sort properly
+            # this works for now. If the request is not accepted or denied this
+            # will loop infinitely. Short of keep track per session (or local
+            # ignore list) this seems reasonable to expect manual termination
+            # and run without --open-review-by option.
+            if review['by'] == open_review_by:
+                print('opening for review')
+                devnull = open(os.devnull, 'wb')
+                subprocess.call(['xdg-open', '{}/request/show/{}'.format(self.api.apiurl, review['request'])],
+                                stdout=devnull, stderr=devnull)
+                return True
+            return False
         if self.api.is_user_member_of(self.api.user, 'factory-staging'):
             print query_project, "is ready"
             for req in info['selected_requests']:
@@ -42,10 +59,17 @@ class AdiCommand:
             delete_project(self.api.apiurl, project)
         else:
             print query_project, "ready:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['selected_requests']])
+        return False
 
-    def check_adi_projects(self):
+    def check_adi_projects(self, open_review_by, loop_when_reviewed):
+        reviewed = 0
         for p in self.api.get_adi_projects():
-            self.check_adi_project(p)
+            if self.check_adi_project(p, open_review_by) is True:
+                reviewed += 1
+
+        if loop_when_reviewed and reviewed > 0:
+            print('loop since {} request(s) were reviewed'.format(reviewed))
+            self.check_adi_projects(open_review_by, loop_when_reviewed)
 
     def create_new_adi(self, wanted_requests, by_dp=False, split=False):
         requests = self.api.get_open_requests()
@@ -93,7 +117,7 @@ class AdiCommand:
                 self.api.update_status_comments(name, 'select')
                 print(line + ' (staged in {})'.format(name))
 
-    def perform(self, packages, move=False, by_dp=False, split=False):
+    def perform(self, packages, move=False, by_dp=False, split=False, open_review_by=None, loop_when_reviewed=False):
         """
         Perform the list command
         """
@@ -114,6 +138,6 @@ class AdiCommand:
                 requests.add(request)
             self.create_new_adi(requests, split=split)
         else:
-            self.check_adi_projects() 
+            self.check_adi_projects(open_review_by, loop_when_reviewed)
             if self.api.is_user_member_of(self.api.user, 'factory-staging'):
                 self.create_new_adi((), by_dp=by_dp, split=split)

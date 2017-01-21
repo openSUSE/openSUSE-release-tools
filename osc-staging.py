@@ -103,6 +103,8 @@ def _full_project_name(self, project):
 @cmdln.option('--filter-by', action='append', help='xpath by which to filter requests')
 @cmdln.option('--group-by', action='append', help='xpath by which to group requests')
 @cmdln.option('-i', '--interactive', action='store_true', help='interactively modify selection proposal')
+@cmdln.option('--open-review-by', metavar='GROUP', help='open request (xdg-open) when relevant review matches')
+@cmdln.option('--loop-when-reviewed', action='store_true', help='loop when a request was opened for review')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -185,6 +187,7 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging accept [--force] [LETTER...]
+        osc staging adi [--by-develproject] [--open-review-by GROUP [--loop-when-reviewed]]
         osc staging check [--old] REPO
         osc staging cleanup_rings
         osc staging freeze [--no-boostrap] PROJECT...
@@ -397,6 +400,6 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'list':
             ListCommand(api).perform(args[1:], supersede=opts.supersede)
         elif cmd == 'adi':
-            AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split)
+            AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split, open_review_by=opts.open_review_by, loop_when_reviewed=opts.loop_when_reviewed)
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:])
