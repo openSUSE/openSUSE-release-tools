@@ -92,13 +92,14 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def _package_get_upstream_projects(self, package):
         """ return list of projects where the specified package is supposed to come
         from. Either by lookup table or self.factory """
+        projects = self.factory
         if self.lookup and package in self.lookup:
-            return self.lookup[package]
+            projects = self.lookup[package]
 
-        if type(self.factory) is str:
-            return [self.factory]
+        if isinstance(projects, basestring):
+            projects = [projects]
 
-        return self.factory
+        return projects
 
     def _check_project(self, project, package, rev):
         """check if factory sources contain the package and revision. check head and history"""
