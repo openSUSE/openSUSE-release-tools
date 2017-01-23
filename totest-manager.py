@@ -409,7 +409,7 @@ class ToTestBase(object):
 
     def known_failures_from_dashboard(self, project):
         known_failures = []
-        if self.project == "Factory:PowerPC":
+        if self.project == "Factory:PowerPC" or self.project == "Factory:zSystems":
             project = "Factory"
         else:
             project = self.project
@@ -477,6 +477,29 @@ class ToTestFactoryPowerPC(ToTestBase):
     def jobs_num(self):
         return 4
 
+class ToTestFactoryzSystems(ToTestBase):
+    main_products = ['_product:openSUSE-dvd5-dvd-s390x',
+                     '_product:openSUSE-cd-mini-s390x']
+
+    ftp_products = [ '_product:openSUSE-ftp-ftp-s390x' ]
+
+    livecd_products = []
+
+    def __init__(self, *args, **kwargs):
+        ToTestBase.__init__(self, *args, **kwargs)
+
+    def openqa_group(self):
+        return 'openSUSE Tumbleweed zSystems'
+
+    def arch(self):
+        return 's390x'
+
+    def iso_prefix(self):
+        return 'Tumbleweed'
+
+    def jobs_num(self):
+        return 4
+
 class ToTestFactoryARM(ToTestFactory):
     main_products = [ '_product:openSUSE-cd-mini-aarch64',
                       '_product:openSUSE-dvd5-dvd-aarch64' ]
@@ -520,6 +543,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'Factory': ToTestFactory,
             'Factory:PowerPC': ToTestFactoryPowerPC,
             'Factory:ARM': ToTestFactoryARM,
+            'Factory:zSystems': ToTestFactoryzSystems,
             '13.2': ToTest132,
         }
 
