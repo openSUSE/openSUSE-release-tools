@@ -24,6 +24,7 @@ class FreezeCommand(object):
     def __init__(self, api):
         self.api = api
         self.projectlinks = []
+        self.aggrpkgs = ['rpmlint-mini-AGGR', 'bash-completion-AGGR']
 
     def set_links(self):
         url = self.api.makeurl(['source', self.prj, '_meta'])
@@ -56,7 +57,7 @@ class FreezeCommand(object):
         l = list()
         for e in root.findall('entry'):
             name = e.get('name')
-            if name in ['rpmlint-mini-AGGR']:
+            if name in self.aggrpkgs:
                 continue
             l.append(name)
         l.sort()
@@ -262,7 +263,7 @@ class FreezeCommand(object):
                     raise Exception("{}/{} is not a link but we expected one".format(self.api.project, package))
                 ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
                 return package
-        if package in ['rpmlint-mini-AGGR']:
+        if package in self.aggrpkgs:
             return package  # we should not freeze aggregates
         ET.SubElement(flink, 'package', {'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
         return package
