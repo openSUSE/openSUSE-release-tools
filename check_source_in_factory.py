@@ -69,29 +69,39 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             # handle here to avoid crashing on the next line
             self.logger.info("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
             return False
-        project = self._package_get_upstream_project(target_package)
-        if project is None:
-            self.logger.error("no upstream project found for {}, can't check".format(package))
+        projects = self._package_get_upstream_projects(target_package)
+        if projects is None:
+            self.logger.error("no upstream project found for {}, can't check".format(target_package))
             return False
 
-        good = self._check_project(project, target_package, src_srcinfo.verifymd5)
-        if good:
-            self.logger.info("{} is in {}".format(target_package, project))
-            return good
+        self.review_messages['declined'] = 'the package needs to be accepted in {} first'.format(' or '.join(projects))
+        for project in projects:
+            self.logger.info("Checking in project %s" % project)
+            good = self._check_project(project, target_package, src_srcinfo.verifymd5)
+            if good:
+                self.logger.info("{} is in {}".format(target_package, project))
+                return good
 
-        good = self._check_requests(project, target_package, src_srcinfo.verifymd5)
-        if good:
-            self.logger.info("{} already reviewed for {}".format(target_package, project))
+            good = self._check_requests(project, target_package, src_srcinfo.verifymd5)
+            if good:
+                self.logger.info("{} already reviewed for {}".format(target_package, project))
+
+        if not good:
+            self.logger.info('{} failed source submission check'.format(target_package))
 
         return good
 
-    def _package_get_upstream_project(self, package):
-        """ return project where the specified pacakge is supposed to come
+    def _package_get_upstream_projects(self, package):
+        """ return list of projects where the specified package is supposed to come
         from. Either by lookup table or self.factory """
+        projects = self.factory
         if self.lookup and package in self.lookup:
-            return self.lookup[package]
+            projects = self.lookup[package]
 
-        return self.factory
+        if isinstance(projects, basestring):
+            projects = [projects]
+
+        return projects
 
     def _check_project(self, project, package, rev):
         """check if factory sources contain the package and revision. check head and history"""
@@ -196,7 +206,9 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
-        parser.add_option("--factory", metavar="project", help="the openSUSE Factory project")
+        parser.add_option("--factory", metavar="project", action="append",
+                          help=("Project to check source against. Use multiple times to check more than one project. "
+                                "[default: openSUSE:Factory]"))
         parser.add_option("--lookup", metavar="project", help="use lookup file")
         parser.add_option("--limit", metavar="limit", help="how many revisions back to check. [default: 5]")
 
