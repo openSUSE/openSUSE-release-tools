@@ -16,6 +16,7 @@ import sys
 import urllib2
 import logging
 import signal
+import time
 
 from xml.etree import cElementTree as ET
 
@@ -600,15 +601,19 @@ class CommandlineInterface(cmdln.Cmdln):
                 logger.error(e)
 
             if opts.interval:
-                logger.info("sleeping %d minutes. Press enter to check now ..."%opts.interval)
-                signal.alarm(opts.interval*60)
-                try:
-                    raw_input()
-                except ExTimeout:
-                    pass
-                signal.alarm(0)
-                logger.info("recheck at %s"%datetime.datetime.now().isoformat())
-                continue
+                if os.isatty(0):
+                    logger.info("sleeping %d minutes. Press enter to check now ..."%opts.interval)
+                    signal.alarm(opts.interval*60)
+                    try:
+                        raw_input()
+                    except ExTimeout:
+                        pass
+                    signal.alarm(0)
+                    logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                    continue
+                else:
+                    logger.info("sleeping %d minutes."%opts.interval)
+                    time.sleep(opts.interval*60)
             break
 
     def do_release(self, subcmd, opts, project = 'Factory'):
