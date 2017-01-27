@@ -13,3 +13,4 @@ server:messaging
 system:snappy
 X11:GNUstep
 FATE
+X11:Solus
