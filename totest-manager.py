@@ -610,10 +610,10 @@ class CommandlineInterface(cmdln.Cmdln):
                         pass
                     signal.alarm(0)
                     logger.info("recheck at %s"%datetime.datetime.now().isoformat())
-                    continue
                 else:
                     logger.info("sleeping %d minutes."%opts.interval)
                     time.sleep(opts.interval*60)
+                continue
             break
 
     def do_release(self, subcmd, opts, project = 'Factory'):
