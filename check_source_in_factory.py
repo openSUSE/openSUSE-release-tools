@@ -195,7 +195,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                         self.logger.error("sr#%s in state %s not expected", req.reqid, req.state.name)
                         return None
                 else:
-                    self.logger.info("sr#%s has different sources", req.reqid)
+                    self.logger.info("sr#%s to %s has different sources", req.reqid, project)
         return False
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):

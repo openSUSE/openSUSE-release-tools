@@ -145,28 +145,40 @@ class Leaper(ReviewBot.ReviewBot):
                 self.logger.info("expected origin is '%s' (%s)", origin,
                                  "unchanged" if origin_same else "changed")
 
+            prj = 'openSUSE.org:openSUSE:Factory'
             # True or None (open request) are acceptable for SLE.
-            self.source_in_factory = self._check_factory(package, src_srcinfo, 'openSUSE.org:openSUSE:Factory')
+            self.source_in_factory = self._check_factory(package, src_srcinfo, prj)
             if self.source_in_factory is None:
                 self.pending_factory_submission = True
             if self.source_in_factory is not False:
                 return self.source_in_factory
 
-            if self._check_factory(package, src_srcinfo, 'openSUSE.org:openSUSE:Leap:42.2') is True:
-                self.logger.info('found package in openSUSE.org:openSUSE:Leap:42.2')
+            # got false. could mean package doesn't exist or no match
+            if self.is_package_in_project(prj, package):
+                self.logger.info('different sources in {}/{}'.format(prj, package))
+
+            prj = 'openSUSE.org:openSUSE:Leap:42.2'
+            if self.is_package_in_project(prj, package):
+                if self._check_factory(package, src_srcinfo, prj) is True:
+                    self.logger.info('found source match in {}'.format(prj))
+                else:
+                    self.logger.info('different sources in {}/{}'.format(prj, package))
 
             devel_project, devel_package = self.get_devel_project('openSUSE.org:openSUSE:Factory', package)
             if devel_project is not None:
                 # specifying devel package is optional
                 if devel_package is None:
                     devel_package = package
-                if self.factory._check_project(devel_project, devel_package, src_srcinfo.verifymd5) == True:
-                    self.logger.info('found package in {}/{}'.format(devel_project, devel_package))
-                    return True
+                if self.is_package_in_project(devel_project, devel_package):
+                    if self.factory._check_project(devel_project, devel_package, src_srcinfo.verifymd5) == True:
+                        self.logger.info('matching sources in {}/{}'.format(devel_project, devel_package))
+                        return True
+                    else:
+                        self.logger.info('different sources in {}/{}'.format(devel_project, devel_package))
             else:
                 self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', package))
 
-            self.logger.info('sources not found in Factory, Leap:42.2, or devel project')
+            self.logger.info('no matching sources in Factory, Leap:42.2, nor devel project')
 
             return origin_same
 
