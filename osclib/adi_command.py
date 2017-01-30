@@ -6,6 +6,7 @@ from osc.core import show_package_meta
 
 from osclib.select_command import SelectCommand
 from osclib.request_finder import RequestFinder
+from osclib.request_splitter import RequestSplitter
 from xml.etree import cElementTree as ET
 
 class AdiCommand:
@@ -47,87 +48,50 @@ class AdiCommand:
             self.check_adi_project(p)
 
     def create_new_adi(self, wanted_requests, by_dp=False, split=False):
-        all_requests = self.api.get_open_requests()
-
-        non_ring_packages = []
-        non_ring_requests = dict()
-        non_ring_requests_ignored = []
-
-        for request in all_requests:
-            # Consolidate all data from request
-            request_id = int(request.get('id'))
-            if len(wanted_requests) and request_id not in wanted_requests:
-                continue
-            action = request.findall('action')
-            if not action:
-                msg = 'Request {} has no action'.format(request_id)
-                raise oscerr.WrongArgs(msg)
-            # we care only about first action
-            action = action[0]
-
-            # Where are we targeting the package
-            if len(wanted_requests):
-                source_project = 'wanted'
+        requests = self.api.get_open_requests()
+        splitter = RequestSplitter(self.api, requests, in_ring=False)
+        splitter.filter_add('./action[@type="submit"]')
+        if len(wanted_requests):
+            splitter.filter_add_requests(wanted_requests)
+            # wanted_requests forces all requests into a single group.
+        else:
+            if split:
+                splitter.group_by('./@id')
+            elif by_dp:
+                splitter.group_by('./action/source/@devel_project')
             else:
-                source = action.find('source')
-                if source is not None:
-                    source_project = source.get('project')
-                else:
-                    source_project = 'none'
+                splitter.group_by('./action/source/@project')
+        splitter.split()
 
-            # do not process the rest request type than submit
-            if action.get('type') != 'submit':
-                continue
+        for group in sorted(splitter.grouped.keys()):
+            print(group if group != '' else 'wanted')
 
-            target_package = action.find('target').get('package')
-            source_package = action.find('source').get('package')
+            name = None
+            for request in splitter.grouped[group]['requests']:
+                request_id = int(request.get('id'))
+                target_package = request.find('./action/target').get('package')
+                line = '- sr#{}: {:<30}'.format(request_id, target_package)
 
-            if not self.api.ring_packages.get(target_package):
+                if request_id in self.requests_ignored:
+                    print(line + '\n    ignored: ' + self.requests_ignored[request_id])
+                    continue
+
                 # Auto-superseding request in adi command
                 if self.api.update_superseded_request(request):
+                    print(line + ' (superseded)')
                     continue
 
-                if not len(wanted_requests) and request_id in self.requests_ignored:
-                    non_ring_requests_ignored.append(request_id)
-                    continue
+                # Only create staging projec the first time a non superseded
+                # request is processed from a particular group.
+                if name is None:
+                    name = self.api.create_adi_project(None)
 
-                non_ring_packages.append(target_package)
-                if split:
-                    # request_id pretended to be index of non_ring_requests
-                    non_ring_requests[request_id] = [request_id]
-                else:
-                    if by_dp:
-                        devel_project = self.api.get_devel_project(source_project, source_package)
-                        # try target pacakge in Factory
-                        # this is a bit against Leap development in case submissions is from Update,
-                        # or any other project than Factory
-                        if devel_project is None and self.api.project.startswith('openSUSE:'):
-                            devel_project = self.api.get_devel_project('openSUSE:Factory', target_package)
-                        if devel_project is not None:
-                            source_project = devel_project
-
-                    if source_project not in non_ring_requests:
-                        non_ring_requests[source_project] = []
-                    non_ring_requests[source_project].append(request_id)
-
-        if len(non_ring_requests_ignored):
-            print "Not in a ring, but ignored:"
-            for request_id in non_ring_requests_ignored:
-                print "- sr#{}: {}".format(request_id, requests_ignored[request_id])
-        if len(non_ring_packages):
-            print "Not in a ring:", ' '.join(sorted(non_ring_packages))
-        else:
-            return
-
-        for source_project, requests in non_ring_requests.items():
-            name = self.api.create_adi_project(None)
-
-            for request in requests:
-                if not self.api.rq_to_prj(request, name):
+                if not self.api.rq_to_prj(request_id, name):
                     return False
 
-            # Notify everybody about the changes
-            self.api.update_status_comments(name, 'select')
+                # Notify everybody about the changes.
+                self.api.update_status_comments(name, 'select')
+                print(line + ' (staged in {})'.format(name))
 
     def perform(self, packages, move=False, by_dp=False, split=False):
         """

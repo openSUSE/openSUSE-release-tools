@@ -19,7 +19,7 @@ import logging
 import urllib2
 import time
 import re
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import yaml
 
@@ -314,6 +314,34 @@ class StagingAPI(object):
             projects.append(val.get('name'))
         return projects
 
+    def extract_staging_short(self, p):
+        if not ':' in p:
+            return p
+        prefix = len(self.cstaging) + 1
+        if p.endswith(':DVD'):
+            p = p[:-4]
+        return p[prefix:]
+
+    def prj_from_short(self, name):
+        if name.startswith(self.cstaging):
+            return name
+        return '{}:{}'.format(self.cstaging, name)
+
+    def get_staging_projects_short(self, adi=False):
+        """
+        Get list of staging project by short-hand names.
+        :param adi: True for only adi stagings, False for only non-adi stagings,
+                    and None for both.
+        """
+        prefix = len(self.cstaging) + 1
+        projects = []
+        for project in self.get_staging_projects():
+            if project.endswith(':DVD') or \
+               (adi is not None and self.is_adi_project(project) != adi):
+                continue
+            projects.append(self.extract_staging_short(project))
+        return projects
+
     def is_adi_project(self, p):
         return ':adi:' in p
 
@@ -513,6 +541,11 @@ class StagingAPI(object):
             #     self.accept_non_ring_request(rq)
             self.update_superseded_request(rq, packages)
 
+    def get_prj_meta(self, project):
+        url = make_meta_url('prj', project, self.apiurl)
+        f = http_GET(url)
+        return ET.parse(f).getroot()
+
     @memoize(ttl=60, session=True, add_invalidate=True)
     def get_prj_pseudometa(self, project):
         """
@@ -521,9 +554,7 @@ class StagingAPI(object):
         :return structured object with metadata
         """
 
-        url = make_meta_url('prj', project, self.apiurl)
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
+        root = self.get_prj_meta(project)
         description = root.find('description')
         # If YAML parsing fails, load default
         # FIXME: Better handling of errors
@@ -999,7 +1030,7 @@ class StagingAPI(object):
         prjmeta = ET.parse(http_GET(url)).getroot()
 
         flagxml = prjmeta.find(flag)
-        if not flagxml:  # appending is fine
+        if flagxml is None:
             flagxml = ET.SubElement(prjmeta, flag)
 
         foundone = False
