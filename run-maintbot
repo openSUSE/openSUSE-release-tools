@@ -4,7 +4,14 @@ while date; do
 	echo "maintbot ..."
 	sudo -u "maintbot" ./check_maintenance_incidents.py "$@" review
 	echo "factory-source ..."
-	sudo -u "factory-source" ./check_source_in_factory.py "$@" review
+	sudo -u "factory-source" ./check_source_in_factory.py \
+		--factory openSUSE:Factory \
+		--factory openSUSE:Leap:42.2:Update \
+		--factory openSUSE:Leap:42.2 \
+		--factory openSUSE:Leap:42.1:Update \
+		--factory openSUSE:Leap:42.1 \
+		--review-mode=fallback-onfail --fallback-group=backports-reviewers \
+			"$@" review
 	read -t "$interval" -p "done. sleeping. press enter to check immediately"
 	[ "$?" -eq 0 ] || echo
 	[ "$REPLY" != 'q' ] || break
