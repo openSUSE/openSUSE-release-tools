@@ -148,19 +148,24 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def _check_requests(self, project, package, rev):
         self.logger.debug("checking requests")
         prjprefix = ''
+        apiurl = self.apiurl
+        sr = 'sr'
         try:
-            apiurl = self.apiurl
             if self.config.project_namespace_api_map:
-                for prefix, url in self.config.project_namespace_api_map:
+                for prefix, url, srprefix in self.config.project_namespace_api_map:
                     if project.startswith(prefix):
                         apiurl = url
                         prjprefix = prefix
                         project = project[len(prefix):]
+                        sr = srprefix
                         break
             requests = osc.core.get_request_list(apiurl, project, package, None, ['new', 'review'], 'submit')
         except (urllib2.HTTPError, urllib2.URLError):
             self.logger.error("caught exception while checking %s/%s", project, package)
             return None
+
+        def srref(reqid):
+            return '#'.join((sr, reqid))
 
         for req in requests:
             for a in req.actions:
@@ -168,34 +173,34 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                 self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, prjprefix + a.src_project, a.src_package, si.verifymd5))
                 if si.verifymd5 == rev:
                     if req.state.name == 'new':
-                        self.logger.info("sr#%s ok", req.reqid)
+                        self.logger.info("%s ok", srref(req.reqid))
                         return True
                     elif req.state.name == 'review':
-                        self.logger.debug("sr#%s still in review", req.reqid)
+                        self.logger.debug("%s still in review", srref(req.reqid))
                         if not req.reviews:
-                            self.logger.error("sr#%s in state review but no reviews?", req.reqid)
+                            self.logger.error("%s in state review but no reviews?", srref(req.reqid))
                             return False
                         for r in req.reviews:
                             if r.by_project and r.state == 'new' and r.by_project.startswith('openSUSE:Factory:Staging:'):
-                                self.logger.info("sr#%s review by %s ok", req.reqid, r.by_project)
+                                self.logger.info("%s review by %s ok", srref(req.reqid), r.by_project)
                                 continue
                             if r.state != 'accepted':
                                 if r.by_user:
-                                    self.logger.info("sr#%s waiting for review by %s", req.reqid, r.by_user)
+                                    self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_user)
                                 elif r.by_group:
-                                    self.logger.info("sr#%s waiting for review by %s", req.reqid, r.by_group)
+                                    self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_group)
                                 elif r.by_project:
                                     if r.by_package:
-                                        self.logger.info("sr#%s waiting for review by %s/%s", req.reqid, r.by_project, r.by_package)
+                                        self.logger.info("%s waiting for review by %s/%s", srref(req.reqid), r.by_project, r.by_package)
                                     else:
-                                        self.logger.info("sr#%s waiting for review by %s", req.reqid, r.by_project)
+                                        self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_project)
                                 return None
                         return True
                     else:
-                        self.logger.error("sr#%s in state %s not expected", req.reqid, req.state.name)
+                        self.logger.error("%s in state %s not expected", srref(req.reqid), req.state.name)
                         return None
                 else:
-                    self.logger.info("sr#%s to %s has different sources", req.reqid, project)
+                    self.logger.info("%s to %s has different sources", srref(req.reqid), project)
         return False
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):

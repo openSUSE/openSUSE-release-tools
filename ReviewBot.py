@@ -53,11 +53,11 @@ class ReviewBot(object):
 
     # map of default config entries
     config_defaults = {
-            # list of tuples (prefix, apiurl)
+            # list of tuples (prefix, apiurl, submitrequestprefix)
             # set this if the obs instance maps another instance into it's
             # namespace
             'project_namespace_api_map' : [
-                ('openSUSE.org:', 'https://api.opensuse.org'),
+                ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
                 ],
             }
 
