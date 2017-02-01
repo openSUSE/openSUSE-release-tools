@@ -67,7 +67,8 @@ class RequestSplitter(object):
 
     def suppliment(self, request, target_package):
         """ Provide additional information for grouping """
-        devel = self.devel_project_get(request, target_package)
+        target_project = request.find('./action/target').get('project')
+        devel = self.devel_project_get(target_project, target_package)
         if devel:
             request.find('./action/source').set('devel_project', devel)
 
@@ -89,12 +90,10 @@ class RequestSplitter(object):
                 return ring[len(self.api.crings)+1:]
         return None
 
-    def devel_project_get(self, request, target_project):
-        # Preserve logic from adi and note that not Leap development friendly.
-        source = request.find('./action/source')
-        devel = self.api.get_devel_project(source.get('project'), source.get('package'))
+    def devel_project_get(self, target_project, target_package):
+        devel = self.api.get_devel_project(target_project, target_package)
         if devel is None and self.api.project.startswith('openSUSE:'):
-            devel = self.api.get_devel_project('openSUSE:Factory', target_project)
+            devel = self.api.get_devel_project('openSUSE:Factory', target_package)
         return devel
 
     def filter_check(self, request):
