@@ -122,6 +122,18 @@ class Leaper(ReviewBot.ReviewBot):
             self.packages[project] = self.get_source_packages(project)
         return True if package in self.packages[project] else False
 
+    def rdiff_link(self, src_project, src_package, src_rev, target_project, target_package = None):
+        if target_package is None:
+            target_package = src_package
+
+        return '[%(target_project)s/%(target_package)s](/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s)'%{
+                'src_project': src_project,
+                'src_package': src_package,
+                'src_rev': src_rev,
+                'target_project': target_project,
+                'target_package': target_package,
+                }
+
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
@@ -155,14 +167,14 @@ class Leaper(ReviewBot.ReviewBot):
 
             # got false. could mean package doesn't exist or no match
             if self.is_package_in_project(prj, package):
-                self.logger.info('different sources in {}/{}'.format(prj, package))
+                self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
 
             prj = 'openSUSE.org:openSUSE:Leap:42.2'
             if self.is_package_in_project(prj, package):
                 if self._check_factory(package, src_srcinfo, prj) is True:
                     self.logger.info('found source match in {}'.format(prj))
                 else:
-                    self.logger.info('different sources in {}/{}'.format(prj, package))
+                    self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
 
             devel_project, devel_package = self.get_devel_project('openSUSE.org:openSUSE:Factory', package)
             if devel_project is not None:
@@ -174,7 +186,7 @@ class Leaper(ReviewBot.ReviewBot):
                         self.logger.info('matching sources in {}/{}'.format(devel_project, devel_package))
                         return True
                     else:
-                        self.logger.info('different sources in {}/{}'.format(devel_project, devel_package))
+                        self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, devel_project, devel_package)))
             else:
                 self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', package))
 
