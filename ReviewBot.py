@@ -320,8 +320,9 @@ class ReviewBot(object):
             node = ET.fromstring(''.join(m)).find('devel')
             if node is not None:
                 return node.get('project'), node.get('package', None)
-        except urllib2.HTTPError:
-            pass
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                pass
         return None, None
 
     def can_accept_review(self, request_id):
