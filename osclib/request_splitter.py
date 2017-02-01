@@ -70,7 +70,7 @@ class RequestSplitter(object):
         target_project = request.find('./action/target').get('project')
         devel = self.devel_project_get(target_project, target_package)
         if devel:
-            request.find('./action/source').set('devel_project', devel)
+            request.find('./action/target').set('devel_project', devel)
 
         ring = self.ring_get(target_package)
         if ring:

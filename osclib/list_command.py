@@ -38,7 +38,7 @@ class ListCommand:
         splitter.reset()
 
         splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
-        splitter.group_by('./action/source/@devel_project')
+        splitter.group_by('./action/target/@devel_project')
         splitter.split()
 
         is_factory = self.api.project != 'openSUSE:Factory'

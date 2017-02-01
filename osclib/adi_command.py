@@ -58,7 +58,7 @@ class AdiCommand:
             if split:
                 splitter.group_by('./@id')
             elif by_dp:
-                splitter.group_by('./action/source/@devel_project')
+                splitter.group_by('./action/target/@devel_project')
             else:
                 splitter.group_by('./action/source/@project')
         splitter.split()
