@@ -34,20 +34,19 @@ class RequestSplitter(object):
     def filter_only(self):
         ret = []
         for request in self.requests:
-            target_package = request.find('./action/target').get('package')
-            self.suppliment(request, target_package)
+            self.suppliment(request)
             if self.filter_check(request):
                 ret.append(request)
         return ret
 
     def split(self):
         for request in self.requests:
-            target_package = request.find('./action/target').get('package')
-            self.suppliment(request, target_package)
+            self.suppliment(request)
 
             if not self.filter_check(request):
                 continue
 
+            target_package = request.find('./action/target').get('package')
             if self.in_ring != (not self.api.ring_packages.get(target_package)):
                 # Request is of desired ring type.
                 key = self.group_key_build(request)
@@ -65,16 +64,18 @@ class RequestSplitter(object):
             else:
                 self.other.append(request)
 
-    def suppliment(self, request, target_package):
+    def suppliment(self, request):
         """ Provide additional information for grouping """
-        target_project = request.find('./action/target').get('project')
+        target = request.find('./action/target')
+        target_project = target.get('project')
+        target_package = target.get('package')
         devel = self.devel_project_get(target_project, target_package)
         if devel:
-            request.find('./action/target').set('devel_project', devel)
+            target.set('devel_project', devel)
 
         ring = self.ring_get(target_package)
         if ring:
-            request.find('./action/target').set('ring', ring)
+            target.set('ring', ring)
 
         request_id = int(request.get('id'))
         if request_id in self.requests_ignored:
