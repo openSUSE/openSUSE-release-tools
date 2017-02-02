@@ -50,6 +50,7 @@ for my $pdir ( glob("$dir/*") ) {
             || $name eq "rpm-python"
             || $name eq "popt"
             || $name eq "rpmlint"
+            || $name eq "rpmlint-mini"
             || $name eq "rpmlint-Factory" )
         {
             print "ignoring - whitelist\n";
