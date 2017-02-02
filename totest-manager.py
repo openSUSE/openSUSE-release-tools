@@ -86,12 +86,18 @@ class ToTestBase(object):
         return None
 
 
-    def ftp_build_version(self, tree):
-        for binary in self.binaries_of_product('openSUSE:%s' % self.project, tree):
+    def ftp_build_version(self, project, tree):
+        for binary in self.binaries_of_product('openSUSE:%s' % project, tree):
             result = re.match(r'openSUSE.*Build(.*)-Media1.report', binary)
+            if result:
+                return result.group(1)
+        raise Exception("can't find %s version" % self.project)
 
-        if result:
-            return result.group(1)
+    def iso_build_version(self, project, tree):
+        for binary in self.binaries_of_product('openSUSE:%s' % project, tree):
+            result = re.match(r'openSUSE.*Build(.*)-Media.iso', binary)
+            if result:
+                return result.group(1)
         raise Exception("can't find %s version" % self.project)
 
     def release_version(self):
@@ -242,7 +248,7 @@ class ToTestBase(object):
         if package.startswith('_product:openSUSE-ftp-ftp-'):
             return None
 
-        if package == '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64':
+        if package.startswith('_product:openSUSE-Addon-NonOss-ftp-ftp'):
             return None
 
         raise Exception('No maxsize for {}'.format(package))
@@ -280,7 +286,7 @@ class ToTestBase(object):
 
         return True
 
-    def factory_snapshottable(self):
+    def is_snapshottable(self):
         """Check various conditions required for factory to be snapshotable
 
         """
@@ -323,7 +329,8 @@ class ToTestBase(object):
         else:
             self.api.retried_POST(url)
 
-    def update_totest(self, snapshot):
+    def update_totest(self, snapshot = None):
+        release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
         if not self.dryrun:
             self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
@@ -332,10 +339,10 @@ class ToTestBase(object):
             self.release_package('openSUSE:%s' % self.project, product)
 
         for cd in self.livecd_products:
-            self.release_package('openSUSE:%s:Live' % self.project, cd, set_release='Snapshot%s' % snapshot)
+            self.release_package('openSUSE:%s:Live' % self.project, cd, set_release=release)
 
         for cd in self.main_products:
-            self.release_package('openSUSE:%s' % self.project, cd, set_release='Snapshot%s' % snapshot)
+            self.release_package('openSUSE:%s' % self.project, cd, set_release=release)
 
     def publish_factory_totest(self):
         logger.info('Publish ToTest')
@@ -369,7 +376,7 @@ class ToTestBase(object):
         logger.debug('new_snapshot %s', new_snapshot)
         logger.debug('current_qa_version %s', current_qa_version)
 
-        snapshotable = self.factory_snapshottable()
+        snapshotable = self.is_snapshottable()
         logger.debug("snapshotable: %s", snapshotable)
         can_release = (current_result != QA_INPROGRESS and snapshotable)
 
@@ -521,20 +528,46 @@ class ToTestFactoryARM(ToTestFactory):
     def jobs_num(self):
         return 2
 
-class ToTest132(ToTestBase):
+class ToTest423(ToTestBase):
     main_products = [
-        '_product:openSUSE-dvd5-dvd-i586',
-        '_product:openSUSE-dvd5-dvd-x86_64',
-        '_product:openSUSE-cd-mini-i586',
         '_product:openSUSE-cd-mini-x86_64',
-        '_product:openSUSE-dvd5-dvd-promo-i586',
-        '_product:openSUSE-dvd5-dvd-promo-x86_64',
-        '_product:openSUSE-dvd9-dvd-biarch-i586_x86_64'
+        '_product:openSUSE-dvd5-dvd-x86_64',
     ]
 
-    def current_version(self):
-        return self.ftp_tree_version('_product:openSUSE-ftp-ftp-i586_x86_64')
+    ftp_products = ['_product:openSUSE-ftp-ftp-x86_64',
+                    '_product:openSUSE-Addon-NonOss-ftp-ftp-x86_64']
 
+    livecd_products = []
+
+    def openqa_group(self):
+        return 'openSUSE Leap 42.3'
+
+    def current_version(self):
+        return self.iso_build_version(self.project, self.main_products[0])
+
+    def get_current_snapshot(self):
+        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
+
+    def is_snapshottable(self):
+        ret = super(ToTest423, self).is_snapshottable()
+        if ret:
+            # make sure all medias have the same build number
+            builds = set()
+            for p in self.ftp_products:
+                if 'Addon-NonOss' in p:
+                    # XXX: don't care about nonoss atm.
+                    continue
+                builds.add(self.ftp_build_version(self.project, p))
+            for p in self.main_products + self.livecd_products:
+                builds.add(self.iso_build_version(self.project, p))
+
+            ret = (len(builds) == 1)
+
+        return ret
+
+    def update_totest(self, snapshot):
+        # omit snapshot, we don't want to rename on release
+        super(ToTest423, self).update_totest()
 
 class CommandlineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
@@ -545,7 +578,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'Factory:PowerPC': ToTestFactoryPowerPC,
             'Factory:ARM': ToTestFactoryARM,
             'Factory:zSystems': ToTestFactoryzSystems,
-            '13.2': ToTest132,
+            'Leap:42.3': ToTest423,
         }
 
     def get_optparser(self):
