@@ -210,7 +210,7 @@ class AcceptCommand(object):
 
         service = {'cmd': 'runservice'}
 
-        ports_prjs = ['PowerPC', 'ARM' ]
+        ports_prjs = ['PowerPC', 'ARM', 'zSystems' ]
 
         for ports in ports_prjs:
             project = self.api.project + ':' + ports
