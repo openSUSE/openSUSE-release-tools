@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import re
+import urllib2
 
 from osc import oscerr
 from osc.core import change_review_state
@@ -34,11 +35,22 @@ class RepairCommand(object):
             raise oscerr.WrongArgs('Request {} is not for staging project'.format(reqid))
 
         staging_project = reviews[0]
-        data = self.api.get_prj_pseudometa(staging_project)
-        for request in data['requests']:
-            if request['id'] == reqid:
-                print('Request "{}" had the good setup in "{}"'.format(reqid, staging_project))
-                return
+        try:
+            data = self.api.get_prj_pseudometa(staging_project)
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                data = None
+
+        # Pre-check and pre-setup
+        if data:
+            for request in data['requests']:
+                if request['id'] == reqid:
+                    print('Request "{}" had the good setup in "{}"'.format(reqid, staging_project))
+                    return
+        else:
+            # this situation should only happens on adi staging
+            print('Project is not exist, re-creating "{}"'.format(staging_project))
+            name = self.api.create_adi_project(staging_project)
 
         # a bad request setup found
         print('Repairing "{}"'.format(reqid))
