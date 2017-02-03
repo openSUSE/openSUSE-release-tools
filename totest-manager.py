@@ -170,13 +170,14 @@ class ToTestBase(object):
                 jobname = job['name']
                 # Record machines we have tests for
                 if jobname in self.known_failures:
+                    logger.debug("known failure %s ignored", jobname)
                     self.known_failures.remove(jobname)
                     continue
                 number_of_fails += 1
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
                 failedmodule = self.find_failed_module(job['modules'])
                 url = 'https://openqa.opensuse.org/tests/%s' % job['id']
-                print (jobname, url, failedmodule, job['retry_avbl'])
+                logger.info("job %s failed %s, see %s", jobname, 'early' if failedmodule is None else failedmodule, url)
                 # if number_of_fails < 3: continue
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
                 continue
