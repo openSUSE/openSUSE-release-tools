@@ -167,7 +167,7 @@ class ToTestBase(object):
             machines.append(job['settings']['MACHINE'])
             # print json.dumps(job, sort_keys=True, indent=4)
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted'):
-                jobname = job['name'] + '@' + job['settings']['MACHINE']
+                jobname = job['name']
                 # Record machines we have tests for
                 if jobname in self.known_failures:
                     self.known_failures.remove(jobname)
