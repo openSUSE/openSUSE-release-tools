@@ -144,18 +144,18 @@ def do_staging(self, subcmd, opts, *args):
         request node as returned by OBS. Several values will supplement the
         normal request node.
 
-        - ./action/source/@devel_project: the devel project for the package
+        - ./action/target/@devel_project: the devel project for the package
         - ./action/target/@ring: the ring to which the package belongs
         - ./@ignored: either false or the provided message
 
         Some useful examples:
 
         --filter-by './action/target[starts-with(@package, "yast-")]'
-        --filter-by './action/source/[@devel_project="YaST:Head"]'
+        --filter-by './action/target/[@devel_project="YaST:Head"]'
         --filter-by './action/target[starts-with(@ring, "1")]'
         --filter-by '@id!="1234567"'
 
-        --group-by='./action/source/@devel_project'
+        --group-by='./action/target/@devel_project'
         --group-by='./action/target/@ring'
 
         Multiple filter-by or group-by options may be used at the same time.
@@ -164,7 +164,7 @@ def do_staging(self, subcmd, opts, *args):
         provided in addition to a list of requests by which to filter. A more
         complex example:
 
-        select --group-by='./action/source/@devel_project' A B C 123 456 789
+        select --group-by='./action/target/@devel_project' A B C 123 456 789
 
         This will separate the requests 123, 456, 789 by devel project and only
         consider stagings A, B, or C, if available, for placement.
