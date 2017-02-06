@@ -1326,41 +1326,13 @@ class StagingAPI(object):
         else:
             return False
 
-    # from manager_42
-    def _fill_package_meta(self, project):
-        self._package_metas.setdefault(project, {})
-        url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
-        root = ET.parse(self.retried_GET(url))
-        for p in root.findall('package'):
-            name = p.attrib['name']
-            self._package_metas[project][name] = p
-
-
-    def _get_devel_project(self, project, package):
-        """ get devel project for a single project"""
-        if not self.item_exists(project, package):
-            return None
-
-        m = show_package_meta(self.apiurl, project, package)
-        node = ET.fromstring(''.join(m)).find('devel')
-        if node is None:
-            return None
-        else:
-            return node.get('project')
-
     def get_devel_project(self, project, package):
-        # if _package_metas is None we force individual queries
-        if self._package_metas is None:
-            return self._get_devel_project(project,package)
-
-        if not project in self._package_metas:
-            self._fill_package_meta(project)
-
-        if not package in self._package_metas[project]:
-            return None
-
-        node = self._package_metas[project][package].find('devel')
-        if node is None:
-            return None
-
-        return node.get('project')
+        try:
+            m = show_package_meta(self.apiurl, project, package)
+            node = ET.fromstring(''.join(m)).find('devel')
+            if node is not None:
+                return node.get('project')
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                pass
+        return None
