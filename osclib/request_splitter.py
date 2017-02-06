@@ -92,6 +92,9 @@ class RequestSplitter(object):
     def devel_project_get(self, request, target_project):
         # Preserve logic from adi and note that not Leap development friendly.
         source = request.find('./action/source')
+        # delete request has no action/source just return None
+        if source is None:
+            return None
         devel = self.api.get_devel_project(source.get('project'), source.get('package'))
         if devel is None and self.api.project.startswith('openSUSE:'):
             devel = self.api.get_devel_project('openSUSE:Factory', target_project)
