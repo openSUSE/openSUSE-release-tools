@@ -490,7 +490,7 @@ class ToTestFactoryzSystems(ToTestBase):
         ToTestBase.__init__(self, *args, **kwargs)
 
     def openqa_group(self):
-        return 'openSUSE Tumbleweed zSystems'
+        return 'openSUSE Tumbleweed s390x'
 
     def arch(self):
         return 's390x'
@@ -499,7 +499,7 @@ class ToTestFactoryzSystems(ToTestBase):
         return 'Tumbleweed'
 
     def jobs_num(self):
-        return 4
+        return 1
 
 class ToTestFactoryARM(ToTestFactory):
     main_products = [ '_product:openSUSE-cd-mini-aarch64',
