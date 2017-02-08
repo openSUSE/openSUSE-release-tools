@@ -31,7 +31,7 @@ ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
 ISSUE_SUMMARY_PLAIN = u'[{label}]({url})'
 
 
-def bug_create(bugzilla_api, meta, cc, summary, description):
+def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
     createinfo = bugzilla_api.build_createbug(
         product=meta[0],
         component=meta[1],
@@ -39,12 +39,35 @@ def bug_create(bugzilla_api, meta, cc, summary, description):
         severity='normal',
         op_sys='Linux',
         platform='PC',
+        assigned_to=assigned_to,
         cc=cc,
         summary=summary,
         description=description)
     newbug = bugzilla_api.createbug(createinfo)
 
     return newbug.id
+
+def user_email(apiurl, userid):
+    url = osc.core.makeurl(apiurl, ('person', userid))
+    root = ET.parse(osc.core.http_GET(url)).getroot()
+    email = root.find('email')
+    return email.text if email is not None else None
+
+def bug_owner(apiurl, package):
+    query = {
+        'binary': package,
+    }
+    url = osc.core.makeurl(apiurl, ('search', 'owner'), query=query)
+    root = ET.parse(osc.core.http_GET(url)).getroot()
+
+    bugowner = root.find('.//person[@role="bugowner"]')
+    if bugowner is not None:
+        return user_email(apiurl, bugowner.get('name'))
+    maintainer = root.find('.//person[@role="maintainer"]')
+    if maintainer is not None:
+        return user_email(apiurl, maintainer.get('name'))
+
+    return None
 
 def bug_meta_get(bugzilla_api, bug_id):
     bug = bugzilla_api.getbug(bug_id)
@@ -304,9 +327,10 @@ def main(args):
 
             # Determine bugzilla meta information to use when creating bug.
             meta = bug_meta(bugzilla_api, bugzilla_defaults, trackers, changes.keys())
+            owner = bug_owner(apiurl, package)
             if args.bugzilla_cc:
                 cc.append(args.bugzilla_cc)
-            bug_id = bug_create(bugzilla_api, meta, cc, summary, message)
+            bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
 
         # Mark changes in db.
         notified, whitelisted = 0, 0
