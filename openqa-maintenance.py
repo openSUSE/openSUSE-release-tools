@@ -862,9 +862,6 @@ class OpenQABot(ReviewBot.ReviewBot):
                 self.commentapi.delete(comment_id)
             self.commentapi.add_comment(request_id=req.reqid, comment=str(comment))
 
-    def openqa_overview_url_from_settings(self, settings):
-        return osc.core.makeurl(self.openqa.baseurl, ['tests'], {'match': settings['BUILD']})
-
     # escape markdown
     def emd(self, str):
         return str.replace('_', '\_')
@@ -920,12 +917,11 @@ class OpenQABot(ReviewBot.ReviewBot):
                     self.add_comment(req, msg, 'done', 'accepted')
                     ret = True
                 else:
-                    url = self.openqa_overview_url_from_settings(jobs[0]['settings'])
-                    self.logger.debug("url %s", url)
-                    msg = "now testing in [openQA](%s)" % url
-                    self.add_comment(req, msg, 'seen')
+                    # no notification until the result is done
+                    osc.core.change_review_state(req.apiurl, req.reqid, newstate='new',
+                                                 by_group=self.review_group, by_user=self.review_user,
+                                                 msg='now testing in openQA')
             elif qa_state == QA_FAILED or qa_state == QA_PASSED:
-                url = self.openqa_overview_url_from_settings(jobs[0]['settings'])
                 # don't take test repo results into the calculation of total
                 # this is for humans to decide which incident broke the test repo
                 jobs += self.request_get_openqa_jobs(req, incident=False, test_repo=True)
