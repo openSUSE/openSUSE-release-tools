@@ -200,7 +200,13 @@ if (-d "$old") {
     if (%patches) {
         # parsing changes
         for my $changes (@changes) {
-            my $diff = diff "$old/$changes", "$dir/$changes";
+            my $diff = "";
+            if (! -e "$old/$changes") {
+                $diff = diff "/dev/null", "$dir/$changes";
+            }
+            else {
+                $diff = diff "$old/$changes", "$dir/$changes";
+            }
             for my $line (split(/\n/, $diff)) {
                 next unless $line =~ m/^+/;
                 $line =~ s/^\+//;
