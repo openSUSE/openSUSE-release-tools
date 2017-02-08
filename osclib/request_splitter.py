@@ -42,12 +42,23 @@ class RequestSplitter(object):
     def split(self):
         for request in self.requests:
             self.suppliment(request)
+            delete_request = False
 
             if not self.filter_check(request):
                 continue
 
             target_package = request.find('./action/target').get('package')
-            if self.in_ring != (not self.api.ring_packages.get(target_package)):
+
+            # the delete request implies a ring type for staging project
+            if request.find('./action').get('type') == 'delete':
+                delete_request = True
+
+            if (delete_request and self.in_ring) or self.in_ring != (not self.api.ring_packages.get(target_package)):
+	        # the delete request against non-ring package
+	        if delete_request and self.in_ring is not True:
+	            self.other.append(request)
+	            continue
+
                 # Request is of desired ring type.
                 key = self.group_key_build(request)
                 if key not in self.grouped:
