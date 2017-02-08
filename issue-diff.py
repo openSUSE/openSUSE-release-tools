@@ -378,7 +378,7 @@ if __name__ == '__main__':
     parser.add_argument('--bugzilla-cc', metavar='EMAIL', help='bugzilla address added to cc on all bugs created')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debugging')
     parser.add_argument('-f', '--factory', default='openSUSE:Factory', metavar='PROJECT', help='factory project to use as baseline for comparison')
-    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP2:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
+    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
     parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
     parser.add_argument('--config-dir', help='configuration directory containing git-sync tool and issue db')
