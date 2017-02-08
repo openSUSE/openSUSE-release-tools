@@ -26,7 +26,7 @@ from osclib.cache import Cache
 # unicode character in its summary.
 BUG_SUMMARY = 'Missing issue references from {project}/{package} in {factory}/{package}'
 BUG_TEMPLATE = u'{message_start}\n\n{issues}'
-MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} as necessary.'
+MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version. For more information and details on how to go about submitting the changes see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html.'
 ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
 ISSUE_SUMMARY_PLAIN = u'[{label}]({url})'
 
