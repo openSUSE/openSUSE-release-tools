@@ -112,6 +112,8 @@ class RequestSplitter(object):
             element = xpath(request)
             if element:
                 key.append(element[0])
+        if len(key) == 0:
+            return '00'
         return '__'.join(key)
 
     def propose_stagings_load(self, stagings):
