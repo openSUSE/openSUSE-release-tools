@@ -46,8 +46,8 @@ class RequestSplitter(object):
             if not self.filter_check(request):
                 continue
 
-            target_package = request.find('./action/target').get('package')
-            if self.in_ring != (not self.api.ring_packages.get(target_package)):
+            ring = request.find('./action/target').get('ring')
+            if self.in_ring != (not ring):
                 # Request is of desired ring type.
                 key = self.group_key_build(request)
                 if key not in self.grouped:
@@ -58,7 +58,6 @@ class RequestSplitter(object):
 
                 self.grouped[key]['requests'].append(request)
 
-                ring = request.find('./action/target').get('ring')
                 if ring and ring.startswith('0'):
                     self.grouped[key]['bootstrap_required'] = True
             else:
