@@ -75,6 +75,9 @@ class RequestSplitter(object):
         ring = self.ring_get(target_package)
         if ring:
             target.set('ring', ring)
+        elif request.find('./action').get('type') == 'delete':
+            # Delete requests should always be considered in a ring.
+            target.set('ring', 'delete')
 
         request_id = int(request.get('id'))
         if request_id in self.requests_ignored:
