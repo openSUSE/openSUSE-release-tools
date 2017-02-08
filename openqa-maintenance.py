@@ -920,7 +920,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     # no notification until the result is done
                     osc.core.change_review_state(req.apiurl, req.reqid, newstate='new',
                                                  by_group=self.review_group, by_user=self.review_user,
-                                                 msg='now testing in openQA')
+                                                 message='now testing in openQA')
             elif qa_state == QA_FAILED or qa_state == QA_PASSED:
                 # don't take test repo results into the calculation of total
                 # this is for humans to decide which incident broke the test repo
