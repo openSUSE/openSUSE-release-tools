@@ -2,6 +2,7 @@ Application:Dochazka
 Application:ERP:Tryton:Factory
 Novell:NTS
 Virtualization:Appliances:Builder
+devel:CaaSP
 devel:languages:D
 devel:languages:pascal
 isv:ownCloud:desktop
