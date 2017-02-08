@@ -88,6 +88,9 @@ class RequestSplitter(object):
             if ring:
                 # Cut off *:Rings: prefix.
                 return ring[len(self.api.crings)+1:]
+        else:
+            # Projects not using rings handle all requests as ring requests.
+            return self.api.project
         return None
 
     def devel_project_get(self, target_project, target_package):
