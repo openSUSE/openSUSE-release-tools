@@ -26,12 +26,12 @@ from osclib.cache import Cache
 # unicode character in its summary.
 BUG_SUMMARY = 'Missing issue references from {project}/{package} in {factory}/{package}'
 BUG_TEMPLATE = u'{message_start}\n\n{issues}'
-MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} as necessary.'
+MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version. For more information and details on how to go about submitting the changes see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html.'
 ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
 ISSUE_SUMMARY_PLAIN = u'[{label}]({url})'
 
 
-def bug_create(bugzilla_api, meta, cc, summary, description):
+def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
     createinfo = bugzilla_api.build_createbug(
         product=meta[0],
         component=meta[1],
@@ -39,12 +39,35 @@ def bug_create(bugzilla_api, meta, cc, summary, description):
         severity='normal',
         op_sys='Linux',
         platform='PC',
+        assigned_to=assigned_to,
         cc=cc,
         summary=summary,
         description=description)
     newbug = bugzilla_api.createbug(createinfo)
 
     return newbug.id
+
+def user_email(apiurl, userid):
+    url = osc.core.makeurl(apiurl, ('person', userid))
+    root = ET.parse(osc.core.http_GET(url)).getroot()
+    email = root.find('email')
+    return email.text if email is not None else None
+
+def bug_owner(apiurl, package):
+    query = {
+        'binary': package,
+    }
+    url = osc.core.makeurl(apiurl, ('search', 'owner'), query=query)
+    root = ET.parse(osc.core.http_GET(url)).getroot()
+
+    bugowner = root.find('.//person[@role="bugowner"]')
+    if bugowner is not None:
+        return user_email(apiurl, bugowner.get('name'))
+    maintainer = root.find('.//person[@role="maintainer"]')
+    if maintainer is not None:
+        return user_email(apiurl, maintainer.get('name'))
+
+    return None
 
 def bug_meta_get(bugzilla_api, bug_id):
     bug = bugzilla_api.getbug(bug_id)
@@ -304,9 +327,10 @@ def main(args):
 
             # Determine bugzilla meta information to use when creating bug.
             meta = bug_meta(bugzilla_api, bugzilla_defaults, trackers, changes.keys())
+            owner = bug_owner(apiurl, package)
             if args.bugzilla_cc:
                 cc.append(args.bugzilla_cc)
-            bug_id = bug_create(bugzilla_api, meta, cc, summary, message)
+            bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
 
         # Mark changes in db.
         notified, whitelisted = 0, 0
@@ -354,7 +378,7 @@ if __name__ == '__main__':
     parser.add_argument('--bugzilla-cc', metavar='EMAIL', help='bugzilla address added to cc on all bugs created')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debugging')
     parser.add_argument('-f', '--factory', default='openSUSE:Factory', metavar='PROJECT', help='factory project to use as baseline for comparison')
-    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP2:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
+    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
     parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
     parser.add_argument('--config-dir', help='configuration directory containing git-sync tool and issue db')
