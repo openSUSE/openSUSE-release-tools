@@ -45,7 +45,6 @@ class ToTestBase(object):
         self.project = project
         self.dryrun = dryrun
         self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
-        self.known_failures = self.known_failures_from_dashboard(project)
 
     def openqa_group(self):
         return self.project
@@ -160,6 +159,8 @@ class ToTestBase(object):
             logger.warning('we have only %s jobs' % len(jobs))
             return QA_INPROGRESS
 
+        known_failures = set(self.known_failures_from_dashboard())
+
         number_of_fails = 0
         in_progress = False
         machines = []
@@ -169,9 +170,12 @@ class ToTestBase(object):
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted'):
                 jobname = job['name']
                 # Record machines we have tests for
-                if jobname in self.known_failures:
-                    logger.debug("known failure %s ignored", jobname)
-                    self.known_failures.remove(jobname)
+                if jobname in known_failures:
+                    logger.debug("known failure %s %s ignored", jobname, job['id'])
+                    # XXX why do we remove here? If openqa is
+                    # misconfigured and has duplicate jobs ttm gets
+                    # confused if we remove jobs.
+                    known_failures.remove(jobname)
                     continue
                 number_of_fails += 1
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
@@ -195,7 +199,7 @@ class ToTestBase(object):
 
         machines = list(set(machines))
         for item in machines:
-            for item2 in self.known_failures:
+            for item2 in known_failures:
                 if item2.split('@')[1] == item:
                     logger.info('now passing %s'%item2)
         return QA_PASSED
@@ -416,7 +420,7 @@ class ToTestBase(object):
         new_snapshot = self.current_version()
         self.update_totest(new_snapshot)
 
-    def known_failures_from_dashboard(self, project):
+    def known_failures_from_dashboard(self):
         known_failures = []
         if self.project == "Factory:PowerPC" or self.project == "Factory:zSystems":
             project = "Factory"
