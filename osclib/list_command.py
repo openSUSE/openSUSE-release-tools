@@ -50,13 +50,8 @@ class ListCommand:
                 action = request.find('action')
                 target_package = action.find('target').get('package')
                 ring = action.find('target').get('ring')
-                if self.api.crings and ring is None:
-                    ring = self.api.project
                 if action.get('type') == 'delete':
-                    if ring:
-                        ring += ' (delete request)'
-                    else:
-                        ring = '(delete request)'
+                    ring += ' (delete request)'
 
                 line = 'sr#{}: {:<30} -> {:<12}'.format(request_id, target_package, ring)
 

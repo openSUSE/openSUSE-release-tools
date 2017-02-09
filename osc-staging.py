@@ -348,7 +348,7 @@ def do_staging(self, subcmd, opts, *args):
                         temp.write('# stagings\n')
                         temp.write('# - considered: {}\n'
                                    .format(', '.join(sorted(splitter.stagings_considerable.keys()))))
-                        temp.write('# - available: {}\n'
+                        temp.write('# - remaining: {}\n'
                                    .format(', '.join(sorted(splitter.stagings_available.keys()))))
                         temp.flush()
 
