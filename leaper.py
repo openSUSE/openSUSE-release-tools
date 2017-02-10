@@ -41,29 +41,12 @@ import ReviewBot
 from check_maintenance_incidents import MaintenanceChecker
 from check_source_in_factory import FactorySourceChecker
 
-from osclib.comments import CommentAPI
-
-class LogToString(logging.Filter):
-    def __init__(self, obj, propname):
-        self.obj = obj
-        self.propname = propname
-
-    def filter(self, record):
-        if record.levelno >= logging.INFO:
-            line = record.getMessage()
-            comment_log = getattr(self.obj, self.propname)
-            if comment_log is not None:
-                comment_log.append(line)
-            setattr(self.obj, self.propname, comment_log)
-        return True
-
 class Leaper(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         self.do_comments = True
-        self.commentapi = CommentAPI(self.apiurl)
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
         # for FactorySourceChecker
@@ -78,12 +61,6 @@ class Leaper(ReviewBot.ReviewBot):
         self.must_approve_maintenance_updates = False
         self.needs_check_source = False
         self.check_source_group = None
-
-        self.comment_marker_re = re.compile(r'<!-- leaper state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined))? -->')
-
-        self.comment_log = None
-        self.commentlogger = LogToString(self, 'comment_log')
-        self.logger.addFilter(self.commentlogger)
 
         # project => package list
         self.packages = {}
@@ -374,7 +351,7 @@ class Leaper(ReviewBot.ReviewBot):
         self.needs_release_manager = False
         self.pending_factory_submission = False
         self.source_in_factory = None
-        self.comment_log = []
+        self.comment_handler_add()
         self.packages = {}
 
         if len(req.actions) != 1:
@@ -400,7 +377,7 @@ class Leaper(ReviewBot.ReviewBot):
         elif self.needs_release_manager:
             self.logger.info("request needs review by release management")
 
-        if self.comment_log:
+        if self.do_comments:
             result = None
             if request_ok is None:
                 state = 'seen'
@@ -410,8 +387,7 @@ class Leaper(ReviewBot.ReviewBot):
             else:
                 state = 'done'
                 result = 'declined'
-            self.add_comment(req, '\n\n'.join(self.comment_log), state)
-        self.comment_log = None
+            self.comment_write(state, result)
 
         if self.needs_release_manager:
             add_review = True
@@ -457,40 +433,6 @@ class Leaper(ReviewBot.ReviewBot):
         # decline all other requests for fallback reviewer
         self.logger.debug("auto decline request type %s"%a.type)
         return False
-
-    # TODO: make generic, move to Reviewbot. Used by multiple bots
-    def add_comment(self, req, msg, state, result=None):
-        if not self.do_comments:
-            return
-
-        comment = "<!-- leaper state=%s%s -->\n" % (state, ' result=%s' % result if result else '')
-        comment += "\n" + msg
-
-        (comment_id, comment_state, comment_result, comment_text) = self.find_obs_request_comment(req, state)
-
-        if comment_id is not None and state == comment_state:
-            # count number of lines as aproximation to avoid spamming requests
-            # for slight wording changes in the code
-            if len(comment_text.split('\n')) == len(comment.split('\n')):
-                self.logger.debug("not worth the update, previous comment %s is state %s", comment_id, comment_state)
-                return
-
-        self.logger.debug("adding comment to %s, state %s result %s", req.reqid, state, result)
-        self.logger.debug("message: %s", msg)
-        if not self.dryrun:
-            if comment_id is not None:
-                self.commentapi.delete(comment_id)
-            self.commentapi.add_comment(request_id=req.reqid, comment=str(comment))
-
-    def find_obs_request_comment(self, req, state=None):
-        """Return previous comments (should be one)."""
-        if self.do_comments:
-            comments = self.commentapi.get_comments(request_id=req.reqid)
-            for c in comments.values():
-                m = self.comment_marker_re.match(c['comment'])
-                if m and (state is None or state == m.group('state')):
-                    return c['id'], m.group('state'), m.group('result'), c['comment']
-        return None, None, None, None
 
     def check_action__default(self, req, a):
         self.logger.info("unhandled request type %s"%a.type)
