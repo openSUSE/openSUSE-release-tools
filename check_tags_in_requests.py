@@ -78,13 +78,13 @@ by OBS on which this bot relies on.
 
     def checkTagInRequest(self, req, a):
         u = osc.core.makeurl(self.apiurl,
-                             ['source', a.tgt_project, a.tgt_package],
+                             ['source', a.src_project, a.src_package],
                              {'cmd': 'diff',
                               'onlyissues': '1',
                               'view': 'xml',
-                              'opackage': a.src_package,
-                              'oproject': a.src_project,
-                              'orev': a.src_rev})
+                              'opackage': a.tgt_package,
+                              'oproject': a.tgt_project,
+                              'rev': a.src_rev})
         try:
             f = osc.core.http_POST(u)
         except (HTTPError, URLError):

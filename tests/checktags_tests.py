@@ -163,12 +163,12 @@ Pico text editor while also offering a few enhancements.</description>
     def _run_with_data(self, accept, exists_in_factory, issues_data):
         # exists_in_factory: whether the package is exists in factory
         httpretty.register_uri(httpretty.POST,
-                               osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'cmd': 'diff',
+                               osc.core.makeurl(APIURL, ['source', "editors", "nano"], {         'cmd': 'diff',
                                                                                                  'onlyissues': '1',
                                                                                                  'view': 'xml',
                                                                                                  'opackage': 'nano',
-                                                                                                 'oproject': 'editors',
-                                                                                                 'orev': '25'}),
+                                                                                                 'oproject': 'openSUSE:Factory',
+                                                                                                 'rev': '25'}),
                                match_querystring=True,
                                body=issues_data)
         httpretty.register_uri(httpretty.GET,
