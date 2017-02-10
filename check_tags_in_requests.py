@@ -56,7 +56,7 @@ class TagChecker(ReviewBot.ReviewBot):
         super(TagChecker, self).__init__(*args, **kwargs)
         self.factory = "openSUSE:Factory"
         self.review_messages['declined'] = """
-(This is a script running, so report bugs)
+(This is a script, so report bugs)
 
 The project you submitted to requires a bug tracker ID marked in the
 .changes file. OBS supports several patterns, see
@@ -64,8 +64,8 @@ $ osc api /issue_trackers
 
 See also https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_set_of_abbreviations
 
-Note that not necessarily all of the tags listed there are supported
-by OBS on which this bot relies on.
+Note that not all of the tags listed there are necessarily supported
+by OBS on which this bot relies.
 """
 
     def isNewPackage(self, tgt_project, tgt_package):
@@ -115,7 +115,7 @@ by OBS on which this bot relies on.
         # 1) A tag is not required only if the package is
         # already in Factory with the same revision,
         # and the package is being introduced, not updated
-        # 2) A new package must be have a issue tag
+        # 2) A new package must have an issue tag
         factory_checker = check_source_in_factory.FactorySourceChecker(apiurl=self.apiurl,
                                                                        dryrun=self.dryrun,
                                                                        logger=self.logger,
