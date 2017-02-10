@@ -222,7 +222,7 @@ def do_staging(self, subcmd, opts, *args):
     if cmd in ('freeze', 'frozenage', 'repair'):
         min_args, max_args = 1, None
     elif cmd == 'check':
-        min_args, max_args = 0, 2
+        min_args, max_args = 0, 1
     elif cmd == 'select':
         min_args, max_args = 0, None
     elif cmd == 'unselect':
