@@ -228,7 +228,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'unselect':
         min_args, max_args = 1, None
     elif cmd == 'adi':
-        min_args, max_args = None, None
+        min_args, max_args = 0, None
     elif cmd in ('ignore', 'unignore'):
         min_args, max_args = 1, None
     elif cmd in ('list', 'accept'):
