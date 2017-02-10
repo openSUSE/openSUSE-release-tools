@@ -96,8 +96,8 @@ by OBS on which this bot relies on.
             return None
 
         xml = ET.parse(f)
-        has_changes = list(xml.findall('./issues/issue'))
-        if not has_changes:
+        issues = len(xml.findall('./issues/issue'))
+        if issues == 0:
             self.logger.debug("reject: diff contains no tags")
             return False
         return True
