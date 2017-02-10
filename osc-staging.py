@@ -260,7 +260,7 @@ def do_staging(self, subcmd, opts, *args):
             CheckCommand(api).perform(prj, opts.old)
         elif cmd == 'freeze':
             for prj in args[1:]:
-                FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap )
+                FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap)
         elif cmd == 'frozenage':
             for prj in args[1:]:
                 print("%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj))))
