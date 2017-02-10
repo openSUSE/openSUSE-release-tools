@@ -103,6 +103,7 @@ def _full_project_name(self, project):
 @cmdln.option('--filter-by', action='append', help='xpath by which to filter requests')
 @cmdln.option('--group-by', action='append', help='xpath by which to group requests')
 @cmdln.option('-i', '--interactive', action='store_true', help='interactively modify selection proposal')
+@cmdln.option('-n', '--non-interactive', action='store_true', help='do not ask anything, use default answers')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -208,7 +209,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unignore REQUEST...|all
         osc staging list [--supersede] [PACKAGE...]
         osc staging select [--no-freeze] [--move [--from PROJECT] STAGING REQUEST...
-        osc staging select [--no-freeze] [[--interactive] [--filter-by...] [--group-by...]] [STAGING...] [REQUEST...]
+        osc staging select [--no-freeze] [[--interactive|--non-interactive] [--filter-by...] [--group-by...]] [STAGING...] [REQUEST...]
         osc staging unselect REQUEST...
         osc staging repair REQUEST...
     """
@@ -377,10 +378,13 @@ def do_staging(self, subcmd, opts, *args):
                 print(yaml.safe_dump(proposal, default_flow_style=False))
 
                 print('Accept proposal? [y/n] (y): ', end='')
-                response = raw_input().lower()
-                if response != '' and response != 'y':
-                    print('Quit')
-                    return
+                if opts.non_interactive:
+                    print('y')
+                else:
+                    response = raw_input().lower()
+                    if response != '' and response != 'y':
+                        print('Quit')
+                        return
 
                 for group in sorted(proposal.keys()):
                     g = proposal[group]
