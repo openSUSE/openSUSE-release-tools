@@ -596,7 +596,12 @@ class CommandlineInterface(cmdln.Cmdln):
             level = logging.DEBUG
         elif (self.options.verbose):
             level = logging.INFO
-        logging.basicConfig(level=level, format='%(asctime)s - %(module)s:%(lineno)d - %(levelname)s - %(message)s')
+
+        fmt = '%(module)s:%(lineno)d %(levelname)s %(message)s'
+        if os.isatty(0):
+            fmt = '%(asctime)s - ' + fmt
+
+        logging.basicConfig(level=level, format=fmt)
 
         osc.conf.get_config()
         if (self.options.osc_debug):
