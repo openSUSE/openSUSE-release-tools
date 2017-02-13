@@ -89,9 +89,11 @@ class AdiCommand:
                 if not self.api.rq_to_prj(request_id, name):
                     return False
 
+                print(line + ' (staged in {})'.format(name))
+
+            if name:
                 # Notify everybody about the changes.
                 self.api.update_status_comments(name, 'select')
-                print(line + ' (staged in {})'.format(name))
 
     def perform(self, packages, move=False, by_dp=False, split=False):
         """
