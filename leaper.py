@@ -135,7 +135,7 @@ class Leaper(ReviewBot.ReviewBot):
                 }
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
-        self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
+        super(Leaper, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         package = target_package
 
