@@ -34,7 +34,7 @@ import osc.core
 from osc import oscerr
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:Leap:42.2'
+OPENSUSE = 'openSUSE:Leap:42.3'
 FCC = 'openSUSE:42:Factory-Candidates-Check'
 
 makeurl = osc.core.makeurl
@@ -60,6 +60,11 @@ class FccFreezer(object):
         return set(pkglist)
 
     def check_one_source(self, flink, si, pkglist):
+        """
+        Insert package information to the temporary frozenlinks.
+        Return package name if the package can not fit the condition
+        add to the frozenlinks, can be the ignored package.
+        """
         package = si.get('package')
         logging.debug("Processing %s" % (package))
 
@@ -79,18 +84,20 @@ class FccFreezer(object):
                 if lsrcmd5 is None:
                     raise Exception("{}/{} is not a link but we expected one".format(self.factory, package))
                 ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
-                return package
+                return None
 
         if package in pkglist:
             return package
 
         if package in ['rpmlint-mini-AGGR']:
-            return package  # we should not freeze aggregates
+            # we should not freeze aggregates
+            return None
 
         ET.SubElement(flink, 'package', {'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
-        return package
+        return None
 
-    def receive_sources(self, flink, sources):
+    def receive_sources(self, flink):
+        ignored_sources = []
         pkglist = self.list_packages(OPENSUSE)
 
         url = makeurl(self.apiurl, ['source', self.factory], {'view': 'info', 'nofilename': '1'})
@@ -99,16 +106,20 @@ class FccFreezer(object):
 
         for si in root.findall('sourceinfo'):
             package = self.check_one_source(flink, si, pkglist)
-            sources[package] = 1
-        return sources
+            if package is not None:
+                ignored_sources.append(str(package))
+        return ignored_sources
 
     def freeze(self):
         """Main method"""
-        sources = {}
         flink = ET.Element('frozenlinks')
 
         fl = ET.SubElement(flink, 'frozenlink', {'project': self.factory})
-        sources = self.receive_sources(fl, sources)
+        ignored_sources = self.receive_sources(fl)
+        if self.debug:
+            logging.debug("Dump ignored source")
+            for source in ignored_sources:
+                logging.debug("Ignored source: %s" % source)
 
         url = makeurl(self.apiurl, ['source', FCC, '_project', '_frozenlinks'], {'meta': '1'})
         l = ET.tostring(flink)
@@ -126,6 +137,7 @@ class FccSubmitter(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         self.sle_base_prjs = [
+                'SUSE:SLE-12-SP2:Update',
                 'SUSE:SLE-12-SP2:GA',
                 'SUSE:SLE-12-SP1:Update',
                 'SUSE:SLE-12-SP1:GA',
@@ -500,7 +512,7 @@ def main(args):
 
 if __name__ == '__main__':
     description = 'Create SR from openSUSE:42:Factory-Candidates-Check to '\
-                  'openSUSE:Leap:42.2 project for new build succeded packages.'
+                  'openSUSE Leap project for new build succeded packages.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
