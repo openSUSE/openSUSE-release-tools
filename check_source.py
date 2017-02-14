@@ -45,7 +45,9 @@ class CheckSource(ReviewBot.ReviewBot):
             # Check if target package exists and has devel project.
             devel_project, devel_package = self.get_devel_project(target_project, target_package)
             if devel_project:
-                if source_project != devel_project or source_package != devel_package:
+                if (source_project != devel_project or source_package != devel_package) and \
+                   not(source_project == target_project and source_package == target_package):
+                    # Not from proper devel project/package and not self-submission.
                     self.review_messages['declined'] = 'Expected submission from devel package %s/%s' % (devel_project, devel_package)
                     return False
             else:
