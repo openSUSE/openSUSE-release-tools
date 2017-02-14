@@ -74,23 +74,23 @@ def _full_project_name(self, project):
 @cmdln.option('--move', action='store_true',
               help='force the selection to become a move')
 @cmdln.option('--by-develproject', action='store_true',
-              help='sort the packages by devel project')
+              help='split the requests by devel project')
 @cmdln.option('--split', action='store_true',
-              help='splits each package to different adi staging')
+              help='split the requests into individual groups')
 @cmdln.option('--supersede', action='store_true',
-              help='superseding requests. please make sure you have staging permissions')
+              help='replace staged requests when superseded')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
-              help='manually specify different source project during request moving')
+              help='specify a source project when moving a request')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
-              help='select a different project instead of openSUSE:Factory')
+              help='indicate the project on which to operate, default is openSUSE:Factory')
 @cmdln.option('--add', dest='add', metavar='PACKAGE',
               help='mark additional packages to be checked by repo checker')
-@cmdln.option('--force', action='store_true', 
-              help='Force action, overruling internal checks (CAUTION)')
+@cmdln.option('--force', action='store_true',
+              help='force action, overruling internal checks (CAUTION)')
 @cmdln.option('-o', '--old', action='store_true',
               help='use the old check algorithm')
 @cmdln.option('-v', '--version', action='store_true',
-              help='show version of the plugin')
+              help='print the plugin version')
 @cmdln.option('--no-freeze', dest='no_freeze', action='store_true',
               help='force the select command ignoring the time from the last freeze')
 @cmdln.option('--no-cleanup', dest='no_cleanup', action='store_true',
@@ -109,20 +109,28 @@ def do_staging(self, subcmd, opts, *args):
     ${cmd_option_list}
 
     "accept" will accept all requests in
-        openSUSE:Factory:Staging:<LETTER> (into Factory)
+        $PROJECT:Staging:<LETTER> into $PROJECT
+        If openSUSE:* project, requests marked ready from adi stagings will also
+        be accepted.
 
-    "acheck" will check if it's safe to accept new staging projects
-        As openSUSE:Factory is syncing the right package versions between
-        /standard, /totest and /snapshot, it's important that the projects
+    "acheck" will check if it is safe to accept new staging projects
+        As $PROJECT is syncing the right package versions between
+        /standard, /totest and /snapshot, it is important that the projects
         are clean prior to a checkin round.
+
+    "adi" will list already staged requests, stage new requests, and supersede
+        requests where applicable. New adi stagings will be created for new
+        packages based on the grouping options used. The default grouping is by
+        source project. When adi stagings are ready the request will be marked
+        ready, unstaged, and the adi staging deleted.
 
     "check" will check if all packages are links without changes
 
     "cleanup_rings" will try to cleanup rings content and print
         out problems
 
-    "freeze" will freeze the sources of the project's links (not
-        affecting the packages actually in)
+    "freeze" will freeze the sources of the project's links while not
+        affecting the source packages
 
     "frozenage" will show when the respective staging project was last frozen
 
@@ -130,7 +138,12 @@ def do_staging(self, subcmd, opts, *args):
 
     "unignore" will remove from ignore list
 
-    "list" will pick the requests not in rings
+    "list" will list/supersede requests for ring packages or all if no rings.
+        The package list is used to limit what requests are superseded when
+        called with the --supersede option.
+
+    "repair" will attempt to repair the state of a request that has been
+        corrupted.
 
     "select" will add requests to the project
         Stagings are expected to be either in short-hand or the full project
@@ -184,14 +197,16 @@ def do_staging(self, subcmd, opts, *args):
     "unselect" will remove from the project - pushing them back to the backlog
 
     Usage:
-        osc staging accept [--force] [LETTER...]
+        osc staging accept [--force] [--no-cleanup] [LETTER...]
+        osc staging acheck
+        osc staging adi [--move] [--by-develproject] [--split] REQUEST...
         osc staging check [--old] REPO
         osc staging cleanup_rings
         osc staging freeze [--no-boostrap] PROJECT...
         osc staging frozenage PROJECT...
         osc staging ignore [-m MESSAGE] REQUEST...
         osc staging unignore REQUEST...|all
-        osc staging list [--supersede]
+        osc staging list [--supersede] [PACKAGE...]
         osc staging select [--no-freeze] [--move [--from PROJECT] STAGING REQUEST...
         osc staging select [--no-freeze] [[--interactive] [--filter-by...] [--group-by...]] [STAGING...] [REQUEST...]
         osc staging unselect REQUEST...
@@ -207,13 +222,13 @@ def do_staging(self, subcmd, opts, *args):
     if cmd in ('freeze', 'frozenage', 'repair'):
         min_args, max_args = 1, None
     elif cmd == 'check':
-        min_args, max_args = 0, 2
+        min_args, max_args = 0, 1
     elif cmd == 'select':
         min_args, max_args = 0, None
     elif cmd == 'unselect':
         min_args, max_args = 1, None
     elif cmd == 'adi':
-        min_args, max_args = None, None
+        min_args, max_args = 0, None
     elif cmd in ('ignore', 'unignore'):
         min_args, max_args = 1, None
     elif cmd in ('list', 'accept'):
@@ -245,7 +260,7 @@ def do_staging(self, subcmd, opts, *args):
             CheckCommand(api).perform(prj, opts.old)
         elif cmd == 'freeze':
             for prj in args[1:]:
-                FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap )
+                FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap)
         elif cmd == 'frozenage':
             for prj in args[1:]:
                 print("%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj))))
