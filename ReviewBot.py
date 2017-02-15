@@ -25,6 +25,7 @@ import logging
 from optparse import OptionParser
 import cmdln
 from collections import namedtuple
+from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 import signal
 import datetime
@@ -51,6 +52,8 @@ class ReviewBot(object):
     DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
+    COMMENT_MARKER_REGEX = re.compile(r'<!-- (?P<bot>[^ ]+) state=(?P<state>[^ ]+)(?: result=(?P<result>[^ ]+))? -->')
+
     # map of default config entries
     config_defaults = {
             # list of tuples (prefix, apiurl, submitrequestprefix)
@@ -73,6 +76,7 @@ class ReviewBot(object):
         self._review_mode = 'normal'
         self.fallback_user = None
         self.fallback_group = None
+        self.comment_api = CommentAPI(self.apiurl)
 
         self.load_config()
 
@@ -374,6 +378,63 @@ class ReviewBot(object):
             req = osc.core.Request()
             req.read(request)
             self.requests.append(req)
+
+    def comment_handler_add(self, level=logging.INFO):
+        """Add handler to start recording log messages for comment."""
+        self.comment_handler = CommentFromLogHandler(level)
+        self.logger.addHandler(self.comment_handler)
+
+    def comment_handler_remove(self):
+        self.logger.removeHandler(self.comment_handler)
+
+    def comment_find(self, request=None, state=None, result=None):
+        """Return previous comments by current bot and matching criteria."""
+        # Case-insensitive for backwards compatibility.
+        bot = self.__class__.__name__.lower()
+        comments = self.comment_api.get_comments(request_id=request.reqid)
+        for c in comments.values():
+            m = ReviewBot.COMMENT_MARKER_REGEX.match(c['comment'])
+            if m and \
+               bot == m.group('bot').lower() and \
+               (state is None or state == m.group('state')) and \
+               (result is None or result == m.group('result')):
+                return c['id'], m.group('state'), m.group('result'), c['comment']
+        return None, None, None, None
+
+    def comment_write(self, state='done', result=None, request=None, message=None):
+        """Write comment from log messages if not similar to previous comment."""
+        if request is None:
+            request = self.request
+        if message is None:
+            message = '\n\n'.join(self.comment_handler.lines)
+
+        marker = '<!-- {} state={} result={} -->'.format(self.__class__.__name__, state, result)
+        message = marker + '\n\n' + message
+
+        comment_id, _, _, comment_text = self.comment_find(request, state, result)
+        if comment_id is not None and comment_text.count('\n') == message.count('\n'):
+            # Assume same state/result and number of lines in message is duplicate.
+            self.logger.debug('previous comment too similar to bother commenting again')
+            return
+
+        self.logger.debug('adding comment to {}: {}'.format(request.reqid, message))
+
+        if not self.dryrun:
+            if comment_id is not None:
+                self.comment_api.delete(comment_id)
+            self.comment_api.add_comment(request_id=request.reqid, comment=str(message))
+
+        self.comment_handler_remove()
+
+
+class CommentFromLogHandler(logging.Handler):
+    def __init__(self, level=logging.INFO):
+        super(CommentFromLogHandler, self).__init__(level)
+        self.lines = []
+
+    def emit(self, record):
+        self.lines.append(record.getMessage())
+
 
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
