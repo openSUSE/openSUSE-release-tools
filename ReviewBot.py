@@ -257,7 +257,7 @@ class ReviewBot(object):
 
     def check_action__default(self, req, a):
         self.logger.error("unhandled request type %s"%a.type)
-        ret = None
+        return None
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """
