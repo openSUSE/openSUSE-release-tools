@@ -430,7 +430,7 @@ class Leaper(ReviewBot.ReviewBot):
         return request_ok
 
     def check_action__default(self, req, a):
-        self.logger.info("unhandled request type %s"%a.type)
+        super(Leaper, self).check_action__default(req, a)
         self.needs_release_manager = True
         return True
 
