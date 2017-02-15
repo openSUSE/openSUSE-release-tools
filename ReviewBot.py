@@ -30,7 +30,6 @@ from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 import signal
 import datetime
-from collections import namedtuple
 
 try:
     from xml.etree import cElementTree as ET
