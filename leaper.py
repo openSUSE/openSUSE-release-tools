@@ -430,11 +430,6 @@ class Leaper(ReviewBot.ReviewBot):
         return request_ok
 
     def check_action__default(self, req, a):
-        # decline all other requests for fallback reviewer
-        self.logger.debug("auto decline request type %s"%a.type)
-        return False
-
-    def check_action__default(self, req, a):
         self.logger.info("unhandled request type %s"%a.type)
         self.needs_release_manager = True
         return True
