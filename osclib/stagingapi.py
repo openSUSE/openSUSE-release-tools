@@ -1199,7 +1199,8 @@ class StagingAPI(object):
 
         meta = self.get_prj_pseudometa(project)
         lines = ['<!--- osc staging %s --->' % command]
-        lines.append('The list of requests tracked in %s has changed:\n' % project)
+        dashboard_url = '{}/project/staging_projects/{}/{}'.format(self.apiurl, self.project, self.extract_staging_short(project))
+        lines.append('The list of requests tracked in [%s](%s) has changed:\n' % (project, dashboard_url))
         for req in meta['requests']:
             author = req.get('autor', None)
             if not author:
