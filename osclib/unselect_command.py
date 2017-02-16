@@ -1,3 +1,4 @@
+from osc.core import get_request
 from osclib.request_finder import RequestFinder
 
 
@@ -12,6 +13,7 @@ class UnselectCommand(object):
         :param packages: packages/requests to delete from staging projects
         """
 
+        ignored_requests = self.api.get_ignored_requests()
         affected_projects = set()
         for request, request_project in RequestFinder.find_staged_sr(packages,
                                                                      self.api).items():
@@ -21,6 +23,10 @@ class UnselectCommand(object):
             print(msg)
             self.api.rm_from_prj(staging_project, request_id=request, msg='Removing from {}, re-evaluation needed'.format(staging_project))
             self.api.add_review(request, by_group=self.api.cstaging_group, msg='Requesting new staging review')
+
+            req = get_request(self.api.apiurl, str(request))
+            if req.state.name in ('new', 'review') and request not in ignored_requests:
+                print('  Consider marking the request ignored to let others know not to restage.')
 
         # Notify everybody about the changes
         for prj in affected_projects:
