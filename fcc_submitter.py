@@ -153,112 +153,6 @@ class FccSubmitter(object):
                 ]
         # put the except packages from skip_devel_project_list, use regex in this list, eg. "^golang-x-(\w+)", "^nodejs$"
         self.except_pkgs_list = []
-        # put the exact package name here
-        self.skip_pkgs_list = [
-                'python-pypuppetdb$',
-                'smbtad',
-                'mdds-1_2',
-                '^e17',
-                'shellementary',
-                'aer-inject',
-                'xplatproviders',
-                'newlib',
-                'openttd-openmsx',
-                'tulip',
-                'guake',
-                'mlterm',
-                'uim',
-                '^libxml',
-                'w3m-el',
-                'scim$',
-                '^scim-(\w+)',
-                'gstreamer-0_10-plugins-gl',
-                'libgdamm',
-                'gtk3-metatheme-sonar',
-                'gstreamer-0_10-plugin-crystalhd',
-                'grisbi',
-                'heroes-tron',
-                'specto',
-                'wayland-protocols',
-                'gsf-sharp',
-                'hal-flash',
-                'kdelibs3',
-                'qca-sasl',
-                'mozaddon-gnotifier',
-                'khunphan',
-                'lxcfs',
-                'containerd',
-                'docker-bench-security',
-                '0ad-data',
-                'python-plaso',
-                'gnome-news',
-                'wdm',
-                'nuntius',
-                'gobby04',
-                'sobby',
-                'efax-gtk',
-                'gnome-blog',
-                'clipit',
-                'fyre',
-                'gDesklets',
-                'texi2html',
-                'texi2roff',
-                'typo3-cms-6_2',
-                'decibel-audio-player',
-                'jamin',
-                'twind',
-                'ksshaskpass',
-                'sdl-asylum',
-                'nepomuk-core',
-                'audaspace',
-                'e_dbus',
-                'gnome-do',
-                'giver',
-                'php5-APCu',
-                'php5-memcache',
-                'java-1_9_0-openjdk',
-                'python-pandas',
-                '^bundle-lang',
-                'docker-image-migrator',
-                'metacity-themes',
-                'gnome-python-desktop',
-                'kiwi-config-openSUSE',
-                'tecnoballz',
-                'zaz',
-                'sawfish-pager',
-                'libgepub',
-                '^akonadi',
-                '^ffmpeg',
-                'sdl_bomber',
-                'double-cross',
-                'aop',
-                'viruskiller',
-                'ceferino',
-                'sdlscavenger:',
-                'asteroid',
-                'xgalaga-sdl',
-                'libgig',
-                'blog',
-                'mt-st',
-                'lostfeathers',
-                'gstreamer-rtsp-server',
-                'libgnome-games-support',
-                'php5-ZendFramework',
-                'runc',
-                'rubygem-json_pure-1_5',
-                'rubygem-addressable-2_3',
-                'rubygem-arel-6',
-                'rubygem-colorator-0',
-                'rubygem-listen-3_0',
-                'rubygem-rouge-1',
-                'rubygem-json-schema-2_2',
-                'computertemp',
-                'libtiger',
-                ]
-        self.check_later = [
-                'tulip',
-                'khunphan',
-                ]
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -395,6 +289,13 @@ class FccSubmitter(object):
 
         return pkgs
 
+    def load_skip_pkgs_list(self, project, package):
+        url = makeurl(self.apiurl, ['source', project, package, '{}?expand=1'.format('fcc_skip_pkgs')])
+        try:
+            return http_GET(url).read()
+        except urllib2.HTTPError:
+            return ''
+
     def crawl(self):
         """Main method"""
         succeeded_packages = []
@@ -408,6 +309,8 @@ class FccSubmitter(object):
         # get souce packages from target
         target_packages = self.get_source_packages(self.to_prj)
         deleted_packages = self.get_deleted_packages(self.to_prj)
+
+        skip_pkgs_list = self.load_skip_pkgs_list('openSUSE:Factory:Staging', 'dashboard').splitlines()
 
         ms_packages = [] # collect multi specs packages
 
@@ -465,7 +368,7 @@ class FccSubmitter(object):
 
                     # check package does not in the skip list
                     match = None
-                    for elem in self.skip_pkgs_list:
+                    for elem in skip_pkgs_list:
                         m = re.search(elem, package)
                         if m is not None:
                             match = True
