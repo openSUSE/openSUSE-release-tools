@@ -61,6 +61,7 @@ class Leaper(ReviewBot.ReviewBot):
         self.must_approve_maintenance_updates = False
         self.needs_check_source = False
         self.check_source_group = None
+        self.automatic_submission = False
 
         # project => package list
         self.packages = {}
@@ -191,6 +192,12 @@ class Leaper(ReviewBot.ReviewBot):
                     self.needs_release_manager = True
                 # fall through to check history and requests
             elif origin.startswith('openSUSE:Factory'):
+                # A large number of requests are created by hand that leaper
+                # would have created via update_crawler.py. This applies to
+                # other origins, but primary looking to let Factory submitters
+                # know that there is no need to make manual submissions to both.
+                # Since it has a lookup entry it is not a new package.
+                self.automatic_submission = True
                 if self.must_approve_version_updates:
                     self.needs_release_manager = True
                 if origin == src_project:
@@ -367,6 +374,10 @@ class Leaper(ReviewBot.ReviewBot):
         self.logger.debug("review result: %s", request_ok)
         if self.pending_factory_submission:
             self.logger.info("submission is waiting for a Factory request to complete")
+            creator = req.get_creator()
+            bot_name = self.bot_name.lower()
+            if self.automatic_submission and creator != bot_name:
+                self.logger.info('@{}: this request would have been automatically created by {} after the Factory submission was accepted in order to eleviate the need to manually create requests for packages sourced from Factory'.format(creator, bot_name))
         elif self.source_in_factory:
             self.logger.info("the submitted sources are in or accepted for Factory")
         elif self.source_in_factory == False:
