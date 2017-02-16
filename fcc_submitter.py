@@ -35,6 +35,7 @@ from osc import oscerr
 from osclib.memoize import memoize
 
 OPENSUSE = 'openSUSE:Leap:42.3'
+OPENSUSE_PREVERSION = 'openSUSE:Leap:42.2'
 FCC = 'openSUSE:42:Factory-Candidates-Check'
 
 makeurl = osc.core.makeurl
@@ -59,7 +60,7 @@ class FccFreezer(object):
 
         return set(pkglist)
 
-    def check_one_source(self, flink, si, pkglist):
+    def check_one_source(self, flink, si, pkglist, pkglist_prever):
         """
         Insert package information to the temporary frozenlinks.
         Return package name if the package can not fit the condition
@@ -74,7 +75,7 @@ class FccFreezer(object):
 
         for linked in si.findall('linked'):
             if linked.get('project') == self.factory:
-                if linked.get('package') in pkglist:
+                if linked.get('package') in pkglist or linked.get('package') in pkglist_prever:
                     return package
                 url = makeurl(self.apiurl, ['source', self.factory, package], {'view': 'info', 'nofilename': '1'})
                 # print(package, linked.get('package'), linked.get('project'))
@@ -86,7 +87,7 @@ class FccFreezer(object):
                 ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
                 return None
 
-        if package in pkglist:
+        if package in pkglist or package in pkglist_prever:
             return package
 
         if package in ['rpmlint-mini-AGGR']:
@@ -99,13 +100,15 @@ class FccFreezer(object):
     def receive_sources(self, flink):
         ignored_sources = []
         pkglist = self.list_packages(OPENSUSE)
+        # we also don't want the package is exist in the previous version
+        pkglist_prever = self.list_packages(OPENSUSE_PREVERSION)
 
         url = makeurl(self.apiurl, ['source', self.factory], {'view': 'info', 'nofilename': '1'})
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
         for si in root.findall('sourceinfo'):
-            package = self.check_one_source(flink, si, pkglist)
+            package = self.check_one_source(flink, si, pkglist, pkglist_prever)
             if package is not None:
                 ignored_sources.append(str(package))
         return ignored_sources
