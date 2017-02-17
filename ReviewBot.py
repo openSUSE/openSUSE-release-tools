@@ -77,6 +77,7 @@ class ReviewBot(object):
         self.fallback_user = None
         self.fallback_group = None
         self.comment_api = CommentAPI(self.apiurl)
+        self.bot_name = self.__class__.__name__
 
         self.load_config()
 
@@ -390,7 +391,7 @@ class ReviewBot(object):
     def comment_find(self, request=None, state=None, result=None):
         """Return previous comments by current bot and matching criteria."""
         # Case-insensitive for backwards compatibility.
-        bot = self.__class__.__name__.lower()
+        bot = self.bot_name.lower()
         comments = self.comment_api.get_comments(request_id=request.reqid)
         for c in comments.values():
             m = ReviewBot.COMMENT_MARKER_REGEX.match(c['comment'])
@@ -408,7 +409,7 @@ class ReviewBot(object):
         if message is None:
             message = '\n\n'.join(self.comment_handler.lines)
 
-        marker = '<!-- {} state={} result={} -->'.format(self.__class__.__name__, state, result)
+        marker = '<!-- {} state={} result={} -->'.format(self.bot_name, state, result)
         message = marker + '\n\n' + message
 
         comment_id, _, _, comment_text = self.comment_find(request, state, result)
