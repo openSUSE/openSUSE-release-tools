@@ -56,7 +56,7 @@ class TagChecker(ReviewBot.ReviewBot):
         super(TagChecker, self).__init__(*args, **kwargs)
         self.factory = "openSUSE:Factory"
         self.review_messages['declined'] = """
-(This is a script running, so report bugs)
+(This is a script, so report bugs)
 
 The project you submitted to requires a bug tracker ID marked in the
 .changes file. OBS supports several patterns, see
@@ -64,8 +64,8 @@ $ osc api /issue_trackers
 
 See also https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_set_of_abbreviations
 
-Note that not necessarily all of the tags listed there are supported
-by OBS on which this bot relies on.
+Note that not all of the tags listed there are necessarily supported
+by OBS on which this bot relies.
 """
 
     def isNewPackage(self, tgt_project, tgt_package):
@@ -77,32 +77,33 @@ by OBS on which this bot relies on.
         return False
 
     def checkTagInRequest(self, req, a):
-        is_new = False
         u = osc.core.makeurl(self.apiurl,
-                             ['source', a.tgt_project, a.tgt_package],
+                             ['source', a.src_project, a.src_package],
                              {'cmd': 'diff',
                               'onlyissues': '1',
                               'view': 'xml',
-                              'opackage': a.src_package,
-                              'oproject': a.src_project,
-                              'orev': a.src_rev})
+                              'opackage': a.tgt_package,
+                              'oproject': a.tgt_project,
+                              'rev': a.src_rev})
         try:
             f = osc.core.http_POST(u)
         except (HTTPError, URLError):
-            is_new = self.isNewPackage(a.tgt_project, a.tgt_package)
-        
-        # in case the quest have not the matched revision in Factory
-        # and it is a new package to target project, then leave it to
-        # human review
-        if is_new:
-            self.logger.info("New package to %s and have not the matched revision in Factory"%a.tgt_project)
-            return True
+            if self.isNewPackage(a.tgt_project, a.tgt_package):
+                self.review_messages['accepted'] = 'New package'
+                return True
+
+            self.logger.debug('error loading diff, assume transient error')
+            return None
 
         xml = ET.parse(f)
-        has_changes = list(xml.findall('./issues/issue'))
-        if not has_changes:
+        issues = len(xml.findall('./issues/issue'))
+        removed = len(xml.findall('./issues/issue[@state="removed"]'))
+        if issues == 0:
             self.logger.debug("reject: diff contains no tags")
             return False
+        if removed > 0:
+            self.review_messages['accepted'] = 'Warning: {} issues reference(s) removed'.format(removed)
+            return True
         return True
 
     def checkTagNotRequired(self, req, a):
@@ -114,7 +115,7 @@ by OBS on which this bot relies on.
         # 1) A tag is not required only if the package is
         # already in Factory with the same revision,
         # and the package is being introduced, not updated
-        # 2) A new package must be have a issue tag
+        # 2) A new package must have an issue tag
         factory_checker = check_source_in_factory.FactorySourceChecker(apiurl=self.apiurl,
                                                                        dryrun=self.dryrun,
                                                                        logger=self.logger,
