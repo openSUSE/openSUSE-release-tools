@@ -387,6 +387,9 @@ class Leaper(ReviewBot.ReviewBot):
             else:
                 state = 'done'
                 result = 'declined'
+            # Since leaper calls other bots (like maintbot) comments may
+            # sometimes contain identical lines (like for unhandled requests).
+            self.comment_handler_lines_deduplicate()
             self.comment_write(state, result)
 
         if self.needs_release_manager:
@@ -430,12 +433,7 @@ class Leaper(ReviewBot.ReviewBot):
         return request_ok
 
     def check_action__default(self, req, a):
-        # decline all other requests for fallback reviewer
-        self.logger.debug("auto decline request type %s"%a.type)
-        return False
-
-    def check_action__default(self, req, a):
-        self.logger.info("unhandled request type %s"%a.type)
+        super(Leaper, self).check_action__default(req, a)
         self.needs_release_manager = True
         return True
 

@@ -25,11 +25,11 @@ import logging
 from optparse import OptionParser
 import cmdln
 from collections import namedtuple
+from collections import OrderedDict
 from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 import signal
 import datetime
-from collections import namedtuple
 
 try:
     from xml.etree import cElementTree as ET
@@ -258,7 +258,7 @@ class ReviewBot(object):
 
     def check_action__default(self, req, a):
         self.logger.error("unhandled request type %s"%a.type)
-        ret = None
+        return None
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """
@@ -387,6 +387,9 @@ class ReviewBot(object):
 
     def comment_handler_remove(self):
         self.logger.removeHandler(self.comment_handler)
+
+    def comment_handler_lines_deduplicate(self):
+        self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
     def comment_find(self, request=None, state=None, result=None):
         """Return previous comments by current bot and matching criteria."""
