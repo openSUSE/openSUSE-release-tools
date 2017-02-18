@@ -65,6 +65,10 @@ class RequestSplitter(object):
 
     def suppliment(self, request):
         """ Provide additional information for grouping """
+        if request.get('ignored'):
+            # Only supliment once.
+            return
+
         target = request.find('./action/target')
         target_project = target.get('project')
         target_package = target.get('package')
