@@ -339,7 +339,11 @@ class StagingAPI(object):
             if project.endswith(':DVD') or \
                (adi is not None and self.is_adi_project(project) != adi):
                 continue
-            projects.append(self.extract_staging_short(project))
+            short = self.extract_staging_short(project)
+            if adi is False and len(short) > 1:
+                # Non-letter stagings are not setup for stagingapi.
+                continue
+            projects.append(short)
         return projects
 
     def is_adi_project(self, p):
