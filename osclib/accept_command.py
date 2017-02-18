@@ -69,6 +69,9 @@ class AcceptCommand(object):
                                  message='Accept to %s' % self.api.project)
             self.create_new_links(self.api.project, req['package'], oldspecs)
 
+        # Clear pseudometa since it no longer represents the staging.
+        self.api.clear_prj_pseudometa(project)
+
         # A single comment should be enough to notify everybody, since
         # they are already mentioned in the comments created by
         # select/unselect
