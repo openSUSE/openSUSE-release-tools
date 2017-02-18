@@ -727,6 +727,13 @@ class StagingAPI(object):
 
         return False
 
+    def project_status(self, project):
+        short = self.extract_staging_short(project)
+        query = {'format': 'json'}
+        url = self.makeurl(('project', 'staging_projects', self.project, short),
+                           query=query)
+        return json.load(self.retried_GET(url))
+
     def check_project_status(self, project):
         """
         Checks a staging project for acceptance. Use the JSON document
@@ -736,15 +743,8 @@ class StagingAPI(object):
                 informations)
 
         """
-        _prefix = '{}:'.format(self.cstaging)
-        if project.startswith(_prefix):
-            project = project.replace(_prefix, '')
-
-        query = {'format': 'json'}
-        url = self.makeurl(('project',  'staging_projects', self.project, project),
-                           query=query)
-        result = json.load(self.retried_GET(url))
-        return result and result['overall_state'] == 'acceptable'
+        status = self.project_status(project)
+        return status and status['overall_state'] == 'acceptable'
 
     def days_since_last_freeze(self, project):
         """
