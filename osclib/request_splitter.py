@@ -109,6 +109,8 @@ class RequestSplitter(object):
         else:
             request.set('ignored', 'false')
 
+        request.set('postponed', 'false')
+
     def ring_get(self, target_package):
         if self.api.crings:
             ring = self.api.ring_packages_for_links.get(target_package)
@@ -214,6 +216,8 @@ class RequestSplitter(object):
                 staging = self.propose_staging(choose_bootstrapped=True)
                 if staging:
                     self.requests_assign(group, staging)
+                else:
+                    self.requests_postpone(group)
 
         # Assign groups that do not have bootstrap_required and fallback to a
         # bootstrapped staging if no non-bootstrapped stagings available.
@@ -227,6 +231,8 @@ class RequestSplitter(object):
                 staging = self.propose_staging(choose_bootstrapped=True)
                 if staging:
                     self.requests_assign(group, staging)
+                else:
+                    self.requests_postpone(group)
 
     def requests_assign(self, group, staging, merge=False):
         # Arbitrary, but descriptive group key for proposal.
@@ -247,6 +253,13 @@ class RequestSplitter(object):
             self.requests.remove(request)
 
         return key
+
+    def requests_postpone(self, group):
+        if self.strategy.name == 'none':
+            return
+
+        for request in self.grouped[group]['requests']:
+            request.set('postponed', 'true')
 
     def propose_staging(self, choose_bootstrapped):
         found = False
@@ -329,6 +342,7 @@ class StrategyNone(Strategy):
     def apply(self, splitter):
         splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
         splitter.filter_add('@ignored="false"')
+        splitter.filter_add('@postponed="false"')
 
 class StrategyRequests(Strategy):
     def apply(self, splitter):
