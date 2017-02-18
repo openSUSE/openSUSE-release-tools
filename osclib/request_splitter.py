@@ -298,6 +298,12 @@ class RequestSplitter(object):
         self.split()
         self.propose_assignment()
 
+    def strategy_do_non_bootstrapped(self, name, **kwargs):
+        self.strategy_set(name, **kwargs)
+        self.filter_add('./action/target[not(starts-with(@ring, "0"))]')
+        self.split()
+        self.propose_assignment()
+
     def filter_grouped(self, groups):
         for group in sorted(self.grouped.keys()):
             if group not in groups:
