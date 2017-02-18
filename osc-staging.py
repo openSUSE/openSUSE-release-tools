@@ -339,6 +339,12 @@ def do_staging(self, subcmd, opts, *args):
                     return
 
                 splitter = RequestSplitter(api, open_requests, in_ring=True)
+
+                considerable = splitter.stagings_load(stagings)
+                if considerable == 0:
+                    print('No considerable stagings on which to act')
+                    return
+
                 if len(requests) > 0:
                     splitter.filter_add_requests(requests)
                 if len(splitter.filters) == 0:
@@ -352,7 +358,7 @@ def do_staging(self, subcmd, opts, *args):
                         splitter.group_by(group_by)
                 splitter.split()
 
-                result = splitter.propose_assignment(stagings)
+                result = splitter.propose_assignment()
                 if result is not True:
                     print('Failed to generate proposal: {}'.format(result))
                     return

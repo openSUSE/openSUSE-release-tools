@@ -125,7 +125,7 @@ class RequestSplitter(object):
             return '00'
         return '__'.join(key)
 
-    def propose_stagings_load(self, stagings):
+    def stagings_load(self, stagings):
         self.stagings_considerable = {}
 
         if self.api.rings:
@@ -156,10 +156,9 @@ class RequestSplitter(object):
         # Allow both considered and remaining to be accessible after proposal.
         self.stagings_available = self.stagings_considerable.copy()
 
-    def propose_assignment(self, stagings):
-        # Determine available stagings and make working copy.
-        self.propose_stagings_load(stagings)
+        return len(self.stagings_considerable)
 
+    def propose_assignment(self):
         if len(self.grouped) > len(self.stagings_available):
             return 'more groups than available stagings'
 
