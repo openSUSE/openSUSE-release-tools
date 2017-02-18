@@ -414,13 +414,12 @@ def do_staging(self, subcmd, opts, *args):
                         print('Quit')
                         return
 
-                for group in sorted(proposal.keys()):
-                    g = proposal[group]
-                    print('Staging {}'.format(g['staging']))
+                for group, info in sorted(proposal.items()):
+                    print('Staging {} in {}'.format(group, info['staging']))
 
                     # SelectCommand expects strings.
-                    request_ids = map(str, g['requests'].keys())
-                    target_project = api.prj_from_short(g['staging'])
+                    request_ids = map(str, info['requests'].keys())
+                    target_project = api.prj_from_short(info['staging'])
 
                     SelectCommand(api, target_project) \
                         .perform(request_ids, opts.move, opts.from_, opts.no_freeze)
