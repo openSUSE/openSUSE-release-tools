@@ -371,6 +371,7 @@ def do_staging(self, subcmd, opts, *args):
                         # Merge any none strategies before final none strategy.
                         splitter.merge(strategy_none=True)
                     splitter.strategy_do('none')
+                    splitter.strategy_do_non_bootstrapped('none')
 
                 proposal = splitter.proposal
                 if len(proposal) == 0:
