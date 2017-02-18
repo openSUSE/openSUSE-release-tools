@@ -395,6 +395,14 @@ def do_staging(self, subcmd, opts, *args):
 
                         proposal = yaml.safe_load(open(temp.name).read())
 
+                        # Filter invalidated groups from proposal.
+                        keys = ['requests', 'staging']
+                        for group, info in sorted(proposal.items()):
+                            for key in keys:
+                                if not info.get(key):
+                                    del proposal[group]
+                                    break
+
                 print(yaml.safe_dump(proposal, default_flow_style=False))
 
                 print('Accept proposal? [y/n] (y): ', end='')
@@ -408,10 +416,6 @@ def do_staging(self, subcmd, opts, *args):
 
                 for group in sorted(proposal.keys()):
                     g = proposal[group]
-                    if not g['requests']:
-                        # Skipping since all request removed, presumably in interactive.
-                        continue
-
                     print('Staging {}'.format(g['staging']))
 
                     # SelectCommand expects strings.
