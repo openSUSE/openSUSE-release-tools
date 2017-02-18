@@ -333,7 +333,6 @@ class StagingAPI(object):
         :param adi: True for only adi stagings, False for only non-adi stagings,
                     and None for both.
         """
-        prefix = len(self.cstaging) + 1
         projects = []
         for project in self.get_staging_projects():
             if project.endswith(':DVD') or \
