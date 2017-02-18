@@ -138,9 +138,6 @@ class RequestSplitter(object):
             project = self.api.prj_from_short(staging)
 
             if not filter_skip:
-                if len(staging) > 1:
-                    continue
-
                 # TODO Allow stagings that have not finished building by threshold.
                 if len(self.api.get_prj_pseudometa(project)['requests']) > 0:
                     continue
