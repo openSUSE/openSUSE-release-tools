@@ -333,7 +333,12 @@ def do_staging(self, subcmd, opts, *args):
                     print('--move and --from must be used with explicit staging and request list')
                     return
 
-                splitter = RequestSplitter(api, api.get_open_requests(), in_ring=True)
+                open_requests = api.get_open_requests()
+                if len(open_requests) == 0:
+                    print('No open requests to consider')
+                    return
+
+                splitter = RequestSplitter(api, open_requests, in_ring=True)
                 if len(requests) > 0:
                     splitter.filter_add_requests(requests)
                 if len(splitter.filters) == 0:
