@@ -549,6 +549,15 @@ class StagingAPI(object):
         f = http_GET(url)
         return ET.parse(f).getroot()
 
+    def load_prj_pseudometa(self, description_text):
+        try:
+            data = yaml.load(description_text)
+        except (TypeError, AttributeError):
+            data = {}
+        # make sure we have a requests field
+        data['requests'] = data.get('requests', [])
+        return data
+
     @memoize(ttl=60, session=True, add_invalidate=True)
     def get_prj_pseudometa(self, project):
         """
@@ -564,13 +573,7 @@ class StagingAPI(object):
         # * broken description
         # * directly linked packages
         # * removed linked packages
-        try:
-            data = yaml.load(description.text)
-        except (TypeError, AttributeError):
-            data = {}
-        # make sure we have a requests field
-        data['requests'] = data.get('requests', [])
-        return data
+        return self.load_prj_pseudometa(description.text)
 
     def set_prj_pseudometa(self, project, meta):
         """
