@@ -746,6 +746,26 @@ class StagingAPI(object):
         status = self.project_status(project)
         return status and status['overall_state'] == 'acceptable'
 
+    def project_status_build_percent(self, status):
+        final, tobuild = self.project_status_build_sum(status)
+        return (final - tobuild) / float(final) * 100
+
+    def project_status_build_sum(self, status):
+        final, tobuild = self.project_status_build_sum_repos(status['building_repositories'])
+        for subproject in status['subprojects']:
+            # _, _ += ... would be neat.
+            _final, _tobuild = self.project_status_build_sum_repos(subproject['building_repositories'])
+            final += _final
+            tobuild += _tobuild
+        return final, tobuild
+
+    def project_status_build_sum_repos(self, repositories):
+        final = tobuild = 0
+        for repo in repositories:
+            final += int(repo['final'])
+            tobuild += int(repo['tobuild'])
+        return final, tobuild
+
     def days_since_last_freeze(self, project):
         """
         Checks the last update for the frozen links
