@@ -230,12 +230,6 @@ class TestUpdate(openSUSEUpdate):
         return settings
 
 KGRAFT_SETTINGS = {
-    'SLE12_Update_10' : { 'VIRSH_GUESTNAME': 'kGraft0a',
-                          'WORKER_CLASS': 'svirt-perseus',
-                          'VIRSH_INSTANCE': 12010 - 5900 },
-    'SLE12_Update_11' : { 'VIRSH_GUESTNAME': 'kGraft0b',
-                          'WORKER_CLASS': 'svirt-perseus',
-                          'VIRSH_INSTANCE': 12011 - 5900 },
     'SLE12_Update_12' : { 'VIRSH_GUESTNAME': 'kGraft0c',
                           'WORKER_CLASS': 'svirt-perseus',
                           'VIRSH_INSTANCE': 12012 - 5900 },
@@ -257,15 +251,9 @@ KGRAFT_SETTINGS = {
     'SLE12_Update_18' : { 'VIRSH_GUESTNAME': 'kGraft0i',
                           'WORKER_CLASS': 'svirt-perseus',
                           'VIRSH_INSTANCE': 12018 - 5900 },
-    'SLE12-SP1_Update_0' : { 'VIRSH_GUESTNAME': 'kGraft11',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12101 - 5900 },
-    'SLE12-SP1_Update_1' : { 'VIRSH_GUESTNAME': 'kGraft12',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12102 - 5900 },
-    'SLE12-SP1_Update_2' : { 'VIRSH_GUESTNAME': 'kGraft13',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12103 - 5900 },
+    'SLE12_Update_19' : { 'VIRSH_GUESTNAME': 'kGraft0j',
+                          'WORKER_CLASS': 'svirt-perseus',
+                          'VIRSH_INSTANCE': 12019 - 5900 },
     'SLE12-SP1_Update_3' : { 'VIRSH_GUESTNAME': 'kGraft14',
                              'WORKER_CLASS': 'svirt-perseus',
                              'VIRSH_INSTANCE': 12104 - 5900 },
@@ -304,7 +292,10 @@ KGRAFT_SETTINGS = {
                              'VIRSH_INSTANCE': 12202 - 5900},
     'SLE12-SP2_Update_3' : { 'VIRSH_GUESTNAME': 'kGraft23',
                              'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12203 - 5900}
+                             'VIRSH_INSTANCE': 12203 - 5900},
+    'SLE12-SP2_Update_4' : { 'VIRSH_GUESTNAME': 'kGraft24',
+                             'WORKER_CLASS': 'svirt-pegasus',
+                             'VIRSH_INSTANCE': 12204 - 5900}
 }
 
 TARGET_REPO_SETTINGS = {
