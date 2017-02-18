@@ -1,3 +1,4 @@
+import hashlib
 from lxml import etree as ET
 
 class RequestSplitter(object):
@@ -5,10 +6,16 @@ class RequestSplitter(object):
         self.api = api
         self.requests = requests
         self.in_ring = in_ring
+        self.mergeable_build_percent = 80
+
         self.requests_ignored = self.api.get_ignored_requests()
+
         self.reset()
+        # after propose_assignment()
+        self.proposal = {}
 
     def reset(self):
+        self.strategy = None
         self.filters = []
         self.groups = []
 
@@ -16,8 +23,21 @@ class RequestSplitter(object):
         self.filtered = []
         self.other = []
         self.grouped = {}
-        # after propose_assignment()
-        self.proposal = {}
+
+    def strategy_set(self, name, **kwargs):
+        self.reset()
+
+        class_name = 'Strategy{}'.format(name.lower().title())
+        cls = globals()[class_name]
+        self.strategy = cls(**kwargs)
+        self.strategy.apply(self)
+
+    def strategy_from_splitter_info(self, splitter_info):
+        strategy = splitter_info['strategy']
+        if 'args' in strategy:
+            self.strategy_set(strategy['name'], **strategy['args'])
+        else:
+            self.strategy_set(strategy['name'])
 
     def filter_add(self, xpath):
         self.filters.append(ET.XPath(xpath))
@@ -134,75 +154,227 @@ class RequestSplitter(object):
 
         return False
 
+    def is_staging_mergeable(self, status, pseudometa):
+        # Mergeable if building and not too far along.
+        return (len(pseudometa['requests']) > 0 and
+                'splitter_info' in pseudometa and
+                status['overall_state'] == 'building' and
+                self.api.project_status_build_percent(status) <= self.mergeable_build_percent)
+
+    def staging_status_load(self, project):
+        status = self.api.project_status(project)
+        return status, self.api.load_prj_pseudometa(status['description'])
+
+    def is_staging_considerable(self, project, pseudometa):
+        return (len(pseudometa['requests']) == 0 and
+                self.api.prj_frozen_enough(project))
+
     def stagings_load(self, stagings):
-        self.stagings_considerable = {}
+        self.stagings = {}
+        self.stagings_considerable = []
+        self.stagings_mergeable = []
+        self.stagings_mergeable_none = []
 
         # Use specified list of stagings, otherwise only empty, letter stagings.
         if len(stagings) == 0:
             stagings = self.api.get_staging_projects_short()
-            filter_skip = False
-        else:
-            filter_skip = True
 
         for staging in stagings:
             project = self.api.prj_from_short(staging)
+            status, pseudometa = self.staging_status_load(project)
 
-            if not filter_skip:
-                # TODO Allow stagings that have not finished building by threshold.
-                if len(self.api.get_prj_pseudometa(project)['requests']) > 0:
-                    continue
-
-            self.stagings_considerable[staging] = self.is_staging_bootstrapped(project)
-
-        # Allow both considered and remaining to be accessible after proposal.
-        self.stagings_available = self.stagings_considerable.copy()
-
-        return len(self.stagings_considerable)
-
-    def propose_assignment(self):
-        if len(self.grouped) > len(self.stagings_available):
-            return 'more groups than available stagings'
-
-        # Cycle through all groups and initialize proposal and attempt to assign
-        # groups that have bootstrap_required.
-        for group in sorted(self.grouped.keys()):
-            self.proposal[group] = {
-                'bootstrap_required': self.grouped[group]['bootstrap_required'],
-                'requests': {},
+            # Store information about staging.
+            self.stagings[staging] = {
+                'project': project,
+                'bootstrapped': self.is_staging_bootstrapped(project),
+                'status': status,
+                'pseudometa': pseudometa,
             }
 
-            # Covert request nodes to simple proposal form.
-            for request in self.grouped[group]['requests']:
-                self.proposal[group]['requests'][int(request.get('id'))] = request.find('action/target').get('package')
+            # Decide if staging of interested.
+            if self.is_staging_mergeable(status, pseudometa):
+                if pseudometa['splitter_info']['strategy']['name'] == 'none':
+                    self.stagings_mergeable_none.append(staging)
+                else:
+                    self.stagings_mergeable.append(staging)
+            elif self.is_staging_considerable(project, pseudometa):
+                self.stagings_considerable.append(staging)
 
+        # Allow both considered and remaining to be accessible after proposal.
+        self.stagings_available = list(self.stagings_considerable)
+
+        return (len(self.stagings_considerable) +
+                len(self.stagings_mergeable) +
+                len(self.stagings_mergeable_none))
+
+    def propose_assignment(self):
+        # Attempt to assign groups that have bootstrap_required first.
+        for group in sorted(self.grouped.keys()):
             if self.grouped[group]['bootstrap_required']:
-                self.proposal[group]['staging'] = self.propose_staging(True)
-                if not self.proposal[group]['staging']:
-                    return 'unable to find enough available bootstrapped stagings'
+                staging = self.propose_staging(choose_bootstrapped=True)
+                if staging:
+                    self.requests_assign(group, staging)
 
         # Assign groups that do not have bootstrap_required and fallback to a
         # bootstrapped staging if no non-bootstrapped stagings available.
         for group in sorted(self.grouped.keys()):
             if not self.grouped[group]['bootstrap_required']:
-                self.proposal[group]['staging'] = self.propose_staging(False)
-                if self.proposal[group]['staging']:
+                staging = self.propose_staging(choose_bootstrapped=False)
+                if staging:
+                    self.requests_assign(group, staging)
                     continue
 
-                self.proposal[group]['staging'] = self.propose_staging(True)
-                if not self.proposal[group]['staging']:
-                    return 'unable to find enough available stagings'
+                staging = self.propose_staging(choose_bootstrapped=True)
+                if staging:
+                    self.requests_assign(group, staging)
 
-        return True
+    def requests_assign(self, group, staging, merge=False):
+        # Arbitrary, but descriptive group key for proposal.
+        key = '{}#{}@{}'.format(len(self.proposal), self.strategy.key, group)
+        self.proposal[key] = {
+            'bootstrap_required': self.grouped[group]['bootstrap_required'],
+            'group': group,
+            'requests': {},
+            'staging': staging,
+            'strategy': self.strategy.info(),
+        }
+        if merge:
+            self.proposal[key]['merge'] = True
+
+        # Covert request nodes to simple proposal form.
+        for request in self.grouped[group]['requests']:
+            self.proposal[key]['requests'][int(request.get('id'))] = request.find('action/target').get('package')
+            self.requests.remove(request)
+
+        return key
 
     def propose_staging(self, choose_bootstrapped):
         found = False
-        for staging, bootstrapped in sorted(self.stagings_available.items()):
-            if choose_bootstrapped == bootstrapped:
+        for staging in sorted(self.stagings_available):
+            if choose_bootstrapped == self.stagings[staging]['bootstrapped']:
                 found = True
                 break
 
         if found:
-            del self.stagings_available[staging]
+            self.stagings_available.remove(staging)
             return staging
 
         return None
+
+    def strategies_try(self):
+        strategies = (
+            'special',
+            'devel',
+        )
+
+        map(self.strategy_try, strategies)
+
+    def strategy_try(self, name):
+        self.strategy_set(name)
+        self.split()
+
+        groups = self.strategy.desirable(self)
+        if len(groups) == 0:
+            return
+        self.filter_grouped(groups)
+
+        self.propose_assignment()
+
+    def strategy_do(self, name, **kwargs):
+        self.strategy_set(name, **kwargs)
+        self.split()
+        self.propose_assignment()
+
+    def filter_grouped(self, groups):
+        for group in sorted(self.grouped.keys()):
+            if group not in groups:
+                del self.grouped[group]
+
+    def merge_staging(self, staging, pseudometa):
+        splitter_info = pseudometa['splitter_info']
+        self.strategy_from_splitter_info(splitter_info)
+
+        if not self.stagings[staging]['bootstrapped']:
+            # If when the strategy was first run the resulting staging was not
+            # bootstrapped then ensure no bootstrapped packages are included.
+            self.filter_add('./action/target[not(starts-with(@ring, "0"))]')
+
+        self.split()
+
+        group = splitter_info['group']
+        if group in self.grouped:
+            key = self.requests_assign(group, staging, merge=True)
+
+    def merge(self, strategy_none=False):
+        stagings = self.stagings_mergeable_none if strategy_none else self.stagings_mergeable
+        for staging in sorted(stagings):
+            self.merge_staging(staging, self.stagings[staging]['pseudometa'])
+
+
+class Strategy(object):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.name = self.__class__.__name__[8:].lower()
+        self.key = self.name
+        if kwargs:
+            self.key += '_' + hashlib.sha1(str(kwargs)).hexdigest()[:7]
+
+    def info(self):
+        info = {'name': self.name}
+        if self.kwargs:
+            info['args'] = self.kwargs
+        return info
+
+class StrategyNone(Strategy):
+    def apply(self, splitter):
+        splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
+        splitter.filter_add('@ignored="false"')
+
+class StrategyRequests(Strategy):
+    def apply(self, splitter):
+        splitter.filter_add_requests(self.kwargs['requests'])
+
+class StrategyCustom(StrategyNone):
+    def apply(self, splitter):
+        if 'filters' not in self.kwargs:
+            super(StrategyCustom, self).apply(splitter)
+        else:
+            map(splitter.filter_add, self.kwargs['filters'])
+
+        if 'groups' in self.kwargs:
+            map(splitter.group_by, self.kwargs['groups'])
+
+class StrategyDevel(StrategyNone):
+    GROUP_MIN = 7
+
+    def apply(self, splitter):
+        super(StrategyDevel, self).apply(splitter)
+        splitter.group_by('./action/target/@devel_project')
+
+    def desirable(self, splitter):
+        groups = []
+        for group, info in sorted(splitter.grouped.items()):
+            if len(info['requests']) >= self.GROUP_MIN:
+                groups.append(group)
+        return groups
+
+class StrategySpecial(StrategyNone):
+    PACKAGES = [
+        'boost',
+        'gcc',
+        'gcc6',
+        'gcc7',
+        'glibc',
+        'kernel-source',
+        'python2',
+        'python3',
+        'util-linux',
+    ]
+
+    def apply(self, splitter):
+        super(StrategySpecial, self).apply(splitter)
+        splitter.filter_add_requests(self.PACKAGES)
+        splitter.group_by('./action/target/@package')
+
+    def desirable(self, splitter):
+        return splitter.grouped.keys()

@@ -629,6 +629,14 @@ class StagingAPI(object):
             data['requests'].append({'id': request_id, 'package': package, 'author': author})
         self.set_prj_pseudometa(project, data)
 
+    def set_splitter_info_in_prj_pseudometa(self, project, group, strategy_info):
+        data = self.get_prj_pseudometa(project)
+        data['splitter_info'] = {
+            'group': group,
+            'strategy': strategy_info,
+        }
+        self.set_prj_pseudometa(project, data)
+
     def get_request_id_for_package(self, project, package):
         """
         Query the request id from meta
