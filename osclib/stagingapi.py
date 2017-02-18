@@ -582,7 +582,7 @@ class StagingAPI(object):
         # Find description
         description = root.find('description')
         # Order the requests and replace it with yaml
-        meta['requests'] = sorted(meta['requests'], key=lambda x: x['id'])
+        meta['requests'] = sorted(meta.get('requests', []), key=lambda x: x['id'])
         description.text = yaml.dump(meta)
         # Find title
         title = root.find('title')
@@ -598,6 +598,9 @@ class StagingAPI(object):
 
         # Invalidate here the cache for this stating project
         self._invalidate_get_prj_pseudometa(project)
+
+    def clear_prj_pseudometa(self, project):
+        self.set_prj_pseudometa(project, {})
 
     def _add_rq_to_prj_pseudometa(self, project, request_id, package):
         """
