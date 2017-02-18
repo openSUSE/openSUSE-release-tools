@@ -104,6 +104,9 @@ def _full_project_name(self, project):
 @cmdln.option('--group-by', action='append', help='xpath by which to group requests')
 @cmdln.option('-i', '--interactive', action='store_true', help='interactively modify selection proposal')
 @cmdln.option('-n', '--non-interactive', action='store_true', help='do not ask anything, use default answers')
+@cmdln.option('--merge', action='store_true', help='propose merge where applicable and store details to allow future merges')
+@cmdln.option('--try-strategies', action='store_true', default=False, help='apply strategies and keep any with desireable outcome')
+@cmdln.option('--strategy', help='apply a specific strategy')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -209,7 +212,10 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unignore REQUEST...|all
         osc staging list [--supersede] [PACKAGE...]
         osc staging select [--no-freeze] [--move [--from PROJECT]] STAGING REQUEST...
-        osc staging select [--no-freeze] [[--interactive|--non-interactive] [--filter-by...] [--group-by...]] [STAGING...] [REQUEST...]
+        osc staging select [--no-freeze] [--interactive|--non-interactive]
+            [--filter-by...] [--group-by...]
+            [--merge] [--try-strategies] [--strategy]
+            [STAGING...] [REQUEST...]
         osc staging unselect REQUEST...
         osc staging repair REQUEST...
     """
@@ -345,23 +351,27 @@ def do_staging(self, subcmd, opts, *args):
                     print('No considerable stagings on which to act')
                     return
 
+                if opts.merge:
+                    splitter.merge()
+                if opts.try_strategies:
+                    splitter.strategies_try()
                 if len(requests) > 0:
-                    splitter.filter_add_requests(requests)
-                if len(splitter.filters) == 0:
-                    splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
-                    splitter.filter_add('@ignored="false"')
-                if opts.filter_by:
-                    for filter_by in opts.filter_by:
-                        splitter.filter_add(filter_by)
-                if opts.group_by:
-                    for group_by in opts.group_by:
-                        splitter.group_by(group_by)
-                splitter.split()
+                    splitter.strategy_do('requests', requests=requests)
+                if opts.strategy:
+                    splitter.strategy_do(opts.strategy)
+                elif opts.filter_by or opts.group_by:
+                    kwargs = {}
+                    if opts.filter_by:
+                        kwargs['filters'] = opts.filter_by
+                    if opts.group_by:
+                        kwargs['groups'] = opts.group_by
+                    splitter.strategy_do('custom', **kwargs)
+                else:
+                    if opts.merge:
+                        # Merge any none strategies before final none strategy.
+                        splitter.merge(strategy_none=True)
+                    splitter.strategy_do('none')
 
-                result = splitter.propose_assignment()
-                if result is not True:
-                    print('Failed to generate proposal: {}'.format(result))
-                    return
                 proposal = splitter.proposal
                 if len(proposal) == 0:
                     print('Empty proposal')
@@ -373,10 +383,14 @@ def do_staging(self, subcmd, opts, *args):
                         temp.write('# move requests between stagings or comment/remove them\n')
                         temp.write('# change the target staging for a group\n')
                         temp.write('# stagings\n')
+                        if opts.merge:
+                            temp.write('# - merged: {}\n'
+                                       .format(', '.join(sorted(splitter.stagings_mergeable +
+                                                                splitter.stagings_mergeable_none))))
                         temp.write('# - considered: {}\n'
-                                   .format(', '.join(sorted(splitter.stagings_considerable.keys()))))
+                                   .format(', '.join(sorted(splitter.stagings_considerable))))
                         temp.write('# - remaining: {}\n'
-                                   .format(', '.join(sorted(splitter.stagings_available.keys()))))
+                                   .format(', '.join(sorted(splitter.stagings_available))))
                         temp.flush()
 
                         editor = os.getenv('EDITOR')
@@ -387,7 +401,7 @@ def do_staging(self, subcmd, opts, *args):
                         proposal = yaml.safe_load(open(temp.name).read())
 
                         # Filter invalidated groups from proposal.
-                        keys = ['requests', 'staging']
+                        keys = ['group', 'requests', 'staging', 'strategy']
                         for group, info in sorted(proposal.items()):
                             for key in keys:
                                 if not info.get(key):
@@ -411,6 +425,11 @@ def do_staging(self, subcmd, opts, *args):
                     # SelectCommand expects strings.
                     request_ids = map(str, info['requests'].keys())
                     target_project = api.prj_from_short(info['staging'])
+
+                    if 'merge' not in info:
+                        # Assume that the original splitter_info is desireable
+                        # and that this staging is simply manual followup.
+                        api.set_splitter_info_in_prj_pseudometa(target_project, info['group'], info['strategy'])
 
                     SelectCommand(api, target_project) \
                         .perform(request_ids, opts.move, opts.from_, opts.no_freeze)
