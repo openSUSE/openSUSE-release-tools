@@ -125,11 +125,17 @@ class RequestSplitter(object):
             return '00'
         return '__'.join(key)
 
+    def is_staging_bootstrapped(self, project):
+        if self.api.rings:
+            # Determine if staging is bootstrapped.
+            meta = self.api.get_prj_meta(project)
+            xpath = 'link[@project="{}"]'.format(self.api.rings[0])
+            return meta.find(xpath) is not None
+
+        return False
+
     def stagings_load(self, stagings):
         self.stagings_considerable = {}
-
-        if self.api.rings:
-            xpath = 'link[@project="{}"]'.format(self.api.rings[0])
 
         # Use specified list of stagings, otherwise only empty, letter stagings.
         if len(stagings) == 0:
@@ -146,12 +152,7 @@ class RequestSplitter(object):
                 if len(self.api.get_prj_pseudometa(project)['requests']) > 0:
                     continue
 
-            if self.api.rings:
-                # Determine if staging is bootstrapped.
-                meta = self.api.get_prj_meta(project)
-                self.stagings_considerable[staging] = True if meta.find(xpath) is not None else False
-            else:
-                self.stagings_considerable[staging] = False
+            self.stagings_considerable[staging] = self.is_staging_bootstrapped(project)
 
         # Allow both considered and remaining to be accessible after proposal.
         self.stagings_available = self.stagings_considerable.copy()
