@@ -297,6 +297,14 @@ class Leaper(ReviewBot.ReviewBot):
             is_fine_if_factory = True
             self.needs_release_manager = True
 
+        if origin is None or not origin.startswith('SUSE:SLE-'):
+            for p in ('-SP3:GA', '-SP2:Update', '-SP2:GA',
+                    '-SP1:Update', '-SP1:GA', ':Update', ':GA'):
+                prj = 'SUSE:SLE-12' + p
+                if self.is_package_in_project(prj, target_package):
+                    self.logger.info('Package is in {}'.format(prj))
+                    break
+
         # we came here because none of the above checks find it good, so
         # let's see if the package is in Factory at least
         is_in_factory = self._check_factory(target_package, src_srcinfo)
