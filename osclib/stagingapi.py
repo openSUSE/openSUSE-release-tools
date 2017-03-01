@@ -583,8 +583,7 @@ class StagingAPI(object):
         """
 
         # Get current metadata
-        url = make_meta_url('prj', project, self.apiurl)
-        root = ET.parse(http_GET(url)).getroot()
+        root = self.get_prj_meta(project)
         # Find description
         description = root.find('description')
         # Order the requests and replace it with yaml
