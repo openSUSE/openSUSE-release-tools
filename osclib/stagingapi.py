@@ -1298,9 +1298,10 @@ class StagingAPI(object):
             raise Exception('Project {} already exist'.format(name))
 
         meta = """
-        <project name="{}">
+        <project name="{0}">
           <title></title>
           <description></description>
+          <url>/project/staging_projects/{1}/adi:{2}</url>
           <publish>
             <disable/>
           </publish>
@@ -1308,10 +1309,10 @@ class StagingAPI(object):
             <enable/>
           </debuginfo>
           <repository name="standard">
-            <path project="{}" repository="standard"/>
+            <path project="{1}" repository="standard"/>
             <arch>x86_64</arch>
           </repository>
-        </project>""".format(name, self.project)
+        </project>""".format(name, self.project, self.extract_adi_number(name))
         url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)
         # put twice because on first put, the API adds useless maintainer
