@@ -1,6 +1,7 @@
 lxml
 PyYAML
 pycurl
+python-dateutil
 urlgrabber
 pyxdg
 cmdln
