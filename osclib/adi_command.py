@@ -73,7 +73,7 @@ class AdiCommand:
                 line = '- sr#{}: {:<30}'.format(request_id, target_package)
 
                 if request_id in self.requests_ignored:
-                    print(line + '\n    ignored: ' + self.requests_ignored[request_id])
+                    print(line + '\n    ignored: ' + str(self.requests_ignored[request_id]))
                     continue
 
                 # Auto-superseding request in adi command
