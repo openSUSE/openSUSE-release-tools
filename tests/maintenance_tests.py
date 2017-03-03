@@ -61,7 +61,7 @@ class TestMaintenance(unittest.TestCase):
         """
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?match=state/@name='review'+and+review[@by_user='maintbot'+and+@state='new']&withhistory=1"),
+            rr("/search/request?withhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D"),
             match_querystring = True,
             body = """
                 <collection matches="1">
@@ -167,7 +167,7 @@ class TestMaintenance(unittest.TestCase):
     def test_non_maintainer_double_review(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?match=state/@name='review'+and+review[@by_user='maintbot'+and+@state='new']&withhistory=1"),
+            rr("/search/request?withhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D"),
             match_querystring = True,
             body = """
                 <collection matches="1">
@@ -281,7 +281,7 @@ class TestMaintenance(unittest.TestCase):
     def test_backports_submit(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?match=state/@name='review'+and+review[@by_user='maintbot'+and+@state='new']&withhistory=1"),
+            rr("/search/request?withhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D"),
             match_querystring = True,
             body = """
                 <collection matches="1">
