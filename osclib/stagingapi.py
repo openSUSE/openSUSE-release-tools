@@ -315,7 +315,7 @@ class StagingAPI(object):
         return projects
 
     def extract_staging_short(self, p):
-        if not ':' in p:
+        if not p.startswith(self.cstaging):
             return p
         prefix = len(self.cstaging) + 1
         if p.endswith(':DVD'):
