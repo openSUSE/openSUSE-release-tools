@@ -81,7 +81,7 @@ class RequestSplitter(object):
 
         request_id = int(request.get('id'))
         if request_id in self.requests_ignored:
-            request.set('ignored', self.requests_ignored[request_id])
+            request.set('ignored', str(self.requests_ignored[request_id]))
         else:
             request.set('ignored', 'false')
 

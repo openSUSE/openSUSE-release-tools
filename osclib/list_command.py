@@ -61,7 +61,7 @@ class ListCommand:
                     line += ' ({})'.format(source_project)
 
                 if request_id in requests_ignored:
-                    line += '\n    ignored: ' + requests_ignored[request_id]
+                    line += '\n    ignored: ' + str(requests_ignored[request_id])
 
                 print ' ', line
 
