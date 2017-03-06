@@ -112,6 +112,16 @@ class Leaper(ReviewBot.ReviewBot):
                 'target_package': target_package,
                 }
 
+    def _check_same_origin(self, origin, project):
+
+        if origin == 'FORK':
+            return True
+
+        if origin.startswith('Devel;'):
+            (dummy, origin, dummy) = origin.split(';')
+
+        return project.startswith(origin)
+
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         super(Leaper, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
@@ -131,7 +141,7 @@ class Leaper(ReviewBot.ReviewBot):
 
             origin_same = True
             if origin:
-                origin_same = True if origin == 'FORK' else src_project.startswith(origin)
+                origin_same = self._check_same_origin(origin, src_project)
                 self.logger.info("expected origin is '%s' (%s)", origin,
                                  "unchanged" if origin_same else "changed")
 
@@ -178,12 +188,11 @@ class Leaper(ReviewBot.ReviewBot):
         is_fine_if_factory = False
         not_in_factory_okish = False
         if origin:
-            origin_same = src_project.startswith(origin)
+            origin_same = self._check_same_origin(origin, src_project)
             self.logger.info("expected origin is '%s' (%s)", origin,
                              "unchanged" if origin_same else "changed")
             if origin.startswith('Devel;'):
-                (dummy, origin, dummy) = origin.split(';')
-                if origin != src_project:
+                if origin_same == False:
                     self.logger.debug("not submitted from devel project")
                     return False
                 is_fine_if_factory = True
