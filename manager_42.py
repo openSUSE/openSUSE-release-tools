@@ -140,6 +140,8 @@ class Manager42(object):
             if e.code == 404:
                 logger.error("{}: {}".format(project, e))
                 packages = []
+            else:
+                raise
 
         return packages
 
