@@ -259,7 +259,7 @@ class Manager42(object):
                     logger.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
                 return
 
-        if lproject and lproject != 'FORK' and not lproject.startswith('subpackage '):
+        elif lproject and lproject != 'FORK' and not lproject.startswith('subpackage '):
             srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
             if srcmd5:
                 logger.debug("{} lookup from {} is correct".format(package, lproject))
