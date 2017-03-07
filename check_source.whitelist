@@ -7,6 +7,7 @@ devel:languages:D
 devel:languages:pascal
 isv:ownCloud:desktop
 network:cluster
+network:cluster:ohpc
 network:mail:zarafa
 science:HPC
 security:Stunnel
