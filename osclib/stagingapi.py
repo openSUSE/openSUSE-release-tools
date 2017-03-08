@@ -333,13 +333,16 @@ class StagingAPI(object):
         :param adi: True for only adi stagings, False for only non-adi stagings,
                     and None for both.
         """
-        prefix = len(self.cstaging) + 1
         projects = []
         for project in self.get_staging_projects():
             if project.endswith(':DVD') or \
                (adi is not None and self.is_adi_project(project) != adi):
                 continue
-            projects.append(self.extract_staging_short(project))
+            short = self.extract_staging_short(project)
+            if adi is False and len(short) > 1:
+                # Non-letter stagings are not setup for stagingapi.
+                continue
+            projects.append(short)
         return projects
 
     def is_adi_project(self, p):
@@ -546,6 +549,15 @@ class StagingAPI(object):
         f = http_GET(url)
         return ET.parse(f).getroot()
 
+    def load_prj_pseudometa(self, description_text):
+        try:
+            data = yaml.load(description_text)
+        except (TypeError, AttributeError):
+            data = {}
+        # make sure we have a requests field
+        data['requests'] = data.get('requests', [])
+        return data
+
     @memoize(ttl=60, session=True, add_invalidate=True)
     def get_prj_pseudometa(self, project):
         """
@@ -561,13 +573,7 @@ class StagingAPI(object):
         # * broken description
         # * directly linked packages
         # * removed linked packages
-        try:
-            data = yaml.load(description.text)
-        except (TypeError, AttributeError):
-            data = {}
-        # make sure we have a requests field
-        data['requests'] = data.get('requests', [])
-        return data
+        return self.load_prj_pseudometa(description.text)
 
     def set_prj_pseudometa(self, project, meta):
         """
@@ -577,12 +583,11 @@ class StagingAPI(object):
         """
 
         # Get current metadata
-        url = make_meta_url('prj', project, self.apiurl)
-        root = ET.parse(http_GET(url)).getroot()
+        root = self.get_prj_meta(project)
         # Find description
         description = root.find('description')
         # Order the requests and replace it with yaml
-        meta['requests'] = sorted(meta['requests'], key=lambda x: x['id'])
+        meta['requests'] = sorted(meta.get('requests', []), key=lambda x: x['id'])
         description.text = yaml.dump(meta)
         # Find title
         title = root.find('title')
@@ -598,6 +603,9 @@ class StagingAPI(object):
 
         # Invalidate here the cache for this stating project
         self._invalidate_get_prj_pseudometa(project)
+
+    def clear_prj_pseudometa(self, project):
+        self.set_prj_pseudometa(project, {})
 
     def _add_rq_to_prj_pseudometa(self, project, request_id, package):
         """
@@ -619,6 +627,14 @@ class StagingAPI(object):
         if append:
             author = get_request(self.apiurl, str(request_id)).get_creator()
             data['requests'].append({'id': request_id, 'package': package, 'author': author})
+        self.set_prj_pseudometa(project, data)
+
+    def set_splitter_info_in_prj_pseudometa(self, project, group, strategy_info):
+        data = self.get_prj_pseudometa(project)
+        data['splitter_info'] = {
+            'group': group,
+            'strategy': strategy_info,
+        }
         self.set_prj_pseudometa(project, data)
 
     def get_request_id_for_package(self, project, package):
@@ -719,6 +735,13 @@ class StagingAPI(object):
 
         return False
 
+    def project_status(self, project):
+        short = self.extract_staging_short(project)
+        query = {'format': 'json'}
+        url = self.makeurl(('project', 'staging_projects', self.project, short),
+                           query=query)
+        return json.load(self.retried_GET(url))
+
     def check_project_status(self, project):
         """
         Checks a staging project for acceptance. Use the JSON document
@@ -728,15 +751,28 @@ class StagingAPI(object):
                 informations)
 
         """
-        _prefix = '{}:'.format(self.cstaging)
-        if project.startswith(_prefix):
-            project = project.replace(_prefix, '')
+        status = self.project_status(project)
+        return status and status['overall_state'] == 'acceptable'
 
-        query = {'format': 'json'}
-        url = self.makeurl(('project',  'staging_projects', self.project, project),
-                           query=query)
-        result = json.load(self.retried_GET(url))
-        return result and result['overall_state'] == 'acceptable'
+    def project_status_build_percent(self, status):
+        final, tobuild = self.project_status_build_sum(status)
+        return (final - tobuild) / float(final) * 100
+
+    def project_status_build_sum(self, status):
+        final, tobuild = self.project_status_build_sum_repos(status['building_repositories'])
+        for subproject in status['subprojects']:
+            # _, _ += ... would be neat.
+            _final, _tobuild = self.project_status_build_sum_repos(subproject['building_repositories'])
+            final += _final
+            tobuild += _tobuild
+        return final, tobuild
+
+    def project_status_build_sum_repos(self, repositories):
+        final = tobuild = 0
+        for repo in repositories:
+            final += int(repo['final'])
+            tobuild += int(repo['tobuild'])
+        return final, tobuild
 
     def days_since_last_freeze(self, project):
         """
