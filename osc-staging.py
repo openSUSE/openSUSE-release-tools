@@ -199,6 +199,8 @@ def do_staging(self, subcmd, opts, *args):
 
     "unselect" will remove from the project - pushing them back to the backlog
 
+    "unlock" will remove the staging lock in case it gets stuck
+
     Usage:
         osc staging accept [--force] [--no-cleanup] [LETTER...]
         osc staging acheck
@@ -213,6 +215,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging select [--no-freeze] [--move [--from PROJECT] STAGING REQUEST...
         osc staging select [--no-freeze] [[--interactive] [--filter-by...] [--group-by...]] [STAGING...] [REQUEST...]
         osc staging unselect REQUEST...
+        osc staging unlock
         osc staging repair REQUEST...
     """
     if opts.version:
@@ -240,6 +243,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 0, None
     elif cmd in ('cleanup_rings', 'acheck'):
         min_args, max_args = 0, 0
+    elif cmd == 'unlock':
+        min_args, max_args = 0, 0
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
     if len(args) - 1 < min_args:
@@ -256,7 +261,12 @@ def do_staging(self, subcmd, opts, *args):
     if opts.wipe_cache:
         Cache.delete_all()
 
-    with OBSLock(opts.apiurl, opts.project):
+    lock = OBSLock(opts.apiurl, opts.project)
+    if cmd == 'unlock':
+        lock.release()
+        return
+
+    with lock:
         api = StagingAPI(opts.apiurl, opts.project)
 
         # call the respective command and parse args by need
