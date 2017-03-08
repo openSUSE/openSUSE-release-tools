@@ -5,6 +5,7 @@ Virtualization:Appliances:Builder
 devel:CaaSP
 devel:languages:D
 devel:languages:pascal
+hardware:sdr
 isv:ownCloud:desktop
 network:cluster
 network:cluster:ohpc
