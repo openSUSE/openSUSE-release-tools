@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 import argparse
+from datetime import datetime
+import dateutil.parser
 import sys
 from xml.etree import cElementTree as ET
 
@@ -12,6 +14,28 @@ from osc.core import makeurl
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
+
+# Short of either copying the two osc.core list functions to build the search
+# queries and call a different search function this is the only reasonable way
+# to add withhistory to the query. The base search function does not even have a
+# method for adding to the query. Alternatively, get_request() can be called for
+# each request to load the history, but obviously that is not very desirable.
+# Having the history allows for the age of the request to be determined.
+def search(apiurl, **kwargs):
+    res = {}
+    for urlpath, xpath in kwargs.items():
+        path = [ 'search' ]
+        path += urlpath.split('_')
+        query = {'match': xpath}
+        if urlpath == 'request':
+            query['withhistory'] = 1
+        u = makeurl(apiurl, path, query)
+        f = http_GET(u)
+        res[urlpath] = ET.parse(f).getroot()
+    return res
+
+osc.core._search = osc.core.search
+osc.core.search = search
 
 def staging_api(args):
     Config(args.project)
@@ -59,6 +83,11 @@ def devel_projects_load(args):
 
     raise Exception('no devel projects found')
 
+def request_age(request):
+    date = dateutil.parser.parse(request.statehistory[0].when)
+    delta = datetime.utcnow() - date
+    return delta.days
+
 def requests(args):
     apiurl = osc.conf.config['apiurl']
     devel_projects = devel_projects_load(args)
@@ -71,10 +100,15 @@ def requests(args):
                                     exclude_target_projects=[devel_project])
         for request in requests:
             action = request.actions[0]
+            age = request_age(request)
+            if age < args.min_age:
+                continue
+
             print(' '.join((
                 request.reqid,
                 '/'.join((action.tgt_project, action.tgt_package)),
                 '/'.join((action.src_project, action.src_package)),
+                '({} days old)'.format(age),
             )))
 
 def reviews(args):
@@ -88,6 +122,10 @@ def reviews(args):
             if action.type != 'submit':
                 continue
 
+            age = request_age(request)
+            if age < args.min_age:
+                continue
+
             for review in request.reviews:
                 if review.by_project == devel_project:
                     break
@@ -96,7 +134,11 @@ def reviews(args):
                 request.reqid,
                 '/'.join((review.by_project, review.by_package)) if review.by_package else review.by_project,
                 '/'.join((action.tgt_project, action.tgt_package)),
+                '({} days old)'.format(age),
             )))
+
+def common_args_add(parser):
+    parser.add_argument('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')
 
 
 if __name__ == '__main__':
@@ -113,9 +155,11 @@ if __name__ == '__main__':
 
     parser_requests = subparsers.add_parser('requests', help='List open requests.')
     parser_requests.set_defaults(func=requests)
+    common_args_add(parser_requests)
 
     parser_reviews = subparsers.add_parser('reviews', help='List open reviews.')
     parser_reviews.set_defaults(func=reviews)
+    common_args_add(parser_reviews)
 
     args = parser.parse_args()
     osc.conf.get_config(override_apiurl=args.apiurl)
