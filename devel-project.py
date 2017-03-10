@@ -5,6 +5,7 @@ import sys
 from xml.etree import cElementTree as ET
 
 import osc.conf
+from osc.core import get_request_list
 from osc.core import http_GET
 from osc.core import makeurl
 from osclib.conf import Config
@@ -57,6 +58,24 @@ def devel_projects_load(args):
 
     raise Exception('no devel projects found')
 
+def requests(args):
+    apiurl = osc.conf.config['apiurl']
+    devel_projects = devel_projects_load(args)
+
+    for devel_project in devel_projects:
+        requests = get_request_list(apiurl, devel_project,
+                                    req_state=('new', 'review'),
+                                    req_type='submit',
+                                    # Seems to work backwards, as it includes only.
+                                    exclude_target_projects=[devel_project])
+        for request in requests:
+            action = request.actions[0]
+            print(' '.join((
+                request.reqid,
+                '/'.join((action.tgt_project, action.tgt_package)),
+                '/'.join((action.src_project, action.src_package)),
+            )))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Operate on devel projects for a given project.')
@@ -69,6 +88,9 @@ if __name__ == '__main__':
     parser_list = subparsers.add_parser('list', help='List devel projects.')
     parser_list.set_defaults(func=list)
     parser_list.add_argument('-w', '--write', action='store_true', help='write to dashboard container package')
+
+    parser_requests = subparsers.add_parser('requests', help='List open requests.')
+    parser_requests.set_defaults(func=requests)
 
     args = parser.parse_args()
     osc.conf.get_config(override_apiurl=args.apiurl)
