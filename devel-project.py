@@ -5,7 +5,8 @@ import sys
 from xml.etree import cElementTree as ET
 
 import osc.conf
-import osc.core
+from osc.core import http_GET
+from osc.core import makeurl
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
@@ -25,8 +26,8 @@ def devel_projects_get(apiurl, project):
     """
     devel_projects = {}
 
-    url = osc.core.makeurl(apiurl, ['search', 'package'], "match=[@project='%s']" % project)
-    root = ET.parse(osc.core.http_GET(url)).getroot()
+    url = makeurl(apiurl, ['search', 'package'], "match=[@project='%s']" % project)
+    root = ET.parse(http_GET(url)).getroot()
     for package in root.findall('package'):
         devel = package.find('devel')
         if devel is not None:
