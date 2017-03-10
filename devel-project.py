@@ -10,6 +10,12 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
 
+def staging_api(args):
+    Config(args.project)
+    api = StagingAPI(osc.conf.config['apiurl'], args.project)
+    staging = '%s:Staging' % api.project
+    return (api, staging)
+
 def devel_projects_get(apiurl, project):
     """
     Returns a sorted list of devel projects for a given project.
@@ -37,11 +43,18 @@ def list(args):
         print(out)
 
         if args.write:
-            Config(args.project)
-            api = StagingAPI(osc.conf.config['apiurl'], args.project)
-            staging = '%s:Staging' % api.project
+            api, staging = staging_api(args)
             if api.load_file_content(staging, 'dashboard', 'devel_projects') != out:
                 api.save_file_content(staging, 'dashboard', 'devel_projects', out)
+
+def devel_projects_load(args):
+    api, staging = staging_api(args)
+    devel_projects = api.load_file_content(staging, 'dashboard', 'devel_projects')
+
+    if devel_projects:
+        return devel_projects.splitlines()
+
+    raise Exception('no devel projects found')
 
 
 if __name__ == '__main__':
