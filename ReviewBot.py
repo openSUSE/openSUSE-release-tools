@@ -392,20 +392,6 @@ class ReviewBot(object):
     def comment_handler_lines_deduplicate(self):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
-    def comment_find(self, request=None, state=None, result=None):
-        """Return previous comments by current bot and matching criteria."""
-        # Case-insensitive for backwards compatibility.
-        bot = self.bot_name.lower()
-        comments = self.comment_api.get_comments(request_id=request.reqid)
-        for c in comments.values():
-            m = ReviewBot.COMMENT_MARKER_REGEX.match(c['comment'])
-            if m and \
-               bot == m.group('bot').lower() and \
-               (state is None or state == m.group('state')) and \
-               (result is None or result == m.group('result')):
-                return c['id'], m.group('state'), m.group('result'), c['comment']
-        return None, None, None, None
-
     def comment_write(self, state='done', result=None, request=None, message=None):
         """Write comment from log messages if not similar to previous comment."""
         if request is None:
@@ -413,11 +399,12 @@ class ReviewBot(object):
         if message is None:
             message = '\n\n'.join(self.comment_handler.lines)
 
-        marker = '<!-- {} state={} result={} -->'.format(self.bot_name, state, result)
-        message = marker + '\n\n' + message
+        info = {'state': state, 'result': result}
+        message = self.comment_api.add_marker(message, self.bot_name, info)
 
-        comment_id, _, _, comment_text = self.comment_find(request, state, result)
-        if comment_id is not None and comment_text.count('\n') == message.count('\n'):
+        comments = self.comment_api.get_comments(request_id=request.reqid)
+        comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
+        if comment is not None and comment['comment'].count('\n') == message.count('\n'):
             # Assume same state/result and number of lines in message is duplicate.
             self.logger.debug('previous comment too similar to bother commenting again')
             return
@@ -425,8 +412,8 @@ class ReviewBot(object):
         self.logger.debug('adding comment to {}: {}'.format(request.reqid, message))
 
         if not self.dryrun:
-            if comment_id is not None:
-                self.comment_api.delete(comment_id)
+            if comment is not None:
+                self.comment_api.delete(comment['id'])
             self.comment_api.add_comment(request_id=request.reqid, comment=str(message))
 
         self.comment_handler_remove()
