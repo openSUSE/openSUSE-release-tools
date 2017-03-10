@@ -84,6 +84,7 @@ by OBS on which this bot relies.
                               'view': 'xml',
                               'opackage': a.tgt_package,
                               'oproject': a.tgt_project,
+                              'expand': '1',
                               'rev': a.src_rev})
         try:
             f = osc.core.http_POST(u)
