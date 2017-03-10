@@ -166,6 +166,10 @@ def maintainers_get(apiurl, project, package=None):
     for person in meta.findall('person[@role="maintainer"]'):
         userids.append(person.get('userid'))
 
+    if len(userids) == 0 and package is not None:
+        # Fallback to project if package has no maintainers.
+        return maintainers_get(apiurl, project)
+
     return userids
 
 def remind_comment(apiurl, repeat_age, request_id, project, package=None):
