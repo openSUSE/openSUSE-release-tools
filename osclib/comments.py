@@ -25,6 +25,8 @@ from osc.core import makeurl
 
 
 class CommentAPI(object):
+    COMMENT_MARKER_REGEX = re.compile(r'<!-- (?P<bot>[^ ]+)(?P<info>(?: [^= ]+=[^ ]+)*) -->')
+
     def __init__(self, apiurl):
         self.apiurl = apiurl
 
@@ -79,6 +81,53 @@ class CommentAPI(object):
             c = self._comment_as_dict(c)
             comments[c['id']] = c
         return comments
+
+    def comment_find(self, comments, bot, info_match=None):
+        """Return previous bot comments that match criteria."""
+
+        def chunks(l, n):
+            """Yield successive n-sized chunks from l."""
+            for i in xrange(0, len(l), n):
+                yield l[i:i + n]
+
+        # Case-insensitive for backwards compatibility.
+        bot = bot.lower()
+        for c in comments.values():
+            m = self.COMMENT_MARKER_REGEX.match(c['comment'])
+            if m and bot == m.group('bot').lower():
+                info = {}
+
+                # Python base regex does not support repeated subgroup capture
+                # so parse the optional info using string split.
+                stripped = m.group('info').strip()
+                if stripped:
+                    for pair in stripped.split(' '):
+                        key, value = pair.split('=')
+                        info[key] = value
+
+                # Skip if info does not match.
+                if info_match:
+                    match = True
+                    for key, value in info_match.items():
+                        if not(value is None or (key in info and info[key] == value)):
+                            match = False
+                            break
+                    if not match:
+                        continue
+
+                return c, info
+        return None, None
+
+    def add_marker(self, comment, bot, info=None):
+        """Add bot marker to comment that can be used to find comment."""
+
+        if info:
+            infos = []
+            for key, value in info.items():
+                infos.append('='.join((str(key), str(value))))
+
+        marker = '<!-- {}{} -->'.format(bot, ' ' + ' '.join(infos) if info else '')
+        return marker + '\n\n' + comment
 
     def add_comment(self, request_id=None, project_name=None,
                     package_name=None, comment=None):
