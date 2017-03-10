@@ -6,6 +6,7 @@ from xml.etree import cElementTree as ET
 
 import osc.conf
 from osc.core import get_request_list
+from osc.core import get_review_list
 from osc.core import http_GET
 from osc.core import makeurl
 from osclib.conf import Config
@@ -76,6 +77,27 @@ def requests(args):
                 '/'.join((action.src_project, action.src_package)),
             )))
 
+def reviews(args):
+    apiurl = osc.conf.config['apiurl']
+    devel_projects = devel_projects_load(args)
+
+    for devel_project in devel_projects:
+        requests = get_review_list(apiurl, byproject=devel_project)
+        for request in requests:
+            action = request.actions[0]
+            if action.type != 'submit':
+                continue
+
+            for review in request.reviews:
+                if review.by_project == devel_project:
+                    break
+
+            print(' '.join((
+                request.reqid,
+                '/'.join((review.by_project, review.by_package)) if review.by_package else review.by_project,
+                '/'.join((action.tgt_project, action.tgt_package)),
+            )))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Operate on devel projects for a given project.')
@@ -91,6 +113,9 @@ if __name__ == '__main__':
 
     parser_requests = subparsers.add_parser('requests', help='List open requests.')
     parser_requests.set_defaults(func=requests)
+
+    parser_reviews = subparsers.add_parser('reviews', help='List open reviews.')
+    parser_reviews.set_defaults(func=reviews)
 
     args = parser.parse_args()
     osc.conf.get_config(override_apiurl=args.apiurl)
