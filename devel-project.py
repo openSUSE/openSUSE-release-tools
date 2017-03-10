@@ -7,13 +7,20 @@ import sys
 from xml.etree import cElementTree as ET
 
 import osc.conf
+from osc.core import HTTPError
 from osc.core import get_request_list
 from osc.core import get_review_list
 from osc.core import http_GET
 from osc.core import makeurl
+from osc.core import show_package_meta
+from osc.core import show_project_meta
+from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
+
+BOT_NAME = 'devel-project'
+REMINDER = 'review reminder'
 
 # Short of either copying the two osc.core list functions to build the search
 # queries and call a different search function this is the only reasonable way
@@ -111,6 +118,9 @@ def requests(args):
                 '({} days old)'.format(age),
             )))
 
+            if args.remind:
+                remind_comment(apiurl, args.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
+
 def reviews(args):
     apiurl = osc.conf.config['apiurl']
     devel_projects = devel_projects_load(args)
@@ -137,8 +147,52 @@ def reviews(args):
                 '({} days old)'.format(age),
             )))
 
+            if args.remind:
+                remind_comment(apiurl, args.repeat_age, request.reqid, review.by_project, review.by_package)
+
+def maintainers_get(apiurl, project, package=None):
+    if package:
+        try:
+            meta = show_package_meta(apiurl, project, package)
+        except HTTPError as e:
+            if e.code == 404:
+                # Fallback to project in the case of new package.
+                meta = show_project_meta(apiurl, project)
+    else:
+        meta = show_project_meta(apiurl, project)
+    meta = ET.fromstring(''.join(meta))
+
+    userids = []
+    for person in meta.findall('person[@role="maintainer"]'):
+        userids.append(person.get('userid'))
+
+    return userids
+
+def remind_comment(apiurl, repeat_age, request_id, project, package=None):
+    comment_api = CommentAPI(apiurl)
+    comments = comment_api.get_comments(request_id=request_id)
+    comment, _ = comment_api.comment_find(comments, BOT_NAME)
+
+    if comment:
+        delta = datetime.utcnow() - comment['when']
+        if delta.days < repeat_age:
+            print('  skipping due to previous reminder from {} days ago'.format(delta.days))
+            return
+
+        # Repeat notification so remove old comment.
+        comment_api.delete(comment['id'])
+
+    userids = sorted(maintainers_get(apiurl, project, package))
+    users = ['@' + userid for userid in userids]
+    message = '{}: {}'.format(', '.join(users), REMINDER)
+    print('  ' + message)
+    message = comment_api.add_marker(message, BOT_NAME)
+    comment_api.add_comment(request_id=request_id, comment=message)
+
 def common_args_add(parser):
     parser.add_argument('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')
+    parser.add_argument('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')
+    parser.add_argument('--remind', action='store_true', help='remind maintainers to review')
 
 
 if __name__ == '__main__':
