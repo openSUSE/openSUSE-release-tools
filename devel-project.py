@@ -28,10 +28,7 @@ def devel_projects_get(apiurl, project):
 
     return sorted(devel_projects)
 
-def main(args):
-    osc.conf.get_config(override_apiurl=args.apiurl)
-    osc.conf.config['debug'] = args.debug
-
+def list(args):
     devel_projects = devel_projects_get(osc.conf.config['apiurl'], args.project)
     if len(devel_projects) == 0:
         print('no devel projects found')
@@ -46,12 +43,18 @@ def main(args):
 
 
 if __name__ == '__main__':
-    description = 'Print out devel projects for a given project (like openSUSE:Factory).'
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description='Operate on devel projects for a given project.')
+    subparsers = parser.add_subparsers(title='subcommands')
+
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debuging')
-    parser.add_argument('-p', '--project', default='openSUSE:Factory', metavar='PROJECT', help='project for which to list devel projects')
-    parser.add_argument('-w', '--write', action='store_true', help='write to dashboard container package')
-    args = parser.parse_args()
+    parser.add_argument('-p', '--project', default='openSUSE:Factory', metavar='PROJECT', help='project from which to source devel projects')
 
-    sys.exit(main(args))
+    parser_list = subparsers.add_parser('list', help='List devel projects.')
+    parser_list.set_defaults(func=list)
+    parser_list.add_argument('-w', '--write', action='store_true', help='write to dashboard container package')
+
+    args = parser.parse_args()
+    osc.conf.get_config(override_apiurl=args.apiurl)
+    osc.conf.config['debug'] = args.debug
+    sys.exit(args.func(args))
