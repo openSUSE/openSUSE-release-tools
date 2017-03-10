@@ -215,7 +215,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging check [--old] REPO
         osc staging cleanup_rings
         osc staging freeze [--no-boostrap] PROJECT...
-        osc staging frozenage PROJECT...
+        osc staging frozenage [STAGING...]
         osc staging ignore [-m MESSAGE] REQUEST...
         osc staging unignore [--cleanup] REQUEST...|all
         osc staging list [--supersede] [PACKAGE...]
@@ -236,8 +236,10 @@ def do_staging(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
-    if cmd in ('freeze', 'frozenage', 'repair'):
+    if cmd in ('freeze', 'repair'):
         min_args, max_args = 1, None
+    elif cmd == 'frozenage':
+        min_args, max_args = 0, None
     elif cmd == 'check':
         min_args, max_args = 0, 1
     elif cmd == 'select':
@@ -290,7 +292,8 @@ def do_staging(self, subcmd, opts, *args):
             for prj in args[1:]:
                 FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap)
         elif cmd == 'frozenage':
-            for prj in args[1:]:
+            projects = api.get_staging_projects_short() if len(args) == 1 else args[1:]
+            for prj in projects:
                 print("%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj))))
         elif cmd == 'acheck':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
