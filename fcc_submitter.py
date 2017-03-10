@@ -245,10 +245,16 @@ class FccSubmitter(object):
                 return None
             raise e
         root = ET.fromstring(http_GET(url).read())
+        data = {}
         linkinfo = root.find('linkinfo')
+        if linkinfo:
+            data['linkinfo'] = linkinfo.attrib['package']
+
         files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
-        if linkinfo is not None and len(files) > 1:
-            return linkinfo.attrib['package']
+        data['specs'] = files
+
+        if len(files) > 1:
+            return data
         else:
             return False
 
@@ -316,29 +322,39 @@ class FccSubmitter(object):
 
         for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]
+            submit_ok = True
 
             if package in deleted_packages:
                 logging.info('%s has been dropped from %s, ignore it!'%(package, self.to_prj))
-                continue
+                submit_ok = False
 
             if self.is_sle_base_pkgs(package) is True:
                 logging.info('%s origin from SLE base, skip for now!'%package)
-                continue
+                submit_ok = False
 
             # make sure it is new package
             new_pkg = self.is_new_package(self.to_prj, package)
             if new_pkg is not True:
                 logging.info('%s is not a new package, do not submit.' % package)
-                continue
+                submit_ok = False
 
             multi_specs = self.check_multiple_specfiles(self.factory, package)
             if multi_specs is None:
                 logging.info('%s does not exist in %s'%(package, 'openSUSE:Factory'))
-                continue
+                submit_ok = False
 
             if multi_specs:
-                logging.info('%s in %s have multiple specs, it is linked to %s, skip it!'%(package, 'openSUSE:Factory', multi_specs))
-                ms_packages.append(package)
+                if multi_specs['linkinfo']:
+                    logging.info('%s in %s is sub-package of %s, skip it!'%(package, 'openSUSE:Factory', multi_specs['linkinfo']))
+                    ms_packages.append(package)
+                    submit_ok = False
+
+                for spec in multi_specs['specs']:
+                    if spec not in succeeded_packages:
+                        logging.info('%s is sub-pacakge of %s but build failed, skip it!'%(spec, package))
+                        submit_ok = False
+
+            if not submit_ok:
                 continue
 
             # make sure the package non-exist in target yet ie. expand=False
