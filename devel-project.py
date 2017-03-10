@@ -39,7 +39,9 @@ def list(args):
         if args.write:
             Config(args.project)
             api = StagingAPI(osc.conf.config['apiurl'], args.project)
-            api.save_file_content('%s:Staging' % api.project, 'dashboard', 'devel_projects', out)
+            staging = '%s:Staging' % api.project
+            if api.load_file_content(staging, 'dashboard', 'devel_projects') != out:
+                api.save_file_content(staging, 'dashboard', 'devel_projects', out)
 
 
 if __name__ == '__main__':
