@@ -166,6 +166,10 @@ def maintainers_get(apiurl, project, package=None):
     for person in meta.findall('person[@role="maintainer"]'):
         userids.append(person.get('userid'))
 
+    if len(userids) == 0 and package is not None:
+        # Fallback to project if package has no maintainers.
+        return maintainers_get(apiurl, project)
+
     return userids
 
 def remind_comment(apiurl, repeat_age, request_id, project, package=None):
@@ -183,8 +187,11 @@ def remind_comment(apiurl, repeat_age, request_id, project, package=None):
         comment_api.delete(comment['id'])
 
     userids = sorted(maintainers_get(apiurl, project, package))
-    users = ['@' + userid for userid in userids]
-    message = '{}: {}'.format(', '.join(users), REMINDER)
+    if len(userids):
+        users = ['@' + userid for userid in userids]
+        message = '{}: {}'.format(', '.join(users), REMINDER)
+    else:
+        message = REMINDER
     print('  ' + message)
     message = comment_api.add_marker(message, BOT_NAME)
     comment_api.add_comment(request_id=request_id, comment=message)
