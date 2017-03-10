@@ -203,6 +203,7 @@ def do_staging(self, subcmd, opts, *args):
         Interactive mode allows the proposal to be modified before application.
 
     "unselect" will remove from the project - pushing them back to the backlog
+        If a message is included the requests will be ignored first.
 
     "unlock" will remove the staging lock in case it gets stuck
 
@@ -224,7 +225,7 @@ def do_staging(self, subcmd, opts, *args):
             [--filter-by...] [--group-by...]
             [--merge] [--try-strategies] [--strategy]
             [STAGING...] [REQUEST...]
-        osc staging unselect REQUEST...
+        osc staging unselect [-m MESSAGE] REQUEST...
         osc staging unlock
         osc staging rebuild [STAGING...]
         osc staging repair REQUEST...
@@ -334,6 +335,9 @@ def do_staging(self, subcmd, opts, *args):
             else:
                 print("Not safe to accept: /totest is not yet synced")
         elif cmd == 'unselect':
+            if opts.message:
+                print('Ignoring requests first')
+                IgnoreCommand(api).perform(args[1:], opts.message)
             UnselectCommand(api).perform(args[1:])
         elif cmd == 'select':
             # Include list of all stagings in short-hand and by full name.
