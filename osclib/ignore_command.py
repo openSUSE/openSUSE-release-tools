@@ -1,5 +1,6 @@
 from osc.core import get_request
 from osclib.comments import CommentAPI
+from osclib.request_finder import RequestFinder
 
 
 class IgnoreCommand(object):
@@ -7,7 +8,7 @@ class IgnoreCommand(object):
         self.api = api
         self.comment = CommentAPI(self.api.apiurl)
 
-    def perform(self, request_ids, message=None):
+    def perform(self, requests, message=None):
         """
         Ignore a request from "list" and "adi" commands until unignored.
         """
@@ -15,7 +16,8 @@ class IgnoreCommand(object):
         requests_ignored = self.api.get_ignored_requests()
         length = len(requests_ignored)
 
-        for request_id in request_ids:
+        for request_id, _ in RequestFinder.find_staged_sr(requests, self.api).items():
+            request_id = str(request_id)
             print('Processing {}'.format(request_id))
             check = self.check_and_comment(request_id, message)
             if check is not True:
