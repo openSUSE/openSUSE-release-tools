@@ -44,6 +44,7 @@ from osclib.stagingapi import StagingAPI
 from osclib.cache import Cache
 from osclib.unselect_command import UnselectCommand
 from osclib.repair_command import RepairCommand
+from osclib.rebuild_command import RebuildCommand
 from osclib.request_splitter import RequestSplitter
 
 OSC_STAGING_VERSION = '0.0.1'
@@ -205,6 +206,8 @@ def do_staging(self, subcmd, opts, *args):
 
     "unlock" will remove the staging lock in case it gets stuck
 
+    "rebuild" will rebuild broken packages in the given stagings or all
+
     Usage:
         osc staging accept [--force] [--no-cleanup] [LETTER...]
         osc staging acheck
@@ -223,6 +226,7 @@ def do_staging(self, subcmd, opts, *args):
             [STAGING...] [REQUEST...]
         osc staging unselect REQUEST...
         osc staging unlock
+        osc staging rebuild [STAGING...]
         osc staging repair REQUEST...
     """
     if opts.version:
@@ -252,6 +256,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 0, 0
     elif cmd == 'unlock':
         min_args, max_args = 0, 0
+    elif cmd == 'rebuild':
+        min_args, max_args = 0, None
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
     if len(args) - 1 < min_args:
@@ -466,5 +472,7 @@ def do_staging(self, subcmd, opts, *args):
             ListCommand(api).perform(args[1:], supersede=opts.supersede)
         elif cmd == 'adi':
             AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split)
+        elif cmd == 'rebuild':
+            RebuildCommand(api).perform(args[1:])
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:])

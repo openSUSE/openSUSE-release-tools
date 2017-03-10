@@ -35,6 +35,7 @@ from osc.core import makeurl
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
+from osc.core import rebuild
 
 from osclib.cache import Cache
 from osclib.comments import CommentAPI
@@ -734,6 +735,22 @@ class StagingAPI(object):
                 return True
 
         return False
+
+    def rebuild_broken(self, status):
+        """ Rebuild broken packages given a staging's status information. """
+        rebuilt = {}
+        for package in status['broken_packages']:
+            package = {k: str(v) for k, v in package.items()}
+            code = rebuild(self.apiurl, package['project'], package['package'],
+                           package['repository'], package['arch'])
+            key = '/'.join((package['project'], package['package'], package['repository'], package['arch']))
+            rebuilt[key] = code
+
+        for project in status['subprojects']:
+            if project:
+                rebuilt.update(self.rebuild_broken(project))
+
+        return rebuilt
 
     def project_status(self, project):
         short = self.extract_staging_short(project)
