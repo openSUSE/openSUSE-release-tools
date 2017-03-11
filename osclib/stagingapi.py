@@ -14,6 +14,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from cStringIO import StringIO
 import json
 import logging
 import urllib2
@@ -36,6 +37,7 @@ from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import rebuild
+from osc.core import streamfile
 
 from osclib.cache import Cache
 from osclib.comments import CommentAPI
@@ -736,21 +738,83 @@ class StagingAPI(object):
 
         return False
 
-    def rebuild_broken(self, status):
+    def rebuild_broken(self, status, check=True):
         """ Rebuild broken packages given a staging's status information. """
         rebuilt = {}
         for package in status['broken_packages']:
             package = {k: str(v) for k, v in package.items()}
+            key = '/'.join((package['project'], package['package'], package['repository'], package['arch']))
+            if check and not self.rebuild_check(package['project'], package['package'],
+                                                package['repository'], package['arch']):
+                rebuilt[key] = 'skipped'
+                continue
+
             code = rebuild(self.apiurl, package['project'], package['package'],
                            package['repository'], package['arch'])
-            key = '/'.join((package['project'], package['package'], package['repository'], package['arch']))
             rebuilt[key] = code
 
         for project in status['subprojects']:
             if project:
-                rebuilt.update(self.rebuild_broken(project))
+                rebuilt.update(self.rebuild_broken(project, check))
 
         return rebuilt
+
+    def rebuild_check(self, project, package, repository, architecture):
+        history = self.job_history_get(project, repository, architecture, package)
+        fail_count = self.job_history_fail_count(history)
+        if fail_count < 3:
+            return True
+
+        log = self.buildlog_get(project, package, repository, architecture)
+        if 'Job seems to be stuck here, killed.' in log:
+            return True
+
+        return False
+
+    def job_history_fail_count(self, history):
+        fail_count = 0
+        for job in reversed(history.findall('jobhist')):
+            if job.get('reason') != 'meta change':
+                if job.get('code') == 'failed':
+                    fail_count += 1
+                else:
+                    break
+        return fail_count
+
+    # Modfied from osc.core.print_jobhistory()
+    def job_history_get(self, project, repository, architecture, package=None, limit=20):
+        query = {}
+        if package:
+            query['package'] = package
+        if limit != None and int(limit) > 0:
+            query['limit'] = int(limit)
+        u = makeurl(self.apiurl, ['build', project, repository, architecture, '_jobhistory'], query)
+        return ET.parse(http_GET(u)).getroot()
+
+    # Modified from osc.core.print_buildlog()
+    def buildlog_get(self, prj, package, repository, arch, offset=0, strip_time=False, last=False):
+        # to protect us against control characters
+        import string
+        all_bytes = string.maketrans('', '')
+        remove_bytes = all_bytes[:8] + all_bytes[14:32] # accept tabs and newlines
+
+        query = {'nostream' : '1', 'start' : '%s' % offset}
+        if last:
+            query['last'] = 1
+        log = StringIO()
+        while True:
+            query['start'] = offset
+            start_offset = offset
+            u = makeurl(self.apiurl, ['build', prj, repository, arch, package, '_log'], query=query)
+            for data in streamfile(u, bufsize="line"):
+                offset += len(data)
+                if strip_time:
+                    data = buildlog_strip_time(data)
+                log.write(data.translate(all_bytes, remove_bytes))
+            if start_offset == offset:
+                break
+
+        return log.getvalue()
 
     def project_status(self, project):
         short = self.extract_staging_short(project)
