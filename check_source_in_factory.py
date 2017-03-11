@@ -47,7 +47,10 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.factory = "openSUSE:Factory"
-        self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
+        self.review_messages = { 'accepted': 'ok',
+                                 'declined': 'the package needs to be accepted in Factory first',
+                                 'fallback': 'Sources not accepted in Factory. Please review.',
+                                 }
         self.lookup = {}
         self.history_limit = 5
 
