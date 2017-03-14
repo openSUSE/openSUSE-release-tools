@@ -212,15 +212,17 @@ def do_staging(self, subcmd, opts, *args):
     Usage:
         osc staging accept [--force] [--no-cleanup] [LETTER...]
         osc staging acheck
-        osc staging adi [--move] [--by-develproject] [--split] REQUEST...
+        osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
         osc staging check [--old] REPO
         osc staging cleanup_rings
-        osc staging freeze [--no-boostrap] PROJECT...
+        osc staging freeze [--no-boostrap] STAGING...
         osc staging frozenage [STAGING...]
         osc staging ignore [-m MESSAGE] REQUEST...
-        osc staging unignore [--cleanup] REQUEST...|all
+        osc staging unignore [--cleanup] [REQUEST...|all]
         osc staging list [--supersede] [PACKAGE...]
-        osc staging select [--no-freeze] [--move [--from PROJECT]] STAGING REQUEST...
+        osc staging select [--no-freeze] [--move [--from STAGING]]
+            [--add PACKAGE]
+            STAGING REQUEST...
         osc staging select [--no-freeze] [--interactive|--non-interactive]
             [--filter-by...] [--group-by...]
             [--merge] [--try-strategies] [--strategy]
