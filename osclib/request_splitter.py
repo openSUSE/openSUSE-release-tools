@@ -366,6 +366,9 @@ class StrategyCustom(StrategyNone):
 
 class StrategyDevel(StrategyNone):
     GROUP_MIN = 7
+    GROUP_MIN_MAP = {
+        'YaST:Head': 2,
+    }
 
     def apply(self, splitter):
         super(StrategyDevel, self).apply(splitter)
@@ -374,7 +377,7 @@ class StrategyDevel(StrategyNone):
     def desirable(self, splitter):
         groups = []
         for group, info in sorted(splitter.grouped.items()):
-            if len(info['requests']) >= self.GROUP_MIN:
+            if len(info['requests']) >= self.GROUP_MIN_MAP.get(group, self.GROUP_MIN):
                 groups.append(group)
         return groups
 
