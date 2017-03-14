@@ -461,7 +461,7 @@ def do_staging(self, subcmd, opts, *args):
                         api.set_splitter_info_in_prj_pseudometa(target_project, info['group'], info['strategy'])
 
                     SelectCommand(api, target_project) \
-                        .perform(request_ids, opts.move, opts.from_, opts.no_freeze)
+                        .perform(request_ids, no_freeze=opts.no_freeze)
             else:
                 target_project = api.prj_from_short(stagings[0])
                 if opts.add:
