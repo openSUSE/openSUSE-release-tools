@@ -248,8 +248,8 @@ class Leaper(ReviewBot.ReviewBot):
                     self.logger.debug("oldorigin {}".format(oldorigin))
                     # Factory. So it's ok to keep upgrading it to Factory
                     # TODO: whitelist packages where this is ok and block others?
+                    self.logger.info("Package was from %s in 42.2", oldorigin)
                     if oldorigin.startswith('openSUSE:Factory'):
-                        self.logger.info("Package was from Factory in 42.2")
                         # check if an attempt to switch to SLE package is made
                         for sp in ('SP2:GA', 'SP2:Update', 'SP3:GA'):
                             good = self.factory._check_project('SUSE:SLE-12-{}'.format(sp), target_package, src_srcinfo.verifymd5)
@@ -257,6 +257,9 @@ class Leaper(ReviewBot.ReviewBot):
                                 self.logger.info("request sources come from SLE")
                                 self.needs_release_manager = True
                                 return good
+                    elif oldorigin.startswith('openSUSE:Leap:42.1'):
+                        o = self.lookup_421[package]
+                        self.logger.info("Package was from %s in 42.1", o)
                 # the release manager needs to review attempts to upgrade to Factory
                 is_fine_if_factory = True
                 self.needs_release_manager = True
