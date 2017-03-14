@@ -27,8 +27,9 @@ from osc import cmdln
 from osc import oscerr
 
 # Expand sys.path to search modules inside the pluging directory
-_plugin_dir = os.path.expanduser('~/.osc-plugins')
-sys.path.append(_plugin_dir)
+# FIXME: osc should do that
+PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
+sys.path.append(PLUGINDIR)
 from osclib.accept_command import AcceptCommand
 from osclib.adi_command import AdiCommand
 from osclib.check_command import CheckCommand
