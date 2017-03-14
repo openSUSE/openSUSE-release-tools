@@ -208,6 +208,11 @@ def do_staging(self, subcmd, opts, *args):
     "unlock" will remove the staging lock in case it gets stuck
 
     "rebuild" will rebuild broken packages in the given stagings or all
+        The rebuild command will only trigger builds for packages with less than
+        3 failures since the last success or if the build log indicates a stall.
+
+        If the force option is included the rebuild checks will be ignored and
+        all packages failing to build will be triggered.
 
     Usage:
         osc staging accept [--force] [--no-cleanup] [LETTER...]
@@ -227,7 +232,7 @@ def do_staging(self, subcmd, opts, *args):
             [STAGING...] [REQUEST...]
         osc staging unselect [-m MESSAGE] REQUEST...
         osc staging unlock
-        osc staging rebuild [STAGING...]
+        osc staging rebuild [--force] [STAGING...]
         osc staging repair REQUEST...
     """
     if opts.version:
@@ -480,6 +485,6 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'adi':
             AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split)
         elif cmd == 'rebuild':
-            RebuildCommand(api).perform(args[1:])
+            RebuildCommand(api).perform(args[1:], opts.force)
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:])
