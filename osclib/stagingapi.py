@@ -1455,3 +1455,15 @@ class StagingAPI(object):
             if e.code == 404:
                 pass
         return None
+
+    def staging_deactivate(self, project):
+        """Cleanup staging after last request is removed and disable building."""
+        # Clear pseudometa since it no longer represents the staging.
+        self.clear_prj_pseudometa(project)
+
+        # Clear all comments.
+        CommentAPI(self.apiurl).delete_from(project_name=project)
+
+        self.build_switch_prj(project, 'disable')
+        if self.item_exists(project + ':DVD'):
+            self.build_switch_prj(project + ':DVD', 'disable')
