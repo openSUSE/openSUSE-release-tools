@@ -57,6 +57,7 @@ class Leaper(ReviewBot.ReviewBot):
         self.source_in_factory = None
         self.needs_release_manager = False
         self.release_manager_group = 'leap-reviewers'
+        self.review_team_group = 'opensuse-review-team'
         self.must_approve_version_updates = False
         self.must_approve_maintenance_updates = False
         self.needs_check_source = False
@@ -417,15 +418,15 @@ class Leaper(ReviewBot.ReviewBot):
 
         if self.needs_reviewteam:
             add_review = True
-            self.logger.info("%s needs review by opensuse-review-team"%req.reqid)
+            self.logger.info("{} needs review by {}".format(req.reqid, self.review_team_group))
             for r in req.reviews:
-                if r.by_group == 'opensuse-review-team':
+                if r.by_group == self.review_team_group:
                     add_review = False
-                    self.logger.debug("opensuse-review-team already is a reviewer")
+                    self.logger.debug("{} already is a reviewer".format(self.review_team_group))
                     break
             if add_review:
-                if self.add_review(req, by_group = "opensuse-review-team") != True:
-                    self.review_messages['declined'] += '\nadding opensuse-review-team failed'
+                if self.add_review(req, by_group = self.review_team_group) != True:
+                    self.review_messages['declined'] += '\nadding {} failed'.format(self.review_team_group)
                     return False
 
         if self.needs_check_source and self.check_source_group is not None:
@@ -461,6 +462,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser.add_option("--manual-version-updates", action="store_true", help="release manager must approve version updates")
         parser.add_option("--manual-maintenance-updates", action="store_true", help="release manager must approve maintenance updates")
         parser.add_option("--check-source-group", dest="check_source_group", metavar="GROUP", help="group used by check_source.py bot which will be added as a reviewer should leaper checks pass")
+        parser.add_option("--review-team-group", dest="review_team_group", metavar="GROUP", help="group used for package reviews", default="opensuse-review-team")
+        parser.add_option("--release-manager-group", dest="release_manager_group", metavar="GROUP", help="group used for release manager reviews", default="leap-reviewers")
 
         return parser
 
@@ -473,6 +476,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.must_approve_maintenance_updates = True
         if self.options.check_source_group:
             bot.check_source_group = self.options.check_source_group
+        if self.options.review_team_group:
+            bot.review_team_group = self.options.review_team_group
+        if self.options.release_manager_group:
+            bot.release_manager_group = self.options.release_manager_group
         bot.do_comments = self.options.comment
 
         return bot
