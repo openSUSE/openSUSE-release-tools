@@ -19,15 +19,8 @@ class ListCommand:
         Perform the list command
         """
 
-        if not packages:
-            packages = []
-
         if supersede:
-            if packages:
-                self.api.dispatch_open_requests(packages)
-            else:
-                # First dispatch all possible requests
-                self.api.dispatch_open_requests()
+            self.api.dispatch_open_requests(packages)
 
         requests = self.api.get_open_requests()
         requests_ignored = self.api.get_ignored_requests()
