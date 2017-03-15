@@ -164,7 +164,7 @@ class FccSubmitter(object):
         return packages
 
     def get_request_list(self, package):
-        return osc.core.get_request_list(self.apiurl, self.to_prj, package, req_state=('new', 'review'))
+        return osc.core.get_request_list(self.apiurl, self.to_prj, package, req_state=('new', 'review', 'declined'))
 
     def get_link(self, project, package):
         try:
@@ -249,6 +249,8 @@ class FccSubmitter(object):
         linkinfo = root.find('linkinfo')
         if linkinfo:
             data['linkinfo'] = linkinfo.attrib['package']
+        else:
+            data['linkinfo'] = None
 
         files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
         data['specs'] = files
@@ -362,7 +364,7 @@ class FccSubmitter(object):
                 # make sure there is no request against same package
                 request = self.get_request_list(package)
                 if request:
-                    logging.debug("There is a request to %s / %s already, skip!"%(package, self.to_prj))
+                    logging.debug("There is a request to %s / %s already or it has been declined, skip!"%(package, self.to_prj))
                 else:
                     logging.info("%d - Preparing submit %s to %s"%(i, package, self.to_prj))
                     # get devel project
