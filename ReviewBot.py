@@ -148,17 +148,17 @@ class ReviewBot(object):
         by_user = self.fallback_user
         by_group = self.fallback_group
 
+        msg = self.review_messages[state] if state in self.review_messages else state
+        self.logger.info("%s %s: %s"%(req.reqid, state, msg))
+
         if state == 'declined':
             if self.review_mode == 'fallback-onfail':
                 self.logger.info("%s needs fallback reviewer"%req.reqid)
                 # don't check duplicates, in case review was re-opened
-                self.add_review(req, by_group=by_group, by_user=by_user)
+                self.add_review(req, by_group=by_group, by_user=by_user, msg="Automated review failed. Needs fallback reviewer.")
                 newstate = 'accepted'
         elif self.review_mode == 'fallback-always':
-            self.add_review(req, by_group=by_group, by_user=by_user)
-
-        msg = self.review_messages[state] if state in self.review_messages else state
-        self.logger.info("%s %s: %s"%(req.reqid, state, msg))
+            self.add_review(req, by_group=by_group, by_user=by_user, msg='Adding fallback reviewer')
 
         if doit == True:
             self.logger.debug("setting %s to %s"%(req.reqid, state))
