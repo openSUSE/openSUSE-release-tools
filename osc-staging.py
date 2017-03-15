@@ -46,6 +46,7 @@ from osclib.unselect_command import UnselectCommand
 from osclib.repair_command import RepairCommand
 from osclib.rebuild_command import RebuildCommand
 from osclib.request_splitter import RequestSplitter
+from osclib.supersede_command import SupersedeCommand
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -78,8 +79,6 @@ def _full_project_name(self, project):
               help='split the requests by devel project')
 @cmdln.option('--split', action='store_true',
               help='split the requests into individual groups')
-@cmdln.option('--supersede', action='store_true',
-              help='replace staged requests when superseded')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='specify a source project when moving a request')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
@@ -146,9 +145,7 @@ def do_staging(self, subcmd, opts, *args):
         If the --cleanup flag is included then all ignored requests that were
         changed from state new or review more than 3 days ago will be removed.
 
-    "list" will list/supersede requests for ring packages or all if no rings.
-        The package list is used to limit what requests are superseded when
-        called with the --supersede option.
+    "list" will list requests for ring packages or all if no rings.
 
     "repair" will attempt to repair the state of a request that has been
         corrupted.
@@ -214,6 +211,9 @@ def do_staging(self, subcmd, opts, *args):
         If the force option is included the rebuild checks will be ignored and
         all packages failing to build will be triggered.
 
+    "supersede" will supersede requests were applicable.
+        A package list can be used to limit what requests are superseded.
+
     Usage:
         osc staging accept [--force] [--no-cleanup] [LETTER...]
         osc staging acheck
@@ -224,7 +224,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging frozenage [STAGING...]
         osc staging ignore [-m MESSAGE] REQUEST...
         osc staging unignore [--cleanup] [REQUEST...|all]
-        osc staging list [--supersede] [PACKAGE...]
+        osc staging list
         osc staging select [--no-freeze] [--move [--from STAGING]]
             [--add PACKAGE]
             STAGING REQUEST...
@@ -236,6 +236,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unlock
         osc staging rebuild [--force] [STAGING...]
         osc staging repair REQUEST...
+        osc staging supersede [PACKAGE...]
     """
     if opts.version:
         self._print_version()
@@ -267,6 +268,8 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'unlock':
         min_args, max_args = 0, 0
     elif cmd == 'rebuild':
+        min_args, max_args = 0, None
+    elif cmd == 'supersede':
         min_args, max_args = 0, None
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
@@ -483,10 +486,12 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'unignore':
             UnignoreCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'list':
-            ListCommand(api).perform(args[1:], supersede=opts.supersede)
+            ListCommand(api).perform()
         elif cmd == 'adi':
             AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split)
         elif cmd == 'rebuild':
             RebuildCommand(api).perform(args[1:], opts.force)
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:])
+        elif cmd == 'supersede':
+            SupersedeCommand(api).perform(args[1:])
