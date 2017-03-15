@@ -249,6 +249,8 @@ class FccSubmitter(object):
         linkinfo = root.find('linkinfo')
         if linkinfo:
             data['linkinfo'] = linkinfo.attrib['package']
+        else:
+            data['linkinfo'] = None
 
         files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
         data['specs'] = files
