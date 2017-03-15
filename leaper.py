@@ -112,6 +112,16 @@ class Leaper(ReviewBot.ReviewBot):
                 'target_package': target_package,
                 }
 
+    def _check_same_origin(self, origin, project):
+
+        if origin == 'FORK':
+            return True
+
+        if origin.startswith('Devel;'):
+            (dummy, origin, dummy) = origin.split(';')
+
+        return project.startswith(origin)
+
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         super(Leaper, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
@@ -131,7 +141,7 @@ class Leaper(ReviewBot.ReviewBot):
 
             origin_same = True
             if origin:
-                origin_same = True if origin == 'FORK' else src_project.startswith(origin)
+                origin_same = self._check_same_origin(origin, src_project)
                 self.logger.info("expected origin is '%s' (%s)", origin,
                                  "unchanged" if origin_same else "changed")
 
@@ -178,12 +188,11 @@ class Leaper(ReviewBot.ReviewBot):
         is_fine_if_factory = False
         not_in_factory_okish = False
         if origin:
-            origin_same = src_project.startswith(origin)
+            origin_same = self._check_same_origin(origin, src_project)
             self.logger.info("expected origin is '%s' (%s)", origin,
                              "unchanged" if origin_same else "changed")
             if origin.startswith('Devel;'):
-                (dummy, origin, dummy) = origin.split(';')
-                if origin != src_project:
+                if origin_same == False:
                     self.logger.debug("not submitted from devel project")
                     return False
                 is_fine_if_factory = True
@@ -239,8 +248,8 @@ class Leaper(ReviewBot.ReviewBot):
                     self.logger.debug("oldorigin {}".format(oldorigin))
                     # Factory. So it's ok to keep upgrading it to Factory
                     # TODO: whitelist packages where this is ok and block others?
+                    self.logger.info("Package was from %s in 42.2", oldorigin)
                     if oldorigin.startswith('openSUSE:Factory'):
-                        self.logger.info("Package was from Factory in 42.2")
                         # check if an attempt to switch to SLE package is made
                         for sp in ('SP2:GA', 'SP2:Update', 'SP3:GA'):
                             good = self.factory._check_project('SUSE:SLE-12-{}'.format(sp), target_package, src_srcinfo.verifymd5)
@@ -248,6 +257,9 @@ class Leaper(ReviewBot.ReviewBot):
                                 self.logger.info("request sources come from SLE")
                                 self.needs_release_manager = True
                                 return good
+                    elif oldorigin.startswith('openSUSE:Leap:42.1'):
+                        o = self.lookup_421[package]
+                        self.logger.info("Package was from %s in 42.1", o)
                 # the release manager needs to review attempts to upgrade to Factory
                 is_fine_if_factory = True
                 self.needs_release_manager = True
@@ -296,6 +308,14 @@ class Leaper(ReviewBot.ReviewBot):
 
             is_fine_if_factory = True
             self.needs_release_manager = True
+
+        if origin is None or not origin.startswith('SUSE:SLE-'):
+            for p in ('-SP3:GA', '-SP2:Update', '-SP2:GA',
+                    '-SP1:Update', '-SP1:GA', ':Update', ':GA'):
+                prj = 'SUSE:SLE-12' + p
+                if self.is_package_in_project(prj, target_package):
+                    self.logger.info('Package is in {}'.format(prj))
+                    break
 
         # we came here because none of the above checks find it good, so
         # let's see if the package is in Factory at least
