@@ -47,6 +47,7 @@ from osclib.unselect_command import UnselectCommand
 from osclib.repair_command import RepairCommand
 from osclib.rebuild_command import RebuildCommand
 from osclib.request_splitter import RequestSplitter
+from osclib.prio_command import PrioCommand
 
 OSC_STAGING_VERSION = '0.0.1'
 
@@ -237,6 +238,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unlock
         osc staging rebuild [--force] [STAGING...]
         osc staging repair REQUEST...
+        osc staging setprio [STAGING...]
     """
     if opts.version:
         self._print_version()
@@ -249,6 +251,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, None
     elif cmd == 'frozenage':
         min_args, max_args = 0, None
+    elif cmd == 'setprio':
+        min_args, max_args = 0, 1
     elif cmd == 'check':
         min_args, max_args = 0, 1
     elif cmd == 'select':
@@ -491,3 +495,5 @@ def do_staging(self, subcmd, opts, *args):
             RebuildCommand(api).perform(args[1:], opts.force)
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:])
+        elif cmd == 'setprio':
+            PrioCommand(api).perform(args[1:])
