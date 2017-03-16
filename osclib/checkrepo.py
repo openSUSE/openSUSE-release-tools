@@ -97,10 +97,10 @@ class Request(object):
 
         # Detect if the request comes from Factory to a openSUSE
         # release, and adjust the source and target projects
-        _is_product = re.match(r'openSUSE:\d{2}.\d', self.tgt_project)
+        _is_product = re.match(r'openSUSE:Leap:\d{2}.\d', self.tgt_project)
         if self.src_project == 'openSUSE:Factory' and _is_product:
             self.is_shadow_devel = True
-            self.shadow_src_project = '%s:Devel' % self.tgt_project
+            self.shadow_src_project = '%s:Staging:repochecker' % self.tgt_project
         else:
             self.is_shadow_devel = False
             self.shadow_src_project = self.src_project
