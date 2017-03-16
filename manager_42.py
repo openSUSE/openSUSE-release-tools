@@ -56,6 +56,7 @@ class Manager42(object):
         self.caching = caching
         self.apiurl = osc.conf.config['apiurl']
         self.config = self._load_config(configfh)
+        self.force = False
 
         self.parse_lookup(self.config.from_prj)
         self.fill_package_meta()
@@ -139,6 +140,8 @@ class Manager42(object):
             if e.code == 404:
                 logger.error("{}: {}".format(project, e))
                 packages = []
+            else:
+                raise
 
         return packages
 
@@ -212,7 +215,10 @@ class Manager42(object):
     # check if we can find the srcmd5 in any of our underlay
     # projects
     def check_one_package(self, package):
-        lproject = self.lookup.get(package, None)
+        if self.force:
+            lproject = None
+        else:
+            lproject = self.lookup.get(package, None)
         if not package in self.packages[self.config.from_prj]:
             logger.info("{} vanished".format(package))
             if self.lookup.get(package):
@@ -255,7 +261,7 @@ class Manager42(object):
                     logger.debug("{} lookup from {}/{} is correct".format(package, develprj, develpkg))
                 return
 
-        if lproject and lproject != 'FORK' and not lproject.startswith('subpackage '):
+        elif lproject and lproject != 'FORK' and not lproject.startswith('subpackage '):
             srcmd5, rev = self.check_source_in_project(lproject, package, root.get('verifymd5'))
             if srcmd5:
                 logger.debug("{} lookup from {} is correct".format(package, lproject))
@@ -319,6 +325,8 @@ def main(args):
     given_packages = args.packages
     if not args.all and not given_packages:
         given_packages = uc.latest_packages()
+    if args.force:
+        uc.force = True
     uc.crawl(given_packages)
 
 if __name__ == '__main__':
@@ -334,6 +342,8 @@ if __name__ == '__main__':
                         help='read config file FILE')
     parser.add_argument('-n', '--dry', action='store_true',
                         help='dry run, no POST, PUT, DELETE')
+    parser.add_argument('--force', action='store_true',
+                        help='don\'t take previous lookup information into consideration')
     parser.add_argument('--cache-requests', action='store_true', default=False,
                         help='cache GET requests. Not recommended for daily use.')
     parser.add_argument("packages", nargs='*', help="packages to check")
