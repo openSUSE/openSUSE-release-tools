@@ -108,14 +108,7 @@ class CheckCommand(object):
         """
         report = []
 
-        query = {'format': 'json'}
-        if project:
-            url = self.api.makeurl(('project', 'staging_projects', self.api.project,
-                                    project), query=query)
-        else:
-            url = self.api.makeurl(('project', 'staging_projects', self.api.project),
-                                   query=query)
-        info = json.load(self.api.retried_GET(url))
+        info = self.api.project_status(project, not project)
         if not project:
             for prj in info:
                 if not prj['selected_requests']:
