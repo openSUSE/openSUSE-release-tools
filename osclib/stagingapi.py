@@ -816,11 +816,11 @@ class StagingAPI(object):
 
         return log.getvalue()
 
-    def project_status(self, project):
-        short = self.extract_staging_short(project)
-        query = {'format': 'json'}
-        url = self.makeurl(('project', 'staging_projects', self.project, short),
-                           query=query)
+    def project_status(self, staging=None):
+        path = ('project', 'staging_projects', self.project)
+        if staging:
+            path += (self.extract_staging_short(staging),)
+        url = self.makeurl(path, {'format': 'json'})
         return json.load(self.retried_GET(url))
 
     def check_project_status(self, project):
