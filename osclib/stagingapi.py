@@ -430,7 +430,7 @@ class StagingAPI(object):
             self.do_change_review_state(request_id, 'accepted', message=message,
                                         by_group=self.cstaging_group)
 
-    def supseded_request(self, request, target_pkgs=None):
+    def superseded_request(self, request, target_pkgs=None):
         """
         Returns a staging info for a request or None
         :param request - a Request instance
@@ -479,7 +479,7 @@ class StagingAPI(object):
         if not target_pkgs:
             target_pkgs = []
 
-        stage_info = self.supseded_request(request, target_pkgs)
+        stage_info = self.superseded_request(request, target_pkgs)
         request_id = int(request.get('id'))
 
         if stage_info:
