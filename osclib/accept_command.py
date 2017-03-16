@@ -69,9 +69,6 @@ class AcceptCommand(object):
                                  message='Accept to %s' % self.api.project)
             self.create_new_links(self.api.project, req['package'], oldspecs)
 
-        # Clear pseudometa since it no longer represents the staging.
-        self.api.clear_prj_pseudometa(project)
-
         # A single comment should be enough to notify everybody, since
         # they are already mentioned in the comments created by
         # select/unselect
@@ -82,12 +79,7 @@ class AcceptCommand(object):
                                                                                pkg_list)
         self.comment.add_comment(project_name=project, comment=cmmt)
 
-        # XXX CAUTION - AFAIK the 'accept' command is expected to clean the messages here.
-        self.comment.delete_from(project_name=project)
-
-        self.api.build_switch_prj(project, 'disable')
-        if self.api.item_exists(project + ':DVD'):
-            self.api.build_switch_prj(project + ':DVD', 'disable')
+        self.api.staging_deactivate(project)
 
         return True
 
