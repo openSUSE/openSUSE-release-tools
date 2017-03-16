@@ -386,8 +386,6 @@ class StrategySpecial(StrategyNone):
         'gcc7',
         'glibc',
         'kernel-source',
-        'python2',
-        'python3',
         'util-linux',
     ]
 
