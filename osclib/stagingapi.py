@@ -816,10 +816,18 @@ class StagingAPI(object):
 
         return log.getvalue()
 
-    def project_status(self, staging=None):
+    @memoize(session=True)
+    def project_status(self, staging=None, aggregate=False):
         path = ('project', 'staging_projects', self.project)
         if staging:
-            path += (self.extract_staging_short(staging),)
+            if aggregate:
+                full = self.prj_from_short(staging)
+                for status in self.project_status():
+                    if status['name'] == full:
+                        return status
+                return None
+            else:
+                path += (self.extract_staging_short(staging),)
         url = self.makeurl(path, {'format': 'json'})
         return json.load(self.retried_GET(url))
 
