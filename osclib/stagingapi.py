@@ -562,8 +562,12 @@ class StagingAPI(object):
 
         # get all current pending requests
         requests = self.get_open_requests()
+        requests_ignored = self.get_ignored_requests()
         # check if we can reduce it down by accepting some
         for rq in requests:
+            request_id = int(rq.get('id'))
+            if request_id in requests_ignored:
+                continue
             # if self.crings:
             #     self.accept_non_ring_request(rq)
             self.update_superseded_request(rq, packages)
