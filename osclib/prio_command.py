@@ -48,24 +48,21 @@ class PrioCommand(object):
                     print e
 
 
-    def perform(self, project=None):
+    def perform(self, projects=None):
         """
-        Check one staging project verbosibly or all of them at once
-        :param project: project to check, None for all
+        Set priority on specific stagings or all of them at once
+        :param projects: projects on which to set priority, None for all
         """
 
-        query = {'format': 'json'}
-        path = [ 'project', 'staging_projects', self.api.project ]
-        if project:
-            path += project
-        url = self.api.makeurl(path, query=query)
-        info = json.load(self.api.retried_GET(url))
-        if not project:
-            for prj in info:
-                if not prj['selected_requests']:
-                    continue
-                self._setprio(prj)
-        else:
+        aggregate = False
+        if not projects:
+            aggregate = True
+            projects = self.api.get_staging_projects()
+
+        for project in projects:
+            info = self.api.project_status(project, aggregate)
+            if not info['selected_requests']:
+                continue
             self._setprio(info)
 
         return True

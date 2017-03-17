@@ -252,7 +252,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'frozenage':
         min_args, max_args = 0, None
     elif cmd == 'setprio':
-        min_args, max_args = 0, 1
+        min_args, max_args = 0, None
     elif cmd == 'check':
         min_args, max_args = 0, 1
     elif cmd == 'select':
