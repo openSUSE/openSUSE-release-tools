@@ -555,6 +555,8 @@ class StagingAPI(object):
     def load_prj_pseudometa(self, description_text):
         try:
             data = yaml.load(description_text)
+            if data is None:
+                data = {}
         except (TypeError, AttributeError):
             data = {}
         # make sure we have a requests field
