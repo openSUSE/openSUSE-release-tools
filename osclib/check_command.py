@@ -11,7 +11,7 @@ class CheckCommand(object):
         :param project: project to check
         :param verbose: do verbose check or not
         """
-        state = self.api.check_project_status(project, verbose)
+        state = self.api.check_project_status(project)
 
         # If the project is empty just skip it
         if not state:
