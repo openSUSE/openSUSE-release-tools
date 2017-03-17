@@ -17,13 +17,14 @@ class IgnoreCommand(object):
         length = len(requests_ignored)
 
         for request_id in RequestFinder.find_sr(requests, self.api):
-            request_id = str(request_id)
-            print('Processing {}'.format(request_id))
-            check = self.check_and_comment(request_id, message)
-            if check is not True:
-                print('- {}'.format(check))
-            elif request_id not in requests_ignored:
-                requests_ignored[int(request_id)] = message
+            if request_id in requests_ignored:
+                print('{}: already ignored'.format(request_id))
+                continue
+
+            print('{}: ignored'.format(request_id))
+            requests_ignored[request_id] = message
+            if message:
+                self.comment.add_comment(request_id=str(request_id), comment=message)
 
         diff = len(requests_ignored) - length
         if diff > 0:
@@ -31,16 +32,5 @@ class IgnoreCommand(object):
             self.api.set_ignored_requests(requests_ignored)
         else:
             print('No new requests to ignore')
-
-        return True
-
-    def check_and_comment(self, request_id, message=None):
-        request = get_request(self.api.apiurl, request_id)
-        if not request:
-            return 'not found'
-        if request.actions[0].tgt_project != self.api.project:
-            return 'not targeting {}'.format(self.api.project)
-        if message:
-            self.comment.add_comment(request_id=request_id, comment=message)
 
         return True
