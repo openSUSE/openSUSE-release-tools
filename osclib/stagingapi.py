@@ -430,6 +430,17 @@ class StagingAPI(object):
             self.do_change_review_state(request_id, 'accepted', message=message,
                                         by_group=self.cstaging_group)
 
+    @memoize(session=True)
+    def source_info(self, project, package, rev=None):
+        query = {'view': 'info'}
+        if rev is not None:
+            query['rev'] = rev
+        url = makeurl(self.apiurl, ('source', project, package), query=query)
+        try:
+            return ET.parse(http_GET(url)).getroot()
+        except (urllib2.HTTPError, urllib2.URLError):
+            return None
+
     def superseded_request(self, request, target_pkgs=None):
         """
         Returns a staging info for a request or None
