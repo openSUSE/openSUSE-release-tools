@@ -441,6 +441,16 @@ class StagingAPI(object):
         except (urllib2.HTTPError, urllib2.URLError):
             return None
 
+    def source_info_request(self, request):
+        action = request.find('action')
+        if action.get('type') != 'submit':
+            return None
+
+        source = action.find('source')
+        return self.source_info(source.get('project'),
+                                source.get('package'),
+                                source.get('rev'))
+
     def superseded_request(self, request, target_pkgs=None):
         """
         Returns a staging info for a request or None
