@@ -41,6 +41,7 @@ from osc.core import streamfile
 
 from osclib.cache import Cache
 from osclib.comments import CommentAPI
+from osclib.ignore_command import IgnoreCommand
 from osclib.memoize import memoize
 
 
@@ -478,15 +479,40 @@ class StagingAPI(object):
             msg = msg.format(request_id, action)
             logging.info(msg)
 
-        pkg_do_supersede = True
-        if target_pkgs:
-            if action.get('type') not in ['submit', 'delete'] or target_package not in target_pkgs:
-                pkg_do_supersede = False
+        # Only consider if submit or delete and in target_pkgs if provided.
+        if action.get('type') in ['submit', 'delete'] and (
+           not(target_pkgs) or target_package in target_pkgs):
+            stage_info = self.packages_staged.get(target_package)
 
-        # If the package is currently tracked then we do the replacement
-        stage_info = self.packages_staged.get(target_package, {'prj': '', 'rq_id': 0})
-        if pkg_do_supersede and int(stage_info['rq_id']) != 0 and int(stage_info['rq_id']) != request_id:
-            return stage_info
+            # Ensure a request for same package is already staged.
+            if stage_info and stage_info['rq_id'] != request_id:
+                request_old = get_request(self.apiurl, str(stage_info['rq_id'])).to_xml()
+                request_new = request
+
+                # If both are submits from different source projects then check
+                # the source info and proceed accordingly, otherwise supersede.
+                if not(
+                    request_new.find('action').get('type') == 'submit' and
+                    request_old.find('action').get('type') == 'submit' and
+                    request_new.find('action/source').get('project') !=
+                    request_old.find('action/source').get('project')
+                ):
+                    return stage_info
+
+                source_info_new = self.source_info_request(request_new)
+                source_info_old = self.source_info_request(request_old)
+
+                source_same = source_info_new.get('verifymd5') == source_info_old.get('verifymd5')
+                message = 'sr#{} has {} source and is already staged'.format(
+                    request_old.get('id'), 'same' if source_same else 'different')
+                if source_same:
+                    # Keep the original request and decline this identical one.
+                    self.do_change_review_state(request_id, 'declined',
+                        by_group=self.cstaging_group, message=message)
+                else:
+                    # Ingore the new request pending manual review.
+                    IgnoreCommand(self).perform(request_id, message)
+
         return None
 
     def update_superseded_request(self, request, target_pkgs=None):
