@@ -206,7 +206,8 @@ class StagingAPI(object):
 
         packages_staged = {}
         for prj in self.get_staging_projects():
-            meta = self.get_prj_pseudometa(prj)
+            status = self.project_status(prj, True)
+            meta = self.load_prj_pseudometa(status['description'])
             for req in meta['requests']:
                 packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id']}
 
@@ -555,6 +556,8 @@ class StagingAPI(object):
     def load_prj_pseudometa(self, description_text):
         try:
             data = yaml.load(description_text)
+            if data is None:
+                data = {}
         except (TypeError, AttributeError):
             data = {}
         # make sure we have a requests field
@@ -816,11 +819,19 @@ class StagingAPI(object):
 
         return log.getvalue()
 
-    def project_status(self, project):
-        short = self.extract_staging_short(project)
-        query = {'format': 'json'}
-        url = self.makeurl(('project', 'staging_projects', self.project, short),
-                           query=query)
+    @memoize(session=True)
+    def project_status(self, staging=None, aggregate=False):
+        path = ('project', 'staging_projects', self.project)
+        if staging:
+            if aggregate:
+                full = self.prj_from_short(staging)
+                for status in self.project_status():
+                    if status['name'] == full:
+                        return status
+                return None
+            else:
+                path += (self.extract_staging_short(staging),)
+        url = self.makeurl(path, {'format': 'json'})
         return json.load(self.retried_GET(url))
 
     def check_project_status(self, project):

@@ -14,11 +14,8 @@ class AdiCommand:
         self.api = api
 
     def check_adi_project(self, project):
-        query_project = 'adi:' + project.split(':adi:')[1]
-        query = {'format': 'json'}
-        url = self.api.makeurl(('project', 'staging_projects', self.api.project,
-                                query_project), query=query)
-        info = json.load(self.api.retried_GET(url))
+        query_project = self.api.extract_staging_short(project)
+        info = self.api.project_status(project, True)
         if len(info['building_repositories']):
             print query_project, "still building"
             return
