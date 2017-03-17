@@ -30,8 +30,8 @@ class IgnoreCommand(object):
 
         diff = len(requests_ignored) - length
         if diff > 0:
-            print('Ignoring {} requests'.format(diff))
             self.api.set_ignored_requests(requests_ignored)
+            print('Ignored {} requests'.format(diff))
         else:
             print('No new requests to ignore')
 

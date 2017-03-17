@@ -26,7 +26,7 @@ class UnignoreCommand(object):
         else:
             for request_id in RequestFinder.find_sr(requests, self.api):
                 if request_id in requests_ignored:
-                    print('Removing {}'.format(request_id))
+                    print('{}: unignored'.format(request_id))
                     del requests_ignored[request_id]
                     self.comment.add_comment(request_id=str(request_id), comment=self.MESSAGE)
 
@@ -44,8 +44,8 @@ class UnignoreCommand(object):
 
         diff = length - len(requests_ignored)
         if diff > 0:
-            print('Unignoring {} requests'.format(diff))
             self.api.set_ignored_requests(requests_ignored)
+            print('Unignored {} requests'.format(diff))
         else:
             print('No requests to unignore')
 
