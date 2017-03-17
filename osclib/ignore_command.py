@@ -4,6 +4,8 @@ from osclib.request_finder import RequestFinder
 
 
 class IgnoreCommand(object):
+    MESSAGE = 'Ignored: removed from active backlog.'
+
     def __init__(self, api):
         self.api = api
         self.comment = CommentAPI(self.api.apiurl)
@@ -23,8 +25,8 @@ class IgnoreCommand(object):
 
             print('{}: ignored'.format(request_id))
             requests_ignored[request_id] = message
-            if message:
-                self.comment.add_comment(request_id=str(request_id), comment=message)
+            comment = message if message else self.MESSAGE
+            self.comment.add_comment(request_id=str(request_id), comment=comment)
 
         diff = len(requests_ignored) - length
         if diff > 0:
