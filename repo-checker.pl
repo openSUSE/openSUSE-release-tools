@@ -93,7 +93,8 @@ sub write_package($$) {
 }
 
 my @rpms  = glob("$repodir/*.rpm");
-my $pfile = $ENV{'HOME'} . "/packages";
+my $tmpdir = tempdir( "repochecker-XXXXXXX", TMPDIR => 1, CLEANUP => 1 );
+my $pfile = $tmpdir . "/packages";
 open( PACKAGES, ">", $pfile ) || die 'can not open';
 print PACKAGES "=Ver: 2.0\n";
 
