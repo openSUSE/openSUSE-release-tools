@@ -463,12 +463,10 @@ class StagingAPI(object):
 
         # Consolidate all data from request
         request_id = int(request.get('id'))
-        action = request.findall('action')
-        if not action:
+        action = request.find('action')
+        if action is None:
             msg = 'Request {} has no action'.format(request_id)
             raise oscerr.WrongArgs(msg)
-        # we care only about first action
-        action = action[0]
 
         # Where are we targeting the package
         target_project = action.find('target').get('project')
