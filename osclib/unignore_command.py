@@ -2,12 +2,16 @@ import dateutil.parser
 from datetime import datetime
 
 from osc.core import get_request
+from osclib.comments import CommentAPI
 from osclib.request_finder import RequestFinder
 
 
 class UnignoreCommand(object):
+    MESSAGE = 'Unignored: returned to active backlog.'
+
     def __init__(self, api):
         self.api = api
+        self.comment = CommentAPI(self.api.apiurl)
 
     def perform(self, requests, cleanup=False):
         """
@@ -24,6 +28,7 @@ class UnignoreCommand(object):
                 if request_id in requests_ignored:
                     print('Removing {}'.format(request_id))
                     del requests_ignored[request_id]
+                    self.comment.add_comment(request_id=str(request_id), comment=self.MESSAGE)
 
         if cleanup:
             now = datetime.now()
