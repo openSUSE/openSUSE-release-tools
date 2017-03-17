@@ -493,6 +493,7 @@ class StagingAPI(object):
             return True
         return False
 
+    @memoize(session=True)
     def get_ignored_requests(self):
         ignore = self.load_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests')
         if ignore is None:
@@ -503,6 +504,7 @@ class StagingAPI(object):
         ignore = yaml.dump(ignore_requests, default_flow_style=False)
         self.save_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests', ignore)
 
+    @memoize(session=True)
     def get_open_requests(self):
         """
         Get all requests with open review for staging project
