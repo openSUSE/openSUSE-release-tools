@@ -220,7 +220,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging accept [--force] [--no-cleanup] [LETTER...]
         osc staging acheck
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
-        osc staging check [--old] REPO
+        osc staging check [--old] STAGING
         osc staging cleanup_rings
         osc staging freeze [--no-boostrap] STAGING...
         osc staging frozenage [STAGING...]
