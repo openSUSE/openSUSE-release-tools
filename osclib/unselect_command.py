@@ -7,11 +7,17 @@ class UnselectCommand(object):
     def __init__(self, api):
         self.api = api
 
-    def perform(self, packages):
+    def perform(self, packages, cleanup=False):
         """
         Remove request from staging project
         :param packages: packages/requests to delete from staging projects
         """
+
+        if cleanup:
+            obsolete = self.api.project_status_requests('obsolete')
+            if len(obsolete) > 0:
+                print('Cleanup {} obsolete requests'.format(len(obsolete)))
+                packages += tuple(obsolete)
 
         ignored_requests = self.api.get_ignored_requests()
         affected_projects = set()

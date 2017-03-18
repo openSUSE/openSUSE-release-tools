@@ -207,6 +207,8 @@ def do_staging(self, subcmd, opts, *args):
     "unselect" will remove from the project - pushing them back to the backlog
         If a message is included the requests will be ignored first.
 
+        Use the --cleanup flag to include all obsolete requests.
+
     "unlock" will remove the staging lock in case it gets stuck
 
     "rebuild" will rebuild broken packages in the given stagings or all
@@ -234,7 +236,7 @@ def do_staging(self, subcmd, opts, *args):
             [--filter-by...] [--group-by...]
             [--merge] [--try-strategies] [--strategy]
             [STAGING...] [REQUEST...]
-        osc staging unselect [-m MESSAGE] REQUEST...
+        osc staging unselect [--cleanup] [-m MESSAGE] [REQUEST...]
         osc staging unlock
         osc staging rebuild [--force] [STAGING...]
         osc staging repair REQUEST...
@@ -258,7 +260,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'select':
         min_args, max_args = 0, None
     elif cmd == 'unselect':
-        min_args, max_args = 1, None
+        min_args, max_args = 0, None
     elif cmd == 'adi':
         min_args, max_args = 0, None
     elif cmd == 'ignore':
@@ -350,7 +352,7 @@ def do_staging(self, subcmd, opts, *args):
             if opts.message:
                 print('Ignoring requests first')
                 IgnoreCommand(api).perform(args[1:], opts.message)
-            UnselectCommand(api).perform(args[1:])
+            UnselectCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'select':
             # Include list of all stagings in short-hand and by full name.
             existing_stagings = api.get_staging_projects_short(None)
