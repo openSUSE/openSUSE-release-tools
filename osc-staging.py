@@ -155,6 +155,8 @@ def do_staging(self, subcmd, opts, *args):
     "repair" will attempt to repair the state of a request that has been
         corrupted.
 
+        Use the --cleanup flag to include all untracked requests.
+
     "select" will add requests to the project
         Stagings are expected to be either in short-hand or the full project
         name. For example letter or named stagings can be specified simply as
@@ -239,7 +241,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unselect [--cleanup] [-m MESSAGE] [REQUEST...]
         osc staging unlock
         osc staging rebuild [--force] [STAGING...]
-        osc staging repair REQUEST...
+        osc staging repair [--cleanup] [REQUEST...]
         osc staging setprio [STAGING...]
     """
     if opts.version:
@@ -249,8 +251,10 @@ def do_staging(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
-    if cmd in ('freeze', 'repair'):
+    if cmd == 'freeze':
         min_args, max_args = 1, None
+    elif cmd == 'repair':
+        min_args, max_args = 0, None
     elif cmd == 'frozenage':
         min_args, max_args = 0, None
     elif cmd == 'setprio':
@@ -496,6 +500,6 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'rebuild':
             RebuildCommand(api).perform(args[1:], opts.force)
         elif cmd == 'repair':
-            RepairCommand(api).perform(args[1:])
+            RepairCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'setprio':
             PrioCommand(api).perform(args[1:])

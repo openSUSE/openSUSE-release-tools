@@ -57,11 +57,17 @@ class RepairCommand(object):
         change_review_state(self.api.apiurl, reqid, newstate='accepted', message='Re-evaluation needed', by_project=staging_project)
         self.api.add_review(reqid, by_group=self.api.cstaging_group, msg='Requesting new staging review')
 
-    def perform(self, packages):
+    def perform(self, packages, cleanup=False):
         """
         Repair request in staging project or move it out
         :param packages: packages/requests to repair in staging projects
         """
+
+        if cleanup:
+            untracked = self.api.project_status_requests('untracked')
+            if len(untracked) > 0:
+                print('Cleanup {} untracked requests'.format(len(untracked)))
+                packages += tuple(untracked)
 
         for reqid in RequestFinder.find_sr(packages, self.api):
             self.repair(reqid)
