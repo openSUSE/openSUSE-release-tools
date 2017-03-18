@@ -866,6 +866,14 @@ class StagingAPI(object):
             tobuild += int(repo['tobuild'])
         return final, tobuild
 
+    def project_status_requests(self, request_type):
+        key = '{}_requests'.format(request_type)
+        requests = []
+        for status in self.project_status():
+            for request in status[key]:
+                requests.append(str(request['number']))
+        return requests
+
     def days_since_last_freeze(self, project):
         """
         Checks the last update for the frozen links
