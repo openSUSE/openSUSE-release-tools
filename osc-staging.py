@@ -332,7 +332,9 @@ def do_staging(self, subcmd, opts, *args):
             if version_openqa == version_totest and not totest_dirty:
                 cmd = AcceptCommand(api)
                 for prj in args[1:]:
-                    if not cmd.perform(api.prj_from_letter(prj), opts.force):
+                    if cmd.perform(api.prj_from_letter(prj), opts.force):
+                        cmd.reset_rebuild_data(prj)
+                    else:
                         return
                     if not opts.no_cleanup:
                         if api.item_exists(api.prj_from_letter(prj)):
