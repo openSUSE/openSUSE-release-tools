@@ -496,7 +496,7 @@ class StagingAPI(object):
 
     def get_ignored_requests(self):
         ignore = self.load_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests')
-        if ignore is None:
+        if ignore is None or not ignore:
             return {}
         return yaml.safe_load(ignore)
 
