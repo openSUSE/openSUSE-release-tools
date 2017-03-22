@@ -75,7 +75,7 @@ for my $spec (glob("$dir/*.spec")) {
         $ret = 1;
     }
     if (-f "$old/$changes") {
-        if (system("cmp -s $old/$changes $dir/$changes")) {
+        if (system(("cmp", "-s", "$old/$changes", "$dir/$changes"))) {
             $changes_updated = 1;
         }
     }
@@ -189,7 +189,7 @@ if (-d "$old") {
         }
         close(OSPEC);
         close(NSPEC);
-        system("cp $spec $spec.beforeurlstrip");
+        system(("cp", "$spec", "$spec.beforeurlstrip"));
         rename("$spec.new", "$spec") || die "rename failed";
     }
 
