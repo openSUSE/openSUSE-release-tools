@@ -41,6 +41,7 @@ from osc.core import streamfile
 
 from osclib.cache import Cache
 from osclib.comments import CommentAPI
+from osclib.ignore_command import IgnoreCommand
 from osclib.memoize import memoize
 
 
@@ -431,7 +432,28 @@ class StagingAPI(object):
             self.do_change_review_state(request_id, 'accepted', message=message,
                                         by_group=self.cstaging_group)
 
-    def supseded_request(self, request, target_pkgs=None):
+    @memoize(session=True)
+    def source_info(self, project, package, rev=None):
+        query = {'view': 'info'}
+        if rev is not None:
+            query['rev'] = rev
+        url = makeurl(self.apiurl, ('source', project, package), query=query)
+        try:
+            return ET.parse(http_GET(url)).getroot()
+        except (urllib2.HTTPError, urllib2.URLError):
+            return None
+
+    def source_info_request(self, request):
+        action = request.find('action')
+        if action.get('type') != 'submit':
+            return None
+
+        source = action.find('source')
+        return self.source_info(source.get('project'),
+                                source.get('package'),
+                                source.get('rev'))
+
+    def superseded_request(self, request, target_pkgs=None):
         """
         Returns a staging info for a request or None
         :param request - a Request instance
@@ -443,12 +465,10 @@ class StagingAPI(object):
 
         # Consolidate all data from request
         request_id = int(request.get('id'))
-        action = request.findall('action')
-        if not action:
+        action = request.find('action')
+        if action is None:
             msg = 'Request {} has no action'.format(request_id)
             raise oscerr.WrongArgs(msg)
-        # we care only about first action
-        action = action[0]
 
         # Where are we targeting the package
         target_project = action.find('target').get('project')
@@ -460,15 +480,40 @@ class StagingAPI(object):
             msg = msg.format(request_id, action)
             logging.info(msg)
 
-        pkg_do_supersede = True
-        if target_pkgs:
-            if action.get('type') not in ['submit', 'delete'] or target_package not in target_pkgs:
-                pkg_do_supersede = False
+        # Only consider if submit or delete and in target_pkgs if provided.
+        if action.get('type') in ['submit', 'delete'] and (
+           not(target_pkgs) or target_package in target_pkgs):
+            stage_info = self.packages_staged.get(target_package)
 
-        # If the package is currently tracked then we do the replacement
-        stage_info = self.packages_staged.get(target_package, {'prj': '', 'rq_id': 0})
-        if pkg_do_supersede and int(stage_info['rq_id']) != 0 and int(stage_info['rq_id']) != request_id:
-            return stage_info
+            # Ensure a request for same package is already staged.
+            if stage_info and stage_info['rq_id'] != request_id:
+                request_old = get_request(self.apiurl, str(stage_info['rq_id'])).to_xml()
+                request_new = request
+
+                # If both are submits from different source projects then check
+                # the source info and proceed accordingly, otherwise supersede.
+                if not(
+                    request_new.find('action').get('type') == 'submit' and
+                    request_old.find('action').get('type') == 'submit' and
+                    request_new.find('action/source').get('project') !=
+                    request_old.find('action/source').get('project')
+                ):
+                    return stage_info
+
+                source_info_new = self.source_info_request(request_new)
+                source_info_old = self.source_info_request(request_old)
+
+                source_same = source_info_new.get('verifymd5') == source_info_old.get('verifymd5')
+                message = 'sr#{} has {} source and is already staged'.format(
+                    request_old.get('id'), 'same' if source_same else 'different')
+                if source_same:
+                    # Keep the original request and decline this identical one.
+                    self.do_change_review_state(request_id, 'declined',
+                        by_group=self.cstaging_group, message=message)
+                else:
+                    # Ingore the new request pending manual review.
+                    IgnoreCommand(self).perform(request_id, message)
+
         return None
 
     def update_superseded_request(self, request, target_pkgs=None):
@@ -480,7 +525,7 @@ class StagingAPI(object):
         if not target_pkgs:
             target_pkgs = []
 
-        stage_info = self.supseded_request(request, target_pkgs)
+        stage_info = self.superseded_request(request, target_pkgs)
         request_id = int(request.get('id'))
 
         if stage_info:
@@ -494,6 +539,7 @@ class StagingAPI(object):
             return True
         return False
 
+    @memoize(session=True)
     def get_ignored_requests(self):
         ignore = self.load_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests')
         if ignore is None or not ignore:
@@ -504,6 +550,7 @@ class StagingAPI(object):
         ignore = yaml.dump(ignore_requests, default_flow_style=False)
         self.save_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests', ignore)
 
+    @memoize(session=True)
     def get_open_requests(self):
         """
         Get all requests with open review for staging project
@@ -542,8 +589,12 @@ class StagingAPI(object):
 
         # get all current pending requests
         requests = self.get_open_requests()
+        requests_ignored = self.get_ignored_requests()
         # check if we can reduce it down by accepting some
         for rq in requests:
+            request_id = int(rq.get('id'))
+            if request_id in requests_ignored:
+                continue
             # if self.crings:
             #     self.accept_non_ring_request(rq)
             self.update_superseded_request(rq, packages)
