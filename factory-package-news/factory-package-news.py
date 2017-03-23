@@ -143,6 +143,8 @@ class ChangeLogger(cmdln.Cmdln):
             elif os.path.isdir(arg):
                 for root, dirs, files in os.walk(arg):
                     for pkg in [ os.path.join(root, file) for file in files]:
+                        if not pkg.endswith('.rpm'):
+                            continue
                         h = self.readRpmHeader( pkg )
                         _getdata(h)
             else:
