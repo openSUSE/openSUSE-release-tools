@@ -119,7 +119,7 @@ class ChangeLogger(cmdln.Cmdln):
                 if not iso.is_open() or fd is None:
                     raise Exception("Could not open %s as an ISO-9660 image." %  arg)
 
-                for path in ['/suse/x86_64/', '/suse/noarch']:
+                for path in ['/suse/x86_64', '/suse/noarch', '/suse/s390x']:
                     file_stats = iso.readdir(path)
                     if file_stats is None:
                         continue
