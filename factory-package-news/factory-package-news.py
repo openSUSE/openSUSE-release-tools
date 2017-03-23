@@ -121,6 +121,9 @@ class ChangeLogger(cmdln.Cmdln):
 
                 for path in ['/suse/x86_64/', '/suse/noarch']:
                     file_stats = iso.readdir(path)
+                    if file_stats is None:
+                        continue
+
                     for stat in file_stats:
                         filename = stat[0]
                         LSN      = stat[1]
