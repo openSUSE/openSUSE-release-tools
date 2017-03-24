@@ -35,7 +35,7 @@ class AcceptCommand(object):
         return rqs
 
     def reset_rebuild_data(self, project):
-        url = self.api.makeurl(['source', self.cstaging, 'dashboard', 'support_pkg_rebuild?expand=1'])
+        url = self.api.makeurl(['source', self.api.cstaging, 'dashboard', 'support_pkg_rebuild?expand=1'])
         try:
             data = http_GET(url)
         except urllib2.HTTPError:
@@ -47,7 +47,7 @@ class AcceptCommand(object):
                 stg.find('rebuild').text = 'unknown'
 
         # reset accpted staging project rebuild state to unknown
-        url = self.api.makeurl(['source', self.cstaging, 'dashboard', 'support_pkg_rebuild'])
+        url = self.api.makeurl(['source', self.api.cstaging, 'dashboard', 'support_pkg_rebuild'])
         content = ET.tostring(root)
         http_PUT(url + '?comment=accept+command+update', data=content)
 
