@@ -598,8 +598,9 @@ class OpenQABot(ReviewBot.ReviewBot):
         # first calculate the latest build number for current jobs
         self.gather_test_builds()
 
+        self.pending_target_repos = set()
+
         started = []
-        all_done = True
         # then check progress on running incidents
         for req in self.requests:
             # just patch apiurl in to avoid having to pass it around
@@ -608,21 +609,25 @@ class OpenQABot(ReviewBot.ReviewBot):
             ret = self.calculate_qa_status(jobs)
             if ret != QA_UNKNOWN:
                 started.append(req)
-                if ret == QA_INPROGRESS:
-                    all_done = False
 
         all_requests = self.requests
         self.requests = started
         ReviewBot.ReviewBot.check_requests(self)
 
-        if not all_done:
-            return
-
         self.requests = all_requests
 
+        skipped_one = False
         # now make sure the jobs are for current repo
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
+            if prj in self.pending_target_repos:
+                skipped_one = True
+                continue
             self.trigger_build_for_target(prj, u)
+
+        # do not schedule new incidents unless we finished
+        # last wave
+        if skipped_one:
+            return
 
         ReviewBot.ReviewBot.check_requests(self)
 
@@ -789,7 +794,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                 if test_repo and prj in repo_settings:
                     u = repo_settings[prj]
                     for s in u['settings']:
-                        ret += self.openqa.openqa_request(
+                        repo_jobs = self.openqa.openqa_request(
                             'GET', 'jobs',
                             {
                                 'distri': s['DISTRI'],
@@ -799,6 +804,9 @@ class OpenQABot(ReviewBot.ReviewBot):
                                 'build':  self.update_test_builds.get(prj, 'UNKNOWN'),
                                 'scope': 'relevant',
                             })['jobs']
+                        ret += repo_jobs
+                        if self.calculate_qa_status(repo_jobs) == QA_INPROGRESS:
+                            self.pending_target_repos.add(prj)
         return ret
 
     def calculate_qa_status(self, jobs=None):
