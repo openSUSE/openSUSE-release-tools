@@ -139,11 +139,8 @@ class SelectCommand(object):
                 return False
 
         # Notify everybody about the changes
-        self.api.update_status_comments(self.target_project, 'select')
+        self.api.update_status_or_deactivate(self.target_project, 'select')
         for fprj in self.affected_projects:
-            self.api.update_status_comments(fprj, 'select')
-
-        # now make sure we enable the prj if the prj contains any ringed package
-        self.api.build_switch_staging_project(self.target_project)
+            self.api.update_status_or_deactivate(fprj, 'select')
 
         return True
