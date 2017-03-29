@@ -68,11 +68,9 @@ class AcceptCommand(object):
                 return False
 
         meta = self.api.get_prj_pseudometa(project)
-        requests = []
         packages = []
         for req in meta['requests']:
             self.api.rm_from_prj(project, request_id=req['id'], msg='ready to accept')
-            requests.append(req['id'])
             packages.append(req['package'])
             msg = 'Accepting staging review for {}'.format(req['package'])
             print(msg)
