@@ -54,12 +54,18 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.commentapi = CommentAPI(self.apiurl)
         self.apinick = None
         self.message = None
-        if self.apiurl == 'https://api.suse.de':
+        if self.ibs:
             self.apinick = 'ibs#'
-        elif self.apiurl == 'https://api.opensuse.org':
+        else:
             self.apinick = 'obs#'
-        if not self.apinick:
-            raise Exception('Unknown API ' + self.apiurl)
+
+    def request_priority(self):
+        prio = self.request.priority or 'moderate'
+        prios = {'low': 1, 'moderate': 2, 'important': 3, 'critical': 4}
+        prio = prios.get(prio, 4) * 2
+        if self.ibs:
+            prio = prio + 1
+        return prio
 
     def request_nick(self, id=None):
         if not id:
@@ -93,6 +99,11 @@ class LegalAuto(ReviewBot.ReviewBot):
         for pack in to_review:
             url = osc.core.makeurl(self.legaldb, ['package', str(pack)])
             report = REQ.get(url).json()
+            if report.get('priority', 0) != self.request_priority():
+                print "Update priority %d" % self.request_priority()
+                url = osc.core.makeurl(
+                    self.legaldb, ['package', str(pack)], {'priority': self.request_priority()})
+                REQ.patch(url)
             state = report.get('state', 'BROKEN')
             if state == 'obsolete':
                 url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(pack)], {
