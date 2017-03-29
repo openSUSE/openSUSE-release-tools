@@ -1397,6 +1397,14 @@ class StagingAPI(object):
         msg = '\n'.join(lines)
         comment_api.add_comment(project_name=project, comment=msg)
 
+    def accept_status_comment(self, project, packages):
+        # A single comment should be enough to notify everybody, since they are
+        # already mentioned in the comments created by select/unselect.
+        comment = 'Project "{}" accepted. ' \
+            'The following packages have been submitted to {}: {}.'.format(
+                project, self.project, ', '.join(packages))
+        CommentAPI(self.apiurl).add_comment(project_name=project, comment=comment)
+
     def mark_additional_packages(self, project, packages):
         """
         Adds packages that the repo checker needs to download from staging prj

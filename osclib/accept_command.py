@@ -7,13 +7,11 @@ from osc.core import change_request_state
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
 from osc.core import delete_package
 from datetime import date
-from osclib.comments import CommentAPI
 
 
 class AcceptCommand(object):
     def __init__(self, api):
         self.api = api
-        self.comment = CommentAPI(self.api.apiurl)
 
     def find_new_requests(self, project):
         query = "match=state/@name='new'+and+(action/target/@project='{}'+and+action/@type='submit')".format(project)
@@ -84,16 +82,7 @@ class AcceptCommand(object):
                                  message='Accept to %s' % self.api.project)
             self.create_new_links(self.api.project, req['package'], oldspecs)
 
-        # A single comment should be enough to notify everybody, since
-        # they are already mentioned in the comments created by
-        # select/unselect
-        pkg_list = ", ".join(packages)
-        cmmt = 'Project "{}" accepted.' \
-               ' The following packages have been submitted to {}: {}.'.format(project,
-                                                                               self.api.project,
-                                                                               pkg_list)
-        self.comment.add_comment(project_name=project, comment=cmmt)
-
+        self.api.accept_status_comment(project, packages)
         self.api.staging_deactivate(project)
 
         return True
