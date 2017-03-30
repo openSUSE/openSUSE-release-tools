@@ -536,6 +536,7 @@ class StagingAPI(object):
                              review='declined')
             # Add the new one that should be replacing it
             self.rq_to_prj(request_id, stage_info['prj'])
+            self._invalidate_get_open_requests()
             return True
         return False
 
@@ -550,7 +551,7 @@ class StagingAPI(object):
         ignore = yaml.dump(ignore_requests, default_flow_style=False)
         self.save_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests', ignore)
 
-    @memoize(session=True)
+    @memoize(session=True, add_invalidate=True)
     def get_open_requests(self):
         """
         Get all requests with open review for staging project
