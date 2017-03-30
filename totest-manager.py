@@ -193,7 +193,7 @@ class ToTestBase(object):
                         labeled = comment['id']
                     if comment['text'].find('@ttm ignore') >= 0:
                         to_ignore = True
-                ignored = True
+                ignored = len(refs) > 0
                 for ref in refs:
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
@@ -202,6 +202,7 @@ class ToTestBase(object):
                                 f.write("%s\n" % ref)
                         else:
                             ignored = False
+
                 if not ignored:
                     number_of_fails += 1
                     if not labeled:
