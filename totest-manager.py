@@ -19,6 +19,8 @@ import signal
 import time
 
 from xml.etree import cElementTree as ET
+from pprint import pprint
+from openqa_client.client import OpenQA_Client
 
 import osc
 
@@ -31,6 +33,7 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osc.core import makeurl
 
+ISSUE_FILE = 'issues_to_ignore'
 
 # QA Results
 QA_INPROGRESS = 1
@@ -39,13 +42,20 @@ QA_PASSED = 3
 
 
 class ToTestBase(object):
+
     """Base class to store the basic interface"""
 
-    def __init__(self, project, dryrun = False):
+    def __init__(self, project, dryrun=False):
         self.project = project
         self.dryrun = dryrun
-        self.api = StagingAPI(osc.conf.config['apiurl'], project='openSUSE:%s' % project)
-        self.known_failures = self.known_failures_from_dashboard(project)
+        self.api = StagingAPI(
+            osc.conf.config['apiurl'], project='openSUSE:%s' % project)
+        self.openqa = OpenQA_Client(server='https://openqa.opensuse.org')
+        self.issues_to_ignore = []
+        if os.path.isfile(ISSUE_FILE):
+            with open(ISSUE_FILE, 'r') as f:
+                for line in f.readlines():
+                    self.issues_to_ignore.append(line.strip())
 
     def openqa_group(self):
         return self.project
@@ -85,7 +95,6 @@ class ToTestBase(object):
 
         return None
 
-
     def ftp_build_version(self, project, tree):
         for binary in self.binaries_of_product('openSUSE:%s' % project, tree):
             result = re.match(r'openSUSE.*Build(.*)-Media1.report', binary)
@@ -101,17 +110,17 @@ class ToTestBase(object):
         raise Exception("can't find %s version" % self.project)
 
     def release_version(self):
-       url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
-                               '_product:openSUSE-release'])
-       f = self.api.retried_GET(url)
-       root = ET.parse(f).getroot()
-       for binary in root.findall('binary'):
-           binary = binary.get('filename', '')
-           result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
-           if result:
-              return result.group(1)
+        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
+                                '_product:openSUSE-release'])
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        for binary in root.findall('binary'):
+            binary = binary.get('filename', '')
+            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
+            if result:
+                return result.group(1)
 
-       raise Exception("can't find %s version" % self.project)
+        raise Exception("can't find %s version" % self.project)
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -119,7 +128,8 @@ class ToTestBase(object):
 
         """
 
-        url = makeurl('https://openqa.opensuse.org', ['api', 'v1', 'jobs'], { 'group': self.openqa_group(), 'build': snapshot } )
+        url = makeurl('https://openqa.opensuse.org',
+                      ['api', 'v1', 'jobs'], {'group': self.openqa_group(), 'build': snapshot})
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
@@ -146,7 +156,8 @@ class ToTestBase(object):
             if 'fatal' in flags or 'important' in flags:
                 return module['name']
                 break
-            logger.info('%s %s %s'%(module['name'], module['result'], module['flags']))
+            logger.info('%s %s %s' %
+                        (module['name'], module['result'], module['flags']))
 
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
@@ -162,23 +173,49 @@ class ToTestBase(object):
 
         number_of_fails = 0
         in_progress = False
-        machines = []
         for job in jobs:
-            machines.append(job['settings']['MACHINE'])
             # print json.dumps(job, sort_keys=True, indent=4)
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted'):
                 jobname = job['name']
-                # Record machines we have tests for
-                if jobname in self.known_failures:
-                    logger.debug("known failure %s ignored", jobname)
-                    self.known_failures.remove(jobname)
-                    continue
-                number_of_fails += 1
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
-                failedmodule = self.find_failed_module(job['modules'])
                 url = 'https://openqa.opensuse.org/tests/%s' % job['id']
-                logger.info("job %s failed %s, see %s", jobname, 'early' if failedmodule is None else failedmodule, url)
-                # if number_of_fails < 3: continue
+                logger.info("job %s failed, see %s", jobname, url)
+                url = makeurl('https://openqa.opensuse.org',
+                              ['api', 'v1', 'jobs', str(job['id']), 'comments'])
+                f = self.api.retried_GET(url)
+                comments = json.load(f)
+                refs = set()
+                #pprint(comments)
+                labeled = 0
+                to_ignore = False
+                for comment in comments:
+                    for ref in comment['bugrefs']:
+                        refs.add(str(ref))
+                    if comment['userName'] == 'ttm' and comment['text'] == 'label:unknown_failure':
+                        labeled = comment['id']
+                    if comment['text'].find('@ttm ignore') >= 0:
+                        to_ignore = True
+                ignored = True
+                for ref in refs:
+                    if not ref in self.issues_to_ignore:
+                        if to_ignore:
+                            self.issues_to_ignore.append(ref)
+                            with open(ISSUE_FILE, 'a') as f:
+                                f.write("%s\n" % ref)
+                        else:
+                            ignored = False
+                if not ignored:
+                    number_of_fails += 1
+                    if not labeled:
+                        data = {'text': 'label:unknown_failure'}
+                        self.openqa.openqa_request(
+                            'POST', 'jobs/%s/comments' % job['id'], data=data)
+                elif labeled:
+                    # remove flag - unfortunately can't delete comment unless admin
+                    data = {'text': 'Ignored issue'}
+                    self.openqa.openqa_request(
+                        'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
                 continue
             elif job['result'] == 'none':
@@ -193,11 +230,6 @@ class ToTestBase(object):
         if in_progress:
             return QA_INPROGRESS
 
-        machines = list(set(machines))
-        for item in machines:
-            for item2 in self.known_failures:
-                if item2.split('@')[1] == item:
-                    logger.info('now passing %s'%item2)
         return QA_PASSED
 
     def all_repos_done(self, project, codes=None):
@@ -210,7 +242,8 @@ class ToTestBase(object):
         # sufficient here, so don't try to add it :-)
         codes = ['published', 'unpublished'] if not codes else codes
 
-        url = self.api.makeurl(['build', project, '_result'], {'code': 'failed'})
+        url = self.api.makeurl(
+            ['build', project, '_result'], {'code': 'failed'})
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         ready = True
@@ -223,10 +256,12 @@ class ToTestBase(object):
             if repo.get('arch') in ('armv6l', 'armv7l'):
                 continue
             if repo.get('dirty', '') == 'true':
-                logger.info('%s %s %s -> %s'%(repo.get('project'), repo.get('repository'), repo.get('arch'), 'dirty'))
+                logger.info('%s %s %s -> %s' % (repo.get('project'),
+                                                repo.get('repository'), repo.get('arch'), 'dirty'))
                 ready = False
             if repo.get('code') not in codes:
-                logger.info('%s %s %s -> %s'%(repo.get('project'), repo.get('repository'), repo.get('arch'), repo.get('code')))
+                logger.info('%s %s %s -> %s' % (repo.get('project'),
+                                                repo.get('repository'), repo.get('arch'), repo.get('code')))
                 ready = False
         return ready
 
@@ -267,7 +302,8 @@ class ToTestBase(object):
         for repo in root.findall('result'):
             status = repo.find('status')
             if status.get('code') != 'succeeded':
-                logger.info('%s %s %s %s -> %s'%(project, package, repository, arch, status.get('code')))
+                logger.info(
+                    '%s %s %s %s -> %s' % (project, package, repository, arch, status.get('code')))
                 return False
 
         maxsize = self.maxsize_for_package(package)
@@ -282,7 +318,8 @@ class ToTestBase(object):
                 continue
             isosize = int(binary.get('size', 0))
             if isosize > maxsize:
-                logger.error('%s %s %s %s: %s'%(project, package, repository, arch, 'too large by %s bytes' % (isosize-maxsize)))
+                logger.error('%s %s %s %s: %s' % (
+                    project, package, repository, arch, 'too large by %s bytes' % (isosize - maxsize)))
                 return False
 
         return True
@@ -304,7 +341,7 @@ class ToTestBase(object):
                 if not self.all_repos_done('openSUSE:%s:Live' % self.project):
                     return False
 
-                for arch in ['i586', 'x86_64' ]:
+                for arch in ['i586', 'x86_64']:
                     for product in self.livecd_products:
                         if not self.package_ok('openSUSE:%s:Live' % self.project, product, 'standard', arch):
                             return False
@@ -326,34 +363,39 @@ class ToTestBase(object):
 
         url = self.api.makeurl(baseurl, query=query)
         if self.dryrun:
-            logger.info("release %s/%s (%s)"%(project, package, set_release))
+            logger.info("release %s/%s (%s)" % (project, package, set_release))
         else:
             self.api.retried_POST(url)
 
-    def update_totest(self, snapshot = None):
+    def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
         if not self.dryrun:
-            self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
+            self.api.switch_flag_in_prj(
+                'openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
 
         for product in self.ftp_products:
             self.release_package('openSUSE:%s' % self.project, product)
 
         for cd in self.livecd_products:
-            self.release_package('openSUSE:%s:Live' % self.project, cd, set_release=release)
+            self.release_package('openSUSE:%s:Live' %
+                                 self.project, cd, set_release=release)
 
         for cd in self.main_products:
-            self.release_package('openSUSE:%s' % self.project, cd, set_release=release)
+            self.release_package(
+                'openSUSE:%s' % self.project, cd, set_release=release)
 
     def publish_factory_totest(self):
         logger.info('Publish ToTest')
         if not self.dryrun:
-            self.api.switch_flag_in_prj('openSUSE:%s:ToTest' % self.project, flag='publish', state='enable')
+            self.api.switch_flag_in_prj(
+                'openSUSE:%s:ToTest' % self.project, flag='publish', state='enable')
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
 
-        url = self.api.makeurl(['source', 'openSUSE:%s:ToTest' % self.project, '_meta'])
+        url = self.api.makeurl(
+            ['source', 'openSUSE:%s:ToTest' % self.project, '_meta'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         if not root.find('publish'):  # default true
@@ -371,9 +413,11 @@ class ToTestBase(object):
         new_snapshot = self.current_version()
 
         current_result = self.overall_result(current_snapshot)
-        current_qa_version = self.api.load_file_content("%s:Staging" % self.api.project, "dashboard", "version_totest")
+        current_qa_version = self.api.load_file_content(
+            "%s:Staging" % self.api.project, "dashboard", "version_totest")
 
-        logger.info('current_snapshot %s: %s'%(current_snapshot, self._result2str(current_result)))
+        logger.info('current_snapshot %s: %s' %
+                    (current_snapshot, self._result2str(current_result)))
         logger.debug('new_snapshot %s', new_snapshot)
         logger.debug('current_qa_version %s', current_qa_version)
 
@@ -387,7 +431,8 @@ class ToTestBase(object):
             can_release = False
         elif not self.all_repos_done('openSUSE:%s:ToTest' % self.project):
             logger.debug("not all repos done, can't release")
-            # the repos have to be done, otherwise we better not touch them with a new release
+            # the repos have to be done, otherwise we better not touch them
+            # with a new release
             can_release = False
 
         can_publish = (current_result == QA_PASSED)
@@ -404,9 +449,10 @@ class ToTestBase(object):
                 can_release = False  # we have to wait
             else:
                 # We reached a very bad status: openQA testing is 'done', but not of the same version
-                # currently in :ToTest. This can happen when 'releasing' the product failed
-                raise Exception("Publishing stopped: tested version (%s) does not match :ToTest version (%s)" 
-                    % (current_qa_version, current_snapshot))
+                # currently in :ToTest. This can happen when 'releasing' the
+                # product failed
+                raise Exception("Publishing stopped: tested version (%s) does not match :ToTest version (%s)"
+                                % (current_qa_version, current_snapshot))
 
         if can_release:
             self.update_totest(new_snapshot)
@@ -416,24 +462,12 @@ class ToTestBase(object):
         new_snapshot = self.current_version()
         self.update_totest(new_snapshot)
 
-    def known_failures_from_dashboard(self, project):
-        known_failures = []
-        if self.project == "Factory:PowerPC" or self.project == "Factory:zSystems":
-            project = "Factory"
-        else:
-            project = self.project
-
-        url = self.api.makeurl(['source', 'openSUSE:%s:Staging' % project, 'dashboard', 'known_failures'])
-        f = self.api.retried_GET(url)
-        for line in f:
-            if not line[0] == '#':
-                known_failures.append(line.strip())
-        return known_failures
-
     def write_version_to_dashboard(self, target, version):
         if not self.dryrun:
-            url = self.api.makeurl(['source', 'openSUSE:%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
+            url = self.api.makeurl(
+                ['source', 'openSUSE:%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
             osc.core.http_PUT(url + '?comment=Update+version', data=version)
+
 
 class ToTestFactory(ToTestBase):
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
@@ -467,7 +501,7 @@ class ToTestFactoryPowerPC(ToTestBase):
                      '_product:openSUSE-cd-mini-ppc64',
                      '_product:openSUSE-cd-mini-ppc64le']
 
-    ftp_products = [ '_product:openSUSE-ftp-ftp-ppc64_ppc64le' ]
+    ftp_products = ['_product:openSUSE-ftp-ftp-ppc64_ppc64le']
 
     livecd_products = []
 
@@ -486,11 +520,12 @@ class ToTestFactoryPowerPC(ToTestBase):
     def jobs_num(self):
         return 4
 
+
 class ToTestFactoryzSystems(ToTestBase):
     main_products = ['_product:openSUSE-dvd5-dvd-s390x',
                      '_product:openSUSE-cd-mini-s390x']
 
-    ftp_products = [ '_product:openSUSE-ftp-ftp-s390x' ]
+    ftp_products = ['_product:openSUSE-ftp-ftp-s390x']
 
     livecd_products = []
 
@@ -509,11 +544,12 @@ class ToTestFactoryzSystems(ToTestBase):
     def jobs_num(self):
         return 1
 
-class ToTestFactoryARM(ToTestFactory):
-    main_products = [ '_product:openSUSE-cd-mini-aarch64',
-                      '_product:openSUSE-dvd5-dvd-aarch64' ]
 
-    ftp_products = [ '_product:openSUSE-ftp-ftp-aarch64' ]
+class ToTestFactoryARM(ToTestFactory):
+    main_products = ['_product:openSUSE-cd-mini-aarch64',
+                     '_product:openSUSE-dvd5-dvd-aarch64']
+
+    ftp_products = ['_product:openSUSE-ftp-ftp-aarch64']
 
     livecd_products = []
 
@@ -528,6 +564,7 @@ class ToTestFactoryARM(ToTestFactory):
 
     def jobs_num(self):
         return 2
+
 
 class ToTest423(ToTestBase):
     main_products = [
@@ -570,7 +607,9 @@ class ToTest423(ToTestBase):
         # omit snapshot, we don't want to rename on release
         super(ToTest423, self).update_totest()
 
+
 class CommandlineInterface(cmdln.Cmdln):
+
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
 
@@ -587,7 +626,8 @@ class CommandlineInterface(cmdln.Cmdln):
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--verbose", action="store_true", help="verbose")
-        parser.add_option("--osc-debug", action="store_true", help="osc debug output")
+        parser.add_option(
+            "--osc-debug", action="store_true", help="osc debug output")
         return parser
 
     def postoptparse(self):
@@ -611,13 +651,14 @@ class CommandlineInterface(cmdln.Cmdln):
         Config('openSUSE:%s' % project)
 
         if project not in self.totest_class:
-            msg = 'Project %s not recognized. Possible values [%s]' % (project, ', '.join(self.totest_class))
+            msg = 'Project %s not recognized. Possible values [%s]' % (
+                project, ', '.join(self.totest_class))
             raise cmdln.CmdlnUserError(msg)
 
         return self.totest_class[project](project, self.options.dry)
 
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
-    def do_run(self, subcmd, opts, project = 'Factory'):
+    def do_run(self, subcmd, opts, project='Factory'):
         """${cmd_name}: run the ToTest Manager
 
         ${cmd_usage}
@@ -625,6 +666,7 @@ class CommandlineInterface(cmdln.Cmdln):
         """
 
         class ExTimeout(Exception):
+
             """raised on timeout"""
 
         if opts.interval:
@@ -641,21 +683,23 @@ class CommandlineInterface(cmdln.Cmdln):
 
             if opts.interval:
                 if os.isatty(0):
-                    logger.info("sleeping %d minutes. Press enter to check now ..."%opts.interval)
-                    signal.alarm(opts.interval*60)
+                    logger.info(
+                        "sleeping %d minutes. Press enter to check now ..." % opts.interval)
+                    signal.alarm(opts.interval * 60)
                     try:
                         raw_input()
                     except ExTimeout:
                         pass
                     signal.alarm(0)
-                    logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                    logger.info("recheck at %s" %
+                                datetime.datetime.now().isoformat())
                 else:
-                    logger.info("sleeping %d minutes."%opts.interval)
-                    time.sleep(opts.interval*60)
+                    logger.info("sleeping %d minutes." % opts.interval)
+                    time.sleep(opts.interval * 60)
                 continue
             break
 
-    def do_release(self, subcmd, opts, project = 'Factory'):
+    def do_release(self, subcmd, opts, project='Factory'):
         """${cmd_name}: manually release all media. Use with caution!
 
         ${cmd_usage}
@@ -669,6 +713,6 @@ class CommandlineInterface(cmdln.Cmdln):
 
 if __name__ == "__main__":
     app = CommandlineInterface()
-    sys.exit( app.main() )
+    sys.exit(app.main())
 
 # vim: sw=4 et
