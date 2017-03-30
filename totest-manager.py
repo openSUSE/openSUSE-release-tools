@@ -178,8 +178,6 @@ class ToTestBase(object):
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted'):
                 jobname = job['name']
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
-                url = 'https://openqa.opensuse.org/tests/%s' % job['id']
-                logger.info("job %s failed, see %s", jobname, url)
                 url = makeurl('https://openqa.opensuse.org',
                               ['api', 'v1', 'jobs', str(job['id']), 'comments'])
                 f = self.api.retried_GET(url)
@@ -197,7 +195,7 @@ class ToTestBase(object):
                         to_ignore = True
                 ignored = True
                 for ref in refs:
-                    if not ref in self.issues_to_ignore:
+                    if ref not in self.issues_to_ignore:
                         if to_ignore:
                             self.issues_to_ignore.append(ref)
                             with open(ISSUE_FILE, 'a') as f:
@@ -215,6 +213,12 @@ class ToTestBase(object):
                     data = {'text': 'Ignored issue'}
                     self.openqa.openqa_request(
                         'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+
+                if ignored:
+                    logger.info("job %s failed, but was ignored", jobname)
+                else:
+                    joburl = 'https://openqa.opensuse.org/tests/%s' % job['id']
+                    logger.info("job %s failed, see %s", jobname, joburl)
 
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
                 continue
