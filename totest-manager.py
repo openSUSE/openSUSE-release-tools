@@ -52,8 +52,9 @@ class ToTestBase(object):
             osc.conf.config['apiurl'], project='openSUSE:%s' % project)
         self.openqa = OpenQA_Client(server='https://openqa.opensuse.org')
         self.issues_to_ignore = []
-        if os.path.isfile(ISSUE_FILE):
-            with open(ISSUE_FILE, 'r') as f:
+        self.issuefile = "{}_{}".format(self.project, ISSUE_FILE)
+        if os.path.isfile(self.issuefile):
+            with open(self.issuefile, 'r') as f:
                 for line in f.readlines():
                     self.issues_to_ignore.append(line.strip())
 
@@ -198,7 +199,7 @@ class ToTestBase(object):
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
                             self.issues_to_ignore.append(ref)
-                            with open(ISSUE_FILE, 'a') as f:
+                            with open(self.issuefile, 'a') as f:
                                 f.write("%s\n" % ref)
                         else:
                             ignored = False
