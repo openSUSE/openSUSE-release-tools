@@ -52,8 +52,9 @@ class ToTestBase(object):
             osc.conf.config['apiurl'], project='openSUSE:%s' % project)
         self.openqa = OpenQA_Client(server='https://openqa.opensuse.org')
         self.issues_to_ignore = []
-        if os.path.isfile(ISSUE_FILE):
-            with open(ISSUE_FILE, 'r') as f:
+        self.issuefile = "{}_{}".format(self.project, ISSUE_FILE)
+        if os.path.isfile(self.issuefile):
+            with open(self.issuefile, 'r') as f:
                 for line in f.readlines():
                     self.issues_to_ignore.append(line.strip())
 
@@ -178,8 +179,6 @@ class ToTestBase(object):
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted'):
                 jobname = job['name']
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
-                url = 'https://openqa.opensuse.org/tests/%s' % job['id']
-                logger.info("job %s failed, see %s", jobname, url)
                 url = makeurl('https://openqa.opensuse.org',
                               ['api', 'v1', 'jobs', str(job['id']), 'comments'])
                 f = self.api.retried_GET(url)
@@ -195,15 +194,16 @@ class ToTestBase(object):
                         labeled = comment['id']
                     if comment['text'].find('@ttm ignore') >= 0:
                         to_ignore = True
-                ignored = True
+                ignored = len(refs) > 0
                 for ref in refs:
-                    if not ref in self.issues_to_ignore:
+                    if ref not in self.issues_to_ignore:
                         if to_ignore:
                             self.issues_to_ignore.append(ref)
-                            with open(ISSUE_FILE, 'a') as f:
+                            with open(self.issuefile, 'a') as f:
                                 f.write("%s\n" % ref)
                         else:
                             ignored = False
+
                 if not ignored:
                     number_of_fails += 1
                     if not labeled:
@@ -215,6 +215,12 @@ class ToTestBase(object):
                     data = {'text': 'Ignored issue'}
                     self.openqa.openqa_request(
                         'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+
+                if ignored:
+                    logger.info("job %s failed, but was ignored", jobname)
+                else:
+                    joburl = 'https://openqa.opensuse.org/tests/%s' % job['id']
+                    logger.info("job %s failed, see %s", jobname, joburl)
 
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
                 continue
