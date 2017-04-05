@@ -33,9 +33,12 @@ class AdiCommand:
             return
         if self.api.is_user_member_of(self.api.user, 'factory-staging'):
             print query_project, "is ready"
+            packages = []
             for req in info['selected_requests']:
                 print " - %s [%s]"%(req['package'], req['number'])
                 self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
+                packages.append(req['package'])
+            self.api.accept_status_comment(project, packages)
             delete_project(self.api.apiurl, project)
         else:
             print query_project, "ready:", ', '.join(['%s[%s]'%(req['package'], req['number']) for req in info['selected_requests']])
