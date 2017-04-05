@@ -36,9 +36,4 @@ class UnselectCommand(object):
 
         # Notify everybody about the changes
         for prj in affected_projects:
-            meta = self.api.get_prj_pseudometa(prj)
-            if len(meta['requests']) == 0:
-                # Cleanup like accept since the staging is now empty.
-                self.api.staging_deactivate(prj)
-            else:
-                self.api.update_status_comments(prj, 'unselect')
+            self.api.update_status_or_deactivate(prj, 'unselect')

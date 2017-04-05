@@ -298,9 +298,6 @@ class StagingAPI(object):
         self.rm_from_prj(source_project, request_id=req_id,
                          msg='Moved to {}'.format(destination_project))
 
-        # Build disable the old project if empty
-        self.build_switch_staging_project(source_project)
-
         return True
 
     def get_staging_projects(self):
@@ -1263,22 +1260,12 @@ class StagingAPI(object):
 
         return False
 
-    def build_switch_staging_project(self, target_project):
+    def build_switch_staging_project(self, target_project, target_flag):
         """
-        Verify what packages are in project and switch the build
-        accordingly.
-        :param target_project: project we validate and switch
+        Switch the build flag for a staging project (includes :DVD).
+        :param target_project: staging project
+        :param target_flag: build target flag
         """
-        meta = self.get_prj_pseudometa(target_project)
-        staged_requests = list()
-        for request in meta['requests']:
-            staged_requests.append(request['id'])
-        target_flag = 'disable'
-        # for adi projects we always build
-        if self.is_adi_project(target_project):
-            target_flag = 'enable'
-        elif not self.crings or self.check_ring_packages(target_project, staged_requests):
-            target_flag = 'enable'
         self.build_switch_prj(target_project, target_flag)
 
         if self.item_exists(target_project + ":DVD"):
@@ -1356,6 +1343,15 @@ class StagingAPI(object):
         """
         url = self.makeurl(['source', project, package, filename])
         http_PUT(url + '?comment=scripted+update', data=content)
+
+    def update_status_or_deactivate(self, project, command):
+        meta = self.get_prj_pseudometa(project)
+        if len(meta['requests']) == 0:
+            # Cleanup like accept since the staging is now empty.
+            self.staging_deactivate(project)
+        else:
+            self.build_switch_staging_project(project, 'enable')
+            self.update_status_comments(project, command)
 
     def update_status_comments(self, project, command):
         """
@@ -1543,6 +1539,4 @@ class StagingAPI(object):
         # Clear all comments.
         CommentAPI(self.apiurl).delete_from(project_name=project)
 
-        self.build_switch_prj(project, 'disable')
-        if self.item_exists(project + ':DVD'):
-            self.build_switch_prj(project + ':DVD', 'disable')
+        self.build_switch_staging_project(project, 'disable')
