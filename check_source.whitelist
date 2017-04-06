@@ -8,3 +8,4 @@ server:messaging
 server:php:extensions:php7
 system:snappy
 X11:Solus
+devel:openQA:tested
