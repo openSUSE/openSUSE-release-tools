@@ -509,7 +509,7 @@ class StagingAPI(object):
                         by_group=self.cstaging_group, message=message)
                 else:
                     # Ingore the new request pending manual review.
-                    IgnoreCommand(self).perform(request_id, message)
+                    IgnoreCommand(self).perform([str(request_id)], message)
 
         return None
 
