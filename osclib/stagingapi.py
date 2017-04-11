@@ -795,6 +795,8 @@ class StagingAPI(object):
         rebuilt = {}
         for package in status['broken_packages']:
             package = {k: str(v) for k, v in package.items()}
+            if package['state'] == 'unresolvable':
+                continue
             key = '/'.join((package['project'], package['package'], package['repository'], package['arch']))
             if check and not self.rebuild_check(package['project'], package['package'],
                                                 package['repository'], package['arch']):
