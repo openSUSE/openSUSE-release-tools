@@ -125,6 +125,7 @@ class Leaper(ReviewBot.ReviewBot):
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         super(Leaper, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
+        self.automatic_submission = False
 
         if src_project == target_project and src_package == target_package:
             self.logger.info('self submission detected')
