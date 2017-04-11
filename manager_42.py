@@ -215,10 +215,7 @@ class Manager42(object):
     # check if we can find the srcmd5 in any of our underlay
     # projects
     def check_one_package(self, package):
-        if self.force:
-            lproject = None
-        else:
-            lproject = self.lookup.get(package, None)
+        lproject = self.lookup.get(package, None)
         if not package in self.packages[self.config.from_prj]:
             logger.info("{} vanished".format(package))
             if self.lookup.get(package):
@@ -266,7 +263,7 @@ class Manager42(object):
             if srcmd5:
                 logger.debug("{} lookup from {} is correct".format(package, lproject))
                 # if it's from Factory we check if the package can be found elsewhere meanwhile
-                if lproject != self.config.factory:
+                if not self.force and lproject != self.config.factory:
                     return
             elif lproject == self.config.factory and not package in self.packages[lproject]:
                 his = self.get_package_history(lproject, package, deleted=True)
