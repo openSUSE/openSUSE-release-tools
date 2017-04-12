@@ -559,14 +559,14 @@ class StagingAPI(object):
         requests = []
 
         # xpath query, using the -m, -r, -s options
-        where = "@by_group='{}'+and+@state='new'".format(self.cstaging_group)
+        where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
         projects = [format(self.project)]
         if self.cnonfree:
             projects.append(self.cnonfree)
         targets = ["target[@project='{}']".format(p) for p in projects]
 
-        query = "match=state/@name='review'+and+review[{}]+and+({})".format(
-            where, '+or+'.join(targets))
+        query = {'match': "state/@name='review' and review[{}] and ({})".format(
+            where, ' or '.join(targets))}
         url = self.makeurl(['search', 'request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
