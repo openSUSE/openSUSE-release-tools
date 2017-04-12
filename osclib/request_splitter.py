@@ -1,3 +1,5 @@
+from datetime import datetime
+import dateutil.parser
 import hashlib
 from lxml import etree as ET
 
@@ -7,6 +9,8 @@ class RequestSplitter(object):
         self.requests = requests
         self.in_ring = in_ring
         self.mergeable_build_percent = 80
+        # 55 minutes to avoid two staging bot loops of 30 minutes
+        self.age_threshold = 55 * 60
 
         self.requests_ignored = self.api.get_ignored_requests()
 
@@ -88,6 +92,12 @@ class RequestSplitter(object):
         if request.get('ignored'):
             # Only supliment once.
             return
+
+        history = request.find('history')
+        if history is not None:
+            created = dateutil.parser.parse(request.find('history').get('when'))
+            delta = datetime.utcnow() - created
+            request.set('aged', str(delta.total_seconds() > self.age_threshold))
 
         target = request.find('./action/target')
         target_project = target.get('project')
@@ -347,6 +357,10 @@ class Strategy(object):
 class StrategyNone(Strategy):
     def apply(self, splitter):
         splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
+        # All other strategies that inherit this are not restricted by age as
+        # the age restriction is used to allow other strategies to be observed.
+        if type(self) is StrategyNone:
+            splitter.filter_add('@aged="True"')
         splitter.filter_add('@ignored="False"')
         splitter.filter_add('@postponed="False"')
 
