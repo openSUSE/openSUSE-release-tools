@@ -107,9 +107,9 @@ class RequestSplitter(object):
         if request_id in self.requests_ignored:
             request.set('ignored', str(self.requests_ignored[request_id]))
         else:
-            request.set('ignored', 'false')
+            request.set('ignored', 'False')
 
-        request.set('postponed', 'false')
+        request.set('postponed', 'False')
 
     def ring_get(self, target_package):
         if self.api.crings:
@@ -259,7 +259,7 @@ class RequestSplitter(object):
             return
 
         for request in self.grouped[group]['requests']:
-            request.set('postponed', 'true')
+            request.set('postponed', 'True')
 
     def propose_staging(self, choose_bootstrapped):
         found = False
@@ -347,8 +347,8 @@ class Strategy(object):
 class StrategyNone(Strategy):
     def apply(self, splitter):
         splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
-        splitter.filter_add('@ignored="false"')
-        splitter.filter_add('@postponed="false"')
+        splitter.filter_add('@ignored="False"')
+        splitter.filter_add('@postponed="False"')
 
 class StrategyRequests(Strategy):
     def apply(self, splitter):
