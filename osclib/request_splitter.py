@@ -54,14 +54,14 @@ class RequestSplitter(object):
     def filter_only(self):
         ret = []
         for request in self.requests:
-            self.suppliment(request)
+            self.supplement(request)
             if self.filter_check(request):
                 ret.append(request)
         return ret
 
     def split(self):
         for request in self.requests:
-            self.suppliment(request)
+            self.supplement(request)
 
             if not self.filter_check(request):
                 continue
@@ -83,7 +83,7 @@ class RequestSplitter(object):
             else:
                 self.other.append(request)
 
-    def suppliment(self, request):
+    def supplement(self, request):
         """ Provide additional information for grouping """
         if request.get('ignored'):
             # Only supliment once.
