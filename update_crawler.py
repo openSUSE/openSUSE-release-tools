@@ -149,7 +149,7 @@ class UpdateCrawler(object):
     def _find_existing_request(self, src_project, src_package, rev, dst_project,
                        dst_package):
         """Create a submit request."""
-        states = ['new', 'review', 'declined', 'revoked']
+        states = ['new', 'review', 'declined', 'revoked', 'superseded']
         reqs = osc.core.get_exact_request_list(self.apiurl,
                                                src_project,
                                                dst_project,
