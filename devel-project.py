@@ -184,7 +184,14 @@ def remind_comment(apiurl, repeat_age, request_id, project, package=None):
             return
 
         # Repeat notification so remove old comment.
-        comment_api.delete(comment['id'])
+        try:
+            comment_api.delete(comment['id'])
+        except HTTPError, e:
+            if e.code == 403:
+                # Gracefully skip when previous reminder was by another user.
+                print('  unable to remove previous reminder')
+                return
+            raise e
 
     userids = sorted(maintainers_get(apiurl, project, package))
     if len(userids):
