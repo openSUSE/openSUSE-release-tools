@@ -549,7 +549,7 @@ class StagingAPI(object):
         self.save_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests', ignore)
 
     @memoize(session=True, add_invalidate=True)
-    def get_open_requests(self):
+    def get_open_requests(self, query_extra=None):
         """
         Get all requests with open review for staging project
         that are not yet included in any staging project
@@ -559,14 +559,16 @@ class StagingAPI(object):
         requests = []
 
         # xpath query, using the -m, -r, -s options
-        where = "@by_group='{}'+and+@state='new'".format(self.cstaging_group)
+        where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
         projects = [format(self.project)]
         if self.cnonfree:
             projects.append(self.cnonfree)
         targets = ["target[@project='{}']".format(p) for p in projects]
 
-        query = "match=state/@name='review'+and+review[{}]+and+({})".format(
-            where, '+or+'.join(targets))
+        query = {'match': "state/@name='review' and review[{}] and ({})".format(
+            where, ' or '.join(targets))}
+        if query_extra is not None:
+            query.update(query_extra)
         url = self.makeurl(['search', 'request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()

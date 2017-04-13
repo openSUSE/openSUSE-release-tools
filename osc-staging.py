@@ -387,7 +387,7 @@ def do_staging(self, subcmd, opts, *args):
                     print('--move and --from must be used with explicit staging and request list')
                     return
 
-                open_requests = api.get_open_requests()
+                open_requests = api.get_open_requests({'withhistory': 1})
                 if len(open_requests) == 0:
                     print('No open requests to consider')
                     return

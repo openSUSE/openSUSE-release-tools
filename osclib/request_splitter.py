@@ -1,3 +1,5 @@
+from datetime import datetime
+import dateutil.parser
 import hashlib
 from lxml import etree as ET
 
@@ -7,6 +9,8 @@ class RequestSplitter(object):
         self.requests = requests
         self.in_ring = in_ring
         self.mergeable_build_percent = 80
+        # 55 minutes to avoid two staging bot loops of 30 minutes
+        self.age_threshold = 55 * 60
 
         self.requests_ignored = self.api.get_ignored_requests()
 
@@ -54,14 +58,14 @@ class RequestSplitter(object):
     def filter_only(self):
         ret = []
         for request in self.requests:
-            self.suppliment(request)
+            self.supplement(request)
             if self.filter_check(request):
                 ret.append(request)
         return ret
 
     def split(self):
         for request in self.requests:
-            self.suppliment(request)
+            self.supplement(request)
 
             if not self.filter_check(request):
                 continue
@@ -83,11 +87,17 @@ class RequestSplitter(object):
             else:
                 self.other.append(request)
 
-    def suppliment(self, request):
+    def supplement(self, request):
         """ Provide additional information for grouping """
         if request.get('ignored'):
             # Only supliment once.
             return
+
+        history = request.find('history')
+        if history is not None:
+            created = dateutil.parser.parse(request.find('history').get('when'))
+            delta = datetime.utcnow() - created
+            request.set('aged', str(delta.total_seconds() > self.age_threshold))
 
         target = request.find('./action/target')
         target_project = target.get('project')
@@ -107,9 +117,9 @@ class RequestSplitter(object):
         if request_id in self.requests_ignored:
             request.set('ignored', str(self.requests_ignored[request_id]))
         else:
-            request.set('ignored', 'false')
+            request.set('ignored', 'False')
 
-        request.set('postponed', 'false')
+        request.set('postponed', 'False')
 
     def ring_get(self, target_package):
         if self.api.crings:
@@ -259,7 +269,7 @@ class RequestSplitter(object):
             return
 
         for request in self.grouped[group]['requests']:
-            request.set('postponed', 'true')
+            request.set('postponed', 'True')
 
     def propose_staging(self, choose_bootstrapped):
         found = False
@@ -347,8 +357,12 @@ class Strategy(object):
 class StrategyNone(Strategy):
     def apply(self, splitter):
         splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
-        splitter.filter_add('@ignored="false"')
-        splitter.filter_add('@postponed="false"')
+        # All other strategies that inherit this are not restricted by age as
+        # the age restriction is used to allow other strategies to be observed.
+        if type(self) is StrategyNone:
+            splitter.filter_add('@aged="True"')
+        splitter.filter_add('@ignored="False"')
+        splitter.filter_add('@postponed="False"')
 
 class StrategyRequests(Strategy):
     def apply(self, splitter):
