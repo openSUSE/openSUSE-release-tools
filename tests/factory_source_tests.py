@@ -63,7 +63,7 @@ class TestFactorySourceAccept(unittest.TestCase):
         httpretty.register_uri(httpretty.GET,
             APIURL + "/request/770001",
             body = """
-                <request id="770001">
+                <request id="770001" creator="chameleon">
                   <action type="submit">
                     <source project="Base:System" package="timezone" rev="481ecbe0dfc63ece3a1f1b5598f7d96c"/>
                     <target project="openSUSE:13.2" package="timezone"/>
@@ -118,7 +118,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             responses = [
                 httpretty.Response( body = """
                     <collection matches="1">
-                      <request id="254684">
+                      <request id="254684" creator="chameleon">
                         <action type="submit">
                           <source project="Base:System" package="timezone" rev="481ecbe0dfc63ece3a1f1b5598f7d96c"/>
                           <target project="openSUSE:Factory" package="timezone"/>
@@ -135,7 +135,7 @@ class TestFactorySourceAccept(unittest.TestCase):
                     """),
                 httpretty.Response( body = """
                     <collection matches="1">
-                      <request id="254684">
+                      <request id="254684" creator="chameleon">
                         <action type="submit">
                           <source project="Base:System" package="timezone" rev="481ecbe0dfc63ece3a1f1b5598f7d96c"/>
                           <target project="openSUSE:Factory" package="timezone"/>
@@ -182,7 +182,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             match_querystring = True,
             body = """
                 <collection matches="1">
-                    <request id="261411">
+                    <request id="261411" creator="lnussel">
                       <action type="maintenance_incident">
                         <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
                         <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
@@ -213,7 +213,7 @@ class TestFactorySourceAccept(unittest.TestCase):
         httpretty.register_uri(httpretty.GET,
             APIURL + "/request/261411",
             body = """
-                <request id="261411">
+                <request id="261411" creator="lnussel">
                   <action type="maintenance_incident">
                     <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
                     <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>

@@ -61,7 +61,7 @@ class TestTagChecker(unittest.TestCase):
                                   logger=self.logger)
 
         self._request_data = """
-                <request id="293129">
+                <request id="293129" creator="darix">
                   <action type="submit">
                     <source project="editors" package="nano" rev="25"/>
                     <target project="openSUSE:Factory" package="nano"/>
@@ -102,7 +102,7 @@ class TestTagChecker(unittest.TestCase):
                 </request>
             """
         self._request_withhistory = """
-                <request id="293129">
+                <request id="293129" creator="darix">
                   <action type="submit">
                     <source project="editors" package="nano" rev="25"/>
                     <target project="openSUSE:Factory" package="nano"/>

@@ -1,4 +1,4 @@
-<request id="${id}">
+<request id="${id}" creator="Admin">
   <action type="submit">
     <source project="home:Admin" package="${package}" rev="59f0f46262d7b57b9cdc720c06d5e317"/>
     <target project="openSUSE:Factory" package="${package}"/>

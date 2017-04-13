@@ -65,7 +65,7 @@ class TestMaintenance(unittest.TestCase):
             match_querystring = True,
             body = """
                 <collection matches="1">
-                  <request id="261355">
+                  <request id="261355" creator="brassh">
                     <action type="maintenance_incident">
                       <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
                       <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
@@ -92,7 +92,7 @@ class TestMaintenance(unittest.TestCase):
             APIURL + "/request/261355",
             match_querystring = True,
             body = """
-              <request id="261355">
+              <request id="261355" creator="brassh">
                 <action type="maintenance_incident">
                   <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
                   <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
@@ -171,7 +171,7 @@ class TestMaintenance(unittest.TestCase):
             match_querystring = True,
             body = """
                 <collection matches="1">
-                  <request id="261355">
+                  <request id="261355" creator="brassh">
                     <action type="maintenance_incident">
                       <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
                       <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
@@ -201,7 +201,7 @@ class TestMaintenance(unittest.TestCase):
             APIURL + "/request/261355",
             match_querystring = True,
             body = """
-              <request id="261355">
+              <request id="261355" creator="brassh">
                 <action type="maintenance_incident">
                   <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
                   <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
@@ -285,7 +285,7 @@ class TestMaintenance(unittest.TestCase):
             match_querystring = True,
             body = """
                 <collection matches="1">
-                    <request id="261411">
+                    <request id="261411" creator="lnussel">
                       <action type="maintenance_incident">
                         <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
                         <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
@@ -306,7 +306,7 @@ class TestMaintenance(unittest.TestCase):
         httpretty.register_uri(httpretty.GET,
             APIURL + "/request/261411",
             body = """
-                <request id="261411">
+                <request id="261411" creator="lnussel">
                   <action type="maintenance_incident">
                     <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
                     <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
