@@ -37,6 +37,8 @@ import re
 from urllib import quote_plus
 
 from osclib.memoize import memoize
+from osclib.conf import Config
+from osclib.stagingapi import StagingAPI
 
 OPENSUSE = 'openSUSE:Leap:42.3'
 FACTORY = 'openSUSE:Factory'
@@ -63,6 +65,8 @@ class UpdateCrawler(object):
         self.dryrun = False
         self.skipped = {}
         self.submit_new = {}
+        self.api = StagingAPI(
+            osc.conf.config['apiurl'], project = to_prj)
 
         self.parse_lookup()
 
@@ -270,8 +274,11 @@ class UpdateCrawler(object):
             else:
                 targetinfo = targets[package]
 
-                #if package != 'openssl':
-                #    continue
+                # XXX: make more generic :-)
+                devel_prj = self.api.get_devel_project(FACTORY, package)
+                if devel_prj == 'devel:languages:haskell':
+                    logging.info('skipping haskell package %s' % package)
+                    continue
 
                 # Compare verifymd5
                 md5_from = sourceinfo.get('verifymd5')
@@ -307,11 +314,13 @@ class UpdateCrawler(object):
         sources = self.get_source_infos(self.from_prj, packages)
         self.update_targets(targets, sources)
 
-
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.osc_debug
+
+    # initialize stagingapi config
+    Config(args.to_prj)
 
     uc = UpdateCrawler(args.from_prj, args.to_prj)
     uc.caching = args.cache_requests
