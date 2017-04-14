@@ -167,10 +167,10 @@ class RequestSplitter(object):
         return False
 
     def is_staging_mergeable(self, status, pseudometa):
-        # Mergeable if building and not too far along.
-        return (len(pseudometa['requests']) > 0 and
-                'splitter_info' in pseudometa and
-                status['overall_state'] == 'building' and
+        return len(pseudometa['requests']) > 0 and 'splitter_info' in pseudometa
+
+    def should_staging_merge(self, status, pseudometa):
+        return (status['overall_state'] == 'building' and
                 self.api.project_status_build_percent(status) <= self.mergeable_build_percent)
 
     def staging_status_load(self, project):
@@ -190,6 +190,11 @@ class RequestSplitter(object):
         # Use specified list of stagings, otherwise only empty, letter stagings.
         if len(stagings) == 0:
             stagings = self.api.get_staging_projects_short()
+            should_always = False
+        else:
+            # If the an explicit list of stagings was included then always
+            # attempt to use even if the normal conditions are not met.
+            should_always = True
 
         for staging in stagings:
             project = self.api.prj_from_short(staging)
@@ -204,7 +209,8 @@ class RequestSplitter(object):
             }
 
             # Decide if staging of interested.
-            if self.is_staging_mergeable(status, pseudometa):
+            if self.is_staging_mergeable(status, pseudometa) and (
+               should_always or self.should_staging_merge(status, pseudometa)):
                 if pseudometa['splitter_info']['strategy']['name'] == 'none':
                     self.stagings_mergeable_none.append(staging)
                 else:
