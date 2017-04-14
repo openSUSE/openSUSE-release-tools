@@ -10,7 +10,7 @@ class RequestSplitter(object):
         self.in_ring = in_ring
         self.mergeable_build_percent = 80
         # 55 minutes to avoid two staging bot loops of 30 minutes
-        self.age_threshold = 55 * 60
+        self.request_age_threshold = 55 * 60
 
         self.requests_ignored = self.api.get_ignored_requests()
 
@@ -97,7 +97,7 @@ class RequestSplitter(object):
         if history is not None:
             created = dateutil.parser.parse(request.find('history').get('when'))
             delta = datetime.utcnow() - created
-            request.set('aged', str(delta.total_seconds() > self.age_threshold))
+            request.set('aged', str(delta.total_seconds() >= self.request_age_threshold))
 
         target = request.find('./action/target')
         target_project = target.get('project')
