@@ -15,6 +15,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from cStringIO import StringIO
+from datetime import datetime
 import json
 import logging
 import urllib2
@@ -691,6 +692,7 @@ class StagingAPI(object):
         data['splitter_info'] = {
             'group': group,
             'strategy': strategy_info,
+            'activated': str(datetime.utcnow()),
         }
         self.set_prj_pseudometa(project, data)
 

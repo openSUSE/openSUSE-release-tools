@@ -8,9 +8,9 @@ class RequestSplitter(object):
         self.api = api
         self.requests = requests
         self.in_ring = in_ring
-        self.mergeable_build_percent = 80
         # 55 minutes to avoid two staging bot loops of 30 minutes
         self.request_age_threshold = 55 * 60
+        self.staging_age_max = 8 * 60 * 60
 
         self.requests_ignored = self.api.get_ignored_requests()
 
@@ -170,8 +170,17 @@ class RequestSplitter(object):
         return len(pseudometa['requests']) > 0 and 'splitter_info' in pseudometa
 
     def should_staging_merge(self, status, pseudometa):
-        return (status['overall_state'] == 'building' and
-                self.api.project_status_build_percent(status) <= self.mergeable_build_percent)
+        if 'activated' not in pseudometa['splitter_info']:
+            # No information on the age of the staging.
+            return False
+
+        # Allows for immediate staging when possible while not blocking requests
+        # created shortly after. This method removes the need to wait to create
+        # a larger staging at once while not ending up with lots of tiny
+        # stagings. As such this handles both high and low request backlogs.
+        activated = dateutil.parser.parse(pseudometa['splitter_info']['activated'])
+        delta = datetime.utcnow() - activated
+        return delta.total_seconds() <= self.staging_age_max
 
     def staging_status_load(self, project):
         status = self.api.project_status(project)
