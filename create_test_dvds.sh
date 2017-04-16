@@ -48,6 +48,23 @@ fi
 CODIR=$PWD
 SCRIPTDIR=`dirname "$0"`
 
+has_except=0
+testcase_name=''
+
+function check_exception_list() {
+    prj=$1
+
+    EXCEPT_FILE=$SCRIPTDIR/exception.list
+
+    while read exception_prj; do
+        edata=( $exception_prj )
+        if [ "$prj" = "${edata[0]}" ] && [ -n "${edata[1]}" ]; then
+            has_except=1
+            testcase_name="${edata[1]}"
+        fi
+    done < "$EXCEPT_FILE"
+}
+
 function regenerate_pl() {
     prj=$1
     shift;
@@ -67,7 +84,15 @@ function regenerate_pl() {
 		echo "repo $i 0 solv $i.solv" >> $tcfile
 	fi
     done
-    cpp -E -U__ppc64__ -U__x86_64__ -D__$arch\__ $SCRIPTDIR/create_test_$target\_dvd-$suffix.testcase >> $tcfile
+
+    check_exception_list $prj
+
+    if [ $has_except -gt 0 ]; then
+        has_except=0 # reset
+    else
+        testcase_name="create_test_${target}_dvd-${suffix}.testcase"
+    fi
+    cpp -E -U__ppc64__ -U__x86_64__ -D__$arch\__ $SCRIPTDIR/$testcase_name >> $tcfile
 
     out=$(mktemp)
     testsolv -r $tcfile > $out
