@@ -8,9 +8,9 @@ class RequestSplitter(object):
         self.api = api
         self.requests = requests
         self.in_ring = in_ring
-        self.mergeable_build_percent = 80
         # 55 minutes to avoid two staging bot loops of 30 minutes
-        self.age_threshold = 55 * 60
+        self.request_age_threshold = 55 * 60
+        self.staging_age_max = 8 * 60 * 60
 
         self.requests_ignored = self.api.get_ignored_requests()
 
@@ -97,7 +97,7 @@ class RequestSplitter(object):
         if history is not None:
             created = dateutil.parser.parse(request.find('history').get('when'))
             delta = datetime.utcnow() - created
-            request.set('aged', str(delta.total_seconds() > self.age_threshold))
+            request.set('aged', str(delta.total_seconds() >= self.request_age_threshold))
 
         target = request.find('./action/target')
         target_project = target.get('project')
@@ -167,11 +167,20 @@ class RequestSplitter(object):
         return False
 
     def is_staging_mergeable(self, status, pseudometa):
-        # Mergeable if building and not too far along.
-        return (len(pseudometa['requests']) > 0 and
-                'splitter_info' in pseudometa and
-                status['overall_state'] == 'building' and
-                self.api.project_status_build_percent(status) <= self.mergeable_build_percent)
+        return len(pseudometa['requests']) > 0 and 'splitter_info' in pseudometa
+
+    def should_staging_merge(self, status, pseudometa):
+        if 'activated' not in pseudometa['splitter_info']:
+            # No information on the age of the staging.
+            return False
+
+        # Allows for immediate staging when possible while not blocking requests
+        # created shortly after. This method removes the need to wait to create
+        # a larger staging at once while not ending up with lots of tiny
+        # stagings. As such this handles both high and low request backlogs.
+        activated = dateutil.parser.parse(pseudometa['splitter_info']['activated'])
+        delta = datetime.utcnow() - activated
+        return delta.total_seconds() <= self.staging_age_max
 
     def staging_status_load(self, project):
         status = self.api.project_status(project)
@@ -190,6 +199,11 @@ class RequestSplitter(object):
         # Use specified list of stagings, otherwise only empty, letter stagings.
         if len(stagings) == 0:
             stagings = self.api.get_staging_projects_short()
+            should_always = False
+        else:
+            # If the an explicit list of stagings was included then always
+            # attempt to use even if the normal conditions are not met.
+            should_always = True
 
         for staging in stagings:
             project = self.api.prj_from_short(staging)
@@ -204,7 +218,8 @@ class RequestSplitter(object):
             }
 
             # Decide if staging of interested.
-            if self.is_staging_mergeable(status, pseudometa):
+            if self.is_staging_mergeable(status, pseudometa) and (
+               should_always or self.should_staging_merge(status, pseudometa)):
                 if pseudometa['splitter_info']['strategy']['name'] == 'none':
                     self.stagings_mergeable_none.append(staging)
                 else:
