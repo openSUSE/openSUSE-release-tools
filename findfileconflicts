@@ -323,6 +323,18 @@ for my $pkg (sort keys %pkgneeded) {
   }
 }
 
+# let -x86_64 packages conflict with the x86_64 version
+for my $pkg (sort keys %pkgneeded) {
+  next unless $pkg =~ /^([^ ]+)-x86_64 /;
+  my $n = $1;
+  for my $p (@{$whatprovides{$n} || []}) {
+    next unless $p =~ /^\Q$n\E .* x86_64$/;
+    next if $p eq $pkg;
+    $conflicts{"$pkg\n$p"} = 1;
+    $conflicts{"$p\n$pkg"} = 1;
+  }
+}
+
 print "found ".(keys %tocheck)." conflict candidates\n";
 print "checking...\n";
 # now check each package combination for all candidates
