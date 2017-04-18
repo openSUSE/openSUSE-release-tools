@@ -90,7 +90,7 @@ class RequestSplitter(object):
     def supplement(self, request):
         """ Provide additional information for grouping """
         if request.get('ignored'):
-            # Only supliment once.
+            # Only supplement once.
             return
 
         history = request.find('history')
