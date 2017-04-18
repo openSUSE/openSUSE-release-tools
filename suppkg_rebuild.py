@@ -184,6 +184,8 @@ class StagingHelper(object):
             elif not len(cand_sources[stgname]):
                 stg.find('rebuild').text = 'unneeded'
 
+            if stg.find('rebuild').text == 'needed':
+                need_rebuild = True
 
             if need_rebuild and not self.api.is_repo_dirty(stgname, 'standard'):
                 logging.info('Rebuild %s' % stgname)
