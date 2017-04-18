@@ -306,6 +306,7 @@ class RequestSplitter(object):
     def strategies_try(self):
         strategies = (
             'special',
+            'quick',
             'super',
             'devel',
         )
@@ -453,6 +454,12 @@ class StrategySuper(StrategyDevel):
         super(StrategySuper, self).apply(splitter)
         splitter.groups = []
         splitter.group_by('./action/target/@devel_project_super', True)
+
+class StrategyQuick(StrategyNone):
+    def apply(self, splitter):
+        super(StrategyQuick, self).apply(splitter)
+        splitter.filter_add('./review[@by_user="leaper" and @state="accepted"]')
+        splitter.filter_add('not(./review[not(@by_user="leaper" or @by_group="factory-staging")])')
 
 class StrategySpecial(StrategyNone):
     PACKAGES = [
