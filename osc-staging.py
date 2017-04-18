@@ -204,7 +204,25 @@ def do_staging(self, subcmd, opts, *args):
 
         select A
 
-        Interactive mode allows the proposal to be modified before application.
+        Built in strategies may be specified as well. For example:
+
+        select --strategy devel
+        select --strategy special
+        select --strategy super
+
+        The default is none and custom is used with any filter-by or group-by
+        arguments are provided.
+
+        To merge applicable requests into an existing staging.
+
+        select --merge A
+
+        To automatically try all available strategies.
+
+        select --try-strategies
+
+        These concepts can be combined and interactive mode allows the proposal
+        to be modified before it is executed.
 
     "unselect" will remove from the project - pushing them back to the backlog
         If a message is included the requests will be ignored first.
