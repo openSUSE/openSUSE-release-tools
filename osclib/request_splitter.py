@@ -374,6 +374,9 @@ class Strategy(object):
             info['args'] = self.kwargs
         return info
 
+    def desirable(self, splitter):
+        return splitter.grouped.keys()
+
 class StrategyNone(Strategy):
     def apply(self, splitter):
         splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
@@ -466,6 +469,3 @@ class StrategySpecial(StrategyNone):
         super(StrategySpecial, self).apply(splitter)
         splitter.filter_add_requests(self.PACKAGES)
         splitter.group_by('./action/target/@package')
-
-    def desirable(self, splitter):
-        return splitter.grouped.keys()
