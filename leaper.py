@@ -421,8 +421,6 @@ class Leaper(ReviewBot.ReviewBot):
 
         if request_ok == False:
             self.logger.info("NOTE: if you think the automated review was wrong here, please talk to the release team before reopening the request")
-        elif self.needs_release_manager:
-            self.logger.info("request needs review by release management")
 
         if self.do_comments:
             result = None
@@ -439,55 +437,30 @@ class Leaper(ReviewBot.ReviewBot):
             self.comment_handler_lines_deduplicate()
             self.comment_write(state, result)
 
+        # list of tuple ('group', (states))
+        add_review_groups = []
         if self.needs_release_manager:
-            add_review = True
-            for r in req.reviews:
-                if r.by_group == self.release_manager_group and (r.state == 'new' or r.state == 'accepted'):
-                    add_review = False
-                    self.logger.debug("%s already is a reviewer", self.release_manager_group)
-                    break
-            if add_review:
-                if self.add_review(req, by_group = self.release_manager_group) != True:
-                    self.review_messages['declined'] += '\nadding %s failed' % self.release_manager_group
-                    return False
-
+            add_review_groups.append((self.release_manager_group, ('new', 'accepted')))
         if self.needs_reviewteam:
-            add_review = True
-            self.logger.info("{} needs review by {}".format(req.reqid, self.review_team_group))
-            for r in req.reviews:
-                if r.by_group == self.review_team_group:
-                    add_review = False
-                    self.logger.debug("{} already is a reviewer".format(self.review_team_group))
-                    break
-            if add_review:
-                if self.add_review(req, by_group = self.review_team_group) != True:
-                    self.review_messages['declined'] += '\nadding {} failed'.format(self.review_team_group)
-                    return False
-
+            add_review_groups.append((self.review_team_group, None))
         if self.needs_legal_review:
-            add_review = True
-            self.logger.info("{} needs review by {}".format(req.reqid, self.legal_review_group))
-            for r in req.reviews:
-                if r.by_group == self.legal_review_group:
-                    add_review = False
-                    self.logger.debug("{} already is a reviewer".format(self.legal_review_group))
-                    break
-            if add_review:
-                if self.add_review(req, by_group = self.legal_review_group) != True:
-                    self.review_messages['declined'] += '\nadding {} failed'.format(self.legal_review_group)
-                    return False
-
+            add_review_groups.append((self.legal_review_group, None))
         if self.needs_check_source and self.check_source_group is not None:
+            add_review_groups.append((self.check_source_group, None))
+
+        for (group, states) in add_review_groups:
+            if group is None:
+                continue
             add_review = True
-            self.logger.info("%s needs review by %s" % (req.reqid, self.check_source_group))
+            self.logger.info("{} needs review by {}".format(req.reqid, group))
             for r in req.reviews:
-                if r.by_group == self.check_source_group:
+                if r.by_group == group and (states is None or r.state in states):
                     add_review = False
-                    self.logger.debug("%s already is a reviewer", self.check_source_group)
+                    self.logger.debug("{} already is a reviewer".format(group))
                     break
             if add_review:
-                if self.add_review(req, by_group = self.check_source_group) != True:
-                    self.review_messages['declined'] += '\nadding %s failed' % self.check_source_group
+                if self.add_review(req, by_group = group) != True:
+                    self.review_messages['declined'] += '\nadding {} failed'.format(group)
                     return False
 
         return request_ok
