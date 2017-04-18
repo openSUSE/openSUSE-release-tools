@@ -52,12 +52,14 @@ class Leaper(ReviewBot.ReviewBot):
         # for FactorySourceChecker
         self.factory = FactorySourceChecker(*args, **kwargs)
 
+        self.needs_legal_review = False
         self.needs_reviewteam = False
         self.pending_factory_submission = False
         self.source_in_factory = None
         self.needs_release_manager = False
         self.release_manager_group = 'leap-reviewers'
         self.review_team_group = 'opensuse-review-team'
+        self.legal_review_group = 'legal-auto'
         self.must_approve_version_updates = False
         self.must_approve_maintenance_updates = False
         self.needs_check_source = False
@@ -331,15 +333,19 @@ class Leaper(ReviewBot.ReviewBot):
         if is_in_factory:
             self.source_in_factory = True
             self.needs_reviewteam = False
+            self.needs_legal_review = False
         elif is_in_factory is None:
             self.pending_factory_submission = True
             self.needs_reviewteam = False
+            self.needs_legal_review = False
         else:
             if src_project.startswith('SUSE:SLE-12') \
                 or src_project.startswith('openSUSE:Leap:42.'):
                 self.needs_reviewteam = False
+                self.needs_legal_review = False
             else:
                 self.needs_reviewteam = True
+                self.needs_legal_review = True
             self.source_in_factory = False
 
         if is_fine_if_factory:
@@ -349,6 +355,7 @@ class Leaper(ReviewBot.ReviewBot):
                 return None
             elif not_in_factory_okish:
                 self.needs_reviewteam = True
+                self.needs_legal_review = True
                 return True
 
         return False
@@ -382,6 +389,7 @@ class Leaper(ReviewBot.ReviewBot):
 
     def check_one_request(self, req):
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
+        self.needs_legal_review = False
         self.needs_reviewteam = False
         self.needs_release_manager = False
         self.pending_factory_submission = False
@@ -456,6 +464,19 @@ class Leaper(ReviewBot.ReviewBot):
                     self.review_messages['declined'] += '\nadding {} failed'.format(self.review_team_group)
                     return False
 
+        if self.needs_legal_review:
+            add_review = True
+            self.logger.info("{} needs review by {}".format(req.reqid, self.legal_review_group))
+            for r in req.reviews:
+                if r.by_group == self.legal_review_group:
+                    add_review = False
+                    self.logger.debug("{} already is a reviewer".format(self.legal_review_group))
+                    break
+            if add_review:
+                if self.add_review(req, by_group = self.legal_review_group) != True:
+                    self.review_messages['declined'] += '\nadding {} failed'.format(self.legal_review_group)
+                    return False
+
         if self.needs_check_source and self.check_source_group is not None:
             add_review = True
             self.logger.info("%s needs review by %s" % (req.reqid, self.check_source_group))
@@ -491,6 +512,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser.add_option("--check-source-group", dest="check_source_group", metavar="GROUP", help="group used by check_source.py bot which will be added as a reviewer should leaper checks pass")
         parser.add_option("--review-team-group", dest="review_team_group", metavar="GROUP", help="group used for package reviews", default="opensuse-review-team")
         parser.add_option("--release-manager-group", dest="release_manager_group", metavar="GROUP", help="group used for release manager reviews", default="leap-reviewers")
+        parser.add_option("--legal-review-group", dest="legal_review_group", metavar="GROUP", help="group used for legal reviews", default="legal-auto")
 
         return parser
 
@@ -505,6 +527,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.check_source_group = self.options.check_source_group
         if self.options.review_team_group:
             bot.review_team_group = self.options.review_team_group
+        if self.options.legal_review_group:
+            bot.legal_review_group = self.options.legal_review_group
         if self.options.release_manager_group:
             bot.release_manager_group = self.options.release_manager_group
         bot.do_comments = self.options.comment
