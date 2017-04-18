@@ -52,8 +52,10 @@ class RequestSplitter(object):
                         'contains("{requests}", concat(" ", ./action/target/@package, " "))'
                         .format(requests=requests))
 
-    def group_by(self, xpath):
+    def group_by(self, xpath, required=False):
         self.groups.append(ET.XPath(xpath))
+        if required:
+            self.filter_add(xpath)
 
     def filter_only(self):
         ret = []
@@ -401,7 +403,7 @@ class StrategyDevel(StrategyNone):
 
     def apply(self, splitter):
         super(StrategyDevel, self).apply(splitter)
-        splitter.group_by('./action/target/@devel_project')
+        splitter.group_by('./action/target/@devel_project', True)
 
     def desirable(self, splitter):
         groups = []
