@@ -173,15 +173,14 @@ class StagingHelper(object):
                 new_suppkg_list = ','.join(cand_sources[stgname])
                 stg.find('supportpkg').text = new_suppkg_list
             elif len(cand_sources[stgname]) and rebuild != 'unknown':
-                if rebuild == 'unneeded':
-                    for cand in cand_sources[stgname]:
-                        if cand not in suppkgs:
-                            need_rebuild = True
-                            stg.find('rebuild').text = 'needed'
-                            break
-                    update_suppkgs = True
-                    new_suppkg_list = ','.join(cand_sources[stgname])
-                    stg.find('supportpkg').text = new_suppkg_list
+                for cand in cand_sources[stgname]:
+                    if cand not in suppkgs:
+                        need_rebuild = True
+                        update_suppkgs = True
+                        stg.find('rebuild').text = 'needed'
+                        break
+                new_suppkg_list = ','.join(cand_sources[stgname])
+                stg.find('supportpkg').text = new_suppkg_list
             elif not len(cand_sources[stgname]):
                 stg.find('rebuild').text = 'unneeded'
 
