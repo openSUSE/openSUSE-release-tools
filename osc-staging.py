@@ -431,6 +431,7 @@ def do_staging(self, subcmd, opts, *args):
                         temp.write(yaml.safe_dump(splitter.proposal, default_flow_style=False) + '\n\n')
                         temp.write('# move requests between stagings or comment/remove them\n')
                         temp.write('# change the target staging for a group\n')
+                        temp.write('# remove the group, requests, staging, or strategy to skip\n')
                         temp.write('# stagings\n')
                         if opts.merge:
                             temp.write('# - merged: {}\n'
