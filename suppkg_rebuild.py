@@ -156,7 +156,6 @@ class StagingHelper(object):
 
         logging.info('Checking rebuild data...')
 
-        update_suppkgs = False
         for stg in root.findall('staging'):
             rebuild = stg.find('rebuild').text
             suppkg_list = stg.find('supportpkg').text
@@ -169,14 +168,12 @@ class StagingHelper(object):
             if len(cand_sources[stgname]) and rebuild == 'unknown':
                 need_rebuild = True
                 stg.find('rebuild').text = 'needed'
-                update_suppkgs = True
                 new_suppkg_list = ','.join(cand_sources[stgname])
                 stg.find('supportpkg').text = new_suppkg_list
             elif len(cand_sources[stgname]) and rebuild != 'unknown':
                 for cand in cand_sources[stgname]:
                     if cand not in suppkgs:
                         need_rebuild = True
-                        update_suppkgs = True
                         stg.find('rebuild').text = 'needed'
                         break
                 new_suppkg_list = ','.join(cand_sources[stgname])
@@ -192,10 +189,9 @@ class StagingHelper(object):
                 self.rebuild_project(stgname)
                 stg.find('rebuild').text = 'unneeded'
 
-        if update_suppkgs:
-            logging.info('Updating support pkg list...')
-            logging.debug(ET.tostring(root))
-            self.save_rebuild_data(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild', ET.tostring(root))
+        logging.info('Updating support pkg list...')
+        logging.debug(ET.tostring(root))
+        self.save_rebuild_data(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild', ET.tostring(root))
 
 def main(args):
     # Configure OSC
