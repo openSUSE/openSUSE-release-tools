@@ -2,6 +2,7 @@ from datetime import datetime
 import dateutil.parser
 import hashlib
 from lxml import etree as ET
+import re
 
 class RequestSplitter(object):
     def __init__(self, api, requests, in_ring):
@@ -107,6 +108,7 @@ class RequestSplitter(object):
         devel = self.devel_project_get(target_project, target_package)
         if devel:
             target.set('devel_project', devel)
+            StrategySuper.supplement(request)
 
         ring = self.ring_get(target_package)
         if ring:
@@ -304,6 +306,7 @@ class RequestSplitter(object):
     def strategies_try(self):
         strategies = (
             'special',
+            'super',
             'devel',
         )
 
@@ -411,6 +414,42 @@ class StrategyDevel(StrategyNone):
             if len(info['requests']) >= self.GROUP_MIN_MAP.get(group, self.GROUP_MIN):
                 groups.append(group)
         return groups
+
+class StrategySuper(StrategyDevel):
+    # Regex pattern prefix representing super devel projects that should be
+    # grouped together. The whole pattern will be used and the last colon
+    # stripped, otherwise the first match group.
+    PATTERNS = [
+        'KDE:',
+        'GNOME:',
+        '(multimedia):(?:libs|apps)',
+        'zypp:'
+    ]
+
+    @classmethod
+    def init(cls):
+        cls.patterns = []
+        for pattern in cls.PATTERNS:
+            cls.patterns.append(re.compile(pattern))
+
+    @classmethod
+    def supplement(cls, request):
+        if not hasattr(cls, 'patterns'):
+            cls.init()
+
+        target = request.find('./action/target')
+        devel_project = target.get('devel_project')
+        for pattern in cls.patterns:
+            match = pattern.match(devel_project)
+            if match:
+                prefix = match.group(0 if len(match.groups()) == 0 else 1).rstrip(':')
+                target.set('devel_project_super', prefix)
+                break
+
+    def apply(self, splitter):
+        super(StrategySuper, self).apply(splitter)
+        splitter.groups = []
+        splitter.group_by('./action/target/@devel_project_super', True)
 
 class StrategySpecial(StrategyNone):
     PACKAGES = [
