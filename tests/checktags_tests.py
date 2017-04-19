@@ -26,6 +26,7 @@ import httpretty
 import osc
 import urlparse
 import sys
+import re
 from osclib.cache import Cache
 sys.path.append(".")
 
@@ -205,6 +206,11 @@ Pico text editor while also offering a few enhancements.</description>
                                APIURL + "/request/293129?withhistory=1",
                                match_querystring=True,
                                body=self._request_withhistory)
+
+        httpretty.register_uri(httpretty.GET,
+                               re.compile (re.escape(APIURL + "/search/request?")),
+                               match_querystring=True,
+                               body='<collection matches="0"></collection>')
 
         result = {'state_accepted': None}
 
