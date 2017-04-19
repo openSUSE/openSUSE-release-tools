@@ -597,7 +597,7 @@ class StagingAPI(object):
         # check if we can reduce it down by accepting some
         for rq in requests:
             request_id = int(rq.get('id'))
-            if request_id in requests_ignored:
+            if not len(target_requests) and request_id in requests_ignored:
                 continue
             # if self.crings:
             #     self.accept_non_ring_request(rq)
