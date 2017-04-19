@@ -26,6 +26,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.devel_whitelist = None
         self.review_team = 'opensuse-review-team'
         self.repo_checker = 'factory-repo-checker'
+        self.staging_group = 'factory-staging'
         self.skip_add_reviews = False
 
     def check_one_request(self, request):
@@ -127,7 +128,13 @@ class CheckSource(ReviewBot.ReviewBot):
                 if self.review_team is not None:
                     self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
 
-            if self.repo_checker is not None:
+            if self.only_changes():
+                self.logger.debug('only .changes modifications')
+                if not self.dryrun:
+                    osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
+                        by_group=self.staging_group,
+                        message='skipping the staging process since only .changes modifications')
+            elif self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
         return True
@@ -178,6 +185,19 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return ret
 
+    def only_changes(self):
+        u = osc.core.makeurl(self.apiurl, ['request', self.request.reqid],
+                             {'cmd': 'diff', 'view': 'xml'})
+        try:
+            diff = ET.parse(osc.core.http_POST(u)).getroot()
+            for f in diff.findall('action/sourcediff/files/file/*[@name]'):
+                if not f.get('name').endswith('.changes'):
+                    return False
+            return True
+        except:
+            pass
+        return False
+
     def check_action_add_role(self, request, action):
         # Decline add_role request (assumed the bot acting on requests to Factory or similar).
         message = 'Roles to packages are granted in the devel project, not in %s.' % action.tgt_project
@@ -225,6 +245,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser.add_option('--devel-whitelist', dest='devel_whitelist_file', metavar='FILE', help='file containing whitelisted projects (one per line)')
         parser.add_option('--review-team', dest='review_team', metavar='GROUP', help='review team group added to requests with > 8 diff')
         parser.add_option('--repo-checker', dest='repo_checker', metavar='USER', help='repo checker user added after accepted review')
+        parser.add_option('--staging-group', metavar='GROUP', help='group used by staging process')
         parser.add_option('--skip-add-reviews', dest='skip_add_reviews', action='store_true', default=False, help='skip adding review after completing checks')
 
         return parser
@@ -240,6 +261,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.review_team = self.options.review_team
         if self.options.repo_checker:
             bot.repo_checker = self.options.repo_checker
+        if self.options.staging_group:
+            bot.staging_group = self.options.staging_group
         bot.skip_add_reviews = self.options.skip_add_reviews
 
         return bot
