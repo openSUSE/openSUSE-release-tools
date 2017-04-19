@@ -479,8 +479,9 @@ class StagingAPI(object):
             logging.info(msg)
 
         # Only consider if submit or delete and in target_pkgs if provided.
+        is_targeted = target_package in target_pkgs
         if action.get('type') in ['submit', 'delete'] and (
-           not(target_pkgs) or target_package in target_pkgs):
+           not(target_pkgs) or is_targeted):
             stage_info = self.packages_staged.get(target_package)
 
             # Ensure a request for same package is already staged.
@@ -490,7 +491,8 @@ class StagingAPI(object):
 
                 # If both are submits from different source projects then check
                 # the source info and proceed accordingly, otherwise supersede.
-                if not(
+                # A targeted package overrides this condition.
+                if is_targeted or not(
                     request_new.find('action').get('type') == 'submit' and
                     request_old.find('action').get('type') == 'submit' and
                     request_new.find('action/source').get('project') !=
