@@ -14,7 +14,7 @@ class UnselectCommand(object):
         """
 
         if cleanup:
-            obsolete = self.api.project_status_requests('obsolete')
+            obsolete = self.api.project_status_requests('obsolete', filter_superseded=True)
             if len(obsolete) > 0:
                 print('Cleanup {} obsolete requests'.format(len(obsolete)))
                 packages += tuple(obsolete)
