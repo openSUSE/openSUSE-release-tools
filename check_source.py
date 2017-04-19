@@ -71,7 +71,7 @@ class CheckSource(ReviewBot.ReviewBot):
                          server_service_files=True, expand_link=True)
             shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
-            old_info = self.package_source_parse(self.apiurl, target_project, target_package)
+            old_info = self.package_source_parse(target_project, target_package)
         except urllib2.HTTPError:
             self.logger.error('failed to checkout %s/%s' % (target_project, target_package))
 
@@ -80,7 +80,7 @@ class CheckSource(ReviewBot.ReviewBot):
         os.rename(source_package, target_package)
         shutil.rmtree(os.path.join(target_package, '.osc'))
 
-        new_info = self.package_source_parse(self.apiurl, source_project, source_package, source_revision)
+        new_info = self.package_source_parse(source_project, source_package, source_revision)
         if new_info['name'] != target_package:
             shutil.rmtree(dir)
             self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (target_package, target_package, new_info['name'])
@@ -155,7 +155,7 @@ class CheckSource(ReviewBot.ReviewBot):
             sys.stdout = _stdout
         return result
 
-    def package_source_parse(self, apiurl, project, package, revision=None):
+    def package_source_parse(self, project, package, revision=None):
         query = {'view': 'info', 'parse': 1}
         if revision:
             query['rev'] = revision
