@@ -538,7 +538,7 @@ class StagingAPI(object):
             # Add the new one that should be replacing it
             self.rq_to_prj(request_id, stage_info['prj'])
             self._invalidate_get_open_requests()
-            return True
+            return stage_info
         return False
 
     @memoize(session=True)
@@ -601,7 +601,9 @@ class StagingAPI(object):
                 continue
             # if self.crings:
             #     self.accept_non_ring_request(rq)
-            self.update_superseded_request(rq, target_requests)
+            stage_info = self.update_superseded_request(rq, target_requests)
+            if stage_info:
+                yield (stage_info, rq)
 
     def get_prj_meta(self, project):
         url = make_meta_url('prj', project, self.apiurl)
