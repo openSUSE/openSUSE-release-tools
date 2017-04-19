@@ -263,7 +263,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging rebuild [--force] [STAGING...]
         osc staging repair [--cleanup] [REQUEST...]
         osc staging setprio [STAGING...]
-        osc staging supersede [PACKAGE...]
+        osc staging supersede [REQUEST...]
     """
     if opts.version:
         self._print_version()
