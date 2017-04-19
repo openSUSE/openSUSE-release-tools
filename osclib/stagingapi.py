@@ -921,12 +921,13 @@ class StagingAPI(object):
             tobuild += int(repo['tobuild'])
         return final, tobuild
 
-    def project_status_requests(self, request_type):
+    def project_status_requests(self, request_type, filter_superseded=False):
         key = '{}_requests'.format(request_type)
         requests = []
         for status in self.project_status():
             for request in status[key]:
-                requests.append(str(request['number']))
+                if not filter_superseded or request['superseded_by_id'] is None:
+                    requests.append(str(request['number']))
         return requests
 
     def days_since_last_freeze(self, project):
