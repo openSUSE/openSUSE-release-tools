@@ -1,5 +1,6 @@
 from osc import oscerr
 from osclib.request_splitter import RequestSplitter
+from osclib.supersede_command import SupersedeCommand
 
 
 class ListCommand:
@@ -14,13 +15,13 @@ class ListCommand:
     def __init__(self, api):
         self.api = api
 
-    def perform(self, packages=None, supersede=False):
+    def perform(self, supersede=False):
         """
         Perform the list command
         """
 
         if supersede:
-            self.api.dispatch_open_requests(packages)
+            SupersedeCommand(self.api).perform()
 
         requests = self.api.get_open_requests()
         requests_ignored = self.api.get_ignored_requests()
