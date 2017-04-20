@@ -160,6 +160,38 @@ class ToTestBase(object):
             logger.info('%s %s %s' %
                         (module['name'], module['result'], module['flags']))
 
+    def update_ignored_issues(self):
+        url = makeurl('https://openqa.opensuse.org',
+                      ['api', 'v1', 'job_groups'])
+        f = self.api.retried_GET(url)
+        job_groups = json.load(f)
+        group_id = 0
+        for jg in job_groups:
+            if jg['name'] == self.openqa_group():
+                group_id = jg['id']
+                break
+
+        if group_id:
+            pinned_ignored_issue = 0
+            issues = ' , '.join(self.self.issues_to_ignore)
+            msg = "pinned-description: Ignored issues\r\n\r\n{}".format(issues)
+            data = {'text': msg}
+            url = makeurl('https://openqa.opensuse.org',
+                          ['api', 'v1', str(group_id), 'comments'])
+            f = self.api.retried_GET(url)
+            comments = json.load(f)
+            for comment in comments:
+                if comment['userName'] == 'ttm' and \
+                        comment['text'].startswith('pinned-description: Ignored issues'):
+                    pinned_ignored_issue = comment['id']
+
+            if pinned_ignored_issue:
+                self.openqa.openqa_request(
+                        'PUT', 'groups/%s/comments/%d' % (group_id, pinned_ignored_issue), data=data)
+            else:
+                self.openqa.openqa_request(
+                        'POST', 'groups/%s/comments' % group_id, data=data)
+
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
 
@@ -174,6 +206,7 @@ class ToTestBase(object):
 
         number_of_fails = 0
         in_progress = False
+        update_pinned_descr = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted'):
@@ -199,6 +232,7 @@ class ToTestBase(object):
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
                             self.issues_to_ignore.append(ref)
+                            update_pinned_descr = True
                             with open(self.issuefile, 'a') as f:
                                 f.write("%s\n" % ref)
                         else:
@@ -229,6 +263,9 @@ class ToTestBase(object):
                     in_progress = True
             else:
                 raise Exception(job['result'])
+
+        if update_pinned_descr:
+            self.update_ignored_issues()
 
         if number_of_fails > 0:
             return QA_FAILED
