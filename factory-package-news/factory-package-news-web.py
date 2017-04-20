@@ -26,16 +26,21 @@ from flask import make_response
 import re
 import os
 import sys
+from urlparse import urlparse
 
 import re
 digits_re = re.compile('^[0-9]+$')
 
-_dir = "/var/lib/openqa/factory/snapshot-changes"
+BASE_DIR = '/var/lib'
 
 app = Flask(__name__)
 
+def get_dir(url):
+    return os.path.join(BASE_DIR, urlparse(url).path.lstrip('/'))
+
 @app.route('/')
 def list():
+    _dir = get_dir(request.url_root)
     fn = os.path.join(_dir, 'current')
     current = None
     if os.path.exists(fn):
@@ -53,6 +58,7 @@ def list():
 
 @app.route('/current', methods=['GET', 'POST'])
 def current():
+    _dir = get_dir(request.url_root)
     fn = os.path.join(_dir, 'current')
     if request.method == 'POST':
         if not 'version' in request.form:
@@ -76,6 +82,7 @@ def current():
 
 @app.route('/diff/<int:version>')
 def diff(version):
+    _dir = get_dir(request.url_root)
     version = str(version)
     fn = os.path.join(_dir, 'current')
     if not os.path.exists(fn):
