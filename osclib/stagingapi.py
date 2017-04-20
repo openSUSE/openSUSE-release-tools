@@ -889,6 +889,13 @@ class StagingAPI(object):
         url = self.makeurl(path, {'format': 'json'})
         return json.load(self.retried_GET(url))
 
+    def project_status_walk(self, project):
+        yield project
+        for sub in project['subprojects']:
+            # Oddly, dashboard returns [ None ] instead of [].
+            if sub is not None:
+                yield sub
+
     def check_project_status(self, project):
         """
         Checks a staging project for acceptance. Use the JSON document
@@ -906,19 +913,11 @@ class StagingAPI(object):
         return final / float(final + tobuild) * 100
 
     def project_status_build_sum(self, status):
-        final, tobuild = self.project_status_build_sum_repos(status['building_repositories'])
-        for subproject in status['subprojects']:
-            # _, _ += ... would be neat.
-            _final, _tobuild = self.project_status_build_sum_repos(subproject['building_repositories'])
-            final += _final
-            tobuild += _tobuild
-        return final, tobuild
-
-    def project_status_build_sum_repos(self, repositories):
         final = tobuild = 0
-        for repo in repositories:
-            final += int(repo['final'])
-            tobuild += int(repo['tobuild'])
+        for project in self.project_status_walk(status):
+            for repo in project['building_repositories']:
+                final += int(repo['final'])
+                tobuild += int(repo['tobuild'])
         return final, tobuild
 
     def project_status_requests(self, request_type, filter_superseded=False):
