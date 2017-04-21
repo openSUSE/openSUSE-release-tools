@@ -173,11 +173,11 @@ class ToTestBase(object):
 
         if group_id:
             pinned_ignored_issue = 0
-            issues = ' , '.join(self.self.issues_to_ignore)
+            issues = ' , '.join(self.issues_to_ignore)
             msg = "pinned-description: Ignored issues\r\n\r\n{}".format(issues)
             data = {'text': msg}
             url = makeurl('https://openqa.opensuse.org',
-                          ['api', 'v1', str(group_id), 'comments'])
+                          ['api', 'v1', 'groups', str(group_id), 'comments'])
             f = self.api.retried_GET(url)
             comments = json.load(f)
             for comment in comments:
