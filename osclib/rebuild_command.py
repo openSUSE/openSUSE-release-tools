@@ -13,5 +13,5 @@ class RebuildCommand(object):
         for staging in stagings:
             status = self.api.project_status(staging)
             rebuilt = self.api.rebuild_broken(status, not force)
-            for key, code in rebuilt.items():
+            for key, code in rebuilt:
                 print('rebuild {} {}'.format(key, code))

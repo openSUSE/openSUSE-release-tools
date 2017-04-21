@@ -801,26 +801,20 @@ class StagingAPI(object):
 
     def rebuild_broken(self, status, check=True):
         """ Rebuild broken packages given a staging's status information. """
-        rebuilt = {}
-        for package in status['broken_packages']:
-            package = {k: str(v) for k, v in package.items()}
-            if package['state'] == 'unresolvable':
-                continue
-            key = '/'.join((package['project'], package['package'], package['repository'], package['arch']))
-            if check and not self.rebuild_check(package['project'], package['package'],
-                                                package['repository'], package['arch']):
-                rebuilt[key] = 'skipped'
-                continue
+        for project in self.project_status_walk(status):
+            for package in project['broken_packages']:
+                package = {k: str(v) for k, v in package.items()}
+                if package['state'] == 'unresolvable':
+                    continue
+                key = '/'.join((package['project'], package['package'], package['repository'], package['arch']))
+                if check and not self.rebuild_check(package['project'], package['package'],
+                                                    package['repository'], package['arch']):
+                    yield (key, 'skipped')
+                    continue
 
-            code = rebuild(self.apiurl, package['project'], package['package'],
-                           package['repository'], package['arch'])
-            rebuilt[key] = code
-
-        for project in status['subprojects']:
-            if project:
-                rebuilt.update(self.rebuild_broken(project, check))
-
-        return rebuilt
+                code = rebuild(self.apiurl, package['project'], package['package'],
+                            package['repository'], package['arch'])
+                yield (key, code)
 
     def rebuild_check(self, project, package, repository, architecture):
         history = self.job_history_get(project, repository, architecture, package)
