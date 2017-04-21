@@ -23,7 +23,10 @@ import tempfile
 import warnings
 import yaml
 
+import colorama
+
 from osc import cmdln
+from osc import conf
 from osc import oscerr
 
 # Expand sys.path to search modules inside the pluging directory
@@ -112,6 +115,7 @@ def _full_project_name(self, project):
 @cmdln.option('--merge', action='store_true', help='propose merge where applicable and store details to allow future merges')
 @cmdln.option('--try-strategies', action='store_true', default=False, help='apply strategies and keep any with desireable outcome')
 @cmdln.option('--strategy', help='apply a specific strategy')
+@cmdln.option('--no-color', action='store_true', help='strip colors from output (or add staging.color = 0 to the .oscrc general section')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -314,6 +318,8 @@ def do_staging(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
     opts.verbose = False
     Config(opts.project)
+    colorama.init(autoreset=True,
+        strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
 
     if opts.wipe_cache:
         Cache.delete_all()

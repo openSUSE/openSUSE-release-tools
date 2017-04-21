@@ -1,3 +1,4 @@
+from colorama import Fore
 from osc import oscerr
 from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
@@ -37,17 +38,19 @@ class ListCommand:
 
         is_factory = self.api.project != 'openSUSE:Factory'
         for group in sorted(splitter.grouped.keys()):
-            print group
+            print Fore.YELLOW + group
 
             for request in splitter.grouped[group]['requests']:
                 request_id = int(request.get('id'))
                 action = request.find('action')
                 target_package = action.find('target').get('package')
                 ring = action.find('target').get('ring')
+                if ring.startswith('0'):
+                    ring = Fore.MAGENTA + ring + Fore.RESET
                 if action.get('type') == 'delete':
-                    ring += ' (delete request)'
+                    ring += Fore.RED + ' (delete request)'
 
-                line = 'sr#{}: {:<30} -> {:<12}'.format(request_id, target_package, ring)
+                line = 'sr#{}: {}{:<30}{} -> {:<12}'.format(request_id, Fore.CYAN, target_package, Fore.RESET, ring)
 
                 if is_factory and action.find('source') != None:
                     source_project = action.find('source').get('project')
@@ -55,7 +58,7 @@ class ListCommand:
                     line += ' ({})'.format(source_project)
 
                 if request_id in requests_ignored:
-                    line += '\n    ignored: ' + str(requests_ignored[request_id])
+                    line += Fore.WHITE + '\n    ignored: ' + str(requests_ignored[request_id]) + Fore.RESET
 
                 print ' ', line
 
