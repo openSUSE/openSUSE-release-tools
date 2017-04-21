@@ -187,7 +187,7 @@ class FreezeCommand(object):
         f = ET.SubElement(root, 'publish')
         ET.SubElement(f, 'disable')
         f = ET.SubElement(root, 'debuginfo')
-        ET.SubElement(f, 'enable')
+        ET.SubElement(f, 'disable')
 
         r = ET.SubElement(root, 'repository', {'name': 'bootstrap_copy'})
         ET.SubElement(r, 'path', {'project': self.api.cstaging, 'repository': 'standard'})

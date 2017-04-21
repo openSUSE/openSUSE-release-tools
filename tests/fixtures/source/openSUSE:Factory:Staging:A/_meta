@@ -10,7 +10,7 @@
     <disable/>
   </publish>
   <debuginfo>
-    <enable/>
+    <disable/>
   </debuginfo>
   <repository name="standard" rebuild="direct" linkedbuild="all">
     <path project="openSUSE:Factory:Build" repository="standard"/>
