@@ -135,11 +135,11 @@ class BiArchTool(ToolBase.ToolBase):
             is_enabled = None
             is_disabled = None
             has_baselibs = None
-            must_enable = None
+            must_disable = None
             changed = None
 
             if force:
-                must_enable = True
+                must_disable = False
 
             for n in pkgmeta.findall("./build/enable[@arch='{}']".format(self.arch)):
                 is_enabled = True
@@ -149,7 +149,7 @@ class BiArchTool(ToolBase.ToolBase):
                 break
             if pkg in self.biarch_packages:
                 logger.debug('%s is known biarch package', pkg)
-                must_enable = True
+                must_disable = False
             else:
                 files = ET.fromstring(self.cached_GET(makeurl(self.apiurl, ['source', self.project, pkg])))
                 for n in files.findall("./entry[@name='baselibs.conf']"):
@@ -157,21 +157,35 @@ class BiArchTool(ToolBase.ToolBase):
                     logger.debug('%s has baselibs', pkg)
                     break
             if has_baselibs:
-                must_enable = True
+                must_disable = False
+            else:
+                must_disable = True
 
-            if must_enable:
+            if must_disable == False:
                 if is_disabled:
-                    logger.warn('%s should be enabled but is disabled', pkg)
-                if not is_enabled:
-                    logger.info('enabling %s for biarch', pkg)
+                    logger.info('enabling %s for %s', pkg, self.arch)
+                    for build in pkgmeta.findall("./build"):
+                        for n in build.findall("./disable[@arch='{}']".format(self.arch)):
+                            build.remove(n)
+                            changed = True
+                    if changed == False:
+                        logger.error('build tag not found in %s/%s!?', pkg, self.arch)
+            elif must_disable == True:
+                    logger.info('disabling %s for %s', pkg, self.arch)
                     bn = pkgmeta.find('build')
                     if bn is None:
                         bn = ET.SubElement(pkgmeta, 'build')
-                    ET.SubElement(bn, 'enable', { 'arch' : self.arch })
+                    ET.SubElement(bn, 'disable', { 'arch' : self.arch })
                     changed = True
-            else:
-                if is_enabled:
-                    logger.warn("%s enabled or biarch without need", pkg)
+
+            if is_enabled:
+                logger.info('removing explicit enable %s for %s', pkg, self.arch)
+                for build in pkgmeta.findall("./build"):
+                    for n in build.findall("./enable[@arch='{}']".format(self.arch)):
+                        build.remove(n)
+                        changed = True
+                if changed == False:
+                    logger.error('build tag not found in %s/%s!?', pkg, self.arch)
 
             if changed:
                 try:
