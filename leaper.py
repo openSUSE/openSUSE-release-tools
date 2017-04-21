@@ -225,10 +225,11 @@ class Leaper(ReviewBot.ReviewBot):
                 is_fine_if_factory = True
                 # fall through to check history and requests
             elif origin == 'FORK':
-                is_fine_if_factory = True
-                not_in_factory_okish = True
+                if not src_project.startswith('SUSE:SLE-'):
+                    is_fine_if_factory = True
+                    not_in_factory_okish = True
+                    self.needs_check_source = True
                 self.needs_release_manager = True
-                self.needs_check_source = True
                 # fall through to check history and requests
             elif origin.startswith('openSUSE:Leap:42.2'):
                 if self.must_approve_maintenance_updates:
