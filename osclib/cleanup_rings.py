@@ -13,11 +13,9 @@ class CleanupRings(object):
         self.links = {}
 
     def perform(self):
-        self.check_depinfo_ring('{}:0-Bootstrap'.format(self.api.crings),
-                                '{}:1-MinimalX'.format(self.api.crings))
-        self.check_depinfo_ring('{}:1-MinimalX'.format(self.api.crings),
-                                '{}:2-TestDVD'.format(self.api.crings))
-        self.check_depinfo_ring('{}:2-TestDVD'.format(self.api.crings), None)
+        for index, ring in enumerate(self.api.rings):
+            ring_next = self.api.rings[index + 1] if index + 1 < len(self.api.rings) else None
+            self.check_depinfo_ring(ring, ring_next)
 
     def find_inner_ring_links(self, prj):
         query = {
