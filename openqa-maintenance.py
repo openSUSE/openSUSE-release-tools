@@ -147,8 +147,6 @@ class SUSEUpdate(Update):
             settings['BUILD'] = ':' + req.reqid + '.kgraft.' + incident_id
             settings['MAINT_UPDATE_RRID'] = action.src_project + ':' + req.reqid
 
-            # backward compat
-            settings['KGRAFT_TEST_REPO'] = settings['INCIDENT_REPO']
         return settings
 
 class openSUSEUpdate(Update):
