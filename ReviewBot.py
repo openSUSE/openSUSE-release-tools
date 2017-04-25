@@ -412,6 +412,9 @@ class ReviewBot(object):
         self.logger.debug('adding comment to {}: {}'.format(request.reqid, message))
 
         if not self.dryrun:
+            if comment is None:
+                # Broaden search to include any comment state.
+                comment, _ = self.comment_api.comment_find(comments, self.bot_name)
             if comment is not None:
                 self.comment_api.delete(comment['id'])
             self.comment_api.add_comment(request_id=request.reqid, comment=str(message))
