@@ -1545,3 +1545,8 @@ class StagingAPI(object):
         CommentAPI(self.apiurl).delete_from(project_name=project)
 
         self.build_switch_staging_project(project, 'disable')
+
+    def ring_archs(self, ring):
+        if self.rings.index(ring) == 2:
+            return self.cstaging_dvd_archs
+        return self.cstaging_archs
