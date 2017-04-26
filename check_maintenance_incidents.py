@@ -50,11 +50,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
     # XXX: share with checkrepo
     def _maintainers(self, package):
         """Get the maintainer of the package involved in the package."""
-        query = {
-            'binary': package,
-        }
-        url = osc.core.makeurl(self.apiurl, ('search', 'owner'), query=query)
-        root = ET.parse(osc.core.http_GET(url)).getroot()
+        root = osc.core.owner(self.apiurl, package)
         maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
         if not maintainers:
             for group in [p.get('name') for p in root.findall('.//group') if p.get('role') == 'maintainer']:
@@ -65,11 +61,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
     def add_devel_project_review(self, req, package):
         """ add devel project/package as reviewer """
-        query = {
-            'binary': package,
-        }
-        url = osc.core.makeurl(self.apiurl, ('search', 'owner'), query=query)
-        root = ET.parse(osc.core.http_GET(url)).getroot()
+        root = osc.core.owner(self.apiurl, package)
 
         package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_project)
         for p in root.findall('./owner'):
