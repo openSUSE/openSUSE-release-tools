@@ -117,7 +117,7 @@ class CleanupRings(object):
 
     def check_buildconfig(self, project):
         url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
-        for line in http_GET(url).read().split('\n'):
+        for line in http_GET(url).read().splitlines():
             if line.startswith('Preinstall:') or line.startswith('Support:'):
                 for prein in line.split(':')[1].split():
                     if prein not in self.bin2src:
