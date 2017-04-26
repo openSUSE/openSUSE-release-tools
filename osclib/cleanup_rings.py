@@ -14,6 +14,7 @@ class CleanupRings(object):
 
     def perform(self):
         for index, ring in enumerate(self.api.rings):
+            print('# {}'.format(ring))
             ring_next = self.api.rings[index + 1] if index + 1 < len(self.api.rings) else None
             self.check_depinfo_ring(ring, ring_next)
 
