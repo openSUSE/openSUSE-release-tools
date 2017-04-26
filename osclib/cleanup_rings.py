@@ -11,12 +11,15 @@ class CleanupRings(object):
         self.sources = set()
         self.api = api
         self.links = {}
+        self.commands = []
 
     def perform(self):
         for index, ring in enumerate(self.api.rings):
             print('# {}'.format(ring))
             ring_next = self.api.rings[index + 1] if index + 1 < len(self.api.rings) else None
             self.check_depinfo_ring(ring, ring_next)
+
+        print('\n'.join(self.commands))
 
     def find_inner_ring_links(self, prj):
         query = {
@@ -144,6 +147,8 @@ class CleanupRings(object):
             if source not in self.pkgdeps and source not in self.links:
                 if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
                     continue
-                print('osc rdelete -m cleanup {} {}'.format(prj, source))
+
+                print('# - {}'.format(source))
+                self.commands.append('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
-                    print('osc linkpac {} {} {}').format(self.api.project, source, nextprj)
+                    self.commands.append('osc linkpac {} {} {}'.format(self.api.project, source, nextprj))
