@@ -103,47 +103,42 @@ class CleanupRings(object):
                     return False
         return True
 
+    def check_image_bdeps(self, project, arch):
+        url = makeurl(self.api.apiurl, ['build', project, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
+        root = ET.parse(http_GET(url)).getroot()
+        for bdep in root.findall('bdep'):
+            if 'name' not in bdep.attrib:
+                continue
+            b = bdep.attrib['name']
+            if b not in self.bin2src:
+                continue
+            b = self.bin2src[b]
+            self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+
+    def check_buildconfig(self, project):
+        url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
+        for line in http_GET(url).read().split('\n'):
+            if line.startswith('Preinstall:') or line.startswith('Support:'):
+                for prein in line.split(':')[1].split():
+                    if prein not in self.bin2src:
+                        continue
+                    b = self.bin2src[prein]
+                    self.pkgdeps[b] = 'MYinstall'
+
     def check_depinfo_ring(self, prj, nextprj):
         if not self.repo_state_acceptable(prj):
             return False
 
         self.find_inner_ring_links(prj)
-        for arch in self.api.cstaging_dvd_archs:
+        for arch in self.api.ring_archs(prj):
             self.fill_pkgdeps(prj, 'standard', arch)
 
-            if prj == '{}:1-MinimalX'.format(self.api.crings):
-                url = makeurl(self.api.apiurl, ['build', prj, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
-                root = ET.parse(http_GET(url)).getroot()
-                for bdep in root.findall('bdep'):
-                    if 'name' not in bdep.attrib:
-                        continue
-                    b = bdep.attrib['name']
-                    if b not in self.bin2src:
-                        continue
-                    b = self.bin2src[b]
-                    self.pkgdeps[b] = 'MYdvd'
-
-            if prj == '{}:2-TestDVD'.format(self.api.crings):
-                url = makeurl(self.api.apiurl, ['build', prj, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
-                root = ET.parse(http_GET(url)).getroot()
-                for bdep in root.findall('bdep'):
-                    if 'name' not in bdep.attrib:
-                        continue
-                    b = bdep.attrib['name']
-                    if b not in self.bin2src:
-                        continue
-                    b = self.bin2src[b]
-                    self.pkgdeps[b] = 'MYdvd2'
-
         if prj == '{}:0-Bootstrap'.format(self.api.crings):
-            url = makeurl(self.api.apiurl, ['build', prj, 'standard', '_buildconfig'])
-            for line in http_GET(url).read().split('\n'):
-                if line.startswith('Preinstall:') or line.startswith('Support:'):
-                    for prein in line.split(':')[1].split():
-                        if prein not in self.bin2src:
-                            continue
-                        b = self.bin2src[prein]
-                        self.pkgdeps[b] = 'MYinstall'
+            self.check_buildconfig(prj)
+        else: # Ring 1 or 2.
+            # Always look at DVD archs for image, even in ring 1.
+            for arch in self.api.cstaging_dvd_archs:
+                self.check_image_bdeps(prj, arch)
 
         for source in self.sources:
             if source not in self.pkgdeps and source not in self.links:
