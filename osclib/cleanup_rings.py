@@ -12,6 +12,11 @@ class CleanupRings(object):
         self.api = api
         self.links = {}
         self.commands = []
+        self.whitelist = [
+            # Must remain in ring-1 with other kernel packages to keep matching
+            # build number, but is required by virtualbox in ring-2.
+            'kernel-syms',
+        ]
 
     def perform(self):
         for index, ring in enumerate(self.api.rings):
@@ -157,7 +162,9 @@ class CleanupRings(object):
                 self.check_image_bdeps(prj, arch)
 
         for source in self.sources:
-            if source not in self.pkgdeps and source not in self.links:
+            if (source not in self.pkgdeps and
+                source not in self.links and
+                source not in self.whitelist):
                 if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
                     continue
                 # Expensive check so left until last.
