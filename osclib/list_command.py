@@ -48,7 +48,7 @@ class ListCommand:
                 if ring.startswith('0'):
                     ring = Fore.MAGENTA + ring + Fore.RESET
 
-                line = 'sr#{}: {}{:<30}{} -> {:<12}'.format(request_id, Fore.CYAN, target_package, Fore.RESET, ring)
+                line = '{} {}{:<30}{} -> {:<12}'.format(request_id, Fore.CYAN, target_package, Fore.RESET, ring)
 
                 if is_factory and action.find('source') != None:
                     source_project = action.find('source').get('project')

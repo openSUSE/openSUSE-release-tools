@@ -79,7 +79,7 @@ class AdiCommand:
             for request in splitter.grouped[group]['requests']:
                 request_id = int(request.get('id'))
                 target_package = request.find('./action/target').get('package')
-                line = '- sr#{}: {}{:<30}{}'.format(request_id, Fore.CYAN, target_package, Fore.RESET)
+                line = '- {} {}{:<30}{}'.format(request_id, Fore.CYAN, target_package, Fore.RESET)
 
                 if request_id in self.requests_ignored:
                     print(line + Fore.WHITE + '\n    ignored: ' + str(self.requests_ignored[request_id]) + Fore.RESET)
