@@ -133,7 +133,7 @@ class CleanupRings(object):
         for arch in self.api.ring_archs(prj):
             self.fill_pkgdeps(prj, 'standard', arch)
 
-        if prj == '{}:0-Bootstrap'.format(self.api.crings):
+        if self.api.rings.index(prj) == 0:
             self.check_buildconfig(prj)
         else: # Ring 1 or 2.
             # Always look at DVD archs for image, even in ring 1.
