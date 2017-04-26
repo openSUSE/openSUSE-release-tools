@@ -88,8 +88,8 @@ class CleanupRings(object):
                 b = self.bin2src[pkg.text]
                 self.pkgdeps[b] = source
 
-    def check_depinfo_ring(self, prj, nextprj):
-        url = makeurl(self.api.apiurl, ['build', prj, '_result'])
+    def repo_state_acceptable(self, project):
+        url = makeurl(self.api.apiurl, ['build', project, '_result'])
         root = ET.parse(http_GET(url)).getroot()
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
@@ -101,6 +101,11 @@ class CleanupRings(object):
                 if code not in ['succeeded', 'excluded', 'disabled']:
                     print('Package {}/{}/{} is {}'.format(repo.get('project'), repo.get('repository'), package.get('package'), code))
                     return False
+        return True
+
+    def check_depinfo_ring(self, prj, nextprj):
+        if not self.repo_state_acceptable(prj):
+            return False
 
         self.find_inner_ring_links(prj)
         for arch in self.api.cstaging_dvd_archs:
