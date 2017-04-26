@@ -47,8 +47,6 @@ class ListCommand:
                 ring = action.find('target').get('ring')
                 if ring.startswith('0'):
                     ring = Fore.MAGENTA + ring + Fore.RESET
-                if action.get('type') == 'delete':
-                    ring += Fore.RED + ' (delete request)'
 
                 line = 'sr#{}: {}{:<30}{} -> {:<12}'.format(request_id, Fore.CYAN, target_package, Fore.RESET, ring)
 
@@ -56,6 +54,8 @@ class ListCommand:
                     source_project = action.find('source').get('project')
                     source_project = self.project_strip(source_project)
                     line += ' ({})'.format(source_project)
+                if action.get('type') == 'delete':
+                    line += Fore.RED + ' (delete request)'
 
                 if request_id in requests_ignored:
                     line += Fore.WHITE + '\n    ignored: ' + str(requests_ignored[request_id]) + Fore.RESET
