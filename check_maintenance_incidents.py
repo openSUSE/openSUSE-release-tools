@@ -47,10 +47,19 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.review_messages = {}
 
+    @memoize(session=True)
+    def owner_fallback(self, project, package):
+        root = osc.core.owner(self.apiurl, package, project=project)
+        owner = root.find('owner')
+        if not owner or owner.get('project') == project:
+            # Fallback to global (ex Factory) maintainer.
+            root = osc.core.owner(self.apiurl, package)
+        return root
+
     # XXX: share with checkrepo
-    def _maintainers(self, package):
+    def _maintainers(self, project, package):
         """Get the maintainer of the package involved in the package."""
-        root = osc.core.owner(self.apiurl, package)
+        root = self.owner_fallback(project, package)
         maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
         if not maintainers:
             for group in [p.get('name') for p in root.findall('.//group') if p.get('role') == 'maintainer']:
@@ -61,7 +70,9 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
     def add_devel_project_review(self, req, package):
         """ add devel project/package as reviewer """
-        root = osc.core.owner(self.apiurl, package)
+        a = req.actions[0]
+        project = a.tgt_releaseproject if a.type == 'maintenance_incident' else req.actions[0].tgt_project
+        root = self.owner_fallback(project, package)
 
         package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_project)
         for p in root.findall('./owner'):
@@ -122,7 +133,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                     self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
                     return
 
-        maintainers = set(self._maintainers(pkgname))
+        maintainers = set(self._maintainers(project, pkgname))
         if maintainers:
             known_maintainer = False
             for m in maintainers:
