@@ -128,6 +128,19 @@ class CleanupRings(object):
                     b = self.bin2src[prein]
                     self.pkgdeps[b] = 'MYinstall'
 
+    def check_requiredby(self, project, package):
+        # Prioritize x86_64 bit.
+        for arch in reversed(self.api.ring_archs(project)):
+            for fileinfo in self.api.fileinfo_ext_all(project, 'standard', arch, package):
+                for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
+                    b = self.bin2src[requiredby.get('name')]
+                    if b == package:
+                        # A subpackage depending on self.
+                        continue
+                    self.pkgdeps[package] = b
+                    return True
+        return False
+
     def check_depinfo_ring(self, prj, nextprj):
         if not self.repo_state_acceptable(prj):
             return False
@@ -147,8 +160,15 @@ class CleanupRings(object):
             if source not in self.pkgdeps and source not in self.links:
                 if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
                     continue
+                # Expensive check so left until last.
+                if self.check_requiredby(prj, source):
+                    continue
 
                 print('# - {}'.format(source))
                 self.commands.append('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
                     self.commands.append('osc linkpac {} {} {}'.format(self.api.project, source, nextprj))
+
+        # Only loop through sources once from their origin ring to ensure single
+        # step moving to allow check_requiredby() to see result in each ring.
+        self.sources = set()
