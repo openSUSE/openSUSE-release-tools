@@ -11,13 +11,20 @@ class CleanupRings(object):
         self.sources = set()
         self.api = api
         self.links = {}
+        self.commands = []
+        self.whitelist = [
+            # Must remain in ring-1 with other kernel packages to keep matching
+            # build number, but is required by virtualbox in ring-2.
+            'kernel-syms',
+        ]
 
     def perform(self):
-        self.check_depinfo_ring('{}:0-Bootstrap'.format(self.api.crings),
-                                '{}:1-MinimalX'.format(self.api.crings))
-        self.check_depinfo_ring('{}:1-MinimalX'.format(self.api.crings),
-                                '{}:2-TestDVD'.format(self.api.crings))
-        self.check_depinfo_ring('{}:2-TestDVD'.format(self.api.crings), None)
+        for index, ring in enumerate(self.api.rings):
+            print('# {}'.format(ring))
+            ring_next = self.api.rings[index + 1] if index + 1 < len(self.api.rings) else None
+            self.check_depinfo_ring(ring, ring_next)
+
+        print('\n'.join(self.commands))
 
     def find_inner_ring_links(self, prj):
         query = {
@@ -89,8 +96,8 @@ class CleanupRings(object):
                 b = self.bin2src[pkg.text]
                 self.pkgdeps[b] = source
 
-    def check_depinfo_ring(self, prj, nextprj):
-        url = makeurl(self.api.apiurl, ['build', prj, '_result'])
+    def repo_state_acceptable(self, project):
+        url = makeurl(self.api.apiurl, ['build', project, '_result'])
         root = ET.parse(http_GET(url)).getroot()
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
@@ -102,49 +109,73 @@ class CleanupRings(object):
                 if code not in ['succeeded', 'excluded', 'disabled']:
                     print('Package {}/{}/{} is {}'.format(repo.get('project'), repo.get('repository'), package.get('package'), code))
                     return False
+        return True
+
+    def check_image_bdeps(self, project, arch):
+        url = makeurl(self.api.apiurl, ['build', project, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
+        root = ET.parse(http_GET(url)).getroot()
+        for bdep in root.findall('bdep'):
+            if 'name' not in bdep.attrib:
+                continue
+            b = bdep.attrib['name']
+            if b not in self.bin2src:
+                continue
+            b = self.bin2src[b]
+            self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+
+    def check_buildconfig(self, project):
+        url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
+        for line in http_GET(url).read().splitlines():
+            if line.startswith('Preinstall:') or line.startswith('Support:'):
+                for prein in line.split(':')[1].split():
+                    if prein not in self.bin2src:
+                        continue
+                    b = self.bin2src[prein]
+                    self.pkgdeps[b] = 'MYinstall'
+
+    def check_requiredby(self, project, package):
+        # Prioritize x86_64 bit.
+        for arch in reversed(self.api.ring_archs(project)):
+            for fileinfo in self.api.fileinfo_ext_all(project, 'standard', arch, package):
+                for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
+                    b = self.bin2src[requiredby.get('name')]
+                    if b == package:
+                        # A subpackage depending on self.
+                        continue
+                    self.pkgdeps[package] = b
+                    return True
+        return False
+
+    def check_depinfo_ring(self, prj, nextprj):
+        if not self.repo_state_acceptable(prj):
+            return False
 
         self.find_inner_ring_links(prj)
-        for arch in self.api.cstaging_dvd_archs:
+        for arch in self.api.ring_archs(prj):
             self.fill_pkgdeps(prj, 'standard', arch)
 
-            if prj == '{}:1-MinimalX'.format(self.api.crings):
-                url = makeurl(self.api.apiurl, ['build', prj, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
-                root = ET.parse(http_GET(url)).getroot()
-                for bdep in root.findall('bdep'):
-                    if 'name' not in bdep.attrib:
-                        continue
-                    b = bdep.attrib['name']
-                    if b not in self.bin2src:
-                        continue
-                    b = self.bin2src[b]
-                    self.pkgdeps[b] = 'MYdvd'
-
-            if prj == '{}:2-TestDVD'.format(self.api.crings):
-                url = makeurl(self.api.apiurl, ['build', prj, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
-                root = ET.parse(http_GET(url)).getroot()
-                for bdep in root.findall('bdep'):
-                    if 'name' not in bdep.attrib:
-                        continue
-                    b = bdep.attrib['name']
-                    if b not in self.bin2src:
-                        continue
-                    b = self.bin2src[b]
-                    self.pkgdeps[b] = 'MYdvd2'
-
-        if prj == '{}:0-Bootstrap'.format(self.api.crings):
-            url = makeurl(self.api.apiurl, ['build', prj, 'standard', '_buildconfig'])
-            for line in http_GET(url).read().split('\n'):
-                if line.startswith('Preinstall:') or line.startswith('Support:'):
-                    for prein in line.split(':')[1].split():
-                        if prein not in self.bin2src:
-                            continue
-                        b = self.bin2src[prein]
-                        self.pkgdeps[b] = 'MYinstall'
+        if self.api.rings.index(prj) == 0:
+            self.check_buildconfig(prj)
+        else: # Ring 1 or 2.
+            # Always look at DVD archs for image, even in ring 1.
+            for arch in self.api.cstaging_dvd_archs:
+                self.check_image_bdeps(prj, arch)
 
         for source in self.sources:
-            if source not in self.pkgdeps and source not in self.links:
+            if (source not in self.pkgdeps and
+                source not in self.links and
+                source not in self.whitelist):
                 if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
                     continue
-                print('osc rdelete -m cleanup {} {}'.format(prj, source))
+                # Expensive check so left until last.
+                if self.check_requiredby(prj, source):
+                    continue
+
+                print('# - {}'.format(source))
+                self.commands.append('osc rdelete -m cleanup {} {}'.format(prj, source))
                 if nextprj:
-                    print('osc linkpac {} {} {}').format(self.api.project, source, nextprj)
+                    self.commands.append('osc linkpac {} {} {}'.format(self.api.project, source, nextprj))
+
+        # Only loop through sources once from their origin ring to ensure single
+        # step moving to allow check_requiredby() to see result in each ring.
+        self.sources = set()

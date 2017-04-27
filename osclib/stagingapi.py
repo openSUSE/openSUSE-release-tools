@@ -1545,3 +1545,24 @@ class StagingAPI(object):
         CommentAPI(self.apiurl).delete_from(project_name=project)
 
         self.build_switch_staging_project(project, 'disable')
+
+    def ring_archs(self, ring):
+        if self.rings.index(ring) == 2:
+            return self.cstaging_dvd_archs
+        return self.cstaging_archs
+
+    def fileinfo_ext_all(self, project, repo, arch, package):
+        url = makeurl(self.apiurl, ['build', project, repo, arch, package])
+        binaries = ET.parse(http_GET(url)).getroot()
+        for binary in binaries.findall('binary'):
+            filename = binary.get('filename')
+            if not filename.endswith('.rpm'):
+                continue
+
+            yield self.fileinfo_ext(project, repo, arch, package, filename)
+
+    def fileinfo_ext(self, project, repo, arch, package, filename):
+        url = makeurl(self.apiurl,
+                      ['build', project, repo, arch, package, filename],
+                      {'view': 'fileinfo_ext'})
+        return ET.parse(http_GET(url)).getroot()
