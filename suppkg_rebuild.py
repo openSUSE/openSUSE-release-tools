@@ -131,6 +131,25 @@ class StagingHelper(object):
 
         return files
 
+    def check_multiple_specs(self, project, packages):
+        expanded_packages = []
+
+        for pkg in packages:
+            query = {'expand': 1}
+            url = makeurl(self.apiurl, ['source', project, pkg], query=query)
+            try:
+                root = ET.parse(http_GET(url)).getroot()
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    continue
+                raise
+            for en in root.findall('entry'):
+                if en.attrib['name'].endswith('.spec'):
+                    print en.attrib['name'][:-5]
+                    expanded_packages.append(en.attrib['name'][:-5])
+
+        return expanded_packages
+
     def crawl(self):
         """Main method"""
         rebuild_data = self.load_rebuild_data(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild')
@@ -146,8 +165,9 @@ class StagingHelper(object):
         for stg in staging_projects:
             prj_meta = self.api.get_prj_pseudometa(stg)
             prj_staged_packages = [req['package'] for req in prj_meta['requests']]
+            prj_expanded_packages = self.check_multiple_specs(self.project, prj_staged_packages)
             for pkg in support_pkgs:
-                if files.get(pkg) and files.get(pkg) in prj_staged_packages:
+                if files.get(pkg) and files.get(pkg) in prj_expanded_packages:
                     if files.get(pkg) not in cand_sources[stg]:
                         cand_sources[stg].append(files.get(pkg))
 
