@@ -147,7 +147,14 @@ class TestMaintenance(unittest.TestCase):
             body = lambda method, uri, headers: change_request(result, method, uri, headers))
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/owner?binary=mysql-workbench"),
+            APIURL + "/search/owner?project=openSUSE:13.2:Update&binary=mysql-workbench",
+            match_querystring = True,
+            body = """
+                <collection/>
+            """)
+
+        httpretty.register_uri(httpretty.GET,
+            APIURL + "/search/owner?binary=mysql-workbench",
             match_querystring = True,
             body = """
                 <collection>
@@ -259,7 +266,14 @@ class TestMaintenance(unittest.TestCase):
             body = lambda method, uri, headers: change_request(result, method, uri, headers))
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/owner?binary=mysql-workbench"),
+            APIURL + "/search/owner?project=openSUSE:13.2:Update&binary=mysql-workbench",
+            match_querystring = True,
+            body = """
+                <collection/>
+            """)
+
+        httpretty.register_uri(httpretty.GET,
+            APIURL + "/search/owner?binary=mysql-workbench",
             match_querystring = True,
             body = """
                 <collection>
@@ -335,7 +349,14 @@ class TestMaintenance(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/owner?binary=plan"),
+            APIURL + "/search/owner?project=openSUSE:Backports:SLE-12&binary=plan",
+            match_querystring = True,
+            body = """
+                <collection/>
+            """)
+
+        httpretty.register_uri(httpretty.GET,
+            APIURL + "/search/owner?binary=plan",
             match_querystring = True,
             body = """
                 <collection/>
