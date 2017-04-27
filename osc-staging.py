@@ -339,7 +339,9 @@ def do_staging(self, subcmd, opts, *args):
             CheckCommand(api).perform(prj, opts.old)
         elif cmd == 'freeze':
             for prj in args[1:]:
-                FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap)
+                prj = api.prj_from_letter(prj)
+                print(Fore.YELLOW + prj)
+                FreezeCommand(api).perform(prj, copy_bootstrap=opts.bootstrap)
         elif cmd == 'frozenage':
             projects = api.get_staging_projects_short() if len(args) == 1 else args[1:]
             for prj in projects:
