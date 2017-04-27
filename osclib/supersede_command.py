@@ -1,9 +1,11 @@
+from colorama import Fore
+
 
 class SupersedeCommand(object):
     CODE_MAP = {
-        None: 'superseded',
-        True: 'declined',
-        False: 'ignored',
+        None: Fore.MAGENTA + 'superseded' + Fore.RESET,
+        True: Fore.RED + 'declined' + Fore.RESET,
+        False: Fore.WHITE + 'ignored' + Fore.RESET,
     }
 
     def __init__(self, api):
@@ -17,5 +19,8 @@ class SupersedeCommand(object):
             if code is not None:
                 verbage += ' in favor of'
             print('request {} for {} {} {} in {}'.format(
-                request.get('id'), target_package, verbage,
-                stage_info['rq_id'], stage_info['prj']))
+                request.get('id'),
+                Fore.CYAN + target_package + Fore.RESET,
+                verbage,
+                stage_info['rq_id'],
+                Fore.YELLOW + stage_info['prj']))

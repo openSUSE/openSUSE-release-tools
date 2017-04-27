@@ -89,8 +89,7 @@ class AdiCommand:
                 # Auto-superseding request in adi command
                 stage_info, code = self.api.update_superseded_request(request)
                 if stage_info:
-                    print(line + Fore.MAGENTA +
-                          ' ({})'.format(SupersedeCommand.CODE_MAP[code]) + Fore.RESET)
+                    print(line + ' ({})'.format(SupersedeCommand.CODE_MAP[code]))
                     continue
 
                 # Only create staging projec the first time a non superseded
