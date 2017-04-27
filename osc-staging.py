@@ -24,6 +24,7 @@ import warnings
 import yaml
 
 import colorama
+from colorama import Fore
 
 from osc import cmdln
 from osc import conf
@@ -342,7 +343,11 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'frozenage':
             projects = api.get_staging_projects_short() if len(args) == 1 else args[1:]
             for prj in projects:
-                print("%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj))))
+                prj = api.prj_from_letter(prj)
+                print('{} last frozen {}{:.1f} days ago'.format(
+                    Fore.YELLOW + prj + Fore.RESET,
+                    Fore.GREEN if api.prj_frozen_enough(prj) else Fore.RED,
+                    api.days_since_last_freeze(prj)))
         elif cmd == 'acheck':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
