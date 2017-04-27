@@ -7,6 +7,7 @@ from osc.core import delete_project
 from osc.core import show_package_meta
 
 from osclib.select_command import SelectCommand
+from osclib.supersede_command import SupersedeCommand
 from osclib.request_finder import RequestFinder
 from osclib.request_splitter import RequestSplitter
 from xml.etree import cElementTree as ET
@@ -86,8 +87,10 @@ class AdiCommand:
                     continue
 
                 # Auto-superseding request in adi command
-                if self.api.update_superseded_request(request):
-                    print(line + Fore.MAGENTA + ' (superseded)' + Fore.RESET)
+                stage_info, code = self.api.update_superseded_request(request)
+                if stage_info:
+                    print(line + Fore.MAGENTA +
+                          ' ({})'.format(SupersedeCommand.CODE_MAP[code]) + Fore.RESET)
                     continue
 
                 # Only create staging projec the first time a non superseded
