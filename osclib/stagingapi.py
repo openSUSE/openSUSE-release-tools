@@ -810,13 +810,11 @@ class StagingAPI(object):
                     continue
                 key = (package['project'], package['package'],
                        package['repository'], package['arch'])
-                if check and not self.rebuild_check(package['project'], package['package'],
-                                                    package['repository'], package['arch']):
+                if check and not self.rebuild_check(*key):
                     yield (key, 'skipped')
                     continue
 
-                code = rebuild(self.apiurl, package['project'], package['package'],
-                            package['repository'], package['arch'])
+                code = rebuild(self.apiurl, *key)
                 yield (key, code)
 
     def rebuild_check(self, project, package, repository, architecture):
