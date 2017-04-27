@@ -1,3 +1,5 @@
+import textwrap
+from colorama import Fore
 from osc import oscerr
 from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
@@ -24,6 +26,7 @@ class ListCommand:
             SupersedeCommand(self.api).perform()
 
         requests = self.api.get_open_requests()
+        if not len(requests): return
         requests_ignored = self.api.get_ignored_requests()
 
         splitter = RequestSplitter(self.api, requests, in_ring=True)
@@ -36,26 +39,33 @@ class ListCommand:
         splitter.split()
 
         is_factory = self.api.project != 'openSUSE:Factory'
+        ignore_indent = ' ' * (2 + len(requests[0].get('id')) + 1)
         for group in sorted(splitter.grouped.keys()):
-            print group
+            print Fore.YELLOW + group
 
             for request in splitter.grouped[group]['requests']:
                 request_id = int(request.get('id'))
                 action = request.find('action')
                 target_package = action.find('target').get('package')
                 ring = action.find('target').get('ring')
-                if action.get('type') == 'delete':
-                    ring += ' (delete request)'
+                if ring.startswith('0'):
+                    ring = Fore.MAGENTA + ring + Fore.RESET
 
-                line = 'sr#{}: {:<30} -> {:<12}'.format(request_id, target_package, ring)
+                line = '{} {}{:<30}{} -> {:<12}'.format(request_id, Fore.CYAN, target_package, Fore.RESET, ring)
 
                 if is_factory and action.find('source') != None:
                     source_project = action.find('source').get('project')
                     source_project = self.project_strip(source_project)
                     line += ' ({})'.format(source_project)
+                if action.get('type') == 'delete':
+                    line += Fore.RED + ' (delete request)'
 
                 if request_id in requests_ignored:
-                    line += '\n    ignored: ' + str(requests_ignored[request_id])
+                    line += '\n' + Fore.WHITE + \
+                        textwrap.fill(str(requests_ignored[request_id]),
+                                      initial_indent=ignore_indent,
+                                      subsequent_indent=ignore_indent,
+                                      break_long_words=False) + Fore.RESET
 
                 print ' ', line
 
