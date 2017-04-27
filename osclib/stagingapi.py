@@ -499,7 +499,7 @@ class StagingAPI(object):
                     request_new.find('action/source').get('project') !=
                     request_old.find('action/source').get('project')
                 ):
-                    return stage_info
+                    return stage_info, None
 
                 source_info_new = self.source_info_request(request_new)
                 source_info_old = self.source_info_request(request_old)
@@ -515,7 +515,9 @@ class StagingAPI(object):
                     # Ingore the new request pending manual review.
                     IgnoreCommand(self).perform([str(request_id)], message)
 
-        return None
+                return stage_info, source_same
+
+        return None, None
 
     def update_superseded_request(self, request, target_requests=None):
         """
@@ -526,10 +528,10 @@ class StagingAPI(object):
         if not target_requests:
             target_requests = []
 
-        stage_info = self.superseded_request(request, target_requests)
+        stage_info, code = self.superseded_request(request, target_requests)
         request_id = int(request.get('id'))
 
-        if stage_info:
+        if stage_info and code is None:
             # Remove the old request
             self.rm_from_prj(stage_info['prj'],
                              request_id=stage_info['rq_id'],
@@ -538,8 +540,8 @@ class StagingAPI(object):
             # Add the new one that should be replacing it
             self.rq_to_prj(request_id, stage_info['prj'])
             self._invalidate_get_open_requests()
-            return stage_info
-        return False
+
+        return stage_info, code
 
     @memoize(session=True)
     def get_ignored_requests(self):
@@ -601,9 +603,9 @@ class StagingAPI(object):
                 continue
             # if self.crings:
             #     self.accept_non_ring_request(rq)
-            stage_info = self.update_superseded_request(rq, target_requests)
+            stage_info, code = self.update_superseded_request(rq, target_requests)
             if stage_info:
-                yield (stage_info, rq)
+                yield (stage_info, code, rq)
 
     def get_prj_meta(self, project):
         url = make_meta_url('prj', project, self.apiurl)
