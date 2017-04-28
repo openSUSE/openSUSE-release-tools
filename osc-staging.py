@@ -157,6 +157,19 @@ def do_staging(self, subcmd, opts, *args):
 
     "list" will list/supersede requests for ring packages or all if no rings.
 
+    "lock" acquire a hold on the project in order to execute multiple commands
+        and prevent others from interrupting. An example:
+
+        lock -m "checkin round"
+
+        list --supersede
+        adi
+        accept A B C D E
+
+        unlock
+
+        Each command will update the lock to keep it up-to-date.
+
     "repair" will attempt to repair the state of a request that has been
         corrupted.
 
@@ -234,7 +247,10 @@ def do_staging(self, subcmd, opts, *args):
 
         Use the --cleanup flag to include all obsolete requests.
 
-    "unlock" will remove the staging lock in case it gets stuck
+    "unlock" will remove the staging lock in case it gets stuck or a manual hold
+        If a command lock gets stuck while a hold is placed on a project the
+        unlock command will need to be run twice since there are two layers of
+        locks.
 
     "rebuild" will rebuild broken packages in the given stagings or all
         The rebuild command will only trigger builds for packages with less than
@@ -257,6 +273,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging ignore [-m MESSAGE] REQUEST...
         osc staging unignore [--cleanup] [REQUEST...|all]
         osc staging list [--supersede]
+        osc staging lock [-m MESSAGE]
         osc staging select [--no-freeze] [--move [--from STAGING]]
             [--add PACKAGE]
             STAGING REQUEST...
@@ -302,6 +319,8 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 0, None
     elif cmd in ('cleanup_rings', 'acheck'):
         min_args, max_args = 0, 0
+    elif cmd == 'lock':
+        min_args, max_args = 0, 0
     elif cmd == 'unlock':
         min_args, max_args = 0, 0
     elif cmd == 'rebuild':
@@ -336,7 +355,7 @@ def do_staging(self, subcmd, opts, *args):
 
     lock = OBSLock(opts.apiurl, opts.project, reason=cmd)
     if cmd == 'unlock':
-        lock.release()
+        lock.release(force=True)
         return
 
     with lock:
@@ -543,6 +562,8 @@ def do_staging(self, subcmd, opts, *args):
             UnignoreCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'list':
             ListCommand(api).perform(supersede=opts.supersede)
+        elif cmd == 'lock':
+            lock.hold(opts.message)
         elif cmd == 'adi':
             AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split)
         elif cmd == 'rebuild':

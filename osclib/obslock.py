@@ -37,23 +37,30 @@ class OBSLock(object):
         self.ttl = ttl
         self.user = conf.config['api_host_options'][apiurl]['user']
         self.reason = reason
+        self.reason_sub = None
         self.locked = False
 
     def _signature(self):
         """Create a signature with a timestamp."""
-        reason = str(self.reason).replace('@', 'at').replace('#', 'hash')
+        reason = str(self.reason)
+        if self.reason_sub:
+            reason += ' ({})'.format(self.reason_sub)
+        reason = reason.replace('@', 'at').replace('#', 'hash')
         return '%s#%s@%s' % (self.user, reason, datetime.isoformat(datetime.utcnow()))
 
     def _parse(self, signature):
         """Parse a signature into an user and a timestamp."""
-        user, reason, ts = None, None, None
+        user, reason, reason_sub, ts = None, None, None, None
         try:
             rest, ts_str = signature.split('@')
             user, reason = rest.split('#')
+            if ' (hold' in reason:
+                reason, reason_sub = reason.split(' (', 1)
+                reason_sub = reason_sub.rstrip(')')
             ts = datetime.strptime(ts_str, '%Y-%m-%dT%H:%M:%S.%f')
         except (AttributeError, ValueError):
             pass
-        return user, reason, ts
+        return user, reason, reason_sub, ts
 
     def _read(self):
         url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
@@ -82,34 +89,48 @@ class OBSLock(object):
             warnings.warn('Locking attribute is not found.  Create one to avoid race conditions.')
             return self
 
-        user, reason, ts = self._parse(self._read())
+        user, reason, reason_sub, ts = self._parse(self._read())
         if user and ts:
             now = datetime.utcnow()
             if now < ts:
                 raise Exception('Lock acquired from the future [%s] by [%s]. Try later.' % (ts, user))
             delta = now - ts
-            if delta.seconds < self.ttl:
+            if delta.seconds < self.ttl and not(
+                user == self.user and (reason == 'lock' or reason.startswith('hold'))):
                 print 'Lock acquired by [%s] %s ago, reason <%s>. Try later.' % (user, delta, reason)
                 exit(-1)
                 # raise Exception('Lock acquired by [%s]. Try later.' % user)
+        if reason and reason != 'lock':
+            self.reason_sub = reason
         self._write(self._signature())
 
         time.sleep(1)
-        user, _, _ = self._parse(self._read())
+        user, _, _, _ = self._parse(self._read())
         if user != self.user:
             raise Exception('Race condition, [%s] wins. Try later.' % user)
 
         return self
 
-    def release(self):
+    def release(self, force=False):
         # If the project do not have locks configured, simply ignore
         # the operation.
         if not self.lock:
             return
 
-        user, reason, _ = self._parse(self._read())
+        user, reason, reason_sub, _ = self._parse(self._read())
         if user == self.user:
-            self._write('')
+            if reason_sub:
+                self.reason = reason_sub
+                self.reason_sub = None
+                self._write(self._signature())
+            elif not reason.startswith('hold') or force:
+                self._write('')
+
+    def hold(self, message=None):
+        self.reason = 'hold'
+        if message:
+            self.reason += ': ' + message
+        self.acquire()
 
     __enter__ = acquire
 
