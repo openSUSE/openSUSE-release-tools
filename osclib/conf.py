@@ -43,6 +43,7 @@ DEFAULT = {
         'openqa': 'https://openqa.opensuse.org',
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
+        'splitter-whitelist': 'B C D E F G',
     },
     r'openSUSE:(?P<project>Leap:[\d.]+)': {
         'staging': 'openSUSE:%(project)s:Staging',
