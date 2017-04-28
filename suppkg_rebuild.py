@@ -145,7 +145,6 @@ class StagingHelper(object):
                 raise
             for en in root.findall('entry'):
                 if en.attrib['name'].endswith('.spec'):
-                    print en.attrib['name'][:-5]
                     expanded_packages.append(en.attrib['name'][:-5])
 
         return expanded_packages
