@@ -334,7 +334,7 @@ def do_staging(self, subcmd, opts, *args):
     if opts.wipe_cache:
         Cache.delete_all()
 
-    lock = OBSLock(opts.apiurl, opts.project)
+    lock = OBSLock(opts.apiurl, opts.project, reason=cmd)
     if cmd == 'unlock':
         lock.release()
         return
