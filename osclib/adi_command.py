@@ -82,15 +82,15 @@ class AdiCommand:
                 target_package = request.find('./action/target').get('package')
                 line = '- {} {}{:<30}{}'.format(request_id, Fore.CYAN, target_package, Fore.RESET)
 
-                if request_id in self.requests_ignored:
-                    print(line + Fore.WHITE + '\n    ignored: ' + str(self.requests_ignored[request_id]) + Fore.RESET)
+                message = self.api.ignore_format(request_id)
+                if message:
+                    print(line + '\n' + Fore.WHITE + message + Fore.RESET)
                     continue
 
                 # Auto-superseding request in adi command
                 stage_info, code = self.api.update_superseded_request(request)
                 if stage_info:
-                    print(line + Fore.MAGENTA +
-                          ' ({})'.format(SupersedeCommand.CODE_MAP[code]) + Fore.RESET)
+                    print(line + ' ({})'.format(SupersedeCommand.CODE_MAP[code]))
                     continue
 
                 # Only create staging projec the first time a non superseded
@@ -111,7 +111,6 @@ class AdiCommand:
         """
         Perform the list command
         """
-        self.requests_ignored = self.api.get_ignored_requests()
         if len(packages):
             requests = set()
             if move:

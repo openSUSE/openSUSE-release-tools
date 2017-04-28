@@ -1,4 +1,3 @@
-import textwrap
 from colorama import Fore
 from osc import oscerr
 from osclib.request_splitter import RequestSplitter
@@ -27,7 +26,6 @@ class ListCommand:
 
         requests = self.api.get_open_requests()
         if not len(requests): return
-        requests_ignored = self.api.get_ignored_requests()
 
         splitter = RequestSplitter(self.api, requests, in_ring=True)
         splitter.filter_add('./action[@type="change_devel"]')
@@ -39,7 +37,6 @@ class ListCommand:
         splitter.split()
 
         is_factory = self.api.project != 'openSUSE:Factory'
-        ignore_indent = ' ' * (2 + len(requests[0].get('id')) + 1)
         for group in sorted(splitter.grouped.keys()):
             print Fore.YELLOW + group
 
@@ -56,16 +53,13 @@ class ListCommand:
                 if is_factory and action.find('source') != None:
                     source_project = action.find('source').get('project')
                     source_project = self.project_strip(source_project)
-                    line += ' ({})'.format(source_project)
+                    line += ' ({})'.format(Fore.YELLOW + source_project + Fore.RESET)
                 if action.get('type') == 'delete':
                     line += Fore.RED + ' (delete request)'
 
-                if request_id in requests_ignored:
-                    line += '\n' + Fore.WHITE + \
-                        textwrap.fill(str(requests_ignored[request_id]),
-                                      initial_indent=ignore_indent,
-                                      subsequent_indent=ignore_indent,
-                                      break_long_words=False) + Fore.RESET
+                message = self.api.ignore_format(request_id)
+                if message:
+                    line += '\n' + Fore.WHITE + message + Fore.RESET
 
                 print ' ', line
 

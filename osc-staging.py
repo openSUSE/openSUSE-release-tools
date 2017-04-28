@@ -24,6 +24,8 @@ import warnings
 import yaml
 
 import colorama
+from colorama import Fore
+from colorama import ansi
 
 from osc import cmdln
 from osc import conf
@@ -318,8 +320,16 @@ def do_staging(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
     opts.verbose = False
     Config(opts.project)
+
     colorama.init(autoreset=True,
         strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
+    # Allow colors to be changed.
+    for name in dir(Fore):
+        if not name.startswith('_'):
+            # .oscrc requires keys to be lower-case.
+            value = conf.config.get('staging.color.' + name.lower())
+            if value:
+                setattr(Fore, name, ansi.code_to_chars(value))
 
     if opts.wipe_cache:
         Cache.delete_all()
@@ -338,11 +348,17 @@ def do_staging(self, subcmd, opts, *args):
             CheckCommand(api).perform(prj, opts.old)
         elif cmd == 'freeze':
             for prj in args[1:]:
-                FreezeCommand(api).perform(api.prj_from_letter(prj), copy_bootstrap = opts.bootstrap)
+                prj = api.prj_from_letter(prj)
+                print(Fore.YELLOW + prj)
+                FreezeCommand(api).perform(prj, copy_bootstrap=opts.bootstrap)
         elif cmd == 'frozenage':
             projects = api.get_staging_projects_short() if len(args) == 1 else args[1:]
             for prj in projects:
-                print("%s last frozen %0.1f days ago" % (api.prj_from_letter(prj), api.days_since_last_freeze(api.prj_from_letter(prj))))
+                prj = api.prj_from_letter(prj)
+                print('{} last frozen {}{:.1f} days ago'.format(
+                    Fore.YELLOW + prj + Fore.RESET,
+                    Fore.GREEN if api.prj_frozen_enough(prj) else Fore.RED,
+                    api.days_since_last_freeze(prj)))
         elif cmd == 'acheck':
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")

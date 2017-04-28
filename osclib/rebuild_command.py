@@ -1,8 +1,19 @@
+from colorama import Fore
+
 from osc.core import get_request
 from osclib.comments import CommentAPI
 
 
 class RebuildCommand(object):
+    KEY_COLOR = {
+        0: Fore.YELLOW,
+        1: Fore.CYAN,
+    }
+    CODE_COLOR = {
+        'ok': Fore.GREEN,
+        'skipped': Fore.WHITE,
+    }
+
     def __init__(self, api):
         self.api = api
 
@@ -14,4 +25,7 @@ class RebuildCommand(object):
             status = self.api.project_status(staging)
             rebuilt = self.api.rebuild_broken(status, not force)
             for key, code in rebuilt:
-                print('rebuild {} {}'.format(key, code))
+                key = [self.KEY_COLOR.get(i, '') + part + Fore.RESET for i, part in enumerate(key)]
+                print('rebuild {} {}'.format(
+                    '/'.join(key),
+                    self.CODE_COLOR.get(code, Fore.RED) + code + Fore.RESET))
