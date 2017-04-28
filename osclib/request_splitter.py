@@ -2,6 +2,7 @@ from datetime import datetime
 import dateutil.parser
 import hashlib
 from lxml import etree as ET
+from osc import conf
 import re
 
 class RequestSplitter(object):
@@ -202,7 +203,11 @@ class RequestSplitter(object):
 
         # Use specified list of stagings, otherwise only empty, letter stagings.
         if len(stagings) == 0:
-            stagings = self.api.get_staging_projects_short()
+            whitelist = conf.config[self.api.project].get('splitter-whitelist')
+            if whitelist:
+                stagings = whitelist.split()
+            else:
+                stagings = self.api.get_staging_projects_short()
             should_always = False
         else:
             # If the an explicit list of stagings was included then always
