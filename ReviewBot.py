@@ -226,7 +226,7 @@ class ReviewBot(object):
     def check_action_maintenance_incident(self, req, a):
         dst_package = a.src_package
         # Ignoring patchinfo package for checking
-        if a.src_package == 'patchinfo':
+        if a.src_package == 'patchinfo' or a.src_package.startswith('patchinfo.'):
           self.logger.info("package is patchinfo, ignoring")
           return None
         # dirty obs crap
@@ -238,7 +238,7 @@ class ReviewBot(object):
 
     def check_action_maintenance_release(self, req, a):
         pkgname = a.src_package
-        if pkgname == 'patchinfo':
+        if pkgname == 'patchinfo' or pkgname.startswith('patchinfo.'):
             return None
         linkpkg = self._get_linktarget_self(a.src_project, pkgname)
         if linkpkg is not None:
