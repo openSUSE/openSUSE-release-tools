@@ -82,8 +82,9 @@ class AdiCommand:
                 target_package = request.find('./action/target').get('package')
                 line = '- {} {}{:<30}{}'.format(request_id, Fore.CYAN, target_package, Fore.RESET)
 
-                if request_id in self.requests_ignored:
-                    print(line + Fore.WHITE + '\n    ignored: ' + str(self.requests_ignored[request_id]) + Fore.RESET)
+                message = self.api.ignore_format(request_id)
+                if message:
+                    print(line + '\n' + Fore.WHITE + message + Fore.RESET)
                     continue
 
                 # Auto-superseding request in adi command
@@ -110,7 +111,6 @@ class AdiCommand:
         """
         Perform the list command
         """
-        self.requests_ignored = self.api.get_ignored_requests()
         if len(packages):
             requests = set()
             if move:

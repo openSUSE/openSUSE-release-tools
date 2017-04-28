@@ -18,6 +18,7 @@ from cStringIO import StringIO
 from datetime import datetime
 import json
 import logging
+import textwrap
 import urllib2
 import time
 import re
@@ -1567,3 +1568,14 @@ class StagingAPI(object):
                       ['build', project, repo, arch, package, filename],
                       {'view': 'fileinfo_ext'})
         return ET.parse(http_GET(url)).getroot()
+
+    def ignore_format(self, request_id):
+        requests_ignored = self.get_ignored_requests()
+        if request_id in requests_ignored:
+            ignore_indent = ' ' * (2 + len(str(request_id)) + 1)
+            return textwrap.fill(str(requests_ignored[request_id]),
+                                 initial_indent=ignore_indent,
+                                 subsequent_indent=ignore_indent,
+                                 break_long_words=False)
+
+        return None
