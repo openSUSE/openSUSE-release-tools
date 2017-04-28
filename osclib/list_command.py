@@ -53,7 +53,7 @@ class ListCommand:
                 if is_factory and action.find('source') != None:
                     source_project = action.find('source').get('project')
                     source_project = self.project_strip(source_project)
-                    line += ' ({})'.format(source_project)
+                    line += ' ({})'.format(Fore.YELLOW + source_project + Fore.RESET)
                 if action.get('type') == 'delete':
                     line += Fore.RED + ' (delete request)'
 
