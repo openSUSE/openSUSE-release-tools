@@ -25,6 +25,7 @@ import yaml
 
 import colorama
 from colorama import Fore
+from colorama import ansi
 
 from osc import cmdln
 from osc import conf
@@ -319,8 +320,16 @@ def do_staging(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
     opts.verbose = False
     Config(opts.project)
+
     colorama.init(autoreset=True,
         strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
+    # Allow colors to be changed.
+    for name in dir(Fore):
+        if not name.startswith('_'):
+            # .oscrc requires keys to be lower-case.
+            value = conf.config.get('staging.color.' + name.lower())
+            if value:
+                setattr(Fore, name, ansi.code_to_chars(value))
 
     if opts.wipe_cache:
         Cache.delete_all()
