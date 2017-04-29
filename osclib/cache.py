@@ -84,6 +84,7 @@ class Cache(object):
         # Project will be marked changed when packages are added/removed.
         '/source/([^/]+)/_meta$': TTL_LONG,
         '/source/([^/]+)/(?:[^/]+)/(?:_meta|_link)$': TTL_LONG,
+        '/source/([^/]+)/dashboard/[^/]+\\?expand=1': TTL_LONG,
         # Handles clearing local cache on package deletes. Lots of queries like
         # updating project info, comment, and package additions.
         '/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_LONG,
