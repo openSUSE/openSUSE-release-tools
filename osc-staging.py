@@ -311,9 +311,9 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, None
     elif cmd == 'unignore':
         min_args, max_args = 0, None
-    elif cmd in ('list', 'accept'):
+    elif cmd  == 'accept':
         min_args, max_args = 0, None
-    elif cmd in ('cleanup_rings', 'acheck'):
+    elif cmd in ('cleanup_rings', 'acheck', 'list'):
         min_args, max_args = 0, 0
     elif cmd == 'lock':
         min_args, max_args = 0, 0
