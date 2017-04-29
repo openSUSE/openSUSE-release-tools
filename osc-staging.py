@@ -60,7 +60,7 @@ OSC_STAGING_VERSION = '0.0.1'
 
 def _print_version(self):
     """ Print version information about this extension. """
-    print(self.OSC_STAGING_VERSION)
+    print(OSC_STAGING_VERSION)
     quit(0)
 
 
