@@ -15,6 +15,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from ConfigParser import ConfigParser
+import io
 import os
 import operator
 import re
@@ -96,6 +97,7 @@ class Config(object):
 
         conf_file = os.environ.get('OSC_CONFIG', '~/.oscrc')
         self.conf_file = os.path.expanduser(conf_file)
+        self.remote_values = None
 
         # Populate the configuration dictionary
         self.populate_conf()
@@ -120,6 +122,9 @@ class Config(object):
                         defaults[k] = v
                 break
 
+        if self.remote_values:
+            defaults.update(self.remote_values)
+
         # Update the configuration, only when it is necessary
         conf.config[self.project] = self.read_section(self.project, defaults)
 
@@ -141,3 +146,16 @@ class Config(object):
             return dict(cp.items(section))
         else:
             return defaults
+
+    def apply_remote(self, api):
+        """Fetch remote config and re-process (defaults, remote, .oscrc)."""
+        config = api.load_file_content(api.cstaging, 'dashboard', 'config')
+        if config:
+            cp = ConfigParser()
+            config = '[remote]\n' + config
+            cp.readfp(io.BytesIO(config))
+            self.remote_values = dict(cp.items('remote'))
+            self.populate_conf()
+        else:
+            # Write empty config to allow for caching.
+            api.save_file_content(api.cstaging, 'dashboard', 'config', '')
