@@ -30,9 +30,6 @@ from osc import cmdln
 from osc import conf
 from osc import oscerr
 
-# Expand sys.path to search modules inside the pluging directory
-PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
-sys.path.append(PLUGINDIR)
 from osclib.conf import Config
 from osclib.checkrepo import CheckRepo
 from osclib.checkrepo import BINCACHE, DOWNLOADS

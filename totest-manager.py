@@ -26,9 +26,6 @@ import osc
 
 logger = logging.getLogger()
 
-# Expand sys.path to search modules inside the pluging directory
-PLUGINDIR = os.path.expanduser(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(PLUGINDIR)
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osc.core import makeurl
