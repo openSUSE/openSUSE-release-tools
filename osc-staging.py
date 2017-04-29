@@ -262,7 +262,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging accept [--force] [--no-cleanup] [LETTER...]
         osc staging acheck
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
-        osc staging check [--old] STAGING
+        osc staging check [--old] [STAGING...]
         osc staging cleanup_rings
         osc staging freeze [--no-boostrap] STAGING...
         osc staging frozenage [STAGING...]
@@ -300,7 +300,7 @@ def do_staging(self, subcmd, opts, *args):
     elif cmd == 'setprio':
         min_args, max_args = 0, None
     elif cmd == 'check':
-        min_args, max_args = 0, 1
+        min_args, max_args = 0, None
     elif cmd == 'select':
         min_args, max_args = 0, None
     elif cmd == 'unselect':
@@ -360,8 +360,12 @@ def do_staging(self, subcmd, opts, *args):
 
         # call the respective command and parse args by need
         if cmd == 'check':
-            prj = args[1] if len(args) > 1 else None
-            CheckCommand(api).perform(prj, opts.old)
+            if len(args) == 1:
+                CheckCommand(api).perform(None, opts.old)
+            else:
+                for prj in args[1:]:
+                    CheckCommand(api).perform(prj, opts.old)
+                    print()
         elif cmd == 'freeze':
             for prj in args[1:]:
                 prj = api.prj_from_letter(prj)
