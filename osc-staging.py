@@ -291,38 +291,33 @@ def do_staging(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('No command given, see "osc help staging"!')
     cmd = args[0]
-    if cmd == 'freeze':
+    if cmd in (
+        'accept',
+        'adi',
+        'check',
+        'frozenage',
+        'unignore',
+        'select',
+        'unselect',
+        'rebuild',
+        'repair',
+        'setprio',
+        'supersede',
+    ):
+        min_args, max_args = 0, None
+    elif cmd in (
+        'freeze',
+        'ignore',
+    ):
         min_args, max_args = 1, None
-    elif cmd == 'repair':
-        min_args, max_args = 0, None
-    elif cmd == 'frozenage':
-        min_args, max_args = 0, None
-    elif cmd == 'setprio':
-        min_args, max_args = 0, None
-    elif cmd == 'check':
-        min_args, max_args = 0, None
-    elif cmd == 'select':
-        min_args, max_args = 0, None
-    elif cmd == 'unselect':
-        min_args, max_args = 0, None
-    elif cmd == 'adi':
-        min_args, max_args = 0, None
-    elif cmd == 'ignore':
-        min_args, max_args = 1, None
-    elif cmd == 'unignore':
-        min_args, max_args = 0, None
-    elif cmd  == 'accept':
-        min_args, max_args = 0, None
-    elif cmd in ('cleanup_rings', 'acheck', 'list'):
+    elif cmd in (
+        'acheck',
+        'cleanup_rings',
+        'list',
+        'lock',
+        'unlock',
+    ):
         min_args, max_args = 0, 0
-    elif cmd == 'lock':
-        min_args, max_args = 0, 0
-    elif cmd == 'unlock':
-        min_args, max_args = 0, 0
-    elif cmd == 'rebuild':
-        min_args, max_args = 0, None
-    elif cmd == 'supersede':
-        min_args, max_args = 0, None
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
     if len(args) - 1 < min_args:
