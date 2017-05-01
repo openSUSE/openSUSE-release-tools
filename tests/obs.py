@@ -262,6 +262,8 @@ class OBS(object):
             },
         }
 
+        self.lock = None
+
         self.meta = {}
 
         self.package = {
@@ -482,6 +484,33 @@ class OBS(object):
     #
     # /source/
     #
+
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging/_attribute/openSUSE:LockedBy'))
+    def source_staging_lock(self, request, uri, headers):
+        """Return staging lock."""
+        response = (404, headers, '<result>Not found</result>')
+        try:
+            lock = self.lock if self.lock else self._fixture(uri)
+            response = (200, headers, lock)
+        except Exception as e:
+            if DEBUG:
+                print uri, e
+
+        if DEBUG:
+            print 'STAGING LOCK', uri, response
+
+        return response
+
+    @POST(re.compile(r'/source/openSUSE:Factory:Staging/_attribute/openSUSE:LockedBy'))
+    def source_staging_lock_put(self, request, uri, headers):
+        """Set the staging lock."""
+        self.lock = request.body
+        response = (200, headers, self.lock)
+
+        if DEBUG:
+            print 'PUT STAGING LOCK', uri, response
+
+        return response
 
     @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|J]/_project'))
     def source_staging_project_project(self, request, uri, headers):

@@ -28,7 +28,7 @@ from osc.core import http_POST
 class OBSLock(object):
     """Implement a distributed lock using a shared OBS resource."""
 
-    def __init__(self, apiurl, project, ttl=3600):
+    def __init__(self, apiurl, project, ttl=3600, reason=None):
         self.apiurl = apiurl
         self.project = project
         self.lock = conf.config[project]['lock']
@@ -36,21 +36,31 @@ class OBSLock(object):
         # TTL is measured in seconds
         self.ttl = ttl
         self.user = conf.config['api_host_options'][apiurl]['user']
+        self.reason = reason
+        self.reason_sub = None
         self.locked = False
 
     def _signature(self):
         """Create a signature with a timestamp."""
-        return '%s@%s' % (self.user, datetime.isoformat(datetime.utcnow()))
+        reason = str(self.reason)
+        if self.reason_sub:
+            reason += ' ({})'.format(self.reason_sub)
+        reason = reason.replace('@', 'at').replace('#', 'hash')
+        return '%s#%s@%s' % (self.user, reason, datetime.isoformat(datetime.utcnow()))
 
     def _parse(self, signature):
         """Parse a signature into an user and a timestamp."""
-        user, ts = None, None
+        user, reason, reason_sub, ts = None, None, None, None
         try:
-            user, ts_str = signature.split('@')
+            rest, ts_str = signature.split('@')
+            user, reason = rest.split('#')
+            if ' (hold' in reason:
+                reason, reason_sub = reason.split(' (', 1)
+                reason_sub = reason_sub.rstrip(')')
             ts = datetime.strptime(ts_str, '%Y-%m-%dT%H:%M:%S.%f')
         except (AttributeError, ValueError):
             pass
-        return user, ts
+        return user, reason, reason_sub, ts
 
     def _read(self):
         url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
@@ -79,34 +89,50 @@ class OBSLock(object):
             warnings.warn('Locking attribute is not found.  Create one to avoid race conditions.')
             return self
 
-        user, ts = self._parse(self._read())
+        user, reason, reason_sub, ts = self._parse(self._read())
         if user and ts:
             now = datetime.utcnow()
             if now < ts:
                 raise Exception('Lock acquired from the future [%s] by [%s]. Try later.' % (ts, user))
             delta = now - ts
-            if delta.seconds < self.ttl:
-                print 'Lock acquired by [%s] %s ago. Try later.' % (user, delta)
+            if delta.seconds < self.ttl and not(
+                user == self.user and (reason == 'lock' or reason.startswith('hold'))):
+                print 'Lock acquired by [%s] %s ago, reason <%s>. Try later.' % (user, delta, reason)
                 exit(-1)
                 # raise Exception('Lock acquired by [%s]. Try later.' % user)
+        if reason and reason != 'lock':
+            self.reason_sub = reason
         self._write(self._signature())
 
         time.sleep(1)
-        user, ts = self._parse(self._read())
+        user, _, _, _ = self._parse(self._read())
         if user != self.user:
             raise Exception('Race condition, [%s] wins. Try later.' % user)
+        self.locked = True
 
         return self
 
-    def release(self):
+    def release(self, force=False):
         # If the project do not have locks configured, simply ignore
         # the operation.
         if not self.lock:
             return
 
-        user, ts = self._parse(self._read())
+        user, reason, reason_sub, _ = self._parse(self._read())
         if user == self.user:
-            self._write('')
+            if reason_sub:
+                self.reason = reason_sub
+                self.reason_sub = None
+                self._write(self._signature())
+            elif not reason.startswith('hold') or force:
+                self._write('')
+                self.locked = False
+
+    def hold(self, message=None):
+        self.reason = 'hold'
+        if message:
+            self.reason += ': ' + message
+        self.acquire()
 
     __enter__ = acquire
 
