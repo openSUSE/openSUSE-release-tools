@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-#sys.path.append(os.path.expanduser('~/.osc-plugins'))
-
 import sys
 import os
 import osc
