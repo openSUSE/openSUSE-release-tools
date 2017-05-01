@@ -101,3 +101,6 @@ pass=opensuse
 #       User: mumblegack
 # Force using of keyring for this API
 #keyring = 1
+
+[openSUSE:Factory]
+overridden-by-local = local
