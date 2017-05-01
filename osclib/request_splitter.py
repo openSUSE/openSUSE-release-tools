@@ -10,9 +10,11 @@ class RequestSplitter(object):
         self.api = api
         self.requests = requests
         self.in_ring = in_ring
+        self.config = conf.config[self.api.project]
+
         # 55 minutes to avoid two staging bot loops of 30 minutes
-        self.request_age_threshold = 55 * 60
-        self.staging_age_max = 8 * 60 * 60
+        self.request_age_threshold = int(self.config.get('splitter-request-age-threshold', 55 * 60))
+        self.staging_age_max = int(self.config.get('splitter-staging-age-max', 8 * 60 * 60))
 
         self.requests_ignored = self.api.get_ignored_requests()
 
@@ -203,7 +205,7 @@ class RequestSplitter(object):
 
         # Use specified list of stagings, otherwise only empty, letter stagings.
         if len(stagings) == 0:
-            whitelist = conf.config[self.api.project].get('splitter-whitelist')
+            whitelist = self.config.get('splitter-whitelist')
             if whitelist:
                 stagings = whitelist.split()
             else:

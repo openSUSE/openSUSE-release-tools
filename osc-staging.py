@@ -338,7 +338,7 @@ def do_staging(self, subcmd, opts, *args):
     opts.project = self._full_project_name(opts.project)
     opts.apiurl = self.get_api_url()
     opts.verbose = False
-    Config(opts.project)
+    config = Config(opts.project)
 
     colorama.init(autoreset=True,
         strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
@@ -360,6 +360,7 @@ def do_staging(self, subcmd, opts, *args):
 
     with lock:
         api = StagingAPI(opts.apiurl, opts.project)
+        config.apply_remote(api)
 
         # call the respective command and parse args by need
         if cmd == 'check':
