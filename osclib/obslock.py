@@ -108,6 +108,7 @@ class OBSLock(object):
         user, _, _, _ = self._parse(self._read())
         if user != self.user:
             raise Exception('Race condition, [%s] wins. Try later.' % user)
+        self.locked = True
 
         return self
 
@@ -125,6 +126,7 @@ class OBSLock(object):
                 self._write(self._signature())
             elif not reason.startswith('hold') or force:
                 self._write('')
+                self.locked = False
 
     def hold(self, message=None):
         self.reason = 'hold'
