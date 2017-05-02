@@ -28,6 +28,7 @@ from osclib.cache import Cache
 
 
 APIURL = 'http://localhost'
+PROJECT = 'openSUSE:Factory'
 
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 

@@ -4,16 +4,17 @@ from osclib.conf import Config
 from osclib.obslock import OBSLock
 
 from obs import APIURL
+from obs import PROJECT
 from obs import OBS
 
 
 class TestOBSLock(unittest.TestCase):
     def setUp(self):
         self.obs = OBS()
-        Config('openSUSE:Factory')
+        Config(PROJECT)
 
     def obs_lock(self, reason='list'):
-        return OBSLock(APIURL, 'openSUSE:Factory', reason=reason)
+        return OBSLock(APIURL, PROJECT, reason=reason)
 
     def assertLockFail(self, lock):
         with self.assertRaises(SystemExit):
