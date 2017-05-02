@@ -16,6 +16,7 @@
 
 from cStringIO import StringIO
 from datetime import datetime
+import dateutil.parser
 import json
 import logging
 import textwrap
@@ -926,8 +927,16 @@ class StagingAPI(object):
         requests = []
         for status in self.project_status():
             for request in status[key]:
+                updated_at = dateutil.parser.parse(request['updated_at'], ignoretz=True)
+                updated_delta = datetime.utcnow() - updated_at
+                if updated_delta.total_seconds() < 5 * 60:
+                    # Allow for dashboard to update caches by not considering
+                    # requests whose state has changed in the last 5 minutes.
+                    continue
+
                 if not filter_superseded or request['superseded_by_id'] is None:
                     requests.append(str(request['number']))
+
         return requests
 
     def days_since_last_freeze(self, project):
