@@ -138,6 +138,9 @@ class OBS(object):
         # Internal status of OBS.  The mockup will use this data to
         # build the responses.  We will try to put responses as XML
         # templates in the fixture directory.
+        self.dashboard = {}
+        self.dashboard_counts = {}
+
         self.requests = {
             '123': {
                 'request': 'new',
@@ -509,6 +512,36 @@ class OBS(object):
 
         if DEBUG:
             print 'PUT STAGING LOCK', uri, response
+
+        return response
+
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging/dashboard/\w+'))
+    def source_staging_dashboard(self, request, uri, headers):
+        """Return staging dashboard file."""
+        filename = re.search(r'/source/[\w:]+/\w+/(\w+)', uri).group(1)
+        response = (404, headers, '<result>Not found</result>')
+        try:
+            contents = self.dashboard.get(filename, self._fixture(uri))
+            response = (200, headers, contents)
+        except Exception as e:
+            if DEBUG:
+                print uri, e
+
+        if DEBUG:
+            print 'STAGING DASHBOARD FILE', uri, response
+
+        return response
+
+    @PUT(re.compile(r'/source/openSUSE:Factory:Staging/dashboard/\w+'))
+    def source_staging_dashboard_put(self, request, uri, headers):
+        """Set the staging dashboard file contents."""
+        filename = re.search(r'/source/[\w:]+/\w+/(\w+)', uri).group(1)
+        self.dashboard[filename] = request.body
+        self.dashboard_counts[filename] = self.dashboard_counts.get(filename, 0) + 1
+        response = (200, headers, request.body)
+
+        if DEBUG:
+            print 'PUT STAGING DASHBOARD FILE', uri, response
 
         return response
 

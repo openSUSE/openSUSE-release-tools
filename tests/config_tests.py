@@ -13,6 +13,7 @@ class TestConfig(unittest.TestCase):
     def setUp(self):
         self.obs = OBS()
         self.config = Config(PROJECT)
+        self.api = StagingAPI(APIURL, PROJECT)
 
     def test_basic(self):
         self.assertEqual('openSUSE', conf.config[PROJECT]['lock-ns'])
@@ -21,8 +22,14 @@ class TestConfig(unittest.TestCase):
         self.assertEqual('local', conf.config[PROJECT]['overridden-by-local'])
         self.assertIsNone(conf.config[PROJECT].get('remote-only'))
 
-        api = StagingAPI(APIURL, PROJECT)
-        self.config.apply_remote(api)
+        self.config.apply_remote(self.api)
 
         self.assertEqual('local', conf.config[PROJECT]['overridden-by-local'])
         self.assertEqual('remote-indeed', conf.config[PROJECT]['remote-only'])
+
+    def test_remote_none(self):
+        self.api.save_file_content(self.api.cstaging, 'dashboard', 'config', '')
+        self.assertEqual(self.obs.dashboard_counts['config'], 1)
+        self.config.apply_remote(self.api)
+        # Ensure blank file not overridden.
+        self.assertEqual(self.obs.dashboard_counts['config'], 1)
