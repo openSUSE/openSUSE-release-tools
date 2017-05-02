@@ -3,6 +3,9 @@ from osclib.request_finder import RequestFinder
 
 
 class UnselectCommand(object):
+    CLEANUP_WHITELIST = [
+        'leaper',
+    ]
 
     def __init__(self, api):
         self.api = api
@@ -12,7 +15,13 @@ class UnselectCommand(object):
         if request['superseded_by_id'] is not None:
             return False
 
-        return True
+        if (request['state'] == 'revoked' or
+           (request['state'] == 'declined' and (
+                request['creator'] in UnselectCommand.CLEANUP_WHITELIST or
+                updated_delta.days >= 7))):
+            return True
+
+        return False
 
     def perform(self, packages, cleanup=False):
         """
