@@ -14,6 +14,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from datetime import datetime, timedelta
 import os
 import re
 import string
@@ -906,8 +907,12 @@ class OBS(object):
         response = (404, headers, '<result>Not found</result>')
         try:
             path = urlparse.urlparse(uri).path + '.json'
-            fixture = self._fixture(path=path)
-            response = (200, headers, fixture)
+            template = string.Template(self._fixture(path=path))
+            response = (200, headers, template.substitute({
+                'update_at_too_recent': (datetime.utcnow() - timedelta(minutes=2)).isoformat(),
+                'declined_updated_at_under': (datetime.utcnow() - timedelta(days=1)).isoformat(),
+                'declined_updated_at_over': (datetime.utcnow() - timedelta(days=10)).isoformat(),
+            }))
         except Exception as e:
             if DEBUG:
                 print uri, e

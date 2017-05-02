@@ -1760,7 +1760,80 @@
         "description": "requests: []\n",
         "missing_reviews": [],
         "name": "openSUSE:Factory:Staging:U",
-        "obsolete_requests": [],
+        "obsolete_requests": [
+            {
+                "accept_at": null,
+                "superseded_by_id": null,
+                "description": "",
+                "creator": "alois",
+                "created_at": "2017-05-02T10:24:19.000Z",
+                "package": "kernel-source",
+                "updated_at": "${update_at_too_recent}",
+                "number": 492436,
+                "state": "revoked",
+                "id": 697437
+            },
+            {
+                "accept_at": null,
+                "superseded_by_id": 492518,
+                "description": "",
+                "creator": "alois",
+                "created_at": "2017-05-02T10:24:19.000Z",
+                "package": "Photini",
+                "updated_at": "2017-05-02T17:14:31.000Z",
+                "number": 492437,
+                "state": "superseded",
+                "id": 697437
+            },
+            {
+                "accept_at": null,
+                "superseded_by_id": null,
+                "description": "",
+                "creator": "alois",
+                "created_at": "2017-05-02T10:24:19.000Z",
+                "package": "kernel-source",
+                "updated_at": "2017-05-02T17:14:31.000Z",
+                "number": 492438,
+                "state": "revoked",
+                "id": 697437
+            },
+            {
+                "accept_at": null,
+                "superseded_by_id": null,
+                "description": "",
+                "creator": "leaper",
+                "created_at": "2017-05-02T10:24:19.000Z",
+                "package": "zypper",
+                "updated_at": "2017-05-02T17:14:31.000Z",
+                "number": 492439,
+                "state": "declined",
+                "id": 697437
+            },
+            {
+                "accept_at": null,
+                "superseded_by_id": null,
+                "description": "",
+                "creator": "alois",
+                "created_at": "2017-05-02T10:24:19.000Z",
+                "package": "phpmyadmin",
+                "updated_at": "${declined_updated_at_under}",
+                "number": 492440,
+                "state": "declined",
+                "id": 697437
+            },
+            {
+                "accept_at": null,
+                "superseded_by_id": null,
+                "description": "",
+                "creator": "alois",
+                "created_at": "2017-05-02T10:24:19.000Z",
+                "package": "adminer",
+                "updated_at": "${declined_updated_at_over}",
+                "number": 492441,
+                "state": "declined",
+                "id": 697437
+            }
+        ],
         "openqa_jobs": [
             {
                 "clone_id": null,
