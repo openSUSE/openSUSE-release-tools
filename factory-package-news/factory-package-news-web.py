@@ -80,10 +80,9 @@ def current():
             return "", 404
         return os.readlink(fn)
 
-@app.route('/diff/<int:version>')
+@app.route('/diff/<version>')
 def diff(version):
     _dir = get_dir(request.url_root)
-    version = str(version)
     fn = os.path.join(_dir, 'current')
     if not os.path.exists(fn):
         return "current version doesn't exist", 404
