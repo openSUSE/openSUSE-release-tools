@@ -155,6 +155,6 @@ class Config(object):
             cp.readfp(io.BytesIO(config))
             self.remote_values = dict(cp.items('remote'))
             self.populate_conf()
-        else:
+        elif config is None:
             # Write empty config to allow for caching.
             api.save_file_content(api.cstaging, 'dashboard', 'config', '')

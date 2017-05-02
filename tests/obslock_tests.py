@@ -7,7 +7,7 @@ from obs import APIURL
 from obs import OBS
 
 
-class TestSelect(unittest.TestCase):
+class TestOBSLock(unittest.TestCase):
     def setUp(self):
         self.obs = OBS()
         Config('openSUSE:Factory')
