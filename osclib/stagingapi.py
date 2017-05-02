@@ -922,7 +922,7 @@ class StagingAPI(object):
                 tobuild += int(repo['tobuild'])
         return final, tobuild
 
-    def project_status_requests(self, request_type, filter_superseded=False):
+    def project_status_requests(self, request_type, filter_function=None):
         key = '{}_requests'.format(request_type)
         requests = []
         for status in self.project_status():
@@ -934,8 +934,10 @@ class StagingAPI(object):
                     # requests whose state has changed in the last 5 minutes.
                     continue
 
-                if not filter_superseded or request['superseded_by_id'] is None:
-                    requests.append(str(request['number']))
+                if filter_function and not filter_function(request, updated_delta):
+                    continue
+
+                requests.append(str(request['number']))
 
         return requests
 

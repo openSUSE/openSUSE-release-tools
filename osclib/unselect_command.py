@@ -7,6 +7,13 @@ class UnselectCommand(object):
     def __init__(self, api):
         self.api = api
 
+    @staticmethod
+    def filter_obsolete(request, updated_delta):
+        if request['superseded_by_id'] is not None:
+            return False
+
+        return True
+
     def perform(self, packages, cleanup=False):
         """
         Remove request from staging project
@@ -14,7 +21,7 @@ class UnselectCommand(object):
         """
 
         if cleanup:
-            obsolete = self.api.project_status_requests('obsolete', filter_superseded=True)
+            obsolete = self.api.project_status_requests('obsolete', self.filter_obsolete)
             if len(obsolete) > 0:
                 print('Cleanup {} obsolete requests'.format(len(obsolete)))
                 packages += tuple(obsolete)
