@@ -29,6 +29,7 @@ from colorama import ansi
 
 from osc import cmdln
 from osc import conf
+from osc import core
 from osc import oscerr
 
 from osclib.accept_command import AcceptCommand
@@ -86,7 +87,7 @@ def _full_project_name(self, project):
               help='replace staged requests when superseded')
 @cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
               help='specify a source project when moving a request')
-@cmdln.option('-p', '--project', dest='project', metavar='PROJECT', default='Factory',
+@cmdln.option('-p', '--project', dest='project', metavar='PROJECT',
               help='indicate the project on which to operate, default is openSUSE:Factory')
 @cmdln.option('--add', dest='add', metavar='PACKAGE',
               help='mark additional packages to be checked by repo checker')
@@ -324,6 +325,13 @@ def do_staging(self, subcmd, opts, *args):
         raise oscerr.WrongArgs('Too few arguments.')
     if max_args is not None and len(args) - 1 > max_args:
         raise oscerr.WrongArgs('Too many arguments.')
+
+    # Allow for determining project from osc store.
+    if not opts.project:
+        if core.is_project_dir('.'):
+            opts.project = core.store_read_project('.')
+        else:
+            opts.project = 'Factory'
 
     # Init the OBS access and configuration
     opts.project = self._full_project_name(opts.project)
