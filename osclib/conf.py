@@ -72,6 +72,7 @@ DEFAULT = {
         'openqa': None,
         'lock': 'SUSE:%(project)s:Staging',
         'lock-ns': 'SUSE',
+        'remote-config': False,
     },
 }
 
@@ -148,6 +149,9 @@ class Config(object):
 
     def apply_remote(self, api):
         """Fetch remote config and re-process (defaults, remote, .oscrc)."""
+        if not conf.config[self.project].get('remote-config', True):
+            return
+
         config = api.load_file_content(api.cstaging, 'dashboard', 'config')
         if config:
             cp = ConfigParser()
