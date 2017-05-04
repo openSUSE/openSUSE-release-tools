@@ -30,6 +30,7 @@ from osc import cmdln
 from osc import conf
 from osc import oscerr
 
+PLUGINDIR = os.path.dirname(os.path.realpath(__file__.replace('.pyc', '.py')))
 from osclib.conf import Config
 from osclib.checkrepo import CheckRepo
 from osclib.checkrepo import BINCACHE, DOWNLOADS
