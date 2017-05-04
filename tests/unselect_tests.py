@@ -15,6 +15,7 @@ class TestUnselect(unittest.TestCase):
         self.api = StagingAPI(APIURL, PROJECT)
 
     def test_cleanup_filter(self):
+        UnselectCommand.config_init(self.api)
         obsolete = self.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)
         self.assertTrue('492438' in obsolete, 'revoked')
         self.assertTrue('492439' in obsolete, 'declined by leaper')

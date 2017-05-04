@@ -1,14 +1,23 @@
+from osc import conf
 from osc.core import get_request
 from osclib.request_finder import RequestFinder
 
 
 class UnselectCommand(object):
-    CLEANUP_WHITELIST = [
-        'leaper',
-    ]
+    CLEANUP_WHITELIST = 'leaper'
 
     def __init__(self, api):
         self.api = api
+        self.config_init(api)
+
+    @classmethod
+    def config_init(cls, api):
+        config = conf.config[api.project]
+
+        cleanup_whitelist = config.get('unselect-cleanup-whitelist', cls.CLEANUP_WHITELIST)
+        cls.cleanup_whitelist = cleanup_whitelist.split()
+
+        cls.cleanup_days = int(config.get('unselect-cleanup-days', 7))
 
     @staticmethod
     def filter_obsolete(request, updated_delta):
@@ -17,8 +26,8 @@ class UnselectCommand(object):
 
         if (request['state'] == 'revoked' or
            (request['state'] == 'declined' and (
-                request['creator'] in UnselectCommand.CLEANUP_WHITELIST or
-                updated_delta.days >= 7))):
+                request['creator'] in UnselectCommand.cleanup_whitelist or
+                updated_delta.days >= UnselectCommand.cleanup_days))):
             return True
 
         return False
