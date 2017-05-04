@@ -95,7 +95,7 @@ class OBSLock(object):
             if now < ts:
                 raise Exception('Lock acquired from the future [%s] by [%s]. Try later.' % (ts, user))
             delta = now - ts
-            if delta.seconds < self.ttl:
+            if delta.total_seconds() < self.ttl:
                 # Existing lock that has not expired.
                 stop = True
                 if user == self.user:
