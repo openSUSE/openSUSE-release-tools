@@ -96,6 +96,25 @@ class TestOBSLock(unittest.TestCase):
                 user, _, _, _ = lock2._parse(lock2._read())
                 self.assertEqual(user, lock2.user)
 
+    def test_expire_hold(self):
+        lock1 = self.obs_lock('lock')
+        lock2 = self.obs_lock('override')
+        lock2.ttl = 0
+        lock2.user = 'user2'
+
+        self.assertFalse(lock1.locked)
+        self.assertFalse(lock2.locked)
+
+        with lock1:
+            self.assertTrue(lock1.locked)
+            lock1.hold('test')
+            with lock2:
+                self.assertTrue(lock2.locked)
+                user, reason, reason_sub, _ = lock2._parse(lock2._read())
+                self.assertEqual(user, lock2.user)
+                self.assertEqual(reason, 'override')
+                self.assertEqual(reason_sub, None, 'does not inherit hold')
+
     def test_reserved_characters(self):
         lock = self.obs_lock('some reason @ #night')
 
