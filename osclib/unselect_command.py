@@ -1,11 +1,36 @@
+from osc import conf
 from osc.core import get_request
 from osclib.request_finder import RequestFinder
 
 
 class UnselectCommand(object):
+    CLEANUP_WHITELIST = 'leaper'
 
     def __init__(self, api):
         self.api = api
+        self.config_init(api)
+
+    @classmethod
+    def config_init(cls, api):
+        config = conf.config[api.project]
+
+        cleanup_whitelist = config.get('unselect-cleanup-whitelist', cls.CLEANUP_WHITELIST)
+        cls.cleanup_whitelist = cleanup_whitelist.split()
+
+        cls.cleanup_days = int(config.get('unselect-cleanup-days', 7))
+
+    @staticmethod
+    def filter_obsolete(request, updated_delta):
+        if request['superseded_by_id'] is not None:
+            return False
+
+        if (request['state'] == 'revoked' or
+           (request['state'] == 'declined' and (
+                request['creator'] in UnselectCommand.cleanup_whitelist or
+                updated_delta.days >= UnselectCommand.cleanup_days))):
+            return True
+
+        return False
 
     def perform(self, packages, cleanup=False):
         """
@@ -14,7 +39,7 @@ class UnselectCommand(object):
         """
 
         if cleanup:
-            obsolete = self.api.project_status_requests('obsolete', filter_superseded=True)
+            obsolete = self.api.project_status_requests('obsolete', self.filter_obsolete)
             if len(obsolete) > 0:
                 print('Cleanup {} obsolete requests'.format(len(obsolete)))
                 packages += tuple(obsolete)

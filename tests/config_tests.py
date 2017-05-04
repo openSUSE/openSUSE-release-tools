@@ -4,9 +4,8 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
 from obs import APIURL
+from obs import PROJECT
 from obs import OBS
-
-PROJECT = 'openSUSE:Factory'
 
 
 class TestConfig(unittest.TestCase):
