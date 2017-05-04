@@ -50,6 +50,33 @@ cd osc-plugin-factory
 ln -sr ./osc-staging.py ./osclib ~/.osc-plugins
 --------------------------------------------------------------------------------
 
+Optionally, one can create directories for each project of interest in order to
+alleviate the need to use the +--project option+ for each command. For example:
+
+--------------------------------------------------------------------------------
+# Or use a directory already initialized by osc.
+mkdir -p "openSUSE:Leap:42.3/.osc"
+cd "openSUSE:Leap:42.3"
+echo openSUSE:Leap:42.3 > .osc/_project
+
+# runs against openSUSE:Leap:42.3
+osc staging list
+
+# runs against openSUSE:Factory
+osc staging -p Factory list
+--------------------------------------------------------------------------------
+
+The following snippet may be useful for addition to a bash PS1.
+
+--------------------------------------------------------------------------------
+if [ -f .osc/_project ] ; then
+  echo " <<$(head -n 1 .osc/_project)>> \$ ";
+fi
+--------------------------------------------------------------------------------
+
+This provides a clear indication of the project against which the commands will
+run and can be merged with an existing complex PS1.
+
 
 Command line
 ------------
