@@ -84,9 +84,6 @@ def current():
 def diff(version):
     _dir = get_dir(request.url_root)
     version = str(version)
-    fn = os.path.join(_dir, 'current')
-    if not os.path.exists(fn):
-        return "current version doesn't exist", 404
     if not os.path.exists(os.path.join(_dir, version)):
         return "invalid version", 400
     import subprocess
