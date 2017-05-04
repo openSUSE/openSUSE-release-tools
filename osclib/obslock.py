@@ -95,13 +95,21 @@ class OBSLock(object):
             if now < ts:
                 raise Exception('Lock acquired from the future [%s] by [%s]. Try later.' % (ts, user))
             delta = now - ts
-            if delta.seconds < self.ttl and not(
-                user == self.user and (reason == 'lock' or reason.startswith('hold'))):
-                print 'Lock acquired by [%s] %s ago, reason <%s>. Try later.' % (user, delta, reason)
-                exit(-1)
-                # raise Exception('Lock acquired by [%s]. Try later.' % user)
-        if reason and reason != 'lock':
-            self.reason_sub = reason
+            if delta.total_seconds() < self.ttl:
+                # Existing lock that has not expired.
+                stop = True
+                if user == self.user:
+                    if reason.startswith('hold'):
+                        # Command being issued during a hold.
+                        self.reason_sub = reason
+                        stop = False
+                    elif reason == 'lock':
+                        # Second pass to acquire hold.
+                        stop = False
+
+                if stop:
+                    print 'Lock acquired by [%s] %s ago, reason <%s>. Try later.' % (user, delta, reason)
+                    exit(-1)
         self._write(self._signature())
 
         time.sleep(1)
