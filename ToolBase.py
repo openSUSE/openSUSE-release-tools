@@ -80,6 +80,12 @@ class ToolBase(object):
         else:
             osc.core.http_PUT(*args, **kwargs)
 
+    def http_POST(self, *args, **kwargs):
+        if self.dryrun:
+            logging.debug("dryrun POST %s %s", args, str(kwargs)[:200])
+        else:
+            osc.core.http_POST(*args, **kwargs)
+
     def get_project_meta(self, prj):
         url = self.makeurl(['source', prj, '_meta'])
         return self.cached_GET(url)

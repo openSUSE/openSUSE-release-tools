@@ -30,8 +30,6 @@ import osc.core
 
 import ToolBase
 
-makeurl = osc.core.makeurl
-
 logger = logging.getLogger()
 
 FACTORY = "openSUSE:Factory"
@@ -62,7 +60,7 @@ class BiArchTool(ToolBase.ToolBase):
 
         self._init_biarch_packages()
 
-        resulturl = makeurl(self.apiurl, ['build', self.project, '_result'])
+        resulturl = self.makeurl(['build', self.project, '_result'])
         result = ET.fromstring(self.cached_GET(resulturl))
 
         packages = set()
@@ -76,7 +74,7 @@ class BiArchTool(ToolBase.ToolBase):
             changed = False
 
             logger.debug("processing %s", pkg)
-            pkgmetaurl = makeurl(self.apiurl, ['source', self.project, pkg, '_meta'])
+            pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
             pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
 
             for build in pkgmeta.findall("./build"):
@@ -93,11 +91,11 @@ class BiArchTool(ToolBase.ToolBase):
                 except urllib2.HTTPError, e:
                     logger.error('failed to update %s: %s', pkg, e)
 
-    def add_explicit_disable(self):
+    def add_explicit_disable(self, wipebinaries=False):
 
         self._init_biarch_packages()
 
-        resulturl = makeurl(self.apiurl, ['source', self.project])
+        resulturl = self.makeurl(['source', self.project])
         result = ET.fromstring(self.cached_GET(resulturl))
 
         for pkg in self.packages:
@@ -105,7 +103,7 @@ class BiArchTool(ToolBase.ToolBase):
             changed = False
 
             logger.debug("processing %s", pkg)
-            pkgmetaurl = makeurl(self.apiurl, ['source', self.project, pkg, '_meta'])
+            pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
             pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
 
             build = pkgmeta.findall("./build")
@@ -122,6 +120,11 @@ class BiArchTool(ToolBase.ToolBase):
                     self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
                     if self.caching:
                         self._invalidate__cached_GET(pkgmetaurl)
+                    if wipebinaries:
+                        self.http_POST(self.makeurl(['build', self.project], {
+                            'cmd' : 'wipe',
+                            'arch': self.arch,
+                            'package' : pkg }))
                 except urllib2.HTTPError, e:
                     logger.error('failed to update %s: %s', pkg, e)
 
@@ -130,7 +133,7 @@ class BiArchTool(ToolBase.ToolBase):
         self._init_biarch_packages()
         for pkg in self.packages:
             logger.debug("processing %s", pkg)
-            pkgmetaurl = makeurl(self.apiurl, ['source', self.project, pkg, '_meta'])
+            pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
             pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
             is_enabled = None
             is_disabled = None
@@ -151,7 +154,7 @@ class BiArchTool(ToolBase.ToolBase):
                 logger.debug('%s is known biarch package', pkg)
                 must_disable = False
             else:
-                files = ET.fromstring(self.cached_GET(makeurl(self.apiurl, ['source', self.project, pkg])))
+                files = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg])))
                 for n in files.findall("./entry[@name='baselibs.conf']"):
                     has_baselibs = True
                     logger.debug('%s has baselibs', pkg)
@@ -247,6 +250,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('-a', '--all', action='store_true', help='process all packages')
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
+    @cmdln.option('--wipe', action='store_true', help='also wipe binaries')
     def do_add_explicit_disable(self, subcmd, opts, *packages):
         """${cmd_name}: add explicit disable to all packages
 
@@ -256,7 +260,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         def work():
             self._select_packages(opts.all, packages)
-            self.tool.add_explicit_disable()
+            self.tool.add_explicit_disable(wipebinaries=opts.wipe)
 
         self.runner(work, opts.interval)
 
