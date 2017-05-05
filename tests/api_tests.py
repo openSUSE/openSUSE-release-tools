@@ -58,6 +58,7 @@ class TestApiCalls(unittest.TestCase):
         # our content in the XML files
         # test content for listonly ie. list command
         ring_packages = {
+            'apparmor': 'openSUSE:Factory:Rings:1-MinimalX',
             'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-1': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
@@ -69,6 +70,7 @@ class TestApiCalls(unittest.TestCase):
 
         # test content for real usage
         ring_packages = {
+            'apparmor': 'openSUSE:Factory:Rings:1-MinimalX',
             'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX',
             'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',

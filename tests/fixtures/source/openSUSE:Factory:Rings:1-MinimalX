@@ -5,4 +5,8 @@
   <sourceinfo package="elem-ring-1" rev="2" vrev="13" srcmd5="1ca04ad54e7de2612ec1f01f46bbc763" lsrcmd5="b4f289282eb01f5812a4ead909215ecf" verifymd5="d4e1ef121637c87f0b6cb6afbeba5758">
     <linked project="openSUSE:Factory" package="elem-ring-1" />
   </sourceinfo>
+  <sourceinfo package="apparmor" rev="1" vrev="5" srcmd5="a19bb8cd73690c7823c0c5bb2076c050" lsrcmd5="c1d67025f343ca222fc4599d8f2ea96f" verifymd5="6c0bc7aa478ab409cfeecd08fad1588b">
+    <filename>apparmor.spec</filename>
+    <linked project="openSUSE:Factory" package="apparmor" />
+  </sourceinfo>
 </sourceinfolist>
