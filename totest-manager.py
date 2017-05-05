@@ -237,7 +237,7 @@ class ToTestBase(object):
 
                 if not ignored:
                     number_of_fails += 1
-                    if not labeled:
+                    if not labeled and len(refs) > 0:
                         data = {'text': 'label:unknown_failure'}
                         self.openqa.openqa_request(
                             'POST', 'jobs/%s/comments' % job['id'], data=data)
