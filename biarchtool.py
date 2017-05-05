@@ -52,9 +52,22 @@ class BiArchTool(ToolBase.ToolBase):
         if packages == '__all__':
             self.packages = self.meta_get_packagelist(self.project)
         elif packages == '__latest__':
-            self.packages = self.latest_packages(self.project)
+            self.packages = self._filter_packages_by_time(self.latest_packages(self.project))
         else:
             self.packages = packages
+
+    # check when _product was last changed, eg by packagelist
+    # generator. Yield only packges that got checked in after that
+    # point in time.
+    def _filter_packages_by_time(self, packages):
+        x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '_product', '_history'], {'limit':'1'})))
+        producttime = int(x.find('./revision/time').text)
+        for pkg in packages:
+            x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev':'1'})))
+            packagetime = int(x.find('./revision/time').text)
+            if producttime > packagetime:
+                continue
+            yield pkg
 
     def remove_explicit_enable(self):
 
