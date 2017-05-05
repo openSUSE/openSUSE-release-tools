@@ -221,7 +221,6 @@ class Leaper(ReviewBot.ReviewBot):
                     self.needs_release_manager = True
                 if origin == src_project:
                     self.source_in_factory = True
-                    return True
                 is_fine_if_factory = True
                 # fall through to check history and requests
             elif origin == 'FORK':
@@ -285,7 +284,8 @@ class Leaper(ReviewBot.ReviewBot):
                         if not self.factory._check_project(prj,
                                 target_package,
                                 src_srcinfo.verifymd5):
-                            self.logger.info("sources in %s are NOT identical", prj)
+                            self.logger.info("sources in %s are [NOT identical](%s)", prj,
+                                    self.rdiff_link(src_project, src_package, src_rev, prj, package))
 
                         self.needs_release_manager = True
                 # submitted from :Update
@@ -324,13 +324,17 @@ class Leaper(ReviewBot.ReviewBot):
             for p in ('-SP3:GA', '-SP2:Update', '-SP2:GA',
                     '-SP1:Update', '-SP1:GA', ':Update', ':GA'):
                 prj = 'SUSE:SLE-12' + p
-                if self.is_package_in_project(prj, target_package):
-                    self.logger.info('Package is in {}'.format(prj))
+                if self.is_package_in_project(prj, package):
+                    self.logger.info('Package is in [{0}](/package/show/{0}/{1}) ([diff]([{2}]))'.format(prj,
+                        package, self.rdiff_link(src_project, src_package, src_rev, prj, package)))
                     break
+
+        is_in_factory = self.source_in_factory
 
         # we came here because none of the above checks find it good, so
         # let's see if the package is in Factory at least
-        is_in_factory = self._check_factory(target_package, src_srcinfo)
+        if is_in_factory is None:
+            is_in_factory = self._check_factory(package, src_srcinfo)
         if is_in_factory:
             self.source_in_factory = True
             self.needs_reviewteam = False
