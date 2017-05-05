@@ -129,7 +129,7 @@ class BiArchTool(ToolBase.ToolBase):
                     logger.error('failed to update %s: %s', pkg, e)
 
 
-    def enable_baselibs_packages(self, force=False):
+    def enable_baselibs_packages(self, force=False, wipebinaries=False):
         self._init_biarch_packages()
         for pkg in self.packages:
             logger.debug("processing %s", pkg)
@@ -159,10 +159,10 @@ class BiArchTool(ToolBase.ToolBase):
                     has_baselibs = True
                     logger.debug('%s has baselibs', pkg)
                     break
-            if has_baselibs:
-                must_disable = False
-            else:
-                must_disable = True
+                if has_baselibs:
+                    must_disable = False
+                else:
+                    must_disable = True
 
             if must_disable == False:
                 if is_disabled:
@@ -195,6 +195,11 @@ class BiArchTool(ToolBase.ToolBase):
                     self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
                     if self.caching:
                         self._invalidate__cached_GET(pkgmetaurl)
+                    if must_disable and wipebinaries:
+                        self.http_POST(self.makeurl(['build', self.project], {
+                            'cmd' : 'wipe',
+                            'arch': self.arch,
+                            'package' : pkg }))
                 except urllib2.HTTPError, e:
                     logger.error('failed to update %s: %s', pkg, e)
 
@@ -225,6 +230,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     @cmdln.option('-a', '--all', action='store_true', help='process all packages')
     @cmdln.option('-f', '--force', action='store_true', help='enable in any case')
+    @cmdln.option('--wipe', action='store_true', help='also wipe binaries')
     def do_enable_baselibs_packages(self, subcmd, opts, *packages):
         """${cmd_name}: enable build for packages in Ring 0 or 1 or with
         baselibs.conf
@@ -234,7 +240,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
         def work():
             self._select_packages(opts.all, packages)
-            self.tool.enable_baselibs_packages(force=opts.force)
+            self.tool.enable_baselibs_packages(force=opts.force, wipebinaries=opts.wipe)
 
         self.runner(work, opts.interval)
 
