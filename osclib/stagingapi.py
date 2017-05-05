@@ -1009,16 +1009,16 @@ class StagingAPI(object):
         """
         # it's actually a pretty stupid algorithm, but it might become more complex later
 
-        if project.endswith(':DVD'):
-            return project  # not yet
+        # assuming it is in adi staging, workaround for https://progress.opensuse.org/issues/9646
+        if self.is_adi_project(project):
+            return project
 
-        ring_dvd = '{}:2-TestDVD'.format(self.crings)
-        if self.ring_packages.get(pkg) == ring_dvd:
-            if not self.item_exists(project + ":DVD") and self.item_exists(project, pkg):
-                # assuming it is in adi staging, workaround for https://progress.opensuse.org/issues/9646
-                return project
-            else:
-                return project + ":DVD"
+        if self.ring_packages.get(pkg) and self.rings.index(self.ring_packages.get(pkg)) == 2 and not project.endswith(':DVD'):
+            # pkg A in ring1 and points to pkg B in ring2
+            return project + ":DVD"
+        elif self.ring_packages.get(pkg) and self.rings.index(self.ring_packages.get(pkg)) != 2 and project.endswith(':DVD'):
+            # pkg A in ring2 and points to pkg B in ring1
+            return project.replace(':DVD', '')
 
         return project
 
