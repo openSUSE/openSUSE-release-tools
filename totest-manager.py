@@ -216,12 +216,15 @@ class ToTestBase(object):
                 refs = set()
                 #pprint(comments)
                 labeled = 0
+                marked_ignored = 0
                 to_ignore = False
                 for comment in comments:
                     for ref in comment['bugrefs']:
                         refs.add(str(ref))
                     if comment['userName'] == 'ttm' and comment['text'] == 'label:unknown_failure':
                         labeled = comment['id']
+                    if comment['userName'] == 'ttm' and comment['text'] == 'Ignored issue':
+                        marked_ignored = comment['id']
                     if comment['text'].find('@ttm ignore') >= 0:
                         to_ignore = True
                 ignored = len(refs) > 0
@@ -241,11 +244,16 @@ class ToTestBase(object):
                         data = {'text': 'label:unknown_failure'}
                         self.openqa.openqa_request(
                             'POST', 'jobs/%s/comments' % job['id'], data=data)
-                elif labeled:
-                    # remove flag - unfortunately can't delete comment unless admin
-                    data = {'text': 'Ignored issue'}
-                    self.openqa.openqa_request(
-                        'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+                else:
+                    if labeled:
+                        # remove flag - unfortunately can't delete comment unless admin
+                        data = {'text': 'Ignored issue'}
+                        self.openqa.openqa_request(
+                            'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+                    elif not marked_ignored:
+                        data = {'text': 'Ignored issue'}
+                        self.openqa.openqa_request(
+                            'POST', 'jobs/%s/comments' % job['id'], data=data)
 
                 if ignored:
                     logger.info("job %s failed, but was ignored", jobname)
