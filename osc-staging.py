@@ -76,6 +76,12 @@ def _full_project_name(self, project):
     warnings.warn('%s project not recognized.' % project)
     return project
 
+def lock_needed(cmd, opts):
+    return not(
+        cmd in ('acheck', 'check', 'frozenage', 'rebuild', 'unlock') or
+        (cmd == 'list' and not opts.supersede)
+    )
+
 
 @cmdln.option('--move', action='store_true',
               help='force the selection to become a move')
@@ -352,12 +358,8 @@ def do_staging(self, subcmd, opts, *args):
     if opts.wipe_cache:
         Cache.delete_all()
 
-    lock = OBSLock(opts.apiurl, opts.project, reason=cmd)
-    if cmd == 'unlock':
-        lock.release(force=True)
-        return
-
-    with lock:
+    needed = lock_needed(cmd, opts)
+    with OBSLock(opts.apiurl, opts.project, reason=cmd, needed=needed) as lock:
         api = StagingAPI(opts.apiurl, opts.project)
         config.apply_remote(api)
 
@@ -578,3 +580,5 @@ def do_staging(self, subcmd, opts, *args):
             PrioCommand(api).perform(args[1:])
         elif cmd == 'supersede':
             SupersedeCommand(api).perform(args[1:])
+        elif cmd == 'unlock':
+            lock.release(force=True)

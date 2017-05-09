@@ -28,7 +28,7 @@ from osc.core import http_POST
 class OBSLock(object):
     """Implement a distributed lock using a shared OBS resource."""
 
-    def __init__(self, apiurl, project, ttl=3600, reason=None):
+    def __init__(self, apiurl, project, ttl=3600, reason=None, needed=True):
         self.apiurl = apiurl
         self.project = project
         self.lock = conf.config[project]['lock']
@@ -39,6 +39,7 @@ class OBSLock(object):
         self.reason = reason
         self.reason_sub = None
         self.locked = False
+        self.needed = needed
 
     def _signature(self):
         """Create a signature with a timestamp."""
@@ -83,6 +84,8 @@ class OBSLock(object):
         http_POST(url, data=data)
 
     def acquire(self):
+        if not self.needed: return self
+
         # If the project doesn't have locks configured, raise a
         # Warning (but continue the operation)
         if not self.lock:
@@ -121,6 +124,8 @@ class OBSLock(object):
         return self
 
     def release(self, force=False):
+        if not force and not self.needed: return
+
         # If the project do not have locks configured, simply ignore
         # the operation.
         if not self.lock:
