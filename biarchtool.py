@@ -40,13 +40,56 @@ class BiArchTool(ToolBase.ToolBase):
         ToolBase.ToolBase.__init__(self)
         self.project = project
         self.biarch_packages = None
+        self._has_baselibs = dict()
         self.packages = []
         self.arch = 'i586'
+        self.rdeps = None
+        self.whitelist = {
+                'i586': set([
+                    'ovmf'
+                    ]),
+                }
+
+    def has_baselibs(self, package):
+        if package in self._has_baselibs:
+            return self._has_baselibs[package]
+
+        ret = False
+        files = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package])))
+        for n in files.findall("./entry[@name='baselibs.conf']"):
+            logger.debug('%s has baselibs', package)
+            ret = True
+            return True
+        self._has_baselibs[package] = ret
+        return ret
+
+    def has_baselibs_recursive(self, package):
+        r = self.has_baselibs(package)
+        if not r and package in self.rdeps:
+            for p in self.rdeps[package]:
+                r = self.has_baselibs_recursive(p)
+                if r:
+                    break
+        return r
 
     def _init_biarch_packages(self):
         if self.biarch_packages is None:
             self.biarch_packages = set(self.meta_get_packagelist("%s:Rings:0-Bootstrap"%self.project))
             self.biarch_packages |= set(self.meta_get_packagelist("%s:Rings:1-MinimalX"%self.project))
+
+        self._init_rdeps()
+
+    def _init_rdeps(self):
+        if self.rdeps is not None:
+            return
+        self.rdeps = dict()
+        url = self.makeurl(['build', self.project, 'standard', self.arch, '_builddepinfo' ], {'view':'revpkgnames'})
+        x = ET.fromstring(self.cached_GET(url))
+        for pnode in x.findall('package'):
+            name = pnode.get('name')
+            for depnode in pnode.findall('pkgdep'):
+                depname = depnode.text
+                self.rdeps.setdefault(name, set()).add(depname)
 
     def select_packages(self, packages):
         if packages == '__all__':
@@ -65,8 +108,8 @@ class BiArchTool(ToolBase.ToolBase):
         for pkg in packages:
             x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev':'1'})))
             packagetime = int(x.find('./revision/time').text)
-            if producttime > packagetime:
-                continue
+#            if producttime > packagetime:
+#                continue
             yield pkg
 
     def remove_explicit_enable(self):
@@ -166,12 +209,11 @@ class BiArchTool(ToolBase.ToolBase):
             if pkg in self.biarch_packages:
                 logger.debug('%s is known biarch package', pkg)
                 must_disable = False
+            elif pkg in self.whitelist[self.arch]:
+                logger.debug('%s is whitelisted', pkg)
+                must_disable = False
             else:
-                files = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg])))
-                for n in files.findall("./entry[@name='baselibs.conf']"):
-                    has_baselibs = True
-                    logger.debug('%s has baselibs', pkg)
-                    break
+                has_baselibs = self.has_baselibs_recursive(pkg)
                 if has_baselibs:
                     must_disable = False
                 else:
@@ -186,13 +228,18 @@ class BiArchTool(ToolBase.ToolBase):
                             changed = True
                     if changed == False:
                         logger.error('build tag not found in %s/%s!?', pkg, self.arch)
+                else:
+                    logger.debug('%s already enabled for %s', pkg, self.arch)
             elif must_disable == True:
+                if not is_disabled:
                     logger.info('disabling %s for %s', pkg, self.arch)
                     bn = pkgmeta.find('build')
                     if bn is None:
                         bn = ET.SubElement(pkgmeta, 'build')
                     ET.SubElement(bn, 'disable', { 'arch' : self.arch })
                     changed = True
+                else:
+                    logger.debug('%s already disabled for %s', pkg, self.arch)
 
             if is_enabled:
                 logger.info('removing explicit enable %s for %s', pkg, self.arch)
