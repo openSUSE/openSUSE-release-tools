@@ -125,7 +125,7 @@ class TestOBSLock(unittest.TestCase):
 
     def test_needed(self):
         lock1 = self.obs_lock()
-        lock2 = self.obs_lock()
+        lock2 = self.obs_lock('unlock')
         lock2.user = 'user2'
         lock2.needed = False
 
@@ -138,3 +138,7 @@ class TestOBSLock(unittest.TestCase):
                 self.assertFalse(lock2.locked)
                 user, _, _, _ = lock2._parse(lock2._read())
                 self.assertEqual(user, lock1.user, 'lock1 remains')
+
+                lock2.release(force=True)
+                user, _, _, _ = lock2._parse(lock2._read())
+                self.assertEqual(user, None, 'unlocked')
