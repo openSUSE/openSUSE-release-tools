@@ -127,14 +127,22 @@ class OBSLock(object):
             return
 
         user, reason, reason_sub, _ = self._parse(self._read())
+        clear = False
         if user == self.user:
             if reason_sub:
                 self.reason = reason_sub
                 self.reason_sub = None
                 self._write(self._signature())
             elif not reason.startswith('hold') or force:
-                self._write('')
-                self.locked = False
+                # Only clear a command lock as hold can only be cleared by force.
+                clear = True
+        elif user is not None and force:
+            # Clear if a lock is present and force.
+            clear = True
+
+        if clear:
+            self._write('')
+            self.locked = False
 
     def hold(self, message=None):
         self.reason = 'hold'

@@ -122,3 +122,23 @@ class TestOBSLock(unittest.TestCase):
         with lock:
             _, reason, _, _ = lock._parse(lock._read())
             self.assertEqual(reason, 'some reason at hashnight')
+
+    def test_unlock_other_user(self):
+        lock1 = self.obs_lock()
+        lock2 = self.obs_lock('unlock')
+        lock2.user = 'user2'
+        lock2.needed = False
+
+        self.assertFalse(lock1.locked)
+        self.assertFalse(lock2.locked)
+
+        with lock1:
+            self.assertTrue(lock1.locked)
+            with lock2:
+                self.assertFalse(lock2.locked)
+                user, _, _, _ = lock2._parse(lock2._read())
+                self.assertEqual(user, lock1.user, 'lock1 remains')
+
+                lock2.release(force=True)
+                user, _, _, _ = lock2._parse(lock2._read())
+                self.assertEqual(user, None, 'unlocked')
