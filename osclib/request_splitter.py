@@ -177,6 +177,12 @@ class RequestSplitter(object):
         return len(pseudometa['requests']) > 0 and 'splitter_info' in pseudometa
 
     def should_staging_merge(self, status, pseudometa):
+        if (pseudometa['splitter_info']['strategy']['name'] in ('devel', 'super') and
+            status['overall_state'] not in ('acceptable', 'review')):
+            # Simplistic attempt to allow for followup requests to be staged
+            # after age max has been passed while still stopping when ready.
+            return True
+
         if 'activated' not in pseudometa['splitter_info']:
             # No information on the age of the staging.
             return False
