@@ -37,8 +37,6 @@ from osclib.memoize import memoize
 
 logger = logging.getLogger()
 
-makeurl = osc.core.makeurl
-
 http_GET = osc.core.http_GET
 http_DELETE = osc.core.http_DELETE
 http_POST = osc.core.http_POST
@@ -82,8 +80,14 @@ class ToolBase(object):
         else:
             osc.core.http_PUT(*args, **kwargs)
 
+    def http_POST(self, *args, **kwargs):
+        if self.dryrun:
+            logging.debug("dryrun POST %s %s", args, str(kwargs)[:200])
+        else:
+            osc.core.http_POST(*args, **kwargs)
+
     def get_project_meta(self, prj):
-        url = makeurl(self.apiurl, ['source', prj, '_meta'])
+        url = self.makeurl(['source', prj, '_meta'])
         return self.cached_GET(url)
 
     def _meta_get_packagelist(self, prj, deleted=None, expand=False):
@@ -94,7 +98,7 @@ class ToolBase(object):
         if expand:
             query['expand'] = 1
 
-        u = makeurl(self.apiurl, ['source', prj], query)
+        u = self.makeurl(['source', prj], query)
         return self.cached_GET(u)
 
     def meta_get_packagelist(self, prj, deleted=None, expand=False):
@@ -103,8 +107,7 @@ class ToolBase(object):
 
     # FIXME: duplicated from manager_42
     def latest_packages(self, project):
-        data = self.cached_GET(makeurl(self.apiurl,
-                                       ['project', 'latest_commits', project]))
+        data = self.cached_GET(self.makeurl(['project', 'latest_commits', project]))
         lc = ET.fromstring(data)
         packages = set()
         for entry in lc.findall('{http://www.w3.org/2005/Atom}entry'):
@@ -112,6 +115,15 @@ class ToolBase(object):
             if title.startswith('In '):
                 packages.add(title[3:].split(' ')[0])
         return sorted(packages)
+
+    def makeurl(self, l, query=None):
+        """
+        Wrapper around osc's makeurl passing our apiurl
+        :return url made for l and query
+        """
+        query = [] if not query else query
+        return osc.core.makeurl(self.apiurl, l, query)
+
 
     def process(self, packages):
         """ reimplement this """
