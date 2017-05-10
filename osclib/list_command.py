@@ -45,10 +45,11 @@ class ListCommand:
                 action = request.find('action')
                 target_package = action.find('target').get('package')
                 ring = action.find('target').get('ring')
-                if ring.startswith('0'):
-                    ring = Fore.MAGENTA + ring + Fore.RESET
+                ring_color = Fore.MAGENTA if ring.startswith('0') else ''
 
-                line = '{} {}{:<30}{} -> {:<12}'.format(request_id, Fore.CYAN, target_package, Fore.RESET, ring)
+                line = '{} {}{:<30}{} -> {}{:<12}{}'.format(
+                    request_id, Fore.CYAN, target_package, Fore.RESET,
+                    ring_color, ring, Fore.RESET)
 
                 if is_factory and action.find('source') != None:
                     source_project = action.find('source').get('project')
