@@ -176,8 +176,9 @@ class RequestSplitter(object):
     def is_staging_mergeable(self, status, pseudometa):
         return len(pseudometa['requests']) > 0 and 'splitter_info' in pseudometa
 
-    def should_staging_merge(self, status, pseudometa):
-        if (pseudometa['splitter_info']['strategy']['name'] in ('devel', 'super') and
+    def should_staging_merge(self, status, pseudometa, bootstrapped):
+        if (not bootstrapped and
+            pseudometa['splitter_info']['strategy']['name'] in ('devel', 'super') and
             status['overall_state'] not in ('acceptable', 'review')):
             # Simplistic attempt to allow for followup requests to be staged
             # after age max has been passed while still stopping when ready.
@@ -225,18 +226,19 @@ class RequestSplitter(object):
         for staging in stagings:
             project = self.api.prj_from_short(staging)
             status, pseudometa = self.staging_status_load(project)
+            bootstrapped = self.is_staging_bootstrapped(project)
 
             # Store information about staging.
             self.stagings[staging] = {
                 'project': project,
-                'bootstrapped': self.is_staging_bootstrapped(project),
+                'bootstrapped': bootstrapped,
                 'status': status,
                 'pseudometa': pseudometa,
             }
 
             # Decide if staging of interested.
             if self.is_staging_mergeable(status, pseudometa) and (
-               should_always or self.should_staging_merge(status, pseudometa)):
+               should_always or self.should_staging_merge(status, pseudometa, bootstrapped)):
                 if pseudometa['splitter_info']['strategy']['name'] == 'none':
                     self.stagings_mergeable_none.append(staging)
                 else:
