@@ -82,6 +82,19 @@ def lock_needed(cmd, opts):
         (cmd == 'list' and not opts.supersede)
     )
 
+def clean_args(args):
+    out = []
+    for arg in args:
+        if arg == 'and':
+            continue
+        if ' ' not in arg:
+            arg = arg.rstrip(',')
+            if ',' in arg:
+                out.extend(arg.split(','))
+                continue
+        out.append(arg)
+    return out
+
 
 @cmdln.option('--move', action='store_true',
               help='force the selection to become a move')
@@ -327,6 +340,7 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 0, 0
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
+    args = clean_args(args)
     if len(args) - 1 < min_args:
         raise oscerr.WrongArgs('Too few arguments.')
     if max_args is not None and len(args) - 1 > max_args:
