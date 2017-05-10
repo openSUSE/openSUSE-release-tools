@@ -306,6 +306,11 @@ class Leaper(ReviewBot.ReviewBot):
                                 self.logger.info("submission from higher service pack %s:* ok", prj)
                                 return True
 
+                in_sle_origin = self._check_factory(target_package, _src_srcinfo, origin)
+                if in_sle_origin:
+                    self.logger.info('parallel submission, also in {}'.format(origin))
+                    return True
+
                 self.needs_release_manager = True
                 # the release manager needs to review attempts to upgrade to Factory
                 is_fine_if_factory = True
