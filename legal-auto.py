@@ -51,6 +51,7 @@ class LegalAuto(ReviewBot.ReviewBot):
 
         self.do_comments = True
         self.legaldb = None
+        self.legaldb_headers = {}
         self.commentapi = CommentAPI(self.apiurl)
         self.apinick = None
         self.message = None
@@ -79,13 +80,14 @@ class LegalAuto(ReviewBot.ReviewBot):
         if src_rev:
             params['rev'] = src_rev
         url = osc.core.makeurl(self.legaldb, ['packages'], params)
-        package = REQ.post(url).json()
+
+        package = REQ.post(url, headers=self.legaldb_headers).json()
         if not 'saved' in package:
             return None
         package = package['saved']
         url = osc.core.makeurl(self.legaldb, ['requests'], {'external_link': self.request_nick(),
                                                             'package': package['id']})
-        request = REQ.post(url).json()
+        request = REQ.post(url, headers=self.legaldb_headers).json()
         return [package['id']]
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
@@ -98,17 +100,17 @@ class LegalAuto(ReviewBot.ReviewBot):
             return None
         for pack in to_review:
             url = osc.core.makeurl(self.legaldb, ['package', str(pack)])
-            report = REQ.get(url).json()
+            report = REQ.get(url, headers=self.legaldb_headers).json()
             if report.get('priority', 0) != self.request_priority():
                 print "Update priority %d" % self.request_priority()
                 url = osc.core.makeurl(
                     self.legaldb, ['package', str(pack)], {'priority': self.request_priority()})
-                REQ.patch(url)
+                REQ.patch(url, headers=self.legaldb_headers)
             state = report.get('state', 'BROKEN')
             if state == 'obsolete':
                 url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(pack)], {
                                        'result': 'reopened in obs', 'state': 'new'})
-                package = REQ.post(url).json()
+                package = REQ.post(url, headers=self.legaldb_headers).json()
                 # reopen
                 return None
             if not state in ['acceptable', 'correct', 'unacceptable']:
@@ -138,7 +140,7 @@ class LegalAuto(ReviewBot.ReviewBot):
 
     def prepare_review(self):
         url = osc.core.makeurl(self.legaldb, ['requests'])
-        req = REQ.get(url).json()
+        req = REQ.get(url, headers=self.legaldb_headers).json()
         self.open_reviews = {}
         requests = []
         for hash in req['requests']:
@@ -162,7 +164,7 @@ class LegalAuto(ReviewBot.ReviewBot):
     def delete_from_db(self, id):
         url = osc.core.makeurl(
             self.legaldb, ['requests'], {'external_link': self.request_nick(id)})
-        REQ.delete(url)
+        REQ.delete(url, headers=self.legaldb_headers)
 
     # overload as we need to get of the bot_request
     def _set_review(self, req, state):
@@ -192,6 +194,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                           default=True, help="don't actually post comments to obs")
         parser.add_option("--legaldb", dest='legaldb', metavar='URL',
                           default='http://legaldb.suse.de', help="Use different legaldb deployment")
+        parser.add_option("--token", dest='token', metavar='STRING',
+                          default=False, help="Use token to authenticate")
         return parser
 
     def setup_checker(self):
@@ -200,6 +204,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         bot = ReviewBot.CommandLineInterface.setup_checker(self)
         bot.do_comments = self.options.comment
         bot.legaldb = self.options.legaldb
+        if self.options.token:
+            self.legaldb_headers['Authorization'] = 'Token ' + self.options.token
         return bot
 
 if __name__ == "__main__":
