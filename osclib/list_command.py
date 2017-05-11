@@ -36,7 +36,7 @@ class ListCommand:
         splitter.group_by('./action/target/@devel_project')
         splitter.split()
 
-        is_factory = self.api.project != 'openSUSE:Factory'
+        not_factory = self.api.project != 'openSUSE:Factory'
         for group in sorted(splitter.grouped.keys()):
             print Fore.YELLOW + group
 
@@ -51,7 +51,7 @@ class ListCommand:
                     request_id, Fore.CYAN, target_package, Fore.RESET,
                     ring_color, ring, Fore.RESET)
 
-                if is_factory and action.find('source') != None:
+                if not_factory and action.find('source') != None:
                     source_project = action.find('source').get('project')
                     source_project = self.project_strip(source_project)
                     line += ' ({})'.format(Fore.YELLOW + source_project + Fore.RESET)
