@@ -86,7 +86,9 @@ def _check_repo_download(self, request):
             return set()
 
     staging_prefix = '{}:'.format(self.checkrepo.staging.cstaging)
-    if staging_prefix in str(request.group):
+    if (str(request.group).startswith(staging_prefix) and
+        arch in self.checkrepo.target_archs(request.group)
+    ):
         pkglist = self.checkrepo.get_package_list_from_repository(
             request.group, 'standard', arch,
             request.src_package)
@@ -99,17 +101,21 @@ def _check_repo_download(self, request):
 
         toignore.update(fn[1] for fn in pkglist)
 
-        pkglist = self.checkrepo.get_package_list_from_repository(
-            request.group + ':DVD', 'standard',
-            'x86_64', request.src_package)
-        todownload = [ToDownload(request.group + ':DVD', 'standard',
-                                 'x86_64', fn[0], fn[3]) for fn in pkglist]
+        project_dvd = request.group + ':DVD'
+        if (not self.checkrepo.staging.is_adi_project(request.group) and
+            self.checkrepo.staging.crings and
+            arch in self.checkrepo.target_archs(project_dvd)
+        ):
+            pkglist = self.checkrepo.get_package_list_from_repository(
+                project_dvd, 'standard', arch, request.src_package)
+            todownload = [ToDownload(project_dvd, 'standard', arch, fn[0],
+                                     fn[3]) for fn in pkglist]
 
-        toignore.update(fn[1] for fn in pkglist)
+            toignore.update(fn[1] for fn in pkglist)
 
-        self.checkrepo._download(request, todownload)
-        if request.error:
-            return set()
+            self.checkrepo._download(request, todownload)
+            if request.error:
+                return set()
 
     # Update toignore with the names of the source project (here in
     # this method) and with the names of the target project (_toignore
