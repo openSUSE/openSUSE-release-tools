@@ -51,15 +51,6 @@ class StagingHelper(object):
         Config(self.project)
         self.api = StagingAPI(self.apiurl, self.project)
 
-    def get_source_packages(self, project):
-        """Return the list of packages in a project."""
-        query = {'expand': 1}
-        root = ET.parse(http_GET(makeurl(self.apiurl,['source', project],
-            query=query))).getroot()
-        packages = [i.get('name') for i in root.findall('entry')]
-
-        return packages
-
     def get_support_package_list(self, project, repository):
         f = osc.core.get_buildconfig(self.apiurl, project, repository).splitlines()
         pkg_list = []
