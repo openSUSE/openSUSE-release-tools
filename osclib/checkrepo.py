@@ -22,6 +22,7 @@ import urllib2
 from xml.etree import cElementTree as ET
 from pprint import pformat
 
+import osc.core
 from osc.core import get_binary_file
 from osc.core import http_DELETE
 from osc.core import http_GET
@@ -591,6 +592,17 @@ class CheckRepo(object):
                     repos_to_check.append(repo)
 
         return repos_to_check
+
+    @memoize(session=True)
+    def target_archs(self, project=None):
+        if not project: project = self.project
+
+        meta = osc.core.show_project_meta(self.apiurl, project)
+        meta = ET.fromstring(''.join(meta))
+        archs = []
+        for arch in meta.findall('repository[@name="standard"]/arch'):
+            archs.append(arch.text)
+        return archs
 
     def is_binary(self, project, repository, arch, package):
         """Return True if is a binary package."""
