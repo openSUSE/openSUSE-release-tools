@@ -200,8 +200,9 @@ class StagingHelper(object):
         logging.info('Updating support pkg list...')
         rebuild_data_updated = ET.tostring(root)
         logging.debug(rebuild_data_updated)
-        self.api.save_file_content(self.project + ':Staging', 'dashboard',
-            'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
+        if rebuild_data_updated != rebuild_data:
+            self.api.save_file_content(self.project + ':Staging', 'dashboard',
+                'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
 
 def main(args):
     # Configure OSC
