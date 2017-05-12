@@ -161,13 +161,13 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
 
     # Extend packs array with the packages and .spec files of the
     # not-fetched requests.  The not fetched ones are the requests of
-    # the same group that are not listed as a paramater.
+    # the same group that is not listed as a parameter.
     for request_id, is_fetched in fetched.items():
         if not is_fetched:
             packs.extend(self.checkrepo.check_specs(request_id=request_id))
 
     # Download the repos from the request of the same group not
-    # explicited in the command line.
+    # explicit in the command line.
     for rq in packs[:]:
         if rq.request_id in fetched and fetched[rq.request_id]:
             continue
@@ -180,7 +180,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
             error_delete = self.checkrepo.is_safe_to_delete(rq)
             if error_delete:
                 rq.error = 'This delete request is not safe to accept yet, ' \
-                           'please wait until the reasons dissapear in the ' \
+                           'please wait until the reasons disappear in the ' \
                            'target project. %s' % error_delete
                 print ' - %s' % rq.error
                 self.checkrepo.change_review_state(request.request_id, 'new', message=request.error)
@@ -190,7 +190,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
                 print 'ACCEPTED', msg
                 self.checkrepo.change_review_state(rq.request_id, 'accepted', message=msg)
 
-            # Remove it from the packs, so do not interfere with the
+            # Remove it from the packs, so it does not interfere with the
             # rest of the check.
             packs.remove(rq)
         else:
@@ -199,7 +199,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
             self.checkrepo.is_buildsuccess(rq)
             i = self._check_repo_download(rq)
             if rq.error:
-                print 'ERROR (ALREADY ACEPTED?):', rq.error
+                print 'ERROR (ALREADY ACCEPTED?):', rq.error
                 rq.updated = True
 
         toignore.update(i)
@@ -216,7 +216,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
             print ' - New edges:', new_edges
 
             if skip_cycle:
-                print ' - Skiping this cycle and moving to the next check.'
+                print ' - Skipping this cycle and moving to the next check.'
                 continue
             else:
                 print ' - If you want to skip this cycle, run manually the ' \
@@ -248,7 +248,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
                 package = '#[%s](%s)' % (request, package)
             smissing.append(package)
         if len(smissing):
-            msg = 'Please make sure to wait before these depencencies are in %s: %s [%s]' % (
+            msg = 'Please make sure to wait before these dependencies are in %s: %s [%s]' % (
                 rq.tgt_project, ', '.join(smissing), rq.tgt_package)
             if not rq.updated:
                 self.checkrepo.change_review_state(rq.request_id, 'new', message=msg)
@@ -578,7 +578,7 @@ def do_check_repo(self, subcmd, opts, *args):
                                    skip_cycle=opts.skipcycle,
                                    debug=opts.verbose)
         except Exception as e:
-            print 'ERROR -- An exception happends while checking a group [%s]' % e
+            print 'ERROR -- An exception happened while checking a group [%s]' % e
             if conf.config['debug']:
                 print traceback.format_exc()
         print

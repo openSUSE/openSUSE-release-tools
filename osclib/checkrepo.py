@@ -458,7 +458,7 @@ class CheckRepo(object):
         elif rq.tgt_package in specs:
             specs.remove(rq.tgt_package)
         else:
-            msg = 'The name of the SPEC files %s do not match with the name of the package (%s)'
+            msg = 'The name of the SPEC files %s do not match the name of the package (%s)'
             msg = msg % (specs, rq.src_package)
             print('[DECLINED]', msg)
             self.change_review_state(request_id, 'declined', message=msg)
@@ -554,7 +554,7 @@ class CheckRepo(object):
                                                request.verifymd5)
         except urllib2.HTTPError as e:
             if 300 <= e.code <= 499:
-                print ' - The request is not built agains this project'
+                print ' - The request is not built against this project'
                 return repos_to_check
             raise e
 
@@ -721,7 +721,7 @@ class CheckRepo(object):
     def check_disturl(self, request, filename=None, md5_disturl=None):
         """Try to match the srcmd5 of a request with the one in the RPM package."""
         if not filename and not md5_disturl:
-            raise ValueError('Please, procide filename or md5_disturl')
+            raise ValueError('Please, provide filename or md5_disturl')
 
         # ugly workaround here, glibc.i686 had a topadd block in _link, and looks like
         # it causes the disturl won't consistently with glibc even with the same srcmd5
