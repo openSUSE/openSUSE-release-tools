@@ -72,13 +72,6 @@ class StagingHelper(object):
             query=query))).getroot()
         return root
 
-    def get_buildinfo_version(self, project, package):
-        buildinfo = self.get_package_buildinfo(project, 'standard', 'x86_64', package)
-        versrel = buildinfo.find('versrel')
-        version = versrel.split('-')[0]
-
-        return version
-
     def process_project_binarylist(self, project, repository, arch):
         prj_binarylist = self.get_project_binarylist(project, repository, arch)
         files = {}
