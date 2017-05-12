@@ -362,7 +362,8 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
                 os.symlink(d, target)
 
         repochecker = os.path.join(PLUGINDIR, 'repo-checker.pl')
-        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
+        repo_dir = self.repo_dir + '-' + arch
+        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, repo_dir, params_file.name)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
         stdoutdata = stdoutdata.strip()
@@ -437,13 +438,15 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
         updated[rq.request_id] = 1
 
 
-def _mirror_full(self, plugin_dir, repo_dir):
+def _mirror_full(self, plugin_dir, repo_dir, arch):
     """Call bs_mirrorfull script to mirror packages."""
-    url = 'https://api.opensuse.org/public/build/%s/%s/x86_64' % (self.checkrepo.project, 'standard')
+    url = 'https://api.opensuse.org/public/build/%s/%s/%s' % (self.checkrepo.project, 'standard', arch)
 
+    repo_dir += '-' + arch
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
 
+    print('mirroring {}'.format('/'.join((self.checkrepo.project, 'standard', arch))))
     script = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug %s %s' % (plugin_dir, url, repo_dir)
     os.system(script)
 
@@ -563,8 +566,9 @@ def do_check_repo(self, subcmd, opts, *args):
         groups[request.group] = rqs
 
     # Mirror the packages locally in the CACHEDIR
-    self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:{}'.format(opts.project), 'standard')
-    self._mirror_full(PLUGINDIR, self.repo_dir)
+    self.repo_dir = '%s/repo-%s-%s' % (CACHEDIR, 'openSUSE:{}'.format(opts.project), 'standard')
+    for arch in self.checkrepo.target_archs():
+        self._mirror_full(PLUGINDIR, self.repo_dir, arch)
 
     print
     print 'Analysis results'
