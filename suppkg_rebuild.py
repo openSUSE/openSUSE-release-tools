@@ -51,17 +51,6 @@ class StagingHelper(object):
         Config(self.project)
         self.api = StagingAPI(self.apiurl, self.project)
 
-    def load_rebuild_data(self, project, package, filename):
-        url = makeurl(self.apiurl, ['source', project, package, '{}?expand=1'.format(filename)])
-        try: 
-            return http_GET(url)
-        except urllib2.HTTPError:
-            return None
-
-    def save_rebuild_data(self, project, package, filename, content):
-        url = makeurl(self.apiurl, ['source', project, package, filename])
-        http_PUT(url + '?comment=support+package+rebuild+update', data=content)
-
     def rebuild_project(self, project):
         query = {'cmd': 'rebuild'}
         url = makeurl(self.apiurl,['build', project], query=query)
@@ -151,7 +140,7 @@ class StagingHelper(object):
 
     def crawl(self):
         """Main method"""
-        rebuild_data = self.load_rebuild_data(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild')
+        rebuild_data = self.api.load_file_content(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild')
         if rebuild_data is None:
             print "There is no support_pkg_rebuild file!"
             return
@@ -170,7 +159,7 @@ class StagingHelper(object):
                     if files.get(pkg) not in cand_sources[stg]:
                         cand_sources[stg].append(files.get(pkg))
 
-        tree = ET.parse(rebuild_data)
+        tree = ET.fromstring(rebuild_data)
         root = tree.getroot()
 
         logging.info('Checking rebuild data...')
@@ -209,8 +198,10 @@ class StagingHelper(object):
                 stg.find('rebuild').text = 'unneeded'
 
         logging.info('Updating support pkg list...')
-        logging.debug(ET.tostring(root))
-        self.save_rebuild_data(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild', ET.tostring(root))
+        rebuild_data_updated = ET.tostring(root)
+        logging.debug(rebuild_data_updated)
+        self.api.save_file_content(self.project + ':Staging', 'dashboard',
+            'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
 
 def main(args):
     # Configure OSC
