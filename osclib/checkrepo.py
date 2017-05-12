@@ -931,7 +931,7 @@ class CheckRepo(object):
             'package': request.tgt_package,
             'view': 'revpkgnames',
         }
-        for arch in ('i586', 'x86_64'):
+        for arch in self.target_archs():
             url = makeurl(self.apiurl, ('build', request.tgt_project, 'standard', arch, '_builddepinfo'),
                           query=query)
             root = ET.parse(http_GET(url)).getroot()
@@ -944,7 +944,7 @@ class CheckRepo(object):
         query = {
             'package': package,
         }
-        for arch in ('i586', 'x86_64'):
+        for arch in self.target_archs():
             url = makeurl(self.apiurl, ('build', project, 'standard', arch, '_builddepinfo'),
                           query=query)
             root = ET.parse(http_GET(url)).getroot()
