@@ -159,6 +159,8 @@ class CheckRepo(object):
         self._staging()
         self.readonly = readonly
         self.debug_enable = debug
+        self.accept_counts = {}
+        self.accepts = {}
 
     def debug(self, *args):
         if not self.debug_enable:
@@ -219,6 +221,18 @@ class CheckRepo(object):
         review_state = self.get_review_state(request_id)
         if review_state == 'accepted' and newstate != 'accepted':
             print ' - Avoid change state %s -> %s (%s)' % (review_state, newstate, message)
+
+        if newstate == 'accepted':
+            messages = self.accepts.get(request_id, [])
+            messages.append(message)
+            self.accepts[request_id] = messages
+
+            self.accept_counts[request_id] = self.accept_counts.get(request_id, 0) + 1
+            if self.accept_counts[request_id] != len(self.target_archs()):
+                print('- Wait for successful reviews of all archs.')
+                return 200
+            else:
+                message = '\n'.join(set(messages))
 
         code = 404
         url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
