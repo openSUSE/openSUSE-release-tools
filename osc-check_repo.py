@@ -426,7 +426,8 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
         if not hasattr(rq, 'goodrepo'):
             msg = 'Can not find a good repo for %s' % rq.str_compact()
             print 'NOT ACCEPTED - ', msg
-            print 'Perhaps this request is not against i586/x86_64 build or i586 build only. For human to check!'
+            print 'Perhaps this request is not against {}. For human to check!'.format(
+                ', '.join(self.repochecker.target_archs()))
             continue
         msg = 'Builds for repo %s' % rq.goodrepo
         print 'ACCEPTED', msg

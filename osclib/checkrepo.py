@@ -760,7 +760,7 @@ class CheckRepo(object):
             return False
 
         if not repos_to_check:
-            msg = 'Missing i586 and x86_64 in the repo list'
+            msg = 'Missing {} in the repo list'.format(', '.join(self.target_archs()))
             print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation.
