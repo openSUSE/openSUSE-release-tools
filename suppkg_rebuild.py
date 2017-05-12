@@ -72,12 +72,6 @@ class StagingHelper(object):
             query=query))).getroot()
         return root
 
-    def get_package_buildinfo(self, project, repository, arch, package):
-        url = makeurl(self.apiurl,['build', project, repository, arch, package, '_buildinfo'])
-        root = ET.parse(http_GET(url)).getroot()
-
-        return root
-
     def get_buildinfo_version(self, project, package):
         buildinfo = self.get_package_buildinfo(project, 'standard', 'x86_64', package)
         versrel = buildinfo.find('versrel')
