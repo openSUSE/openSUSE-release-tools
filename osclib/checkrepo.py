@@ -772,6 +772,7 @@ class CheckRepo(object):
         foundbuilding = None
         foundfailed = None
 
+        archs_target = self.target_archs()
         for repository in repos_to_check:
             repo_name = repository.attrib['name']
             self.debug("checking repo", ET.tostring(repository))
@@ -781,10 +782,10 @@ class CheckRepo(object):
             r_foundfailed = None
             missings = []
             for arch in repository.findall('arch'):
-                if arch.attrib['arch'] not in ('i586', 'x86_64'):
+                if arch.attrib['arch'] not in archs_target:
                     continue
                 if arch.attrib['result'] == 'excluded':
-                    if ((arch.attrib['arch'] == 'x86_64' and request.src_package not in request.i686_only) or
+                    if ((arch.attrib['arch'] != 'i586' and request.src_package not in request.i686_only) or
                        (arch.attrib['arch'] == 'i586' and request.src_package in request.i686_only)):
                         request.build_excluded = True
                 if 'missing' in arch.attrib:
@@ -812,7 +813,7 @@ class CheckRepo(object):
                 # and the build state per srcmd5 was outdated also.
                 if request.src_package == 'glibc.i686':
                     if ((arch.attrib['arch'] == 'i586' and arch.attrib['result'] == 'outdated') or
-                       (arch.attrib['arch'] == 'x86_64' and arch.attrib['result'] == 'excluded')):
+                       (arch.attrib['arch'] != 'i586' and arch.attrib['result'] == 'excluded')):
                         isgood = True
                         continue
                 if arch.attrib['result'] == 'outdated':
