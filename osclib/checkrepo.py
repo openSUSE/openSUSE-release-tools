@@ -565,36 +565,15 @@ class CheckRepo(object):
             raise e
 
         root = ET.fromstring(root_xml)
+        archs_target = self.target_archs()
         for repo in root.findall('repository'):
-            valid_intel_repo = True
-            intel_archs = []
+            archs_found = 0
+            for arch in repo.findall('arch'):
+                if arch.attrib['arch'] in archs_target:
+                    archs_found += 1
 
-            for a in repo.findall('arch'):
-                if a.attrib['arch'] not in ('i586', 'x86_64'):
-                    # It is not a common Factory i586/x86_64 build repository
-                    # probably builds on ARM, PPC or images
-                    valid_intel_repo = False
-                else:
-                    # We assume it is standard Factory i586/x86_64 build repository
-                    intel_archs.append(a)
-
-            if not valid_intel_repo:
-                if len(intel_archs) == 2:
-                    # the possible repo candidate ie. complex build repos layout includes i586 and x86_64
-                    more_repo_candidates.append(repo)
-                continue
-
-            if len(intel_archs) == 2:
+            if archs_found == len(archs_target):
                 repos_to_check.append(repo)
-
-        if more_repo_candidates:
-            for repo in more_repo_candidates:
-                rpms = []
-                # check if x86_64 package is exist
-                rpms = self.get_package_list_from_repository(request.shadow_src_project, repo.attrib['name'], 'x86_64', request.src_package)
-                if rpms:
-                    # valid candidate
-                    repos_to_check.append(repo)
 
         return repos_to_check
 
