@@ -43,7 +43,7 @@ from osclib.request_finder import RequestFinder
 Cache.CACHE_DIR = save_cache_path('opensuse-repo-checker-http')
 
 
-def _check_repo_download(self, request):
+def _check_repo_download(self, request, arch):
     toignore = set()
     request.downloads = defaultdict(list)
 
@@ -51,21 +51,13 @@ def _check_repo_download(self, request):
     if request.build_excluded:
         return set()
 
-    # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
-    arch = 'x86_64'
-
-    if request.src_package in request.i686_only:
+    if request.src_package in request.i686_only and arch != 'i586':
         # Use imported binaries from x86_64 to check the requirements is fine,
         # but we can not get rpmlint.log from x86_64 repo if it was excluded,
         # i586 repo should be are build succeeded already as we have check it
         # in repositories_to_check(). Therefore, we have to download binary
         # binary files from i586 repo.
-        arch = 'i586'
-
-    # if not request.build_excluded:
-    #     arch = 'x86_64'
-    # else:
-    #     arch = 'i586'
+        return toignore
 
     ToDownload = namedtuple('ToDownload', ('project', 'repo', 'arch', 'package', 'size'))
 
@@ -128,7 +120,7 @@ def _check_repo_download(self, request):
 _errors_printed = set()
 
 
-def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
+def _check_repo_group(self, id_, requests, arch, skip_cycle=None, debug=False):
     if skip_cycle is None:
         skip_cycle = []
 
@@ -144,7 +136,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
         if request.action_type == 'delete':
             continue
 
-        i = self._check_repo_download(request)
+        i = self._check_repo_download(request, arch)
         if request.error and request.error not in _errors_printed:
             _errors_printed.add(request.error)
             if not request.updated:
@@ -197,7 +189,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
             # we need to call it to fetch the good repos to download
             # but the return value is of no interest right now.
             self.checkrepo.is_buildsuccess(rq)
-            i = self._check_repo_download(rq)
+            i = self._check_repo_download(rq, arch)
             if rq.error:
                 print 'ERROR (ALREADY ACCEPTED?):', rq.error
                 rq.updated = True
@@ -585,9 +577,13 @@ def do_check_repo(self, subcmd, opts, *args):
             if not all(self.checkrepo.is_buildsuccess(r) for r in reqs if r.action_type != 'delete'):
                 return
 
-            self._check_repo_group(id_, reqs,
-                                   skip_cycle=opts.skipcycle,
-                                   debug=opts.verbose)
+            for arch in self.checkrepo.target_archs():
+                print
+                print('Arch: {}\n'.format(arch))
+
+                self._check_repo_group(id_, reqs, arch,
+                                    skip_cycle=opts.skipcycle,
+                                    debug=opts.verbose)
         except Exception as e:
             print 'ERROR -- An exception happened while checking a group [%s]' % e
             if conf.config['debug']:
