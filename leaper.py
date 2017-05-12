@@ -306,7 +306,7 @@ class Leaper(ReviewBot.ReviewBot):
                                 self.logger.info("submission from higher service pack %s:* ok", prj)
                                 return True
 
-                in_sle_origin = self._check_factory(target_package, _src_srcinfo, origin)
+                in_sle_origin = self._check_factory(target_package, src_srcinfo, origin)
                 if in_sle_origin:
                     self.logger.info('parallel submission, also in {}'.format(origin))
                     return True
