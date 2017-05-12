@@ -47,7 +47,6 @@ class StagingHelper(object):
     def __init__(self, project):
         self.project = project
         self.apiurl = osc.conf.config['apiurl']
-        self.debug = osc.conf.config['debug']
         Config(self.project)
         self.api = StagingAPI(self.apiurl, self.project)
 
