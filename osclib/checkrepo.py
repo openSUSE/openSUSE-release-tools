@@ -672,16 +672,13 @@ class CheckRepo(object):
     def _toignore(self, request):
         """Return the list of files to ignore during the checkrepo."""
         toignore = set()
-        for fn in self.get_package_list_from_repository(
-                request.tgt_project, 'standard', 'x86_64', request.tgt_package):
-            if fn[1]:
-                toignore.add(fn[1])
+        for arch in self.target_archs():
+            for fn in self.get_package_list_from_repository(
+                request.tgt_project, 'standard', arch, request.tgt_package):
+                # On i586 only exclude -32bit packages.
+                if fn[1] and (arch != 'i586' or fn[2] == 'x86_64'):
+                    toignore.add(fn[1])
 
-        # now fetch -32bit pack list
-        for fn in self.get_package_list_from_repository(
-                request.tgt_project, 'standard', 'i586', request.tgt_package):
-            if fn[1] and fn[2] == 'x86_64':
-                toignore.add(fn[1])
         return toignore
 
     def _disturl(self, filename):
