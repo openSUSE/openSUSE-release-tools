@@ -28,6 +28,7 @@ from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
+from osclib.core import maintainers_get
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize
 from osclib.pkgcache import PkgCache
@@ -965,15 +966,6 @@ class CheckRepo(object):
             deps.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
         return deps
 
-    def _maintainers(self, request):
-        """Get the maintainer of the package involved in the request."""
-        query = {
-            'binary': request.tgt_package,
-        }
-        url = makeurl(self.apiurl, ('search', 'owner'), query=query)
-        root = ET.parse(http_GET(url)).getroot()
-        return [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
-
     def _author(self, request):
         """Get the author of the request."""
         query = {
@@ -1009,7 +1001,7 @@ class CheckRepo(object):
         """
         reasons = []
         whatdependson = self._whatdependson(request)
-        maintainers = self._maintainers(request)
+        maintainers = maintainers_get(self.apiurl, request.tgt_project, request.tgt_package)
         author = self._author(request)
         prj_maintainers = self._project_maintainer(request)
 
