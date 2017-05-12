@@ -46,7 +46,7 @@ class Request(object):
                  revision=None, srcmd5=None, verifymd5=None,
                  group=None, goodrepos=None, missings=None,
                  is_shadow=None, shadow_src_project=None,
-                 element=None):
+                 element=None, staging=None):
 
         self.request_id = request_id
         self.src_project = src_project
@@ -71,9 +71,9 @@ class Request(object):
         self.i686_only = ['glibc.i686']
 
         if element:
-            self.load(element)
+            self.load(element, staging)
 
-    def load(self, element):
+    def load(self, element, staging):
         """Load a node from a ElementTree request XML element."""
         self.request_id = int(element.get('id'))
 
@@ -100,8 +100,13 @@ class Request(object):
         # release, and adjust the source and target projects
         _is_product = re.match(r'openSUSE:Leap:\d{2}.\d', self.tgt_project)
         if self.src_project == 'openSUSE:Factory' and _is_product:
-            self.is_shadow_devel = True
-            self.shadow_src_project = '%s:Staging:repochecker' % self.tgt_project
+            devel = staging.get_devel_project(self.src_project, self.src_package)
+            if devel:
+                self.is_shadow_devel = False
+                self.shadow_src_project = devel
+            else:
+                self.is_shadow_devel = True
+                self.shadow_src_project = '%s:Staging:repochecker' % self.tgt_project
         else:
             self.is_shadow_devel = False
             self.shadow_src_project = self.src_project
@@ -234,7 +239,7 @@ class CheckRepo(object):
             url = makeurl(self.apiurl, ('request', str(request_id)))
             request = ET.parse(http_GET(url)).getroot()
             if internal:
-                request = Request(element=request)
+                request = Request(element=request, staging=self.staging)
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return request
@@ -274,7 +279,7 @@ class CheckRepo(object):
             url = makeurl(self.apiurl, ('search', 'request'), query=query)
             collection = ET.parse(http_GET(url)).getroot()
             for root in collection.findall('request'):
-                _request = Request(element=root)
+                _request = Request(element=root, staging=self.staging)
                 request_id = _request.request_id
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
@@ -405,7 +410,7 @@ class CheckRepo(object):
             self.change_review_state(request_id, 'declined', message=msg)
             return requests
 
-        rq = Request(element=request)
+        rq = Request(element=request, staging=self.staging)
 
         if rq.action_type != 'submit' and rq.action_type != 'delete':
             msg = 'Unchecked request type %s' % rq.action_type
