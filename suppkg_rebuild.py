@@ -51,11 +51,6 @@ class StagingHelper(object):
         Config(self.project)
         self.api = StagingAPI(self.apiurl, self.project)
 
-    def rebuild_project(self, project):
-        query = {'cmd': 'rebuild'}
-        url = makeurl(self.apiurl,['build', project], query=query)
-        http_POST(url)
-
     def get_source_packages(self, project):
         """Return the list of packages in a project."""
         query = {'expand': 1}
@@ -194,7 +189,7 @@ class StagingHelper(object):
 
             if need_rebuild and not self.api.is_repo_dirty(stgname, 'standard'):
                 logging.info('Rebuild %s' % stgname)
-                self.rebuild_project(stgname)
+                osc.core.rebuild(self.apiurl, stgname, None, None, None)
                 stg.find('rebuild').text = 'unneeded'
 
         logging.info('Updating support pkg list...')
