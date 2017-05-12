@@ -851,9 +851,9 @@ class CheckRepo(object):
             return True
 
         if alldisabled:
-            msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
-            print '[DECLINED]', msg
-            self.change_review_state(request.request_id, 'declined', message=msg)
+            msg = '%s is disabled or does not build against the target project.' % request.src_package
+            print msg
+            self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation
             request.updated = True
             return False
