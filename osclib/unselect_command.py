@@ -21,8 +21,10 @@ class UnselectCommand(object):
 
     @staticmethod
     def filter_obsolete(request, updated_delta):
-        if request['superseded_by_id'] is not None:
-            return False
+        if request['state'] == 'superseded':
+            # Allow for cases where a request is superseded, but a newer request
+            # is never staged due all newer requests being superseded/declined.
+            return updated_delta.days >= UnselectCommand.cleanup_days
 
         if (request['state'] == 'revoked' or
            (request['state'] == 'declined' and (

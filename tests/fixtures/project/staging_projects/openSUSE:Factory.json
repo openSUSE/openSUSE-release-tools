@@ -1780,8 +1780,20 @@
                 "creator": "alois",
                 "created_at": "2017-05-02T10:24:19.000Z",
                 "package": "Photini",
-                "updated_at": "2017-05-02T17:14:31.000Z",
+                "updated_at": "${update_at_too_recent}",
                 "number": 492437,
+                "state": "superseded",
+                "id": 697437
+            },
+            {
+                "accept_at": null,
+                "superseded_by_id": 592518,
+                "description": "",
+                "creator": "alois",
+                "created_at": "2017-05-02T10:24:19.000Z",
+                "package": "Photini2",
+                "updated_at": "${declined_updated_at_over}",
+                "number": 592437,
                 "state": "superseded",
                 "id": 697437
             },
