@@ -128,10 +128,11 @@ by OBS on which this bot relies.
         return factory_ok
 
     def checkTagNotRequiredOrInRequest(self, req, a):
-        r = self.checkTagNotRequired(req, a)
-        if r != False:
-            return r
-        return self.checkTagInRequest(req, a)
+        tags = self.checkTagInRequest(req, a)
+        if tags is True:
+            return True
+
+        return self.checkTagNotRequired(req, a)
 
     def check_action_submit(self, req, a):
         return self.checkTagNotRequiredOrInRequest(req, a)
