@@ -1351,7 +1351,7 @@ class StagingAPI(object):
         except urllib2.HTTPError:
             return None
 
-    def save_file_content(self, project, package, filename, content):
+    def save_file_content(self, project, package, filename, content, comment='script updated'):
         """
         Save content to a project/package/file
         :param project: The project containing the package
@@ -1359,8 +1359,8 @@ class StagingAPI(object):
         :param filename: the filename to save the data to
         :param content: the content to write to the file
         """
-        url = self.makeurl(['source', project, package, filename])
-        http_PUT(url + '?comment=scripted+update', data=content)
+        url = self.makeurl(['source', project, package, filename], {'comment': comment})
+        http_PUT(url, data=content)
 
     def update_status_or_deactivate(self, project, command):
         meta = self.get_prj_pseudometa(project)

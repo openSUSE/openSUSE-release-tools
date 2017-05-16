@@ -47,34 +47,8 @@ class StagingHelper(object):
     def __init__(self, project):
         self.project = project
         self.apiurl = osc.conf.config['apiurl']
-        self.debug = osc.conf.config['debug']
         Config(self.project)
         self.api = StagingAPI(self.apiurl, self.project)
-
-    def load_rebuild_data(self, project, package, filename):
-        url = makeurl(self.apiurl, ['source', project, package, '{}?expand=1'.format(filename)])
-        try: 
-            return http_GET(url)
-        except urllib2.HTTPError:
-            return None
-
-    def save_rebuild_data(self, project, package, filename, content):
-        url = makeurl(self.apiurl, ['source', project, package, filename])
-        http_PUT(url + '?comment=support+package+rebuild+update', data=content)
-
-    def rebuild_project(self, project):
-        query = {'cmd': 'rebuild'}
-        url = makeurl(self.apiurl,['build', project], query=query)
-        http_POST(url)
-
-    def get_source_packages(self, project):
-        """Return the list of packages in a project."""
-        query = {'expand': 1}
-        root = ET.parse(http_GET(makeurl(self.apiurl,['source', project],
-            query=query))).getroot()
-        packages = [i.get('name') for i in root.findall('entry')]
-
-        return packages
 
     def get_support_package_list(self, project, repository):
         f = osc.core.get_buildconfig(self.apiurl, project, repository).splitlines()
@@ -96,19 +70,6 @@ class StagingHelper(object):
         root = ET.parse(http_GET(makeurl(self.apiurl,['build', project, '_result'],
             query=query))).getroot()
         return root
-
-    def get_package_buildinfo(self, project, repository, arch, package):
-        url = makeurl(self.apiurl,['build', project, repository, arch, package, '_buildinfo'])
-        root = ET.parse(http_GET(url)).getroot()
-
-        return root
-
-    def get_buildinfo_version(self, project, package):
-        buildinfo = self.get_package_buildinfo(project, 'standard', 'x86_64', package)
-        versrel = buildinfo.find('versrel')
-        version = versrel.split('-')[0]
-
-        return version
 
     def process_project_binarylist(self, project, repository, arch):
         prj_binarylist = self.get_project_binarylist(project, repository, arch)
@@ -151,7 +112,7 @@ class StagingHelper(object):
 
     def crawl(self):
         """Main method"""
-        rebuild_data = self.load_rebuild_data(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild')
+        rebuild_data = self.api.load_file_content(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild')
         if rebuild_data is None:
             print "There is no support_pkg_rebuild file!"
             return
@@ -170,7 +131,7 @@ class StagingHelper(object):
                     if files.get(pkg) not in cand_sources[stg]:
                         cand_sources[stg].append(files.get(pkg))
 
-        tree = ET.parse(rebuild_data)
+        tree = ET.fromstring(rebuild_data)
         root = tree.getroot()
 
         logging.info('Checking rebuild data...')
@@ -205,12 +166,15 @@ class StagingHelper(object):
 
             if need_rebuild and not self.api.is_repo_dirty(stgname, 'standard'):
                 logging.info('Rebuild %s' % stgname)
-                self.rebuild_project(stgname)
+                osc.core.rebuild(self.apiurl, stgname, None, None, None)
                 stg.find('rebuild').text = 'unneeded'
 
         logging.info('Updating support pkg list...')
-        logging.debug(ET.tostring(root))
-        self.save_rebuild_data(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild', ET.tostring(root))
+        rebuild_data_updated = ET.tostring(root)
+        logging.debug(rebuild_data_updated)
+        if rebuild_data_updated != rebuild_data:
+            self.api.save_file_content(self.project + ':Staging', 'dashboard',
+                'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
 
 def main(args):
     # Configure OSC
