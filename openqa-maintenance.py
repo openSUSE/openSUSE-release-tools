@@ -384,28 +384,6 @@ TARGET_REPO_SETTINGS = {
     },
     },
     'https://openqa.opensuse.org': {
-        'openSUSE:Leap:42.1:Update': {
-            'repos': [
-                'http://download.opensuse.org/update/leap/42.1-test/',
-                'http://download.opensuse.org/update/leap/42.1/oss/',
-                'http://download.opensuse.org/update/leap/42.1/non-oss/',
-            ],
-            'settings': [
-                {
-                    'DISTRI': 'opensuse',
-                    'VERSION': '42.1',
-                    'FLAVOR': 'UpdateTest',
-                    'ARCH': 'x86_64',
-                },
-                {
-                    'DISTRI': 'opensuse',
-                    'VERSION': '42.1',
-                    'FLAVOR': 'Updates',
-                    'ARCH': 'x86_64',
-                },
-            ],
-            'test': 'kde'
-        },
         'openSUSE:Leap:42.2:Update': {
             'repos': [
                 'http://download.opensuse.org/update/leap/42.2-test/',
@@ -546,16 +524,6 @@ PROJECT_OPENQA_SETTINGS = {
                 'VERSION': '12',
                 'FLAVOR': 'KGraft',
                 'ARCH': 'x86_64'
-            }),
-    ],
-    'openSUSE:Leap:42.1:Update': [
-        openSUSEUpdate(
-            {
-                'DISTRI': 'opensuse',
-                'VERSION': '42.1',
-                'FLAVOR': 'Maintenance',
-                'ARCH': 'x86_64',
-                'ISO': 'openSUSE-Leap-42.1-DVD-x86_64.iso',
             }),
     ],
     'openSUSE:Leap:42.2:Update': [
