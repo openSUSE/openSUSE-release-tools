@@ -513,7 +513,8 @@ class ToTestFactory(ToTestBase):
     main_products = ['_product:openSUSE-dvd5-dvd-i586',
                      '_product:openSUSE-dvd5-dvd-x86_64',
                      '_product:openSUSE-cd-mini-i586',
-                     '_product:openSUSE-cd-mini-x86_64']
+                     '_product:openSUSE-cd-mini-x86_64',
+                     '_product:openSUSE-Kubic-dvd5-DVD-x86_64']
 
     ftp_products = ['_product:openSUSE-ftp-ftp-i586_x86_64',
                     '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
