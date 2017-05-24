@@ -893,7 +893,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         for mr in matchrepos:
             if not (mr.srcrepo, mr.arch) in rmap:
-                self.logger.warn("%s/%s had no build success"%(mr.srcrepo, arch))
+                self.logger.warn("%s/%s had no build success"%(mr.srcrepo, mr.arch))
                 raise NotReadyYet(src_project, src_srcinfo.package, "no result")
             if rmap[(mr.srcrepo, mr.arch)]['dirty']:
                 self.logger.warn("%s/%s dirty"%(mr.srcrepo, mr.arch))
