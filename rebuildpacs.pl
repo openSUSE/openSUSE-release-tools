@@ -268,7 +268,7 @@ while (<INSTALLCHECK>) {
 
     s,^\s*,,;
     # patterns are too spammy and rebuilding doesn't help
-    next if (grep { $_ eq $cproblem } qw(patterns-openSUSE));
+    next if (grep { $_ eq $cproblem } qw(patterns-openSUSE installation-images:Kubic));
     $problems{$cproblem}->{$_} = 1;
 
 }
