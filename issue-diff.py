@@ -8,6 +8,7 @@ import dateutil.parser
 from datetime import timedelta, datetime
 from dateutil.tz import tzlocal
 import os
+from random import shuffle
 import requests.exceptions
 import subprocess
 import sys
@@ -271,7 +272,8 @@ def main(args):
     packages_factory = package_list(apiurl_default, args.factory)
     packages = set(packages_project).intersection(set(packages_factory))
     new = 0
-    for package in sorted(packages):
+    shuffle(list(packages))
+    for package in packages:
         issues_project = issues_get(apiurl, args.project, package, trackers, db)
         issues_factory = issues_get(apiurl_default, args.factory, package, trackers, db)
 
