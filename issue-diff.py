@@ -8,6 +8,7 @@ import dateutil.parser
 from datetime import timedelta, datetime
 from dateutil.tz import tzlocal
 import os
+from random import shuffle
 import requests.exceptions
 import subprocess
 import sys
@@ -24,11 +25,13 @@ from osclib.cache import Cache
 # either summary or one in which ISSUE_SUMMARY is then placed must be unicode.
 # For example, translation-update-upstream contains bsc#877707 which has a
 # unicode character in its summary.
-BUG_SUMMARY = 'Missing issue references from {project}/{package} in {factory}/{package}'
+BUG_SUMMARY = '[patch-lost-in-sle] Missing issues in {factory}/{package}'
 BUG_TEMPLATE = u'{message_start}\n\n{issues}'
 MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version. For more information and details on how to go about submitting the changes see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html.'
 ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
+ISSUE_SUMMARY_BUGZILLA = u'{label} owned by {owner}: {summary}'
 ISSUE_SUMMARY_PLAIN = u'[{label}]({url})'
+ISSUE_SUMMARY_PLAIN_BUGZILLA = u'{label}'
 
 
 def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
@@ -47,38 +50,41 @@ def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
 
     return newbug.id
 
-def user_email(apiurl, userid):
-    url = osc.core.makeurl(apiurl, ('person', userid))
+def entity_email(apiurl, entity, key):
+    url = osc.core.makeurl(apiurl, (entity, key))
     root = ET.parse(osc.core.http_GET(url)).getroot()
     email = root.find('email')
     return email.text if email is not None else None
 
-def bug_owner(apiurl, package):
+def bug_owner(apiurl, package, entity='person'):
     query = {
         'binary': package,
     }
     url = osc.core.makeurl(apiurl, ('search', 'owner'), query=query)
     root = ET.parse(osc.core.http_GET(url)).getroot()
 
-    bugowner = root.find('.//person[@role="bugowner"]')
+    bugowner = root.find('.//{}[@role="bugowner"]'.format(entity))
     if bugowner is not None:
-        return user_email(apiurl, bugowner.get('name'))
-    maintainer = root.find('.//person[@role="maintainer"]')
+        return entity_email(apiurl, entity, bugowner.get('name'))
+    maintainer = root.find('.//{}[@role="maintainer"]'.format(entity))
     if maintainer is not None:
-        return user_email(apiurl, maintainer.get('name'))
+        return entity_email(apiurl, entity, maintainer.get('name'))
+    if entity == 'person':
+        return bug_owner(apiurl, package, 'group')
 
     return None
 
 def bug_meta_get(bugzilla_api, bug_id):
     bug = bugzilla_api.getbug(bug_id)
-    return (bug.product, bug.component, bug.version)
+    return bug.component
 
 def bug_meta(bugzilla_api, defaults, trackers, issues):
     # Extract meta from the first bug from bnc tracker or fallback to defaults.
     prefix = trackers['bnc'][:3]
     for issue in issues:
         if issue.startswith(prefix):
-            return bug_meta_get(bugzilla_api, issue[4:])
+            component = bug_meta_get(bugzilla_api, issue[4:])
+            return (defaults[0], component, defaults[2])
 
     return defaults
 
@@ -140,7 +146,9 @@ def issue_trackers(apiurl):
 def issue_normalize(trackers, tracker, name):
     if tracker in trackers:
         return trackers[tracker].replace('@@@', name)
-    raise Exception('unkown tracker {} for {}'.format(tracker, name))
+
+    print('WARNING: ignoring unknown tracker {} for {}'.format(tracker, name))
+    return None
 
 def issues_get(apiurl, project, package, trackers, db):
     issues = {}
@@ -153,6 +161,8 @@ def issues_get(apiurl, project, package, trackers, db):
         # Normalize issues to active API instance issue-tracker definitions.
         # Assumes the two servers have the name trackers, but different labels.
         label = issue_normalize(trackers, issue.find('tracker').text, issue.find('name').text)
+        if label is None:
+            continue
 
         # Ignore already processed issues.
         if issue_found(package, label, db):
@@ -271,7 +281,12 @@ def main(args):
     packages_factory = package_list(apiurl_default, args.factory)
     packages = set(packages_project).intersection(set(packages_factory))
     new = 0
-    for package in sorted(packages):
+    shuffle(list(packages))
+    for package in packages:
+        if package in db and db[package] == 'whitelist':
+            print('Skipping package {}'.format(package))
+            continue
+
         issues_project = issues_get(apiurl, args.project, package, trackers, db)
         issues_factory = issues_get(apiurl_default, args.factory, package, trackers, db)
 
@@ -292,7 +307,7 @@ def main(args):
         changes = {}
         for issue in missing_from_factory:
             info = issues_project[issue]
-            summary = ISSUE_SUMMARY if info['owner'] is not None else ISSUE_SUMMARY_PLAIN
+            summary = ISSUE_SUMMARY if info['owner'] else ISSUE_SUMMARY_PLAIN
             changes[issue] = summary.format(
                 label=issue, url=info['url'], owner=info['owner'], summary=info['summary'])
 
@@ -305,10 +320,16 @@ def main(args):
         if len(changes_after) > 0:
             for issue, summary in changes.items():
                 if issue in changes_after:
+                    info = issues_project[issue]
+                    if issue.startswith('bsc'):
+                        # Reformat for bugzilla markdown.
+                        summary = ISSUE_SUMMARY_BUGZILLA if info['owner'] else ISSUE_SUMMARY_PLAIN_BUGZILLA
+                        issue = issue.replace('bsc', 'bug')
+                        summary = summary.format(
+                            label=issue, url=info['url'], owner=info['owner'], summary=info['summary'])
                     issues.append('- ' + summary)
-                    owner = issues_project[issue]['owner']
-                    if owner is not None:
-                        cc.append(owner)
+                    if info['owner'] is not None:
+                        cc.append(info['owner'])
 
         # Prompt user about how to continue.
         response = prompt_continue(len(issues))
@@ -330,7 +351,12 @@ def main(args):
             owner = bug_owner(apiurl, package)
             if args.bugzilla_cc:
                 cc.append(args.bugzilla_cc)
-            bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+            try:
+                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+            except:
+                # Fallback to default component.
+                meta = (meta[0], bugzilla_defaults[1], meta[2])
+                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
 
         # Mark changes in db.
         notified, whitelisted = 0, 0
@@ -350,7 +376,7 @@ def main(args):
             yaml.safe_dump(db, outfile, default_flow_style=False, default_style="'")
 
         if notified > 0:
-            print('{}: {} notified in bug #{}, {} whitelisted'.format(package, notified, bug_id, whitelisted))
+            print('{}: {} notified in bug {}, {} whitelisted'.format(package, notified, bug_id, whitelisted))
         else:
             print('{}: {} whitelisted'.format(package, whitelisted))
 
@@ -372,9 +398,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', default='https://api.suse.de', metavar='URL', help='OBS instance API URL')
     parser.add_argument('--bugzilla-apiurl', required=True, metavar='URL', help='bugzilla API URL')
-    parser.add_argument('--bugzilla-product', default='SUSE Linux Enterprise Desktop 12 SP2', metavar='PRODUCT', help='default bugzilla product')
+    parser.add_argument('--bugzilla-product', default='SUSE Linux Enterprise Server 15', metavar='PRODUCT', help='default bugzilla product')
     parser.add_argument('--bugzilla-component', default='Other', metavar='COMPONENT', help='default bugzilla component')
-    parser.add_argument('--bugzilla-version', default='GM', metavar='VERSION', help='default bugzilla version')
+    parser.add_argument('--bugzilla-version', default='unspecified', metavar='VERSION', help='default bugzilla version')
     parser.add_argument('--bugzilla-cc', metavar='EMAIL', help='bugzilla address added to cc on all bugs created')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debugging')
     parser.add_argument('-f', '--factory', default='openSUSE:Factory', metavar='PROJECT', help='factory project to use as baseline for comparison')
