@@ -281,6 +281,10 @@ def main(args):
     new = 0
     shuffle(list(packages))
     for package in packages:
+        if package in db and db[package] == 'whitelist':
+            print('Skipping package {}'.format(package))
+            continue
+
         issues_project = issues_get(apiurl, args.project, package, trackers, db)
         issues_factory = issues_get(apiurl_default, args.factory, package, trackers, db)
 
