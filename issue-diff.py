@@ -29,7 +29,9 @@ BUG_SUMMARY = '[patch-lost-in-sle] Missing issues in {factory}/{package}'
 BUG_TEMPLATE = u'{message_start}\n\n{issues}'
 MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version. For more information and details on how to go about submitting the changes see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html.'
 ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
+ISSUE_SUMMARY_BUGZILLA = u'{label} owned by {owner}: {summary}'
 ISSUE_SUMMARY_PLAIN = u'[{label}]({url})'
+ISSUE_SUMMARY_PLAIN_BUGZILLA = u'{label}'
 
 
 def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
@@ -305,7 +307,7 @@ def main(args):
         changes = {}
         for issue in missing_from_factory:
             info = issues_project[issue]
-            summary = ISSUE_SUMMARY if info['owner'] is not None else ISSUE_SUMMARY_PLAIN
+            summary = ISSUE_SUMMARY if info['owner'] else ISSUE_SUMMARY_PLAIN
             changes[issue] = summary.format(
                 label=issue, url=info['url'], owner=info['owner'], summary=info['summary'])
 
@@ -318,10 +320,16 @@ def main(args):
         if len(changes_after) > 0:
             for issue, summary in changes.items():
                 if issue in changes_after:
+                    info = issues_project[issue]
+                    if issue.startswith('bsc'):
+                        # Reformat for bugzilla markdown.
+                        summary = ISSUE_SUMMARY_BUGZILLA if info['owner'] else ISSUE_SUMMARY_PLAIN_BUGZILLA
+                        issue = issue.replace('bsc', 'bug')
+                        summary = summary.format(
+                            label=issue, url=info['url'], owner=info['owner'], summary=info['summary'])
                     issues.append('- ' + summary)
-                    owner = issues_project[issue]['owner']
-                    if owner is not None:
-                        cc.append(owner)
+                    if info['owner'] is not None:
+                        cc.append(info['owner'])
 
         # Prompt user about how to continue.
         response = prompt_continue(len(issues))
