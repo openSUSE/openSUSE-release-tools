@@ -333,7 +333,12 @@ def main(args):
             owner = bug_owner(apiurl, package)
             if args.bugzilla_cc:
                 cc.append(args.bugzilla_cc)
-            bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+            try:
+                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+            except:
+                # Fallback to default component.
+                meta = (meta[0], bugzilla_defaults[1], meta[2])
+                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
 
         # Mark changes in db.
         notified, whitelisted = 0, 0
