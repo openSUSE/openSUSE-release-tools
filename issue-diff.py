@@ -358,7 +358,7 @@ def main(args):
             yaml.safe_dump(db, outfile, default_flow_style=False, default_style="'")
 
         if notified > 0:
-            print('{}: {} notified in bug #{}, {} whitelisted'.format(package, notified, bug_id, whitelisted))
+            print('{}: {} notified in bug {}, {} whitelisted'.format(package, notified, bug_id, whitelisted))
         else:
             print('{}: {} whitelisted'.format(package, whitelisted))
 
