@@ -25,7 +25,7 @@ from osclib.cache import Cache
 # either summary or one in which ISSUE_SUMMARY is then placed must be unicode.
 # For example, translation-update-upstream contains bsc#877707 which has a
 # unicode character in its summary.
-BUG_SUMMARY = 'Missing issue references from {project}/{package} in {factory}/{package}'
+BUG_SUMMARY = '[patch-lost-in-sle] Missing issues in {factory}/{package}'
 BUG_TEMPLATE = u'{message_start}\n\n{issues}'
 MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version. For more information and details on how to go about submitting the changes see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html.'
 ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
