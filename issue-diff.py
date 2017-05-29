@@ -72,14 +72,15 @@ def bug_owner(apiurl, package):
 
 def bug_meta_get(bugzilla_api, bug_id):
     bug = bugzilla_api.getbug(bug_id)
-    return (bug.product, bug.component, bug.version)
+    return bug.component
 
 def bug_meta(bugzilla_api, defaults, trackers, issues):
     # Extract meta from the first bug from bnc tracker or fallback to defaults.
     prefix = trackers['bnc'][:3]
     for issue in issues:
         if issue.startswith(prefix):
-            return bug_meta_get(bugzilla_api, issue[4:])
+            component = bug_meta_get(bugzilla_api, issue[4:])
+            return (defaults[0], component, defaults[2])
 
     return defaults
 
