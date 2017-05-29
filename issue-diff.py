@@ -144,7 +144,9 @@ def issue_trackers(apiurl):
 def issue_normalize(trackers, tracker, name):
     if tracker in trackers:
         return trackers[tracker].replace('@@@', name)
-    raise Exception('unkown tracker {} for {}'.format(tracker, name))
+
+    print('WARNING: ignoring unknown tracker {} for {}'.format(tracker, name))
+    return None
 
 def issues_get(apiurl, project, package, trackers, db):
     issues = {}
@@ -157,6 +159,8 @@ def issues_get(apiurl, project, package, trackers, db):
         # Normalize issues to active API instance issue-tracker definitions.
         # Assumes the two servers have the name trackers, but different labels.
         label = issue_normalize(trackers, issue.find('tracker').text, issue.find('name').text)
+        if label is None:
+            continue
 
         # Ignore already processed issues.
         if issue_found(package, label, db):
