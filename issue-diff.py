@@ -48,25 +48,27 @@ def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
 
     return newbug.id
 
-def user_email(apiurl, userid):
-    url = osc.core.makeurl(apiurl, ('person', userid))
+def entity_email(apiurl, entity, key):
+    url = osc.core.makeurl(apiurl, (entity, key))
     root = ET.parse(osc.core.http_GET(url)).getroot()
     email = root.find('email')
     return email.text if email is not None else None
 
-def bug_owner(apiurl, package):
+def bug_owner(apiurl, package, entity='person'):
     query = {
         'binary': package,
     }
     url = osc.core.makeurl(apiurl, ('search', 'owner'), query=query)
     root = ET.parse(osc.core.http_GET(url)).getroot()
 
-    bugowner = root.find('.//person[@role="bugowner"]')
+    bugowner = root.find('.//{}[@role="bugowner"]'.format(entity))
     if bugowner is not None:
-        return user_email(apiurl, bugowner.get('name'))
-    maintainer = root.find('.//person[@role="maintainer"]')
+        return entity_email(apiurl, entity, bugowner.get('name'))
+    maintainer = root.find('.//{}[@role="maintainer"]'.format(entity))
     if maintainer is not None:
-        return user_email(apiurl, maintainer.get('name'))
+        return entity_email(apiurl, entity, maintainer.get('name'))
+    if entity == 'person':
+        return bug_owner(apiurl, package, 'group')
 
     return None
 
