@@ -76,7 +76,11 @@ def bug_owner(apiurl, package, entity='person'):
     return None
 
 def bug_meta_get(bugzilla_api, bug_id):
-    bug = bugzilla_api.getbug(bug_id)
+    try:
+        bug = bugzilla_api.getbug(bug_id)
+    except Fault, e:
+        print('bug_meta_get(): ' + str(e))
+        return None
     return bug.component
 
 def bug_meta(bugzilla_api, defaults, trackers, issues):
@@ -85,7 +89,8 @@ def bug_meta(bugzilla_api, defaults, trackers, issues):
     for issue in issues:
         if issue.startswith(prefix):
             component = bug_meta_get(bugzilla_api, issue[4:])
-            return (defaults[0], component, defaults[2])
+            if component:
+                return (defaults[0], component, defaults[2])
 
     return defaults
 
