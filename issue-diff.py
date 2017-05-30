@@ -248,6 +248,24 @@ def sync(config_dir, db_dir):
 
     os.chdir(cwd)
 
+def print_stats(db):
+    bug_ids = []
+    reported = 0
+    whitelisted = 0
+    for package, bugs in db.items():
+        if bugs == 'whitelist':
+            continue
+        for reference, outcome in bugs.items():
+            if outcome != 'whitelist':
+                bug_ids.append(int(outcome))
+                reported += 1
+            else:
+                whitelisted += 1
+    print('Packages: {}'.format(len(db)))
+    print('Bugs: {}'.format(len(set(bug_ids))))
+    print('Reported: {}'.format(reported))
+    print('Whitelisted: {}'.format(whitelisted))
+
 def main(args):
     # Store the default apiurl in addition to the overriden url if the
     # option was set and thus overrides the default config value.
@@ -276,6 +294,10 @@ def main(args):
             print('Loaded db file: {}'.format(db_file))
     else:
         db = {}
+
+    if args.print_stats:
+        print_stats(db)
+        return
 
     print('Comparing {} against {}'.format(args.project, args.factory))
 
@@ -431,6 +453,7 @@ if __name__ == '__main__':
     parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
     parser.add_argument('--config-dir', help='configuration directory containing git-sync tool and issue db')
+    parser.add_argument('--print-stats', action='store_true', help='print statistics based on database')
     args = parser.parse_args()
 
     if args.config_dir is None:
