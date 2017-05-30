@@ -282,7 +282,9 @@ def main(args):
     packages = set(packages_project).intersection(set(packages_factory))
     new = 0
     shuffle(list(packages))
-    for package in packages:
+    for index, package in enumerate(packages, start=1):
+        if index % 50 == 0:
+            print('Checked {} of {}'.format(index, len(packages)))
         if package in db and db[package] == 'whitelist':
             print('Skipping package {}'.format(package))
             continue
