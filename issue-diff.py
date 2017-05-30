@@ -348,6 +348,9 @@ def main(args):
                 message_start=MESSAGE_START.format(
                     project=args.project, factory=args.factory, package=package, newest=args.newest),
                 issues='\n'.join(issues))
+            if len(message) > 65535:
+                # Truncate messages longer than bugzilla limit.
+                message = message[:65535 - 3] + '...'
 
             # Determine bugzilla meta information to use when creating bug.
             meta = bug_meta(bugzilla_api, bugzilla_defaults, trackers, changes.keys())
