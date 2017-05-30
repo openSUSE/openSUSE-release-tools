@@ -13,6 +13,7 @@ import requests.exceptions
 import subprocess
 import sys
 import tempfile
+from xmlrpclib import Fault
 import yaml
 from xml.etree import cElementTree as ET
 
@@ -353,12 +354,24 @@ def main(args):
             owner = bug_owner(apiurl, package)
             if args.bugzilla_cc:
                 cc.append(args.bugzilla_cc)
-            try:
-                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
-            except:
-                # Fallback to default component.
-                meta = (meta[0], bugzilla_defaults[1], meta[2])
-                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+
+            # Try to create bug, but allow for handling faults.
+            tries = 0
+            while tries < 10:
+                try:
+                    bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+                    break
+                except Fault, e:
+                    if 'There is no component named' in e.faultString:
+                        print('Invalid component {}, fallback to default'.format(meta[1]))
+                        meta = (meta[0], bugzilla_defaults[1], meta[2])
+                    elif 'is not a valid username' in e.faultString:
+                        username = e.faultString.split(' ', 3)[2]
+                        cc.remove(username)
+                        print('Removed invalid username {}'.format(username))
+                    else:
+                        raise e
+                tries += 1
 
         # Mark changes in db.
         notified, whitelisted = 0, 0
