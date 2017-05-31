@@ -537,7 +537,7 @@ class StagingAPI(object):
             # Remove the old request
             self.rm_from_prj(stage_info['prj'],
                              request_id=stage_info['rq_id'],
-                             msg='Replaced by newer request',
+                             msg='Replaced by sr#{}'.format(request_id),
                              review='declined')
             # Add the new one that should be replacing it
             self.rq_to_prj(request_id, stage_info['prj'])
