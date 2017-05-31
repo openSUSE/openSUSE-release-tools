@@ -84,12 +84,6 @@ class CommentAPI(object):
 
     def comment_find(self, comments, bot, info_match=None):
         """Return previous bot comments that match criteria."""
-
-        def chunks(l, n):
-            """Yield successive n-sized chunks from l."""
-            for i in xrange(0, len(l), n):
-                yield l[i:i + n]
-
         # Case-insensitive for backwards compatibility.
         bot = bot.lower()
         for c in comments.values():
