@@ -1381,26 +1381,15 @@ class StagingAPI(object):
         :param command: name of the command to include in the message
         """
 
-        # TODO: we need to discuss the best way to keep track of status
-        # comments. Right now they are marked with an initial markdown
-        # comment. Maybe a cleaner approach would be to store something
-        # like 'last_status_comment_id' in the pseudometa. But the current
-        # OBS API for adding comments doesn't return the id of the created
-        # comment.
-
+        bot = 'osc-staging'
+        info = {'type': 'package-list'}
         comment_api = CommentAPI(self.apiurl)
-
         comments = comment_api.get_comments(project_name=project)
-        for comment in comments.values():
-            # TODO: update the comment removing the user mentions instead of
-            # deleting the whole comment. But there is currently not call in
-            # OBS API to update a comment
-            if comment['comment'].startswith('<!--- osc staging'):
-                comment_api.delete(comment['id'])
-                break  # There can be only one! (if we keep deleting them)
+        comment, _ = comment_api.comment_find(comments, bot, info)
+        comment_api.delete(comment['id'])
 
         meta = self.get_prj_pseudometa(project)
-        lines = ['<!--- osc staging %s --->' % command]
+        lines = []
         dashboard_url = '{}/project/staging_projects/{}/{}'.format(self.apiurl, self.project, self.extract_staging_short(project))
         lines.append('The list of requests tracked in [%s](%s) has changed:\n' % (project, dashboard_url))
         for req in meta['requests']:
@@ -1410,6 +1399,7 @@ class StagingAPI(object):
                 author = get_request(self.apiurl, str(req['id'])).get_creator()
             lines.append('  * Request#%s for package %s submitted by @%s' % (req['id'], req['package'], author))
         msg = '\n'.join(lines)
+        msg = comment_api.add_marker(msg, bot, info)
         comment_api.add_comment(project_name=project, comment=msg)
 
     def accept_status_comment(self, project, packages):
