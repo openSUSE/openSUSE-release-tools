@@ -15,6 +15,9 @@ class SupersedeCommand(object):
         for stage_info, code, request in self.api.dispatch_open_requests(requests):
             action = request.find('action')
             target_package = action.find('target').get('package')
+            if code == 'unstage':
+                # Technically, the new request has not been staged, but superseded the old one.
+                code = None
             verbage = self.CODE_MAP[code]
             if code is not None:
                 verbage += ' in favor of'
