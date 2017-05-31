@@ -31,7 +31,7 @@ class CommentAPI(object):
         self.apiurl = apiurl
 
     def _prepare_url(self, request_id=None, project_name=None,
-                     package_name=None):
+                     package_name=None, query=None):
         """Prepare the URL to get/put comments in OBS.
 
         :param request_id: Request where to refer the comment.
@@ -41,12 +41,12 @@ class CommentAPI(object):
         """
         url = None
         if request_id:
-            url = makeurl(self.apiurl, ['comments', 'request', request_id])
+            url = makeurl(self.apiurl, ['comments', 'request', request_id], query)
         elif project_name and package_name:
             url = makeurl(self.apiurl, ['comments', 'package', project_name,
-                                        package_name])
+                                        package_name], query)
         elif project_name:
-            url = makeurl(self.apiurl, ['comments', 'project', project_name])
+            url = makeurl(self.apiurl, ['comments', 'project', project_name], query)
         else:
             raise ValueError('Please, set request_id, project_name or / and package_name to add a comment.')
         return url
