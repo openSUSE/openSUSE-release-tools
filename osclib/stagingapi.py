@@ -32,6 +32,7 @@ from osc import oscerr
 from osc.core import show_package_meta
 from osc.core import change_review_state
 from osc.core import delete_package
+from osc.core import get_commitlog
 from osc.core import get_group
 from osc.core import get_request
 from osc.core import make_meta_url
@@ -609,6 +610,11 @@ class StagingAPI(object):
             stage_info, code = self.update_superseded_request(rq, target_requests)
             if stage_info:
                 yield (stage_info, code, rq)
+
+    def get_prj_meta_revision(self, project):
+        log = get_commitlog(self.apiurl, project, '_project', None, format='xml', meta=True)
+        root = ET.fromstring(''.join(log))
+        return int(root.find('logentry').get('revision'))
 
     def get_prj_meta(self, project, revision=None):
         meta = show_project_meta(self.apiurl, project, rev=revision)
