@@ -209,6 +209,16 @@ class CheckSource(ReviewBot.ReviewBot):
         return False
 
     def check_action_delete(self, request, action):
+        if action.tgt_repository is not None:
+            if action.tgt_project.startswith('openSUSE:'):
+                self.review_messages['declined'] = 'The repositories in the openSUSE:* namespace ' \
+                    'are managed by the Release Managers. For suggesting changes, send a mail ' \
+                    'to opensuse-releaseteam@opensuse.org with an explanation of why the change ' \
+                    'makes sense.'
+                return False
+            else:
+                self.review_messages['accepted'] = 'unhandled: removing repository'
+                return True
         try:
             result = osc.core.show_project_sourceinfo(self.apiurl, action.tgt_project, True, (action.tgt_package))
             root = ET.fromstring(result)
