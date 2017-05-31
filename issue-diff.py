@@ -13,6 +13,7 @@ import requests.exceptions
 import subprocess
 import sys
 import tempfile
+from xmlrpclib import Fault
 import yaml
 from xml.etree import cElementTree as ET
 
@@ -75,7 +76,11 @@ def bug_owner(apiurl, package, entity='person'):
     return None
 
 def bug_meta_get(bugzilla_api, bug_id):
-    bug = bugzilla_api.getbug(bug_id)
+    try:
+        bug = bugzilla_api.getbug(bug_id)
+    except Fault, e:
+        print('bug_meta_get(): ' + str(e))
+        return None
     return bug.component
 
 def bug_meta(bugzilla_api, defaults, trackers, issues):
@@ -84,7 +89,8 @@ def bug_meta(bugzilla_api, defaults, trackers, issues):
     for issue in issues:
         if issue.startswith(prefix):
             component = bug_meta_get(bugzilla_api, issue[4:])
-            return (defaults[0], component, defaults[2])
+            if component:
+                return (defaults[0], component, defaults[2])
 
     return defaults
 
@@ -242,6 +248,24 @@ def sync(config_dir, db_dir):
 
     os.chdir(cwd)
 
+def print_stats(db):
+    bug_ids = []
+    reported = 0
+    whitelisted = 0
+    for package, bugs in db.items():
+        if bugs == 'whitelist':
+            continue
+        for reference, outcome in bugs.items():
+            if outcome != 'whitelist':
+                bug_ids.append(int(outcome))
+                reported += 1
+            else:
+                whitelisted += 1
+    print('Packages: {}'.format(len(db)))
+    print('Bugs: {}'.format(len(set(bug_ids))))
+    print('Reported: {}'.format(reported))
+    print('Whitelisted: {}'.format(whitelisted))
+
 def main(args):
     # Store the default apiurl in addition to the overriden url if the
     # option was set and thus overrides the default config value.
@@ -271,6 +295,10 @@ def main(args):
     else:
         db = {}
 
+    if args.print_stats:
+        print_stats(db)
+        return
+
     print('Comparing {} against {}'.format(args.project, args.factory))
 
     bugzilla_api = bugzilla_init(args.bugzilla_apiurl)
@@ -282,7 +310,9 @@ def main(args):
     packages = set(packages_project).intersection(set(packages_factory))
     new = 0
     shuffle(list(packages))
-    for package in packages:
+    for index, package in enumerate(packages, start=1):
+        if index % 50 == 0:
+            print('Checked {} of {}'.format(index, len(packages)))
         if package in db and db[package] == 'whitelist':
             print('Skipping package {}'.format(package))
             continue
@@ -345,18 +375,33 @@ def main(args):
                 message_start=MESSAGE_START.format(
                     project=args.project, factory=args.factory, package=package, newest=args.newest),
                 issues='\n'.join(issues))
+            if len(message) > 65535:
+                # Truncate messages longer than bugzilla limit.
+                message = message[:65535 - 3] + '...'
 
             # Determine bugzilla meta information to use when creating bug.
             meta = bug_meta(bugzilla_api, bugzilla_defaults, trackers, changes.keys())
             owner = bug_owner(apiurl, package)
             if args.bugzilla_cc:
                 cc.append(args.bugzilla_cc)
-            try:
-                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
-            except:
-                # Fallback to default component.
-                meta = (meta[0], bugzilla_defaults[1], meta[2])
-                bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+
+            # Try to create bug, but allow for handling faults.
+            tries = 0
+            while tries < 10:
+                try:
+                    bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
+                    break
+                except Fault, e:
+                    if 'There is no component named' in e.faultString:
+                        print('Invalid component {}, fallback to default'.format(meta[1]))
+                        meta = (meta[0], bugzilla_defaults[1], meta[2])
+                    elif 'is not a valid username' in e.faultString:
+                        username = e.faultString.split(' ', 3)[2]
+                        cc.remove(username)
+                        print('Removed invalid username {}'.format(username))
+                    else:
+                        raise e
+                tries += 1
 
         # Mark changes in db.
         notified, whitelisted = 0, 0
@@ -408,6 +453,7 @@ if __name__ == '__main__':
     parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
     parser.add_argument('--config-dir', help='configuration directory containing git-sync tool and issue db')
+    parser.add_argument('--print-stats', action='store_true', help='print statistics based on database')
     args = parser.parse_args()
 
     if args.config_dir is None:
