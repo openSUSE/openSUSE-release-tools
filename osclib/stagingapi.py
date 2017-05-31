@@ -40,6 +40,7 @@ from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import rebuild
+from osc.core import show_project_meta
 from osc.core import streamfile
 
 from osclib.cache import Cache
@@ -609,10 +610,9 @@ class StagingAPI(object):
             if stage_info:
                 yield (stage_info, code, rq)
 
-    def get_prj_meta(self, project):
-        url = make_meta_url('prj', project, self.apiurl)
-        f = http_GET(url)
-        return ET.parse(f).getroot()
+    def get_prj_meta(self, project, revision=None):
+        meta = show_project_meta(self.apiurl, project, rev=revision)
+        return ET.fromstring(''.join(meta))
 
     def load_prj_pseudometa(self, description_text):
         try:
