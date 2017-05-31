@@ -1392,21 +1392,56 @@ class StagingAPI(object):
         comment_api = CommentAPI(self.apiurl)
         comments = comment_api.get_comments(project_name=project)
         comment, _ = comment_api.comment_find(comments, bot, info)
-        comment_api.delete(comment['id'])
+        parent_id = None
 
         meta = self.get_prj_pseudometa(project)
+        revision = meta.get('requests_comment', None)
         lines = []
-        dashboard_url = '{}/project/staging_projects/{}/{}'.format(self.apiurl, self.project, self.extract_staging_short(project))
-        lines.append('The list of requests tracked in [%s](%s) has changed:\n' % (project, dashboard_url))
-        for req in meta['requests']:
-            author = req.get('autor', None)
-            if not author:
-                # Old style metadata
-                author = get_request(self.apiurl, str(req['id'])).get_creator()
-            lines.append('  * Request#%s for package %s submitted by @%s' % (req['id'], req['package'], author))
+        if comment and revision:
+            parent_id = comment['id'] if comment else None
+            info['type'] = 'package-diff'
+
+            requests_new = [r['id'] for r in meta['requests']]
+            meta_old = self.get_prj_pseudometa(project, revision)
+            requests_old = [r['id'] for r in meta_old['requests']]
+            requests_common = set(requests_new).intersection(set(requests_old))
+
+            lines.append('Requests: {} added, {} removed; using {} command'.format(
+                len(requests_new) - len(requests_common),
+                len(requests_old) - len(requests_common),
+                command
+            ))
+            lines.append('') # Blank line.
+
+            requests = []
+            for req in meta['requests']:
+                if req['id'] not in requests_common:
+                    req['prefix'] = 'added '
+                    requests.append(req)
+
+            for req in meta_old['requests']:
+                if req['id'] not in requests_common:
+                    req['prefix'] = 'removed '
+                    requests.append(req)
+
+        else:
+            dashboard_url = '{}/project/staging_projects/{}/{}'.format(
+                self.apiurl, self.project, self.extract_staging_short(project))
+            lines.append('Requests ([dashboard]({})):'.format(dashboard_url))
+            lines.append('') # Blank line.
+
+            requests = meta['requests']
+
+        for req in requests:
+            lines.append('  * {}request#{} for package {} submitted by @{}'.format(
+                req.get('prefix', ''), req['id'], req['package'], req.get('author')))
         msg = '\n'.join(lines)
         msg = comment_api.add_marker(msg, bot, info)
-        comment_api.add_comment(project_name=project, comment=msg)
+        comment_api.add_comment(project_name=project, comment=msg, parent_id=parent_id)
+
+        # Store current meta revision for diffing against next time.
+        meta['requests_comment'] = self.get_prj_meta_revision(project)
+        self.set_prj_pseudometa(project, meta)
 
     def accept_status_comment(self, project, packages):
         # A single comment should be enough to notify everybody, since they are
