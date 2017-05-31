@@ -626,14 +626,14 @@ class StagingAPI(object):
         return data
 
     @memoize(ttl=60, session=True, add_invalidate=True)
-    def get_prj_pseudometa(self, project):
+    def get_prj_pseudometa(self, project, revision=None):
         """
         Gets project data from YAML in project description
         :param project: project to read data from
         :return structured object with metadata
         """
 
-        root = self.get_prj_meta(project)
+        root = self.get_prj_meta(project, revision)
         description = root.find('description')
         # If YAML parsing fails, load default
         # FIXME: Better handling of errors
