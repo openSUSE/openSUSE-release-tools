@@ -124,7 +124,7 @@ class CommentAPI(object):
         return marker + '\n\n' + comment
 
     def add_comment(self, request_id=None, project_name=None,
-                    package_name=None, comment=None):
+                    package_name=None, comment=None, parent_id=None):
         """Add a comment in an object in OBS.
 
         :param request_id: Request where to write a comment.
@@ -136,7 +136,10 @@ class CommentAPI(object):
         if not comment:
             raise ValueError('Empty comment.')
 
-        url = self._prepare_url(request_id, project_name, package_name)
+        query = {}
+        if parent_id:
+            query['parent_id'] = parent_id
+        url = self._prepare_url(request_id, project_name, package_name, query)
         return http_POST(url, data=comment)
 
     def delete(self, comment_id):
