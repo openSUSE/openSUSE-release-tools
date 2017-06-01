@@ -493,16 +493,48 @@ class StagingAPI(object):
             if stage_info and stage_info['rq_id'] != request_id:
                 request_old = get_request(self.apiurl, str(stage_info['rq_id'])).to_xml()
                 request_new = request
+                replace_old = request_old.find('state').get('name') in ['revoked', 'superseded']
 
-                # If both are submits from different source projects then check
+                if (request_new.find('action').get('type') == 'delete' and
+                    request_old.find('action').get('type') == 'delete'):
+                    # Both delete requests.
+                    if replace_old:
+                        # Pointless since identical requests, but user desires.
+                        return stage_info, None
+                    else:
+                        # Keep the original request and decline this identical one.
+                        message = 'sr#{} is an identical delete and is already staged'.format(
+                            request_old.get('id'))
+                        self.do_change_review_state(request_id, 'declined',
+                            by_group=self.cstaging_group, message=message)
+                        return stage_info, True
+
+                if (request_new.find('action').get('type') !=
+                    request_old.find('action').get('type')):
+                    # One delete and one submit.
+                    if replace_old:
+                        if self.ring_packages.get(target_package):
+                            # Since deletes are considered ring then both requests are ring and a
+                            # supersede is fine.
+                            return stage_info, None
+                        else:
+                            # Unselect old request and do no stage the new request to allow it to be
+                            # staged via the normal process to find the appropriate staging project.
+                            return stage_info, 'unstage'
+                    else:
+                        # Decline new type and indicate that old request should be revoked first.
+                        message = 'sr#{} of a different type should be revoked first'.format(
+                            request_old.get('id'))
+                        self.do_change_review_state(request_id, 'declined',
+                            by_group=self.cstaging_group, message=message)
+                        return stage_info, True
+
+                # If both submits are from different source projects then check
                 # the source info and proceed accordingly, otherwise supersede.
                 # A targeted package overrides this condition.
-                if is_targeted or not(
-                    request_new.find('action').get('type') == 'submit' and
-                    request_old.find('action').get('type') == 'submit' and
-                    request_new.find('action/source').get('project') !=
-                    request_old.find('action/source').get('project')
-                ):
+                if (is_targeted or replace_old or
+                    (request_new.find('action/source').get('project') ==
+                     request_old.find('action/source').get('project'))):
                     return stage_info, None
 
                 source_info_new = self.source_info_request(request_new)
@@ -539,15 +571,16 @@ class StagingAPI(object):
         stage_info, code = self.superseded_request(request, target_requests)
         request_id = int(request.get('id'))
 
-        if stage_info and code is None:
+        if stage_info and (code is None or code == 'unstage'):
             # Remove the old request
             self.rm_from_prj(stage_info['prj'],
                              request_id=stage_info['rq_id'],
-                             msg='Replaced by newer request',
+                             msg='Replaced by sr#{}'.format(request_id),
                              review='declined')
-            # Add the new one that should be replacing it
-            self.rq_to_prj(request_id, stage_info['prj'])
-            self._invalidate_get_open_requests()
+            if code is None:
+                # Add the new request that should be replacing the old one.
+                self.rq_to_prj(request_id, stage_info['prj'])
+                self._invalidate_get_open_requests()
 
         return stage_info, code
 
