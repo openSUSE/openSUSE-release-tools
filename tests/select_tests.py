@@ -53,19 +53,19 @@ class TestSelect(unittest.TestCase):
         # Only one comment is added
         self.assertEqual(len(first_select_comments), len(comments) + 1)
         # With the right content
-        self.assertTrue('Request#123 for package gcc submitted by @Admin' in first_select_comment['comment'])
+        self.assertTrue('request#123 for package gcc submitted by @Admin' in first_select_comment['comment'])
 
         # Second select
         self.assertEqual(True, SelectCommand(self.api, staging_b).perform(['puppet']))
         second_select_comments = c_api.get_comments(project_name=staging_b)
         last_id = sorted(second_select_comments.keys())[-1]
         second_select_comment = second_select_comments[last_id]
-        # The number of comments remains, but they are different
-        self.assertEqual(len(second_select_comments), len(first_select_comments))
+        # The number of comments increased by one
+        self.assertEqual(len(second_select_comments) - 1, len(first_select_comments))
         self.assertNotEqual(second_select_comment['comment'], first_select_comment['comment'])
-        # The new comments contents both old and new information
-        self.assertTrue('Request#123 for package gcc submitted by @Admin' in second_select_comment['comment'])
-        self.assertTrue('Request#321 for package puppet submitted by @Admin' in second_select_comment['comment'])
+        # The new comments contains new, but not old
+        self.assertFalse('request#123 for package gcc submitted by @Admin' in second_select_comment['comment'])
+        self.assertTrue('added request#321 for package puppet submitted by @Admin' in second_select_comment['comment'])
 
     def test_no_matches(self):
         # search for requests

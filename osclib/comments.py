@@ -31,7 +31,7 @@ class CommentAPI(object):
         self.apiurl = apiurl
 
     def _prepare_url(self, request_id=None, project_name=None,
-                     package_name=None):
+                     package_name=None, query=None):
         """Prepare the URL to get/put comments in OBS.
 
         :param request_id: Request where to refer the comment.
@@ -41,12 +41,12 @@ class CommentAPI(object):
         """
         url = None
         if request_id:
-            url = makeurl(self.apiurl, ['comments', 'request', request_id])
+            url = makeurl(self.apiurl, ['comments', 'request', request_id], query)
         elif project_name and package_name:
             url = makeurl(self.apiurl, ['comments', 'package', project_name,
-                                        package_name])
+                                        package_name], query)
         elif project_name:
-            url = makeurl(self.apiurl, ['comments', 'project', project_name])
+            url = makeurl(self.apiurl, ['comments', 'project', project_name], query)
         else:
             raise ValueError('Please, set request_id, project_name or / and package_name to add a comment.')
         return url
@@ -84,12 +84,6 @@ class CommentAPI(object):
 
     def comment_find(self, comments, bot, info_match=None):
         """Return previous bot comments that match criteria."""
-
-        def chunks(l, n):
-            """Yield successive n-sized chunks from l."""
-            for i in xrange(0, len(l), n):
-                yield l[i:i + n]
-
         # Case-insensitive for backwards compatibility.
         bot = bot.lower()
         for c in comments.values():
@@ -130,7 +124,7 @@ class CommentAPI(object):
         return marker + '\n\n' + comment
 
     def add_comment(self, request_id=None, project_name=None,
-                    package_name=None, comment=None):
+                    package_name=None, comment=None, parent_id=None):
         """Add a comment in an object in OBS.
 
         :param request_id: Request where to write a comment.
@@ -142,7 +136,10 @@ class CommentAPI(object):
         if not comment:
             raise ValueError('Empty comment.')
 
-        url = self._prepare_url(request_id, project_name, package_name)
+        query = {}
+        if parent_id:
+            query['parent_id'] = parent_id
+        url = self._prepare_url(request_id, project_name, package_name, query)
         return http_POST(url, data=comment)
 
     def delete(self, comment_id):

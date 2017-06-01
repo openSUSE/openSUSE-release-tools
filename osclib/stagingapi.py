@@ -32,6 +32,7 @@ from osc import oscerr
 from osc.core import show_package_meta
 from osc.core import change_review_state
 from osc.core import delete_package
+from osc.core import get_commitlog
 from osc.core import get_group
 from osc.core import get_request
 from osc.core import make_meta_url
@@ -40,6 +41,7 @@ from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import rebuild
+from osc.core import show_project_meta
 from osc.core import streamfile
 
 from osclib.cache import Cache
@@ -613,10 +615,14 @@ class StagingAPI(object):
             if stage_info:
                 yield (stage_info, code, rq)
 
-    def get_prj_meta(self, project):
-        url = make_meta_url('prj', project, self.apiurl)
-        f = http_GET(url)
-        return ET.parse(f).getroot()
+    def get_prj_meta_revision(self, project):
+        log = get_commitlog(self.apiurl, project, '_project', None, format='xml', meta=True)
+        root = ET.fromstring(''.join(log))
+        return int(root.find('logentry').get('revision'))
+
+    def get_prj_meta(self, project, revision=None):
+        meta = show_project_meta(self.apiurl, project, rev=revision)
+        return ET.fromstring(''.join(meta))
 
     def load_prj_pseudometa(self, description_text):
         try:
@@ -630,14 +636,14 @@ class StagingAPI(object):
         return data
 
     @memoize(ttl=60, session=True, add_invalidate=True)
-    def get_prj_pseudometa(self, project):
+    def get_prj_pseudometa(self, project, revision=None):
         """
         Gets project data from YAML in project description
         :param project: project to read data from
         :return structured object with metadata
         """
 
-        root = self.get_prj_meta(project)
+        root = self.get_prj_meta(project, revision)
         description = root.find('description')
         # If YAML parsing fails, load default
         # FIXME: Better handling of errors
@@ -1385,36 +1391,61 @@ class StagingAPI(object):
         :param command: name of the command to include in the message
         """
 
-        # TODO: we need to discuss the best way to keep track of status
-        # comments. Right now they are marked with an initial markdown
-        # comment. Maybe a cleaner approach would be to store something
-        # like 'last_status_comment_id' in the pseudometa. But the current
-        # OBS API for adding comments doesn't return the id of the created
-        # comment.
-
+        bot = 'osc-staging'
+        info = {'type': 'package-list'}
         comment_api = CommentAPI(self.apiurl)
-
         comments = comment_api.get_comments(project_name=project)
-        for comment in comments.values():
-            # TODO: update the comment removing the user mentions instead of
-            # deleting the whole comment. But there is currently not call in
-            # OBS API to update a comment
-            if comment['comment'].startswith('<!--- osc staging'):
-                comment_api.delete(comment['id'])
-                break  # There can be only one! (if we keep deleting them)
+        comment, _ = comment_api.comment_find(comments, bot, info)
+        parent_id = None
 
         meta = self.get_prj_pseudometa(project)
-        lines = ['<!--- osc staging %s --->' % command]
-        dashboard_url = '{}/project/staging_projects/{}/{}'.format(self.apiurl, self.project, self.extract_staging_short(project))
-        lines.append('The list of requests tracked in [%s](%s) has changed:\n' % (project, dashboard_url))
-        for req in meta['requests']:
-            author = req.get('autor', None)
-            if not author:
-                # Old style metadata
-                author = get_request(self.apiurl, str(req['id'])).get_creator()
-            lines.append('  * Request#%s for package %s submitted by @%s' % (req['id'], req['package'], author))
+        revision = meta.get('requests_comment', None)
+        lines = []
+        if comment and revision:
+            parent_id = comment['id'] if comment else None
+            info['type'] = 'package-diff'
+
+            requests_new = [r['id'] for r in meta['requests']]
+            meta_old = self.get_prj_pseudometa(project, revision)
+            requests_old = [r['id'] for r in meta_old['requests']]
+            requests_common = set(requests_new).intersection(set(requests_old))
+
+            lines.append('Requests: {} added, {} removed; using {} command'.format(
+                len(requests_new) - len(requests_common),
+                len(requests_old) - len(requests_common),
+                command
+            ))
+            lines.append('') # Blank line.
+
+            requests = []
+            for req in meta['requests']:
+                if req['id'] not in requests_common:
+                    req['prefix'] = 'added '
+                    requests.append(req)
+
+            for req in meta_old['requests']:
+                if req['id'] not in requests_common:
+                    req['prefix'] = 'removed '
+                    requests.append(req)
+
+        else:
+            dashboard_url = '{}/project/staging_projects/{}/{}'.format(
+                self.apiurl, self.project, self.extract_staging_short(project))
+            lines.append('Requests ([dashboard]({})):'.format(dashboard_url))
+            lines.append('') # Blank line.
+
+            requests = meta['requests']
+
+        for req in requests:
+            lines.append('  * {}request#{} for package {} submitted by @{}'.format(
+                req.get('prefix', ''), req['id'], req['package'], req.get('author')))
         msg = '\n'.join(lines)
-        comment_api.add_comment(project_name=project, comment=msg)
+        msg = comment_api.add_marker(msg, bot, info)
+        comment_api.add_comment(project_name=project, comment=msg, parent_id=parent_id)
+
+        # Store current meta revision for diffing against next time.
+        meta['requests_comment'] = self.get_prj_meta_revision(project)
+        self.set_prj_pseudometa(project, meta)
 
     def accept_status_comment(self, project, packages):
         # A single comment should be enough to notify everybody, since they are

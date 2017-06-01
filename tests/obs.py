@@ -547,6 +547,58 @@ class OBS(object):
 
         return response
 
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U|J]/_project/_history'))
+    def source_staging_project_meta_history(self, request, uri, headers):
+        """Return the _meta information for a staging project."""
+
+        response = (404, headers, '<result>Not found</result>')
+        try:
+            history = """
+            <revisionlist>
+                <revision rev="1" vrev="">
+                    <srcmd5>af5d42d465d31da28c1ba31806adeed0</srcmd5>
+                    <version></version>
+                    <time>1495711367</time>
+                    <user>staging-bot</user>
+                </revision>
+            </revisionlist>"""
+            response = (200, headers, history)
+        except Exception as e:
+            if DEBUG:
+                print uri, e
+
+        if DEBUG:
+            print 'STAGING PROJECT _history META', uri, response
+
+        return response
+
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U|J](\:DVD)?/_project/_meta'))
+    def source_staging_project_meta_revisioned(self, request, uri, headers):
+        """Return the _meta information for a staging project."""
+
+        uri = uri.replace('/_project', '')
+        uri = uri.replace(':DVD', '')
+        key = re.search(r'openSUSE:Factory:Staging:(\w(?:/\w+)?)/_meta', uri).group(1)
+
+        response = (404, headers, '<result>Not found</result>')
+        try:
+            if key not in self.meta:
+                template = string.Template(self._fixture(uri))
+                self.meta[key] = template.substitute(self.staging_project[key])
+
+            meta = self.meta[key]
+            # Simulate missing _meta revision missing puppet request.
+            meta = meta.replace('- {author: Admin, id: 321, package: puppet}', '')
+            response = (200, headers, meta)
+        except Exception as e:
+            if DEBUG:
+                print uri, e
+
+        if DEBUG:
+            print 'STAGING PROJECT _project _meta', uri, response
+
+        return response
+
     @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|J]/_project'))
     def source_staging_project_project(self, request, uri, headers):
         """Return the _project information for a staging project."""
@@ -877,7 +929,7 @@ class OBS(object):
     @POST(re.compile(r'/comments/project/.*'))
     def post_comment(self, request, uri, headers):
         """Add comment to a project."""
-        prj = re.search(r'comments/project/([^/]*)', uri).group(1)
+        prj = re.search(r'comments/project/([^/?]*)', uri).group(1)
         comment = {
             'who': 'Admin',
             'when': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
