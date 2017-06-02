@@ -49,6 +49,13 @@ class BiArchTool(ToolBase.ToolBase):
                     'ovmf'
                     ]),
                 }
+        self.blacklist = {
+                'i586': set([
+                    'release-notes-openSUSE',
+                    'skelcd-openSUSE',
+                    'plasma5-workspace',
+                    ]),
+                }
 
     def has_baselibs(self, package):
         if package in self._has_baselibs:
@@ -59,15 +66,28 @@ class BiArchTool(ToolBase.ToolBase):
         for n in files.findall("./entry[@name='baselibs.conf']"):
             logger.debug('%s has baselibs', package)
             ret = True
-            return True
+            break
         self._has_baselibs[package] = ret
+        #logger.debug('%s has no baselibs', package)
         return ret
 
-    def has_baselibs_recursive(self, package):
+    def is_biarch_recursive(self, package):
+        if package in self.blacklist[self.arch]:
+            logger.debug('%s is blacklisted', package)
+            return False
+        if package in self.biarch_packages:
+            logger.debug('%s is known biarch package', package)
+            return True
+        if package in self.whitelist[self.arch]:
+            logger.debug('%s is whitelisted', package)
+            return True
         r = self.has_baselibs(package)
-        if not r and package in self.rdeps:
+        if r:
+            return r
+        if package in self.rdeps:
+            #logger.debug('checking rdeps for %s (%d)', package, len(self.rdeps[package]))
             for p in self.rdeps[package]:
-                r = self.has_baselibs_recursive(p)
+                r = self.is_biarch_recursive(p)
                 if r:
                     break
         return r
@@ -96,6 +116,7 @@ class BiArchTool(ToolBase.ToolBase):
             self.packages = self.meta_get_packagelist(self.project)
         elif packages == '__latest__':
             self.packages = self._filter_packages_by_time(self.latest_packages(self.project))
+            #self.packages = self.latest_packages(self.project)
         else:
             self.packages = packages
 
@@ -106,7 +127,14 @@ class BiArchTool(ToolBase.ToolBase):
         x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '_product', '_history'], {'limit':'1'})))
         producttime = int(x.find('./revision/time').text)
         for pkg in packages:
-            x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev':'1'})))
+            try:
+                x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev':'1'})))
+            # catch deleted packages
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    continue
+                raise e
+
             packagetime = int(x.find('./revision/time').text)
 #            if producttime > packagetime:
 #                continue
@@ -190,7 +218,14 @@ class BiArchTool(ToolBase.ToolBase):
         for pkg in self.packages:
             logger.debug("processing %s", pkg)
             pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
-            pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
+            try:
+                pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
+            except urllib2.HTTPError, e:
+                # catch deleted packages
+                if e.code == 404:
+                    continue
+                raise e
+
             is_enabled = None
             is_disabled = None
             has_baselibs = None
@@ -206,15 +241,9 @@ class BiArchTool(ToolBase.ToolBase):
             for n in pkgmeta.findall("./build/disable[@arch='{}']".format(self.arch)):
                 is_disabled = True
                 break
-            if pkg in self.biarch_packages:
-                logger.debug('%s is known biarch package', pkg)
-                must_disable = False
-            elif pkg in self.whitelist[self.arch]:
-                logger.debug('%s is whitelisted', pkg)
-                must_disable = False
-            else:
-                has_baselibs = self.has_baselibs_recursive(pkg)
-                if has_baselibs:
+
+            if must_disable is None:
+                if self.is_biarch_recursive(pkg):
                     must_disable = False
                 else:
                     must_disable = True

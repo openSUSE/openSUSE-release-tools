@@ -72,6 +72,7 @@ class ToolBase(object):
                 print 'Retrying {}'.format(url)
                 time.sleep(1)
                 return self.retried_GET(url)
+            logging.error('%s: %s', e, url)
             raise e
 
     def http_PUT(self, *args, **kwargs):
