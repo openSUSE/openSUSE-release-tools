@@ -159,6 +159,7 @@ class StagingHelper(object):
                 stg.find('supportpkg').text = new_suppkg_list
             elif not len(cand_sources[stgname]):
                 stg.find('rebuild').text = 'unneeded'
+                stg.find('supportpkg').text = ''
 
             if stg.find('rebuild').text == 'needed':
                 need_rebuild = True
