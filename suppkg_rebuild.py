@@ -131,8 +131,7 @@ class StagingHelper(object):
                     if files.get(pkg) not in cand_sources[stg]:
                         cand_sources[stg].append(files.get(pkg))
 
-        tree = ET.fromstring(rebuild_data)
-        root = tree.getroot()
+        root = ET.fromstring(rebuild_data)
 
         logging.info('Checking rebuild data...')
 
