@@ -19,14 +19,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+import os.path as opa
 import re
 import sys
 from datetime import date
 import md5
-import json
+
+import simplejson as json
+from simplejson import JSONDecodeError
+
 import logging
 import requests
-from simplejson import JSONDecodeError
 from collections import namedtuple
 from pprint import pformat
 try:
@@ -78,6 +82,14 @@ request_name_cache = {}
 #        in_channel = set([p.attrib['name'] for p in root.iter('binary') if p.attrib['name'] in package_names])
 #
 #        return [p for p in packages if p.name in in_channel]
+
+data_path = opa.abspath(opa.dirname(sys.argv[0]))
+
+with open(opa.join(data_path, "data/kgraft.json"), 'r') as f:
+    KGRAFT_SETTINGS = json.load(f)
+
+with open(opa.join(data_path, "data/repos.json"), 'r') as f:
+    TARGET_REPO_SETTINGS = json.load(f)
 
 
 class Update(object):
@@ -227,194 +239,6 @@ class TestUpdate(openSUSEUpdate):
 
         return settings
 
-KGRAFT_SETTINGS = {
-    'SLE12_Update_13' : { 'VIRSH_GUESTNAME': 'kGraft0d',
-                          'WORKER_CLASS': 'svirt-pegasus',
-                          'VIRSH_INSTANCE': 12013 - 5900 },
-    'SLE12_Update_14' : { 'VIRSH_GUESTNAME': 'kGraft0e',
-                          'WORKER_CLASS': 'svirt-pegasus',
-                          'VIRSH_INSTANCE': 12014 - 5900 },
-    'SLE12_Update_15' : { 'VIRSH_GUESTNAME': 'kGraft0f',
-                          'WORKER_CLASS': 'svirt-pegasus',
-                          'VIRSH_INSTANCE': 12015 - 5900 },
-    'SLE12_Update_16' : { 'VIRSH_GUESTNAME': 'kGraft0g',
-                          'WORKER_CLASS': 'svirt-pegasus',
-                          'VIRSH_INSTANCE': 12016 - 5900 },
-    'SLE12_Update_17' : { 'VIRSH_GUESTNAME': 'kGraft0h',
-                          'WORKER_CLASS': 'svirt-pegasus',
-                          'VIRSH_INSTANCE': 12017 - 5900 },
-    'SLE12_Update_18' : { 'VIRSH_GUESTNAME': 'kGraft0i',
-                          'WORKER_CLASS': 'svirt-perseus',
-                          'VIRSH_INSTANCE': 12018 - 5900 },
-    'SLE12_Update_19' : { 'VIRSH_GUESTNAME': 'kGraft0j',
-                          'WORKER_CLASS': 'svirt-perseus',
-                          'VIRSH_INSTANCE': 12019 - 5900 },
-    'SLE12_Update_20' : { 'VIRSH_GUESTNAME': 'kGraft0k',
-                          'WORKER_CLASS': 'svirt-pegasus',
-                          'VIRSH_INSTANCE': 12020 - 5900 },
-    'SLE12-SP1_Update_5' : { 'VIRSH_GUESTNAME': 'kGraft16',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12106 - 5900 },
-    'SLE12-SP1_Update_6' : { 'VIRSH_GUESTNAME': 'kGraft17',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12107 - 5900 },
-    'SLE12-SP1_Update_7' : { 'VIRSH_GUESTNAME': 'kGraft18',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12108 - 5900 },
-    'SLE12-SP1_Update_8' : { 'VIRSH_GUESTNAME': 'kGraft19',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12109 - 5900 },
-    'SLE12-SP1_Update_9' : { 'VIRSH_GUESTNAME': 'kGraft1a',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12110 - 5900 },
-    'SLE12-SP1_Update_10' : { 'VIRSH_GUESTNAME': 'kGraft1b',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12111 - 5900 },
-    'SLE12-SP1_Update_11' : { 'VIRSH_GUESTNAME': 'kGraft1c',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12112 - 5900 },
-    'SLE12-SP1_Update_12' : { 'VIRSH_GUESTNAME': 'kGraft1d',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12113 - 5900 },
-    'SLE12-SP1_Update_13' : { 'VIRSH_GUESTNAME': 'kGraft1e',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12114 - 5900 },
-    'SLE12-SP1_Update_14' : { 'VIRSH_GUESTNAME': 'kGraft1f',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12115 - 5900 },
-    'SLE12-SP2_Update_0' : { 'VIRSH_GUESTNAME': 'kGraft20',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12200 - 5900},
-    'SLE12-SP2_Update_1' : { 'VIRSH_GUESTNAME': 'kGraft21',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12201 - 5900},
-    'SLE12-SP2_Update_2' : { 'VIRSH_GUESTNAME': 'kGraft22',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12202 - 5900},
-    'SLE12-SP2_Update_3' : { 'VIRSH_GUESTNAME': 'kGraft23',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12203 - 5900},
-    'SLE12-SP2_Update_4' : { 'VIRSH_GUESTNAME': 'kGraft24',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12204 - 5900},
-    'SLE12-SP2_Update_5' : { 'VIRSH_GUESTNAME': 'kGraft25',
-                             'WORKER_CLASS': 'svirt-pegasus',
-                             'VIRSH_INSTANCE': 12205 - 5900},
-    'SLE12-SP2_Update_6' : { 'VIRSH_GUESTNAME': 'kGraft26',
-                             'WORKER_CLASS': 'svirt-perseus',
-                             'VIRSH_INSTANCE': 12206 - 5900}
-}
-
-TARGET_REPO_SETTINGS = {
-    'https://openqa.suse.de' : {
-    'SUSE:Updates:SLE-SERVER:12-LTSS:x86_64': {
-        'repos': [
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-LTSS/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-LTSS:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12/x86_64/update/',
-        ],
-        'settings': [ {
-            'DISTRI': 'sle',
-            'VERSION': '12',
-            'FLAVOR': 'Server-DVD-Updates',
-            'ARCH': 'x86_64',
-        } ],
-        'test': 'qam-gnome'
-    },
-    'SUSE:Updates:SLE-SERVER:12-SP1-LTSS:x86_64': {
-        'repos' : [
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP1-LTSS/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP1-LTSS:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP1:/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP1/x86_64/update/',
-        ],
-        'settings': [ {
-            'DISTRI': 'sle',
-            'VERSION': '12-SP1',
-            'FLAVOR': 'Server-DVD-Updates',
-            'ARCH': 'x86_64'
-        } ],
-        'test': 'qam-gnome'
-    },
-    'SUSE:Updates:SLE-SERVER:12-SP2:x86_64': {
-        'repos' : [
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP2/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP2:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/',
-        ],
-        'settings': [ {
-            'DISTRI': 'sle',
-            'VERSION': '12-SP2',
-            'FLAVOR': 'Server-DVD-Updates',
-            'ARCH': 'x86_64'
-        } ],
-        'test': 'qam-gnome'
-    },
-    'SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64': {
-        'repos': [
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12-SP2/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP2:/x86_64/update',
-            'http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/',
-            'http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/',
-        ],
-        'settings': [ {
-            'DISTRI': 'sle',
-            'VERSION': '12-SP2',
-            'FLAVOR': 'Desktop-DVD-Updates',
-            'ARCH': 'x86_64',
-        } ],
-        'test': 'qam-gnome'
-    },
-    },
-    'https://openqa.opensuse.org': {
-        'openSUSE:Leap:42.2:Update': {
-            'repos': [
-                'http://download.opensuse.org/update/leap/42.2-test/',
-                'http://download.opensuse.org/update/leap/42.2/oss/',
-                'http://download.opensuse.org/update/leap/42.2/non-oss/',
-            ],
-            'settings': [
-                {
-                    'DISTRI': 'opensuse',
-                    'VERSION': '42.2',
-                    'FLAVOR': 'UpdateTest',
-                    'ARCH': 'x86_64',
-                },
-                {
-                    'DISTRI': 'opensuse',
-                    'VERSION': '42.2',
-                    'FLAVOR': 'Updates',
-                    'ARCH': 'x86_64',
-                },
-            ],
-            'test': 'kde'
-        },
-        'openSUSE:Leap:42.3:Update': {
-            'repos': [
-                'http://download.opensuse.org/update/leap/42.3-test/',
-                'http://download.opensuse.org/update/leap/42.3/oss/',
-                'http://download.opensuse.org/update/leap/42.3/non-oss/',
-            ],
-            'settings': [
-                {
-                    'DISTRI': 'opensuse',
-                    'VERSION': '42.3',
-                    'FLAVOR': 'UpdateTest',
-                    'ARCH': 'x86_64',
-                },
-                {
-                    'DISTRI': 'opensuse',
-                    'VERSION': '42.3',
-                    'FLAVOR': 'Updates',
-                    'ARCH': 'x86_64',
-                },
-            ],
-            'test': 'kde'
-        },
-    }
-}
 
 PROJECT_OPENQA_SETTINGS = {
     'SUSE:Updates:SLE-SERVER:12-LTSS:x86_64': [

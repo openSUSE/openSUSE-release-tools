@@ -1,0 +1,118 @@
+{
+  "https://openqa.opensuse.org": {
+    "openSUSE:Leap:42.2:Update": {
+      "repos": [
+        "http://download.opensuse.org/update/leap/42.2-test/", 
+        "http://download.opensuse.org/update/leap/42.2/oss/", 
+        "http://download.opensuse.org/update/leap/42.2/non-oss/"
+      ], 
+      "settings": [
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "opensuse", 
+          "FLAVOR": "UpdateTest", 
+          "VERSION": "42.2"
+        }, 
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "opensuse", 
+          "FLAVOR": "Updates", 
+          "VERSION": "42.2"
+        }
+      ], 
+      "test": "kde"
+    }, 
+    "openSUSE:Leap:42.3:Update": {
+      "repos": [
+        "http://download.opensuse.org/update/leap/42.3-test/", 
+        "http://download.opensuse.org/update/leap/42.3/oss/", 
+        "http://download.opensuse.org/update/leap/42.3/non-oss/"
+      ], 
+      "settings": [
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "opensuse", 
+          "FLAVOR": "UpdateTest", 
+          "VERSION": "42.3"
+        }, 
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "opensuse", 
+          "FLAVOR": "Updates", 
+          "VERSION": "42.3"
+        }
+      ], 
+      "test": "kde"
+    }
+  }, 
+  "https://openqa.suse.de": {
+    "SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64": {
+      "repos": [
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12-SP2/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP2:/x86_64/update", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/"
+      ], 
+      "settings": [
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "sle", 
+          "FLAVOR": "Desktop-DVD-Updates", 
+          "VERSION": "12-SP2"
+        }
+      ], 
+      "test": "qam-gnome"
+    }, 
+    "SUSE:Updates:SLE-SERVER:12-LTSS:x86_64": {
+      "repos": [
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-LTSS/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-LTSS:/x86_64/update", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12:/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12/x86_64/update/"
+      ], 
+      "settings": [
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "sle", 
+          "FLAVOR": "Server-DVD-Updates", 
+          "VERSION": "12"
+        }
+      ], 
+      "test": "qam-gnome"
+    }, 
+    "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:x86_64": {
+      "repos": [
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP1-LTSS/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP1-LTSS:/x86_64/update", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP1:/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP1/x86_64/update/"
+      ], 
+      "settings": [
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "sle", 
+          "FLAVOR": "Server-DVD-Updates", 
+          "VERSION": "12-SP1"
+        }
+      ], 
+      "test": "qam-gnome"
+    }, 
+    "SUSE:Updates:SLE-SERVER:12-SP2:x86_64": {
+      "repos": [
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP2/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP2:/x86_64/update", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/", 
+        "http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/"
+      ], 
+      "settings": [
+        {
+          "ARCH": "x86_64", 
+          "DISTRI": "sle", 
+          "FLAVOR": "Server-DVD-Updates", 
+          "VERSION": "12-SP2"
+        }
+      ], 
+      "test": "qam-gnome"
+    }
+  }
+}
