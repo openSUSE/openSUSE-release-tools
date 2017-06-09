@@ -223,10 +223,14 @@ class ReviewBot(object):
                 overall = ret
         return overall
 
+    @staticmethod
+    def _is_patchinfo(pkgname):
+        return pkgname == 'patchinfo' or pkgname.startswith('patchinfo.')
+
     def check_action_maintenance_incident(self, req, a):
         dst_package = a.src_package
         # Ignoring patchinfo package for checking
-        if a.src_package == 'patchinfo' or a.src_package.startswith('patchinfo.'):
+        if self._is_patchinfo(a.src_package):
           self.logger.info("package is patchinfo, ignoring")
           return None
         # dirty obs crap
@@ -238,7 +242,7 @@ class ReviewBot(object):
 
     def check_action_maintenance_release(self, req, a):
         pkgname = a.src_package
-        if pkgname == 'patchinfo' or pkgname.startswith('patchinfo.'):
+        if self._is_patchinfo(pkgname):
             return None
         linkpkg = self._get_linktarget_self(a.src_project, pkgname)
         if linkpkg is not None:
