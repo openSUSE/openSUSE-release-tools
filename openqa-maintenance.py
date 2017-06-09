@@ -391,27 +391,32 @@ TARGET_REPO_SETTINGS = {
             ],
             'test': 'kde'
         },
-
+        'openSUSE:Leap:42.3:Update': {
+            'repos': [
+                'http://download.opensuse.org/update/leap/42.3-test/',
+                'http://download.opensuse.org/update/leap/42.3/oss/',
+                'http://download.opensuse.org/update/leap/42.3/non-oss/',
+            ],
+            'settings': [
+                {
+                    'DISTRI': 'opensuse',
+                    'VERSION': '42.3',
+                    'FLAVOR': 'UpdateTest',
+                    'ARCH': 'x86_64',
+                },
+                {
+                    'DISTRI': 'opensuse',
+                    'VERSION': '42.3',
+                    'FLAVOR': 'Updates',
+                    'ARCH': 'x86_64',
+                },
+            ],
+            'test': 'kde'
+        },
     }
 }
 
 PROJECT_OPENQA_SETTINGS = {
-    'openSUSE:13.2:Update': [
-        openSUSEUpdate(
-            {
-                'DISTRI': 'opensuse',
-                'VERSION': '13.2',
-                'FLAVOR': 'Maintenance',
-                'ARCH': 'x86_64',
-            }),
-        openSUSEUpdate(
-            {
-                'DISTRI': 'opensuse',
-                'VERSION': '13.2',
-                'FLAVOR': 'Maintenance',
-                'ARCH': 'i586',
-            }),
-    ],
     'SUSE:Updates:SLE-SERVER:12-LTSS:x86_64': [
         SUSEUpdate(
             {
@@ -519,6 +524,16 @@ PROJECT_OPENQA_SETTINGS = {
                 'FLAVOR': 'Maintenance',
                 'ARCH': 'x86_64',
                 'ISO': 'openSUSE-Leap-42.2-DVD-x86_64.iso',
+            }),
+    ],
+    'openSUSE:Leap:42.3:Update': [
+        openSUSEUpdate(
+            {
+                'DISTRI': 'opensuse',
+                'VERSION': '42.3',
+                'FLAVOR': 'Maintenance',
+                'ARCH': 'x86_64',
+                'ISO': 'openSUSE-Leap-42.3-DVD-x86_64.iso',
             }),
     ],
 }
