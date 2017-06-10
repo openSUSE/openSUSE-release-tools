@@ -37,6 +37,11 @@ try:
 except ImportError:
     import cElementTree as ET
 
+try:
+    import cPickle as pickle
+except:
+    import pickle
+
 import osc.conf
 import osc.core
 import ReviewBot
@@ -178,6 +183,88 @@ class LegalAuto(ReviewBot.ReviewBot):
                                      by_user=self.review_user, message=self.message)
         self.delete_from_db(req.reqid)
 
+    def _pkl_path(self):
+        CACHE_DIR = os.path.expanduser('~/.cache/osc-plugin-factory')
+        return os.path.join(CACHE_DIR, 'legaldb')
+
+    def update_project(self, project):
+        print "PRJ", project
+        try:
+            with open(self._pkl_path(), 'rb') as pkl_file:
+                self.pkg_cache = pickle.load(pkl_file)
+        except (IOError, EOFError):
+            self.pkg_cache = {}
+
+        self.packages = {}
+        self._query_requests(project)
+        self._query_sources(project)
+
+    def _save_pkl(self):
+        pkl_file = open(self._pkl_path(), 'wb')
+        pickle.dump(self.pkg_cache, pkl_file)
+        pkl_file.close()
+
+    def _query_sources(self, project):
+        url = osc.core.makeurl(
+            self.apiurl, ['source', project], {'view': 'info'})
+        f = osc.core.http_GET(url)
+        root = ET.parse(f).getroot()
+        for si in root.findall('sourceinfo'):
+            if si.findall('error'):
+                continue
+            package = si.get('package')
+            if ':' in package:
+                continue
+            if package == 'patchinfo' or package.startswith('patchinfo.'):
+                continue
+            # handle maintenance links - we only want the latest
+            match = re.match(r'(\S+)\.\d+$', package)
+            if match:
+                if si.find('filename').text == match.group(1) + '.spec':
+                    continue
+            self._add_source(
+                project, project, si.get('package'), si.get('srcmd5'))
+
+    def _query_requests(self, project):
+        match = "(state/@name='new' or state/@name='review') and (action/target/@project='{}')"
+        match = match.format(project)
+        url = osc.core.makeurl(
+            self.apiurl, ['search', 'request'], {'match': match})
+        f = osc.core.http_GET(url)
+        root = ET.parse(f).getroot()
+        for rq in root.findall('request'):
+            for a in rq.findall('action'):
+                if not a.attrib['type'] in ('submit', 'maintenance_incident'):
+                    continue
+                source = a.find('source')
+                revision = source.attrib.get('rev')
+                src_project = source.attrib['project']
+                package = source.attrib['package']
+                self._add_source(project, src_project, package, revision)
+
+    def _add_source(self, tproject, sproject, package, revision):
+        params = {'api': self.apiurl, 'project': sproject, 'package': package,
+                  'external_link': tproject}
+        if revision:
+            params['rev'] = revision
+        hkey = hash(json.dumps(params, sort_keys=True))
+        if hkey in self.pkg_cache:
+            return self.pkg_cache[hkey]
+
+        params['priority'] = 1
+        url = osc.core.makeurl(self.legaldb, ['packages'], params)
+
+        try:
+            obj = REQ.post(url, headers=self.legaldb_headers).json()
+        except:
+            return None
+        if not 'saved' in obj:
+            return None
+        print "PKG", tproject, sproject, package, revision, obj['saved']['id']
+        self.pkg_cache[hkey] = obj['saved']['id']
+        self._save_pkl()
+        return self.pkg_cache[hkey]
+
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
@@ -195,6 +282,12 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser.add_option("--token", dest='token', metavar='STRING',
                           default=False, help="Use token to authenticate")
         return parser
+
+    def do_project(self, subcmd, opts, *projects):
+        """${cmd_name}: Overloaded to create/update product
+        """
+        for project in projects:
+            self.checker.update_project(project)
 
     def setup_checker(self):
         if not self.options.user and not self.options.group:
