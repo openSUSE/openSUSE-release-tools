@@ -83,7 +83,7 @@ class LegalAuto(ReviewBot.ReviewBot):
     def create_db_entry(self, src_project, src_package, src_rev):
         params = {'api': self.apiurl, 'project': src_project, 'package': src_package,
                   'external_link': self.request_nick(),
-                  'created': self.request.statehistory[0].when}
+                  'created': self.request.statehistory[0].when + ' UTC'}
         if src_rev:
             params['rev'] = src_rev
         url = osc.core.makeurl(self.legaldb, ['packages'], params)
