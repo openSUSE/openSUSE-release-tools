@@ -196,7 +196,8 @@ class LegalAuto(ReviewBot.ReviewBot):
             self.pkg_cache = {}
 
         self.packages = {}
-        self._query_requests(project)
+        # we can't create packages for requests - we need a nonewpackages=1 first
+        #self._query_requests(project)
         self._query_sources(project)
 
     def _save_pkl(self):
@@ -223,7 +224,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 if si.find('filename').text == match.group(1) + '.spec':
                     continue
             self._add_source(
-                project, project, si.get('package'), si.get('srcmd5'))
+                project, project, si.get('package'), si.get('rev'))
 
     def _query_requests(self, project):
         match = "(state/@name='new' or state/@name='review') and (action/target/@project='{}')"
