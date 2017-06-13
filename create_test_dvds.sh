@@ -158,7 +158,7 @@ function start_creating() {
                     fi
                 fi
 
-                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]] || [[ $prj =~ ^openSUSE.+:Gcc[0-9]$ ]] || [[ $prj =~ ^openSUSE.+:PIE$ ]]; then
+                if [[ $prj =~ ^openSUSE.+:[A-Z]$ ]]; then
                     echo "Checking $target:$l-$arch"
 
                     meta=$(mktemp)
