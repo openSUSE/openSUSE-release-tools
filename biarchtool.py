@@ -232,15 +232,13 @@ class BiArchTool(ToolBase.ToolBase):
             must_disable = None
             changed = None
 
-            if force:
-                must_disable = False
-
             for n in pkgmeta.findall("./build/enable[@arch='{}']".format(self.arch)):
                 is_enabled = True
-                break
             for n in pkgmeta.findall("./build/disable[@arch='{}']".format(self.arch)):
                 is_disabled = True
-                break
+
+            if force:
+                must_disable = False
 
             if must_disable is None:
                 if self.is_biarch_recursive(pkg):
