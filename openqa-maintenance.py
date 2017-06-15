@@ -486,7 +486,8 @@ class OpenQABot(ReviewBot.ReviewBot):
         return None
 
     # check a set of repos for their primary checksums
-    def calculate_repo_hash(self, repos):
+    @staticmethod
+    def calculate_repo_hash(repos):
         m = md5.new()
         # if you want to force it, increase this number
         m.update('b')
@@ -497,8 +498,19 @@ class OpenQABot(ReviewBot.ReviewBot):
             m.update(cs.text)
         return m.hexdigest()
 
-    def jobs_for_target(self, u):
-        s = u['settings'][0]
+    def calculate_incidents(self, incidents):
+        """
+        get incidet numbers from SUSE:Maintenance:Test project
+        returns dict with openQA var name : string with numbers
+        """
+        l_incidents={}
+        for kind, prj in incidents.items():
+            iid = ','.join([x.split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)])
+            l_incidents[kind+'_TEST_ISSUES']=iid
+        return l_incidents
+
+    def jobs_for_target(self, data):
+        s = data['settings'][0]
         return self.openqa.openqa_request(
             'GET', 'jobs',
         {
@@ -506,7 +518,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             'version': s['VERSION'],
             'arch': s['ARCH'],
             'flavor': s['FLAVOR'],
-            'test': u['test'],
+            'test': data['test'],
             'latest': '1',
         })['jobs']
 
@@ -514,12 +526,11 @@ class OpenQABot(ReviewBot.ReviewBot):
     # so we need to check for one known TEST first
     # if that job doesn't contain the proper hash, we trigger a new one
     # and then we know the build
-    def trigger_build_for_target(self, prj, u):
-
+    def trigger_build_for_target(self, prj, data):
         today=date.today().strftime("%Y%m%d")
-        repohash=self.calculate_repo_hash(u['repos'])
+        repohash=self.calculate_repo_hash(data['repos'])
         buildnr = None
-        j = self.jobs_for_target(u)
+        j = self.jobs_for_target(data)
         for job in j:
             if job['settings'].get('REPOHASH', '') == repohash:
                 # take the last in the row
@@ -546,7 +557,11 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         buildnr = "%s-%d" % (today, buildnr + 1)
 
-        for s in u['settings']:
+        for s in data['settings']:
+            if 'incidents' in data.keys():
+                incidents = self.calculate_incidents(data['incidents'])
+                for x,y in incidents.items():
+                    s[x]=y
             # now schedule it for real
             s['BUILD'] = buildnr
             s['REPOHASH'] = repohash
