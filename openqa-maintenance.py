@@ -500,13 +500,14 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def calculate_incidents(self, incidents):
         """
-        get incidet numbers from SUSE:Maintenance:Test project
+        get incident numbers from SUSE:Maintenance:Test project
         returns dict with openQA var name : string with numbers
         """
-        l_incidents={}
+        l_incidents=[]
         for kind, prj in incidents.items():
-            iid = ','.join([x.split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)])
-            l_incidents[kind+'_TEST_ISSUES']=iid
+            # TODO: unfortuanetly this works correctly only for IBS ( OBS using
+            # incident_NR )
+            l_incidents.append((kind + '_TEST_ISSUES', ','.join([x.split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)])))
         return l_incidents
 
     def jobs_for_target(self, data):
@@ -558,11 +559,10 @@ class OpenQABot(ReviewBot.ReviewBot):
         buildnr = "%s-%d" % (today, buildnr + 1)
 
         for s in data['settings']:
-            if 'incidents' in data.keys():
-                incidents = self.calculate_incidents(data['incidents'])
-                for x,y in incidents.items():
-                    s[x]=y
             # now schedule it for real
+            if 'incidents' in data.keys():
+                for x,y in self.calculate_incidents(data['incidents']):
+                    s[x]=y
             s['BUILD'] = buildnr
             s['REPOHASH'] = repohash
             self.openqa.openqa_request('POST', 'isos', data=s, retries=1)

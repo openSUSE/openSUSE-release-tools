@@ -49,7 +49,7 @@
     "SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64": {
       "repos": [
         "http://download.suse.de/ibs/SUSE/Updates/SLE-DESKTOP/12-SP2/x86_64/update/", 
-        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP2:/x86_64/update", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-DESKTOP:/12-SP2:/x86_64/update/", 
         "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/", 
         "http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/"
       ], 
@@ -69,7 +69,7 @@
       }, 
       "repos": [
         "http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-LTSS/x86_64/update/", 
-        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-LTSS:/x86_64/update"
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-LTSS:/x86_64/update/"
       ], 
       "settings": [
         {
@@ -83,11 +83,11 @@
     }, 
     "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:x86_64": {
       "incidents": {
-        "OS": "SUSE:Maintenance:Test:SERVER:12-SP1-LTSS:x86_64"
+        "OS": "SUSE:Maintenance:Test:SLE-SERVER:12-SP1-LTSS:x86_64"
       }, 
       "repos": [
         "http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP1-LTSS/x86_64/update/", 
-        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP1-LTSS:/x86_64/update"
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP1-LTSS:/x86_64/update/"
       ], 
       "settings": [
         {
@@ -110,7 +110,7 @@
       }, 
       "repos": [
         "http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP2/x86_64/update/", 
-        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP2:/x86_64/update", 
+        "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SERVER:/12-SP2:/x86_64/update/", 
         "http://download.suse.de/ibs/SUSE/Updates/SLE-SDK/12-SP2/x86_64/update/", 
         "http://download.suse.de/ibs/SUSE:/Maintenance:/Test:/SLE-SDK:/12-SP2:/x86_64/update/", 
         "http://download.suse.de/ibs/SUSE/Updates/SLE-WE/12-SP2/x86_64/update/", 
