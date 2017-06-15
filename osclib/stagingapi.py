@@ -582,6 +582,11 @@ class StagingAPI(object):
                 self.rq_to_prj(request_id, stage_info['prj'])
                 self._invalidate_get_open_requests()
 
+            # Skip over supersede for purpose of diff comments.
+            meta = self.get_prj_pseudometa(stage_info['prj'])
+            meta['requests_comment'] = self.get_prj_meta_revision(stage_info['prj'])
+            self.set_prj_pseudometa(stage_info['prj'], meta)
+
         return stage_info, code
 
     @memoize(session=True)
