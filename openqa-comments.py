@@ -153,7 +153,7 @@ class OpenQAReport(object):
 
         failing_report, green_report = '', ''
         if failing_lines:
-            failing_report = '* Failing openQA tests:\n' + '\n'.join(failing_lines[:MAX_LINES])
+            failing_report = '* Failing tests:\n' + '\n'.join(failing_lines[:MAX_LINES])
             if len(failing_lines) > MAX_LINES:
                 failing_report += '\n  * and more (%s) ...' % (len(failing_lines) - MAX_LINES)
         if green_lines:
