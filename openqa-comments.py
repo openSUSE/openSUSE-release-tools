@@ -161,7 +161,7 @@ class OpenQAReport(object):
             if len(green_lines) > MAX_LINES:
                 green_report += ', and more (%s) ...' % (len(green_lines) - MAX_LINES)
 
-        return '\n'.join((failing_report, green_report)), bool(failing_lines)
+        return '\n'.join((failing_report, green_report)).strip(), bool(failing_lines)
 
     def report(self, project):
         info = self.get_info(project)
