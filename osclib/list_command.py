@@ -56,7 +56,7 @@ class ListCommand:
                     source_project = self.project_strip(source_project)
                     line += ' ({})'.format(Fore.YELLOW + source_project + Fore.RESET)
                 if action.get('type') == 'delete':
-                    line += Fore.RED + ' (delete request)'
+                    line += ' (' + Fore.RED + 'delete request' + Fore.RESET + ')'
 
                 message = self.api.ignore_format(request_id)
                 if message:
