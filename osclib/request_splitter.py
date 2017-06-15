@@ -105,10 +105,13 @@ class RequestSplitter(object):
             delta = datetime.utcnow() - created
             request.set('aged', str(delta.total_seconds() >= self.request_age_threshold))
 
+        request_type = request.find('./action').get('type')
         target = request.find('./action/target')
         target_project = target.get('project')
         target_package = target.get('package')
         devel = self.devel_project_get(target_project, target_package)
+        if not devel and request_type == 'submit':
+            devel = request.find('./action/source').get('project')
         if devel:
             target.set('devel_project', devel)
             StrategySuper.supplement(request)
@@ -116,7 +119,7 @@ class RequestSplitter(object):
         ring = self.ring_get(target_package)
         if ring:
             target.set('ring', ring)
-        elif request.find('./action').get('type') == 'delete':
+        elif request_type == 'delete':
             # Delete requests should always be considered in a ring.
             target.set('ring', 'delete')
 
