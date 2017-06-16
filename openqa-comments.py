@@ -153,7 +153,7 @@ class OpenQAReport(object):
 
         failing_report, green_report = '', ''
         if failing_lines:
-            failing_report = '* Failing openQA tests:\n' + '\n'.join(failing_lines[:MAX_LINES])
+            failing_report = '* Failing tests:\n' + '\n'.join(failing_lines[:MAX_LINES])
             if len(failing_lines) > MAX_LINES:
                 failing_report += '\n  * and more (%s) ...' % (len(failing_lines) - MAX_LINES)
         if green_lines:
@@ -161,7 +161,7 @@ class OpenQAReport(object):
             if len(green_lines) > MAX_LINES:
                 green_report += ', and more (%s) ...' % (len(green_lines) - MAX_LINES)
 
-        return '\n'.join((failing_report, green_report)), bool(failing_lines)
+        return '\n'.join((failing_report, green_report)).strip(), bool(failing_lines)
 
     def report(self, project):
         info = self.get_info(project)
@@ -183,6 +183,10 @@ class OpenQAReport(object):
         report_openQA, some_openqa_fail = self._report_openQA(info)
 
         if report_broken_packages or some_openqa_fail:
+            if report_broken_packages:
+                report_broken_packages = 'Broken:\n\n' + report_broken_packages
+            if report_openQA:
+                report_openQA = 'openQA:\n\n' + report_openQA
             report = '\n\n'.join((report_broken_packages, report_openQA))
             report = report.strip()
             if report:
