@@ -1458,6 +1458,7 @@ class StagingAPI(object):
             requests = []
             for req in meta['requests']:
                 if req['id'] not in requests_common:
+                    req = req.copy()
                     req['prefix'] = 'added '
                     requests.append(req)
 
