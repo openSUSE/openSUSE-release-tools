@@ -505,9 +505,10 @@ class OpenQABot(ReviewBot.ReviewBot):
         """
         l_incidents=[]
         for kind, prj in incidents.items():
-            # TODO: unfortuanetly this works correctly only for IBS ( OBS using
-            # incident_NR )
-            l_incidents.append((kind + '_TEST_ISSUES', ','.join([x.split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)])))
+            l_incidents.append(
+                ( kind + '_TEST_ISSUES', ','.join(
+                    [x.replace('_', '.').split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)]
+                )))
         return l_incidents
 
     def jobs_for_target(self, data):
@@ -565,7 +566,12 @@ class OpenQABot(ReviewBot.ReviewBot):
                     s[x]=y
             s['BUILD'] = buildnr
             s['REPOHASH'] = repohash
-            self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+            self.logger.debug(pformat(s))
+            if not self.dryrun:
+                try:
+                    self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+                except Exception, e:
+                    self.logger.debug(e)
         self.update_test_builds[prj] = buildnr
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
