@@ -17,8 +17,12 @@ def owner_fallback(apiurl, project, package):
         root = osc.core.owner(apiurl, package)
     return root
 
-def maintainers_get(apiurl, project, package):
-    """Get the maintainer of the package involved in the package."""
+@memoize(session=True)
+def maintainers_get(apiurl, project, package=None):
+    if package is None:
+        meta = ET.fromstring(''.join(show_project_meta(apiurl, project)))
+        return [p.get('userid') for p in meta.findall('.//person') if p.get('role') == 'maintainer']
+
     root = owner_fallback(apiurl, project, package)
     maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
     if not maintainers:
