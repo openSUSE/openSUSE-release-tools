@@ -79,6 +79,7 @@ class ReviewBot(object):
         self.fallback_group = None
         self.comment_api = CommentAPI(self.apiurl)
         self.bot_name = self.__class__.__name__
+        self.request_default_return = None
 
         self.load_config()
 
@@ -262,7 +263,7 @@ class ReviewBot(object):
 
     def check_action__default(self, req, a):
         self.logger.error("unhandled request type %s"%a.type)
-        return None
+        return self.request_default_return
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """

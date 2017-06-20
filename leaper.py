@@ -46,6 +46,9 @@ class Leaper(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
+        # ReviewBot options.
+        self.request_default_return = True
+
         self.do_comments = True
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
@@ -476,9 +479,8 @@ class Leaper(ReviewBot.ReviewBot):
         return request_ok
 
     def check_action__default(self, req, a):
-        super(Leaper, self).check_action__default(req, a)
         self.needs_release_manager = True
-        return True
+        return super(Leaper, self).check_action__default(req, a)
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
