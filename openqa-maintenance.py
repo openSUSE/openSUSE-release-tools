@@ -505,9 +505,10 @@ class OpenQABot(ReviewBot.ReviewBot):
         """
         l_incidents=[]
         for kind, prj in incidents.items():
-            # TODO: unfortuanetly this works correctly only for IBS ( OBS using
-            # incident_NR )
-            l_incidents.append((kind + '_TEST_ISSUES', ','.join([x.split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)])))
+            l_incidents.append(
+                ( kind + '_TEST_ISSUES', ','.join(
+                    [x.replace('_', '.').split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)]
+                )))
         return l_incidents
 
     def jobs_for_target(self, data):
