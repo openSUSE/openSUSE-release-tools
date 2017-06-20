@@ -29,13 +29,8 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         # TODO Include runtime dependencies instead of just build dependencies.
         what_depends_on = depends_on(self.apiurl, action.tgt_project, 'standard', [action.tgt_package], True)
-        still = []
-        for dependency in what_depends_on:
-            dependencies = depends_on(self.apiurl, action.tgt_project, 'standard', [dependency])
-            if action.tgt_package in dependencies:
-                still.append(dependency)
-        if len(still):
-            self.logger.warn('{} still required by {}'.format(action.tgt_package, ', '.join(still)))
+        if len(what_depends_on):
+            self.logger.warn('{} still required by {}'.format(action.tgt_package, ', '.join(what_depends_on)))
 
         if len(self.comment_handler.lines):
             self.comment_write(result='decline')
