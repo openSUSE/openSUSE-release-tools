@@ -566,7 +566,12 @@ class OpenQABot(ReviewBot.ReviewBot):
                     s[x]=y
             s['BUILD'] = buildnr
             s['REPOHASH'] = repohash
-            self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+            self.logger.debug(pformat(s))
+            if not self.dryrun:
+                try:
+                    self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+                except Exception, e:
+                    self.logger.debug(e)
         self.update_test_builds[prj] = buildnr
 
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
