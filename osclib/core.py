@@ -1,6 +1,7 @@
 from xml.etree import cElementTree as ET
 
 import osc.core
+from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import makeurl
 from osc.core import show_project_meta
@@ -51,3 +52,12 @@ def target_archs(apiurl, project):
     for arch in meta.findall('repository[@name="standard"]/arch'):
         archs.append(arch.text)
     return archs
+
+@memoize(session=True)
+def depends_on(apiurl, project, repository, packages=None, reverse=None):
+    dependencies = set()
+    for arch in target_archs(apiurl, project):
+        root = ET.fromstring(get_dependson(apiurl, project, repository, arch, packages, reverse))
+        dependencies.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
+
+    return dependencies
