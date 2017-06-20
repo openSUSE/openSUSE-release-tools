@@ -49,6 +49,7 @@ class Leaper(ReviewBot.ReviewBot):
         # ReviewBot options.
         self.only_one_action = True
         self.request_default_return = True
+        self.comment_handler = True
 
         self.do_comments = True
 
@@ -407,7 +408,6 @@ class Leaper(ReviewBot.ReviewBot):
         self.needs_release_manager = False
         self.pending_factory_submission = False
         self.source_in_factory = None
-        self.comment_handler_add()
         self.packages = {}
 
         request_ok = ReviewBot.ReviewBot.check_one_request(self, req)

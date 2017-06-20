@@ -81,6 +81,7 @@ class ReviewBot(object):
         self.bot_name = self.__class__.__name__
         self.only_one_action = False
         self.request_default_return = None
+        self.comment_handler = False
 
         self.load_config()
 
@@ -221,6 +222,9 @@ class ReviewBot(object):
         if self.only_one_action and len(req.actions) != 1:
             self.review_messages['declined'] = 'Only one action per request'
             return False
+
+        if self.comment_handler is not False:
+            self.comment_handler_add()
 
         overall = None
         for a in req.actions:
