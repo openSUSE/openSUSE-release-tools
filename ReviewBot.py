@@ -215,6 +215,9 @@ class ReviewBot(object):
         return None if nothing to do, True to accept, False to reject
         """
 
+        # Copy original values to revert changes made to them.
+        self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
+
         if self.only_one_action and len(req.actions) != 1:
             self.review_messages['declined'] = 'Only one action per request'
             return False

@@ -402,7 +402,6 @@ class Leaper(ReviewBot.ReviewBot):
         return False
 
     def check_one_request(self, req):
-        self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
         self.needs_legal_review = False
         self.needs_reviewteam = False
         self.needs_release_manager = False

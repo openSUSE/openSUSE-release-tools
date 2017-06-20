@@ -32,12 +32,6 @@ class CheckSource(ReviewBot.ReviewBot):
         self.staging_group = 'factory-staging'
         self.skip_add_reviews = False
 
-    def check_one_request(self, request):
-        # Copy original values to revert changes made to them.
-        self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
-
-        return super(CheckSource, self).check_one_request(request)
-
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
 
