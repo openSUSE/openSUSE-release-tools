@@ -47,6 +47,7 @@ class Leaper(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         # ReviewBot options.
+        self.only_one_action = True
         self.request_default_return = True
 
         self.do_comments = True
@@ -409,11 +410,6 @@ class Leaper(ReviewBot.ReviewBot):
         self.source_in_factory = None
         self.comment_handler_add()
         self.packages = {}
-
-        if len(req.actions) != 1:
-            msg = "only one action per request please"
-            self.review_messages['declined'] = msg
-            return False
 
         request_ok = ReviewBot.ReviewBot.check_one_request(self, req)
         if not self.ibs:

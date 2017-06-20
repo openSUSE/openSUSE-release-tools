@@ -79,6 +79,7 @@ class ReviewBot(object):
         self.fallback_group = None
         self.comment_api = CommentAPI(self.apiurl)
         self.bot_name = self.__class__.__name__
+        self.only_one_action = False
         self.request_default_return = None
 
         self.load_config()
@@ -213,6 +214,11 @@ class ReviewBot(object):
 
         return None if nothing to do, True to accept, False to reject
         """
+
+        if self.only_one_action and len(req.actions) != 1:
+            self.review_messages['declined'] = 'Only one action per request'
+            return False
+
         overall = None
         for a in req.actions:
             fn = 'check_action_%s'%a.type

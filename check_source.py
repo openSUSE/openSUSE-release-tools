@@ -21,6 +21,9 @@ class CheckSource(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
+        # ReviewBot options.
+        self.only_one_action = True
+
         self.ignore_devel = False
         self.devel_whitelist_file = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.whitelist')
         self.devel_whitelist = None
@@ -32,10 +35,6 @@ class CheckSource(ReviewBot.ReviewBot):
     def check_one_request(self, request):
         # Copy original values to revert changes made to them.
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
-
-        if len(request.actions) != 1:
-            self.review_messages['declined'] = 'Only one action per request'
-            return False
 
         return super(CheckSource, self).check_one_request(request)
 
