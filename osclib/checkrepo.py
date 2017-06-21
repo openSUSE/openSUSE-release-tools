@@ -22,11 +22,13 @@ import urllib2
 from xml.etree import cElementTree as ET
 from pprint import pformat
 
+import osc.core
 from osc.core import get_binary_file
 from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import makeurl
+from osclib.core import maintainers_get
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize
 from osclib.pkgcache import PkgCache
@@ -45,7 +47,7 @@ class Request(object):
                  revision=None, srcmd5=None, verifymd5=None,
                  group=None, goodrepos=None, missings=None,
                  is_shadow=None, shadow_src_project=None,
-                 element=None):
+                 element=None, staging=None):
 
         self.request_id = request_id
         self.src_project = src_project
@@ -70,9 +72,9 @@ class Request(object):
         self.i686_only = ['glibc.i686']
 
         if element:
-            self.load(element)
+            self.load(element, staging)
 
-    def load(self, element):
+    def load(self, element, staging):
         """Load a node from a ElementTree request XML element."""
         self.request_id = int(element.get('id'))
 
@@ -99,8 +101,13 @@ class Request(object):
         # release, and adjust the source and target projects
         _is_product = re.match(r'openSUSE:Leap:\d{2}.\d', self.tgt_project)
         if self.src_project == 'openSUSE:Factory' and _is_product:
-            self.is_shadow_devel = True
-            self.shadow_src_project = '%s:Staging:repochecker' % self.tgt_project
+            devel = staging.get_devel_project(self.src_project, self.src_package)
+            if devel:
+                self.is_shadow_devel = False
+                self.shadow_src_project = devel
+            else:
+                self.is_shadow_devel = True
+                self.shadow_src_project = '%s:Staging:repochecker' % self.tgt_project
         else:
             self.is_shadow_devel = False
             self.shadow_src_project = self.src_project
@@ -153,6 +160,8 @@ class CheckRepo(object):
         self._staging()
         self.readonly = readonly
         self.debug_enable = debug
+        self.accept_counts = {}
+        self.accepts = {}
 
     def debug(self, *args):
         if not self.debug_enable:
@@ -214,6 +223,18 @@ class CheckRepo(object):
         if review_state == 'accepted' and newstate != 'accepted':
             print ' - Avoid change state %s -> %s (%s)' % (review_state, newstate, message)
 
+        if newstate == 'accepted':
+            messages = self.accepts.get(request_id, [])
+            messages.append(message)
+            self.accepts[request_id] = messages
+
+            self.accept_counts[request_id] = self.accept_counts.get(request_id, 0) + 1
+            if self.accept_counts[request_id] != len(self.target_archs()):
+                print('- Wait for successful reviews of all archs.')
+                return 200
+            else:
+                message = '\n'.join(set(messages))
+
         code = 404
         url = makeurl(self.apiurl, ('request', str(request_id)), query=query)
         if self.readonly:
@@ -233,7 +254,7 @@ class CheckRepo(object):
             url = makeurl(self.apiurl, ('request', str(request_id)))
             request = ET.parse(http_GET(url)).getroot()
             if internal:
-                request = Request(element=request)
+                request = Request(element=request, staging=self.staging)
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
         return request
@@ -273,7 +294,7 @@ class CheckRepo(object):
             url = makeurl(self.apiurl, ('search', 'request'), query=query)
             collection = ET.parse(http_GET(url)).getroot()
             for root in collection.findall('request'):
-                _request = Request(element=root)
+                _request = Request(element=root, staging=self.staging)
                 request_id = _request.request_id
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
@@ -404,7 +425,7 @@ class CheckRepo(object):
             self.change_review_state(request_id, 'declined', message=msg)
             return requests
 
-        rq = Request(element=request)
+        rq = Request(element=request, staging=self.staging)
 
         if rq.action_type != 'submit' and rq.action_type != 'delete':
             msg = 'Unchecked request type %s' % rq.action_type
@@ -458,7 +479,7 @@ class CheckRepo(object):
         elif rq.tgt_package in specs:
             specs.remove(rq.tgt_package)
         else:
-            msg = 'The name of the SPEC files %s do not match with the name of the package (%s)'
+            msg = 'The name of the SPEC files %s do not match the name of the package (%s)'
             msg = msg % (specs, rq.src_package)
             print('[DECLINED]', msg)
             self.change_review_state(request_id, 'declined', message=msg)
@@ -554,43 +575,33 @@ class CheckRepo(object):
                                                request.verifymd5)
         except urllib2.HTTPError as e:
             if 300 <= e.code <= 499:
-                print ' - The request is not built agains this project'
+                print ' - The request is not built against this project'
                 return repos_to_check
             raise e
 
         root = ET.fromstring(root_xml)
+        archs_target = self.target_archs()
         for repo in root.findall('repository'):
-            valid_intel_repo = True
-            intel_archs = []
+            archs_found = 0
+            for arch in repo.findall('arch'):
+                if arch.attrib['arch'] in archs_target:
+                    archs_found += 1
 
-            for a in repo.findall('arch'):
-                if a.attrib['arch'] not in ('i586', 'x86_64'):
-                    # It is not a common Factory i586/x86_64 build repository
-                    # probably builds on ARM, PPC or images
-                    valid_intel_repo = False
-                else:
-                    # We assume it is standard Factory i586/x86_64 build repository
-                    intel_archs.append(a)
-
-            if not valid_intel_repo:
-                if len(intel_archs) == 2:
-                    # the possible repo candidate ie. complex build repos layout includes i586 and x86_64
-                    more_repo_candidates.append(repo)
-                continue
-
-            if len(intel_archs) == 2:
+            if archs_found == len(archs_target):
                 repos_to_check.append(repo)
 
-        if more_repo_candidates:
-            for repo in more_repo_candidates:
-                rpms = []
-                # check if x86_64 package is exist
-                rpms = self.get_package_list_from_repository(request.shadow_src_project, repo.attrib['name'], 'x86_64', request.src_package)
-                if rpms:
-                    # valid candidate
-                    repos_to_check.append(repo)
-
         return repos_to_check
+
+    @memoize(session=True)
+    def target_archs(self, project=None):
+        if not project: project = self.project
+
+        meta = osc.core.show_project_meta(self.apiurl, project)
+        meta = ET.fromstring(''.join(meta))
+        archs = []
+        for arch in meta.findall('repository[@name="standard"]/arch'):
+            archs.append(arch.text)
+        return archs
 
     def is_binary(self, project, repository, arch, package):
         """Return True if is a binary package."""
@@ -676,16 +687,13 @@ class CheckRepo(object):
     def _toignore(self, request):
         """Return the list of files to ignore during the checkrepo."""
         toignore = set()
-        for fn in self.get_package_list_from_repository(
-                request.tgt_project, 'standard', 'x86_64', request.tgt_package):
-            if fn[1]:
-                toignore.add(fn[1])
+        for arch in self.target_archs():
+            for fn in self.get_package_list_from_repository(
+                request.tgt_project, 'standard', arch, request.tgt_package):
+                # On i586 only exclude -32bit packages.
+                if fn[1] and (arch != 'i586' or fn[2] == 'x86_64'):
+                    toignore.add(fn[1])
 
-        # now fetch -32bit pack list
-        for fn in self.get_package_list_from_repository(
-                request.tgt_project, 'standard', 'i586', request.tgt_package):
-            if fn[1] and fn[2] == 'x86_64':
-                toignore.add(fn[1])
         return toignore
 
     def _disturl(self, filename):
@@ -721,7 +729,7 @@ class CheckRepo(object):
     def check_disturl(self, request, filename=None, md5_disturl=None):
         """Try to match the srcmd5 of a request with the one in the RPM package."""
         if not filename and not md5_disturl:
-            raise ValueError('Please, procide filename or md5_disturl')
+            raise ValueError('Please, provide filename or md5_disturl')
 
         # ugly workaround here, glibc.i686 had a topadd block in _link, and looks like
         # it causes the disturl won't consistently with glibc even with the same srcmd5
@@ -767,7 +775,7 @@ class CheckRepo(object):
             return False
 
         if not repos_to_check:
-            msg = 'Missing i586 and x86_64 in the repo list'
+            msg = 'Missing {} in the repo list'.format(', '.join(self.target_archs()))
             print ' - %s' % msg
             self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation.
@@ -779,6 +787,7 @@ class CheckRepo(object):
         foundbuilding = None
         foundfailed = None
 
+        archs_target = self.target_archs()
         for repository in repos_to_check:
             repo_name = repository.attrib['name']
             self.debug("checking repo", ET.tostring(repository))
@@ -788,10 +797,10 @@ class CheckRepo(object):
             r_foundfailed = None
             missings = []
             for arch in repository.findall('arch'):
-                if arch.attrib['arch'] not in ('i586', 'x86_64'):
+                if arch.attrib['arch'] not in archs_target:
                     continue
                 if arch.attrib['result'] == 'excluded':
-                    if ((arch.attrib['arch'] == 'x86_64' and request.src_package not in request.i686_only) or
+                    if ((arch.attrib['arch'] != 'i586' and request.src_package not in request.i686_only) or
                        (arch.attrib['arch'] == 'i586' and request.src_package in request.i686_only)):
                         request.build_excluded = True
                 if 'missing' in arch.attrib:
@@ -819,7 +828,7 @@ class CheckRepo(object):
                 # and the build state per srcmd5 was outdated also.
                 if request.src_package == 'glibc.i686':
                     if ((arch.attrib['arch'] == 'i586' and arch.attrib['result'] == 'outdated') or
-                       (arch.attrib['arch'] == 'x86_64' and arch.attrib['result'] == 'excluded')):
+                       (arch.attrib['arch'] != 'i586' and arch.attrib['result'] == 'excluded')):
                         isgood = True
                         continue
                 if arch.attrib['result'] == 'outdated':
@@ -851,9 +860,9 @@ class CheckRepo(object):
             return True
 
         if alldisabled:
-            msg = '%s is disabled or does not build against factory. Please fix and resubmit' % request.src_package
-            print '[DECLINED]', msg
-            self.change_review_state(request.request_id, 'declined', message=msg)
+            msg = '%s is disabled or does not build against the target project.' % request.src_package
+            print msg
+            self.change_review_state(request.request_id, 'new', message=msg)
             # Next line not needed, but for documentation
             request.updated = True
             return False
@@ -937,7 +946,7 @@ class CheckRepo(object):
             'package': request.tgt_package,
             'view': 'revpkgnames',
         }
-        for arch in ('i586', 'x86_64'):
+        for arch in self.target_archs():
             url = makeurl(self.apiurl, ('build', request.tgt_project, 'standard', arch, '_builddepinfo'),
                           query=query)
             root = ET.parse(http_GET(url)).getroot()
@@ -950,21 +959,12 @@ class CheckRepo(object):
         query = {
             'package': package,
         }
-        for arch in ('i586', 'x86_64'):
+        for arch in self.target_archs():
             url = makeurl(self.apiurl, ('build', project, 'standard', arch, '_builddepinfo'),
                           query=query)
             root = ET.parse(http_GET(url)).getroot()
             deps.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
         return deps
-
-    def _maintainers(self, request):
-        """Get the maintainer of the package involved in the request."""
-        query = {
-            'binary': request.tgt_package,
-        }
-        url = makeurl(self.apiurl, ('search', 'owner'), query=query)
-        root = ET.parse(http_GET(url)).getroot()
-        return [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
 
     def _author(self, request):
         """Get the author of the request."""
@@ -1001,7 +1001,7 @@ class CheckRepo(object):
         """
         reasons = []
         whatdependson = self._whatdependson(request)
-        maintainers = self._maintainers(request)
+        maintainers = maintainers_get(self.apiurl, request.tgt_project, request.tgt_package)
         author = self._author(request)
         prj_maintainers = self._project_maintainer(request)
 

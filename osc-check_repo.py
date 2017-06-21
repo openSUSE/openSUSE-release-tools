@@ -43,7 +43,7 @@ from osclib.request_finder import RequestFinder
 Cache.CACHE_DIR = save_cache_path('opensuse-repo-checker-http')
 
 
-def _check_repo_download(self, request):
+def _check_repo_download(self, request, arch):
     toignore = set()
     request.downloads = defaultdict(list)
 
@@ -51,21 +51,13 @@ def _check_repo_download(self, request):
     if request.build_excluded:
         return set()
 
-    # XXX TODO - Rewrite the logic here, meanwhile set is to x86_64
-    arch = 'x86_64'
-
-    if request.src_package in request.i686_only:
+    if request.src_package in request.i686_only and arch != 'i586':
         # Use imported binaries from x86_64 to check the requirements is fine,
         # but we can not get rpmlint.log from x86_64 repo if it was excluded,
         # i586 repo should be are build succeeded already as we have check it
         # in repositories_to_check(). Therefore, we have to download binary
         # binary files from i586 repo.
-        arch = 'i586'
-
-    # if not request.build_excluded:
-    #     arch = 'x86_64'
-    # else:
-    #     arch = 'i586'
+        return toignore
 
     ToDownload = namedtuple('ToDownload', ('project', 'repo', 'arch', 'package', 'size'))
 
@@ -86,7 +78,9 @@ def _check_repo_download(self, request):
             return set()
 
     staging_prefix = '{}:'.format(self.checkrepo.staging.cstaging)
-    if staging_prefix in str(request.group):
+    if (str(request.group).startswith(staging_prefix) and
+        arch in self.checkrepo.target_archs(request.group)
+    ):
         pkglist = self.checkrepo.get_package_list_from_repository(
             request.group, 'standard', arch,
             request.src_package)
@@ -99,17 +93,21 @@ def _check_repo_download(self, request):
 
         toignore.update(fn[1] for fn in pkglist)
 
-        pkglist = self.checkrepo.get_package_list_from_repository(
-            request.group + ':DVD', 'standard',
-            'x86_64', request.src_package)
-        todownload = [ToDownload(request.group + ':DVD', 'standard',
-                                 'x86_64', fn[0], fn[3]) for fn in pkglist]
+        project_dvd = request.group + ':DVD'
+        if (not self.checkrepo.staging.is_adi_project(request.group) and
+            self.checkrepo.staging.crings and
+            arch in self.checkrepo.target_archs(project_dvd)
+        ):
+            pkglist = self.checkrepo.get_package_list_from_repository(
+                project_dvd, 'standard', arch, request.src_package)
+            todownload = [ToDownload(project_dvd, 'standard', arch, fn[0],
+                                     fn[3]) for fn in pkglist]
 
-        toignore.update(fn[1] for fn in pkglist)
+            toignore.update(fn[1] for fn in pkglist)
 
-        self.checkrepo._download(request, todownload)
-        if request.error:
-            return set()
+            self.checkrepo._download(request, todownload)
+            if request.error:
+                return set()
 
     # Update toignore with the names of the source project (here in
     # this method) and with the names of the target project (_toignore
@@ -122,18 +120,12 @@ def _check_repo_download(self, request):
 _errors_printed = set()
 
 
-def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
+def _check_repo_group(self, id_, requests, arch, skip_cycle=None, debug=False):
     if skip_cycle is None:
         skip_cycle = []
 
-    print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
-
     # XXX TODO - If the requests comes from command line, the group is
     # still not there.
-
-    # Do not continue if any of the packages do not successfully build.
-    if not all(self.checkrepo.is_buildsuccess(r) for r in requests if r.action_type != 'delete'):
-        return
 
     toignore = set()
     destdir = os.path.join(BINCACHE, str(requests[0].group))
@@ -144,7 +136,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
         if request.action_type == 'delete':
             continue
 
-        i = self._check_repo_download(request)
+        i = self._check_repo_download(request, arch)
         if request.error and request.error not in _errors_printed:
             _errors_printed.add(request.error)
             if not request.updated:
@@ -161,13 +153,13 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
 
     # Extend packs array with the packages and .spec files of the
     # not-fetched requests.  The not fetched ones are the requests of
-    # the same group that are not listed as a paramater.
+    # the same group that is not listed as a parameter.
     for request_id, is_fetched in fetched.items():
         if not is_fetched:
             packs.extend(self.checkrepo.check_specs(request_id=request_id))
 
     # Download the repos from the request of the same group not
-    # explicited in the command line.
+    # explicit in the command line.
     for rq in packs[:]:
         if rq.request_id in fetched and fetched[rq.request_id]:
             continue
@@ -180,7 +172,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
             error_delete = self.checkrepo.is_safe_to_delete(rq)
             if error_delete:
                 rq.error = 'This delete request is not safe to accept yet, ' \
-                           'please wait until the reasons dissapear in the ' \
+                           'please wait until the reasons disappear in the ' \
                            'target project. %s' % error_delete
                 print ' - %s' % rq.error
                 self.checkrepo.change_review_state(request.request_id, 'new', message=request.error)
@@ -190,16 +182,16 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
                 print 'ACCEPTED', msg
                 self.checkrepo.change_review_state(rq.request_id, 'accepted', message=msg)
 
-            # Remove it from the packs, so do not interfere with the
+            # Remove it from the packs, so it does not interfere with the
             # rest of the check.
             packs.remove(rq)
         else:
             # we need to call it to fetch the good repos to download
             # but the return value is of no interest right now.
             self.checkrepo.is_buildsuccess(rq)
-            i = self._check_repo_download(rq)
+            i = self._check_repo_download(rq, arch)
             if rq.error:
-                print 'ERROR (ALREADY ACEPTED?):', rq.error
+                print 'ERROR (ALREADY ACCEPTED?):', rq.error
                 rq.updated = True
 
         toignore.update(i)
@@ -216,7 +208,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
             print ' - New edges:', new_edges
 
             if skip_cycle:
-                print ' - Skiping this cycle and moving to the next check.'
+                print ' - Skipping this cycle and moving to the next check.'
                 continue
             else:
                 print ' - If you want to skip this cycle, run manually the ' \
@@ -248,7 +240,7 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
                 package = '#[%s](%s)' % (request, package)
             smissing.append(package)
         if len(smissing):
-            msg = 'Please make sure to wait before these depencencies are in %s: %s [%s]' % (
+            msg = 'Please make sure to wait before these dependencies are in %s: %s [%s]' % (
                 rq.tgt_project, ', '.join(smissing), rq.tgt_package)
             if not rq.updated:
                 self.checkrepo.change_review_state(rq.request_id, 'new', message=msg)
@@ -362,7 +354,8 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
                 os.symlink(d, target)
 
         repochecker = os.path.join(PLUGINDIR, 'repo-checker.pl')
-        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, self.repo_dir, params_file.name)
+        repo_dir = self.repo_dir + '-' + arch
+        civs = "LC_ALL=C perl %s '%s' -r %s -f %s" % (repochecker, destdir, repo_dir, params_file.name)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
         stdoutdata = stdoutdata.strip()
@@ -426,7 +419,8 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
         if not hasattr(rq, 'goodrepo'):
             msg = 'Can not find a good repo for %s' % rq.str_compact()
             print 'NOT ACCEPTED - ', msg
-            print 'Perhaps this request is not against i586/x86_64 build or i586 build only. For human to check!'
+            print 'Perhaps this request is not against {}. For human to check!'.format(
+                ', '.join(self.repochecker.target_archs()))
             continue
         msg = 'Builds for repo %s' % rq.goodrepo
         print 'ACCEPTED', msg
@@ -436,13 +430,15 @@ def _check_repo_group(self, id_, requests, skip_cycle=None, debug=False):
         updated[rq.request_id] = 1
 
 
-def _mirror_full(self, plugin_dir, repo_dir):
+def _mirror_full(self, plugin_dir, repo_dir, arch):
     """Call bs_mirrorfull script to mirror packages."""
-    url = 'https://api.opensuse.org/public/build/%s/%s/x86_64' % (self.checkrepo.project, 'standard')
+    url = 'https://api.opensuse.org/public/build/%s/%s/%s' % (self.checkrepo.project, 'standard', arch)
 
+    repo_dir += '-' + arch
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
 
+    print('mirroring {}'.format('/'.join((self.checkrepo.project, 'standard', arch))))
     script = 'LC_ALL=C perl %s/bs_mirrorfull --nodebug %s %s' % (plugin_dir, url, repo_dir)
     os.system(script)
 
@@ -562,8 +558,9 @@ def do_check_repo(self, subcmd, opts, *args):
         groups[request.group] = rqs
 
     # Mirror the packages locally in the CACHEDIR
-    self.repo_dir = '%s/repo-%s-%s-x86_64' % (CACHEDIR, 'openSUSE:{}'.format(opts.project), 'standard')
-    self._mirror_full(PLUGINDIR, self.repo_dir)
+    self.repo_dir = '%s/repo-%s-%s' % (CACHEDIR, 'openSUSE:{}'.format(opts.project), 'standard')
+    for arch in self.checkrepo.target_archs():
+        self._mirror_full(PLUGINDIR, self.repo_dir, arch)
 
     print
     print 'Analysis results'
@@ -573,12 +570,22 @@ def do_check_repo(self, subcmd, opts, *args):
     # Sort the groups, from high to low. This put first the stating
     # projects also
     for id_, reqs in sorted(groups.items(), reverse=True):
+        print '> Check group [%s]' % ', '.join(r.str_compact() for r in requests)
+
         try:
-            self._check_repo_group(id_, reqs,
-                                   skip_cycle=opts.skipcycle,
-                                   debug=opts.verbose)
+            # Do not continue if any of the packages do not successfully build.
+            if not all(self.checkrepo.is_buildsuccess(r) for r in reqs if r.action_type != 'delete'):
+                return
+
+            for arch in self.checkrepo.target_archs():
+                print
+                print('Arch: {}\n'.format(arch))
+
+                self._check_repo_group(id_, reqs, arch,
+                                    skip_cycle=opts.skipcycle,
+                                    debug=opts.verbose)
         except Exception as e:
-            print 'ERROR -- An exception happends while checking a group [%s]' % e
+            print 'ERROR -- An exception happened while checking a group [%s]' % e
             if conf.config['debug']:
                 print traceback.format_exc()
         print
