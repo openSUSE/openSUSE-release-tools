@@ -378,8 +378,13 @@ class OpenQABot(ReviewBot.ReviewBot):
     def gather_test_builds(self):
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
             buildnr = 0
+            cjob = 0
             for j in self.jobs_for_target(u):
+                # avoid going backwards in job ID
+                if cjob > int(j['id']):
+                   continue
                 buildnr = j['settings']['BUILD']
+                cjob = int(j['id'])
             self.update_test_builds[prj] = buildnr
 
     # reimplemention from baseclass
