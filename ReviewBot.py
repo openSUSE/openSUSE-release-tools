@@ -276,6 +276,8 @@ class ReviewBot(object):
 
     def check_action__default(self, req, a):
         self.logger.error("unhandled request type %s"%a.type)
+        if self.comment_handler:
+            self.comment_write()
         return self.request_default_return
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
