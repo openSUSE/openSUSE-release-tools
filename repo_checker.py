@@ -52,6 +52,8 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.requests_map = {}
         self.groups = {}
 
+        # Manipulated in ensure_group().
+        self.group = None
         self.mirrored = set()
 
         # Look for requests of interest and group by staging.
@@ -91,6 +93,56 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         self.logger.debug('requests: {} skipped, {} queued'.format(
             count_before - len(self.requests), len(self.requests)))
+
+    def ensure_group(self, request, action):
+        project = action.tgt_project
+        group = self.requests_map[int(request.reqid)]
+
+        if group == self.group:
+            # Only process a group the first time it is encountered.
+            return self.group_pass
+
+        self.logger.info('group {}'.format(group))
+        self.group = group
+        self.group_pass = True
+
+        comment = []
+        for arch in self.target_archs(project):
+            if arch not in self.target_archs(group):
+                self.logger.debug('{}/{} not available'.format(group, arch))
+                continue
+
+            # Mirror both projects the first time each are encountered.
+            directory_project = self.mirror(project, arch)
+            directory_group = self.mirror(group, arch)
+
+            # Generate list of rpms to ignore from the project consisting of all
+            # packages in group and those that were deleted.
+            ignore = set()
+            self.ignore_from_repo(directory_group, ignore)
+
+            for r in self.groups[group]:
+                a = r.actions[0]
+                if a.type == 'delete':
+                    self.ignore_from_package(project, a.tgt_package, arch, ignore)
+
+            # Perform checks on group.
+            results = {
+                'cycle': self.cycle_check(project, group, arch),
+                'install': self.install_check(directory_project, directory_group, arch, ignore),
+            }
+
+            if not all(result.success for _, result in results.items()):
+                # Not all checks passed, build comment.
+                self.group_pass = False
+                self.result_comment(project, group, arch, results, comment)
+
+        if not self.group_pass:
+            # Some checks in group did not pass, post comment.
+            self.comment_write(state='seen', result='failed', project=group,
+                               message='\n'.join(comment).strip(), identical=True)
+
+        return self.group_pass
 
     def target_archs(self, project):
         archs = target_archs(self.apiurl, project)
@@ -210,6 +262,16 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         self.logger.info('cycle check: passed')
         return CheckResult(True, None)
+
+    def result_comment(self, project, group, arch, results, comment):
+        """Generate comment from results"""
+        comment.append('## ' + arch + '\n')
+        if not results['cycle'].success:
+            comment.append('### new [cycle(s)](/project/repository_state/{}/standard)\n'.format(group))
+            comment.append(results['cycle'].comment + '\n')
+        if not results['install'].success:
+            comment.append('### [install check](/package/view_file/{}:Staging/dashboard/installcheck?expand=1)\n'.format(project))
+            comment.append(results['install'].comment + '\n')
 
     def check_action_delete(self, request, action):
         creator = request.get_creator()
