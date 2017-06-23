@@ -121,6 +121,14 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.mirrored.add((project, arch))
         return directory
 
+    def ignore_from_repo(self, directory, ignore):
+        """Extract rpm names from mirrored repo directory."""
+        for filename in os.listdir(directory):
+            if not filename.endswith('.rpm'):
+                continue
+            _, basename = filename.split('-', 1)
+            ignore.add(basename[:-4])
+
     def check_action_delete(self, request, action):
         creator = request.get_creator()
         # Force include project maintainers in addition to package owners.
