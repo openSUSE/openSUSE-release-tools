@@ -240,127 +240,16 @@ class TestUpdate(openSUSEUpdate):
         return settings
 
 
-PROJECT_OPENQA_SETTINGS = {
-    'SUSE:Updates:SLE-SERVER:12-LTSS:x86_64': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 'x86_64'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-LTSS:ppc64le': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 'ppc64le'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-LTSS:s390x': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 's390x'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-SP1-LTSS:x86_64': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12-SP1',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 'x86_64'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-SP1-LTSS:ppc64le': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12-SP1',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 'ppc64le'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-SP1-LTSS:s390x': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12-SP1',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 's390x'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-SP2:x86_64': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12-SP2',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 'x86_64'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-SP2:ppc64le': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12-SP2',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 'ppc64le'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-SP2:s390x': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12-SP2',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 's390x'
-            }),
-    ],
-    'SUSE:Updates:SLE-SERVER:12-SP2:aarch64': [
-        SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12-SP2',
-                'FLAVOR': 'Server-DVD-Incidents',
-                'ARCH': 'aarch64'
-            }),
-    ],
-    'SUSE:Updates:SLE-Live-Patching:12:x86_64': [
-          SUSEUpdate(
-            {
-                'DISTRI': 'sle',
-                'VERSION': '12',
-                'FLAVOR': 'KGraft',
-                'ARCH': 'x86_64'
-            }),
-    ],
-    'openSUSE:Leap:42.2:Update': [
-        openSUSEUpdate(
-            {
-                'DISTRI': 'opensuse',
-                'VERSION': '42.2',
-                'FLAVOR': 'Maintenance',
-                'ARCH': 'x86_64',
-                'ISO': 'openSUSE-Leap-42.2-DVD-x86_64.iso',
-            }),
-    ],
-    'openSUSE:Leap:42.3:Update': [
-        openSUSEUpdate(
-            {
-                'DISTRI': 'opensuse',
-                'VERSION': '42.3',
-                'FLAVOR': 'Maintenance',
-                'ARCH': 'x86_64',
-                'ISO': 'openSUSE-Leap-42.3-DVD-x86_64.iso',
-            }),
-    ],
-}
+PROJECT_OPENQA_SETTINGS = {}
+
+with open(opa.join(data_path, "data/incidents.json"), 'r') as f:
+    for i,j in json.load(f).items():
+        if i.startswith('SUSE'):
+            PROJECT_OPENQA_SETTINGS[i] = [SUSEUpdate(k) for k in j]
+        elif i.startswith('openSUSE'):
+            PROJECT_OPENQA_SETTINGS[i] = [openSUSEUpdate(k) for k in j]
+        else:
+            PROJECT_OPENQA_SETTINGS[i] = [TestUpdate(k) for k in j]
 
 
 class OpenQABot(ReviewBot.ReviewBot):

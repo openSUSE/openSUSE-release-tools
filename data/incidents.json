@@ -1,0 +1,108 @@
+{
+  "SUSE:Updates:SLE-Live-Patching:12:x86_64": [
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "KGraft", 
+      "VERSION": "12"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-LTSS:ppc64le": [
+    {
+      "ARCH": "ppc64le", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-LTSS:s390x": [
+    {
+      "ARCH": "s390x", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-LTSS:x86_64": [
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:ppc64le": [
+    {
+      "ARCH": "ppc64le", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP1"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:s390x": [
+    {
+      "ARCH": "s390x", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP1"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:x86_64": [
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP1"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-SP2:aarch64": [
+    {
+      "ARCH": "aarch64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP2"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-SP2:ppc64le": [
+    {
+      "ARCH": "ppc64le", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP2"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-SP2:s390x": [
+    {
+      "ARCH": "s390x", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP2"
+    }
+  ], 
+  "SUSE:Updates:SLE-SERVER:12-SP2:x86_64": [
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP2"
+    }
+  ], 
+  "openSUSE:Leap:42.2:Update": [
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "opensuse", 
+      "FLAVOR": "Maintenance", 
+      "ISO": "openSUSE-Leap-42.2-DVD-x86_64.iso", 
+      "VERSION": "42.2"
+    }
+  ], 
+  "openSUSE:Leap:42.3:Update": [
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "opensuse", 
+      "FLAVOR": "Maintenance", 
+      "ISO": "openSUSE-Leap-42.3-DVD-x86_64.iso", 
+      "VERSION": "42.3"
+    }
+  ]
+}
