@@ -30,6 +30,7 @@ from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 import signal
 import datetime
+import yaml
 
 try:
     from xml.etree import cElementTree as ET
@@ -88,9 +89,8 @@ class ReviewBot(object):
 
     def load_config(self, filename = None):
         if filename:
-            fh = open(filename, 'r')
-            self.config = self._load_config(fh)
-            close(fh)
+            with open(filename, 'r') as fh:
+                self.config = self._load_config(fh)
         else:
             self.config = self._load_config()
 
