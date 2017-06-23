@@ -109,7 +109,7 @@ class ReviewBot(object):
 
     def set_request_ids(self, ids):
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withhistory' : '1' })
+            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withfullhistory' : '1' })
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
             req = osc.core.Request()
@@ -376,7 +376,7 @@ class ReviewBot(object):
            review = "@by_user='%s' and @state='new'" % self.review_user
         else:
            review = "@by_group='%s' and @state='new'" % self.review_group
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withhistory': 1 } )
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1 } )
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -389,7 +389,7 @@ class ReviewBot(object):
     def set_request_ids_project(self, project, typename):
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
                                { 'match': "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename),
-                                 'withhistory': 1 })
+                                 'withfullhistory': 1 })
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
