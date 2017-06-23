@@ -273,6 +273,13 @@ class RepoChecker(ReviewBot.ReviewBot):
             comment.append('### [install check](/package/view_file/{}:Staging/dashboard/installcheck?expand=1)\n'.format(project))
             comment.append(results['install'].comment + '\n')
 
+    def check_action_submit(self, request, action):
+        if not self.ensure_group(request, action):
+            return None
+
+        self.review_messages['accepted'] = 'cycle and install check passed'
+        return True
+
     def check_action_delete(self, request, action):
         creator = request.get_creator()
         # Force include project maintainers in addition to package owners.
@@ -289,6 +296,10 @@ class RepoChecker(ReviewBot.ReviewBot):
         if len(self.comment_handler.lines):
             self.comment_write(result='decline')
             return False
+
+        # Allow for delete to be declined before ensuring group passed.
+        if not self.ensure_group(request, action):
+            return None
 
         self.review_messages['accepted'] = 'delete request is safe'
         return True
