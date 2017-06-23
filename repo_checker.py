@@ -2,8 +2,11 @@
 
 import sys
 
+from osclib.conf import Config
 from osclib.core import depends_on
 from osclib.core import maintainers_get
+from osclib.core import request_staged
+from osclib.stagingapi import StagingAPI
 
 import ReviewBot
 
@@ -18,6 +21,57 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         # RepoChecker options.
         self.skip_cycle = False
+
+    def staging_api(self, project):
+        if project not in self.staging_apis:
+            config = Config(project)
+            self.staging_apis[project] = StagingAPI(self.apiurl, project)
+
+        return self.staging_apis[project]
+
+    def prepare_review(self):
+        # Reset for request batch.
+        self.staging_apis = {}
+        self.requests_map = {}
+        self.groups = {}
+
+        # Look for requests of interest and group by staging.
+        for request in self.requests:
+            # Only interesting if request is staged.
+            group = request_staged(request)
+            if not group:
+                self.logger.debug('{}: not staged'.format(request.reqid))
+                continue
+
+            # Only interested if group has completed building.
+            api = self.staging_api(request.actions[0].tgt_project)
+            status = api.project_status(group, True)
+            if str(status['overall_state']) not in ('testing', 'review', 'acceptable'):
+                self.logger.debug('{}: {} not ready'.format(request.reqid, group))
+                continue
+
+            # Only interested if request is in consistent state.
+            selected = api.project_status_requests('selected')
+            if request.reqid not in selected:
+                self.logger.debug('{}: inconsistent state'.format(request.reqid))
+
+            self.requests_map[int(request.reqid)] = group
+
+            requests = self.groups.get(group, [])
+            requests.append(request)
+            self.groups[group] = requests
+
+            self.logger.debug('{}: {} ready'.format(request.reqid, group))
+
+        # Filter out undesirable requests and ensure requests are ordered
+        # together with group for efficiency.
+        count_before = len(self.requests)
+        self.requests = []
+        for group, requests in sorted(self.groups.items()):
+            self.requests.extend(requests)
+
+        self.logger.debug('requests: {} skipped, {} queued'.format(
+            count_before - len(self.requests), len(self.requests)))
 
     def check_action_delete(self, request, action):
         creator = request.get_creator()
