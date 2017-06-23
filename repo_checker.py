@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import os
+import pipes
 import sys
 
 from osc import conf
@@ -8,9 +10,12 @@ from osclib.core import depends_on
 from osclib.core import maintainers_get
 from osclib.core import request_staged
 from osclib.core import target_archs
+from osclib.memoize import CACHEDIR
 from osclib.stagingapi import StagingAPI
 
 import ReviewBot
+
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 class RepoChecker(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
@@ -40,6 +45,8 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.staging_config = {}
         self.requests_map = {}
         self.groups = {}
+
+        self.mirrored = set()
 
         # Look for requests of interest and group by staging.
         for request in self.requests:
@@ -90,6 +97,29 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         # Trick to prioritize x86_64.
         return reversed(archs)
+
+    def mirror(self, project, arch):
+        """Call bs_mirrorfull script to mirror packages."""
+        directory = os.path.join(CACHEDIR, project, 'standard', arch)
+        if (project, arch) in self.mirrored:
+            # Only mirror once per request batch.
+            return directory
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        script = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
+        path = '/'.join((project, 'standard', arch))
+        url = '{}/public/build/{}'.format(self.apiurl, path)
+        parts = ['LC_ALL=C', 'perl', script, '--nodebug', url, directory]
+        parts = [pipes.quote(part) for part in parts]
+
+        self.logger.info('mirroring {}'.format(path))
+        if os.system(' '.join(parts)):
+             raise Exception('failed to mirror {}'.format(path))
+
+        self.mirrored.add((project, arch))
+        return directory
 
     def check_action_delete(self, request, action):
         creator = request.get_creator()
