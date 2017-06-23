@@ -41,34 +41,6 @@ while (@ARGV) {
     }
 }
 
-for my $pdir ( glob("$dir/*") ) {
-    if ( !-f "$pdir/rpmlint.log" ) {
-        print
-	  "Couldn't find a rpmlint.log in the build results in $pdir. This is mandatory\n";
-        my $name = basename($pdir);
-        if (   $name eq "rpm"
-            || $name eq "rpm-python"
-            || $name eq "popt"
-            || $name eq "rpmlint"
-            || $name eq "rpmlint-mini"
-            || $name eq "rpmlint-Factory" )
-        {
-            print "ignoring - whitelist\n";
-        }
-        else {
-            $ret = 1;
-        }
-    }
-    else {
-        open( GREP, "grep 'W:.*invalid-license ' $pdir/rpmlint.log |" );
-        while (<GREP>) {
-            print "Found rpmlint warning: ";
-            print $_;
-            $ret = 1;
-        }
-    }
-}
-
 my %targets;
 
 sub write_package($$) {
