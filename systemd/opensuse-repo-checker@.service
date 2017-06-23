@@ -1,8 +1,0 @@
-[Unit]
-Description=openSUSE repo checker for %i
-PartOf=opensuse-repo-checker.target
-
-[Service]
-ExecStart=/usr/bin/osc check_repo -p %i --dry
-User=_opensuse-repo-checker
-SyslogIdentifier=opensuse-repo-checker

@@ -1,9 +1,0 @@
-[Unit]
-Description=openSUSE repochecker for %i
-
-[Timer]
-OnUnitInactiveSec=15m
-AccuracySec=5m
-
-[Install]
-WantedBy=timers.target
