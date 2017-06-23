@@ -412,24 +412,29 @@ class ReviewBot(object):
     def comment_handler_lines_deduplicate(self):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
-    def comment_write(self, state='done', result=None, request=None, message=None):
+    def comment_write(self, state='done', result=None, project=None, request=None, message=None):
         """Write comment from log messages if not similar to previous comment."""
-        if request is None:
-            request = self.request
+        if project:
+            kwargs = {'project_name': project}
+        else:
+            if request is None:
+                request = self.request
+            kwargs = {'request_id': request.reqid}
+
         if message is None:
             message = '\n\n'.join(self.comment_handler.lines)
 
         info = {'state': state, 'result': result}
         message = self.comment_api.add_marker(message, self.bot_name, info)
 
-        comments = self.comment_api.get_comments(request_id=request.reqid)
+        comments = self.comment_api.get_comments(**kwargs)
         comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
         if comment is not None and comment['comment'].count('\n') == message.count('\n'):
             # Assume same state/result and number of lines in message is duplicate.
             self.logger.debug('previous comment too similar to bother commenting again')
             return
 
-        self.logger.debug('adding comment to {}: {}'.format(request.reqid, message))
+        self.logger.debug('adding comment to {}: {}'.format(kwargs.itervalues().next(), message))
 
         if not self.dryrun:
             if comment is None:
@@ -437,7 +442,7 @@ class ReviewBot(object):
                 comment, _ = self.comment_api.comment_find(comments, self.bot_name)
             if comment is not None:
                 self.comment_api.delete(comment['id'])
-            self.comment_api.add_comment(request_id=request.reqid, comment=str(message))
+            self.comment_api.add_comment(comment=str(message), **kwargs)
 
         self.comment_handler_remove()
 
