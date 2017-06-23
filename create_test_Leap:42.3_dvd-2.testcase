@@ -28,7 +28,7 @@ job install name aaa_base-extras
 job install name branding-openSUSE
 job install name openSUSE-release-dvd
 job install name sudo
-job install name xdelta
+job install name xdelta3
 job install name kate
 job install name sddm
 job install name kernel-default
