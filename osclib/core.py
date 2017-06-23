@@ -1,3 +1,5 @@
+from datetime import datetime
+import dateutil.parser
 from xml.etree import cElementTree as ET
 
 from osc.core import get_dependson
@@ -60,3 +62,23 @@ def depends_on(apiurl, project, repository, packages=None, reverse=None):
         dependencies.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
 
     return dependencies
+
+def request_when_staged(request, project, first=False):
+    when = None
+    for history in request.statehistory:
+        if project in history.comment:
+            when = history.when
+
+    return dateutil.parser.parse(when)
+
+def request_staged(request):
+    for review in request.reviews:
+        if (review.state == 'new' and review.by_project and
+            review.by_project.startswith(request.actions[0].tgt_project)):
+
+            # Allow time for things to settle.
+            when = request_when_staged(request, review.by_project)
+            if (datetime.utcnow() - when).total_seconds() > 10 * 60:
+                return review.by_project
+
+    return None
