@@ -1,13 +1,18 @@
+from collections import namedtuple
 from datetime import datetime
 import dateutil.parser
+import re
 from xml.etree import cElementTree as ET
 
+from osc.core import get_binarylist
 from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import show_project_meta
 from osclib.memoize import memoize
+
+BinaryParsed = namedtuple('BinaryParsed', ('filename', 'name', 'arch'))
 
 
 @memoize(session=True)
@@ -82,3 +87,22 @@ def request_staged(request):
                 return review.by_project
 
     return None
+
+def binary_list(apiurl, project, repository, arch, package=None):
+    parsed = []
+    for binary in get_binarylist(apiurl, project, repository, arch, package):
+        result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', binary)
+        if not result:
+            continue
+
+        name = result.group(1)
+        if name.endswith('-debuginfo') or name.endswith('-debuginfo-32bit'):
+            continue
+        if name.endswith('-debugsource'):
+            continue
+        if result.group(4) == 'src':
+            continue
+
+        parsed.append(BinaryParsed(binary, name, result.group(4)))
+
+    return parsed
