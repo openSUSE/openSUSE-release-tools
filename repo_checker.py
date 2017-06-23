@@ -14,6 +14,7 @@ from osclib.core import depends_on
 from osclib.core import maintainers_get
 from osclib.core import request_staged
 from osclib.core import target_archs
+from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
 from osclib.stagingapi import StagingAPI
 
@@ -177,6 +178,37 @@ class RepoChecker(ReviewBot.ReviewBot):
 
 
         self.logger.info('install check: passed')
+        return CheckResult(True, None)
+
+    def cycle_check(self, project, group, arch):
+        if self.skip_cycle:
+            self.logger.info('cycle check: skip due to --skip-cycle')
+            return CheckResult(True, None)
+
+        self.logger.info('cycle check: start')
+        cycle_detector = CycleDetector(self.staging_api(project))
+        comment = []
+        for index, (cycle, new_edges, new_packages) in enumerate(
+            cycle_detector.cycles(group, arch=arch), start=1):
+            if new_packages:
+                # New package involved in cycle, build comment.
+                comment.append('- #{}: {} package cycle, {} new edges'.format(
+                    index, len(cycle), len(new_edges)))
+
+                comment.append('   - cycle')
+                for package in sorted(cycle):
+                    comment.append('      - {}'.format(package))
+
+                comment.append('   - new edges')
+                for edge in sorted(new_edges):
+                    comment.append('      - ({}, {})'.format(edge[0], edge[1]))
+
+        if len(comment):
+            # New cycles, post comment.
+            self.logger.info('cycle check: failed')
+            return CheckResult(False, '\n'.join(comment))
+
+        self.logger.info('cycle check: passed')
         return CheckResult(True, None)
 
     def check_action_delete(self, request, action):
