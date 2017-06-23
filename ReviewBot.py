@@ -412,7 +412,8 @@ class ReviewBot(object):
     def comment_handler_lines_deduplicate(self):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
-    def comment_write(self, state='done', result=None, project=None, request=None, message=None):
+    def comment_write(self, state='done', result=None, project=None, request=None,
+                      message=None, identical=False):
         """Write comment from log messages if not similar to previous comment."""
         if project:
             kwargs = {'project_name': project}
@@ -429,7 +430,10 @@ class ReviewBot(object):
 
         comments = self.comment_api.get_comments(**kwargs)
         comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
-        if comment is not None and comment['comment'].count('\n') == message.count('\n'):
+        if (comment is not None and
+            ((identical and comment['comment'] == message) or
+             (not identical and comment['comment'].count('\n') == message.count('\n')))
+        ):
             # Assume same state/result and number of lines in message is duplicate.
             self.logger.debug('previous comment too similar to bother commenting again')
             return
