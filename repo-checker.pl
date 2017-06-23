@@ -18,6 +18,7 @@ BEGIN {
 require CreatePackageDescr;
 
 my $ret = 0;
+my $arch = shift @ARGV;
 my $dir = shift @ARGV;
 my %toignore;
 my $repodir;
@@ -84,7 +85,7 @@ close(PACKAGES);
 
 #print STDERR "calling installcheck\n";
 #print STDERR Dumper(\%targets);
-open( INSTALL, "/usr/bin/installcheck x86_64 $pfile 2>&1|" )
+open( INSTALL, "/usr/bin/installcheck $arch $pfile 2>&1|" )
   || die 'exec installcheck';
 while (<INSTALL>) {
     chomp;
