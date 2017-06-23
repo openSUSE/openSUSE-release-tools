@@ -474,6 +474,11 @@ class OpenQABot(ReviewBot.ReviewBot):
             settings = update.settings(a.src_project, a.tgt_project, packages, req)
             settings['INCIDENT_PATCH'] = patch_id
             if settings is not None:
+                # is old style kgraft check if all options correctly set
+                if settings['FLAVOR'] == 'KGraft' and 'VIRSH_GUESTNAME' not in settings:
+                    self.logger.info("build: {!s} hasn't valid values for kgraft".format(settings['BUILD']))
+                    return None
+
                 update.calculate_lastest_good_updates(self.openqa, settings)
 
                 self.logger.info("posting %s %s %s", settings['VERSION'], settings['ARCH'], settings['BUILD'])
