@@ -1,21 +1,20 @@
 from xml.etree import cElementTree as ET
 
-import osc.core
 from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import makeurl
+from osc.core import owner
 from osc.core import show_project_meta
-
 from osclib.memoize import memoize
 
 
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
-    root = osc.core.owner(apiurl, package, project=project)
-    owner = root.find('owner')
-    if not owner or owner.get('project') == project:
+    root = owner(apiurl, package, project=project)
+    entry = root.find('owner')
+    if not entry or entry.get('project') == project:
         # Fallback to global (ex Factory) maintainer.
-        root = osc.core.owner(apiurl, package)
+        root = owner(apiurl, package)
     return root
 
 @memoize(session=True)
