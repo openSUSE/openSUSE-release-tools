@@ -3,7 +3,9 @@
 from collections import namedtuple
 import os
 import pipes
+import subprocess
 import sys
+import tempfile
 
 from osc import conf
 from osclib.conf import Config
@@ -138,6 +140,44 @@ class RepoChecker(ReviewBot.ReviewBot):
             ignore.add(binary.name)
 
         return ignore
+
+    def install_check(self, directory_project, directory_group, arch, ignore):
+        self.logger.info('install check: start')
+
+        with tempfile.NamedTemporaryFile() as ignore_file:
+            # Print ignored rpms on separate lines in ignore file.
+            for item in ignore:
+                ignore_file.write(item + '\n')
+
+            # Invoke repo-checker.pl to perform an install check.
+            script = os.path.join(SCRIPT_PATH, 'repo-checker.pl')
+            parts = ['LC_ALL=C', 'perl', script, arch, directory_group,
+                     '-r', directory_project, '-f', ignore_file.name]
+            parts = [pipes.quote(part) for part in parts]
+            p = subprocess.Popen(' '.join(parts), shell=True,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, close_fds=True)
+            stdout, stderr = p.communicate()
+
+        if p.returncode:
+            self.logger.info('install check: failed')
+
+            # Format output as markdown comment.
+            code = '```\n'
+            parts = []
+
+            stdout = stdout.strip()
+            if stdout:
+                parts.append(code + stdout + '\n' + code)
+            stderr = stderr.strip()
+            if stderr:
+                parts.append(code + stderr + '\n' + code)
+
+            return CheckResult(False, ('\n\n' + ('-' * 80) + '\n\n').join(parts))
+
+
+        self.logger.info('install check: passed')
+        return CheckResult(True, None)
 
     def check_action_delete(self, request, action):
         creator = request.get_creator()
