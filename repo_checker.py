@@ -36,8 +36,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.comment_write(result='decline')
             return False
 
-        self.logger.info('delete request is safe')
-        self.comment_write(result='accept')
+        self.review_messages['accepted'] = 'delete request is safe'
         return True
 
 
