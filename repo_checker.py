@@ -2,10 +2,12 @@
 
 import sys
 
+from osc import conf
 from osclib.conf import Config
 from osclib.core import depends_on
 from osclib.core import maintainers_get
 from osclib.core import request_staged
+from osclib.core import target_archs
 from osclib.stagingapi import StagingAPI
 
 import ReviewBot
@@ -27,11 +29,15 @@ class RepoChecker(ReviewBot.ReviewBot):
             config = Config(project)
             self.staging_apis[project] = StagingAPI(self.apiurl, project)
 
+            config.apply_remote(self.staging_apis[project])
+            self.staging_config[project] = conf.config[project].copy()
+
         return self.staging_apis[project]
 
     def prepare_review(self):
         # Reset for request batch.
         self.staging_apis = {}
+        self.staging_config = {}
         self.requests_map = {}
         self.groups = {}
 
@@ -72,6 +78,18 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         self.logger.debug('requests: {} skipped, {} queued'.format(
             count_before - len(self.requests), len(self.requests)))
+
+    def target_archs(self, project):
+        archs = target_archs(self.apiurl, project)
+
+        # Check for arch whitelist and use intersection.
+        product = project.split(':Staging:', 1)[0]
+        whitelist = self.staging_config[product].get('repo_checker-arch-whitelist')
+        if whitelist:
+            archs = list(set(whitelist.split(' ')).intersection(set(archs)))
+
+        # Trick to prioritize x86_64.
+        return reversed(archs)
 
     def check_action_delete(self, request, action):
         creator = request.get_creator()
