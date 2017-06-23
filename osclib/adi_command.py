@@ -5,6 +5,7 @@ from colorama import Fore
 from osc import oscerr
 from osc.core import delete_project
 from osc.core import show_package_meta
+from osc import conf
 
 from osclib.select_command import SelectCommand
 from osclib.supersede_command import SupersedeCommand
@@ -15,6 +16,7 @@ from xml.etree import cElementTree as ET
 class AdiCommand:
     def __init__(self, api):
         self.api = api
+        self.config = conf.config[self.api.project]
 
     def check_adi_project(self, project):
         query_project = self.api.extract_staging_short(project)
@@ -58,6 +60,7 @@ class AdiCommand:
             self.check_adi_project(p)
 
     def create_new_adi(self, wanted_requests, by_dp=False, split=False):
+        source_projects_expand = self.config.get('source_projects_expand', '').split()
         requests = self.api.get_open_requests()
         splitter = RequestSplitter(self.api, requests, in_ring=False)
         splitter.filter_add('./action[@type="submit"]')
@@ -96,7 +99,9 @@ class AdiCommand:
                 # Only create staging projec the first time a non superseded
                 # request is processed from a particular group.
                 if name is None:
-                    name = self.api.create_adi_project(None)
+                    use_frozenlinks = group in source_projects_expand and not split
+                    name = self.api.create_adi_project(None,
+                            use_frozenlinks, group)
 
                 if not self.api.rq_to_prj(request_id, name):
                     return False

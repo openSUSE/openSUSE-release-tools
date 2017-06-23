@@ -41,7 +41,9 @@ from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import rebuild
+from osc.core import search
 from osc.core import show_project_meta
+from osc.core import show_project_sourceinfo
 from osc.core import streamfile
 
 from osclib.cache import Cache
@@ -1570,7 +1572,34 @@ class StagingAPI(object):
             adi_index = i + 2
         return self.adi_prj_from_number(adi_index)
 
-    def create_adi_project(self, name):
+    def update_adi_frozenlinks(self, name, src_prj):
+        xpath = {
+            'package': "@project='%s' and devel/@project='%s'" % (self.project, src_prj),
+        }
+        collection = search(self.apiurl, **xpath)['package']
+
+        # all packages had matched devel project defined
+        pkglist = [p.attrib['name'] for p in collection.findall('package')]
+
+        flink = ET.Element('frozenlinks')
+        fl_prj = ET.SubElement(flink, 'frozenlink', {'project': self.project})
+
+        project_sourceinfo = ET.fromstring(show_project_sourceinfo(self.apiurl, self.project, True))
+        for si in project_sourceinfo.findall('sourceinfo'):
+            pkg = si.get('package')
+            if pkg in pkglist:
+                ET.SubElement(fl_prj, 'package', {'name': pkg, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
+            # check multiple spec ie. sub-package
+            for linked in si.findall('linked'):
+                if linked.get('package') in pkglist:
+                    ET.SubElement(fl_prj, 'package', {'name': pkg, 'srcmd5': si.get('lsrcmd5'), 'vrev': si.get('vrev')})
+
+        # commit frozenlinks
+        url = self.makeurl(['source', name, '_project', '_frozenlinks'], {'meta': '1'})
+        l = ET.tostring(flink)
+        http_PUT(url, data=l)
+
+    def create_adi_project(self, name, use_frozenlinks=False, src_prj=None):
         """Create an ADI project."""
         if not name:
             name = self._candidate_adi_project()
@@ -1581,10 +1610,18 @@ class StagingAPI(object):
         if name in adi_projects:
             raise Exception('Project {} already exist'.format(name))
 
+        if use_frozenlinks:
+            linkproject = '<link project="{}"/>'.format(self.project)
+            repository = '<repository name="standard" rebuild="direct" linkedbuild="all">'
+        else:
+            linkproject = ''
+            repository = '<repository name="standard">'
+
         meta = """
         <project name="{0}">
           <title></title>
           <description></description>
+          {3}
           <url>/project/staging_projects/{1}/adi:{2}</url>
           <publish>
             <disable/>
@@ -1592,15 +1629,19 @@ class StagingAPI(object):
           <debuginfo>
             <enable/>
           </debuginfo>
-          <repository name="standard">
+          {4}
             <path project="{1}" repository="standard"/>
             <arch>x86_64</arch>
           </repository>
-        </project>""".format(name, self.project, self.extract_adi_number(name))
+        </project>""".format(name, self.project, self.extract_adi_number(name), linkproject, repository)
+
         url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)
         # put twice because on first put, the API adds useless maintainer
         http_PUT(url, data=meta)
+
+        if use_frozenlinks:
+            self.update_adi_frozenlinks(name, src_prj)
 
         return name
 
