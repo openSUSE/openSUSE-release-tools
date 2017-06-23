@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from collections import namedtuple
 import os
 import pipes
 import sys
@@ -17,6 +18,7 @@ from osclib.stagingapi import StagingAPI
 import ReviewBot
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+CheckResult = namedtuple('CheckResult', ('success', 'comment'))
 
 class RepoChecker(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
