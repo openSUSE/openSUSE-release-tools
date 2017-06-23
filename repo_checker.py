@@ -6,6 +6,7 @@ import sys
 
 from osc import conf
 from osclib.conf import Config
+from osclib.core import binary_list
 from osclib.core import depends_on
 from osclib.core import maintainers_get
 from osclib.core import request_staged
@@ -128,6 +129,13 @@ class RepoChecker(ReviewBot.ReviewBot):
                 continue
             _, basename = filename.split('-', 1)
             ignore.add(basename[:-4])
+
+    def ignore_from_package(self, project, package, arch, ignore):
+        """Extract rpm names from current build of package."""
+        for binary in binary_list(self.apiurl, project, 'standard', arch, package):
+            ignore.add(binary.name)
+
+        return ignore
 
     def check_action_delete(self, request, action):
         creator = request.get_creator()
