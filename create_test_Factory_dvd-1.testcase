@@ -15,7 +15,7 @@ job install provides pattern() = yast2_basis
 job install name aaa_base-extras
 job install name branding-openSUSE
 job install name sudo
-job install name xdelta
+job install name xdelta3
 job install name screen
 job install name alsa-utils
 job install name yast2-nfs-client
