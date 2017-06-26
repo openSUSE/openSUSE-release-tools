@@ -137,7 +137,8 @@ class SUSEUpdate(Update):
         return 'http://download.suse.de/ibs'
 
     # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
-    def kgraft_target(self, req):
+    @staticmethod
+    def kgraft_target(req):
         if req:
             for a in req.actions:
                 match = re.match(r"kgraft-patch-([^.]+)\.", a.src_package)
@@ -581,7 +582,8 @@ class OpenQABot(ReviewBot.ReviewBot):
             self.commentapi.add_comment(request_id=req.reqid, comment=str(comment))
 
     # escape markdown
-    def emd(self, str):
+    @staticmethod
+    def emd(str):
         return str.replace('_', '\_')
 
     def get_step_url(self, testurl, modulename):
