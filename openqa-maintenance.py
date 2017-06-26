@@ -581,7 +581,8 @@ class OpenQABot(ReviewBot.ReviewBot):
             self.commentapi.add_comment(request_id=req.reqid, comment=str(comment))
 
     # escape markdown
-    def emd(self, str):
+    @staticmethod
+    def emd(str):
         return str.replace('_', '\_')
 
     def get_step_url(self, testurl, modulename):
