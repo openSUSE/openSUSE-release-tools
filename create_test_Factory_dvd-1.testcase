@@ -39,8 +39,11 @@ job lock name nss-mdns-32bit
 #endif
 job install name kernel-default
 job lock name patterns-openSUSE-enhanced_base_opt
+job lock name patterns-base-enhanced_base_opt
 job lock name patterns-openSUSE-fonts_opt
+job lock name patterns-fonts-fonts_opt
 job lock name patterns-openSUSE-x11_opt
+job lock name patterns-base-x11_opt
 job lock name readline-doc
 job lock name SuSEfirewall2
 job lock name vim-data

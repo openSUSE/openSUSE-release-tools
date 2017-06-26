@@ -9,18 +9,30 @@ namespace namespace:language(en_US) @SYSTEM
 
 job install provides pattern() = apparmor
 job install provides pattern() = base
+job install provides pattern() = console
 job install provides pattern() = enhanced_base
 job install provides pattern() = gnome
+job install provides pattern() = gnome_games
 job install provides pattern() = gnome_internet
+job install provides pattern() = gnome_laptop
 job install provides pattern() = gnome_multimedia
+job install provides pattern() = gnome_office
 job install provides pattern() = gnome_utilities
+job install provides pattern() = gnome_yast
 job install provides pattern() = imaging
 job install provides pattern() = kde
-job install provides pattern() = kde_plasma
+job install provides pattern() = kde_games
+job install provides pattern() = kde_imaging
 job install provides pattern() = kde_multimedia
+job install provides pattern() = kde_office
+job install provides pattern() = kde_plasma
 job install provides pattern() = kde_utilities
+job install provides pattern() = kde_yast
 job install provides pattern() = multimedia
 job install provides pattern() = minimal_base
+job install provides pattern() = sw_management_gnome
+job install provides pattern() = sw_management_kde
+job install provides pattern() = yast2_install_wf
 
 job install provides pattern() = rest_core_dvd
 
@@ -63,4 +75,15 @@ job lock name gettext-runtime-mini
 job lock name udev-mini
 job lock name libudev1-mini
 
+## for testing docker
+job install name docker
 
+## for textmode test
+job install name yast2-nfs-server
+job install name apache2
+job install name php5
+job install name apache2-mod_php5
+job install name php5-mysql
+job install name php5-pgsql
+job install name postgresql94-server
+job install name bind
