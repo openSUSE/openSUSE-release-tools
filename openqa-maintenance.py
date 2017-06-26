@@ -137,7 +137,8 @@ class SUSEUpdate(Update):
         return 'http://download.suse.de/ibs'
 
     # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
-    def kgraft_target(self, req):
+    @staticmethod
+    def kgraft_target(req):
         if req:
             for a in req.actions:
                 match = re.match(r"kgraft-patch-([^.]+)\.", a.src_package)
