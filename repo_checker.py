@@ -289,6 +289,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.logger.warn('{} is not one of the maintainers: {}'.format(creator, ', '.join(maintainers)))
 
         # TODO Include runtime dependencies instead of just build dependencies.
+        # TODO Ignore tgt_project packages that depend on this that are part of
+        # ignore list as and instead look at output from staging for those.
         what_depends_on = depends_on(self.apiurl, action.tgt_project, 'standard', [action.tgt_package], True)
         if len(what_depends_on):
             self.logger.warn('{} still required by {}'.format(action.tgt_package, ', '.join(what_depends_on)))
