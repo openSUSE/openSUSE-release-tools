@@ -178,7 +178,7 @@ class TestFactorySourceAccept(unittest.TestCase):
     def test_source_not_in_factory(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?withhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D"),
+            rr("/search/request?withfullhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D"),
             match_querystring = True,
             body = """
                 <collection matches="1">
