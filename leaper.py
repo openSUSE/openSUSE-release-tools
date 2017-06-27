@@ -330,8 +330,8 @@ class Leaper(ReviewBot.ReviewBot):
                     '-SP1:Update', '-SP1:GA', ':Update', ':GA'):
                 prj = 'SUSE:SLE-12' + p
                 if self.is_package_in_project(prj, package):
-                    self.logger.info('Package is in [{0}](/package/show/{0}/{1}) ([diff]([{2}]))'.format(prj,
-                        package, self.rdiff_link(src_project, src_package, src_rev, prj, package)))
+                    self.logger.info('Package is in {}'.format(
+                        self.rdiff_link(src_project, src_package, src_rev, prj, package)))
                     break
 
         is_in_factory = self.source_in_factory
