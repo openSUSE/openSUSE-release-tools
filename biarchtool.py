@@ -46,11 +46,16 @@ class BiArchTool(ToolBase.ToolBase):
         self.rdeps = None
         self.whitelist = {
                 'i586': set([
+                    'bzr',
+                    'git',
+                    'mercurial',
+                    'subversion',
                     'ovmf'
                     ]),
                 }
         self.blacklist = {
                 'i586': set([
+                    'belle-sip',
                     'release-notes-openSUSE',
                     'skelcd-openSUSE',
                     'plasma5-workspace',
