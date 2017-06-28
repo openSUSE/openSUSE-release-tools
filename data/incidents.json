@@ -5,6 +5,12 @@
       "DISTRI": "sle", 
       "FLAVOR": "KGraft", 
       "VERSION": "12"
+    }, 
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents-Kernel", 
+      "KGRAFT": "1"
     }
   ], 
   "SUSE:Updates:SLE-SERVER:12-LTSS:ppc64le": [
@@ -29,6 +35,12 @@
       "DISTRI": "sle", 
       "FLAVOR": "Server-DVD-Incidents", 
       "VERSION": "12"
+    },
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents-Kernel", 
+      "VERSION": "12"
     }
   ], 
   "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:ppc64le": [
@@ -52,6 +64,12 @@
       "ARCH": "x86_64", 
       "DISTRI": "sle", 
       "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP1"
+    },
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents-Kernel", 
       "VERSION": "12-SP1"
     }
   ], 
@@ -84,6 +102,12 @@
       "ARCH": "x86_64", 
       "DISTRI": "sle", 
       "FLAVOR": "Server-DVD-Incidents", 
+      "VERSION": "12-SP2"
+    },
+    {
+      "ARCH": "x86_64", 
+      "DISTRI": "sle", 
+      "FLAVOR": "Server-DVD-Incidents-Kernel", 
       "VERSION": "12-SP2"
     }
   ], 
