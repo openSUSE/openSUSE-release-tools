@@ -139,24 +139,36 @@ class SUSEUpdate(Update):
     # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
     @staticmethod
     def kgraft_target(req):
+        target = None
+        action = None
+        skip = False
+        pattern = re.compile(r"kgraft-patch-([^.]+)\.")
+
         if req:
             for a in req.actions:
-                match = re.match(r"kgraft-patch-([^.]+)\.", a.src_package)
+                if a.src_package.startswith("kernel-"):
+                    skip = True
+                    break
+                match = re.match(pattern, a.src_package)
                 if match:
-                    return match.group(1), a
-        return None, None
+                    target = match.group(1)
+                    action = a
+        if skip:
+            return None, None
+
+        return target, action
 
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
 
         # special handling for kgraft incidents
-        kgraft_target, action = self.kgraft_target(req)
+        if settings['FLAVOR'] in ('KGraft', 'Server-DVD-Incidents-Kernel'):
+            kgraft_target, action = self.kgraft_target(req)
         # ignore kgraft patches without defined target
         # they are actually only the base for kgraft
-        if kgraft_target and kgraft_target in KGRAFT_SETTINGS:
+        if  settings['FLAVOR'] == 'KGraft' and kgraft_target and kgraft_target in KGRAFT_SETTINGS:
             incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
             settings.update(KGRAFT_SETTINGS[kgraft_target])
-            settings['FLAVOR'] = 'KGraft'
             settings['BUILD'] = ':' + req.reqid + '.kgraft.' + incident_id
             settings['MAINT_UPDATE_RRID'] = action.src_project + ':' + req.reqid
 
