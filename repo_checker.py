@@ -11,7 +11,6 @@ from osc import conf
 from osclib.conf import Config
 from osclib.core import binary_list
 from osclib.core import depends_on
-from osclib.core import maintainers_get
 from osclib.core import request_staged
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
@@ -281,13 +280,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         return True
 
     def check_action_delete(self, request, action):
-        creator = request.get_creator()
-        # Force include project maintainers in addition to package owners.
-        maintainers = set(maintainers_get(self.apiurl, action.tgt_project, action.tgt_package) +
-                          maintainers_get(self.apiurl, action.tgt_project)) # TODO Devel project
-        if creator not in maintainers:
-            self.logger.warn('{} is not one of the maintainers: {}'.format(creator, ', '.join(maintainers)))
-
         # TODO Include runtime dependencies instead of just build dependencies.
         # TODO Ignore tgt_project packages that depend on this that are part of
         # ignore list as and instead look at output from staging for those.
