@@ -48,6 +48,8 @@ class BiArchTool(ToolBase.ToolBase):
                 'i586': set([
                     'bzr',
                     'git',
+                    # _link to baselibs package
+                    'libjpeg62-turbo',
                     'mercurial',
                     'subversion',
                     'ovmf'
