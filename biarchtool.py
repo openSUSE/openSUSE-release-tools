@@ -120,8 +120,9 @@ class BiArchTool(ToolBase.ToolBase):
         if packages == '__all__':
             self.packages = self.meta_get_packagelist(self.project)
         elif packages == '__latest__':
-            self.packages = self._filter_packages_by_time(self.latest_packages(self.project))
-            #self.packages = self.latest_packages(self.project)
+            # only works when called in packagelists loop
+            #self.packages = self._filter_packages_by_time(self.latest_packages(self.project))
+            self.packages = self.latest_packages(self.project)
         else:
             self.packages = packages
 
