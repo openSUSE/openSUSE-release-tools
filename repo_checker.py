@@ -200,6 +200,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Print ignored rpms on separate lines in ignore file.
             for item in ignore:
                 ignore_file.write(item + '\n')
+            ignore_file.flush()
 
             # Invoke repo-checker.pl to perform an install check.
             script = os.path.join(SCRIPT_PATH, 'repo-checker.pl')
