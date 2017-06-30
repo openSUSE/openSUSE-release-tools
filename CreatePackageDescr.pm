@@ -24,7 +24,15 @@ sub package_snippet($) {
             $out .= $_;
         }
         close(C);
-        return $out;
+
+        # Detect corrupt cache file and rebuild.
+        if ($out =~ m/=Pkg:    /) {
+            unlink($cachefile);
+            $out = '';
+        }
+        else {
+            return $out;
+        }
     }
 
     # RPMTAG_FILEMODES            = 1030, /* h[] */
