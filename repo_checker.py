@@ -226,7 +226,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             if stderr:
                 parts.append(code + stderr + '\n' + code)
 
-            return CheckResult(False, ('\n\n' + ('-' * 80) + '\n\n').join(parts))
+            return CheckResult(False, ('\n' + ('-' * 80) + '\n\n').join(parts))
 
 
         self.logger.info('install check: passed')
