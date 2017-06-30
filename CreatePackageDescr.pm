@@ -161,7 +161,7 @@ sub package_snippet($) {
     $out .= "-Sug:\n";
 
     mkdir($cachedir);
-    open( C, '>>', $cachefile ) || die "can't open $cachefile";
+    open(C, '>', $cachefile) || die "can't open $cachefile";
     flock(C, LOCK_EX) or die "failed to lock $cachefile: $!\n";
     seek(C, 0, 0); truncate(C, 0);
     print C $out;
