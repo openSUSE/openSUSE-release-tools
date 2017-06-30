@@ -88,7 +88,8 @@ close(PACKAGES);
 
 #print STDERR "calling installcheck\n";
 #print STDERR Dumper(\%targets);
-open( INSTALL, "/usr/bin/installcheck $arch $pfile 2>&1|" )
+my $error_file = $tmpdir . "/error_file";
+open(INSTALL, "/usr/bin/installcheck $arch $pfile 2> $error_file |")
   || die 'exec installcheck';
 while (<INSTALL>) {
     chomp;
@@ -110,9 +111,17 @@ while (<INSTALL>) {
 }
 close(INSTALL);
 
+open(ERROR, '<', $error_file);
+while (<ERROR>) {
+    chomp;
+    print STDERR "$_\n";
+    $ret = 1;
+}
+close(ERROR);
+
 #print STDERR "checking file conflicts\n";
 my $cmd = sprintf( "perl %s/findfileconflicts $pfile", dirname($0) );
-open( INSTALL, "$cmd |" ) || die 'exec fileconflicts';
+open(INSTALL, "$cmd 2> $error_file |") || die 'exec fileconflicts';
 my $inc = 0;
 while (<INSTALL>) {
     chomp;
@@ -132,6 +141,14 @@ while (<INSTALL>) {
     }
 }
 close(INSTALL);
+
+open(ERROR, '<', $error_file);
+while (<ERROR>) {
+    chomp;
+    print STDERR "$_\n";
+    $ret = 1;
+}
+close(ERROR);
 
 #print STDERR "RET $ret\n";
 exit($ret);
