@@ -48,8 +48,6 @@ sub write_package($$) {
     my $ignore  = shift;
     my $package = shift;
 
-    my $out = CreatePackageDescr::package_snippet($package);
-
     my $name = basename($package);
     if ($name =~ m/^[a-z0-9]{32}-/) { # repo cache
        $name =~ s,^[^-]*-(.*)\.rpm,$1,;
@@ -61,6 +59,7 @@ sub write_package($$) {
         return;
     }
 
+    my $out = CreatePackageDescr::package_snippet($package);
     print PACKAGES $out;
     return $name;
 }
