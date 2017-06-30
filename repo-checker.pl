@@ -78,7 +78,7 @@ foreach my $package (@rpms) {
     write_package( 1, $package );
 }
 
-@rpms = glob("$dir/*/*.rpm");
+@rpms = glob("$dir/*.rpm");
 foreach my $package (@rpms) {
     my $name = write_package( 0, $package );
     $targets{$name} = 1;
