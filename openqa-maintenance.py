@@ -195,7 +195,6 @@ class SUSEUpdate(Update):
                 settings['BUILD'] = ':' + req.reqid + name + incident_id
                 if kgraft_target:
                     settings['VERSION'] = self.parse_kgraft_version(kgraft_target)
-
         # ignore kgraft patches without defined target
         # they are actually only the base for kgraft
         if  settings['FLAVOR'] == 'KGraft' and kgraft_target and kgraft_target in KGRAFT_SETTINGS:
@@ -407,11 +406,17 @@ class OpenQABot(ReviewBot.ReviewBot):
         for update in PROJECT_OPENQA_SETTINGS[a.tgt_project]:
             settings = update.settings(a.src_project, a.tgt_project, packages, req)
             settings['INCIDENT_PATCH'] = patch_id
-            if settings is not None:
+            if settings:
                 # is old style kgraft check if all options correctly set
                 if settings['FLAVOR'] == 'KGraft' and 'VIRSH_GUESTNAME' not in settings:
                     self.logger.info("build: {!s} hasn't valid values for kgraft".format(settings['BUILD']))
                     return None
+
+                # don't start KGRAFT job on Server-DVD-Incidents FLAVOR
+                if settings['FLAVOR'] == 'Server-DVD-Incidents':
+                    if settings['BUILD'].split('.')[1].startswith('kgraft-patch'):
+                        return None
+
                 # kernel incidents jobs -- discard all without 'start' = True
                 if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
                     if 'start' in settings:
