@@ -216,7 +216,7 @@ class Leaper(ReviewBot.ReviewBot):
                 # other origins, but primary looking to let Factory submitters
                 # know that there is no need to make manual submissions to both.
                 # Since it has a lookup entry it is not a new package.
-                self.automatic_submission = True
+                self.automatic_submission = False
                 if self.must_approve_version_updates:
                     self.needs_release_manager = True
                 if origin == src_project:
