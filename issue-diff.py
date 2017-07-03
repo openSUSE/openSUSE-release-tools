@@ -21,6 +21,7 @@ import osc.conf
 import osc.core
 
 from osclib.cache import Cache
+from osclib.core import package_list
 
 # Issue summary can contain unicode characters and therefore a string containing
 # either summary or one in which ISSUE_SUMMARY is then placed must be unicode.
@@ -203,16 +204,6 @@ def issues_get(apiurl, project, package, trackers, db):
         }
 
     return issues
-
-def package_list(apiurl, project):
-    url = osc.core.makeurl(apiurl, ['source', project], { 'expand': 1 })
-    root = ET.parse(osc.core.http_GET(url)).getroot()
-
-    packages = []
-    for package in root.findall('entry'):
-        packages.append(package.get('name'))
-
-    return sorted(packages)
 
 def git_clone(url, directory):
     return_code = subprocess.call(['git', 'clone', url, directory])

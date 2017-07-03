@@ -35,6 +35,7 @@ from osc import oscerr
 from osclib.accept_command import AcceptCommand
 from osclib.adi_command import AdiCommand
 from osclib.check_command import CheckCommand
+from osclib.check_duplicate_binaries_command import CheckDuplicateBinariesCommand
 from osclib.cleanup_rings import CleanupRings
 from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
@@ -78,7 +79,7 @@ def _full_project_name(self, project):
 
 def lock_needed(cmd, opts):
     return not(
-        cmd in ('acheck', 'check', 'frozenage', 'rebuild', 'unlock') or
+        cmd in ('acheck', 'check', 'check_duplicate_binaries', 'frozenage', 'rebuild', 'unlock') or
         (cmd == 'list' and not opts.supersede)
     )
 
@@ -134,6 +135,7 @@ def clean_args(args):
 @cmdln.option('--try-strategies', action='store_true', default=False, help='apply strategies and keep any with desireable outcome')
 @cmdln.option('--strategy', help='apply a specific strategy')
 @cmdln.option('--no-color', action='store_true', help='strip colors from output (or add staging.color = 0 to the .oscrc general section')
+@cmdln.option('--save', action='store_true', help='save the result to the dashboard container')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -156,6 +158,8 @@ def do_staging(self, subcmd, opts, *args):
         ready, unstaged, and the adi staging deleted.
 
     "check" will check if all packages are links without changes
+
+    "check_duplicate_binaries" list binaries provided by multiple packages
 
     "cleanup_rings" will try to cleanup rings content and print
         out problems
@@ -283,6 +287,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging acheck
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
         osc staging check [--old] [STAGING...]
+        osc staging check_duplicate_binaries
         osc staging cleanup_rings
         osc staging freeze [--no-boostrap] STAGING...
         osc staging frozenage [STAGING...]
@@ -332,6 +337,7 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, None
     elif cmd in (
         'acheck',
+        'check_duplicate_binaries',
         'cleanup_rings',
         'list',
         'lock',
@@ -385,6 +391,8 @@ def do_staging(self, subcmd, opts, *args):
                 for prj in args[1:]:
                     CheckCommand(api).perform(prj, opts.old)
                     print()
+        elif cmd == 'check_duplicate_binaries':
+            CheckDuplicateBinariesCommand(api).perform(opts.save)
         elif cmd == 'freeze':
             for prj in args[1:]:
                 prj = api.prj_from_letter(prj)
