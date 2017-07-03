@@ -65,16 +65,30 @@ class BiArchTool(ToolBase.ToolBase):
                     ]),
                 }
 
+
+    def _has_baselibs_in_files(self, files):
+        for n in files.findall("./entry[@name='baselibs.conf']"):
+            return True
+        return False
+
+    def _is_link(self, files):
+        for n in files.findall("./entry[@name='_link']"):
+            return True
+        return False
+
     def has_baselibs(self, package):
         if package in self._has_baselibs:
             return self._has_baselibs[package]
 
         ret = False
         files = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package])))
-        for n in files.findall("./entry[@name='baselibs.conf']"):
+        if self._has_baselibs_in_files(files):
             logger.debug('%s has baselibs', package)
             ret = True
-            break
+        elif self._is_link(files):
+            files = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package], {'expand':'1'})))
+            if self._has_baselibs_in_files(files):
+                logger.warn('%s is linked to a baselibs package', package)
         self._has_baselibs[package] = ret
         #logger.debug('%s has no baselibs', package)
         return ret
