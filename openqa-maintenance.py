@@ -158,12 +158,42 @@ class SUSEUpdate(Update):
 
         return target, action
 
+    @staticmethod
+    def parse_kgraft_version(kgraft_target):
+        return kgraft_target.lstrip('SLE').split('_')[0]
+
+    @staticmethod
+    def kernel_target(req):
+        if req:
+            for a in req.actions:
+                # kernel incidents have kernel-source package (suprise!)
+                if a.src_package.startswith('kernel-source'):
+                    return True, a
+        return None, None
+
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
 
-        # special handling for kgraft incidents
+        # special handling for kgraft and kernel incidents
         if settings['FLAVOR'] in ('KGraft', 'Server-DVD-Incidents-Kernel'):
             kgraft_target, action = self.kgraft_target(req)
+        # Server-DVD-Incidents-Incidents handling
+        if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
+            kernel_target, kaction = self.kernel_target(req)
+            if kernel_target or kgraft_target:
+                # incident_id as part of BUILD
+                if kgraft_target:
+                    incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
+                else:
+                    incident_id = re.match(r".*:(\d+)$", kaction.src_project).group(1)
+
+                name = '.kgraft.' if kgraft_target else '.kernel.'
+                # discard jobs without 'start'
+                settings['start'] = True
+                settings['BUILD'] = ':' + req.reqid + name + incident_id
+                if kgraft_target:
+                    settings['VERSION'] = self.parse_kgraft_version(kgraft_target)
+
         # ignore kgraft patches without defined target
         # they are actually only the base for kgraft
         if  settings['FLAVOR'] == 'KGraft' and kgraft_target and kgraft_target in KGRAFT_SETTINGS:
@@ -380,6 +410,12 @@ class OpenQABot(ReviewBot.ReviewBot):
                 if settings['FLAVOR'] == 'KGraft' and 'VIRSH_GUESTNAME' not in settings:
                     self.logger.info("build: {!s} hasn't valid values for kgraft".format(settings['BUILD']))
                     return None
+                # kernel incidents jobs -- discard all without 'start' = True
+                if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
+                    if 'start' in settings:
+                        del settings['start']
+                    else:
+                        return None
 
                 update.calculate_lastest_good_updates(self.openqa, settings)
 
