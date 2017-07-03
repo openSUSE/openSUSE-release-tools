@@ -184,10 +184,12 @@ class SUSEUpdate(Update):
                 # incident_id as part of BUILD
                 if kgraft_target:
                     incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
+                    name = '.kgraft.'
+                    settings['KGRAFT'] = '1'
                 else:
                     incident_id = re.match(r".*:(\d+)$", kaction.src_project).group(1)
+                    name = '.kernel.'
 
-                name = '.kgraft.' if kgraft_target else '.kernel.'
                 # discard jobs without 'start'
                 settings['start'] = True
                 settings['BUILD'] = ':' + req.reqid + name + incident_id
