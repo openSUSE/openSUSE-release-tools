@@ -21,6 +21,7 @@ job install provides pattern() = kde_multimedia
 job install provides pattern() = kde_utilities
 job install provides pattern() = multimedia
 job install provides pattern() = minimal_base
+job install provides pattern() = generic_server
 
 job install provides pattern() = rest_core_dvd
 
@@ -65,3 +66,13 @@ job lock name libudev1-mini
 // this one has no dependency on X but provides dbus-1-x11 for
 // legacy reasons. It would break X session so block it for now
 job lock name dbus-1-nox11
+
+## for textmode test
+job install name yast2-nfs-server
+job install name apache2
+job install name php5
+job install name apache2-mod_php5
+job install name php5-mysql
+job install name php5-pgsql
+job install name postgresql94-server
+job install name bind
