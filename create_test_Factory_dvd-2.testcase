@@ -87,3 +87,6 @@ job install name php5-mysql
 job install name php5-pgsql
 job install name postgresql94-server
 job install name bind
+
+## required for ppc64 test
+job install name mariadb
