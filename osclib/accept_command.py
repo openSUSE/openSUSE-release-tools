@@ -191,21 +191,20 @@ class AcceptCommand(object):
         # XXX TODO - This method have `factory` in the name.  Can be
         # missleading.
 
-        # If thereis not product defined for this project, show the
-        # warning and return.
-        if not self.api.cproduct:
-            warnings.warn('There is not product defined in the configuration file.')
-            return
-
         project = self.api.project
-        url = self.api.makeurl(['source', project, '_product', self.api.cproduct])
-
-        product = http_GET(url).read()
         curr_version = date.today().strftime('%Y%m%d')
-        new_product = re.sub(r'<version>\d{8}</version>', '<version>%s</version>' % curr_version, product)
+        url = self.api.makeurl(['source', project], {'view': 'productlist'})
 
-        if product != new_product:
-            http_PUT(url + '?comment=Update+version', data=new_product)
+        products = ET.parse(http_GET(url)).getroot()
+        for product in products.findall('product'):
+            product_name = product.get('name') + '.product'
+            product_pkg = product.get('originpackage')
+            url = self.api.makeurl(['source', project, product_pkg,  product_name])
+            product_spec = http_GET(url).read()
+            new_product = re.sub(r'<version>\d{8}</version>', '<version>%s</version>' % curr_version, product_spec)
+
+            if product_spec != new_product:
+                http_PUT(url + '?comment=Update+version', data=new_product)
 
         service = {'cmd': 'runservice'}
 
