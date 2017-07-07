@@ -219,7 +219,7 @@ class openSUSEUpdate(Update):
                 'flavor': 'Updates',
                 'scope': 'current',
                 'limit': 100  # this needs increasing if we ever get *monster* coverage for released updates
-                })['jobs']
+            })['jobs']
         # check all publishing jobs per build and reject incomplete builds
         builds = {}
         for job in j:
@@ -300,6 +300,7 @@ with open(opa.join(data_path, "data/incidents.json"), 'r') as f:
 
 
 class OpenQABot(ReviewBot.ReviewBot):
+
     """ check ABI of library packages
     """
 
@@ -460,6 +461,15 @@ class OpenQABot(ReviewBot.ReviewBot):
             m.update(cs.text)
         return m.hexdigest()
 
+    def is_incident_in_testing(self, incident):
+        # hard coded for now as we only run this code for SUSE Maintenance workflow
+        project = 'SUSE:Maintenance:%s' % incident
+
+        xpath = "(state/@name='review') and (action/source/@project='%s' and action/@type='maintenance_release')" % (project)
+        res = osc.core.search(self.apiurl, request=xpath)['request']
+        # return the one and only (or None)
+        return res.find('request')
+
     def calculate_incidents(self, incidents):
         """
         get incident numbers from SUSE:Maintenance:Test project
@@ -467,10 +477,27 @@ class OpenQABot(ReviewBot.ReviewBot):
         """
         l_incidents = []
         for kind, prj in incidents.items():
-            l_incidents.append(
-                (kind + '_TEST_ISSUES', ','.join(
-                    [x.replace('_', '.').split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)]
-                )))
+            packages = osc.core.meta_get_packagelist(self.apiurl, prj)
+            incidents = []
+            # filter out incidents in staging
+            for incident in packages:
+                # remove patchinfo. prefix
+                incident = incident.replace('_', '.').split('.')[1]
+                req = self.is_incident_in_testing(incident)
+                # without release request it's in staging
+                if req is None:
+                    continue
+
+                req_ = osc.core.Request()
+                req_.read(req)
+                kgraft_target, action = SUSEUpdate.kgraft_target(req_)
+                # skip kgraft patches from aggregation
+                if kgraft_target:
+                    continue
+                incidents.append(incident)
+
+            l_incidents.append((kind + '_TEST_ISSUES', ','.join(incidents)))
+
         return l_incidents
 
     def jobs_for_target(self, data):
@@ -484,7 +511,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                 'flavor': s['FLAVOR'],
                 'test': data['test'],
                 'latest': '1',
-                })['jobs']
+            })['jobs']
 
     # we don't know the current BUILD and querying all jobs is too expensive
     # so we need to check for one known TEST first
