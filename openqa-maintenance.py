@@ -118,7 +118,7 @@ class Update(object):
         return request_name_cache[req.reqid]
 
     def _request_name(self, req):
-        for action in  req.get_actions('maintenance_release'):
+        for action in req.get_actions('maintenance_release'):
             if action.tgt_package.startswith('patchinfo'):
                 continue
             url = osc.core.makeurl(
@@ -130,6 +130,7 @@ class Update(object):
             return action.tgt_package
 
         return 'unknown'
+
 
 class SUSEUpdate(Update):
 
@@ -197,7 +198,7 @@ class SUSEUpdate(Update):
                     settings['VERSION'] = self.parse_kgraft_version(kgraft_target)
         # ignore kgraft patches without defined target
         # they are actually only the base for kgraft
-        if  settings['FLAVOR'] == 'KGraft' and kgraft_target and kgraft_target in KGRAFT_SETTINGS:
+        if settings['FLAVOR'] == 'KGraft' and kgraft_target and kgraft_target in KGRAFT_SETTINGS:
             incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
             settings.update(KGRAFT_SETTINGS[kgraft_target])
             settings['BUILD'] = ':' + req.reqid + '.kgraft.' + incident_id
@@ -205,23 +206,24 @@ class SUSEUpdate(Update):
 
         return settings
 
+
 class openSUSEUpdate(Update):
 
     def calculate_lastest_good_updates(self, openqa, settings):
         j = openqa.openqa_request(
             'GET', 'jobs',
-        {
-            'distri': settings['DISTRI'],
-            'version': settings['VERSION'],
-            'arch': settings['ARCH'],
-            'flavor': 'Updates',
-            'scope': 'current',
-            'limit': 100 # this needs increasing if we ever get *monster* coverage for released updates
-        })['jobs']
+            {
+                'distri': settings['DISTRI'],
+                'version': settings['VERSION'],
+                'arch': settings['ARCH'],
+                'flavor': 'Updates',
+                'scope': 'current',
+                'limit': 100  # this needs increasing if we ever get *monster* coverage for released updates
+                })['jobs']
         # check all publishing jobs per build and reject incomplete builds
-        builds = dict()
+        builds = {}
         for job in j:
-            if not 'PUBLISH_HDD_1' in job['settings']:
+            if 'PUBLISH_HDD_1' not in job['settings']:
                 continue
             if job['result'] == 'passed' or job['result'] == 'softfailed':
                 builds.setdefault(job['settings']['BUILD'], 'passed')
@@ -241,7 +243,7 @@ class openSUSEUpdate(Update):
                         lastgood_suffix = suffix
                     elif prefix == lastgood_prefix and suffix > lastgood_suffix:
                         lastgood_suffix = suffix
-                except:
+                except ValueError:
                     continue
 
         if lastgood_prefix:
@@ -263,7 +265,8 @@ class openSUSEUpdate(Update):
             # - added packages
             # - conflicts with installed packages (e.g sendmail vs postfix)
             settings['INSTALL_PACKAGES'] = ' '.join(set([p.name for p in packages]))
-            settings['VERIFY_PACKAGE_VERSIONS'] = ' '.join(['{} {}-{}'.format(p.name, p.version, p.release) for p in packages])
+            settings['VERIFY_PACKAGE_VERSIONS'] = ' '.join(
+                ['{} {}-{}'.format(p.name, p.version, p.release) for p in packages])
 
         settings['ZYPPER_ADD_REPOS'] = settings['INCIDENT_REPO']
         settings['ADDONURL'] = settings['INCIDENT_REPO']
@@ -287,7 +290,7 @@ class TestUpdate(openSUSEUpdate):
 PROJECT_OPENQA_SETTINGS = {}
 
 with open(opa.join(data_path, "data/incidents.json"), 'r') as f:
-    for i,j in json.load(f).items():
+    for i, j in json.load(f).items():
         if i.startswith('SUSE'):
             PROJECT_OPENQA_SETTINGS[i] = [SUSEUpdate(k) for k in j]
         elif i.startswith('openSUSE'):
@@ -315,7 +318,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             for j in self.jobs_for_target(u):
                 # avoid going backwards in job ID
                 if cjob > int(j['id']):
-                   continue
+                    continue
                 buildnr = j['settings']['BUILD']
                 cjob = int(j['id'])
             self.update_test_builds[prj] = buildnr
@@ -394,7 +397,10 @@ class OpenQABot(ReviewBot.ReviewBot):
                 elif binary.attrib['filename'] == 'updateinfo.xml':
                     url = osc.core.makeurl(
                         self.apiurl,
-                        ('build', a.src_project, a.tgt_project.replace(':', '_'), arch, a.src_package, 'updateinfo.xml'))
+                        ('build', a.src_project, a.tgt_project.replace(':', '_'),
+                         arch,
+                         a.src_package,
+                         'updateinfo.xml'))
                     ui = ET.parse(osc.core.http_GET(url)).getroot()
                     patch_id = ui.find('.//id').text
 
@@ -432,10 +438,10 @@ class OpenQABot(ReviewBot.ReviewBot):
                     try:
                         ret = self.openqa.openqa_request('POST', 'isos', data=settings, retries=1)
                         self.logger.info(pformat(ret))
-                    except JSONDecodeError, e:
+                    except JSONDecodeError as e:
                         self.logger.error(e)
                         # TODO: record error
-                    except openqa_exceptions.RequestError, e:
+                    except openqa_exceptions.RequestError as e:
                         self.logger.error(e)
 
         return None
@@ -449,7 +455,8 @@ class OpenQABot(ReviewBot.ReviewBot):
         for url in repos:
             url += '/repodata/repomd.xml'
             root = ET.parse(osc.core.http_GET(url)).getroot()
-            cs = root.find('.//{http://linux.duke.edu/metadata/repo}data[@type="primary"]/{http://linux.duke.edu/metadata/repo}checksum')
+            cs = root.find(
+                './/{http://linux.duke.edu/metadata/repo}data[@type="primary"]/{http://linux.duke.edu/metadata/repo}checksum')
             m.update(cs.text)
         return m.hexdigest()
 
@@ -458,10 +465,10 @@ class OpenQABot(ReviewBot.ReviewBot):
         get incident numbers from SUSE:Maintenance:Test project
         returns dict with openQA var name : string with numbers
         """
-        l_incidents=[]
+        l_incidents = []
         for kind, prj in incidents.items():
             l_incidents.append(
-                ( kind + '_TEST_ISSUES', ','.join(
+                (kind + '_TEST_ISSUES', ','.join(
                     [x.replace('_', '.').split('.')[1] for x in osc.core.meta_get_packagelist(self.apiurl, prj)]
                 )))
         return l_incidents
@@ -470,22 +477,22 @@ class OpenQABot(ReviewBot.ReviewBot):
         s = data['settings'][0]
         return self.openqa.openqa_request(
             'GET', 'jobs',
-        {
-            'distri': s['DISTRI'],
-            'version': s['VERSION'],
-            'arch': s['ARCH'],
-            'flavor': s['FLAVOR'],
-            'test': data['test'],
-            'latest': '1',
-        })['jobs']
+            {
+                'distri': s['DISTRI'],
+                'version': s['VERSION'],
+                'arch': s['ARCH'],
+                'flavor': s['FLAVOR'],
+                'test': data['test'],
+                'latest': '1',
+                })['jobs']
 
     # we don't know the current BUILD and querying all jobs is too expensive
     # so we need to check for one known TEST first
     # if that job doesn't contain the proper hash, we trigger a new one
     # and then we know the build
     def trigger_build_for_target(self, prj, data):
-        today=date.today().strftime("%Y%m%d")
-        repohash=self.calculate_repo_hash(data['repos'])
+        today = date.today().strftime("%Y%m%d")
+        repohash = self.calculate_repo_hash(data['repos'])
         buildnr = None
         j = self.jobs_for_target(data)
         for job in j:
@@ -509,7 +516,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     nr = int(build.split('-')[1])
                     if nr > buildnr:
                         buildnr = nr
-                except:
+                except BaseException:
                     continue
 
         buildnr = "%s-%d" % (today, buildnr + 1)
@@ -517,15 +524,15 @@ class OpenQABot(ReviewBot.ReviewBot):
         for s in data['settings']:
             # now schedule it for real
             if 'incidents' in data.keys():
-                for x,y in self.calculate_incidents(data['incidents']):
-                    s[x]=y
+                for x, y in self.calculate_incidents(data['incidents']):
+                    s[x] = y
             s['BUILD'] = buildnr
             s['REPOHASH'] = repohash
             self.logger.debug(pformat(s))
             if not self.dryrun:
                 try:
                     self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
-                except Exception, e:
+                except Exception as e:
                     self.logger.debug(e)
         self.update_test_builds[prj] = buildnr
 
@@ -663,7 +670,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         if len(modstrings):
             return '\n- [%s](%s) failed in %s' % (self.job_test_name(job), testurl, ','.join(modstrings))
-        elif job['result'] == 'failed': # rare case: fail without module fails
+        elif job['result'] == 'failed':  # rare case: fail without module fails
             return '\n- [%s](%s) failed' % (self.job_test_name(job), testurl)
         return ''
 
@@ -701,21 +708,22 @@ class OpenQABot(ReviewBot.ReviewBot):
                 # this is for humans to decide which incident broke the test repo
                 jobs += self.request_get_openqa_jobs(req, incident=False, test_repo=True)
                 if self.calculate_qa_status(jobs) == QA_INPROGRESS:
-                    self.logger.debug("incident tests for request %s are done, but need to wait for test repo", req.reqid)
+                    self.logger.debug(
+                        "incident tests for request %s are done, but need to wait for test repo", req.reqid)
                     return
                 groups = dict()
                 for job in jobs:
                     gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
-                    if not gl in groups:
-                        groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview' ],
-                                                    { 'version': job['settings']['VERSION'],
-                                                      'groupid': job['group_id'],
-                                                      'flavor': job['settings']['FLAVOR'],
-                                                      'distri': job['settings']['DISTRI'],
-                                                      'build': job['settings']['BUILD'],
-                                                    })
-                        groups[gl] = { 'title': "__Group [%s](%s)__\n" % (gl, groupurl),
-                                       'passed': 0, 'failed': [] }
+                    if gl not in groups:
+                        groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview'],
+                                                    {'version': job['settings']['VERSION'],
+                                                     'groupid': job['group_id'],
+                                                     'flavor': job['settings']['FLAVOR'],
+                                                     'distri': job['settings']['DISTRI'],
+                                                     'build': job['settings']['BUILD'],
+                                                     })
+                        groups[gl] = {'title': "__Group [%s](%s)__\n" % (gl, groupurl),
+                                      'passed': 0, 'failed': []}
 
                     job_summary = self.summarize_one_openqa_job(job)
                     if not len(job_summary):
@@ -777,7 +785,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
         parser.add_option("--force", action="store_true", help="recheck requests that are already considered done")
-        parser.add_option("--no-comment", dest='comment', action="store_false", default=True, help="don't actually post comments to obs")
+        parser.add_option("--no-comment", dest='comment', action="store_false",
+                          default=True, help="don't actually post comments to obs")
         parser.add_option("--openqa", metavar='HOST', help="openqa api host")
         return parser
 
@@ -795,6 +804,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         logger = self.logger
 
         return bot
+
 
 if __name__ == "__main__":
     requests_log = logging.getLogger("requests.packages.urllib3")
