@@ -1,4 +1,5 @@
 import json
+import urllib2
 
 from colorama import Fore
 
@@ -50,7 +51,11 @@ class AdiCommand:
                 self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
                 packages.append(req['package'])
             self.api.accept_status_comment(project, packages)
-            delete_project(self.api.apiurl, project)
+            try:
+                delete_project(self.api.apiurl, project)
+            except urllib2.HTTPError, e:
+                print e
+                pass
         else:
             print query_project, Fore.GREEN + 'ready:', ', '.join(['{}[{}]'.format(
                 Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['selected_requests']])
