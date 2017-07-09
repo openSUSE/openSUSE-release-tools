@@ -107,6 +107,14 @@
       "VERSION": "12-SP2"
     }
   ], 
+  "SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64": [
+     {
+      "ARCH": "x86_64",
+      "DISTRI": "sle",
+      "FLAVOR": "Desktop-DVD-Incidents",
+      "VERSION": "12-SP2"
+    }
+  ],
   "SUSE:Updates:SLE-SERVER:12-SP2:x86_64": [
     {
       "ARCH": "x86_64", 

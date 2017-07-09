@@ -1,0 +1,27 @@
+{
+    "SUSE:Updates:SLE-SERVER:12-SP2:"
+      : {
+        "archs" : [ "x86_64", "s390x", "ppc64le", "aarch64" ],
+        "version" : "12-SP2",
+        "flavor"  : "Server-DVD-Incidents",
+        "issues"
+        : {
+            "SDK_ISSUES"  : "SUSE:Updates:SLE-SDK:12-SP2:",
+            "HPCM_ISSUES" : "SUSE:Updates:SLE-Module-HPC:12:",
+            "WE_ISSUES"   : "SUSE:Updates:SLE-WE:12-SP2:"
+        }
+      },
+      "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:"
+      : {
+        "archs" : [ "x86_64", "s390x", "ppc64le" ],
+        "version" : "12-SP1",
+        "flavor"  : "Server-DVD-Incidents"
+      },
+      "SUSE:Updates:SLE-DESKTOP:12-SP2:"
+      : {
+        "archs"   : ["x86_64"],
+        "version" : "12-SP2",
+        "flavor"  : "Desktop-DVD-Incidents",
+        "issues"  : { "SDK_ISSUES" : "SUSE:Updates:SLE-SDK:12-SP2:" }
+      }
+}

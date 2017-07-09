@@ -25,6 +25,7 @@ import re
 import sys
 from datetime import date
 import md5
+import cmdln
 
 import simplejson as json
 from simplejson import JSONDecodeError
@@ -38,9 +39,11 @@ try:
 except ImportError:
     import cElementTree as ET
 
+import gzip
+from tempfile import NamedTemporaryFile
 import osc.conf
 import osc.core
-
+from pprint import pprint
 from osclib.comments import CommentAPI
 
 import ReviewBot
@@ -62,7 +65,7 @@ comment_marker_re = re.compile(r'<!-- openqa state=(?P<state>done|seen)(?: resul
 
 logger = None
 
-request_name_cache = {}
+incident_name_cache = {}
 
 # old stuff, for reference
 #    def filterchannel(self, apiurl, prj, packages):
@@ -91,6 +94,9 @@ with open(opa.join(data_path, "data/kgraft.json"), 'r') as f:
 with open(opa.join(data_path, "data/repos.json"), 'r') as f:
     TARGET_REPO_SETTINGS = json.load(f)
 
+with open(opa.join(data_path, "data/apimap.json"), 'r') as f:
+    API_MAP = json.load(f)
+
 
 class Update(object):
 
@@ -102,34 +108,73 @@ class Update(object):
         s = self._settings.copy()
 
         # start with a colon so it looks cool behind 'Build' :/
-        s['BUILD'] = ':' + req.reqid + '.' + self.request_name(req)
-        s['INCIDENT_REPO'] = '%s/%s/%s/' % (self.repo_prefix(), src_prj.replace(':', ':/'), dst_prj.replace(':', '_'))
-
+        s['BUILD'] = ':' + src_prj.split(':')[-1]
+        if req:
+            s['BUILD'] += '.' + req.reqid
+        name = self.incident_name(src_prj)
+        repo = dst_prj.replace(':', '_')
+        repo = '%s/%s/%s/' % (self.repo_prefix(), src_prj.replace(':', ':/'), repo)
+        patch_id = self.patch_id(repo)
+        if patch_id:
+            s['INCIDENT_REPO'] = repo
+            s['INCIDENT_PATCH'] = self.patch_id(repo)
+        s['BUILD'] += ':' + name
         return s
+
+    # grab the updateinfo from the given repo and return its patch's id
+    def patch_id(self, repo):
+        url = repo + 'repodata/repomd.xml'
+        repomd = requests.get(url)
+        if not repomd.ok:
+            return None
+        root = ET.fromstring(repomd.text)
+
+        cs = root.find(
+            './/{http://linux.duke.edu/metadata/repo}data[@type="updateinfo"]/{http://linux.duke.edu/metadata/repo}location')
+        url = repo + cs.attrib['href']
+
+        # python 3 brings gzip.decompress, but with python 2 we need to store to
+        # temporary file to uncompress
+        repomd = requests.get(url).content
+        tfile = NamedTemporaryFile()
+        tfile.write(repomd)
+        tfile.flush()
+        with gzip.open(tfile.name, 'rb') as f:
+            repomd = f.read()
+        root = ET.fromstring(repomd)
+        return root.find('.//id').text
 
     def calculate_lastest_good_updates(self, openqa, settings):
         # not touching anything by default
         pass
 
     # take the first package name we find - often enough correct
-    def request_name(self, req):
-        if req.reqid not in request_name_cache:
-            request_name_cache[req.reqid] = self._request_name(req)
-        return request_name_cache[req.reqid]
+    def incident_name(self, prj):
+        if prj not in incident_name_cache:
+            incident_name_cache[prj] = self._incident_name(prj)
+        return incident_name_cache[prj]
 
-    def _request_name(self, req):
-        for action in req.get_actions('maintenance_release'):
-            if action.tgt_package.startswith('patchinfo'):
+    def _incident_name(self, prj):
+        shortest_pkg = None
+        for package in osc.core.meta_get_packagelist(self.apiurl, prj):
+            if package.startswith('patchinfo'):
+                continue
+            if package.endswith('SUSE_Channels'):
                 continue
             url = osc.core.makeurl(
-                req.apiurl,
-                ('source', action.src_project, action.src_package, '_link'))
+                self.apiurl,
+                ('source', prj, package, '_link'))
             root = ET.parse(osc.core.http_GET(url)).getroot()
             if root.attrib.get('cicount'):
                 continue
-            return action.tgt_package
-
-        return 'unknown'
+            if not shortest_pkg or len(package) < len(shortest_pkg):
+                shortest_pkg = package
+        if not shortest_pkg:
+            shortest_pkg = 'unknown'
+        match = re.match(r'^(.*)\.[^\.]*$', shortest_pkg)
+        if match:
+            return match.group(1)
+        return shortest_pkg
 
 
 class SUSEUpdate(Update):
@@ -174,6 +219,8 @@ class SUSEUpdate(Update):
 
     def settings(self, src_prj, dst_prj, packages, req=None):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
+        if not settings:
+            return None
 
         # special handling for kgraft and kernel incidents
         if settings['FLAVOR'] in ('KGraft', 'Server-DVD-Incidents-Kernel'):
@@ -336,7 +383,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         # then check progress on running incidents
         for req in self.requests:
             # just patch apiurl in to avoid having to pass it around
-            req.apiurl = self.apiurl
             jobs = self.request_get_openqa_jobs(req, incident=True, test_repo=True)
             ret = self.calculate_qa_status(jobs)
             if ret != QA_UNKNOWN:
@@ -373,7 +419,6 @@ class OpenQABot(ReviewBot.ReviewBot):
             return None
 
         packages = []
-        patch_id = None
         # patchinfo collects the binaries and is build for an
         # unpredictable architecture so we need iterate over all
         url = osc.core.makeurl(
@@ -395,15 +440,6 @@ class OpenQABot(ReviewBot.ReviewBot):
                     # can't use arch here as the patchinfo mixes all
                     # archs
                     packages.append(Package(m.group('name'), m.group('version'), m.group('release')))
-                elif binary.attrib['filename'] == 'updateinfo.xml':
-                    url = osc.core.makeurl(
-                        self.apiurl,
-                        ('build', a.src_project, a.tgt_project.replace(':', '_'),
-                         arch,
-                         a.src_package,
-                         'updateinfo.xml'))
-                    ui = ET.parse(osc.core.http_GET(url)).getroot()
-                    patch_id = ui.find('.//id').text
 
         if not packages:
             raise Exception("no packages found")
@@ -411,8 +447,8 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.logger.debug('found packages %s and patch id %s', ' '.join(set([p.name for p in packages])), patch_id)
 
         for update in PROJECT_OPENQA_SETTINGS[a.tgt_project]:
+            update.apiurl = self.apiurl
             settings = update.settings(a.src_project, a.tgt_project, packages, req)
-            settings['INCIDENT_PATCH'] = patch_id
             if settings:
                 # is old style kgraft check if all options correctly set
                 if settings['FLAVOR'] == 'KGraft' and 'VIRSH_GUESTNAME' not in settings:
@@ -579,6 +615,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             for prj in tgt_prjs:
                 if incident and prj in PROJECT_OPENQA_SETTINGS:
                     for u in PROJECT_OPENQA_SETTINGS[prj]:
+                        u.apiurl = self.apiurl
                         s = u.settings(build, prj, [], req=req)
                         ret += self.openqa.openqa_request(
                             'GET', 'jobs',
@@ -727,7 +764,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     ret = True
                 else:
                     # no notification until the result is done
-                    osc.core.change_review_state(req.apiurl, req.reqid, newstate='new',
+                    osc.core.change_review_state(self.apiurl, req.reqid, newstate='new',
                                                  by_group=self.review_group, by_user=self.review_user,
                                                  message='now testing in openQA')
             elif qa_state == QA_FAILED or qa_state == QA_PASSED:
@@ -802,12 +839,68 @@ class OpenQABot(ReviewBot.ReviewBot):
                     return c['id'], m.group('state'), m.group('result'), c['comment']
         return None, None, None, None
 
+    def get_max_revision(self, job, u):
+        repo = '%s/SUSE:/Maintenance:/%s' % (u.repo_prefix(), str(job['id']))
+        max_revision = 0
+        for channel in job['channels']:
+            crepo = repo + '/' + channel.replace(':', '_')
+            xml = requests.get(crepo + '/repodata/repomd.xml')
+            if not xml.ok:
+                # if one fails, we skip it and wait
+                print crepo, 'has no repodata - waiting'
+                return None
+            root = ET.fromstring(xml.text)
+            rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
+            rev = int(rev.text)
+            if rev > max_revision:
+                max_revision = rev
+        return max_revision
+
+    def check_product(self, job, product_prefix):
+        pmap = API_MAP[product_prefix]
+        for arch in pmap['archs']:
+            need = False
+            settings = {'FLAVOR': pmap['flavor'], 'VERSION': pmap['version'], 'ARCH': arch, 'DISTRI': 'sle'}
+            issues = pmap.get('issues', {})
+            issues['OS_ISSUES'] = product_prefix
+            for key, prefix in issues.items():
+                if prefix + arch in job['channels']:
+                    settings[key] = str(job['id'])
+                    need = True
+            if need:
+                u = PROJECT_OPENQA_SETTINGS[product_prefix + arch][0]
+                u.apiurl = self.apiurl
+                s = u.settings('SUSE:Maintenance:' + str(job['id']), product_prefix + arch, [], None)
+                if s:
+                    if job.get('openqa_build') is None:
+                        job['openqa_build'] = self.get_max_revision(job, u)
+                    if job.get('openqa_build') is None:
+                        return
+                    s['BUILD'] += '.' + str(job['openqa_build'])
+                    s.update(settings)
+                    print s
+
+    def test(self):
+        for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
+            job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
+            if job['meta']['state'] in ['final', 'gone']:
+                continue
+            for prod in API_MAP.keys():
+                self.check_product(job['base'], prod)
+
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
         self.clazz = OpenQABot
+
+    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
+    def do_test(self, subcmd, opts, *args):
+        def work():
+            self.checker.test()
+
+        self.runner(work, opts.interval)
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
