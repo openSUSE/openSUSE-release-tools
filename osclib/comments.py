@@ -160,10 +160,14 @@ class CommentAPI(object):
             if comment['parent']:
                 parents.append(comment['parent'])
 
-        for id_ in comments.keys():
-            if id_ not in parents:
-                self.delete(id_)
-                del comments[id_]
+        for comment in comments.values():
+            if comment['id'] not in parents:
+                # Parent comments that have been removed are still returned
+                # when children exist and are authored by _nobody_. Such
+                # should not be deleted remotely, but only marked internally.
+                if comment['who'] != '_nobody_':
+                    self.delete(comment['id'])
+                del comments[comment['id']]
 
         return comments
 
