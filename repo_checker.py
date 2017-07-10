@@ -66,7 +66,9 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Only interested if group has completed building.
             api = self.staging_api(request.actions[0].tgt_project)
             status = api.project_status(group, True)
-            if str(status['overall_state']) not in ('testing', 'review', 'acceptable'):
+            # Corrupted requests may reference non-existent projects and will
+            # thus return a None status which should be considered not ready.
+            if not status or str(status['overall_state']) not in ('testing', 'review', 'acceptable'):
                 self.logger.debug('{}: {} not ready'.format(request.reqid, group))
                 continue
 
