@@ -48,6 +48,12 @@ sub package_snippet($) {
           }
     );
 
+    if (!exists $qq{'NAME'}[0]) {
+        print STDERR "corrupt rpm: $package\n";
+        unlink($package);
+        return $out; # Needs to be re-mirrored, so return blank to trigger error.
+    }
+
     my $name = $qq{'NAME'}[0];
 
     Build::Rpm::add_flagsvers( \%qq, 1049, 1048, 1050 );    # requires
