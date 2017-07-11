@@ -90,7 +90,6 @@ class BiArchTool(ToolBase.ToolBase):
             if self._has_baselibs_in_files(files):
                 logger.warn('%s is linked to a baselibs package', package)
         self._has_baselibs[package] = ret
-        #logger.debug('%s has no baselibs', package)
         return ret
 
     def is_biarch_recursive(self, package):
@@ -107,7 +106,6 @@ class BiArchTool(ToolBase.ToolBase):
         if r:
             return r
         if package in self.rdeps:
-            #logger.debug('checking rdeps for %s (%d)', package, len(self.rdeps[package]))
             for p in self.rdeps[package]:
                 r = self.is_biarch_recursive(p)
                 if r:
@@ -174,7 +172,6 @@ class BiArchTool(ToolBase.ToolBase):
 
         for n in result.findall("./result[@arch='{}']/status".format(self.arch)):
             if n.get('code') not in ('disabled', 'excluded'):
-                #logger.debug('%s %s', n.get('package'), n.get('code'))
                 packages.add(n.get('package'))
 
         for pkg in sorted(packages):
