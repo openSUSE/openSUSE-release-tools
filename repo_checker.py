@@ -216,6 +216,9 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         if p.returncode:
             self.logger.info('install check: failed')
+            if p.returncode == 126:
+                self.logger.warn('mirror cache reset due to corruption')
+                self.mirrored = set()
 
             # Format output as markdown comment.
             code = '```\n'

@@ -62,7 +62,7 @@ sub write_package($$) {
     my $out = CreatePackageDescr::package_snippet($package);
     if ($out eq "" || $out =~ m/=Pkg:    /) {
         print STDERR "ERROR: empty package snippet for: $name\n";
-        exit(1);
+        exit(126);
     }
     print PACKAGES $out;
     return $name;
