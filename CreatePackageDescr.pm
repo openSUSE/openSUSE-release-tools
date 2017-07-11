@@ -26,7 +26,7 @@ sub package_snippet($) {
         close(C);
 
         # Detect corrupt cache file and rebuild.
-        if ($out =~ m/=Pkg:    /) {
+        if ($out eq "" || $out =~ m/=Pkg:    /) {
             unlink($cachefile);
             $out = '';
         }
