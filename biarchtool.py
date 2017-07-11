@@ -65,29 +65,25 @@ class BiArchTool(ToolBase.ToolBase):
                     ]),
                 }
 
-
-    def _has_baselibs_in_files(self, files):
-        for n in files.findall("./entry[@name='baselibs.conf']"):
-            return True
-        return False
-
-    def _is_link(self, files):
-        for n in files.findall("./entry[@name='_link']"):
-            return True
-        return False
+    def get_filelist(self, project, package, expand = False):
+        query = {}
+        if expand:
+            query['expand'] = 1
+        root = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package], query)))
+        return [ node.get('name') for node in root.findall('entry') ]
 
     def has_baselibs(self, package):
         if package in self._has_baselibs:
             return self._has_baselibs[package]
 
         ret = False
-        files = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package])))
-        if self._has_baselibs_in_files(files):
+        files = self.get_filelist(self.project, package)
+        if 'baselibs.conf' in files:
             logger.debug('%s has baselibs', package)
             ret = True
-        elif self._is_link(files):
-            files = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package], {'expand':'1'})))
-            if self._has_baselibs_in_files(files):
+        elif '_link' in files:
+            files = self.get_filelist(self.project, package, expand = True)
+            if 'baselibs.conf' in files:
                 logger.warn('%s is linked to a baselibs package', package)
         self._has_baselibs[package] = ret
         return ret
