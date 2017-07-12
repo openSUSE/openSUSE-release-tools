@@ -14,7 +14,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from copy import deepcopy
 import urllib2
 from xml.etree import cElementTree as ET
 
@@ -144,7 +143,7 @@ class Package(object):
 
 
 class CycleDetector(object):
-    """Class to detect cycles in Factory / 13.2."""
+    """Class to detect cycles in an OBS project."""
 
     def __init__(self, api):
         self.api = api
@@ -228,64 +227,15 @@ class CycleDetector(object):
         return frozenset(frozenset(e.text for e in cycle.findall('package'))
                          for cycle in root.findall('cycle'))
 
-    def cycles(self, requests, project=None, repository='standard', arch='x86_64'):
+    def cycles(self, group, project=None, repository='standard', arch='x86_64'):
         """Detect cycles in a specific repository."""
 
         if not project:
             project = self.api.project
 
-        # filter submit requests
-        requests = [rq for rq in requests if rq.action_type == 'submit' and not rq.updated]
-
         # Detect cycles - We create the full graph from _builddepinfo.
         project_graph = self._get_builddepinfo_graph(project, repository, arch)
-        project_cycles = project_graph.cycles()
-
-        # This graph will be updated for every request
-        current_graph = deepcopy(project_graph)
-
-        subpkgs = current_graph.subpkgs
-
-        # Recover all packages at once, ignoring some packages that
-        # can't be found in x86_64 architecture.
-        #
-        # The first filter is to remove some packages that do not have
-        # `goodrepos`. Those packages are usually marked as 'rq.update
-        # = True' (meaning that they are declined or there is a new
-        # updated review).
-        # all_packages = [self._get_builddepinfo(rq.src_project, rq.goodrepos[0], arch, rq.src_package)
-        #                 for rq in requests if not rq.updated]
-
-        # 'goodrepos' are a list of tuples (project, repository).  We
-        # take the ones that match the project from the request and
-        # take the first repository.
-        goodrepos = {}
-        for rq in requests:
-            _goodrepos = [_repo for (_prj, _repo) in rq.goodrepos if rq.src_project == _prj]
-            if _goodrepos:
-                goodrepos[rq] = _goodrepos[0]
-            else:
-                _prj, _repo = rq.goodrepos[0]
-                goodrepos[rq] = _repo
-        all_packages = [self._get_builddepinfo(rq.shadow_src_project, goodrepos[rq], arch, rq.src_package)
-                        for rq in requests if not rq.updated]
-        all_packages = [pkg for pkg in all_packages if pkg]
-
-        subpkgs.update(dict((p, pkg.pkg) for pkg in all_packages for p in pkg.subs))
-
-        for pkg in all_packages:
-            # Update the current graph and see if we have different cycles
-            edges_to = ()
-            if pkg.pkg in current_graph:
-                current_graph[pkg.pkg] = pkg
-                current_graph.remove_edges_from(set((pkg.pkg, p) for p in current_graph.edges(pkg.pkg)))
-                edges_to = current_graph.edges_to(pkg.pkg)
-                current_graph.remove_edges_from(set((p, pkg.pkg) for p in edges_to))
-            else:
-                current_graph.add_node(pkg.pkg, pkg)
-            current_graph.add_edges_from((pkg.pkg, subpkgs[p]) for p in pkg.deps if p in subpkgs)
-            current_graph.add_edges_from((p, pkg.pkg) for p in edges_to
-                                         if pkg.pkg in set(subpkgs[sp] for sp in current_graph[p].deps if sp in subpkgs))
+        current_graph = self._get_builddepinfo_graph(group, repository, arch)
 
         # Sometimes, new cycles have only new edges, but not new
         # packages.  We need to inform about this, so this can become
@@ -295,6 +245,7 @@ class CycleDetector(object):
         # project (i.e Factory) cycles as a set of packages, so we can
         # check if the new cycle (also as a set of packages) is
         # included here.
+        project_cycles = project_graph.cycles()
         project_cycles_pkgs = [set(cycle) for cycle in project_cycles]
         for cycle in current_graph.cycles():
             if cycle not in project_cycles:

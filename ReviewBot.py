@@ -79,6 +79,9 @@ class ReviewBot(object):
         self.fallback_group = None
         self.comment_api = CommentAPI(self.apiurl)
         self.bot_name = self.__class__.__name__
+        self.only_one_action = False
+        self.request_default_return = None
+        self.comment_handler = False
 
         self.load_config()
 
@@ -106,7 +109,7 @@ class ReviewBot(object):
 
     def set_request_ids(self, ids):
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withhistory' : '1' })
+            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withfullhistory' : '1' })
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
             req = osc.core.Request()
@@ -212,6 +215,17 @@ class ReviewBot(object):
 
         return None if nothing to do, True to accept, False to reject
         """
+
+        # Copy original values to revert changes made to them.
+        self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
+
+        if self.only_one_action and len(req.actions) != 1:
+            self.review_messages['declined'] = 'Only one action per request'
+            return False
+
+        if self.comment_handler is not False:
+            self.comment_handler_add()
+
         overall = None
         for a in req.actions:
             fn = 'check_action_%s'%a.type
@@ -262,7 +276,9 @@ class ReviewBot(object):
 
     def check_action__default(self, req, a):
         self.logger.error("unhandled request type %s"%a.type)
-        return None
+        if self.comment_handler:
+            self.comment_write()
+        return self.request_default_return
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """
@@ -362,7 +378,7 @@ class ReviewBot(object):
            review = "@by_user='%s' and @state='new'" % self.review_user
         else:
            review = "@by_group='%s' and @state='new'" % self.review_group
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withhistory': 1 } )
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1 } )
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -375,7 +391,7 @@ class ReviewBot(object):
     def set_request_ids_project(self, project, typename):
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
                                { 'match': "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename),
-                                 'withhistory': 1 })
+                                 'withfullhistory': 1 })
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -396,24 +412,33 @@ class ReviewBot(object):
     def comment_handler_lines_deduplicate(self):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
-    def comment_write(self, state='done', result=None, request=None, message=None):
+    def comment_write(self, state='done', result=None, project=None, request=None,
+                      message=None, identical=False):
         """Write comment from log messages if not similar to previous comment."""
-        if request is None:
-            request = self.request
+        if project:
+            kwargs = {'project_name': project}
+        else:
+            if request is None:
+                request = self.request
+            kwargs = {'request_id': request.reqid}
+
         if message is None:
             message = '\n\n'.join(self.comment_handler.lines)
 
         info = {'state': state, 'result': result}
         message = self.comment_api.add_marker(message, self.bot_name, info)
 
-        comments = self.comment_api.get_comments(request_id=request.reqid)
+        comments = self.comment_api.get_comments(**kwargs)
         comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
-        if comment is not None and comment['comment'].count('\n') == message.count('\n'):
+        if (comment is not None and
+            ((identical and comment['comment'] == message) or
+             (not identical and comment['comment'].count('\n') == message.count('\n')))
+        ):
             # Assume same state/result and number of lines in message is duplicate.
             self.logger.debug('previous comment too similar to bother commenting again')
             return
 
-        self.logger.debug('adding comment to {}: {}'.format(request.reqid, message))
+        self.logger.debug('adding comment to {}: {}'.format(kwargs.itervalues().next(), message))
 
         if not self.dryrun:
             if comment is None:
@@ -421,7 +446,7 @@ class ReviewBot(object):
                 comment, _ = self.comment_api.comment_find(comments, self.bot_name)
             if comment is not None:
                 self.comment_api.delete(comment['id'])
-            self.comment_api.add_comment(request_id=request.reqid, comment=str(message))
+            self.comment_api.add_comment(comment=str(message), **kwargs)
 
         self.comment_handler_remove()
 

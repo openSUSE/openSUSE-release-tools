@@ -46,6 +46,11 @@ class Leaper(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
+        # ReviewBot options.
+        self.only_one_action = True
+        self.request_default_return = True
+        self.comment_handler = True
+
         self.do_comments = True
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
@@ -398,19 +403,12 @@ class Leaper(ReviewBot.ReviewBot):
         return False
 
     def check_one_request(self, req):
-        self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
         self.needs_legal_review = False
         self.needs_reviewteam = False
         self.needs_release_manager = False
         self.pending_factory_submission = False
         self.source_in_factory = None
-        self.comment_handler_add()
         self.packages = {}
-
-        if len(req.actions) != 1:
-            msg = "only one action per request please"
-            self.review_messages['declined'] = msg
-            return False
 
         request_ok = ReviewBot.ReviewBot.check_one_request(self, req)
         if not self.ibs:
@@ -476,9 +474,8 @@ class Leaper(ReviewBot.ReviewBot):
         return request_ok
 
     def check_action__default(self, req, a):
-        super(Leaper, self).check_action__default(req, a)
         self.needs_release_manager = True
-        return True
+        return super(Leaper, self).check_action__default(req, a)
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 

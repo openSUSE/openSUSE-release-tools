@@ -18,6 +18,7 @@ BEGIN {
 require CreatePackageDescr;
 
 my $ret = 0;
+my $arch = shift @ARGV;
 my $dir = shift @ARGV;
 my %toignore;
 my $repodir;
@@ -41,41 +42,11 @@ while (@ARGV) {
     }
 }
 
-for my $pdir ( glob("$dir/*") ) {
-    if ( !-f "$pdir/rpmlint.log" ) {
-        print
-	  "Couldn't find a rpmlint.log in the build results in $pdir. This is mandatory\n";
-        my $name = basename($pdir);
-        if (   $name eq "rpm"
-            || $name eq "rpm-python"
-            || $name eq "popt"
-            || $name eq "rpmlint"
-            || $name eq "rpmlint-mini"
-            || $name eq "rpmlint-Factory" )
-        {
-            print "ignoring - whitelist\n";
-        }
-        else {
-            $ret = 1;
-        }
-    }
-    else {
-        open( GREP, "grep 'W:.*invalid-license ' $pdir/rpmlint.log |" );
-        while (<GREP>) {
-            print "Found rpmlint warning: ";
-            print $_;
-            $ret = 1;
-        }
-    }
-}
-
 my %targets;
 
 sub write_package($$) {
     my $ignore  = shift;
     my $package = shift;
-
-    my $out = CreatePackageDescr::package_snippet($package);
 
     my $name = basename($package);
     if ($name =~ m/^[a-z0-9]{32}-/) { # repo cache
@@ -88,6 +59,11 @@ sub write_package($$) {
         return;
     }
 
+    my $out = CreatePackageDescr::package_snippet($package);
+    if ($out eq "" || $out =~ m/=Pkg:    /) {
+        print STDERR "ERROR: empty package snippet for: $name\n";
+        exit(126);
+    }
     print PACKAGES $out;
     return $name;
 }
@@ -102,7 +78,7 @@ foreach my $package (@rpms) {
     write_package( 1, $package );
 }
 
-@rpms = glob("$dir/*/*.rpm");
+@rpms = glob("$dir/*.rpm");
 foreach my $package (@rpms) {
     my $name = write_package( 0, $package );
     $targets{$name} = 1;
@@ -112,7 +88,8 @@ close(PACKAGES);
 
 #print STDERR "calling installcheck\n";
 #print STDERR Dumper(\%targets);
-open( INSTALL, "/usr/bin/installcheck x86_64 $pfile 2>&1|" )
+my $error_file = $tmpdir . "/error_file";
+open(INSTALL, "/usr/bin/installcheck $arch $pfile 2> $error_file |")
   || die 'exec installcheck';
 while (<INSTALL>) {
     chomp;
@@ -134,9 +111,17 @@ while (<INSTALL>) {
 }
 close(INSTALL);
 
+open(ERROR, '<', $error_file);
+while (<ERROR>) {
+    chomp;
+    print STDERR "$_\n";
+    $ret = 1;
+}
+close(ERROR);
+
 #print STDERR "checking file conflicts\n";
 my $cmd = sprintf( "perl %s/findfileconflicts $pfile", dirname($0) );
-open( INSTALL, "$cmd |" ) || die 'exec fileconflicts';
+open(INSTALL, "$cmd 2> $error_file |") || die 'exec fileconflicts';
 my $inc = 0;
 while (<INSTALL>) {
     chomp;
@@ -156,6 +141,14 @@ while (<INSTALL>) {
     }
 }
 close(INSTALL);
+
+open(ERROR, '<', $error_file);
+while (<ERROR>) {
+    chomp;
+    print STDERR "$_\n";
+    $ret = 1;
+}
+close(ERROR);
 
 #print STDERR "RET $ret\n";
 exit($ret);

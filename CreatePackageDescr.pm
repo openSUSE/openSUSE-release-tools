@@ -24,7 +24,15 @@ sub package_snippet($) {
             $out .= $_;
         }
         close(C);
-        return $out;
+
+        # Detect corrupt cache file and rebuild.
+        if ($out eq "" || $out =~ m/=Pkg:    /) {
+            unlink($cachefile);
+            $out = '';
+        }
+        else {
+            return $out;
+        }
     }
 
     # RPMTAG_FILEMODES            = 1030, /* h[] */
@@ -39,6 +47,12 @@ sub package_snippet($) {
           5052 5053 5054 5055 5056 5057 1156 1158 1157 1159 1161 1160
           }
     );
+
+    if (!exists $qq{'NAME'}[0]) {
+        print STDERR "corrupt rpm: $package\n";
+        unlink($package);
+        return $out; # Needs to be re-mirrored, so return blank to trigger error.
+    }
 
     my $name = $qq{'NAME'}[0];
 
@@ -153,7 +167,7 @@ sub package_snippet($) {
     $out .= "-Sug:\n";
 
     mkdir($cachedir);
-    open( C, '>>', $cachefile ) || die "can't open $cachefile";
+    open(C, '>', $cachefile) || die "can't open $cachefile";
     flock(C, LOCK_EX) or die "failed to lock $cachefile: $!\n";
     seek(C, 0, 0); truncate(C, 0);
     print C $out;
