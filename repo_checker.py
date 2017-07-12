@@ -155,7 +155,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             archs = list(set(whitelist.split(' ')).intersection(set(archs)))
 
         # Trick to prioritize x86_64.
-        return reversed(archs)
+        return sorted(archs, reverse=True)
 
     def mirror(self, project, arch):
         """Call bs_mirrorfull script to mirror packages."""
