@@ -1,15 +1,13 @@
 language: python
 python:
   - 2.7
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
   - pip install python-coveralls
-  - pip install pycurl
-  - pip install urlgrabber
+  # needed to install osc from git in requirements.txt
+  - pip install pycurl urlgrabber
   - pip install -r requirements.txt
   - sudo mkdir -p /var/cache/repo-checker
   - sudo chown $USER /var/cache/repo-checker
-# command to run tests, e.g. python setup.py test
 script:
   - nosetests --with-coverage --cover-package=osclib --cover-inclusive
 after_success:
