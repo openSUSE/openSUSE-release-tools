@@ -6,6 +6,7 @@ pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy osclib $(wildcard *.pm *.testcase)
 repocheckerhome = /var/lib/opensuse-repo-checker
+package_name = openSUSE-release-tools
 
 all:
 
@@ -24,5 +25,13 @@ check: test
 test:
 	# to see more add -v -d -s --nologcapture
 	$(wildcard /usr/bin/nosetests-2.*)
+
+package:
+	touch dist/package/$(package_name).changes
+	tar -cJf dist/package/$(package_name).tar.xz --exclude=.git* --exclude=dist/package/*.tar.xz --transform 's,^\.,$(package_name),' .
+
+package-clean:
+	rm -f dist/package/$(package_name).changes
+	rm -f dist/package/$(package_name).tar.xz
 
 .PHONY: all install test check
