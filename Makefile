@@ -5,14 +5,12 @@ include Makefile.common
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy osclib $(wildcard *.pm *.testcase)
-repocheckerhome = /var/lib/opensuse-repo-checker
 package_name = openSUSE-release-tools
 
 all:
 
 install:
 	install -d -m 755 $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir)
-	install -d -m 755 $(DESTDIR)$(repocheckerhome)
 	for i in $(pkgdata_SCRIPTS); do install -m 755 $$i $(DESTDIR)$(pkgdatadir); done
 	chmod 644 $(DESTDIR)$(pkgdatadir)/osc-*.py
 	for i in $(pkgdata_DATA); do cp -a $$i $(DESTDIR)$(pkgdatadir); done

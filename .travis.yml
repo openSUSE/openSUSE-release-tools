@@ -6,8 +6,6 @@ install:
   # needed to install osc from git in requirements.txt
   - pip install pycurl urlgrabber
   - pip install -r requirements.txt
-  - sudo mkdir -p /var/cache/repo-checker
-  - sudo chown $USER /var/cache/repo-checker
 script:
   - nosetests --with-coverage --cover-package=osclib --cover-inclusive
 after_success:
