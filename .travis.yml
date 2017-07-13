@@ -1,14 +1,24 @@
-language: python
-python:
-  - 2.7
-install:
-  - pip install python-coveralls
-  # needed to install osc from git in requirements.txt
-  - pip install pycurl urlgrabber
-  - pip install -r requirements.txt
-  - sudo mkdir -p /var/cache/repo-checker
-  - sudo chown $USER /var/cache/repo-checker
-script:
-  - nosetests --with-coverage --cover-package=osclib --cover-inclusive
-after_success:
-  - coveralls
+matrix:
+  include:
+    - env: TEST_SUITE=distribution
+      sudo: required
+      services:
+        - docker
+      language: bash
+      before_install:
+        - docker build -f dist/ci/Dockerfile -t spec .
+      script:
+        - docker run -it spec ./dist/ci/spec.sh
+    - env: TEST_SUITE=nosetests
+      sudo: false
+      language: python
+      python: 2.7
+      install:
+        # needed to install osc from git in requirements.txt
+        - pip install pycurl urlgrabber
+        - pip install -r requirements.txt
+        - pip install python-coveralls
+      script:
+        - nosetests --with-coverage --cover-package=osclib --cover-inclusive
+      after_success:
+        - coveralls
