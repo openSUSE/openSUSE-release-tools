@@ -135,16 +135,6 @@ Requires:       osc
 %description -n osc-plugin-check_dups
 OSC plugin to check for duplicate requests, see `osc check_dups --help`.
 
-%package -n osc-plugin-check_repo
-Summary:        OSC plugin for checking request build cycles and installability
-Group:          Development/Tools/Other
-BuildArch:      noarch
-Requires:       osclib = %{version}
-
-%description -n osc-plugin-check_repo
-OSC plugin for checking request build cycles and installability, see `osc
-check_repo --help`.
-
 %package -n osc-plugin-cycle
 Summary:        OSC plugin for cycle visualization
 Group:          Development/Tools/Other
@@ -204,18 +194,6 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %postun totest-manager
 %service_del_postun opensuse-totest-manager.service
 
-%pre -n osc-plugin-check_repo
-%service_add_pre opensuse-repo-checker.target
-
-%post -n osc-plugin-check_repo
-%service_add_post opensuse-repo-checker.target
-
-%preun -n osc-plugin-check_repo
-%service_del_preun opensuse-repo-checker.target
-
-%postun -n osc-plugin-check_repo
-%service_del_postun opensuse-repo-checker.target
-
 %files
 %defattr(-,root,root,-)
 %doc README.asciidoc
@@ -225,7 +203,6 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %exclude %{_datadir}/%{source_dir}/totest-manager.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
-%exclude %{_datadir}/%{source_dir}/osc-check_repo.py
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
 # Should be in osc package, but ironically it is using its deprecated directory.
@@ -262,13 +239,6 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %files -n osc-plugin-check_dups
 %{_datadir}/%{source_dir}/osc-check_dups.py
 %{osc_plugin_dir}/osc-check_dups.py
-
-%files -n osc-plugin-check_repo
-%{_datadir}/%{source_dir}/osc-check_repo.py
-%{osc_plugin_dir}/osc-check_repo.py
-%{_unitdir}/opensuse-repo-checker.target
-%{_unitdir}/opensuse-repo-checker@.service
-%{_unitdir}/opensuse-repo-checker@.timer
 
 %files -n osc-plugin-cycle
 %{_datadir}/%{source_dir}/osc-cycle.py
