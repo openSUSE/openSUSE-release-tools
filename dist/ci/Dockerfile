@@ -1,4 +1,5 @@
 # https://docs.docker.com/engine/reference/builder/
+# Used for TEST_SUITE=distribution and deployment to OBS.
 
 FROM boombatower/opensuse:tumbleweed
 MAINTAINER Jimmy Berry <jberry@suse.com>
@@ -9,6 +10,7 @@ RUN zypper ar http://mirror.datto.com/opensuse/tumbleweed/repo/oss/ oss2 && \
   zypper lr -U
 
 RUN zypper ref && zypper -n in --no-recommends \
+  obs-service-obs_scm \
   obs-service-source_validator \
   rpm-build \
   apache-rpm-macros \
