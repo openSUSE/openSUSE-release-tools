@@ -10,6 +10,7 @@ eom
 osc checkout "$OBS_PACKAGE"
 cd "$OBS_PACKAGE"
 
+rm *.obscpio
 osc service disabledrun
 echo >> _servicedata
 osc addremove
