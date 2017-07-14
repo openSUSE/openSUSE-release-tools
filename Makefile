@@ -6,6 +6,7 @@ pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy osclib $(wildcard *.pm *.testcase)
 package_name = openSUSE-release-tools
+VERSION = "build-$(shell date +%F)"
 
 all:
 
@@ -17,6 +18,8 @@ install:
 	for i in osc-*.py osclib; do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(oscplugindir)/$$i; done
 	for i in $(SUBDIRS); do $(MAKE) -C $$i install; done
 	install -m 644 systemd/* $(DESTDIR)$(unitdir)
+	sed -i "s/OSC_STAGING_VERSION = '.*'/OSC_STAGING_VERSION = '$(VERSION)'/" \
+	  $(DESTDIR)$(pkgdatadir)/osc-staging.py
 
 check: test
 

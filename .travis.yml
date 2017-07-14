@@ -4,6 +4,7 @@ env:
     - OBS_USER="jberry"
     # OBS_PASS
     - secure: "0MI2ZbJ+C1FoOa+rBYq3+NQBoQzE528B1mNacZx5xaH6IipFklW9TlCUSO91Pgf2l72HzNL5GhBbYGtAO9og0tyJO9Vm+7F+AUNQHQjfD46r1MyxBlACi6FGwuR+E32OIFilekJCnNKp55Cl5O2wGWUcRRVlM6/+k24dt3lkIoY="
+    - OBS_EMAIL="opensuse-releaseteam@opensuse.org"
 
 matrix:
   include:

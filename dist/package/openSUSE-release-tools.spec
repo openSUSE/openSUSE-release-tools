@@ -165,7 +165,7 @@ make check
 %endif
 
 %install
-%make_install
+%make_install VERSION="%{version}"
 
 # TODO Correct makefile to actually install source.
 mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}

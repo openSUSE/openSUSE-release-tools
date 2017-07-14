@@ -5,6 +5,7 @@ cat << eom > ~/.oscrc
 [https://api.opensuse.org]
 user = $OBS_USER
 pass = $OBS_PASS
+email = $OBS_EMAIL
 eom
 
 osc checkout "$OBS_PACKAGE"
