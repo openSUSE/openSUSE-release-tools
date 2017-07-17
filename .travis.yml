@@ -1,6 +1,6 @@
 env:
   global:
-    - OBS_PACKAGE="home:jberry:travis/openSUSE-release-tools"
+    - OBS_PACKAGE="openSUSE:Tools/openSUSE-release-tools"
     - OBS_USER="jberry"
     # OBS_PASS
     - secure: "0MI2ZbJ+C1FoOa+rBYq3+NQBoQzE528B1mNacZx5xaH6IipFklW9TlCUSO91Pgf2l72HzNL5GhBbYGtAO9og0tyJO9Vm+7F+AUNQHQjfD46r1MyxBlACi6FGwuR+E32OIFilekJCnNKp55Cl5O2wGWUcRRVlM6/+k24dt3lkIoY="
@@ -33,7 +33,7 @@ matrix:
 
 deploy:
   provider: script
-  script: docker run -it -e OBS_PACKAGE="$OBS_PACKAGE" -e OBS_USER="$OBS_USER" -e OBS_PASS="$OBS_PASS" spec ./dist/ci/deploy.obs.sh
+  script: docker run -it -e OBS_PACKAGE="$OBS_PACKAGE" -e OBS_USER="$OBS_USER" -e OBS_PASS="$OBS_PASS" -e OBS_EMAIL="$OBS_EMAIL" spec ./dist/ci/deploy.obs.sh
   on:
     branch: master
     condition: $TEST_SUITE = distribution

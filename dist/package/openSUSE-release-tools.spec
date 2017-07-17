@@ -27,8 +27,7 @@ Summary:        Tools to aid in staging and release work for openSUSE/SUSE
 License:        GPL-2.0+ and MIT
 Group:          Development/Tools/Other
 Url:            https://github.com/openSUSE/osc-plugin-factory
-# _service:tar/filename does not seem to add version like docs indicate.
-Source:         %{name}.tar.xz
+Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
 BuildRequires:  osc
 BuildRequires:  python-PyYAML
@@ -122,6 +121,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
+Requires:       osc
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
@@ -148,13 +148,14 @@ OSC plugin for cycle visualization, see `osc cycle --help`.
 Summary:        OSC plugin for the staging workflow
 Group:          Development/Tools/Other
 BuildArch:      noarch
+Requires:       osc
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-staging
 OSC plugin for the staging workflow, see `osc staging --help`.
 
 %prep
-%setup -q -n "%{name}"
+%setup -q
 
 %build
 make %{?_smp_mflags}
@@ -214,6 +215,7 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %doc README.asciidoc
 
 %files abichecker
+%defattr(-,root,root,-)
 %{apache_sysconfdir}/vhosts.d/opensuse-abi-checker.conf.in
 %{_datadir}/%{source_dir}/abichecker
 %{_tmpfilesdir}/opensuse-abi-checker.conf
@@ -229,22 +231,27 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %{_unitdir}/%{announcer_filename}.timer
 
 %files totest-manager
+%defattr(-,root,root,-)
 %{_unitdir}/opensuse-totest-manager.service
 %{_datadir}/%{source_dir}/totest-manager.py
 
 %files -n osclib
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osclib
 %{osc_plugin_dir}/osclib
 
 %files -n osc-plugin-check_dups
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-check_dups.py
 %{osc_plugin_dir}/osc-check_dups.py
 
 %files -n osc-plugin-cycle
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-cycle.py
 %{osc_plugin_dir}/osc-cycle.py
 
 %files -n osc-plugin-staging
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-staging.py
 %{osc_plugin_dir}/osc-staging.py
 
