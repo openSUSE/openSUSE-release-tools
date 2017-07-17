@@ -27,8 +27,7 @@ Summary:        Tools to aid in staging and release work for openSUSE/SUSE
 License:        GPL-2.0+ and MIT
 Group:          Development/Tools/Other
 Url:            https://github.com/openSUSE/osc-plugin-factory
-# _service:tar/filename does not seem to add version like docs indicate.
-Source:         %{name}.tar.xz
+Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
 BuildRequires:  osc
 BuildRequires:  python-PyYAML
@@ -156,7 +155,7 @@ Requires:       osclib = %{version}
 OSC plugin for the staging workflow, see `osc staging --help`.
 
 %prep
-%setup -q -n "%{name}"
+%setup -q
 
 %build
 make %{?_smp_mflags}
