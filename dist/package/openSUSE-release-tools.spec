@@ -122,6 +122,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
+Requires:       osc
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
@@ -148,6 +149,7 @@ OSC plugin for cycle visualization, see `osc cycle --help`.
 Summary:        OSC plugin for the staging workflow
 Group:          Development/Tools/Other
 BuildArch:      noarch
+Requires:       osc
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-staging
