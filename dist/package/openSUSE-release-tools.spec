@@ -216,6 +216,7 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %doc README.asciidoc
 
 %files abichecker
+%defattr(-,root,root,-)
 %{apache_sysconfdir}/vhosts.d/opensuse-abi-checker.conf.in
 %{_datadir}/%{source_dir}/abichecker
 %{_tmpfilesdir}/opensuse-abi-checker.conf
@@ -231,22 +232,27 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %{_unitdir}/%{announcer_filename}.timer
 
 %files totest-manager
+%defattr(-,root,root,-)
 %{_unitdir}/opensuse-totest-manager.service
 %{_datadir}/%{source_dir}/totest-manager.py
 
 %files -n osclib
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osclib
 %{osc_plugin_dir}/osclib
 
 %files -n osc-plugin-check_dups
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-check_dups.py
 %{osc_plugin_dir}/osc-check_dups.py
 
 %files -n osc-plugin-cycle
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-cycle.py
 %{osc_plugin_dir}/osc-cycle.py
 
 %files -n osc-plugin-staging
+%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-staging.py
 %{osc_plugin_dir}/osc-staging.py
 
