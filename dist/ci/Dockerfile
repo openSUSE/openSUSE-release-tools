@@ -10,6 +10,8 @@ RUN zypper ar http://mirror.datto.com/opensuse/tumbleweed/repo/oss/ oss2 && \
   zypper lr -U
 
 RUN zypper ref && zypper -n in --no-recommends \
+  obs-service-download_files \
+  obs-service-format_spec_file \
   obs-service-obs_scm \
   obs-service-source_validator \
   rpm-build \
