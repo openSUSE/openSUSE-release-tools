@@ -25,8 +25,6 @@ class CheckSource(ReviewBot.ReviewBot):
         self.only_one_action = True
 
         self.ignore_devel = False
-        self.devel_whitelist_file = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.whitelist')
-        self.devel_whitelist = None
         self.review_team = 'opensuse-review-team'
         self.repo_checker = 'factory-repo-checker'
         self.staging_group = 'factory-staging'
@@ -133,12 +131,13 @@ class CheckSource(ReviewBot.ReviewBot):
         return True
 
     def is_devel_project(self, source_project, target_project):
-        # Load devel whitelist file if provided and check against before query.
-        if self.devel_whitelist_file and self.devel_whitelist is None:
-            self.devel_whitelist = open(self.devel_whitelist_file).read().splitlines()
-        if self.devel_whitelist is not None and source_project in self.devel_whitelist:
+        # Load project config and allow for remote entries.
+        self.staging_api(target_project)
+        devel_whitelist = self.staging_config[target_project].get('devel-whitelist', '').split()
+        if source_project in devel_whitelist:
             return True
 
+        # Allow any projects already used as devel projects for other packages.
         search = {
             'package': "@project='%s' and devel/@project='%s'" % (target_project, source_project),
         }
@@ -245,7 +244,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
         parser.add_option('--ignore-devel', dest='ignore_devel', action='store_true', default=False, help='ignore devel projects for target package')
-        parser.add_option('--devel-whitelist', dest='devel_whitelist_file', metavar='FILE', help='file containing whitelisted projects (one per line)')
         parser.add_option('--review-team', dest='review_team', metavar='GROUP', help='review team group added to requests with > 8 diff')
         parser.add_option('--repo-checker', dest='repo_checker', metavar='USER', help='repo checker user added after accepted review')
         parser.add_option('--staging-group', metavar='GROUP', help='group used by staging process')
@@ -258,8 +256,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         if self.options.ignore_devel:
             bot.ignore_devel = self.options.ignore_devel
-        if self.options.devel_whitelist_file:
-            bot.devel_whitelist_file = self.options.devel_whitelist_file
         if self.options.review_team:
             bot.review_team = self.options.review_team
         if self.options.repo_checker:
