@@ -104,13 +104,30 @@ class Update(object):
         self._settings = settings
         self._settings['_NOOBSOLETEBUILD'] = '1'
 
-    def settings(self, src_prj, dst_prj, packages, req):
+    def get_max_revision(self, job):
+        repo = self.repo_prefix() + '/'
+        repo += self.maintenance_project().replace(':', ':/')
+        repo += ':/%s' % str(job['id'])
+        max_revision = 0
+        for channel in job['channels']:
+            crepo = repo + '/' + channel.replace(':', '_')
+            xml = requests.get(crepo + '/repodata/repomd.xml')
+            if not xml.ok:
+                # if one fails, we skip it and wait
+                print crepo, 'has no repodata - waiting'
+                return None
+            root = ET.fromstring(xml.text)
+            rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
+            rev = int(rev.text)
+            if rev > max_revision:
+                max_revision = rev
+        return max_revision
+
+    def settings(self, src_prj, dst_prj, packages):
         s = self._settings.copy()
 
         # start with a colon so it looks cool behind 'Build' :/
         s['BUILD'] = ':' + src_prj.split(':')[-1]
-        if req:
-            s['BUILD'] += '.' + req.reqid
         name = self.incident_name(src_prj)
         repo = dst_prj.replace(':', '_')
         repo = '%s/%s/%s/' % (self.repo_prefix(), src_prj.replace(':', ':/'), repo)
@@ -144,10 +161,6 @@ class Update(object):
         root = ET.fromstring(repomd)
         return root.find('.//id').text
 
-    def calculate_lastest_good_updates(self, openqa, settings):
-        # not touching anything by default
-        pass
-
     # take the first package name we find - often enough correct
     def incident_name(self, prj):
         if prj not in incident_name_cache:
@@ -175,86 +188,6 @@ class Update(object):
         if match:
             return match.group(1)
         return shortest_pkg
-
-
-class SUSEUpdate(Update):
-
-    def repo_prefix(self):
-        return 'http://download.suse.de/ibs'
-
-    # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
-    @staticmethod
-    def kgraft_target(req):
-        target = None
-        action = None
-        skip = False
-        pattern = re.compile(r"kgraft-patch-([^.]+)\.")
-
-        if req:
-            for a in req.actions:
-                if a.src_package.startswith("kernel-"):
-                    skip = True
-                    break
-                match = re.match(pattern, a.src_package)
-                if match:
-                    target = match.group(1)
-                    action = a
-        if skip:
-            return None, None
-
-        return target, action
-
-    @staticmethod
-    def parse_kgraft_version(kgraft_target):
-        return kgraft_target.lstrip('SLE').split('_')[0]
-
-    @staticmethod
-    def kernel_target(req):
-        if req:
-            for a in req.actions:
-                # kernel incidents have kernel-source package (suprise!)
-                if a.src_package.startswith('kernel-source'):
-                    return True, a
-        return None, None
-
-    def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
-        if not settings:
-            return None
-
-        # special handling for kgraft and kernel incidents
-        if settings['FLAVOR'] in ('KGraft', 'Server-DVD-Incidents-Kernel'):
-            kgraft_target, action = self.kgraft_target(req)
-        # Server-DVD-Incidents-Incidents handling
-        if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
-            kernel_target, kaction = self.kernel_target(req)
-            if kernel_target or kgraft_target:
-                # incident_id as part of BUILD
-                if kgraft_target:
-                    incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
-                    name = '.kgraft.'
-                    settings['KGRAFT'] = '1'
-                else:
-                    incident_id = re.match(r".*:(\d+)$", kaction.src_project).group(1)
-                    name = '.kernel.'
-
-                # discard jobs without 'start'
-                settings['start'] = True
-                settings['BUILD'] = ':' + req.reqid + name + incident_id
-                if kgraft_target:
-                    settings['VERSION'] = self.parse_kgraft_version(kgraft_target)
-        # ignore kgraft patches without defined target
-        # they are actually only the base for kgraft
-        if settings['FLAVOR'] == 'KGraft' and kgraft_target and kgraft_target in KGRAFT_SETTINGS:
-            incident_id = re.match(r".*:(\d+)$", action.src_project).group(1)
-            settings.update(KGRAFT_SETTINGS[kgraft_target])
-            settings['BUILD'] = ':' + req.reqid + '.kgraft.' + incident_id
-            settings['MAINT_UPDATE_RRID'] = action.src_project + ':' + req.reqid
-
-        return settings
-
-
-class openSUSEUpdate(Update):
 
     def calculate_lastest_good_updates(self, openqa, settings):
         j = openqa.openqa_request(
@@ -296,11 +229,93 @@ class openSUSEUpdate(Update):
         if lastgood_prefix:
             settings['LATEST_GOOD_UPDATES_BUILD'] = "%d-%d" % (lastgood_prefix, lastgood_suffix)
 
+class SUSEUpdate(Update):
+
+    def repo_prefix(self):
+        return 'http://download.suse.de/ibs'
+
+    def maintenance_project(self):
+        return 'SUSE:Maintenance'
+
+    # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
+    def kgraft_target(self, prj):
+        target = None
+        action = None
+        skip = False
+        pattern = re.compile(r"kgraft-patch-([^.]+)\.")
+
+        for package in osc.core.meta_get_packagelist(self.apiurl, prj):
+            if package.startswith("kernel-"):
+                skip = True
+                break
+            match = re.match(pattern, package)
+            if match:
+                target = match.group(1)
+        if skip:
+            return None, None
+
+        return target
+
+    @staticmethod
+    def parse_kgraft_version(kgraft_target):
+        return kgraft_target.lstrip('SLE').split('_')[0]
+
+    @staticmethod
+    def kernel_target(req):
+        if req:
+            for a in req.actions:
+                # kernel incidents have kernel-source package (suprise!)
+                if a.src_package.startswith('kernel-source'):
+                    return True, a
+        return None, None
+
+    def settings(self, src_prj, dst_prj, packages):
+        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages)
+        if not settings:
+            return None
+
+        # special handling for kgraft and kernel incidents
+        if settings['FLAVOR'] in ('KGraft', 'Server-DVD-Incidents-Kernel'):
+            kgraft_target = self.kgraft_target(src_prj)
+        # Server-DVD-Incidents-Incidents handling
+        if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
+            kernel_target = self.kernel_target(src_prj)
+            if kernel_target or kgraft_target:
+                # incident_id as part of BUILD
+                if kgraft_target:
+                    incident_id = re.match(r".*:(\d+)$", src_prj).group(1)
+                    name = '.kgraft.'
+                    settings['KGRAFT'] = '1'
+                else:
+                    incident_id = re.match(r".*:(\d+)$", src_prj).group(1)
+                    name = '.kernel.'
+
+                # discard jobs without 'start'
+                settings['start'] = True
+                settings['BUILD'] = ':' + req.reqid + name + incident_id
+                if kgraft_target:
+                    settings['VERSION'] = self.parse_kgraft_version(kgraft_target)
+        # ignore kgraft patches without defined target
+        # they are actually only the base for kgraft
+        if settings['FLAVOR'] == 'KGraft' and kgraft_target and kgraft_target in KGRAFT_SETTINGS:
+            incident_id = re.match(r".*:(\d+)$", src_prj).group(1)
+            settings.update(KGRAFT_SETTINGS[kgraft_target])
+            settings['BUILD'] = ':kgraft.' + incident_id
+            #TODO settings['MAINT_UPDATE_RRID'] = src_prj + ':' + req.reqid
+
+        return settings
+
+
+class openSUSEUpdate(Update):
+
     def repo_prefix(self):
         return 'http://download.opensuse.org/repositories'
 
-    def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages, req)
+    def maintenance_project(self):
+        return 'openSUSE:Maintenance'
+
+    def settings(self, src_prj, dst_prj, packages):
+        settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages)
 
         # openSUSE:Maintenance key
         settings['IMPORT_GPG_KEYS'] = 'gpg-pubkey-b3fd7e48-5549fd0f'
@@ -324,27 +339,16 @@ class openSUSEUpdate(Update):
         return settings
 
 
-class TestUpdate(openSUSEUpdate):
-
-    def settings(self, src_prj, dst_prj, packages, req=None):
-        settings = super(TestUpdate, self).settings(src_prj, dst_prj, packages, req)
-
-        settings['IMPORT_GPG_KEYS'] = 'testkey'
-
-        return settings
-
-
 PROJECT_OPENQA_SETTINGS = {}
 
 with open(opa.join(data_path, "data/incidents.json"), 'r') as f:
     for i, j in json.load(f).items():
         if i.startswith('SUSE'):
-            PROJECT_OPENQA_SETTINGS[i] = [SUSEUpdate(k) for k in j]
+            PROJECT_OPENQA_SETTINGS[i] = SUSEUpdate(j)
         elif i.startswith('openSUSE'):
-            PROJECT_OPENQA_SETTINGS[i] = [openSUSEUpdate(k) for k in j]
+            PROJECT_OPENQA_SETTINGS[i] = openSUSEUpdate(j)
         else:
-            PROJECT_OPENQA_SETTINGS[i] = [TestUpdate(k) for k in j]
-
+            raise "Unknown openqa", i
 
 class OpenQABot(ReviewBot.ReviewBot):
 
@@ -444,42 +448,40 @@ class OpenQABot(ReviewBot.ReviewBot):
         if not packages:
             raise Exception("no packages found")
 
-        self.logger.debug('found packages %s and patch id %s', ' '.join(set([p.name for p in packages])), patch_id)
+        update=PROJECT_OPENQA_SETTINGS[a.tgt_project]
+        update.apiurl = self.apiurl
+        settings = update.settings(a.src_project, a.tgt_project, packages, req)
+        if settings:
+            # is old style kgraft check if all options correctly set
+            if settings['FLAVOR'] == 'KGraft' and 'VIRSH_GUESTNAME' not in settings:
+                self.logger.info("build: {!s} hasn't valid values for kgraft".format(settings['BUILD']))
+                return None
 
-        for update in PROJECT_OPENQA_SETTINGS[a.tgt_project]:
-            update.apiurl = self.apiurl
-            settings = update.settings(a.src_project, a.tgt_project, packages, req)
-            if settings:
-                # is old style kgraft check if all options correctly set
-                if settings['FLAVOR'] == 'KGraft' and 'VIRSH_GUESTNAME' not in settings:
-                    self.logger.info("build: {!s} hasn't valid values for kgraft".format(settings['BUILD']))
+            # don't start KGRAFT job on Server-DVD-Incidents FLAVOR
+            if settings['FLAVOR'] == 'Server-DVD-Incidents':
+                if settings['BUILD'].split('.')[1].startswith('kgraft-patch'):
                     return None
 
-                # don't start KGRAFT job on Server-DVD-Incidents FLAVOR
-                if settings['FLAVOR'] == 'Server-DVD-Incidents':
-                    if settings['BUILD'].split('.')[1].startswith('kgraft-patch'):
-                        return None
+            # kernel incidents jobs -- discard all without 'start' = True
+            if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
+                if 'start' in settings:
+                    del settings['start']
+                else:
+                    return None
 
-                # kernel incidents jobs -- discard all without 'start' = True
-                if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
-                    if 'start' in settings:
-                        del settings['start']
-                    else:
-                        return None
+            update.calculate_lastest_good_updates(self.openqa, settings)
 
-                update.calculate_lastest_good_updates(self.openqa, settings)
-
-                self.logger.info("posting %s %s %s", settings['VERSION'], settings['ARCH'], settings['BUILD'])
-                self.logger.debug('\n'.join(["  %s=%s" % i for i in settings.items()]))
-                if not self.dryrun:
-                    try:
-                        ret = self.openqa.openqa_request('POST', 'isos', data=settings, retries=1)
-                        self.logger.info(pformat(ret))
-                    except JSONDecodeError as e:
-                        self.logger.error(e)
-                        # TODO: record error
-                    except openqa_exceptions.RequestError as e:
-                        self.logger.error(e)
+            self.logger.info("posting %s %s %s", settings['VERSION'], settings['ARCH'], settings['BUILD'])
+            self.logger.debug('\n'.join(["  %s=%s" % i for i in settings.items()]))
+            if not self.dryrun:
+                try:
+                    ret = self.openqa.openqa_request('POST', 'isos', data=settings, retries=1)
+                    self.logger.info(pformat(ret))
+                except JSONDecodeError as e:
+                    self.logger.error(e)
+                    # TODO: record error
+                except openqa_exceptions.RequestError as e:
+                    self.logger.error(e)
 
         return None
 
@@ -614,19 +616,19 @@ class OpenQABot(ReviewBot.ReviewBot):
             ret = []
             for prj in tgt_prjs:
                 if incident and prj in PROJECT_OPENQA_SETTINGS:
-                    for u in PROJECT_OPENQA_SETTINGS[prj]:
-                        u.apiurl = self.apiurl
-                        s = u.settings(build, prj, [], req=req)
-                        ret += self.openqa.openqa_request(
-                            'GET', 'jobs',
-                            {
-                                'distri': s['DISTRI'],
-                                'version': s['VERSION'],
-                                'arch': s['ARCH'],
-                                'flavor': s['FLAVOR'],
-                                'build': s['BUILD'],
-                                'scope': 'relevant',
-                            })['jobs']
+                    u=PROJECT_OPENQA_SETTINGS[prj]
+                    u.apiurl = self.apiurl
+                    s = u.settings(build, prj, [])
+                    ret += self.openqa.openqa_request(
+                        'GET', 'jobs',
+                        {
+                            'distri': s['DISTRI'],
+                            'version': s['VERSION'],
+                            'arch': s['ARCH'],
+                            'flavor': s['FLAVOR'],
+                            'build': s['BUILD'],
+                            'scope': 'relevant',
+                        })['jobs']
                 repo_settings = TARGET_REPO_SETTINGS.get(self.openqa.baseurl, {})
                 if test_repo and prj in repo_settings:
                     u = repo_settings[prj]
@@ -675,14 +677,6 @@ class OpenQABot(ReviewBot.ReviewBot):
             return QA_FAILED
 
         return QA_PASSED
-
-    def check_publish_enabled(self, project):
-        url = osc.core.makeurl(self.apiurl, ('source', project, '_meta'))
-        root = ET.parse(osc.core.http_GET(url)).getroot()
-        node = root.find('publish')
-        if node is not None and node.find('disable') is not None:
-            return False
-        return True
 
     def add_comment(self, req, msg, state, result=None):
         if not self.do_comments:
@@ -839,25 +833,9 @@ class OpenQABot(ReviewBot.ReviewBot):
                     return c['id'], m.group('state'), m.group('result'), c['comment']
         return None, None, None, None
 
-    def get_max_revision(self, job, u):
-        repo = '%s/SUSE:/Maintenance:/%s' % (u.repo_prefix(), str(job['id']))
-        max_revision = 0
-        for channel in job['channels']:
-            crepo = repo + '/' + channel.replace(':', '_')
-            xml = requests.get(crepo + '/repodata/repomd.xml')
-            if not xml.ok:
-                # if one fails, we skip it and wait
-                print crepo, 'has no repodata - waiting'
-                return None
-            root = ET.fromstring(xml.text)
-            rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
-            rev = int(rev.text)
-            if rev > max_revision:
-                max_revision = rev
-        return max_revision
-
     def check_product(self, job, product_prefix):
         pmap = API_MAP[product_prefix]
+        posts = []
         for arch in pmap['archs']:
             need = False
             settings = {'FLAVOR': pmap['flavor'], 'VERSION': pmap['version'], 'ARCH': arch, 'DISTRI': 'sle'}
@@ -868,27 +846,48 @@ class OpenQABot(ReviewBot.ReviewBot):
                     settings[key] = str(job['id'])
                     need = True
             if need:
-                u = PROJECT_OPENQA_SETTINGS[product_prefix + arch][0]
+                u = PROJECT_OPENQA_SETTINGS[product_prefix + arch]
                 u.apiurl = self.apiurl
-                s = u.settings('SUSE:Maintenance:' + str(job['id']), product_prefix + arch, [], None)
+                s = u.settings(u.maintenance_project() + ':' + str(job['id']), product_prefix + arch, [])
                 if s:
                     if job.get('openqa_build') is None:
-                        job['openqa_build'] = self.get_max_revision(job, u)
+                        job['openqa_build'] = u.get_max_revision(job)
                     if job.get('openqa_build') is None:
-                        return
+                        return []
                     s['BUILD'] += '.' + str(job['openqa_build'])
                     s.update(settings)
-                    print s
+                    posts.append(s)
+        return posts
 
     def test(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
+            if not inc == '2129': continue
             job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
             if job['meta']['state'] in ['final', 'gone']:
                 continue
+            openqa_posts = []
             for prod in API_MAP.keys():
-                self.check_product(job['base'], prod)
-
-
+                s = self.check_product(job['base'], prod)
+                openqa_posts += s
+            for s in openqa_posts:
+                jobs = self.openqa.openqa_request(
+                        'GET', 'jobs',
+                        {
+                            'distri': s['DISTRI'],
+                            'version': s['VERSION'],
+                            'arch': s['ARCH'],
+                            'flavor': s['FLAVOR'],
+                            'build': s['BUILD'],
+                            'scope': 'relevant',
+                        })['jobs']
+                if not len(jobs):
+                    if self.dryrun:
+                        print 'WOULD POST', s
+                    else:
+                        ret = self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+                else:
+                    print jobs
+                    
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):

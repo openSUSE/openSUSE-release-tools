@@ -1,188 +1,119 @@
 {
-  "SUSE:Updates:SLE-Live-Patching:12:x86_64": [
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "KGraft", 
-      "VERSION": "12"
-    }, 
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents-Kernel",
-      "VERSION": "12",
-      "KGRAFT": "1"
-    }
-  ],
-  "SUSE:Updates:SLE-Live-Patching:12-SP3:x86_64": [
-    {
-      "ARCH": "x86_64",
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents-Kernel", 
-      "VERSION": "12-SP3", 
-      "KGRAFT": "1" 
-    }
-  ],
-  "SUSE:Updates:SLE-SERVER:12-LTSS:ppc64le": [
-    {
-      "ARCH": "ppc64le", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-LTSS:s390x": [
-    {
-      "ARCH": "s390x", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-LTSS:x86_64": [
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12"
-    },
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents-Kernel", 
-      "VERSION": "12"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:ppc64le": [
-    {
-      "ARCH": "ppc64le", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP1"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:s390x": [
-    {
-      "ARCH": "s390x", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP1"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:x86_64": [
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP1"
-    },
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents-Kernel", 
-      "VERSION": "12-SP1"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP2:aarch64": [
-    {
-      "ARCH": "aarch64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP2"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP2:ppc64le": [
-    {
-      "ARCH": "ppc64le", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP2"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP2:s390x": [
-    {
-      "ARCH": "s390x", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP2"
-    }
-  ], 
-  "SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64": [
-     {
-      "ARCH": "x86_64",
-      "DISTRI": "sle",
-      "FLAVOR": "Desktop-DVD-Incidents",
-      "VERSION": "12-SP2"
-    }
-  ],
-  "SUSE:Updates:SLE-SERVER:12-SP2:x86_64": [
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP2"
-    },
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents-Kernel", 
-      "VERSION": "12-SP2"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP3:aarch64": [
-    {
-      "ARCH": "aarch64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP3"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP3:ppc64le": [
-    {
-      "ARCH": "ppc64le", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP3"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP3:s390x": [
-    {
-      "ARCH": "s390x", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP3"
-    }
-  ], 
-  "SUSE:Updates:SLE-SERVER:12-SP3:x86_64": [
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents", 
-      "VERSION": "12-SP3"
-    },
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "sle", 
-      "FLAVOR": "Server-DVD-Incidents-Kernel", 
-      "VERSION": "12-SP3"
-    }
-  ], 
-  "openSUSE:Leap:42.2:Update": [
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "opensuse", 
-      "FLAVOR": "Maintenance", 
-      "ISO": "openSUSE-Leap-42.2-DVD-x86_64.iso", 
-      "VERSION": "42.2"
-    }
-  ], 
-  "openSUSE:Leap:42.3:Update": [
-    {
-      "ARCH": "x86_64", 
-      "DISTRI": "opensuse", 
-      "FLAVOR": "Maintenance", 
-      "ISO": "openSUSE-Leap-42.3-DVD-x86_64.iso", 
-      "VERSION": "42.3"
-    }
-  ]
+   "SUSE:Updates:SLE-SERVER:12-LTSS:s390x" : {
+      "DISTRI" : "sle",
+      "ARCH" : "s390x",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "12"
+   },
+   "SUSE:Updates:SLE-SERVER:12-LTSS:ppc64le" : {
+      "DISTRI" : "sle",
+      "ARCH" : "ppc64le",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "12"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:ppc64le" : {
+      "DISTRI" : "sle",
+      "ARCH" : "ppc64le",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "12-SP1"
+   },
+   "openSUSE:Leap:42.3:Update" : {
+      "FLAVOR" : "Maintenance",
+      "VERSION" : "42.3",
+      "DISTRI" : "opensuse",
+      "ARCH" : "x86_64",
+      "ISO" : "openSUSE-Leap-42.3-DVD-x86_64.iso"
+   },
+   "SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64" : {
+      "FLAVOR" : "Desktop-DVD-Incidents",
+      "VERSION" : "12-SP2",
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP2:s390x" : {
+      "DISTRI" : "sle",
+      "ARCH" : "s390x",
+      "VERSION" : "12-SP2",
+      "FLAVOR" : "Server-DVD-Incidents"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP3:s390x" : {
+      "DISTRI" : "sle",
+      "ARCH" : "s390x",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "12-SP3"
+   },
+   "SUSE:Updates:SLE-Live-Patching:12-SP3:x86_64" : {
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64",
+      "VERSION" : "12-SP3",
+      "FLAVOR" : "Server-DVD-Incidents-Kernel",
+      "KGRAFT" : "1"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP2:aarch64" : {
+      "DISTRI" : "sle",
+      "ARCH" : "aarch64",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "12-SP2"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP3:x86_64" : {
+      "VERSION" : "12-SP3",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP3:ppc64le" : {
+      "VERSION" : "12-SP3",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "ARCH" : "ppc64le",
+      "DISTRI" : "sle"
+   },
+   "SUSE:Updates:SLE-Live-Patching:12:x86_64" : {
+      "FLAVOR" : "KGraft",
+      "VERSION" : "12",
+      "ARCH" : "x86_64",
+      "DISTRI" : "sle"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP3:aarch64" : {
+      "VERSION" : "12-SP3",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "DISTRI" : "sle",
+      "ARCH" : "aarch64"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:x86_64" : {
+      "VERSION" : "12-SP1",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP2:ppc64le" : {
+      "VERSION" : "12-SP2",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "ARCH" : "ppc64le",
+      "DISTRI" : "sle"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:s390x" : {
+      "ARCH" : "s390x",
+      "DISTRI" : "sle",
+      "VERSION" : "12-SP1",
+      "FLAVOR" : "Server-DVD-Incidents"
+   },
+   "SUSE:Updates:SLE-SERVER:12-LTSS:x86_64" : {
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "12",
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64"
+   },
+   "openSUSE:Leap:42.2:Update" : {
+      "DISTRI" : "opensuse",
+      "ARCH" : "x86_64",
+      "ISO" : "openSUSE-Leap-42.2-DVD-x86_64.iso",
+      "FLAVOR" : "Maintenance",
+      "VERSION" : "42.2"
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP2:x86_64" : {
+      "VERSION" : "12-SP2",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "ARCH" : "x86_64",
+      "DISTRI" : "sle"
+   }
 }
