@@ -221,6 +221,8 @@ class CheckSource(ReviewBot.ReviewBot):
         # Decline the delete request against linked package.
         links = root.findall('sourceinfo/linked')
         if links is None or len(links) == 0:
+            if self.review_team is not None:
+                self.add_review(self.request, by_group=self.review_team, msg='Please review delete request')
             if not self.skip_add_reviews and self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')
             return True
