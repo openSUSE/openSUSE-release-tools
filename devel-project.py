@@ -12,6 +12,7 @@ from osc.core import get_request_list
 from osc.core import get_review_list
 from osc.core import http_GET
 from osc.core import makeurl
+from osc.core import search
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.comments import CommentAPI
@@ -59,12 +60,9 @@ def devel_projects_get(apiurl, project):
     """
     devel_projects = {}
 
-    url = makeurl(apiurl, ['search', 'package'], "match=[@project='%s']" % project)
-    root = ET.parse(http_GET(url)).getroot()
-    for package in root.findall('package'):
-        devel = package.find('devel')
-        if devel is not None:
-            devel_projects[devel.attrib['project']] = True
+    root = search(apiurl, **{'package': "@project='{}'".format(project)})['package']
+    for devel in root.findall('package/devel[@project]'):
+        devel_projects[devel.attrib['project']] = True
 
     # Ensure self does not end up in list.
     del devel_projects[project]
