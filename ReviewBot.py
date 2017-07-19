@@ -27,7 +27,9 @@ import cmdln
 from collections import namedtuple
 from collections import OrderedDict
 from osclib.comments import CommentAPI
+from osclib.conf import Config
 from osclib.memoize import memoize
+from osclib.stagingapi import StagingAPI
 import signal
 import datetime
 import yaml
@@ -37,7 +39,7 @@ try:
 except ImportError:
     import cElementTree as ET
 
-import osc.conf
+from osc import conf
 import osc.core
 import urllib2
 
@@ -97,6 +99,16 @@ class ReviewBot(object):
         else:
             self.config = self._load_config()
 
+    def staging_api(self, project):
+        if project not in self.staging_apis:
+            config = Config(project)
+            self.staging_apis[project] = StagingAPI(self.apiurl, project)
+
+            config.apply_remote(self.staging_apis[project])
+            self.staging_config[project] = conf.config[project].copy()
+
+        return self.staging_apis[project]
+
     @property
     def review_mode(self):
         return self._review_mode
@@ -121,6 +133,8 @@ class ReviewBot(object):
         pass
 
     def check_requests(self):
+        self.staging_apis = {}
+        self.staging_config = {}
 
         # give implementations a chance to do something before single requests
         self.prepare_review()
@@ -491,10 +505,10 @@ class CommandLineInterface(cmdln.Cmdln):
         logging.basicConfig(level=level)
         self.logger = logging.getLogger(self.optparser.prog)
 
-        osc.conf.get_config(override_apiurl = self.options.apiurl)
+        conf.get_config(override_apiurl = self.options.apiurl)
 
         if (self.options.osc_debug):
-            osc.conf.config['debug'] = 1
+            conf.config['debug'] = 1
 
         self.checker = self.setup_checker()
         if self.options.config:
@@ -511,14 +525,14 @@ class CommandLineInterface(cmdln.Cmdln):
 
     def setup_checker(self):
         """ reimplement this """
-        apiurl = osc.conf.config['apiurl']
+        apiurl = conf.config['apiurl']
         if apiurl is None:
             raise osc.oscerr.ConfigError("missing apiurl")
         user = self.options.user
         group = self.options.group
         # if no args are given, use the current oscrc "owner"
         if user is None and group is None:
-            user = osc.conf.get_apiurl_usr(apiurl)
+            user = conf.get_apiurl_usr(apiurl)
 
         return self.clazz(apiurl = apiurl, \
                 dryrun = self.options.dry, \

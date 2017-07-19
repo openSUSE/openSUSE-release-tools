@@ -8,6 +8,7 @@ import re
 import shutil
 import sys
 import urlparse
+import urllib
 from StringIO import StringIO
 from osc import conf
 from osc.core import urlopen
@@ -108,6 +109,7 @@ class Cache(object):
 
     @staticmethod
     def get(url):
+        url = urllib.unquote(url)
         match, project = Cache.match(url)
         if match:
             path = Cache.path(url, project, include_file=True)
@@ -161,6 +163,7 @@ class Cache(object):
 
     @staticmethod
     def put(url, data):
+        url = urllib.unquote(url)
         match, project = Cache.match(url)
         if match:
             path = Cache.path(url, project, include_file=True, makedirs=True)
@@ -181,6 +184,7 @@ class Cache(object):
 
     @staticmethod
     def delete(url):
+        url = urllib.unquote(url)
         match, project = Cache.match(url)
         if match:
             path = Cache.path(url, project, include_file=True)

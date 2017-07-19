@@ -7,15 +7,12 @@ import subprocess
 import sys
 import tempfile
 
-from osc import conf
-from osclib.conf import Config
 from osclib.core import binary_list
 from osclib.core import depends_on
 from osclib.core import request_staged
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
-from osclib.stagingapi import StagingAPI
 
 import ReviewBot
 
@@ -34,20 +31,8 @@ class RepoChecker(ReviewBot.ReviewBot):
         # RepoChecker options.
         self.skip_cycle = False
 
-    def staging_api(self, project):
-        if project not in self.staging_apis:
-            config = Config(project)
-            self.staging_apis[project] = StagingAPI(self.apiurl, project)
-
-            config.apply_remote(self.staging_apis[project])
-            self.staging_config[project] = conf.config[project].copy()
-
-        return self.staging_apis[project]
-
     def prepare_review(self):
         # Reset for request batch.
-        self.staging_apis = {}
-        self.staging_config = {}
         self.requests_map = {}
         self.groups = {}
 
