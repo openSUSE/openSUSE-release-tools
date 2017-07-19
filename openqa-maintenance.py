@@ -61,7 +61,7 @@ QA_INPROGRESS = 1
 QA_FAILED = 2
 QA_PASSED = 3
 
-comment_marker_re = re.compile(r'<!-- openqa state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined))? -->')
+comment_marker_re = re.compile(r'<!-- openqa state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined))?(?: maxreporevision=(?P<revision>\d+))? -->')
 
 logger = None
 
@@ -685,13 +685,14 @@ class OpenQABot(ReviewBot.ReviewBot):
         comment = "<!-- openqa state=%s%s -->\n" % (state, ' result=%s' % result if result else '')
         comment += "\n" + msg
 
-        (comment_id, comment_state, comment_result, comment_text) = self.find_obs_request_comment(req, state)
+        info = self.find_obs_request_comment(state=state, request_id=req.reqid)
+        comment_id = info.get('id', None)
 
-        if comment_id is not None and state == comment_state:
-            lines_before = len(comment_text.split('\n'))
+        if state == info.get('state', 'missing'):
+            lines_before = len(info['comment'].split('\n'))
             lines_after = len(comment.split('\n'))
             if lines_before == lines_after:
-                self.logger.debug("not worth the update, previous comment %s is state %s", comment_id, comment_state)
+                self.logger.debug("not worth the update, previous comment %s is state %s", comment_id, info['state'])
                 return
 
         self.logger.debug("adding comment to %s, state %s result %s", req.reqid, state, result)
@@ -718,7 +719,10 @@ class OpenQABot(ReviewBot.ReviewBot):
     def summarize_one_openqa_job(self, job):
         testurl = osc.core.makeurl(self.openqa.baseurl, ['tests', str(job['id'])])
         if not job['result'] in ['passed', 'failed', 'softfailed']:
-            return '\n- [%s](%s) is %s' % (self.job_test_name(job), testurl, job['result'])
+            rstring = job['result']
+            if rstring == 'none':
+                rstring = job['state']
+            return '\n- [%s](%s) is %s' % (self.job_test_name(job), testurl, rstring)
 
         modstrings = []
         for module in job['modules']:
@@ -731,6 +735,39 @@ class OpenQABot(ReviewBot.ReviewBot):
         elif job['result'] == 'failed':  # rare case: fail without module fails
             return '\n- [%s](%s) failed' % (self.job_test_name(job), testurl)
         return ''
+
+    def summarize_openqa_jobs(self, jobs):
+        groups = dict()
+        for job in jobs:
+            gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
+            if gl not in groups:
+                groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview'],
+                                            {'version': job['settings']['VERSION'],
+                                             'groupid': job['group_id'],
+                                             'flavor': job['settings']['FLAVOR'],
+                                             'distri': job['settings']['DISTRI'],
+                                             'build': job['settings']['BUILD'],
+                                             })
+                groups[gl] = {'title': "__Group [%s](%s)__\n" % (gl, groupurl),
+                              'passed': 0, 'failed': []}
+
+            job_summary = self.summarize_one_openqa_job(job)
+            if not len(job_summary):
+                groups[gl]['passed'] = groups[gl]['passed'] + 1
+                continue
+            # if there is something to report, hold the request
+            qa_state = QA_FAILED
+            gmsg = groups[gl]
+            groups[gl]['failed'].append(job_summary)
+
+        msg = ''
+        for group in sorted(groups.keys()):
+            msg += "\n\n" + groups[group]['title']
+            msg += "(%d tests passed, %d failed)\n" % (groups[group]['passed'], len(groups[group]['failed']))
+            for fail in groups[group]['failed']:
+                msg += fail
+
+        return msg
 
     def check_one_request(self, req):
         ret = None
@@ -746,11 +783,11 @@ class OpenQABot(ReviewBot.ReviewBot):
 
                 if self.force:
                     # make sure to delete previous comments if we're forcing
-                    (comment_id, comment_state, comment_result, comment_text) = self.find_obs_request_comment(req)
-                    if comment_id is not None:
-                        self.logger.debug("deleting old comment %s", comment_id)
+                    info = self.find_obs_request_comment(request_id=req.reqid)
+                    if 'id' in info:
+                        self.logger.debug("deleting old comment %s", info['id'])
                         if not self.dryrun:
-                            self.commentapi.delete(comment_id)
+                            self.commentapi.delete(info['id'])
 
                 if not jobs:
                     msg = "no openQA tests defined"
@@ -769,46 +806,16 @@ class OpenQABot(ReviewBot.ReviewBot):
                     self.logger.debug(
                         "incident tests for request %s are done, but need to wait for test repo", req.reqid)
                     return
-                groups = dict()
-                for job in jobs:
-                    gl = "%s@%s" % (self.emd(job['group']), self.emd(job['settings']['FLAVOR']))
-                    if gl not in groups:
-                        groupurl = osc.core.makeurl(self.openqa.baseurl, ['tests', 'overview'],
-                                                    {'version': job['settings']['VERSION'],
-                                                     'groupid': job['group_id'],
-                                                     'flavor': job['settings']['FLAVOR'],
-                                                     'distri': job['settings']['DISTRI'],
-                                                     'build': job['settings']['BUILD'],
-                                                     })
-                        groups[gl] = {'title': "__Group [%s](%s)__\n" % (gl, groupurl),
-                                      'passed': 0, 'failed': []}
-
-                    job_summary = self.summarize_one_openqa_job(job)
-                    if not len(job_summary):
-                        groups[gl]['passed'] = groups[gl]['passed'] + 1
-                        continue
-                    # if there is something to report, hold the request
-                    qa_state = QA_FAILED
-                    gmsg = groups[gl]
-                    groups[gl]['failed'].append(job_summary)
-
                 if qa_state == QA_PASSED:
-                    self.logger.debug("request %s passed", req.reqid)
                     msg = "openQA tests passed\n"
                     state = 'accepted'
                     ret = True
                 else:
-                    self.logger.debug("request %s failed", req.reqid)
                     msg = "openQA tests problematic\n"
                     state = 'declined'
                     ret = False
 
-                for group in sorted(groups.keys()):
-                    msg += "\n\n" + groups[group]['title']
-                    msg += "(%d tests passed, %d failed)\n" % (groups[group]['passed'], len(groups[group]['failed']))
-                    for fail in groups[group]['failed']:
-                        msg += fail
-
+                msg += self.summarize_openqa_jobs(jobs)
                 self.add_comment(req, msg, 'done', state)
             elif qa_state == QA_INPROGRESS:
                 self.logger.debug("request %s still in progress", req.reqid)
@@ -823,15 +830,15 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         return ret
 
-    def find_obs_request_comment(self, req, state=None):
+    def find_obs_request_comment(self, request_id=None, project_name=None, state=None):
         """Return previous comments (should be one)."""
         if self.do_comments:
-            comments = self.commentapi.get_comments(request_id=req.reqid)
+            comments = self.commentapi.get_comments(request_id=request_id, project_name=project_name)
             for c in comments.values():
                 m = comment_marker_re.match(c['comment'])
                 if m and (state is None or state == m.group('state')):
-                    return c['id'], m.group('state'), m.group('result'), c['comment']
-        return None, None, None, None
+                    return { 'id' : c['id'], 'state': m.group('state'), 'result': m.group('result'), 'comment': c['comment'], 'revision': m.group('revision') }
+        return {}
 
     def check_product(self, job, product_prefix):
         pmap = API_MAP[product_prefix]
@@ -861,14 +868,17 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def test(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            if not inc == '2129': continue
+            if not inc == '4871': continue
             job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
+            print json.dumps(job, indent=4)
             if job['meta']['state'] in ['final', 'gone']:
                 continue
             openqa_posts = []
             for prod in API_MAP.keys():
                 s = self.check_product(job['base'], prod)
                 openqa_posts += s
+            openqa_jobs = []
+            openqa_done = True
             for s in openqa_posts:
                 jobs = self.openqa.openqa_request(
                         'GET', 'jobs',
@@ -879,15 +889,34 @@ class OpenQABot(ReviewBot.ReviewBot):
                             'flavor': s['FLAVOR'],
                             'build': s['BUILD'],
                             'scope': 'relevant',
+                            'latest': '1'
                         })['jobs']
                 if not len(jobs):
                     if self.dryrun:
                         print 'WOULD POST', s
                     else:
                         ret = self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+                    openqa_done = False
                 else:
-                    print jobs
-                    
+                    print s, 'got', len(jobs)
+                    openqa_jobs += jobs
+            #print openqa_jobs
+            msg = self.summarize_openqa_jobs(openqa_jobs)
+            state = 'running'
+            comment = "<!-- openqa state=%s maxreporevision=%s -->\n" % (state, job.get('openqa_build'))
+            comment += "\n" + msg
+
+            info = self.find_obs_request_comment(state=state, project_name=str(job['base']['project']))
+            comment_id = info.get('id', None)
+
+            self.logger.debug("adding comment to %s, state %s", job['base']['project'], state)
+            self.logger.debug("message: %s", msg)
+            if not self.dryrun:
+                if comment_id is not None:
+                    self.commentapi.delete(comment_id)
+                self.commentapi.add_comment(project_name=str(job['base']['project']), comment=str(comment))
+
+
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
