@@ -17,6 +17,12 @@
         "version" : "12-SP1",
         "flavor"  : "Server-DVD-Incidents"
       },
+      "SUSE:Updates:SLE-SERVER:12-LTSS:"
+      : {
+        "archs" : [ "x86_64", "s390x", "ppc64le" ],
+        "version" : "12",
+        "flavor"  : "Server-DVD-Incidents"
+      },
       "SUSE:Updates:SLE-DESKTOP:12-SP2:"
       : {
         "archs"   : ["x86_64"],
