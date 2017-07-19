@@ -4,7 +4,7 @@ import argparse
 from datetime import datetime
 import dateutil.parser
 import sys
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import osc.conf
 from osc.core import HTTPError
@@ -90,6 +90,21 @@ def devel_projects_load(args):
         return devel_projects.splitlines()
 
     raise Exception('no devel projects found')
+
+def maintainer(args):
+    if args.group is None:
+        # Default is appended to rather than overridden (upstream bug).
+        args.group = ['factory-maintainers', 'factory-staging']
+    desired = set(args.group)
+
+    apiurl = osc.conf.config['apiurl']
+    devel_projects = devel_projects_load(args)
+    for devel_project in devel_projects:
+        meta = ET.fromstring(''.join(show_project_meta(apiurl, devel_project)))
+        groups = meta.xpath('group[@role="maintainer"]/@groupid')
+        intersection = set(groups).intersection(desired)
+        if len(intersection) != len(desired):
+            print('{} missing {}'.format(devel_project, ', '.join(desired - intersection)))
 
 def request_age(request):
     date = dateutil.parser.parse(request.statehistory[0].when)
@@ -221,6 +236,10 @@ if __name__ == '__main__':
     parser_list = subparsers.add_parser('list', help='List devel projects.')
     parser_list.set_defaults(func=list)
     parser_list.add_argument('-w', '--write', action='store_true', help='write to dashboard container package')
+
+    parser_maintainer = subparsers.add_parser('maintainer', help='Check for relevant groups as maintainer.')
+    parser_maintainer.set_defaults(func=maintainer)
+    parser_maintainer.add_argument('-g', '--group', action='append', help='group for which to check')
 
     parser_requests = subparsers.add_parser('requests', help='List open requests.')
     parser_requests.set_defaults(func=requests)
