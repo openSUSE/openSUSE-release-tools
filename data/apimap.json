@@ -1,33 +1,74 @@
 {
-    "SUSE:Updates:SLE-SERVER:12-SP2:"
-      : {
-        "archs" : [ "x86_64", "s390x", "ppc64le", "aarch64" ],
-        "version" : "12-SP2",
-        "flavor"  : "Server-DVD-Incidents",
-        "issues"
-        : {
-            "SDK_ISSUES"  : "SUSE:Updates:SLE-SDK:12-SP2:",
-            "HPCM_ISSUES" : "SUSE:Updates:SLE-Module-HPC:12:",
-            "WE_ISSUES"   : "SUSE:Updates:SLE-WE:12-SP2:"
-        }
+   "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:" : {
+      "flavor" : "Server-DVD-Incidents",
+      "version" : "12-SP1",
+      "archs" : [
+         "x86_64",
+         "s390x",
+         "ppc64le"
+      ]
+   },
+   "SUSE:Updates:SLE-DESKTOP:12-SP2:" : {
+      "issues" : {
+         "SDK_ISSUES" : "SUSE:Updates:SLE-SDK:12-SP2:"
       },
-      "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:"
-      : {
-        "archs" : [ "x86_64", "s390x", "ppc64le" ],
-        "version" : "12-SP1",
-        "flavor"  : "Server-DVD-Incidents"
+      "version" : "12-SP2",
+      "flavor" : "Desktop-DVD-Incidents",
+      "archs" : [
+         "x86_64"
+      ]
+   },
+   "SUSE:Updates:SLE-SERVER:12-LTSS:" : {
+      "version" : "12",
+      "flavor" : "Server-DVD-Incidents",
+      "archs" : [
+         "x86_64",
+         "s390x",
+         "ppc64le"
+      ]
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP3:" : {
+      "issues" : {
+         "WE_ISSUES" : "SUSE:Updates:SLE-WE:12-SP3:",
+         "TCM_ISSUES" : "SUSE:Maintenance:Test:SLE-Module-Toolchain:12:",
+         "HPCM_ISSUES" : "SUSE:Updates:SLE-Module-HPC:12:",
+         "SDK_ISSUES" : "SUSE:Updates:SLE-SDK:12-SP3:",
+         "WSM_ISSUES" : "SUSE:Maintenance:Test:SLE-Module-Web-Scripting:12:"
       },
-      "SUSE:Updates:SLE-SERVER:12-LTSS:"
-      : {
-        "archs" : [ "x86_64", "s390x", "ppc64le" ],
-        "version" : "12",
-        "flavor"  : "Server-DVD-Incidents"
+      "flavor" : "Server-DVD-Incidents",
+      "version" : "12-SP3",
+      "archs" : [
+         "x86_64",
+         "s390x",
+         "ppc64le",
+         "aarch64"
+      ]
+   },
+   "SUSE:Updates:SLE-DESKTOP:12-SP3:" : {
+      "version" : "12-SP3",
+      "issues" : {
+         "SDK_ISSUES" : "SUSE:Updates:SLE-SDK:12-SP3:"
       },
-      "SUSE:Updates:SLE-DESKTOP:12-SP2:"
-      : {
-        "archs"   : ["x86_64"],
-        "version" : "12-SP2",
-        "flavor"  : "Desktop-DVD-Incidents",
-        "issues"  : { "SDK_ISSUES" : "SUSE:Updates:SLE-SDK:12-SP2:" }
-      }
+      "flavor" : "Desktop-DVD-Incidents",
+      "archs" : [
+         "x86_64"
+      ]
+   },
+   "SUSE:Updates:SLE-SERVER:12-SP2:" : {
+      "version" : "12-SP2",
+      "issues" : {
+         "WE_ISSUES" : "SUSE:Updates:SLE-WE:12-SP2:",
+         "TCM_ISSUES" : "SUSE:Maintenance:Test:SLE-Module-Toolchain:12:",
+         "SDK_ISSUES" : "SUSE:Updates:SLE-SDK:12-SP2:",
+         "HPCM_ISSUES" : "SUSE:Updates:SLE-Module-HPC:12:",
+         "WSM_ISSUES" : "SUSE:Maintenance:Test:SLE-Module-Web-Scripting:12:"
+      },
+      "flavor" : "Server-DVD-Incidents",
+      "archs" : [
+         "x86_64",
+         "s390x",
+         "ppc64le",
+         "aarch64"
+      ]
+   }
 }

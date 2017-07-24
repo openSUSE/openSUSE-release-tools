@@ -879,7 +879,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def test(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            if not inc in ['4871', '5146', '2129', '5219']: continue
+            if not inc in ['a4871', 'a5146', 'a2129', 'a5219', '5230']: continue
             job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
             if job['meta']['state'] in ['final', 'gone']:
                 continue

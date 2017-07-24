@@ -30,6 +30,12 @@
       "DISTRI" : "sle",
       "ARCH" : "x86_64"
    },
+   "SUSE:Updates:SLE-DESKTOP:12-SP3:x86_64" : {
+      "FLAVOR" : "Desktop-DVD-Incidents",
+      "VERSION" : "12-SP3",
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64"
+   },
    "SUSE:Updates:SLE-SERVER:12-SP2:s390x" : {
       "DISTRI" : "sle",
       "ARCH" : "s390x",
