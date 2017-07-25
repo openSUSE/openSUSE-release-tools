@@ -858,7 +858,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             need = False
             settings = {'FLAVOR': pmap['flavor'], 'VERSION': pmap['version'], 'ARCH': arch, 'DISTRI': 'sle'}
             issues = pmap.get('issues', {})
-            issues['OS_ISSUES'] = product_prefix
+            issues['OS_TEST_ISSUES'] = product_prefix
             for key, prefix in issues.items():
                 if prefix + arch in job['channels']:
                     settings[key] = str(job['id'])
@@ -879,7 +879,10 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def test(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            if not inc in ['a4871', 'a5146', 'a2129', 'a5219', '5230']: continue
+            if not inc in ['a4871', 'a5146', 'a2129', '5219', '5217', '5230']: continue
+            #if not inc.startswith('52'): continue
+            print inc
+            #continue
             job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
             if job['meta']['state'] in ['final', 'gone']:
                 continue
@@ -910,7 +913,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                 else:
                     print s, 'got', len(jobs)
                     openqa_jobs += jobs
-            if not openqa_done:
+            if not openqa_done or len(openqa_jobs) == 0:
                 continue
             #print openqa_jobs
             msg = self.summarize_openqa_jobs(openqa_jobs)
