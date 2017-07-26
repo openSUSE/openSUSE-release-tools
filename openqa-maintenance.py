@@ -61,7 +61,8 @@ QA_INPROGRESS = 1
 QA_FAILED = 2
 QA_PASSED = 3
 
-comment_marker_re = re.compile(r'<!-- openqa state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined|none))?(?: revision=(?P<revision>\d+))? -->')
+comment_marker_re = re.compile(
+    r'<!-- openqa state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined|none))?(?: revision=(?P<revision>\d+))? -->')
 
 logger = None
 
@@ -103,6 +104,7 @@ class Update(object):
     def __init__(self, settings):
         self._settings = settings
         self._settings['_NOOBSOLETEBUILD'] = '1'
+        self._packages = dict()
 
     def get_max_revision(self, job):
         repo = self.repo_prefix() + '/'
@@ -136,7 +138,23 @@ class Update(object):
             s['INCIDENT_REPO'] = repo
             s['INCIDENT_PATCH'] = self.patch_id(repo)
         s['BUILD'] += ':' + name
-        return s
+        return [s]
+
+    def incident_packages(self, prj):
+        if prj in self._packages:
+            return self._packages[prj]
+
+        self._packages[prj] = []
+        for package in osc.core.meta_get_packagelist(self.apiurl, prj):
+            if package.startswith('patchinfo'):
+                continue
+            if package.endswith('SUSE_Channels'):
+                continue
+            parts = package.split('.')
+            # remove target name
+            parts.pop()
+            self._packages[prj].append('.'.join(parts))
+        return self._packages[prj]
 
     # grab the updateinfo from the given repo and return its patch's id
     def patch_id(self, repo):
@@ -229,6 +247,7 @@ class Update(object):
         if lastgood_prefix:
             settings['LATEST_GOOD_UPDATES_BUILD'] = "%d-%d" % (lastgood_prefix, lastgood_suffix)
 
+
 class SUSEUpdate(Update):
 
     def repo_prefix(self):
@@ -269,10 +288,22 @@ class SUSEUpdate(Update):
                     return True, a
         return None, None
 
-    def settings(self, src_prj, dst_prj, packages):
-        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages)
-        if not settings:
-            return None
+    def add_minimal_settings(self, prj, settings):
+        minimal = False
+        for pkg in self.incident_packages(prj):
+            if pkg in ['yast2']:
+                minimal = True
+        if not minimal:
+            return []
+
+        settings = settings.copy()
+        settings['FLAVOR'] += '-Minimal'
+        return [settings]
+
+    def add_kernel_settings(self, prj, settings):
+        settings = settings.copy()
+        # not right now
+        return []
 
         # special handling for kgraft and kernel incidents
         if settings['FLAVOR'] in ('KGraft', 'Server-DVD-Incidents-Kernel'):
@@ -301,7 +332,16 @@ class SUSEUpdate(Update):
             incident_id = re.match(r".*:(\d+)$", src_prj).group(1)
             settings.update(KGRAFT_SETTINGS[kgraft_target])
             settings['BUILD'] = ':kgraft.' + incident_id
-            #TODO settings['MAINT_UPDATE_RRID'] = src_prj + ':' + req.reqid
+            # TODO settings['MAINT_UPDATE_RRID'] = src_prj + ':' + req.reqid
+        return settings
+
+    def settings(self, src_prj, dst_prj, packages):
+        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages)
+        if not len(settings):
+            return []
+
+        settings += self.add_kernel_settings(src_prj, settings[0])
+        settings += self.add_minimal_settings(src_prj, settings[0])
 
         return settings
 
@@ -316,6 +356,7 @@ class openSUSEUpdate(Update):
 
     def settings(self, src_prj, dst_prj, packages):
         settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages)
+        settings = settings[0]
 
         # openSUSE:Maintenance key
         settings['IMPORT_GPG_KEYS'] = 'gpg-pubkey-b3fd7e48-5549fd0f'
@@ -336,7 +377,7 @@ class openSUSEUpdate(Update):
         settings['WITH_MAIN_REPO'] = 1
         settings['WITH_UPDATE_REPO'] = 1
 
-        return settings
+        return [settings]
 
 
 PROJECT_OPENQA_SETTINGS = {}
@@ -349,6 +390,7 @@ with open(opa.join(data_path, "data/incidents.json"), 'r') as f:
             PROJECT_OPENQA_SETTINGS[i] = openSUSEUpdate(j)
         else:
             raise "Unknown openqa", i
+
 
 class OpenQABot(ReviewBot.ReviewBot):
 
@@ -448,7 +490,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         if not packages:
             raise Exception("no packages found")
 
-        update=PROJECT_OPENQA_SETTINGS[a.tgt_project]
+        update = PROJECT_OPENQA_SETTINGS[a.tgt_project]
         update.apiurl = self.apiurl
         settings = update.settings(a.src_project, a.tgt_project, packages, req)
         if settings:
@@ -616,7 +658,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             ret = []
             for prj in tgt_prjs:
                 if incident and prj in PROJECT_OPENQA_SETTINGS:
-                    u=PROJECT_OPENQA_SETTINGS[prj]
+                    u = PROJECT_OPENQA_SETTINGS[prj]
                     u.apiurl = self.apiurl
                     s = u.settings(build, prj, [])
                     ret += self.openqa.openqa_request(
@@ -848,7 +890,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             for c in comments.values():
                 m = comment_marker_re.match(c['comment'])
                 if m and (state is None or state == m.group('state')):
-                    return { 'id' : c['id'], 'state': m.group('state'), 'result': m.group('result'), 'comment': c['comment'], 'revision': m.group('revision') }
+                    return {'id': c['id'], 'state': m.group('state'), 'result': m.group('result'), 'comment': c['comment'], 'revision': m.group('revision')}
         return {}
 
     def check_product(self, job, product_prefix):
@@ -856,7 +898,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         posts = []
         for arch in pmap['archs']:
             need = False
-            settings = {'FLAVOR': pmap['flavor'], 'VERSION': pmap['version'], 'ARCH': arch, 'DISTRI': 'sle'}
+            settings = {'VERSION': pmap['version'], 'ARCH': arch, 'DISTRI': 'sle'}
             issues = pmap.get('issues', {})
             issues['OS_TEST_ISSUES'] = product_prefix
             for key, prefix in issues.items():
@@ -866,8 +908,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             if need:
                 u = PROJECT_OPENQA_SETTINGS[product_prefix + arch]
                 u.apiurl = self.apiurl
-                s = u.settings(u.maintenance_project() + ':' + str(job['id']), product_prefix + arch, [])
-                if s:
+                for s in u.settings(u.maintenance_project() + ':' + str(job['id']), product_prefix + arch, []):
                     if job.get('openqa_build') is None:
                         job['openqa_build'] = u.get_max_revision(job)
                     if job.get('openqa_build') is None:
@@ -879,34 +920,35 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def test(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            if not inc in ['a4871', 'a5146', 'a2129', '5219', '5217', '5230']: continue
-            #if not inc.startswith('52'): continue
+            if not inc in ['a4871', 'a5205', 'a2129', 'a5219', '5258', '5223']:
+                continue
+            if not inc.startswith('52'):
+                continue
             print inc
-            #continue
+            # continue
             job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
             if job['meta']['state'] in ['final', 'gone']:
                 continue
             openqa_posts = []
             for prod in API_MAP.keys():
-                s = self.check_product(job['base'], prod)
-                openqa_posts += s
+                openqa_posts += self.check_product(job['base'], prod)
             openqa_jobs = []
             openqa_done = True
             for s in openqa_posts:
                 jobs = self.openqa.openqa_request(
-                        'GET', 'jobs',
-                        {
-                            'distri': s['DISTRI'],
-                            'version': s['VERSION'],
-                            'arch': s['ARCH'],
-                            'flavor': s['FLAVOR'],
-                            'build': s['BUILD'],
-                            'scope': 'relevant',
-                            'latest': '1'
-                        })['jobs']
+                    'GET', 'jobs',
+                    {
+                        'distri': s['DISTRI'],
+                        'version': s['VERSION'],
+                        'arch': s['ARCH'],
+                        'flavor': s['FLAVOR'],
+                        'build': s['BUILD'],
+                        'scope': 'relevant',
+                        'latest': '1'
+                    })['jobs']
                 if not len(jobs):
                     if self.dryrun:
-                        print 'WOULD POST', s
+                        print 'WOULD POST', json.dumps(s, sort_keys=True)
                     else:
                         ret = self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
                     openqa_done = False
@@ -915,7 +957,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     openqa_jobs += jobs
             if not openqa_done or len(openqa_jobs) == 0:
                 continue
-            #print openqa_jobs
+            # print openqa_jobs
             msg = self.summarize_openqa_jobs(openqa_jobs)
             state = 'seen'
             result = 'none'
@@ -927,9 +969,9 @@ class OpenQABot(ReviewBot.ReviewBot):
                 result = 'declined'
                 state = 'done'
             comment = "<!-- openqa state=%s result=%s revision=%s -->\n" % (state, result, job['base'].get('openqa_build'))
-            comment += "\n" + msg
+            comment += "\nCC @coolo\n" + msg
 
-            #print comment
+            # print comment
 
             comment_info = self.find_obs_request_comment(state=state, project_name=str(job['base']['project']))
             comment_id = comment_info.get('id', None)
