@@ -31,11 +31,17 @@ def do_cycle(self, subcmd, opts, *args):
 
     print ("digraph depgraph {")
     for pkgname in args:
-        print ("\"%s\"" % pkgname)
-        deps = ET.fromstring(get_dependson(apiurl, "openSUSE:Factory", "standard", "x86_64", [pkgname]))
+        try:
+            deps = ET.fromstring(get_dependson(apiurl, "openSUSE:Factory", "standard", "x86_64", [pkgname]))
 
-        pkg = deps.find('package')
-        for deps in pkg.findall('pkgdep'):
-            if deps.text in args:
-                print ("\"%s\" -> \"%s\"" % (deps.text, pkgname))
+            pkg = deps.find('package')
+            print ("\"%s\"" % pkgname)
+            for deps in pkg.findall('pkgdep'):
+                if deps.text in args:
+                    print ("\"%s\" -> \"%s\"" % (deps.text, pkgname))
+        except:
+            # Ignore packages that do not exist
+            print ("[color=red]")
+            continue
+
     print ("}")
