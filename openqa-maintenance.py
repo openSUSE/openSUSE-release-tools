@@ -436,7 +436,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         started = []
         # then check progress on running incidents
         for req in self.requests:
-            # just patch apiurl in to avoid having to pass it around
             jobs = self.request_get_openqa_jobs(req, incident=True, test_repo=True)
             ret = self.calculate_qa_status(jobs)
             if ret != QA_UNKNOWN:
@@ -472,6 +471,9 @@ class OpenQABot(ReviewBot.ReviewBot):
             self.logger.warn("not handling %s" % a.tgt_project)
             return None
 
+        # TODO - this needs to be moved
+        return None
+
         packages = []
         # patchinfo collects the binaries and is build for an
         # unpredictable architecture so we need iterate over all
@@ -498,40 +500,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         if not packages:
             raise Exception("no packages found")
 
-        update = PROJECT_OPENQA_SETTINGS[a.tgt_project]
-        update.apiurl = self.apiurl
-        settings = update.settings(a.src_project, a.tgt_project, packages, req)
-        if settings:
-            # is old style kgraft check if all options correctly set
-            if settings['FLAVOR'] == 'KGraft' and 'VIRSH_GUESTNAME' not in settings:
-                self.logger.info("build: {!s} hasn't valid values for kgraft".format(settings['BUILD']))
-                return None
-
-            # don't start KGRAFT job on Server-DVD-Incidents FLAVOR
-            if settings['FLAVOR'] == 'Server-DVD-Incidents':
-                if settings['BUILD'].split('.')[1].startswith('kgraft-patch'):
-                    return None
-
-            # kernel incidents jobs -- discard all without 'start' = True
-            if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
-                if 'start' in settings:
-                    del settings['start']
-                else:
-                    return None
-
-            update.calculate_lastest_good_updates(self.openqa, settings)
-
-            self.logger.info("posting %s %s %s", settings['VERSION'], settings['ARCH'], settings['BUILD'])
-            self.logger.debug('\n'.join(["  %s=%s" % i for i in settings.items()]))
-            if not self.dryrun:
-                try:
-                    ret = self.openqa.openqa_request('POST', 'isos', data=settings, retries=1)
-                    self.logger.info(pformat(ret))
-                except JSONDecodeError as e:
-                    self.logger.error(e)
-                    # TODO: record error
-                except openqa_exceptions.RequestError as e:
-                    self.logger.error(e)
+        update.calculate_lastest_good_updates(self.openqa, settings)
 
         return None
 
@@ -664,21 +633,9 @@ class OpenQABot(ReviewBot.ReviewBot):
             build = src_prjs.pop()
             tgt_prjs = set([a.tgt_project for a in req.actions])
             ret = []
+            if incident:
+                raise 'NA'
             for prj in tgt_prjs:
-                if incident and prj in PROJECT_OPENQA_SETTINGS:
-                    u = PROJECT_OPENQA_SETTINGS[prj]
-                    u.apiurl = self.apiurl
-                    s = u.settings(build, prj, [])
-                    ret += self.openqa.openqa_request(
-                        'GET', 'jobs',
-                        {
-                            'distri': s['DISTRI'],
-                            'version': s['VERSION'],
-                            'arch': s['ARCH'],
-                            'flavor': s['FLAVOR'],
-                            'build': s['BUILD'],
-                            'scope': 'relevant',
-                        })['jobs']
                 repo_settings = TARGET_REPO_SETTINGS.get(self.openqa.baseurl, {})
                 if test_repo and prj in repo_settings:
                     u = repo_settings[prj]
@@ -693,6 +650,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                                 'build':  self.update_test_builds.get(prj, 'UNKNOWN'),
                                 'scope': 'relevant',
                             })['jobs']
+                        print 'J', len(repo_jobs)
                         ret += repo_jobs
                         if self.calculate_qa_status(repo_jobs) == QA_INPROGRESS:
                             self.pending_target_repos.add(prj)
@@ -941,7 +899,8 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            # if not inc in ['a4871', 'a5205', 'a2129', 'a5219', '5248', 'a5223']: continue
+            if not inc in ['5232']:
+                continue
             # if not inc.startswith('52'): continue
             print inc
             # continue
