@@ -436,9 +436,8 @@ class OpenQABot(ReviewBot.ReviewBot):
             self.check_suse_incidents()
 
         # first calculate the latest build number for current jobs
-        self.gather_test_builds()
-
         self.pending_target_repos = set()
+        self.gather_test_builds()
 
         started = []
         # then check progress on running incidents
@@ -897,8 +896,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            if not inc in ['5232']:
-                continue
+            # if not inc in ['5232']: continue
             # if not inc.startswith('52'): continue
             print inc
             # continue
