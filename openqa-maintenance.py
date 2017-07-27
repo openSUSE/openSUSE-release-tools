@@ -100,7 +100,8 @@ with open(opa.join(data_path, "data/apimap.json"), 'r') as f:
     API_MAP = json.load(f)
 
 MINIMALS = dict()
-minimals = requests.get('https://gitlab.suse.de/qa-maintenance/metadata/raw/master/packages-to-be-tested-on-minimal-systems')
+minimals = requests.get(
+    'https://gitlab.suse.de/qa-maintenance/metadata/raw/master/packages-to-be-tested-on-minimal-systems')
 for line in minimals.text.split('\n'):
     if line.startswith('#') or line.startswith(' ') or len(line) == 0:
         continue
@@ -262,13 +263,14 @@ class SUSEUpdate(Update):
         return 'SUSE:Maintenance'
 
     # we take requests that have a kgraft-patch package as kgraft patch (suprise!)
-    def kgraft_target(self, prj):
+    @staticmethod
+    def kgraft_target(apiurl, prj):
         target = None
         action = None
         skip = False
         pattern = re.compile(r"kgraft-patch-([^.]+)\.")
 
-        for package in osc.core.meta_get_packagelist(self.apiurl, prj):
+        for package in osc.core.meta_get_packagelist(apiurl, prj):
             if package.startswith("kernel-"):
                 skip = True
                 break
@@ -276,7 +278,7 @@ class SUSEUpdate(Update):
             if match:
                 target = match.group(1)
         if skip:
-            return None, None
+            return None
 
         return target
 
@@ -312,7 +314,7 @@ class SUSEUpdate(Update):
 
         # special handling for kgraft and kernel incidents
         if settings['FLAVOR'] in ('KGraft', 'Server-DVD-Incidents-Kernel'):
-            kgraft_target = self.kgraft_target(src_prj)
+            kgraft_target = kgraft_target(self.apiurl, src_prj)
         # Server-DVD-Incidents-Incidents handling
         if settings['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
             kernel_target = self.kernel_target(src_prj)
@@ -409,6 +411,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.openqa = None
         self.commentapi = CommentAPI(self.apiurl)
         self.update_test_builds = dict()
+        self.openqa_jobs = dict()
 
     def gather_test_builds(self):
         for prj, u in TARGET_REPO_SETTINGS[self.openqa.baseurl].items():
@@ -421,6 +424,10 @@ class OpenQABot(ReviewBot.ReviewBot):
                 buildnr = j['settings']['BUILD']
                 cjob = int(j['id'])
             self.update_test_builds[prj] = buildnr
+            jobs = self.jobs_for_target(u, build=buildnr)
+            self.openqa_jobs[prj] = jobs
+            if self.calculate_qa_status(jobs) == QA_INPROGRESS:
+                self.pending_target_repos.add(prj)
 
     # reimplemention from baseclass
     def check_requests(self):
@@ -545,30 +552,34 @@ class OpenQABot(ReviewBot.ReviewBot):
                 if req is None:
                     continue
 
+                # skip kgraft patches from aggregation
                 req_ = osc.core.Request()
                 req_.read(req)
-                kgraft_target, action = SUSEUpdate.kgraft_target(req_)
-                # skip kgraft patches from aggregation
-                if kgraft_target:
+                src_prjs = set([a.src_project for a in req_.actions])
+                if SUSEUpdate.kgraft_target(self.apiurl, src_prjs.pop()):
                     continue
+
                 incidents.append(incident)
 
             l_incidents.append((kind + '_TEST_ISSUES', ','.join(incidents)))
 
         return l_incidents
 
-    def jobs_for_target(self, data):
+    def jobs_for_target(self, data, build=None):
         s = data['settings'][0]
-        return self.openqa.openqa_request(
-            'GET', 'jobs',
-            {
-                'distri': s['DISTRI'],
-                'version': s['VERSION'],
-                'arch': s['ARCH'],
-                'flavor': s['FLAVOR'],
-                'test': data['test'],
-                'latest': '1',
-            })['jobs']
+        values = {
+            'distri': s['DISTRI'],
+            'version': s['VERSION'],
+            'arch': s['ARCH'],
+            'flavor': s['FLAVOR'],
+            'scope': 'relevant',
+            'latest': '1',
+        }
+        if build:
+            values['build'] = build
+        else:
+            values['test'] = data['test']
+        return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
 
     # we don't know the current BUILD and querying all jobs is too expensive
     # so we need to check for one known TEST first
@@ -634,26 +645,13 @@ class OpenQABot(ReviewBot.ReviewBot):
             tgt_prjs = set([a.tgt_project for a in req.actions])
             ret = []
             if incident:
-                raise 'NA'
+                return self.openqa_jobs[build]
             for prj in tgt_prjs:
                 repo_settings = TARGET_REPO_SETTINGS.get(self.openqa.baseurl, {})
                 if test_repo and prj in repo_settings:
-                    u = repo_settings[prj]
-                    for s in u['settings']:
-                        repo_jobs = self.openqa.openqa_request(
-                            'GET', 'jobs',
-                            {
-                                'distri': s['DISTRI'],
-                                'version': s['VERSION'],
-                                'arch': s['ARCH'],
-                                'flavor': s['FLAVOR'],
-                                'build':  self.update_test_builds.get(prj, 'UNKNOWN'),
-                                'scope': 'relevant',
-                            })['jobs']
-                        print 'J', len(repo_jobs)
-                        ret += repo_jobs
-                        if self.calculate_qa_status(repo_jobs) == QA_INPROGRESS:
-                            self.pending_target_repos.add(prj)
+                    repo_jobs = self.openqa_jobs[prj]
+                    ret += repo_jobs
+
         return ret
 
     def calculate_qa_status(self, jobs=None):
@@ -931,6 +929,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             else:
                 print s, 'got', len(jobs)
                 openqa_jobs += jobs
+        self.openqa_jobs[incident_project] = openqa_jobs
         if len(openqa_jobs) == 0:
             self.logger.debug("No openqa jobs defined")
             return
