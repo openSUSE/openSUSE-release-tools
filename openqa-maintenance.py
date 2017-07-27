@@ -45,6 +45,7 @@ import osc.conf
 import osc.core
 from pprint import pprint
 from osclib.comments import CommentAPI
+from osclib.memoize import memoize
 
 import ReviewBot
 
@@ -98,13 +99,19 @@ with open(opa.join(data_path, "data/repos.json"), 'r') as f:
 with open(opa.join(data_path, "data/apimap.json"), 'r') as f:
     API_MAP = json.load(f)
 
+MINIMALS = dict()
+minimals = requests.get('https://gitlab.suse.de/qa-maintenance/metadata/raw/master/packages-to-be-tested-on-minimal-systems')
+for line in minimals.text.split('\n'):
+    if line.startswith('#') or line.startswith(' ') or len(line) == 0:
+        continue
+    MINIMALS[line] = 1
+
 
 class Update(object):
 
     def __init__(self, settings):
         self._settings = settings
         self._settings['_NOOBSOLETEBUILD'] = '1'
-        self._packages = dict()
 
     def get_max_revision(self, job):
         repo = self.repo_prefix() + '/'
@@ -140,11 +147,9 @@ class Update(object):
         s['BUILD'] += ':' + name
         return [s]
 
+    @memoize()
     def incident_packages(self, prj):
-        if prj in self._packages:
-            return self._packages[prj]
-
-        self._packages[prj] = []
+        packages = []
         for package in osc.core.meta_get_packagelist(self.apiurl, prj):
             if package.startswith('patchinfo'):
                 continue
@@ -153,8 +158,8 @@ class Update(object):
             parts = package.split('.')
             # remove target name
             parts.pop()
-            self._packages[prj].append('.'.join(parts))
-        return self._packages[prj]
+            packages.append('.'.join(parts))
+        return packages
 
     # grab the updateinfo from the given repo and return its patch's id
     def patch_id(self, repo):
@@ -291,7 +296,7 @@ class SUSEUpdate(Update):
     def add_minimal_settings(self, prj, settings):
         minimal = False
         for pkg in self.incident_packages(prj):
-            if pkg in ['yast2']:
+            if pkg in MINIMALS:
                 minimal = True
         if not minimal:
             return []
@@ -419,6 +424,9 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     # reimplemention from baseclass
     def check_requests(self):
+
+        if self.apiurl.endswith('.suse.de'):
+            self.check_suse_incidents()
 
         # first calculate the latest build number for current jobs
         self.gather_test_builds()
@@ -918,77 +926,82 @@ class OpenQABot(ReviewBot.ReviewBot):
                     posts.append(s)
         return posts
 
-    def test(self):
+    def incident_openqa_jobs(self, s):
+        return self.openqa.openqa_request(
+            'GET', 'jobs',
+            {
+                'distri': s['DISTRI'],
+                'version': s['VERSION'],
+                'arch': s['ARCH'],
+                'flavor': s['FLAVOR'],
+                'build': s['BUILD'],
+                'scope': 'relevant',
+                'latest': '1'
+            })['jobs']
+
+    def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            if not inc in ['a4871', 'a5205', 'a2129', 'a5219', '5258', '5223']:
-                continue
-            if not inc.startswith('52'):
-                continue
+            # if not inc in ['a4871', 'a5205', 'a2129', 'a5219', '5248', 'a5223']: continue
+            # if not inc.startswith('52'): continue
             print inc
             # continue
             job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
             if job['meta']['state'] in ['final', 'gone']:
                 continue
-            openqa_posts = []
-            for prod in API_MAP.keys():
-                openqa_posts += self.check_product(job['base'], prod)
-            openqa_jobs = []
-            openqa_done = True
-            for s in openqa_posts:
-                jobs = self.openqa.openqa_request(
-                    'GET', 'jobs',
-                    {
-                        'distri': s['DISTRI'],
-                        'version': s['VERSION'],
-                        'arch': s['ARCH'],
-                        'flavor': s['FLAVOR'],
-                        'build': s['BUILD'],
-                        'scope': 'relevant',
-                        'latest': '1'
-                    })['jobs']
-                if not len(jobs):
-                    if self.dryrun:
-                        print 'WOULD POST', json.dumps(s, sort_keys=True)
-                    else:
-                        ret = self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
-                    openqa_done = False
+            # required in job: project, id, channels
+            self.test_job(job['base'])
+
+    def test_job(self, job):
+        incident_project = str(job['project'])
+        comment_info = self.find_obs_request_comment(project_name=incident_project)
+        comment_id = comment_info.get('id', None)
+
+        openqa_posts = []
+        for prod in API_MAP.keys():
+            openqa_posts += self.check_product(job, prod)
+        openqa_jobs = []
+        for s in openqa_posts:
+            jobs = self.incident_openqa_jobs(s)
+            # take the project comment as marker for not posting jobs
+            if not len(jobs) and not comment_id:
+                if self.dryrun:
+                    print 'WOULD POST', json.dumps(s, sort_keys=True)
                 else:
-                    print s, 'got', len(jobs)
-                    openqa_jobs += jobs
-            if not openqa_done or len(openqa_jobs) == 0:
-                continue
-            # print openqa_jobs
-            msg = self.summarize_openqa_jobs(openqa_jobs)
-            state = 'seen'
-            result = 'none'
-            qa_status = self.calculate_qa_status(openqa_jobs)
-            if qa_status == QA_PASSED:
-                result = 'accepted'
-                state = 'done'
-            if qa_status == QA_FAILED:
-                result = 'declined'
-                state = 'done'
-            comment = "<!-- openqa state=%s result=%s revision=%s -->\n" % (state, result, job['base'].get('openqa_build'))
-            comment += "\nCC @coolo\n" + msg
+                    ret = self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+                openqa_jobs += self.incident_openqa_jobs(s)
+            else:
+                print s, 'got', len(jobs)
+                openqa_jobs += jobs
+        if len(openqa_jobs) == 0:
+            self.logger.debug("No openqa jobs defined")
+            return
+        # print openqa_jobs
+        msg = self.summarize_openqa_jobs(openqa_jobs)
+        state = 'seen'
+        result = 'none'
+        qa_status = self.calculate_qa_status(openqa_jobs)
+        if qa_status == QA_PASSED:
+            result = 'accepted'
+            state = 'done'
+        if qa_status == QA_FAILED:
+            result = 'declined'
+            state = 'done'
+        comment = "<!-- openqa state=%s result=%s revision=%s -->\n" % (state, result, job.get('openqa_build'))
+        comment += "\nCC @coolo\n" + msg
 
-            # print comment
+        if comment_id and state != 'done':
+            self.logger.debug("%s is already commented, wait until done", incident_project)
+            return
+        if comment_info.get('comment', '') == comment:
+            self.logger.debug("%s comment did not change", incident_project)
+            return
 
-            comment_info = self.find_obs_request_comment(state=state, project_name=str(job['base']['project']))
-            comment_id = comment_info.get('id', None)
-            print "Found comment", comment_id
-            if comment_id and state != 'done':
-                self.logger.debug("%s is already comented, wait until done", job['base']['project'])
-                continue
-            if comment_info.get('comment', '') == comment:
-                self.logger.debug("%s comment did not change", job['base']['project'])
-                continue
-
-            self.logger.debug("adding comment to %s, state %s", job['base']['project'], state)
-            #self.logger.debug("message: %s", msg)
-            if not self.dryrun:
-                if comment_id is not None:
-                    self.commentapi.delete(comment_id)
-                self.commentapi.add_comment(project_name=str(job['base']['project']), comment=str(comment))
+        self.logger.debug("adding comment to %s, state %s", incident_project, state)
+        #self.logger.debug("message: %s", msg)
+        if not self.dryrun:
+            if comment_id is not None:
+                self.commentapi.delete(comment_id)
+            self.commentapi.add_comment(project_name=str(incident_project), comment=str(comment))
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
@@ -996,13 +1009,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def __init__(self, *args, **kwargs):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
         self.clazz = OpenQABot
-
-    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
-    def do_test(self, subcmd, opts, *args):
-        def work():
-            self.checker.test()
-
-        self.runner(work, opts.interval)
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
