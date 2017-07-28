@@ -50,9 +50,9 @@ sub write_package($$) {
 
     my $name = basename($package);
     if ($name =~ m/^[a-z0-9]{32}-/) { # repo cache
-       $name =~ s,^[^-]*-(.*)\.rpm,$1,;
+       $name =~ s,^[^-]+-(.*)\.rpm,$1,;
     } else {
-       $name =~ s,^(.*)-[^-]*-[^-]*.rpm,$1,;
+       $name =~ s,^(.*)-[^-]+-[^-]+.rpm,$1,;
     }
 
     if ( $ignore == 1 && defined $toignore{$name} ) {
@@ -99,7 +99,7 @@ while (<INSTALL>) {
     chomp;
 #    print STDERR "$_\n";
     next if (m/unknown line:.*Flx/);
-    if ( $_ =~ m/can't install (.*)-([^-]*)-[^-\.]/ ) {
+    if ( $_ =~ m/can't install (.*)-([^-]+)-[^-\.]/ ) {
 
 #        print STDERR "CI $1 " . $targets{$1} . "\n";
         if ( defined $targets{$1} ) {
@@ -131,7 +131,7 @@ while (<INSTALL>) {
     chomp;
 
 #    print STDERR "$_\n";
-    if ( $_ =~ m/found conflict of (.*)-[^-]*-[^-]* with (.*)-[^-]*-[^-]*:/ ) {
+    if ( $_ =~ m/found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:/ ) {
         $inc = 0;
 
 #        print STDERR "F $1 $2 -$targets{$1}-$targets{$2}-\n";
