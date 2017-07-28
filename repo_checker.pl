@@ -94,9 +94,9 @@ open(INSTALL, "/usr/bin/installcheck $arch $pfile 2> $error_file |")
   || die 'exec installcheck';
 while (<INSTALL>) {
     chomp;
-    next if (m/unknown line:.*Flx/);
-    if ( $_ =~ m/can't install (.*)-([^-]+)-[^-\.]/ ) {
 
+    next if (/^unknown line:.*Flx/);
+    if ( $_ =~ /^can't install (.*)-[^-]+-[^-]+:$/ ) {
         if ( defined $targets{$1} ) {
             print "$_\n";
             while (<INSTALL>) {
@@ -124,7 +124,7 @@ my $inc = 0;
 while (<INSTALL>) {
     chomp;
 
-    if ( $_ =~ m/found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:/ ) {
+    if ( $_ =~ /^found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:$/ ) {
         $inc = 0;
 
         if ( defined $targets{$1} || defined $targets{$2} ) {
