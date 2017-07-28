@@ -68,14 +68,18 @@ sub write_package($$) {
     return $name;
 }
 
-my @rpms  = glob("$repodir/*.rpm");
+my @rpms;
 my $tmpdir = tempdir( "repochecker-XXXXXXX", TMPDIR => 1, CLEANUP => 1 );
 my $pfile = $tmpdir . "/packages";
 open( PACKAGES, ">", $pfile ) || die 'can not open';
 print PACKAGES "=Ver: 2.0\n";
 
-foreach my $package (@rpms) {
-    write_package( 1, $package );
+# Allow $repodir to be empty indicating only to review $dir.
+if (length($repodir)) {
+    my @rpms = glob("$repodir/*.rpm");
+    foreach my $package (@rpms) {
+        write_package(1, $package);
+    }
 }
 
 @rpms = glob("$dir/*.rpm");
