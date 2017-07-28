@@ -92,20 +92,21 @@ close(PACKAGES);
 my $error_file = $tmpdir . "/error_file";
 open(INSTALL, "/usr/bin/installcheck $arch $pfile 2> $error_file |")
   || die 'exec installcheck';
+my $inc = 0;
 while (<INSTALL>) {
     chomp;
 
     next if (/^unknown line:.*Flx/);
     if ( $_ =~ /^can't install (.*)-[^-]+-[^-]+:$/ ) {
+        $inc = 0;
+
         if ( defined $targets{$1} ) {
-            print "$_\n";
-            while (<INSTALL>) {
-                last if (m/^can't install /);
-                print "$_";
-            }
+            $inc = 1;
             $ret = 1;
-            last;
         }
+    }
+    if ($inc) {
+        print "$_\n";
     }
 }
 close(INSTALL);
@@ -120,7 +121,7 @@ close(ERROR);
 
 my $cmd = sprintf( "perl %s/findfileconflicts $pfile", dirname($0) );
 open(CONFLICTS, "$cmd 2> $error_file |") || die 'exec fileconflicts';
-my $inc = 0;
+$inc = 0;
 while (<CONFLICTS>) {
     chomp;
 
