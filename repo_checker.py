@@ -31,6 +31,25 @@ class RepoChecker(ReviewBot.ReviewBot):
         # RepoChecker options.
         self.skip_cycle = False
 
+    def project_only(self, project):
+        # self.staging_config needed by target_archs().
+        api = self.staging_api(project)
+
+        comment = []
+        for arch in self.target_archs(project):
+            directory_project = self.mirror(project, arch)
+
+            results = {
+                'cycle': CheckResult(True, None),
+                'install': self.install_check('', directory_project, arch, []),
+            }
+
+            if not all(result.success for _, result in results.items()):
+                self.result_comment(project, project, arch, results, comment)
+
+        text = '\n'.join(comment).strip()
+        api.dashboard_content_ensure('repo_checker', text, 'project_only run')
+
     def prepare_review(self):
         # Reset for request batch.
         self.requests_map = {}
@@ -310,6 +329,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.skip_cycle = self.options.skip_cycle
 
         return bot
+
+    def do_project_only(self, subcmd, opts, project):
+        self.checker.check_requests() # Needed to properly init ReviewBot.
+        self.checker.project_only(project)
 
 if __name__ == "__main__":
     app = CommandLineInterface()

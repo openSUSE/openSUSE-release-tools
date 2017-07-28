@@ -593,14 +593,14 @@ class StagingAPI(object):
 
     @memoize(session=True)
     def get_ignored_requests(self):
-        ignore = self.load_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests')
+        ignore = self.dashboard_content_load('ignored_requests')
         if ignore is None or not ignore:
             return {}
         return yaml.safe_load(ignore)
 
     def set_ignored_requests(self, ignore_requests):
         ignore = yaml.dump(ignore_requests, default_flow_style=False)
-        self.save_file_content('{}:Staging'.format(self.project), 'dashboard', 'ignored_requests', ignore)
+        self.dashboard_content_ensure('ignored_requests', ignore)
 
     @memoize(session=True, add_invalidate=True)
     def get_open_requests(self, query_extra=None):
@@ -1411,6 +1411,16 @@ class StagingAPI(object):
         """
         url = self.makeurl(['source', project, package, filename], {'comment': comment})
         http_PUT(url, data=content)
+
+    def dashboard_content_load(self, filename):
+        return self.load_file_content(self.cstaging, 'dashboard', filename)
+
+    def dashboard_content_save(self, filename, content, comment='script updated'):
+        return self.save_file_content(self.cstaging, 'dashboard', filename, content, comment)
+
+    def dashboard_content_ensure(self, filename, content, comment='script updated'):
+        if content != self.dashboard_content_load(filename):
+            self.dashboard_content_save(filename, content, comment)
 
     def update_status_or_deactivate(self, project, command):
         meta = self.get_prj_pseudometa(project)

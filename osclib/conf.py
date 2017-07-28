@@ -152,7 +152,7 @@ class Config(object):
         if not conf.config[self.project].get('remote-config', True):
             return
 
-        config = api.load_file_content(api.cstaging, 'dashboard', 'config')
+        config = api.dashboard_content_load('config')
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config
@@ -161,4 +161,4 @@ class Config(object):
             self.populate_conf()
         elif config is None:
             # Write empty config to allow for caching.
-            api.save_file_content(api.cstaging, 'dashboard', 'config', '')
+            api.dashboard_content_save('config', '')

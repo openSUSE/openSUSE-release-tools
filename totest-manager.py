@@ -453,8 +453,7 @@ class ToTestBase(object):
         new_snapshot = self.current_version()
 
         current_result = self.overall_result(current_snapshot)
-        current_qa_version = self.api.load_file_content(
-            "%s:Staging" % self.api.project, "dashboard", "version_totest")
+        current_qa_version = self.api.dashboard_content_load('version_totest')
 
         logger.info('current_snapshot %s: %s' %
                     (current_snapshot, self._result2str(current_result)))
