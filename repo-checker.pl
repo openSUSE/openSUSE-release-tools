@@ -1,6 +1,5 @@
 #! /usr/bin/perl -w
 
-
 use File::Basename;
 use File::Temp qw/ tempdir  /;
 use XML::Simple;
@@ -90,18 +89,14 @@ foreach my $package (@rpms) {
 
 close(PACKAGES);
 
-#print STDERR "calling installcheck\n";
-#print STDERR Dumper(\%targets);
 my $error_file = $tmpdir . "/error_file";
 open(INSTALL, "/usr/bin/installcheck $arch $pfile 2> $error_file |")
   || die 'exec installcheck';
 while (<INSTALL>) {
     chomp;
-#    print STDERR "$_\n";
     next if (m/unknown line:.*Flx/);
     if ( $_ =~ m/can't install (.*)-([^-]+)-[^-\.]/ ) {
 
-#        print STDERR "CI $1 " . $targets{$1} . "\n";
         if ( defined $targets{$1} ) {
             print "$_\n";
             while (<INSTALL>) {
@@ -123,18 +118,15 @@ while (<ERROR>) {
 }
 close(ERROR);
 
-#print STDERR "checking file conflicts\n";
 my $cmd = sprintf( "perl %s/findfileconflicts $pfile", dirname($0) );
 open(INSTALL, "$cmd 2> $error_file |") || die 'exec fileconflicts';
 my $inc = 0;
 while (<INSTALL>) {
     chomp;
 
-#    print STDERR "$_\n";
     if ( $_ =~ m/found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:/ ) {
         $inc = 0;
 
-#        print STDERR "F $1 $2 -$targets{$1}-$targets{$2}-\n";
         if ( defined $targets{$1} || defined $targets{$2} ) {
             $inc = 1;
             $ret = 1;
@@ -154,5 +146,4 @@ while (<ERROR>) {
 }
 close(ERROR);
 
-#print STDERR "RET $ret\n";
 exit($ret);
