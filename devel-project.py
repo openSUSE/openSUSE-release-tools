@@ -47,9 +47,7 @@ osc.core.search = search
 
 def staging_api(args):
     Config(args.project)
-    api = StagingAPI(osc.conf.config['apiurl'], args.project)
-    staging = '%s:Staging' % api.project
-    return (api, staging)
+    return StagingAPI(osc.conf.config['apiurl'], args.project)
 
 def devel_projects_get(apiurl, project):
     """
@@ -78,13 +76,12 @@ def list(args):
         print(out)
 
         if args.write:
-            api, staging = staging_api(args)
-            if api.load_file_content(staging, 'dashboard', 'devel_projects') != out:
-                api.save_file_content(staging, 'dashboard', 'devel_projects', out)
+            api = staging_api(args)
+            api.dashboard_content_ensure('devel_projects', out, 'devel_projects write')
 
 def devel_projects_load(args):
-    api, staging = staging_api(args)
-    devel_projects = api.load_file_content(staging, 'dashboard', 'devel_projects')
+    api = staging_api(args)
+    devel_projects = api.dashboard_content_load('devel_projects')
 
     if devel_projects:
         return devel_projects.splitlines()

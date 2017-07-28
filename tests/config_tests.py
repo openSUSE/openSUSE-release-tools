@@ -27,7 +27,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual('remote-indeed', conf.config[PROJECT]['remote-only'])
 
     def test_remote_none(self):
-        self.api.save_file_content(self.api.cstaging, 'dashboard', 'config', '')
+        self.api.dashboard_content_save('config', '')
         self.assertEqual(self.obs.dashboard_counts['config'], 1)
         self.config.apply_remote(self.api)
         # Ensure blank file not overridden.

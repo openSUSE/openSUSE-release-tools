@@ -112,7 +112,7 @@ class StagingHelper(object):
 
     def crawl(self):
         """Main method"""
-        rebuild_data = self.api.load_file_content(self.project + ':Staging', 'dashboard', 'support_pkg_rebuild')
+        rebuild_data = self.api.dashboard_content_load('support_pkg_rebuild')
         if rebuild_data is None:
             print "There is no support_pkg_rebuild file!"
             return
@@ -173,7 +173,7 @@ class StagingHelper(object):
         rebuild_data_updated = ET.tostring(root)
         logging.debug(rebuild_data_updated)
         if rebuild_data_updated != rebuild_data:
-            self.api.save_file_content(self.project + ':Staging', 'dashboard',
+            self.api.dashboard_content_save(
                 'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
 
 def main(args):
