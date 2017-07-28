@@ -151,6 +151,11 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         return True
 
+    def check_action_delete(self, req, a):
+        self._check_maintainer_review_needed(req, a)
+
+        return True
+
 
     def check_one_request(self, req):
         self.add_factory_source = False

@@ -13,6 +13,7 @@ except ImportError:
 import osc.core
 import urllib2
 import ReviewBot
+from check_maintenance_incidents import MaintenanceChecker
 
 class CheckSource(ReviewBot.ReviewBot):
 
@@ -23,6 +24,8 @@ class CheckSource(ReviewBot.ReviewBot):
 
         # ReviewBot options.
         self.only_one_action = True
+
+        self.maintbot = MaintenanceChecker(*args, **kwargs)
 
         self.ignore_devel = False
         self.review_team = 'opensuse-review-team'
@@ -220,6 +223,9 @@ class CheckSource(ReviewBot.ReviewBot):
         # Decline the delete request against linked package.
         links = root.findall('sourceinfo/linked')
         if links is None or len(links) == 0:
+            # Utilize maintbot to add devel project review if necessary.
+            self.maintbot.check_one_request(request)
+
             if not self.skip_add_reviews and self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')
             return True
