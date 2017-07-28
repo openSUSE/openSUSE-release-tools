@@ -119,9 +119,9 @@ while (<ERROR>) {
 close(ERROR);
 
 my $cmd = sprintf( "perl %s/findfileconflicts $pfile", dirname($0) );
-open(INSTALL, "$cmd 2> $error_file |") || die 'exec fileconflicts';
+open(CONFLICTS, "$cmd 2> $error_file |") || die 'exec fileconflicts';
 my $inc = 0;
-while (<INSTALL>) {
+while (<CONFLICTS>) {
     chomp;
 
     if ( $_ =~ /^found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:$/ ) {
@@ -136,7 +136,7 @@ while (<INSTALL>) {
         print "$_\n";
     }
 }
-close(INSTALL);
+close(CONFLICTS);
 
 open(ERROR, '<', $error_file);
 while (<ERROR>) {
