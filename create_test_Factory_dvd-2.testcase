@@ -85,7 +85,7 @@ job install name php5
 job install name apache2-mod_php5
 job install name php5-mysql
 job install name php5-pgsql
-job install name postgresql94-server
+job install name postgresql96-server
 job install name bind
 
 ## required for ppc64 test
