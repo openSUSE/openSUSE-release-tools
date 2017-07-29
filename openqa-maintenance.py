@@ -644,8 +644,8 @@ class OpenQABot(ReviewBot.ReviewBot):
             tgt_prjs = set([a.tgt_project for a in req.actions])
             ret = []
             if incident:
-                return self.openqa_jobs[build]
-            for prj in tgt_prjs:
+                ret += self.openqa_jobs[build]
+            for prj in sorted(tgt_prjs):
                 repo_settings = TARGET_REPO_SETTINGS.get(self.openqa.baseurl, {})
                 if test_repo and prj in repo_settings:
                     repo_jobs = self.openqa_jobs[prj]
@@ -690,7 +690,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         comment = "<!-- openqa state=%s%s -->\n" % (state, ' result=%s' % result if result else '')
         comment += "\n" + msg
 
-        info = self.find_obs_request_comment(state=state, request_id=request_id)
+        info = self.find_obs_request_comment(request_id=request_id)
         comment_id = info.get('id', None)
 
         if state == info.get('state', 'missing'):
@@ -846,13 +846,13 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         return ret
 
-    def find_obs_request_comment(self, request_id=None, project_name=None, state=None):
+    def find_obs_request_comment(self, request_id=None, project_name=None):
         """Return previous comments (should be one)."""
         if self.do_comments:
             comments = self.commentapi.get_comments(request_id=request_id, project_name=project_name)
             for c in comments.values():
                 m = comment_marker_re.match(c['comment'])
-                if m and (state is None or state == m.group('state')):
+                if m:
                     return {'id': c['id'], 'state': m.group('state'), 'result': m.group('result'), 'comment': c['comment'], 'revision': m.group('revision')}
         return {}
 
@@ -896,7 +896,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            # if not inc in ['5232']: continue
+            # if not inc in ['5219']: continue
             # if not inc.startswith('52'): continue
             print inc
             # continue
@@ -918,7 +918,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         for s in openqa_posts:
             jobs = self.incident_openqa_jobs(s)
             # take the project comment as marker for not posting jobs
-            if not len(jobs) and not comment_id:
+            if not len(jobs) and comment_info.get('revision', '') != job['openqa_build']:
                 if self.dryrun:
                     print 'WOULD POST', json.dumps(s, sort_keys=True)
                 else:
