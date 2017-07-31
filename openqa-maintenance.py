@@ -910,6 +910,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         incident_project = str(job['project'])
         comment_info = self.find_obs_request_comment(project_name=incident_project)
         comment_id = comment_info.get('id', None)
+        comment_build = str(comment_info.get('revision', ''))
 
         openqa_posts = []
         for prod in API_MAP.keys():
@@ -918,12 +919,12 @@ class OpenQABot(ReviewBot.ReviewBot):
         for s in openqa_posts:
             jobs = self.incident_openqa_jobs(s)
             # take the project comment as marker for not posting jobs
-            if not len(jobs) and comment_info.get('revision', '') != job['openqa_build']:
+            if not len(jobs) and comment_build != str(job['openqa_build']):
                 if self.dryrun:
                     print 'WOULD POST', json.dumps(s, sort_keys=True)
                 else:
                     ret = self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
-                openqa_jobs += self.incident_openqa_jobs(s)
+                    openqa_jobs += self.incident_openqa_jobs(s)
             else:
                 print s, 'got', len(jobs)
                 openqa_jobs += jobs
