@@ -4,11 +4,6 @@
 FROM boombatower/opensuse:tumbleweed
 MAINTAINER Jimmy Berry <jberry@suse.com>
 
-# hard-code mirror until TW mirror issue is resolved
-RUN zypper ar http://mirror.datto.com/opensuse/tumbleweed/repo/oss/ oss2 && \
-  zypper mr --disable oss && \
-  zypper lr -U
-
 RUN zypper ref && zypper -n in --no-recommends \
   obs-service-download_files \
   obs-service-format_spec_file \
