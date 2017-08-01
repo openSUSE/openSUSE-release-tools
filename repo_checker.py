@@ -208,8 +208,8 @@ class RepoChecker(ReviewBot.ReviewBot):
                 ignore_file.write(item + '\n')
             ignore_file.flush()
 
-            # Invoke repo-checker.pl to perform an install check.
-            script = os.path.join(SCRIPT_PATH, 'repo-checker.pl')
+            # Invoke repo_checker.pl to perform an install check.
+            script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
             parts = ['LC_ALL=C', 'perl', script, arch, directory_group,
                      '-r', directory_project, '-f', ignore_file.name]
             parts = [pipes.quote(part) for part in parts]
