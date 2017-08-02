@@ -78,21 +78,13 @@ class Leaper(ReviewBot.ReviewBot):
         # update lookup information on every run
 
         if self.ibs:
-            self.factory.parse_lookup('SUSE:SLE-12-SP3:GA')
-            self.lookup_sp3 = self.factory.lookup.copy()
+            self.factory.parse_lookup('SUSE:SLE-15:GA')
+            self.lookup_sle15 = self.factory.lookup.copy()
             return
 
-        self.factory.parse_lookup('openSUSE:Leap:42.3')
-        self.factory.parse_lookup('openSUSE:Leap:42.3:NonFree')
-        self.lookup_423 = self.factory.lookup.copy()
-        self.factory.reset_lookup()
-        self.factory.parse_lookup('openSUSE:Leap:42.2:Update')
-        self.factory.parse_lookup('openSUSE:Leap:42.2:NonFree:Update')
-        self.lookup_422 = self.factory.lookup.copy()
-        self.factory.reset_lookup()
-        self.factory.parse_lookup('openSUSE:Leap:42.1:Update')
-        self.lookup_421 = self.factory.lookup.copy()
-        self.factory.reset_lookup()
+        self.factory.parse_lookup('openSUSE:Leap:15.0')
+        self.factory.parse_lookup('openSUSE:Leap:15.0:NonFree')
+        self.lookup_150 = self.factory.lookup.copy()
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -151,8 +143,8 @@ class Leaper(ReviewBot.ReviewBot):
             return False
 
         if self.ibs and target_project.startswith('SUSE:SLE'):
-            if package in self.lookup_sp3:
-                origin = self.lookup_sp3[package]
+            if package in self.lookup_sle15:
+                origin = self.lookup_sle15[package]
 
             origin_same = True
             if origin:
@@ -172,8 +164,9 @@ class Leaper(ReviewBot.ReviewBot):
             if self.is_package_in_project(prj, package):
                 self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
 
-            prj = 'openSUSE.org:openSUSE:Leap:42.2'
-            if self.is_package_in_project(prj, package):
+            prj = 'openSUSE.org:openSUSE:Leap:15.0'
+            # TODO Ugly save for SLE-15-SP1.
+            if False and self.is_package_in_project(prj, package):
                 if self._check_factory(package, src_srcinfo, prj) is True:
                     self.logger.info('found source match in {}'.format(prj))
                 else:
@@ -193,12 +186,13 @@ class Leaper(ReviewBot.ReviewBot):
             else:
                 self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', package))
 
-            self.logger.info('no matching sources in Factory, Leap:42.2, nor devel project')
+            #self.logger.info('no matching sources in Factory, Leap:15.0, nor devel project')
+            self.logger.info('no matching sources in Factory, nor devel project')
 
             return origin_same
 
-        if package in self.lookup_423:
-            origin = self.lookup_423[package]
+        if package in self.lookup_150:
+            origin = self.lookup_150[package]
 
         is_fine_if_factory = False
         not_in_factory_okish = False
@@ -235,54 +229,56 @@ class Leaper(ReviewBot.ReviewBot):
                     self.needs_check_source = True
                 self.needs_release_manager = True
                 # fall through to check history and requests
-            elif origin.startswith('openSUSE:Leap:42.2'):
+            # TODO Ugly save for 15.1 (n-1).
+            elif False and origin.startswith('openSUSE:Leap:15.0'):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
                 # submitted from :Update
                 if origin_same:
-                    self.logger.debug("submission from 42.2 ok")
+                    self.logger.debug("submission from 15.0 ok")
                     return True
                 # switching to sle package might make sense
-                if src_project.startswith('SUSE:SLE-12'):
+                if src_project.startswith('SUSE:SLE-15'):
                     self.needs_release_manager = True
                     return True
                 # submitted from elsewhere but is in :Update
                 else:
-                    good = self.factory._check_project('openSUSE:Leap:42.2:Update', target_package, src_srcinfo.verifymd5)
+                    good = self.factory._check_project('openSUSE:Leap:15.0:Update', target_package, src_srcinfo.verifymd5)
                     if good:
-                        self.logger.info("submission found in 42.2")
+                        self.logger.info("submission found in 15.0")
                         return good
                     # check release requests too
-                    good = self.factory._check_requests('openSUSE:Leap:42.2:Update', target_package, src_srcinfo.verifymd5)
+                    good = self.factory._check_requests('openSUSE:Leap:15.0:Update', target_package, src_srcinfo.verifymd5)
                     if good or good == None:
                         self.logger.debug("found request")
                         return good
                 # let's see where it came from before
-                if package in self.lookup_422:
-                    oldorigin = self.lookup_422[package]
+                if package in self.lookup_150:
+                    oldorigin = self.lookup_150[package]
                     self.logger.debug("oldorigin {}".format(oldorigin))
                     # Factory. So it's ok to keep upgrading it to Factory
                     # TODO: whitelist packages where this is ok and block others?
-                    self.logger.info("Package was from %s in 42.2", oldorigin)
+                    self.logger.info("Package was from %s in 15.0", oldorigin)
                     if oldorigin.startswith('openSUSE:Factory'):
                         # check if an attempt to switch to SLE package is made
-                        for sp in ('SP2:GA', 'SP2:Update', 'SP3:GA'):
-                            good = self.factory._check_project('SUSE:SLE-12-{}'.format(sp), target_package, src_srcinfo.verifymd5)
+                        for sp in ('SP1:GA', 'SP1:Update'):
+                            good = self.factory._check_project('SUSE:SLE-15-{}'.format(sp), target_package, src_srcinfo.verifymd5)
                             if good:
                                 self.logger.info("request sources come from SLE")
                                 self.needs_release_manager = True
                                 return good
-                    elif oldorigin.startswith('openSUSE:Leap:42.1'):
-                        o = self.lookup_421[package]
-                        self.logger.info("Package was from %s in 42.1", o)
+                    # TODO Ugly save for 15.2 (n-2).
+                    elif False and oldorigin.startswith('openSUSE:Leap:15.0'):
+                        o = self.lookup_150[package]
+                        self.logger.info("Package was from %s in 15.0", o)
                 # the release manager needs to review attempts to upgrade to Factory
                 is_fine_if_factory = True
                 self.needs_release_manager = True
 
-            elif origin.startswith('SUSE:SLE-12'):
+            elif origin.startswith('SUSE:SLE-15'):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
-                for v in ('42.3', '42.2'):
+                for v in ('15.0'):
                     prj = 'openSUSE:Leap:{}:SLE-workarounds'.format(v)
                     if self.is_package_in_project( prj, target_package):
                         self.logger.info("found package in %s", prj)
@@ -303,7 +299,7 @@ class Leaper(ReviewBot.ReviewBot):
                     return True
 
                 # check  if submitted from higher SP
-                priolist = ['SUSE:SLE-12:', 'SUSE:SLE-12-SP1:', 'SUSE:SLE-12-SP2:', 'SUSE:SLE-12-SP3:']
+                priolist = ['SUSE:SLE-15:', 'SUSE:SLE-15-SP1:', 'SUSE:SLE-15-SP2:', 'SUSE:SLE-15-SP3:']
                 for i in range(len(priolist)-1):
                     if origin.startswith(priolist[i]):
                         for prj in priolist[i+1:]:
@@ -324,16 +320,15 @@ class Leaper(ReviewBot.ReviewBot):
                 return False
         else: # no origin
             # submission from SLE is ok
-            if src_project.startswith('SUSE:SLE-12'):
+            if src_project.startswith('SUSE:SLE-15'):
                 return True
 
             is_fine_if_factory = True
             self.needs_release_manager = True
 
         if origin is None or not origin.startswith('SUSE:SLE-'):
-            for p in ('-SP3:GA', '-SP2:Update', '-SP2:GA',
-                    '-SP1:Update', '-SP1:GA', ':Update', ':GA'):
-                prj = 'SUSE:SLE-12' + p
+            for p in (':Update', ':GA'):
+                prj = 'SUSE:SLE-15' + p
                 if self.is_package_in_project(prj, package):
                     self.logger.info('Package is in {}'.format(
                         self.rdiff_link(src_project, src_package, src_rev, prj, package)))
@@ -354,8 +349,8 @@ class Leaper(ReviewBot.ReviewBot):
             self.needs_reviewteam = False
             self.needs_legal_review = False
         else:
-            if src_project.startswith('SUSE:SLE-12') \
-                or src_project.startswith('openSUSE:Leap:42.'):
+            if src_project.startswith('SUSE:SLE-15') \
+                or src_project.startswith('openSUSE:Leap:15.'):
                 self.needs_reviewteam = False
                 self.needs_legal_review = False
             else:
