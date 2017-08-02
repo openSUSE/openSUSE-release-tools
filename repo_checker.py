@@ -290,7 +290,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             comment.append('### new [cycle(s)](/project/repository_state/{}/standard)\n'.format(group))
             comment.append(results['cycle'].comment + '\n')
         if not results['install'].success:
-            comment.append('### [install check](/package/view_file/{}:Staging/dashboard/installcheck?expand=1)\n'.format(project))
+            comment.append('### [install check & file conflicts](/package/view_file/{}:Staging/dashboard/repo_checker)\n'.format(project))
             comment.append(results['install'].comment + '\n')
 
     def check_action_submit(self, request, action):
