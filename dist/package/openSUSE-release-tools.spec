@@ -18,7 +18,6 @@
 
 %global __provides_exclude ^perl.*
 %define source_dir osc-plugin-factory
-%define osc_plugin_dir %{_prefix}/lib/osc-plugins
 %define announcer_filename factory-package-news
 Name:           openSUSE-release-tools
 Version:        0
@@ -29,7 +28,8 @@ Group:          Development/Tools/Other
 Url:            https://github.com/openSUSE/osc-plugin-factory
 Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
-BuildRequires:  osc
+# Requires sr#512849 which provides osc_plugin_dir.
+BuildRequires:  osc >= 0.159.0
 BuildRequires:  python-PyYAML
 BuildRequires:  python-cmdln
 BuildRequires:  python-colorama
@@ -166,7 +166,9 @@ make check
 %endif
 
 %install
-%make_install VERSION="%{version}"
+%make_install \
+  oscplugindir="%{osc_plugin_dir}" \
+  VERSION="%{version}"
 
 # TODO Correct makefile to actually install source.
 mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
@@ -206,8 +208,6 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
-# Should be in osc package, but ironically it is using its deprecated directory.
-%dir %{osc_plugin_dir}
 
 %files devel
 %defattr(-,root,root,-)
