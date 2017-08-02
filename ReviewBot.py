@@ -426,11 +426,13 @@ class ReviewBot(object):
     def comment_handler_lines_deduplicate(self):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
-    def comment_write(self, state='done', result=None, project=None, request=None,
-                      message=None, identical=False):
+    def comment_write(self, state='done', result=None, project=None, package=None,
+                      request=None, message=None, identical=False):
         """Write comment from log messages if not similar to previous comment."""
         if project:
             kwargs = {'project_name': project}
+            if package:
+                kwargs['package_name'] = package
         else:
             if request is None:
                 request = self.request
@@ -452,7 +454,7 @@ class ReviewBot(object):
             self.logger.debug('previous comment too similar to bother commenting again')
             return
 
-        self.logger.debug('adding comment to {}: {}'.format(kwargs.itervalues().next(), message))
+        self.logger.debug('adding comment to {}: {}'.format('/'.join(kwargs.values()), message))
 
         if not self.dryrun:
             if comment is None:
