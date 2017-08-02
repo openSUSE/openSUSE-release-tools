@@ -21,6 +21,7 @@ my $arch = shift @ARGV;
 my $dir = shift @ARGV;
 my %toignore;
 my $repodir;
+my %whitelist;
 while (@ARGV) {
     my $switch = shift @ARGV;
     if ( $switch eq "-f" ) {
@@ -34,6 +35,9 @@ while (@ARGV) {
     }
     elsif ( $switch eq "-r" ) {
         $repodir = shift @ARGV;
+    }
+    elsif ( $switch eq "-w" ) {
+        %whitelist = map { $_ => 1 } split(/\,/, shift @ARGV);
     }
     else {
         print "read the source luke: $switch ? \n";
@@ -84,7 +88,9 @@ if (length($repodir)) {
 @rpms = glob("$dir/*.rpm");
 foreach my $package (@rpms) {
     my $name = write_package( 0, $package );
-    $targets{$name} = 1;
+    if (!exists($whitelist{$name})) {
+        $targets{$name} = 1;
+    }
 }
 
 close(PACKAGES);

@@ -41,7 +41,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             results = {
                 'cycle': CheckResult(True, None),
-                'install': self.install_check('', directory_project, arch, []),
+                'install': self.install_check('', directory_project, arch, [], []),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -131,10 +131,12 @@ class RepoChecker(ReviewBot.ReviewBot):
                 if a.type == 'delete':
                     self.ignore_from_package(project, a.tgt_package, arch, ignore)
 
+            whitelist = self.package_whitelist(project, arch)
+
             # Perform checks on group.
             results = {
                 'cycle': self.cycle_check(project, group, arch),
-                'install': self.install_check(directory_project, directory_group, arch, ignore),
+                'install': self.install_check(directory_project, directory_group, arch, ignore, whitelist),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -199,7 +201,15 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         return ignore
 
-    def install_check(self, directory_project, directory_group, arch, ignore):
+    def package_whitelist(self, project, arch):
+        product = project.split(':Staging:', 1)[0]
+        prefix = 'repo_checker-package-whitelist'
+        whitelist = set()
+        for key in [prefix, '-'.join([prefix, arch])]:
+            whitelist.update(self.staging_config[product].get(key, '').split(' '))
+        return whitelist
+
+    def install_check(self, directory_project, directory_group, arch, ignore, whitelist):
         self.logger.info('install check: start')
 
         with tempfile.NamedTemporaryFile() as ignore_file:
@@ -211,7 +221,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Invoke repo_checker.pl to perform an install check.
             script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
             parts = ['LC_ALL=C', 'perl', script, arch, directory_group,
-                     '-r', directory_project, '-f', ignore_file.name]
+                     '-r', directory_project, '-f', ignore_file.name,
+                     '-w', ','.join(whitelist)]
             parts = [pipes.quote(part) for part in parts]
             p = subprocess.Popen(' '.join(parts), shell=True,
                                  stdout=subprocess.PIPE,
