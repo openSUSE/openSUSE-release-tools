@@ -155,7 +155,7 @@ class CycleDetector(object):
         root = None
         try:
             # print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
-            url = makeurl(self.api.apiurl, ['/build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
+            url = makeurl(self.api.apiurl, ['build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
             root = http_GET(url).read()
         except urllib2.HTTPError, e:
             print('ERROR in URL %s [%s]' % (url, e))
