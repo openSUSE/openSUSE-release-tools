@@ -108,3 +108,28 @@ def binary_list(apiurl, project, repository, arch, package=None):
         parsed.append(BinaryParsed(package, result.group('filename'), name, result.group('arch')))
 
     return parsed
+
+def package_binary_list(apiurl, project, repository, arch, package=None):
+    path = ['build', project, repository, arch]
+    if package:
+        path.append(package)
+    url = makeurl(apiurl, path, {'view': 'binaryversions'})
+    root = ET.parse(http_GET(url)).getroot()
+
+    package_binaries = []
+    binary_map = {} # last duplicate wins
+    for binary_list in root:
+        # Strip off multibuild extra to provide actual package name. The full
+        # value may be useful for duplicate check.
+        package = binary_list.get('package').split(':', 1)[0]
+        for binary in binary_list:
+            filename = binary.get('name')
+            result = re.match(RPM_REGEX, filename)
+            if not result:
+                continue
+
+            package_binaries.append(BinaryParsed(package, result.group('filename'),
+                                                 result.group('name'), result.group('arch')))
+            binary_map[result.group('filename')] = package
+
+    return package_binaries, binary_map
