@@ -66,6 +66,9 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Sort sections by text to group binaries together.
             sections = sorted(sections, key=lambda s: s.text)
             message = '\n'.join([section.text for section in sections])
+            if len(message) > 16384:
+                # Truncate messages to avoid crashing OBS.
+                message = message[:16384 - 3] + '...'
             message = '```\n' + message.strip() + '\n```'
             message = 'The version of this package in `{}` has installation issues and may not be installable:\n\n'.format(project) + message
 
