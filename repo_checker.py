@@ -202,11 +202,10 @@ class RepoChecker(ReviewBot.ReviewBot):
         return ignore
 
     def package_whitelist(self, project, arch):
-        product = project.split(':Staging:', 1)[0]
         prefix = 'repo_checker-package-whitelist'
         whitelist = set()
         for key in [prefix, '-'.join([prefix, arch])]:
-            whitelist.update(self.staging_config[product].get(key, '').split(' '))
+            whitelist.update(self.staging_config[project].get(key, '').split(' '))
         return whitelist
 
     def install_check(self, directory_project, directory_group, arch, ignore, whitelist):
