@@ -14,7 +14,7 @@ from osclib.memoize import memoize
 
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*?)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
 RPM_REGEX = BINARY_REGEX + '\.rpm'
-BinaryParsed = namedtuple('BinaryParsed', ('filename', 'name', 'arch'))
+BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
 
 
 @memoize(session=True)
@@ -105,6 +105,6 @@ def binary_list(apiurl, project, repository, arch, package=None):
         if result.group('arch') == 'src':
             continue
 
-        parsed.append(BinaryParsed(result.group('filename'), name, result.group('arch')))
+        parsed.append(BinaryParsed(package, result.group('filename'), name, result.group('arch')))
 
     return parsed
