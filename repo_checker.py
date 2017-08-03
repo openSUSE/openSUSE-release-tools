@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
+import cmdln
 from collections import namedtuple
+import hashlib
 import os
 import pipes
 import re
@@ -35,7 +37,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         # RepoChecker options.
         self.skip_cycle = False
 
-    def project_only(self, project):
+    def project_only(self, project, post_comments=False):
         # self.staging_config needed by target_archs().
         api = self.staging_api(project)
 
@@ -45,7 +47,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             results = {
                 'cycle': CheckResult(True, None),
-                'install': self.install_check('', directory_project, arch, [], []),
+                'install': self.install_check('', directory_project, arch, [], [], parse=project),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -53,6 +55,33 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         text = '\n'.join(comment).strip()
         api.dashboard_content_ensure('repo_checker', text, 'project_only run')
+
+        if post_comments:
+            self.package_comments(project)
+
+    def package_comments(self, project):
+        self.logger.info('{} package comments'.format(len(self.package_results)))
+
+        for package, sections in self.package_results.items():
+            # Sort sections by text to group binaries together.
+            sections = sorted(sections, key=lambda s: s.text)
+            message = '\n'.join([section.text for section in sections])
+            message = '```\n' + message.strip() + '\n```'
+            message = 'The version of this package in `{}` has installation issues and may not be installable:\n\n'.format(project) + message
+
+            # Generate a hash based on the binaries involved and the number of
+            # sections. This eliminates version or release changes from causing
+            # an update to the comment while still updating on relevant changes.
+            binaries = set()
+            for section in sections:
+                binaries.update(section.binaries)
+            info = ';'.join(['::'.join(sorted(binaries)), str(len(sections))])
+            reference = hashlib.sha1(info).hexdigest()[:7]
+
+            # Post comment on devel package in order to notifiy maintainers.
+            devel_project, devel_package = self.get_devel_project(project, package)
+            self.comment_write(state='seen', result=reference,
+                               project=devel_project, package=devel_package, message=message)
 
     def prepare_review(self):
         # Reset for request batch.
@@ -387,9 +416,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         return bot
 
+    @cmdln.option('--post-comments', action='store_true', help='post comments to packages with issues')
     def do_project_only(self, subcmd, opts, project):
         self.checker.check_requests() # Needed to properly init ReviewBot.
-        self.checker.project_only(project)
+        self.checker.project_only(project, opts.post_comments)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
