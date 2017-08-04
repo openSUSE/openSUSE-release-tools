@@ -1,14 +1,18 @@
 #!/usr/bin/python
 
+import cmdln
 from collections import namedtuple
+import hashlib
 import os
 import pipes
+import re
 import subprocess
 import sys
 import tempfile
 
 from osclib.core import binary_list
 from osclib.core import depends_on
+from osclib.core import package_binary_list
 from osclib.core import request_staged
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
@@ -18,6 +22,8 @@ import ReviewBot
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CheckResult = namedtuple('CheckResult', ('success', 'comment'))
+INSTALL_REGEX = r"^(?:can't install (.*?)|found conflict of (.*?) with (.*?)):$"
+InstallSection = namedtuple('InstallSection', ('binaries', 'text'))
 
 class RepoChecker(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
@@ -31,7 +37,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         # RepoChecker options.
         self.skip_cycle = False
 
-    def project_only(self, project):
+    def project_only(self, project, post_comments=False):
         # self.staging_config needed by target_archs().
         api = self.staging_api(project)
 
@@ -41,7 +47,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             results = {
                 'cycle': CheckResult(True, None),
-                'install': self.install_check('', directory_project, arch, [], []),
+                'install': self.install_check('', directory_project, arch, [], [], parse=project),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -49,6 +55,36 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         text = '\n'.join(comment).strip()
         api.dashboard_content_ensure('repo_checker', text, 'project_only run')
+
+        if post_comments:
+            self.package_comments(project)
+
+    def package_comments(self, project):
+        self.logger.info('{} package comments'.format(len(self.package_results)))
+
+        for package, sections in self.package_results.items():
+            # Sort sections by text to group binaries together.
+            sections = sorted(sections, key=lambda s: s.text)
+            message = '\n'.join([section.text for section in sections])
+            if len(message) > 16384:
+                # Truncate messages to avoid crashing OBS.
+                message = message[:16384 - 3] + '...'
+            message = '```\n' + message.strip() + '\n```'
+            message = 'The version of this package in `{}` has installation issues and may not be installable:\n\n'.format(project) + message
+
+            # Generate a hash based on the binaries involved and the number of
+            # sections. This eliminates version or release changes from causing
+            # an update to the comment while still updating on relevant changes.
+            binaries = set()
+            for section in sections:
+                binaries.update(section.binaries)
+            info = ';'.join(['::'.join(sorted(binaries)), str(len(sections))])
+            reference = hashlib.sha1(info).hexdigest()[:7]
+
+            # Post comment on devel package in order to notifiy maintainers.
+            devel_project, devel_package = self.get_devel_project(project, package)
+            self.comment_write(state='seen', result=reference,
+                               project=devel_project, package=devel_package, message=message)
 
     def prepare_review(self):
         # Reset for request batch.
@@ -58,6 +94,9 @@ class RepoChecker(ReviewBot.ReviewBot):
         # Manipulated in ensure_group().
         self.group = None
         self.mirrored = set()
+
+        # Stores parsed install_check() results grouped by package.
+        self.package_results = {}
 
         # Look for requests of interest and group by staging.
         for request in self.requests:
@@ -202,14 +241,13 @@ class RepoChecker(ReviewBot.ReviewBot):
         return ignore
 
     def package_whitelist(self, project, arch):
-        product = project.split(':Staging:', 1)[0]
         prefix = 'repo_checker-package-whitelist'
         whitelist = set()
         for key in [prefix, '-'.join([prefix, arch])]:
-            whitelist.update(self.staging_config[product].get(key, '').split(' '))
+            whitelist.update(self.staging_config[project].get(key, '').split(' '))
         return whitelist
 
-    def install_check(self, directory_project, directory_group, arch, ignore, whitelist):
+    def install_check(self, directory_project, directory_group, arch, ignore, whitelist, parse=False):
         self.logger.info('install check: start')
 
         with tempfile.NamedTemporaryFile() as ignore_file:
@@ -234,6 +272,10 @@ class RepoChecker(ReviewBot.ReviewBot):
             if p.returncode == 126:
                 self.logger.warn('mirror cache reset due to corruption')
                 self.mirrored = set()
+            elif parse:
+                # Parse output for later consumption for posting comments.
+                sections = self.install_check_parse(stdout)
+                self.install_check_sections_group(parse, arch, sections)
 
             # Format output as markdown comment.
             code = '```\n'
@@ -251,6 +293,42 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         self.logger.info('install check: passed')
         return CheckResult(True, None)
+
+    def install_check_sections_group(self, project, arch, sections):
+        _, binary_map = package_binary_list(self.apiurl, project, 'standard', arch)
+
+        for section in sections:
+            # If switch to creating bugs likely makes sense to join packages to
+            # form grouping key and create shared bugs for conflicts.
+            packages = set([binary_map[b] for b in section.binaries])
+            for package in packages:
+                self.package_results.setdefault(package, [])
+                self.package_results[package].append(section)
+
+    def install_check_parse(self, output):
+        section = None
+        text = None
+
+        # Loop over lines and parse into chunks assigned to binaries.
+        for line in output.splitlines(True):
+            if line.startswith(' '):
+                if section:
+                    text += line
+            else:
+                if section:
+                    yield InstallSection(section, text)
+
+                match = re.match(INSTALL_REGEX, line)
+                if match:
+                    # Remove empty groups since regex matches different patterns.
+                    binaries = [b for b in match.groups() if b is not None]
+                    section = binaries
+                    text = line
+                else:
+                    section = None
+
+        if section:
+            yield InstallSection(section, text)
 
     def cycle_check(self, project, group, arch):
         if self.skip_cycle:
@@ -341,9 +419,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         return bot
 
+    @cmdln.option('--post-comments', action='store_true', help='post comments to packages with issues')
     def do_project_only(self, subcmd, opts, project):
         self.checker.check_requests() # Needed to properly init ReviewBot.
-        self.checker.project_only(project)
+        self.checker.project_only(project, opts.post_comments)
 
 if __name__ == "__main__":
     app = CommandLineInterface()

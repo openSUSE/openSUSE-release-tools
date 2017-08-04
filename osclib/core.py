@@ -12,7 +12,9 @@ from osc.core import owner
 from osc.core import show_project_meta
 from osclib.memoize import memoize
 
-BinaryParsed = namedtuple('BinaryParsed', ('filename', 'name', 'arch'))
+BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*?)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
+RPM_REGEX = BINARY_REGEX + '\.rpm'
+BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
 
 
 @memoize(session=True)
@@ -91,18 +93,43 @@ def request_staged(request):
 def binary_list(apiurl, project, repository, arch, package=None):
     parsed = []
     for binary in get_binarylist(apiurl, project, repository, arch, package):
-        result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', binary)
+        result = re.match(RPM_REGEX, binary)
         if not result:
             continue
 
-        name = result.group(1)
+        name = result.group('name')
         if name.endswith('-debuginfo') or name.endswith('-debuginfo-32bit'):
             continue
         if name.endswith('-debugsource'):
             continue
-        if result.group(4) == 'src':
+        if result.group('arch') == 'src':
             continue
 
-        parsed.append(BinaryParsed(binary, name, result.group(4)))
+        parsed.append(BinaryParsed(package, result.group('filename'), name, result.group('arch')))
 
     return parsed
+
+def package_binary_list(apiurl, project, repository, arch, package=None):
+    path = ['build', project, repository, arch]
+    if package:
+        path.append(package)
+    url = makeurl(apiurl, path, {'view': 'binaryversions'})
+    root = ET.parse(http_GET(url)).getroot()
+
+    package_binaries = []
+    binary_map = {} # last duplicate wins
+    for binary_list in root:
+        # Strip off multibuild extra to provide actual package name. The full
+        # value may be useful for duplicate check.
+        package = binary_list.get('package').split(':', 1)[0]
+        for binary in binary_list:
+            filename = binary.get('name')
+            result = re.match(RPM_REGEX, filename)
+            if not result:
+                continue
+
+            package_binaries.append(BinaryParsed(package, result.group('filename'),
+                                                 result.group('name'), result.group('arch')))
+            binary_map[result.group('filename')] = package
+
+    return package_binaries, binary_map
