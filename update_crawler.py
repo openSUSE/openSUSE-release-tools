@@ -72,8 +72,13 @@ class UpdateCrawler(object):
 
     # FIXME: duplicated from manager_42
     def latest_packages(self):
-        data = self.cached_GET(makeurl(self.apiurl,
-                                       ['project', 'latest_commits', self.from_prj]))
+        apiurl = self.apiurl
+        prj  = self.from_prj
+        if prj.startswith('openSUSE.org:'):
+            apiurl = 'https://api.opensuse.org'
+            prj = prj[len('openSUSE.org:'):]
+        data = self.cached_GET(makeurl(apiurl,
+                               ['project', 'latest_commits', prj]))
         lc = ET.fromstring(data)
         packages = set()
         for entry in lc.findall('{http://www.w3.org/2005/Atom}entry'):
