@@ -206,20 +206,12 @@ class ReviewBot(object):
         u = osc.core.makeurl(self.apiurl, ['request', req.reqid], query)
         if self.dryrun:
             self.logger.info('POST %s' % u)
-            return True
+            return
 
-        try:
-            r = osc.core.http_POST(u, data=msg)
-        except urllib2.HTTPError, e:
-            self.logger.error(e)
-            return False
-
+        r = osc.core.http_POST(u, data=msg)
         code = ET.parse(r).getroot().attrib['code']
         if code != 'ok':
-            self.logger.error("invalid return code %s"%code)
-            return False
-
-        return True
+            raise Exception('non-ok return code: {}'.format(code))
 
     def check_one_request(self, req):
         """

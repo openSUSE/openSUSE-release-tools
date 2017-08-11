@@ -173,8 +173,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         if self.add_factory_source:
             self.logger.debug("%s needs review by factory-source"%req.reqid)
-            if self.add_review(req, by_user =  "factory-source") != True:
-                ret = None
+            self.add_review(req, by_user='factory-source')
 
         if self.needs_maintainer_review:
             for p in self.needs_maintainer_review:

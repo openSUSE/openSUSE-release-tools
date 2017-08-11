@@ -462,9 +462,7 @@ class Leaper(ReviewBot.ReviewBot):
                     self.logger.debug("{} already is a reviewer".format(group))
                     break
             if add_review:
-                if self.add_review(req, by_group = group) != True:
-                    self.review_messages['declined'] += '\nadding {} failed'.format(group)
-                    return False
+                self.add_review(req, by_group=group):
 
         return request_ok
 
