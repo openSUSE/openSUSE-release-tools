@@ -262,6 +262,9 @@ class UpdateCrawler(object):
         for package, sourceinfo in sources.items():
 
             origin = self.lookup.get(package, '')
+            if origin.startswith('Devel;'):
+                (dummy, origin, dummy) = origin.split(';')
+
             if self.filter_lookup and not origin in self.filter_lookup:
                 if not origin.startswith('subpackage of'):
                     self.skipped.setdefault(origin, set()).add(package)
