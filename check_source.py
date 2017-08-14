@@ -29,7 +29,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         self.ignore_devel = False
         self.review_team = 'opensuse-review-team'
-        self.repo_checker = 'factory-repo-checker'
+        self.repo_checker = 'repo-checker'
         self.staging_group = 'factory-staging'
         self.skip_add_reviews = False
 
