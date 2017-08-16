@@ -300,7 +300,10 @@ class RepoChecker(ReviewBot.ReviewBot):
         for section in sections:
             # If switch to creating bugs likely makes sense to join packages to
             # form grouping key and create shared bugs for conflicts.
-            packages = set([binary_map[b] for b in section.binaries])
+            # Added check for b in binary_map after encountering:
+            # https://lists.opensuse.org/opensuse-buildservice/2017-08/msg00035.html
+            # Under normal circumstances this should never occur.
+            packages = set([binary_map[b] for b in section.binaries if b in binary_map])
             for package in packages:
                 self.package_results.setdefault(package, [])
                 self.package_results[package].append(section)
