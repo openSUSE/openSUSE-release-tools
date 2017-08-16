@@ -440,29 +440,21 @@ class Leaper(ReviewBot.ReviewBot):
             self.comment_handler_lines_deduplicate()
             self.comment_write(state, result)
 
-        # list of tuple ('group', (states))
         add_review_groups = []
         if self.needs_release_manager:
-            add_review_groups.append((self.release_manager_group, ('new', 'accepted')))
+            add_review_groups.append(self.release_manager_group)
         if self.needs_reviewteam:
-            add_review_groups.append((self.review_team_group, None))
+            add_review_groups.append(self.review_team_group)
         if self.needs_legal_review:
-            add_review_groups.append((self.legal_review_group, None))
+            add_review_groups.append(self.legal_review_group)
         if self.needs_check_source and self.check_source_group is not None:
-            add_review_groups.append((self.check_source_group, None))
+            add_review_groups.append(self.check_source_group)
 
-        for (group, states) in add_review_groups:
+        for group in add_review_groups:
             if group is None:
                 continue
-            add_review = True
             self.logger.info("{0} needs review by [{1}](/group/show/{1})".format(req.reqid, group))
-            for r in req.reviews:
-                if r.by_group == group and (states is None or r.state in states):
-                    add_review = False
-                    self.logger.debug("{} already is a reviewer".format(group))
-                    break
-            if add_review:
-                self.add_review(req, by_group=group):
+            self.add_review(req, by_group=group):
 
         return request_ok
 
