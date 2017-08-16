@@ -208,21 +208,6 @@ class FccSubmitter(object):
         else:
             return node.get('project'), node.get('package', None)
 
-    def add_review(self, requestid, by_project=None, by_package=None, msg=None):
-        query = {}
-        query['by_project'] = by_project
-        query['by_package'] = by_package
-        if not msg:
-            msg = "Being evaluated by {}/{}. This is submitted by a tool to Leap, please review this change and decline it if Leap do not need this!"
-            msg = msg.format(by_project, by_package)
-
-        if not query:
-            raise oscerr.WrongArgs('We need a project')
-
-        query['cmd'] = 'addreview'
-        url = makeurl(self.apiurl, ['request', str(requestid)], query)
-        http_POST(url, data=msg)
-
     def create_submitrequest(self, package):
         """Create a submit request using the osc.commandline.Osc class."""
         src_project = self.factory # submit from Factory only
@@ -400,9 +385,6 @@ class FccSubmitter(object):
                     res = self.create_submitrequest(package)
                     if res and res is not None:
                         logging.info('Created request %s for %s' % (res, package))
-                        # add review by package
-                        #logging.info("Adding review by %s/%s"%(devel_prj, devel_pkg))
-                        #self.add_review(res, devel_prj, devel_pkg)
                     else:
                         logging.error('Error occurred when creating submit request')
             else:
