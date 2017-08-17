@@ -81,10 +81,10 @@ job install name docker
 ## for textmode test
 job install name yast2-nfs-server
 job install name apache2
-job install name php5
-job install name apache2-mod_php5
-job install name php5-mysql
-job install name php5-pgsql
+job install name php7
+job install name apache2-mod_php7
+job install name php7-mysql
+job install name php7-pgsql
 job install name postgresql96-server
 job install name bind
 
