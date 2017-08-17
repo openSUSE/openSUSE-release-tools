@@ -33,6 +33,7 @@ job install provides pattern() = minimal_base
 job install provides pattern() = sw_management_gnome
 job install provides pattern() = sw_management_kde
 job install provides pattern() = yast2_install_wf
+job install provides pattern() = x86
 
 job install provides pattern() = rest_core_dvd
 

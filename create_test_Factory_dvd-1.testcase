@@ -10,6 +10,7 @@ namespace namespace:language(en_US) @SYSTEM
 job install provides pattern() = enhanced_base
 job install provides pattern() = sw_management
 job install provides pattern() = x11
+job install provides pattern() = x86
 job install provides pattern() = yast2_basis
 
 job install name aaa_base-extras
