@@ -208,7 +208,6 @@ class ReviewBot(object):
             raise osc.oscerr.WrongArgs("missing by_*")
 
         for r in req.reviews:
-            print(r.by_group, r.by_project, r.by_package, r.by_user, r.state)
             if (r.by_group == by_group and
                 r.by_project == by_project and
                 r.by_package == by_package and
