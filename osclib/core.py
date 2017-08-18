@@ -21,7 +21,7 @@ BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'
 def owner_fallback(apiurl, project, package):
     root = owner(apiurl, package, project=project)
     entry = root.find('owner')
-    if not entry or entry.get('project') == project:
+    if not entry or project.startswith(entry.get('project')):
         # Fallback to global (ex Factory) maintainer.
         root = owner(apiurl, package)
     return root
