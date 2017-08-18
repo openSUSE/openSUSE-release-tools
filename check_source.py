@@ -81,8 +81,8 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (target_package, target_package, new_info['name'])
             return False
 
-        # Run source-checker.pl script and interpret output.
-        source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'source-checker.pl')
+        # Run check_source.pl script and interpret output.
+        source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
         new_version = None
         if old_info['version'] and old_info['version'] != new_info['version']:
