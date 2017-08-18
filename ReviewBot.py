@@ -369,8 +369,8 @@ class ReviewBot(object):
             if node is not None:
                 return node.get('project'), node.get('package', None)
         except urllib2.HTTPError, e:
-            if e.code == 404:
-                pass
+            if e.code != 404:
+                raise e
         return None, None
 
     def can_accept_review(self, request_id):
