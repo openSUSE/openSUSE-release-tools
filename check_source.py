@@ -104,23 +104,12 @@ class CheckSource(ReviewBot.ReviewBot):
         shutil.rmtree(dir)
         self.review_messages['accepted'] = 'Check script succeeded'
 
-        # Look for DIFFCOUNT in output.
-        if len(checked) and checked[-1].startswith('DIFFCOUNT'):
-            # This is a major break through in perl<->python communication!
-            diff = int(checked.pop().split(' ')[1])
-            output = '  '.join(checked).translate(None, '\033')
-            if not new_version:
-                diff = 12345
-        else: # e.g. new package
-            diff = 13579
-
         if len(checked):
             self.review_messages['accepted'] += "\n\nOutput of check script (non-fatal):\n" + output
 
         if not self.skip_add_reviews:
-            if diff > 8:
-                if self.review_team is not None:
-                    self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
+            if self.review_team is not None:
+                self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
 
             if self.only_changes():
                 self.logger.debug('only .changes modifications')
