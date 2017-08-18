@@ -4,7 +4,7 @@
 FROM boombatower/opensuse:tumbleweed
 MAINTAINER Jimmy Berry <jberry@suse.com>
 
-RUN zypper ref && zypper -n in --no-recommends \
+RUN zypper -n ref && zypper -n dup && zypper -n in --no-recommends \
   obs-service-download_files \
   obs-service-format_spec_file \
   obs-service-obs_scm \
