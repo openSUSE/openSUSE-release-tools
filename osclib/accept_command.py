@@ -41,10 +41,12 @@ class AcceptCommand(object):
         tree = ET.parse(data)
         root = tree.getroot()
         for stg in root.findall('staging'):
-	    if stg.get('name') == project:
+            if stg.get('name') == project:
                 stg.find('rebuild').text = 'unknown'
+                stg.find('supportpkg').text = ''
 
-        # reset accpted staging project rebuild state to unknown
+        # reset accpted staging project rebuild state to unknown and clean up
+        # supportpkg list
         url = self.api.makeurl(['source', self.api.cstaging, 'dashboard', 'support_pkg_rebuild'])
         content = ET.tostring(root)
         http_PUT(url + '?comment=accept+command+update', data=content)
