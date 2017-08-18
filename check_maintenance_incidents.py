@@ -55,16 +55,12 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         project = a.tgt_releaseproject if a.type == 'maintenance_incident' else req.actions[0].tgt_project
         root = owner_fallback(self.apiurl, project, package)
 
-        package_reviews = set((r.by_project, r.by_package) for r in req.reviews if r.by_project)
         for p in root.findall('./owner'):
             prj = p.get("project")
             pkg = p.get("package")
             # packages dropped from Factory sometimes point to maintained distros
             if prj.startswith('openSUSE:Leap') or prj.startswith('openSUSE:1'):
                 self.logger.debug("%s looks wrong as maintainer, skipped", prj)
-                continue
-            if ((prj, pkg) in package_reviews):
-                self.logger.debug("%s/%s already is a reviewer, not adding again" % (prj, pkg))
                 continue
             self.add_review(req, by_project = prj, by_package = pkg,
                     msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj) )
@@ -173,8 +169,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         if self.add_factory_source:
             self.logger.debug("%s needs review by factory-source"%req.reqid)
-            if self.add_review(req, by_user =  "factory-source") != True:
-                ret = None
+            self.add_review(req, by_user='factory-source')
 
         if self.needs_maintainer_review:
             for p in self.needs_maintainer_review:

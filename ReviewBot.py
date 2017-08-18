@@ -171,7 +171,6 @@ class ReviewBot(object):
         if state == 'declined':
             if self.review_mode == 'fallback-onfail':
                 self.logger.info("%s needs fallback reviewer"%req.reqid)
-                # don't check duplicates, in case review was re-opened
                 self.add_review(req, by_group=by_group, by_user=by_user, msg="Automated review failed. Needs fallback reviewer.")
                 newstate = 'accepted'
         elif self.review_mode == 'fallback-always':
@@ -187,8 +186,13 @@ class ReviewBot(object):
         else:
             self.logger.debug("%s review not changed"%(req.reqid))
 
-    # note we intentionally don't check for duplicate review here!
-    def add_review(self, req, by_group=None, by_user=None, by_project = None, by_package = None, msg=None):
+    # allow_duplicate=True should only be used if it makes sense to force a
+    # re-review in a scenario where the bot adding the review will rerun.
+    # Normally a declined review will automatically be reopened along with the
+    # request and any other bot reviews already added will not be touched unless
+    # the issuing bot is rerun which does not fit normal workflow.
+    def add_review(self, req, by_group=None, by_user=None, by_project=None, by_package=None,
+                   msg=None, allow_duplicate=False):
         query = {
             'cmd': 'addreview'
         }
@@ -203,23 +207,28 @@ class ReviewBot(object):
         else:
             raise osc.oscerr.WrongArgs("missing by_*")
 
+        for r in req.reviews:
+            print(r.by_group, r.by_project, r.by_package, r.by_user, r.state)
+            if (r.by_group == by_group and
+                r.by_project == by_project and
+                r.by_package == by_package and
+                r.by_user == by_user and
+                # Only duplicate when allow_duplicate and state != new.
+                (not allow_duplicate or r.state == 'new')):
+                del query['cmd']
+                self.logger.info('skipped adding duplicate review for {}'.format(
+                    '/'.join(query.values())))
+                return
+
         u = osc.core.makeurl(self.apiurl, ['request', req.reqid], query)
         if self.dryrun:
             self.logger.info('POST %s' % u)
-            return True
+            return
 
-        try:
-            r = osc.core.http_POST(u, data=msg)
-        except urllib2.HTTPError, e:
-            self.logger.error(e)
-            return False
-
+        r = osc.core.http_POST(u, data=msg)
         code = ET.parse(r).getroot().attrib['code']
         if code != 'ok':
-            self.logger.error("invalid return code %s"%code)
-            return False
-
-        return True
+            raise Exception('non-ok return code: {}'.format(code))
 
     def check_one_request(self, req):
         """
