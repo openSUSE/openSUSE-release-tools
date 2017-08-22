@@ -280,39 +280,6 @@ sub prepare_package($) {
         print SPEC join('', @lines);
         close(SPEC);
     }
-
-    my $dir = getcwd();
-    my $diffcount = 0;
-
-    for my $file (glob "*") {
-        my $oldfile = $files->{$file};
-        if ($oldfile) {
-
-            for my $line (split(/\n/, diff($oldfile, $file))) {
-                next unless $line =~ m/^[-+]/;
-                next if $line =~ m/^\Q---/;
-                next if $line =~ m/^\Q+++/;
-                if ($file =~ m/\.spec$/) {
-                  $diffcount++;
-                  
-                  for my $command (qw(chmod chown rm)) {
-                    if ($line =~ m/\b$command\b/) {
-                      $diffcount += 3000;
-		      last;
-                    }
-                  }
-                } else {
-                  $diffcount += 7777;
-		  last;
-                }
-            }
-            delete $files->{$file};
-        }
-        else {
-            $files->{$file} = "$dir/$file";
-        }
-    }
-    return $diffcount;
 }
 
 # move it back so we also diff the service file
@@ -325,11 +292,5 @@ chdir($old);
 prepare_package(\%files);
 chdir($odir);
 chdir($dir);
-my $diff = prepare_package(\%files);
-
-for my $file (keys %files) {
-    $diff += 10000;
-}
-
-print "DIFFCOUNT $diff\n";
+prepare_package(\%files);
 exit(0);

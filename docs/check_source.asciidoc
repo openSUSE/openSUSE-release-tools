@@ -33,7 +33,7 @@ ln -sr ./osc-check_source.py ./osclib ~/.osc-plugins
 -------------------------------------------------------------------------------
 
 The program will search also some external scripts (like
-source-checker.pl) inside the cloned directory (following the symlink).
+check_source.pl) inside the cloned directory (following the symlink).
 
 
 Command line
