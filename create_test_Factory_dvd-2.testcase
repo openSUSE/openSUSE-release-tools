@@ -38,6 +38,7 @@ job install provides pattern() = x86
 job install provides pattern() = rest_core_dvd
 
 job install name aaa_base-extras
+job install name amarok
 job install name branding-openSUSE
 job install name openSUSE-release-livecd-x11
 job install name sudo
