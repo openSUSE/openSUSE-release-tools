@@ -827,6 +827,21 @@ class StagingAPI(object):
         :param disable_build: should the package be created with build
                               flag disabled
         """
+        if disable_build:
+            # keep build state in case builds is not disabled during the
+            # reqeust is superseding a new package
+            try:
+                m = show_package_meta(self.apiurl, project, package)
+                tgt_pkg = ET.fromstring(''.join(m))
+                notbuild = tgt_pkg.find('./build/disable')
+                # checking the package is not inherited from projct link
+                # and the build is not disabled
+                if tgt_pkg.get('project') == project and notbuild is None:
+                    disable_build=False
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    pass
+
         dst_meta = '<package name="{}"><title/><description/></package>'
         dst_meta = dst_meta.format(package)
         if disable_build:
