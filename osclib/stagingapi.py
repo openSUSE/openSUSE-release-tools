@@ -370,6 +370,17 @@ class StagingAPI(object):
         projects = [p for p in self.get_staging_projects() if self.is_adi_project(p)]
         return sorted(projects, key=lambda project: self.extract_adi_number(project))
 
+    def find_devel_project_from_adi_frozenlinks(self, prj):
+        try:
+            url = self.makeurl(['source', prj, '_project', 'frozenlinks'], {'meta': '1'})
+            root = ET.parse(http_GET(url)).getroot()
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                return None
+        packages = root.findall('./frozenlink/package')
+        # the first package's devel project is good enough
+        return self.get_devel_project(self.project, packages[0].get('name'))
+
     def do_change_review_state(self, request_id, newstate, message=None,
                                by_group=None, by_user=None, by_project=None):
         """

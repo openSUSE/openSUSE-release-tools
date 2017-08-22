@@ -118,6 +118,15 @@ class FreezeCommand(object):
 
     def perform(self, prj, copy_bootstrap=True):
         self.prj = prj
+
+        if self.api.is_adi_project(prj):
+            src_prj = self.api.find_devel_project_from_adi_frozenlinks(self.prj)
+            if src_prj is None:
+                raise Exception("{} does not have a valid frozenlinks".format(self.prj))
+            else:
+                self.api.update_adi_frozenlinks(self.prj, src_prj)
+            return
+
         self.set_links()
 
         self.freeze_prjlinks()
