@@ -1072,17 +1072,17 @@ class StagingAPI(object):
 
         return project
 
-    def get_sub_packages(self, pkg, project=None):
+    def get_sub_packages(self, package, project=None):
         """
         Returns a list of packages that need to be linked into rings
         too. A package is actually a tuple of project and package name
         """
         ret = []
         if not project:
-            project = self.ring_packages.get(pkg)
+            project = self.ring_packages.get(package)
         if not project:
             return ret
-        url = self.makeurl(['source', project, pkg],
+        url = self.makeurl(['source', project, package],
                            {'cmd': 'showlinked'})
 
         # showlinked is a POST for rather bizzare reasons
@@ -1090,7 +1090,9 @@ class StagingAPI(object):
         root = ET.parse(f).getroot()
 
         for pkg in root.findall('package'):
-            ret.append((pkg.get('project'), pkg.get('name')))
+            # ensure sub-package is valid
+            if pkg.get('project') in self.rings and pkg.get('name') != package:
+                ret.append((pkg.get('project'), pkg.get('name')))
 
         return ret
 
