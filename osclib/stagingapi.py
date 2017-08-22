@@ -1481,6 +1481,9 @@ class StagingAPI(object):
                     req['prefix'] = 'removed '
                     requests.append(req)
 
+            if not len(requests):
+                # Nothing changed so no sense posting comment.
+                return
         else:
             dashboard_url = '{}/project/staging_projects/{}/{}'.format(
                 self.apiurl, self.project, self.extract_staging_short(project))
