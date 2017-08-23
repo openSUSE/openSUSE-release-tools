@@ -435,7 +435,7 @@ class ReviewBot(object):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
     def comment_write(self, state='done', result=None, project=None, package=None,
-                      request=None, message=None, identical=False):
+                      request=None, message=None, identical=False, only_replace=False):
         """Write comment from log messages if not similar to previous comment."""
         if project:
             kwargs = {'project_name': project}
@@ -470,6 +470,9 @@ class ReviewBot(object):
             self.logger.debug('removing previous comment on {}'.format(debug_key))
             if not self.dryrun:
                 self.comment_api.delete(comment['id'])
+        elif only_replace:
+            self.logger.debug('no previous comment to replace on {}'.format(debug_key))
+            return
 
         self.logger.debug('adding comment to {}: {}'.format(debug_key, message))
         if not self.dryrun:
