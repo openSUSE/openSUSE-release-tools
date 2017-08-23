@@ -460,7 +460,7 @@ class ReviewBot(object):
              (not identical and comment['comment'].count('\n') == message.count('\n')))
         ):
             # Assume same state/result and number of lines in message is duplicate.
-            self.logger.debug('previous comment on {} too similar'.format(debug_key))
+            self.logger.debug('previous comment too similar on {}'.format(debug_key))
             return
 
         self.logger.debug('adding comment to {}: {}'.format(debug_key, message))
