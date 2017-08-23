@@ -390,8 +390,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.logger.warn('{} still required by {}'.format(action.tgt_package, ', '.join(what_depends_on)))
 
         if len(self.comment_handler.lines):
-            self.comment_write(result='decline')
-            return False
+            self.comment_write(state='seen', result='failed')
+            return None
 
         # Allow for delete to be declined before ensuring group passed.
         if not self.ensure_group(request, action):
