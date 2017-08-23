@@ -48,7 +48,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             parse = project if post_comments else False
             results = {
                 'cycle': CheckResult(True, None),
-                'install': self.install_check('', directory_project, arch, [], [], parse=parse),
+                'install': self.install_check(project, '', directory_project, arch, [], [], parse=parse),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -176,13 +176,13 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Perform checks on group.
             results = {
                 'cycle': self.cycle_check(project, group, arch),
-                'install': self.install_check(directory_project, directory_group, arch, ignore, whitelist),
+                'install': self.install_check(project, directory_project, directory_group, arch, ignore, whitelist),
             }
 
             if not all(result.success for _, result in results.items()):
                 # Not all checks passed, build comment.
                 self.group_pass = False
-                self.result_comment(project, group, arch, results, comment)
+                self.result_comment(arch, results, comment)
 
         if not self.group_pass:
             # Some checks in group did not pass, post comment.
@@ -248,7 +248,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             whitelist.update(self.staging_config[project].get(key, '').split(' '))
         return whitelist
 
-    def install_check(self, directory_project, directory_group, arch, ignore, whitelist, parse=False):
+    def install_check(self, project, directory_project, directory_group, arch, ignore, whitelist, parse=False):
         self.logger.info('install check: start')
 
         with tempfile.NamedTemporaryFile() as ignore_file:
@@ -289,7 +289,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             if stderr:
                 parts.append(code + stderr + '\n' + code)
 
-            return CheckResult(False, ('\n' + ('-' * 80) + '\n\n').join(parts))
+            header = '### [install check & file conflicts](/package/view_file/{}:Staging/dashboard/repo_checker)\n\n'.format(project)
+            return CheckResult(False, header + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
 
         self.logger.info('install check: passed')
@@ -342,9 +343,14 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('cycle check: start')
         cycle_detector = CycleDetector(self.staging_api(project))
         comment = []
+        first = True
         for index, (cycle, new_edges, new_packages) in enumerate(
             cycle_detector.cycles(group, arch=arch), start=1):
             if new_packages:
+                if first:
+                    comment.append('### new [cycle(s)](/project/repository_state/{}/standard)\n'.format(staging))
+                    first = False
+
                 # New package involved in cycle, build comment.
                 comment.append('- #{}: {} package cycle, {} new edges'.format(
                     index, len(cycle), len(new_edges)))
@@ -365,15 +371,12 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('cycle check: passed')
         return CheckResult(True, None)
 
-    def result_comment(self, project, group, arch, results, comment):
+    def result_comment(self, arch, results, comment):
         """Generate comment from results"""
         comment.append('## ' + arch + '\n')
-        if not results['cycle'].success:
-            comment.append('### new [cycle(s)](/project/repository_state/{}/standard)\n'.format(group))
-            comment.append(results['cycle'].comment + '\n')
-        if not results['install'].success:
-            comment.append('### [install check & file conflicts](/package/view_file/{}:Staging/dashboard/repo_checker)\n'.format(project))
-            comment.append(results['install'].comment + '\n')
+        for result in results.values():
+            if not result.success:
+                comment.append(result.comment)
 
     def check_action_submit(self, request, action):
         if not self.ensure_group(request, action):
