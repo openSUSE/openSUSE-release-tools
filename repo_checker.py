@@ -161,15 +161,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             directory_project = self.mirror(project, arch)
             directory_group = self.mirror(group, arch)
 
-            # Generate list of rpms to ignore from the project consisting of all
-            # packages in group and those that were deleted.
-            ignore = set()
-            self.ignore_from_repo(directory_group, ignore)
 
-            for r in self.groups[group]:
-                a = r.actions[0]
-                if a.type == 'delete':
-                    self.ignore_from_package(project, a.tgt_package, arch, ignore)
+            ignore = self.ignore_from_staging(project, group, arch)
 
             whitelist = self.package_whitelist(project, arch)
 
@@ -226,20 +219,15 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.mirrored.add((project, arch))
         return directory
 
-    def ignore_from_repo(self, directory, ignore):
-        """Extract rpm names from mirrored repo directory."""
-        for filename in os.listdir(directory):
-            if not filename.endswith('.rpm'):
-                continue
-            _, basename = filename.split('-', 1)
-            ignore.add(basename[:-4])
+    def ignore_from_staging(self, project, staging, arch):
+        """Determine the target project binaries to ingore in favor of staging."""
+        _, binary_map = package_binary_list(self.apiurl, staging, 'standard', arch)
+        packages = set(binary_map.values())
 
-    def ignore_from_package(self, project, package, arch, ignore):
-        """Extract rpm names from current build of package."""
-        for binary in binary_list(self.apiurl, project, 'standard', arch, package):
-            ignore.add(binary.name)
-
-        return ignore
+        binaries, _ = package_binary_list(self.apiurl, project, 'standard', arch)
+        for binary in binaries:
+            if binary.package in packages:
+                yield binary.name
 
     def package_whitelist(self, project, arch):
         prefix = 'repo_checker-package-whitelist'
