@@ -387,7 +387,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         # ignore list as and instead look at output from staging for those.
         what_depends_on = depends_on(self.apiurl, action.tgt_project, 'standard', [action.tgt_package], True)
         if len(what_depends_on):
-            self.logger.warn('{} still required by {}'.format(action.tgt_package, ', '.join(what_depends_on)))
+            self.logger.warn('{} is still a build requirement of {}'.format(action.tgt_package, ', '.join(what_depends_on)))
 
         if len(self.comment_handler.lines):
             self.comment_write(result='decline')
