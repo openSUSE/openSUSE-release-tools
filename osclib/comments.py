@@ -136,11 +136,45 @@ class CommentAPI(object):
         if not comment:
             raise ValueError('Empty comment.')
 
+        # Always encode as utf-8 to ensure truncate handles length properly.
+        comment = self.truncate(comment.strip().encode('utf-8'))
+
         query = {}
         if parent_id:
             query['parent_id'] = parent_id
         url = self._prepare_url(request_id, project_name, package_name, query)
         return http_POST(url, data=comment)
+
+    @staticmethod
+    def truncate(comment, suffix='...', length=65535):
+        # Handle very short length by dropping suffix and just chopping comment.
+        if length <= len(suffix) + len('\n</pre>'):
+            return comment[:length]
+        if len(comment) <= length:
+            return comment
+
+        # Determine the point at which to end by leaving room for suffix.
+        end = length - len(suffix)
+        if comment.find('<pre>', 0, end) != -1:
+            # For the sake of simplicity leave space for closing pre tag even if
+            # after truncation it may no longer be necessary. Otherwise, it
+            # requires recursion with some fun edge cases.
+            end -= len('\n</pre>')
+
+        # Check for the end location landing inside a pre tag and correct by
+        # moving in front of the tag. Landing on the ends is a noop.
+        pre_index = max(comment.rfind('<pre>', end - 4, end + 4),
+                        comment.rfind('</pre>', end - 5, end + 5))
+        if pre_index != -1:
+            end = pre_index
+
+        comment = comment[:end]
+
+        # Check for unbalanced pre tag and add a closing tag.
+        if comment.count('<pre>') > comment.count('</pre>'):
+            suffix += '\n</pre>'
+
+        return comment + suffix
 
     def delete(self, comment_id):
         """Remove a comment object.
