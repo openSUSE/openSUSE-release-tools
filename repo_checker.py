@@ -278,15 +278,14 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.install_check_sections_group(parse, arch, sections)
 
             # Format output as markdown comment.
-            code = '```\n'
             parts = []
 
             stdout = stdout.strip()
             if stdout:
-                parts.append(code + stdout + '\n' + code)
+                parts.append('<pre>\n' + stdout + '\n' + '</pre>\n')
             stderr = stderr.strip()
             if stderr:
-                parts.append(code + stderr + '\n' + code)
+                parts.append('<pre>\n' + stderr + '\n' + '</pre>\n')
 
             return CheckResult(False, ('\n' + ('-' * 80) + '\n\n').join(parts))
 
