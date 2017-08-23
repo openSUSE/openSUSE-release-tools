@@ -227,7 +227,7 @@ class CycleDetector(object):
         return frozenset(frozenset(e.text for e in cycle.findall('package'))
                          for cycle in root.findall('cycle'))
 
-    def cycles(self, group, project=None, repository='standard', arch='x86_64'):
+    def cycles(self, staging, project=None, repository='standard', arch='x86_64'):
         """Detect cycles in a specific repository."""
 
         if not project:
@@ -235,7 +235,7 @@ class CycleDetector(object):
 
         # Detect cycles - We create the full graph from _builddepinfo.
         project_graph = self._get_builddepinfo_graph(project, repository, arch)
-        current_graph = self._get_builddepinfo_graph(group, repository, arch)
+        current_graph = self._get_builddepinfo_graph(staging, repository, arch)
 
         # Sometimes, new cycles have only new edges, but not new
         # packages.  We need to inform about this, so this can become
