@@ -395,7 +395,7 @@ def do_staging(self, subcmd, opts, *args):
             CheckDuplicateBinariesCommand(api).perform(opts.save)
         elif cmd == 'freeze':
             for prj in args[1:]:
-                prj = api.prj_from_letter(prj)
+                prj = api.prj_from_short(prj)
                 print(Fore.YELLOW + prj)
                 FreezeCommand(api).perform(prj, copy_bootstrap=opts.bootstrap)
         elif cmd == 'frozenage':
