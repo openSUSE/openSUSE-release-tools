@@ -439,8 +439,8 @@ def do_staging(self, subcmd, opts, *args):
                             cmd.cleanup(api.prj_from_letter(prj))
                         if api.item_exists("%s:DVD" % api.prj_from_letter(prj)):
                             cmd.cleanup("%s:DVD" % api.prj_from_letter(prj))
+                cmd.accept_other_new()
                 if opts.project.startswith('openSUSE:'):
-                    cmd.accept_other_new()
                     cmd.update_factory_version()
                     if api.item_exists(api.crebuild):
                         cmd.sync_buildfailures()
