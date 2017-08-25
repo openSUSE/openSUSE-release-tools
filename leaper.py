@@ -454,7 +454,7 @@ class Leaper(ReviewBot.ReviewBot):
             if group is None:
                 continue
             self.logger.info("{0} needs review by [{1}](/group/show/{1})".format(req.reqid, group))
-            self.add_review(req, by_group=group):
+            self.add_review(req, by_group=group)
 
         return request_ok
 
