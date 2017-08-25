@@ -372,7 +372,7 @@ class StagingAPI(object):
 
     def find_devel_project_from_adi_frozenlinks(self, prj):
         try:
-            url = self.makeurl(['source', prj, '_project', 'frozenlinks'], {'meta': '1'})
+            url = self.makeurl(['source', prj, '_project', '_frozenlinks'], {'meta': '1'})
             root = ET.parse(http_GET(url)).getroot()
         except urllib2.HTTPError, e:
             if e.code == 404:
