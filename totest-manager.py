@@ -182,11 +182,12 @@ class ToTestBase(object):
                         comment['text'].startswith('pinned-description: Ignored issues'):
                     pinned_ignored_issue = comment['id']
 
-            if pinned_ignored_issue:
-                self.openqa.openqa_request(
+            if not self.dryrun:
+                if pinned_ignored_issue:
+                    self.openqa.openqa_request(
                         'PUT', 'groups/%s/comments/%d' % (group_id, pinned_ignored_issue), data=data)
-            else:
-                self.openqa.openqa_request(
+                else:
+                    self.openqa.openqa_request(
                         'POST', 'groups/%s/comments' % group_id, data=data)
 
     def overall_result(self, snapshot):
