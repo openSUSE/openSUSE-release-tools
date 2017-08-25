@@ -18,7 +18,7 @@ require CreatePackageDescr;
 
 my $ret = 0;
 my $arch = shift @ARGV;
-my $dir = shift @ARGV;
+my @directories = split(/\,/, shift @ARGV);
 my %toignore;
 my $repodir;
 my %whitelist;
@@ -77,7 +77,7 @@ my $pfile = $tmpdir . "/packages";
 open( PACKAGES, ">", $pfile ) || die 'can not open';
 print PACKAGES "=Ver: 2.0\n";
 
-# Allow $repodir to be empty indicating only to review $dir.
+# Allow $repodir to be empty indicating to only review $directories.
 if (length($repodir)) {
     my @rpms = glob("$repodir/*.rpm");
     foreach my $package (@rpms) {
@@ -85,11 +85,13 @@ if (length($repodir)) {
     }
 }
 
-@rpms = glob("$dir/*.rpm");
-foreach my $package (@rpms) {
-    my $name = write_package( 0, $package );
-    if (!exists($whitelist{$name})) {
-        $targets{$name} = 1;
+foreach my $directory (@directories) {
+    @rpms = glob("$directory/*.rpm");
+    foreach my $package (@rpms) {
+        my $name = write_package( 0, $package );
+        if (!exists($whitelist{$name})) {
+            $targets{$name} = 1;
+        }
     }
 }
 

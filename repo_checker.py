@@ -45,9 +45,10 @@ class RepoChecker(ReviewBot.ReviewBot):
         for arch in self.target_archs(project):
             directory_project = self.mirror(project, arch)
 
+            parse = project if post_comments else False
             results = {
                 'cycle': CheckResult(True, None),
-                'install': self.install_check('', directory_project, arch, [], [], parse=project),
+                'install': self.install_check(project, [directory_project], arch, parse=parse),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -150,36 +151,37 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         comment = []
         for arch in self.target_archs(project):
-            if arch not in self.target_archs(group):
-                self.logger.debug('{}/{} not available'.format(group, arch))
+            stagings = []
+            directories = []
+            ignore = set()
+
+            for staging in self.staging_api(project).staging_walk(group):
+                if arch not in self.target_archs(staging):
+                    self.logger.debug('{}/{} not available'.format(staging, arch))
+                    continue
+
+                stagings.append(staging)
+                directories.append(self.mirror(staging, arch))
+                ignore.update(self.ignore_from_staging(project, staging, arch))
+
+            if not len(stagings):
                 continue
 
-            # Mirror both projects the first time each are encountered.
-            directory_project = self.mirror(project, arch)
-            directory_group = self.mirror(group, arch)
-
-            # Generate list of rpms to ignore from the project consisting of all
-            # packages in group and those that were deleted.
-            ignore = set()
-            self.ignore_from_repo(directory_group, ignore)
-
-            for r in self.groups[group]:
-                a = r.actions[0]
-                if a.type == 'delete':
-                    self.ignore_from_package(project, a.tgt_package, arch, ignore)
+            # Only bother if staging can match arch, but layered first.
+            directories.insert(0, self.mirror(project, arch))
 
             whitelist = self.package_whitelist(project, arch)
 
             # Perform checks on group.
             results = {
-                'cycle': self.cycle_check(project, group, arch),
-                'install': self.install_check(directory_project, directory_group, arch, ignore, whitelist),
+                'cycle': self.cycle_check(project, stagings, arch),
+                'install': self.install_check(project, directories, arch, ignore, whitelist),
             }
 
             if not all(result.success for _, result in results.items()):
                 # Not all checks passed, build comment.
                 self.group_pass = False
-                self.result_comment(project, group, arch, results, comment)
+                self.result_comment(arch, results, comment)
 
         if not self.group_pass:
             # Some checks in group did not pass, post comment.
@@ -228,20 +230,15 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.mirrored.add((project, arch))
         return directory
 
-    def ignore_from_repo(self, directory, ignore):
-        """Extract rpm names from mirrored repo directory."""
-        for filename in os.listdir(directory):
-            if not filename.endswith('.rpm'):
-                continue
-            _, basename = filename.split('-', 1)
-            ignore.add(basename[:-4])
+    def ignore_from_staging(self, project, staging, arch):
+        """Determine the target project binaries to ingore in favor of staging."""
+        _, binary_map = package_binary_list(self.apiurl, staging, 'standard', arch)
+        packages = set(binary_map.values())
 
-    def ignore_from_package(self, project, package, arch, ignore):
-        """Extract rpm names from current build of package."""
-        for binary in binary_list(self.apiurl, project, 'standard', arch, package):
-            ignore.add(binary.name)
-
-        return ignore
+        binaries, _ = package_binary_list(self.apiurl, project, 'standard', arch)
+        for binary in binaries:
+            if binary.package in packages:
+                yield binary.name
 
     def package_whitelist(self, project, arch):
         prefix = 'repo_checker-package-whitelist'
@@ -250,7 +247,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             whitelist.update(self.staging_config[project].get(key, '').split(' '))
         return whitelist
 
-    def install_check(self, directory_project, directory_group, arch, ignore, whitelist, parse=False):
+    def install_check(self, project, directories, arch, ignore=[], whitelist=[], parse=False):
         self.logger.info('install check: start')
 
         with tempfile.NamedTemporaryFile() as ignore_file:
@@ -259,11 +256,15 @@ class RepoChecker(ReviewBot.ReviewBot):
                 ignore_file.write(item + '\n')
             ignore_file.flush()
 
+            directory_project = directories.pop(0) if len(directories) > 1 else None
+
             # Invoke repo_checker.pl to perform an install check.
             script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
-            parts = ['LC_ALL=C', 'perl', script, arch, directory_group,
-                     '-r', directory_project, '-f', ignore_file.name,
-                     '-w', ','.join(whitelist)]
+            parts = ['LC_ALL=C', 'perl', script, arch, ','.join(directories),
+                     '-f', ignore_file.name, '-w', ','.join(whitelist)]
+            if directory_project:
+                parts.extend(['-r', directory_project])
+
             parts = [pipes.quote(part) for part in parts]
             p = subprocess.Popen(' '.join(parts), shell=True,
                                  stdout=subprocess.PIPE,
@@ -290,7 +291,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             if stderr:
                 parts.append('<pre>\n' + stderr + '\n' + '</pre>\n')
 
-            return CheckResult(False, ('\n' + ('-' * 80) + '\n\n').join(parts))
+            header = '### [install check & file conflicts](/package/view_file/{}:Staging/dashboard/repo_checker)\n\n'.format(project)
+            return CheckResult(False, header + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
 
         self.logger.info('install check: passed')
@@ -335,7 +337,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if section:
             yield InstallSection(section, text)
 
-    def cycle_check(self, project, group, arch):
+    def cycle_check(self, project, stagings, arch):
         if self.skip_cycle:
             self.logger.info('cycle check: skip due to --skip-cycle')
             return CheckResult(True, None)
@@ -343,9 +345,17 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('cycle check: start')
         cycle_detector = CycleDetector(self.staging_api(project))
         comment = []
-        for index, (cycle, new_edges, new_packages) in enumerate(
-            cycle_detector.cycles(group, arch=arch), start=1):
-            if new_packages:
+        for staging in stagings:
+            first = True
+            for index, (cycle, new_edges, new_packages) in enumerate(
+                cycle_detector.cycles(staging, arch=arch), start=1):
+                if not new_packages:
+                    continue
+
+                if first:
+                    comment.append('### new [cycle(s)](/project/repository_state/{}/standard)\n'.format(staging))
+                    first = False
+
                 # New package involved in cycle, build comment.
                 comment.append('- #{}: {} package cycle, {} new edges'.format(
                     index, len(cycle), len(new_edges)))
@@ -366,15 +376,12 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('cycle check: passed')
         return CheckResult(True, None)
 
-    def result_comment(self, project, group, arch, results, comment):
+    def result_comment(self, arch, results, comment):
         """Generate comment from results"""
         comment.append('## ' + arch + '\n')
-        if not results['cycle'].success:
-            comment.append('### new [cycle(s)](/project/repository_state/{}/standard)\n'.format(group))
-            comment.append(results['cycle'].comment + '\n')
-        if not results['install'].success:
-            comment.append('### [install check & file conflicts](/package/view_file/{}:Staging/dashboard/repo_checker)\n'.format(project))
-            comment.append(results['install'].comment + '\n')
+        for result in results.values():
+            if not result.success:
+                comment.append(result.comment)
 
     def check_action_submit(self, request, action):
         if not self.ensure_group(request, action):

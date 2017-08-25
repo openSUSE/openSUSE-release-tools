@@ -109,6 +109,7 @@ def binary_list(apiurl, project, repository, arch, package=None):
 
     return parsed
 
+@memoize(session=True)
 def package_binary_list(apiurl, project, repository, arch, package=None):
     path = ['build', project, repository, arch]
     if package:
