@@ -458,6 +458,16 @@ class Leaper(ReviewBot.ReviewBot):
 
         return request_ok
 
+    def check_action_delete(self, request, action):
+        # nothing special needed here
+        self.needs_release_manager = True
+        return True
+
+    def check_action_set_bugowner(self, request, action):
+        # nothing special needed here
+        self.needs_release_manager = True
+        return True
+
     def check_action__default(self, req, a):
         self.needs_release_manager = True
         return super(Leaper, self).check_action__default(req, a)
