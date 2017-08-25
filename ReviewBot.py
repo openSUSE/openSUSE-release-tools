@@ -435,7 +435,7 @@ class ReviewBot(object):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
     def comment_write(self, state='done', result=None, project=None, package=None,
-                      request=None, message=None, identical=False):
+                      request=None, message=None, identical=False, only_replace=False):
         """Write comment from log messages if not similar to previous comment."""
         if project:
             kwargs = {'project_name': project}
@@ -460,17 +460,22 @@ class ReviewBot(object):
              (not identical and comment['comment'].count('\n') == message.count('\n')))
         ):
             # Assume same state/result and number of lines in message is duplicate.
-            self.logger.debug('previous comment on {} too similar'.format(debug_key))
+            self.logger.debug('previous comment too similar on {}'.format(debug_key))
+            return
+
+        if comment is None:
+            self.logger.debug('broadening search to include any state on {}'.format(debug_key))
+            comment, _ = self.comment_api.comment_find(comments, self.bot_name)
+        if comment is not None:
+            self.logger.debug('removing previous comment on {}'.format(debug_key))
+            if not self.dryrun:
+                self.comment_api.delete(comment['id'])
+        elif only_replace:
+            self.logger.debug('no previous comment to replace on {}'.format(debug_key))
             return
 
         self.logger.debug('adding comment to {}: {}'.format(debug_key, message))
-
         if not self.dryrun:
-            if comment is None:
-                # Broaden search to include any comment state.
-                comment, _ = self.comment_api.comment_find(comments, self.bot_name)
-            if comment is not None:
-                self.comment_api.delete(comment['id'])
             self.comment_api.add_comment(comment=str(message), **kwargs)
 
         self.comment_handler_remove()

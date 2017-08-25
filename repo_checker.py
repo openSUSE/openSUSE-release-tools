@@ -187,6 +187,11 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Some checks in group did not pass, post comment.
             self.comment_write(state='seen', result='failed', project=group,
                                message='\n'.join(comment).strip(), identical=True)
+        else:
+            # Post passed comment only if previous failed comment.
+            text = 'Previously reported problems have been resolved.'
+            self.comment_write(state='done', result='passed', project=group,
+                               message=text, identical=True, only_replace=True)
 
         return self.group_pass
 
