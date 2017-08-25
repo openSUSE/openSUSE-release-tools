@@ -63,14 +63,12 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('{} package comments'.format(len(self.package_results)))
 
         for package, sections in self.package_results.items():
+            message = 'The version of this package in `{}` has installation issues and may not be installable:'.format(project)
+
             # Sort sections by text to group binaries together.
             sections = sorted(sections, key=lambda s: s.text)
-            message = '\n'.join([section.text for section in sections])
-            if len(message) > 16384:
-                # Truncate messages to avoid crashing OBS.
-                message = message[:16384 - 3] + '...'
-            message = '```\n' + message.strip() + '\n```'
-            message = 'The version of this package in `{}` has installation issues and may not be installable:\n\n'.format(project) + message
+            message += '\n\n<pre>\n{}\n</pre>'.format(
+                '\n'.join([section.text for section in sections]).strip())
 
             # Generate a hash based on the binaries involved and the number of
             # sections. This eliminates version or release changes from causing
