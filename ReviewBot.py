@@ -513,7 +513,7 @@ class CommandLineInterface(cmdln.Cmdln):
         elif (self.options.verbose):
             level = logging.INFO
 
-        logging.basicConfig(level=level)
+        logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
         self.logger = logging.getLogger(self.optparser.prog)
 
         conf.get_config(override_apiurl = self.options.apiurl)
