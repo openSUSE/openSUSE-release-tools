@@ -182,11 +182,12 @@ class ToTestBase(object):
                         comment['text'].startswith('pinned-description: Ignored issues'):
                     pinned_ignored_issue = comment['id']
 
-            if pinned_ignored_issue:
-                self.openqa.openqa_request(
+            if not self.dryrun:
+                if pinned_ignored_issue:
+                    self.openqa.openqa_request(
                         'PUT', 'groups/%s/comments/%d' % (group_id, pinned_ignored_issue), data=data)
-            else:
-                self.openqa.openqa_request(
+                else:
+                    self.openqa.openqa_request(
                         'POST', 'groups/%s/comments' % group_id, data=data)
 
     def overall_result(self, snapshot):
@@ -312,10 +313,10 @@ class ToTestBase(object):
         if re.match(r'.*-dvd5-.*', package):
             return 4700372992  # a DVD needs to match
 
-        if re.match(r'.*-image-livecd-x11.*', package):
+        if re.match(r'livecd-openSUSE:livecd-x11', package):
             return 681574400  # not a full CD
 
-        if re.match(r'.*-image-livecd.*', package):
+        if re.match(r'livecd-openSUSE:livecd-.*', package):
             return 999999999  # a GB stick
 
         if re.match(r'.*-dvd9-dvd-.*', package):
@@ -383,7 +384,7 @@ class ToTestBase(object):
 
                 for arch in ['i586', 'x86_64']:
                     for product in self.livecd_products:
-                        if not self.package_ok('openSUSE:%s:Live' % self.project, product, 'standard', arch):
+                        if not self.package_ok('openSUSE:%s:Live' % self.project, product, 'images', arch):
                             return False
 
         return True
@@ -518,9 +519,9 @@ class ToTestFactory(ToTestBase):
     ftp_products = ['_product:openSUSE-ftp-ftp-i586_x86_64',
                     '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
 
-    livecd_products = ['kiwi-image-livecd-kde',
-                       'kiwi-image-livecd-gnome',
-                       'kiwi-image-livecd-x11']
+    livecd_products = ['livecd-openSUSE:livecd-kde',
+                       'livecd-openSUSE:livecd-gnome',
+                       'livecd-openSUSE:livecd-x11']
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
