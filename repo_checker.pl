@@ -103,9 +103,10 @@ while (<INSTALL>) {
     chomp;
 
     next if (/^unknown line:.*Flx/);
-    if ( $_ =~ /^can't install (.*)-[^-]+-[^-]+:$/ ) {
+    if ($_ =~ /^[^ ]/) {
         $inc = 0;
-
+    }
+    if ( $_ =~ /^can't install (.*)-[^-]+-[^-]+:$/ ) {
         if ( defined $targets{$1} ) {
             $inc = 1;
             $ret = 1;
@@ -131,9 +132,10 @@ $inc = 0;
 while (<CONFLICTS>) {
     chomp;
 
-    if ( $_ =~ /^found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:$/ ) {
+    if ($_ =~ /^[^ ]/) {
         $inc = 0;
-
+    }
+    if ( $_ =~ /^found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:$/ ) {
         if ( defined $targets{$1} || defined $targets{$2} ) {
             $inc = 1;
             $ret = 1;
