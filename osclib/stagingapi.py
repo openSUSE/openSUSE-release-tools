@@ -1671,6 +1671,10 @@ class StagingAPI(object):
         # put twice because on first put, the API adds useless maintainer
         http_PUT(url, data=meta)
 
+        # Force strict rpmlint like :Staging project does.
+        url = make_meta_url('prjconf', name, self.apiurl)
+        http_PUT(url, data='Support: rpmlint-Factory-strict')
+
         if use_frozenlinks:
             self.update_adi_frozenlinks(name, src_prj)
 
