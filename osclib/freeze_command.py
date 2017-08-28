@@ -212,6 +212,10 @@ class FreezeCommand(object):
 
         r = ET.SubElement(root, 'repository', {'name': 'images', 'linkedbuild': 'all', 'rebuild': 'direct'})
         ET.SubElement(r, 'path', {'project': prj, 'repository': 'standard'})
+
+        if prj.startswith('SUSE:'):
+            a = ET.SubElement(r, 'arch')
+            a.text = 'local'
         a = ET.SubElement(r, 'arch')
         a.text = 'x86_64'
 
