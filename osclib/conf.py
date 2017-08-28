@@ -72,7 +72,6 @@ DEFAULT = {
         'openqa': None,
         'lock': 'SUSE:%(project)s:Staging',
         'lock-ns': 'SUSE',
-        'remote-config': False,
     },
     r'SUSE:(?P<project>.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
