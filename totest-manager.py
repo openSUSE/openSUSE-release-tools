@@ -313,10 +313,10 @@ class ToTestBase(object):
         if re.match(r'.*-dvd5-.*', package):
             return 4700372992  # a DVD needs to match
 
-        if re.match(r'livecd-openSUSE:livecd-x11', package):
+        if re.match(r'livecd-x11', package):
             return 681574400  # not a full CD
 
-        if re.match(r'livecd-openSUSE:livecd-.*', package):
+        if re.match(r'livecd-.*', package):
             return 999999999  # a GB stick
 
         if re.match(r'.*-dvd9-dvd-.*', package):
@@ -519,9 +519,9 @@ class ToTestFactory(ToTestBase):
     ftp_products = ['_product:openSUSE-ftp-ftp-i586_x86_64',
                     '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
 
-    livecd_products = ['livecd-openSUSE:livecd-kde',
-                       'livecd-openSUSE:livecd-gnome',
-                       'livecd-openSUSE:livecd-x11']
+    livecd_products = ['livecd-kde',
+                       'livecd-gnome',
+                       'livecd-x11']
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
