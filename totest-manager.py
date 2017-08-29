@@ -563,10 +563,10 @@ class ToTestFactoryPowerPC(ToTestBase):
 
 
 class ToTestFactoryzSystems(ToTestBase):
-    main_products = ['_product:openSUSE-dvd5-dvd-s390x',
-                     '_product:openSUSE-cd-mini-s390x']
+    main_products = ['000product:openSUSE-dvd5-dvd-s390x',
+                     '000product:openSUSE-cd-mini-s390x']
 
-    ftp_products = ['_product:openSUSE-ftp-ftp-s390x']
+    ftp_products = ['000product:openSUSE-ftp-ftp-s390x']
 
     livecd_products = []
 
