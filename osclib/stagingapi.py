@@ -825,8 +825,10 @@ class StagingAPI(object):
 
         for sub_prj, sub_pkg in self.get_sub_packages(package):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
-            if sub_prj != subprj:  # if different to the main package's prj
-                delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
+            # Skip inner-project links for letter stagings as they should
+            # already be in place, but for adi packages remove them.
+            if not self.is_adi_project(project) and sub_prj == project: continue
+            delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
 
         self.set_review(request_id, project, state=review, msg=msg)
 
@@ -1192,9 +1194,9 @@ class StagingAPI(object):
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
-            # print project, tar_pkg, sub_pkg, sub_prj
-            if sub_prj == project:  # skip inner-project links
-                continue
+            # Skip inner-project links for letter stagings as they should
+            # already be in place, but for adi packages create them.
+            if not self.is_adi_project(project) and sub_prj == project: continue
             self.create_package_container(sub_prj, sub_pkg)
 
             root = ET.Element('link', package=tar_pkg, project=project)
