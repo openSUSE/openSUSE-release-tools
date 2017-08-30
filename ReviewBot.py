@@ -445,8 +445,12 @@ class ReviewBot(object):
             if request is None:
                 request = self.request
             kwargs = {'request_id': request.reqid}
+        debug_key = '/'.join(kwargs.values())
 
         if message is None:
+            if not len(self.comment_handler.lines):
+                self.logger.debug('skipping empty comment for {}'.format(debug_key))
+                return
             message = '\n\n'.join(self.comment_handler.lines)
 
         info = {'state': state, 'result': result}
@@ -454,7 +458,6 @@ class ReviewBot(object):
 
         comments = self.comment_api.get_comments(**kwargs)
         comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
-        debug_key = '/'.join(kwargs.values())
         if (comment is not None and
             ((identical and comment['comment'] == message) or
              (not identical and comment['comment'].count('\n') == message.count('\n')))
