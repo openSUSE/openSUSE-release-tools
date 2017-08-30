@@ -215,7 +215,7 @@ class ReviewBot(object):
                 # Only duplicate when allow_duplicate and state != new.
                 (not allow_duplicate or r.state == 'new')):
                 del query['cmd']
-                self.logger.info('skipped adding duplicate review for {}'.format(
+                self.logger.debug('skipped adding duplicate review for {}'.format(
                     '/'.join(query.values())))
                 return
 
