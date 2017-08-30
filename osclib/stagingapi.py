@@ -1661,10 +1661,12 @@ class StagingAPI(object):
             <enable/>
           </debuginfo>
           {4}
+            <path project="{5}" repository="standard"/>
             <path project="{1}" repository="standard"/>
             <arch>x86_64</arch>
           </repository>
-        </project>""".format(name, self.project, self.extract_adi_number(name), linkproject, repository)
+        </project>""".format(name, self.project, self.extract_adi_number(name), linkproject, repository,
+                             self.cstaging)
 
         url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)
