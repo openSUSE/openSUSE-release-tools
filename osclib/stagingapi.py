@@ -68,7 +68,7 @@ class StagingAPI(object):
         self.cstaging_group = conf.config[project]['staging-group']
         self.cstaging_archs = conf.config[project]['staging-archs'].split()
         self.cstaging_dvd_archs = conf.config[project]['staging-dvd-archs'].split()
-        self.cstaging_nocleanup = conf.config[project]['nocleanup-packages'].split()
+        self._cstaging_nocleanup = None
         self.crings = conf.config[project]['rings']
         self.cnonfree = conf.config[project]['nonfree']
         self.crebuild = conf.config[project]['rebuild']
@@ -92,6 +92,13 @@ class StagingAPI(object):
 
         Cache.init()
 
+    @property
+    def cstaging_nocleanup(self):
+        """Lazy-load value to allow for placement in remote config."""
+        if self._cstaging_nocleanup is None:
+            self._cstaging_nocleanup = conf.config[self.project]['nocleanup-packages'].split()
+
+        return self._cstaging_nocleanup
 
     @property
     def ring_packages(self):
