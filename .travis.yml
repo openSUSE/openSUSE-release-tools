@@ -18,9 +18,12 @@ matrix:
       script:
         - docker run -it spec ./dist/ci/spec.sh
     - env: TEST_SUITE=nosetests
-      sudo: false
+      sudo: required
       language: python
       python: 2.7
+      before_install:
+        # provides xmllint used by test_bootstrap_copy (tests.freeze_tests.TestFreeze)
+        - sudo apt-get install libxml2-utils
       install:
         # needed to install osc from git in requirements.txt
         - pip install pycurl urlgrabber
