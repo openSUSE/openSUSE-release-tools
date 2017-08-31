@@ -36,8 +36,7 @@ class ListCommand:
         splitter.group_by('./action/target/@devel_project')
         splitter.split()
 
-        hide_source = (self.api.project == 'openSUSE:Factory' or
-                       self.api.project.startswith('SUSE:SLE'))
+        hide_source = self.api.project == 'openSUSE:Factory'
         for group in sorted(splitter.grouped.keys()):
             print Fore.YELLOW + group
 
