@@ -28,10 +28,6 @@ class ListCommand:
         if not len(requests): return
 
         splitter = RequestSplitter(self.api, requests, in_ring=True)
-        splitter.filter_add('./action[@type="change_devel"]')
-        change_devel_requests = splitter.filter_only()
-        splitter.reset()
-
         splitter.filter_add('./action[@type="submit" or @type="delete"]')
         splitter.group_by('./action/target/@devel_project')
         splitter.split()
@@ -71,12 +67,17 @@ class ListCommand:
                 non_ring_packages.append(request.find('./action/target').get('package'))
             print 'Not in a ring:', ' '.join(sorted(non_ring_packages))
 
-        if len(change_devel_requests):
-            print '\nChange devel requests:'
-            for request in change_devel_requests:
-                target_package = request.find('./action/target').get('package')
-                url = self.api.makeurl(['request', 'show', request.get('id')])
-                print('- request({}): {}'.format(target_package, url))
+        # Print requests not handled by staging process to highlight them.
+        for request_type in ('change_devel', 'set_bugowner'):
+            splitter.reset()
+            splitter.filter_add('./action[@type="{}"]'.format(request_type))
+            requests = splitter.filter_only()
+            if len(requests):
+                print('\n{} request(s)'.format(request_type))
+                for request in sorted(requests, key=lambda s: s.get('id')):
+                    print('  {} {}'.format(
+                        self.api.makeurl(['request', 'show', request.get('id')]),
+                        request.find('./action/target').get('package')))
 
     def project_strip(self, source_project):
         home = source_project.startswith('home:')
