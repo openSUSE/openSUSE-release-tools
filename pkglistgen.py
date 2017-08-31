@@ -31,6 +31,7 @@ import glob
 import solv
 from pprint import pprint, pformat
 import os
+import subprocess
 
 import ToolBase
 
@@ -38,6 +39,7 @@ logger = logging.getLogger()
 
 FACTORY = "SUSE:SLE-15:GA"
 ARCHITECTURES = ('x86_64', 'ppc64le', 's390x')
+APIURL = 'https://api.suse.de/public/'
 
 class Group(object):
 
@@ -67,6 +69,11 @@ class Group(object):
 
         if self.solved:
             return
+
+        if isinstance(base, Group):
+            base = [ base ]
+        if not (base is None or isinstance(base, list) or isinstance(base, tuple)):
+            raise Exception("base must be list but is {}".format(type(base)))
 
         solved = dict()
         for arch in ARCHITECTURES:
@@ -205,6 +212,14 @@ class PkgListGen(ToolBase.ToolBase):
         self.groups = dict()
         self._supportstatus = None
 
+    def _dump_supportstatus(self):
+        for name in self.packages.keys():
+            for status in self.packages[name]:
+                if status == self.default_support_status:
+                    continue
+                for group in self.packages[name][status]:
+                    print group, name, status
+
     def _load_supportstatus(self):
         # XXX
         with open('supportstatus.txt', 'r') as fh:
@@ -231,13 +246,11 @@ class PkgListGen(ToolBase.ToolBase):
             name = node.get('name')
             arch = node.get('arch', '*')
             status = node.get('supportstatus') or ''
-#            logger.debug('group %s, package %s, status %s', groupname, name, status)
-#            self.packages.setdefault(name, dict())
-#            self.packages[name].setdefault(status, set()).add(groupname)
-            if name in self.packages and self.packages[name] != status:
-                logger.error("%s: support status of %s already is %s, got %s", groupname, name, self.packages[name], status)
-            else:
-                self.packages[name] = status
+            logger.debug('group %s, package %s, status %s', groupname, name, status)
+            self.packages.setdefault(name, dict())
+            self.packages[name].setdefault(status, set()).add(groupname)
+            if len(self.packages[name]) > 1:
+                logger.error("multiple supports states for {}: {}".format(name, pformat(self.packages[name])))
             group.packages.setdefault(arch, set()).add(name)
         return group
 
@@ -245,17 +258,23 @@ class PkgListGen(ToolBase.ToolBase):
         with open(fn, 'r') as fh:
             logger.debug("reading %s", fn)
             root = ET.parse(fh).getroot()
-            if root.tag == 'group':
-                g = self._parse_group(root)
+            g = self._parse_group(root)
+            self.groups[g.name] = g
+
+    def _load_groups_file(self, fn):
+        with open(fn, 'r') as fh:
+            logger.debug("reading %s", fn)
+            xml = '<groups>' + ''.join(fh.readlines()) + '</groups>'
+            root = ET.fromstring(xml)
+            for groupnode in root.findall("./group"):
+                g = self._parse_group(groupnode)
                 self.groups[g.name] = g
-            else:
-                for groupnode in root.findall("./group"):
-                    g = self._parse_group(groupnode)
-                    self.groups[g.name] = g
 
     def load_all_groups(self):
         for fn in glob.glob('*.group.in'):
             self._load_group_file(fn)
+        for fn in glob.glob('*.groups.in'):
+            self._load_groups_file(fn)
 
     def _write_all_groups(self):
         for name in self.groups:
@@ -270,7 +289,8 @@ class PkgListGen(ToolBase.ToolBase):
                     fn = '{}.group'.format(name)
                 x = group.toxml(arch)
                 if x is None:
-                    os.unlink(fn)
+                    if os.path.exists(fn):
+                        os.unlink(fn)
                 else:
                     with open(fn, 'w') as fh:
                         fh.write(ET.tostring(x, pretty_print = True))
@@ -325,6 +345,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for name in sorted(self.tool.groups.keys()):
             print name
 
+    # to be called only once to bootstrap
+    def do_dump_supportstatus(self, subcmd, opts):
+        """${cmd_name}: dump supportstatus of input files
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        self.tool.load_all_groups()
+        self.tool._dump_supportstatus()
+
     def do_list_products(self, subcmd, opts):
         """${cmd_name}: list all products
 
@@ -334,19 +365,29 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.tool.list_products()
 
-    def do_solve_group(self, subcmd, opts, name):
-        """${cmd_name}: list all products
+    def do_update(self, subcmd, opts):
+        """${cmd_name}: Solve groups
 
         ${cmd_usage}
         ${cmd_option_list}
         """
 
-        group = self.tool.solve_group(name)
-        for arch in sorted(group.architectures()):
-            print(ET.tostring(group.toxml(arch), pretty_print = True))
+        bs_mirrorfull = os.path.join(os.path.dirname(__file__), 'bs_mirrorfull')
+        repo = 'standard'
+        project = FACTORY
+        for arch in ARCHITECTURES:
+            d = 'repo-{}-{}-{}'.format(project, repo, arch)
+            logger.debug('updating %s', d)
+            subprocess.call([bs_mirrorfull, '{}/build/{}/{}/{}'.format(APIURL, project, repo, arch), d])
+            files = [ os.path.join(d, f) for f in os.listdir(d) if f.endswith('.rpm') ]
+            fh = open(d+'.solv', 'w')
+            p = subprocess.Popen(['rpms2solv', '-m', '-', '-0'], stdin = subprocess.PIPE, stdout = fh)
+            p.communicate('\0'.join(files))
+            p.wait()
+            fh.close()
 
-    def do_solveall(self, subcmd, opts):
-        """${cmd_name}: list all products
+    def do_solve(self, subcmd, opts):
+        """${cmd_name}: Solve groups
 
         ${cmd_usage}
         ${cmd_option_list}
@@ -354,40 +395,34 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.tool.load_all_groups()
 
-        bootloader = self.tool.groups["bootloader"]
-        caasp = self.tool.groups["CAASP-DVD-Packages"] # XXX
-        dictionaries = self.tool.groups["dictionaries"]
-        icewm = self.tool.groups["desktop_icewm"] # XXX
-        legacy = self.tool.groups["legacy"]
-        nvdimm = self.tool.groups["nvdimm"]
-        ofed = self.tool.groups["ofed"]
-        perl = self.tool.groups["perl"]
-        public_cloud = self.tool.groups["public_cloud"]
-        python = self.tool.groups["python"]
-        python_f = self.tool.groups["python_f"]
-        release_packages_sles = self.tool.groups["release_packages_sles"]
-        release_packages_sled = self.tool.groups["release_packages_sled"]
-        release_packages_leanos = self.tool.groups["release_packages_leanos"]
-        sap_applications = self.tool.groups["sap_applications"]
-        sle_base = self.tool.groups["sle_base"]
-        sle_minimal = self.tool.groups["sle_minimal"]
-        update_test = self.tool.groups["update-test"]
+        class G(object):
+            True
 
-        sle_minimal.solve()
-        sle_base.solve(base = [sle_minimal])
+        g = G()
 
-        bootloader.solve(base = [sle_base])
+        for name in self.tool.groups.keys():
+            # FIXME: tolower, replace dashes?
+            setattr(g, name, self.tool.groups[name])
 
-        python.solve(base = [sle_base])
-        python_f.solve(base = [sle_base])
+        g.sle_minimal.solve()
+        g.sle_base.solve(base = g.sle_minimal)
+
+        g.x11_base.solve(base = g.sle_base)
+        g.x11_extended.solve(base = g.x11_base)
+
+        g.desktop_icewm.solve(base = g.x11_extended)
+
+        g.fonts.solve(base = g.sle_minimal)
+
+        g.fonts_initrd.solve(base = g.fonts)
+
+        g.bootloader.solve(base = g.sle_base)
+
+        g.python.solve(base = g.sle_base)
 
 #        sle_base.dump()
 
         self.tool._write_all_groups()
-
-#        group = self.tool.solve_group(name)
-#        for arch in sorted(group.architectures()):
-#            print(ET.tostring(group.toxml(arch), pretty_print = True))
 
 if __name__ == "__main__":
     app = CommandLineInterface()
