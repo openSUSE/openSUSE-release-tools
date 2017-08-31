@@ -64,7 +64,6 @@ DEFAULT = {
         'staging-group': 'sle-staging-managers',  # '%(project.lower)s-staging',
         'staging-archs': 'i586 x86_64',
         'staging-dvd-archs': '',
-        'nocleanup-packages': '000product.local kernel-firmware',
         'rings': 'SUSE:%(project)s:Rings',
         'nonfree': None,
         'rebuild': None,
