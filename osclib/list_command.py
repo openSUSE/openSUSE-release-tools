@@ -32,7 +32,7 @@ class ListCommand:
         change_devel_requests = splitter.filter_only()
         splitter.reset()
 
-        splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
+        splitter.filter_add('./action[@type="submit" or @type="delete"]')
         splitter.group_by('./action/target/@devel_project')
         splitter.split()
 
