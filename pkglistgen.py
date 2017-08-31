@@ -48,9 +48,12 @@ class Group(object):
         self.pkglist = pkglist
         self.conditional = None
         self.packages = dict()
+        self.locked = dict()
         self.solved_packages = None
         self.solved = False
         self.base = None
+        self.missing = None
+        self.flavors = []
 
     def get_solved_packages_recursive(self, arch):
         if not self.solved:
@@ -76,6 +79,7 @@ class Group(object):
             raise Exception("base must be list but is {}".format(type(base)))
 
         solved = dict()
+        missing = dict()
         for arch in ARCHITECTURES:
             pool = solv.Pool()
             pool.setarch(arch)
@@ -89,11 +93,14 @@ class Group(object):
 
             jobs = []
             toinstall = set(self.packages['*'])
+            locked = set(self.locked.get('*', ()))
             basepackages = set()
             logger.debug("{}: {} common packages".format(self.name, len(toinstall)))
             if arch in self.packages:
                 logger.debug("{}: {} {} packages".format(self.name, arch, len(self.packages[arch])))
                 toinstall |= self.packages[arch]
+            if arch in self.locked:
+                locked |= self.locked[arch]
             if base:
                 for b in base:
                     logger.debug("{} adding packges from {}".format(self.name, b.name))
@@ -103,7 +110,17 @@ class Group(object):
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
                     logger.error('{}.{}: package {} not found'.format(self.name, arch, n))
-                jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
+                    missing.setdefault(arch, set()).add(n)
+                else:
+                    jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
+
+            for n in locked:
+                sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
+                if sel.isempty():
+                    logger.warn('{}.{}: locked package {} not found'.format(self.name, arch, n))
+                else:
+                    jobs += sel.jobs(solv.Job.SOLVER_LOCK)
+
 
             solver = pool.Solver()
             problems = solver.solve(jobs)
@@ -111,7 +128,7 @@ class Group(object):
                 for problem in problems:
                     # just ignore conflicts here
                     #if not ' conflicts with ' in str(problem):
-                    logger.error(problem)
+                    logger.error('%s.%s: %s', self.name, arch, problem)
                     raise Exception('unresolvable')
                     #logger.warning(problem)
 
@@ -125,15 +142,30 @@ class Group(object):
                 solved[arch] -= basepackages
 
         common = None
+        missing_common = None
         # compute common packages across all architectures
         for arch in solved.keys():
             if common is None:
                 common = set(solved[arch])
                 continue
             common &= solved[arch]
+
+        for arch in missing.keys():
+            if missing_common is None:
+                missing_common = set(missing[arch])
+                continue
+            missing_common &= missing[arch]
+
         # reduce arch specific set by common ones
         for arch in solved.keys():
             solved[arch] -= common
+
+        for arch in missing.keys():
+            missing[arch] -= missing_common
+
+        self.missing = missing
+        if missing_common:
+            self.missing['*'] = missing_common
 
         self.solved_packages = solved
         self.solved_packages['*'] = common
@@ -178,10 +210,14 @@ class Group(object):
 
         if packages:
             for name in sorted(packages):
-                p = ET.SubElement(packagelist, 'package', {
-                    'name' : name,
-                    'supportstatus' : self.pkglist.supportstatus(name)
-                    })
+                if arch in self.missing and name in self.missing[arch]:
+                    c = ET.Comment(' missing {} '.format(name))
+                    packagelist.append(c)
+                else:
+                    p = ET.SubElement(packagelist, 'package', {
+                        'name' : name,
+                        'supportstatus' : self.pkglist.supportstatus(name)
+                        })
 
         if autodeps:
             c = ET.Comment(' automatic dependencies ')
@@ -242,16 +278,24 @@ class PkgListGen(ToolBase.ToolBase):
     def _parse_group(self, root):
         groupname = root.get('name')
         group = Group(groupname, self)
-        for node in root.findall(".//package"):
-            name = node.get('name')
-            arch = node.get('arch', '*')
-            status = node.get('supportstatus') or ''
-            logger.debug('group %s, package %s, status %s', groupname, name, status)
-            self.packages.setdefault(name, dict())
-            self.packages[name].setdefault(status, set()).add(groupname)
-            if len(self.packages[name]) > 1:
-                logger.error("multiple supports states for {}: {}".format(name, pformat(self.packages[name])))
-            group.packages.setdefault(arch, set()).add(name)
+        for packagelist in root.findall(".//packagelist"):
+            rel = packagelist.get('relationship', 'requires')
+
+            for node in packagelist.findall(".//package"):
+                name = node.get('name')
+                arch = node.get('arch', '*')
+                status = node.get('supportstatus', '')
+                logger.debug('group %s %s package %s, status %s', groupname, rel, name, status)
+                if rel in ('recommends', 'requires'):
+                    self.packages.setdefault(name, dict())
+                    self.packages[name].setdefault(status, set()).add(groupname)
+                    if len(self.packages[name]) > 1:
+                        logger.error("multiple supports states for {}: {}".format(name, pformat(self.packages[name])))
+                    group.packages.setdefault(arch, set()).add(name)
+                elif rel == 'locks':
+                    group.locked.setdefault(arch, set()).add(name)
+                else:
+                    raise Exception('{}: unhandled relation {}'.format(groupname, rel))
         return group
 
     def _load_group_file(self, fn):
@@ -293,7 +337,7 @@ class PkgListGen(ToolBase.ToolBase):
                         os.unlink(fn)
                 else:
                     with open(fn, 'w') as fh:
-                        fh.write(ET.tostring(x, pretty_print = True))
+                        fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
 
     def _parse_product(self, root):
         print(root.find('.//products/product/name').text)
@@ -405,6 +449,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             setattr(g, name, self.tool.groups[name])
 
         g.sle_minimal.solve()
+
+#        g.release_packages_sles.solve()
+#        g.release_packages_sled.solve(base = g.sle_minimal)
+#        g.release_packages_leanos.solve(base = g.sle_minimal)
+
         g.sle_base.solve(base = g.sle_minimal)
 
         g.x11_base.solve(base = g.sle_base)
@@ -419,6 +468,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         g.bootloader.solve(base = g.sle_base)
 
         g.python.solve(base = g.sle_base)
+
+        g.php7.solve(base = g.sle_base)
+
+        g.gnome_minimal.solve(base = (g.x11_extended, g.php7))
+
+#        g.gnome_extended.solve(base = g.gnome_minimal)
+
+        g.qt_standard.solve(base = g.x11_extended)
+        g.qt_extended.solve(base = g.qt_standard)
 
 #        sle_base.dump()
 
