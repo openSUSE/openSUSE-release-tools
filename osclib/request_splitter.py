@@ -146,6 +146,12 @@ class RequestSplitter(object):
         devel = self.api.get_devel_project(target_project, target_package)
         if devel is None and self.api.project.startswith('openSUSE:'):
             devel = self.api.get_devel_project('openSUSE:Factory', target_package)
+        if devel is None and self.api.project.startswith('SUSE:'):
+            # For SLE, fallback to openSUSE:Factory devel projects.
+            devel = self.api.get_devel_project('openSUSE.org:openSUSE:Factory', target_package)
+            if devel:
+                # Strip openSUSE.org: prefix since string since not used for lookup.
+                devel = devel.split(':', 1)[1]
         return devel
 
     def filter_check(self, request):
