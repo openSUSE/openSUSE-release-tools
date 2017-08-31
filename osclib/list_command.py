@@ -10,6 +10,7 @@ class ListCommand:
         'SUSE:SLE-12-',
         'openSUSE:Leap:'
         'openSUSE:',
+        'openSUSE.org:',
         'home:',
     ]
 
