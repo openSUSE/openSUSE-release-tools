@@ -4,34 +4,26 @@
 FROM opensuse:tumbleweed
 MAINTAINER Jimmy Berry <jberry@suse.com>
 
-RUN zypper -n ref && zypper -n dup && zypper -n in --no-recommends \
-  obs-service-download_files \
-  obs-service-format_spec_file \
-  obs-service-obs_scm \
-  obs-service-set_version \
-  obs-service-source_validator \
-  rpm-build \
-  apache-rpm-macros \
-  apache2-devel \
-  libxml2-tools \
-  make \
+# https://github.com/openSUSE/obs-service-set_version/issues/44 python-packaging
+# git for extracting remote, but a more generalized approach would be nice
+RUN zypper -n ref && zypper -n dup && zypper -n install \
+  build \
+  git \
+  obs-service-* \
   osc \
-  python-PyYAML \
-  python-cmdln \
-  python-colorama \
-  python-httpretty \
-  python-lxml \
-  python-mock \
-  python-nose \
-  python-python-dateutil \
-  python-pyxdg \
-  rsyslog
+  python-packaging \
+  sudo
 
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+# `osc build` directories that are effective to cache:
+# - /var/tmp/build-root
+# - /var/tmp/osbuild-packagecache
+VOLUME /var/tmp
 
-COPY . /usr/src/app
+WORKDIR /usr/src
+RUN mkdir -p /usr/src/target
+COPY . /usr/src/target
 
 # Already included in target, but simulate separate container image.
+ADD dist/ci/obs-build-target /usr/bin/
 ADD dist/ci/obs-deploy /usr/bin/
 ADD dist/ci/osc-init /usr/bin/

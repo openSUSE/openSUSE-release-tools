@@ -1,0 +1,11 @@
+#!/bin/bash
+
+eval $(./dist/ci/osc-credentials)
+
+docker run --privileged --rm -it \
+  -v ~/docker-tmp:/var/tmp \
+  -e OBS_USER="${user:-$OBS_USER}" \
+  -e OBS_PASS="${pass:-$OBS_PASS}" \
+  -e OBS_EMAIL="${email:-$OBS_EMAIL}" \
+  -e OBS_PACKAGE="${OBS_PACKAGE:-openSUSE:Tools/openSUSE-release-tools}" \
+  spec "${1:-obs-build-target}" "${2:-openSUSE_Factory}"

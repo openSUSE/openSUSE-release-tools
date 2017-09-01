@@ -1,0 +1,23 @@
+#!/bin/bash
+set -x
+
+SOURCE_DIR="${SOURCE_DIR:-/usr/src/target}"
+
+repo="${1:-openSUSE_Tumbleweed}"
+arch="${2:-x86_64}"
+
+osc-init
+
+osc checkout "$OBS_PACKAGE"
+cd "$OBS_PACKAGE"
+
+# point _service file to SOURCE_DIR instead of remote
+sed -i "s|$(cd "$SOURCE_DIR" && git remote get-url origin)|$SOURCE_DIR|" _service
+
+rm *.obscpio
+osc service disabledrun
+
+# skip interactive
+osc diff | cat
+
+osc build --trust-all-projects --no-verify "$repo" "$arch"
