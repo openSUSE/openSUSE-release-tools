@@ -19,7 +19,10 @@ osc service disabledrun
 tail -n1 _servicedata | read -r _ || echo >> _servicedata
 
 osc addremove
-osc commit -m "$(grep -oP 'version: \K.*' *.obsinfo)"
+
+if [ "$(osc status | wc -l)" -gt 0 ] ; then
+  osc commit -m "$(grep -oP 'version: \K.*' *.obsinfo)"
+fi
 
 # Create submit request if none currently exists.
 OBS_TARGET_PROJECT="$(osc info | grep -oP "Link info:.*?project \K[^\s,]+")"
