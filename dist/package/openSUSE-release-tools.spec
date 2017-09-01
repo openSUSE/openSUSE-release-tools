@@ -121,7 +121,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
-Requires:       osc
+Requires:       osc >= 0.159.0
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
@@ -130,7 +130,7 @@ Supplemental osc libraries utilized by release tools.
 Summary:        OSC plugin to check for duplicate requests
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc
+Requires:       osc >= 0.159.0
 
 %description -n osc-plugin-check_dups
 OSC plugin to check for duplicate requests, see `osc check_dups --help`.
@@ -139,7 +139,7 @@ OSC plugin to check for duplicate requests, see `osc check_dups --help`.
 Summary:        OSC plugin for cycle visualization
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc
+Requires:       osc >= 0.159.0
 
 %description -n osc-plugin-cycle
 OSC plugin for cycle visualization, see `osc cycle --help`.
@@ -148,7 +148,7 @@ OSC plugin for cycle visualization, see `osc cycle --help`.
 Summary:        OSC plugin for the staging workflow
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc
+Requires:       osc >= 0.159.0
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-staging
