@@ -1,7 +1,7 @@
 # https://docs.docker.com/engine/reference/builder/
 # Used for TEST_SUITE=distribution and deployment to OBS.
 
-FROM boombatower/opensuse:tumbleweed
+FROM opensuse:tumbleweed
 MAINTAINER Jimmy Berry <jberry@suse.com>
 
 RUN zypper -n ref && zypper -n dup && zypper -n in --no-recommends \
