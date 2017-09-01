@@ -5,6 +5,9 @@ if [ -z ${OBS_PASS+x} ] || [ -z "$OBS_PASS" ] ; then
   OBS_API="$OBS_API/public"
 fi
 
+echo "OBS_API=$OBS_API"
+echo "OBS_USER=$OBS_USER"
+
 cat << eom > ~/.oscrc
 [general]
 apiurl = $OBS_API
