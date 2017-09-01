@@ -210,7 +210,7 @@ class FreezeCommand(object):
             a = ET.SubElement(r, 'arch')
             a.text = arch
 
-        r = ET.SubElement(root, 'repository', {'name': 'images', 'linkedbuild': 'all', 'rebuild': 'direct'})
+        r = ET.SubElement(root, 'repository', {'name': 'images', 'linkedbuild': 'all'})
         ET.SubElement(r, 'path', {'project': prj, 'repository': 'standard'})
 
         if prj.startswith('SUSE:'):
