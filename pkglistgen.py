@@ -53,7 +53,6 @@ class Group(object):
         self.solved = False
         self.base = None
         self.missing = None
-        self.flavors = []
 
     def get_solved_packages_recursive(self, arch):
         if not self.solved:
@@ -80,7 +79,7 @@ class Group(object):
 
         return packages
 
-    def solve(self, base = None):
+    def solve(self, base = None, extra = None, without = None):
         """ base: list of base groups or None """
 
         if self.solved:
@@ -90,6 +89,18 @@ class Group(object):
             base = [ base ]
         if not (base is None or isinstance(base, list) or isinstance(base, tuple)):
             raise Exception("base must be list but is {}".format(type(base)))
+        if extra:
+            if isinstance(extra, str):
+                extra = set((extra))
+            elif not (isinstance(extra, list) or isinstance(extra, tuple)):
+                raise Exception("extra must be list but is {}".format(type(extra)))
+            extra = set(extra)
+        if without:
+            if isinstance(without, str):
+                without = set([without])
+            elif not (isinstance(without, list) or isinstance(without, tuple)):
+                raise Exception("without must be list but is {}".format(type(without)))
+            without = set(without)
 
         solved = dict()
         missing = dict()
@@ -120,7 +131,11 @@ class Group(object):
                     logger.debug("{} adding packges from {}".format(self.name, b.name))
                     basepackages |= b.get_packages_recursive(arch)
                     basepackages_solved |= b.get_solved_packages_recursive(arch)
+            if without:
+                basepackages -= without
             toinstall |= basepackages
+            if extra:
+                toinstall.update(extra)
             for n in toinstall:
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
@@ -155,6 +170,9 @@ class Group(object):
             if basepackages_solved:
                 self.base = list(base)
                 solved[arch] -= basepackages_solved
+
+            if extra:
+                solved[arch].discard(extra)
 
         common = None
         missing_common = None
@@ -466,7 +484,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         g.sle_minimal.solve()
 
 #        g.release_packages_sles.solve()
-#        g.release_packages_sled.solve(base = g.sle_minimal)
 #        g.release_packages_leanos.solve(base = g.sle_minimal)
 
         g.sle_base.solve(base = g.sle_minimal)
@@ -488,6 +505,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         g.gnome_minimal.solve(base = (g.x11_extended, g.php7))
 
+        g.sled.solve(base = g.gnome_minimal, without = 'sles-release')
+        g.release_packages_sled.solve(base = g.sled, without = 'sles-release')
+
+# NetworkManager unresolvable
 #        g.gnome_extended.solve(base = g.gnome_minimal)
 
         g.qt_standard.solve(base = g.x11_extended)
