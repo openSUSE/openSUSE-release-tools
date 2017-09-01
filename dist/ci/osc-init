@@ -1,6 +1,9 @@
 #!/bin/bash
 
-OBS_API="${OBS_API:-https://api.opensuse.org/public}"
+OBS_API="${OBS_API:-https://api.opensuse.org}"
+if [ -z ${OBS_PASS+x} ] || [ -z "$OBS_PASS" ] ; then
+  OBS_API="$OBS_API/public"
+fi
 
 cat << eom > ~/.oscrc
 [general]
