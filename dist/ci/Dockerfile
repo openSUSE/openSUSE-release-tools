@@ -31,3 +31,6 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 COPY . /usr/src/app
+
+# Already included in target, but simulate separate container image.
+ADD dist/ci/obs-deploy /usr/bin/
