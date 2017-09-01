@@ -490,6 +490,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         g.x11_base.solve(base = g.sle_base)
         g.x11_extended.solve(base = g.x11_base)
+        g.x11_wayland.solve(base = g.x11_base)
 
         g.desktop_icewm.solve(base = g.x11_extended)
 
@@ -503,7 +504,27 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         g.php7.solve(base = g.sle_base)
 
+        g.sle_databases.solve(base = g.sle_base)
+
+        g.sle_webserver.solve(base = g.sle_base)
+
+        g.admin_tools.solve(base = g.sle_base)
+
+        g.ima_applications.solve(base = g.sle_base)
+
+        g.sle_devtools.solve(base = g.sle_base)
+
         g.gnome_minimal.solve(base = (g.x11_extended, g.php7))
+
+        g.sle_misc_applications.solve(base = g.gnome_minimal)
+        g.sle_misc_applications2.solve(base = g.sle_misc_applications, without = "targetcli")
+
+        g.java_base.solve(base = g.gnome_minimal)
+        g.java.solve(base = g.java_base)
+        g.java_ibm.solve(base = g.java_base)
+
+        g.documentation_minimal.solve(base = g.gnome_minimal)
+        g.documentation_sles_basic.solve(base = g.documentation_minimal)
 
         g.sled.solve(base = g.gnome_minimal, without = 'sles-release')
         g.release_packages_sled.solve(base = g.sled, without = 'sles-release')
