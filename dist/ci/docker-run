@@ -4,6 +4,7 @@ eval $(./dist/ci/osc-credentials)
 
 docker run --privileged --rm -it \
   -v ~/docker-tmp:/var/tmp \
+  -e OBS_API="${apiurl:-$OBS_API}" \
   -e OBS_USER="${user:-$OBS_USER}" \
   -e OBS_PASS="${pass:-$OBS_PASS}" \
   -e OBS_EMAIL="${email:-$OBS_EMAIL}" \
