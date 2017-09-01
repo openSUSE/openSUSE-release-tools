@@ -17,12 +17,7 @@ rpmbuild --nocheck -bb -D "jobs `nproc`" dist/package/*.spec
 rpm -iv --force --nodeps /usr/src/packages/RPMS/*/*.rpm
 
 # Ensure the staging plugin starts.
-cat << eom > ~/.oscrc
-[general]
-[https://api.opensuse.org]
-user = example
-pass = example
-eom
+osc-init
 
 osc staging --version
 

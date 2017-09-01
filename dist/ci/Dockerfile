@@ -34,3 +34,4 @@ COPY . /usr/src/app
 
 # Already included in target, but simulate separate container image.
 ADD dist/ci/obs-deploy /usr/bin/
+ADD dist/ci/osc-init /usr/bin/

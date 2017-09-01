@@ -1,13 +1,6 @@
 #!/bin/bash
 
-cat << eom > ~/.oscrc
-[general]
-apiurl = https://api.opensuse.org
-[https://api.opensuse.org]
-user = $OBS_USER
-pass = $OBS_PASS
-email = $OBS_EMAIL
-eom
+osc-init
 
 osc checkout "$OBS_PACKAGE"
 cd "$OBS_PACKAGE"

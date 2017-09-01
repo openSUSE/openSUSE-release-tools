@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cat << eom > ~/.oscrc
+[general]
+apiurl = https://api.opensuse.org
+[https://api.opensuse.org]
+user = ${OBS_USER:-example}
+pass = ${OBS_PASS:-example}
+email = ${OBS_EMAIL:-example@example.com}
+eom
