@@ -14,7 +14,10 @@ cd "$OBS_PACKAGE"
 
 rm *.obscpio
 osc service disabledrun
-echo >> _servicedata
+
+# ensure _servicedata ends with a newline
+tail -n1 _servicedata | read -r _ || echo >> _servicedata
+
 osc addremove
 osc commit -m "$(grep -oP 'version: \K.*' *.obsinfo)"
 
