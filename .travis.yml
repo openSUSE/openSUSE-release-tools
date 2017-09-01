@@ -17,6 +17,24 @@ matrix:
         - docker build -f dist/ci/Dockerfile -t spec .
       script:
         - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
+    - env: TEST_SUITE=distribution TARGET_REPO=openSUSE_42.3
+      sudo: required
+      services:
+        - docker
+      language: bash
+      before_install:
+        - docker build -f dist/ci/Dockerfile -t spec .
+      script:
+        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
+    - env: TEST_SUITE=distribution TARGET_REPO=SLE_12_SP3
+      sudo: required
+      services:
+        - docker
+      language: bash
+      before_install:
+        - docker build -f dist/ci/Dockerfile -t spec .
+      script:
+        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
     - env: TEST_SUITE=flake8
       language: python
       install:
@@ -45,4 +63,4 @@ deploy:
   script: ./dist/ci/docker-run obs-deploy
   on:
     branch: master
-    condition: $TEST_SUITE = distribution
+    condition: $TEST_SUITE = distribution && $TARGET_REPO = openSUSE_Factory
