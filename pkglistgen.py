@@ -67,6 +67,19 @@ class Group(object):
 
         return solved
 
+    def get_packages_recursive(self, arch):
+        packages = set()
+        if '*' in self.packages:
+            packages.update(self.packages['*'])
+        if arch in self.packages:
+            packages.update(self.packages[arch])
+        logger.debug("{}.{} have {} packages".format(self.name, arch, len(packages)))
+        if self.base:
+            for b in self.base:
+                packages |= b.get_packages_recursive(arch)
+
+        return packages
+
     def solve(self, base = None):
         """ base: list of base groups or None """
 
@@ -95,6 +108,7 @@ class Group(object):
             toinstall = set(self.packages['*'])
             locked = set(self.locked.get('*', ()))
             basepackages = set()
+            basepackages_solved = set()
             logger.debug("{}: {} common packages".format(self.name, len(toinstall)))
             if arch in self.packages:
                 logger.debug("{}: {} {} packages".format(self.name, arch, len(self.packages[arch])))
@@ -104,7 +118,8 @@ class Group(object):
             if base:
                 for b in base:
                     logger.debug("{} adding packges from {}".format(self.name, b.name))
-                    basepackages |= b.get_solved_packages_recursive(arch)
+                    basepackages |= b.get_packages_recursive(arch)
+                    basepackages_solved |= b.get_solved_packages_recursive(arch)
             toinstall |= basepackages
             for n in toinstall:
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
@@ -137,9 +152,9 @@ class Group(object):
                 raise Exception('nothing to do')
 
             solved[arch] = set([ s.name for s in trans.newsolvables() ])
-            if basepackages:
+            if basepackages_solved:
                 self.base = list(base)
-                solved[arch] -= basepackages
+                solved[arch] -= basepackages_solved
 
         common = None
         missing_common = None
