@@ -487,6 +487,42 @@ class PkgListGen(ToolBase.ToolBase):
         g.solved_packages = develpkgs
         g.solved = True
 
+    def _collect_unsorted_packages(self):
+
+        packages = dict()
+        for arch in ARCHITECTURES:
+            pool = self._prepare_pool(arch)
+            sel = pool.Selection()
+            p = set([s.name for s in
+                pool.solvables_iter() if not
+                (s.name.endswith('-debuginfo') or
+                    s.name.endswith('-debugsource'))])
+
+            for g in self.groups.values():
+                if g.solved:
+                    for a in ('*', arch):
+                        if a in g.solved_packages:
+                            p -= g.solved_packages[a]
+            packages[arch] = p
+
+        common = None
+        # compute common packages across all architectures
+        for arch in packages.keys():
+            if common is None:
+                common = set(packages[arch])
+                continue
+            common &= packages[arch]
+
+        # reduce arch specific set by common ones
+        for arch in packages.keys():
+            packages[arch] -= common
+
+        packages['*'] = common
+
+        g = Group('unsorted', self)
+        g.solved_packages = packages
+        g.solved = True
+
  
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
@@ -639,6 +675,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 #        sle_base.dump()
 
         self.tool._collect_devel_packages()
+        self.tool._collect_unsorted_packages()
         self.tool._write_all_groups()
 
 if __name__ == "__main__":
