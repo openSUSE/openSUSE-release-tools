@@ -35,6 +35,9 @@ import subprocess
 
 import ToolBase
 
+# share header cache with repochecker
+from osclib.memoize import CACHEDIR
+
 logger = logging.getLogger()
 
 FACTORY = "SUSE:SLE-15:GA"
@@ -109,8 +112,10 @@ class Group(object):
             pool.setarch(arch)
 
             # XXX
-            repo = pool.add_repo('full')
-            repo.add_solv('repo-{}-standard-{}.solv'.format(FACTORY, arch))
+            repo = pool.add_repo(FACTORY)
+            r = repo.add_solv(os.path.join(CACHEDIR, 'repo-{}-standard-{}.solv'.format(FACTORY, arch)))
+            if not r:
+                raise Exception("failed to add repo. Need to run update first?")
 
             pool.addfileprovides()
             pool.createwhatprovides()
@@ -233,9 +238,8 @@ class Group(object):
         root.append(c)
 
         if self.base:
-            for b in self.base:
-                c = ET.Comment(' based on {} '.format(', '.join([b.name for b in self.base])))
-                root.append(c)
+            c = ET.Comment(' based on {} '.format(', '.join([b.name for b in self.base])))
+            root.append(c)
 
         if arch != '*':
             cond = ET.SubElement(root, 'conditional', {'name': 'only_{}'.format(arch)})
@@ -280,6 +284,8 @@ class PkgListGen(ToolBase.ToolBase):
         self.default_support_status = 'l3'
         self.groups = dict()
         self._supportstatus = None
+        self.input_dir = '.'
+        self.output_dir = '.'
 
     def _dump_supportstatus(self):
         for name in self.packages.keys():
@@ -291,7 +297,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _load_supportstatus(self):
         # XXX
-        with open('supportstatus.txt', 'r') as fh:
+        with open(os.path.join(self.input_dir, 'supportstatus.txt'), 'r') as fh:
             self._supportstatus = dict()
             for l in fh.readlines():
                 group, pkg, status  = l.split(' ')
@@ -348,29 +354,26 @@ class PkgListGen(ToolBase.ToolBase):
                 self.groups[g.name] = g
 
     def load_all_groups(self):
-        for fn in glob.glob('*.group.in'):
+        for fn in glob.glob(os.path.join(self.input_dir, '*.group.in')):
             self._load_group_file(fn)
-        for fn in glob.glob('*.groups.in'):
+        for fn in glob.glob(os.path.join(self.input_dir, '*.groups.in')):
             self._load_groups_file(fn)
 
     def _write_all_groups(self):
         for name in self.groups:
             group = self.groups[name]
+            fn = '{}.group'.format(name)
             if not group.solved:
                 logger.error('{} not solved'.format(name))
+                if os.path.exists(fn):
+                    os.unlink(fn)
                 continue
-            for arch in sorted(group.architectures()):
-                if arch != '*':
-                    fn = '{}.{}.group'.format(name, arch)
-                else:
-                    fn = '{}.group'.format(name)
-                x = group.toxml(arch)
-                if x is None:
-                    if os.path.exists(fn):
-                        os.unlink(fn)
-                else:
-                    with open(fn, 'w') as fh:
-                        fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
+            with open(os.path.join(self.output_dir, fn), 'w') as fh:
+                for arch in sorted(group.architectures()):
+                    x = group.toxml(arch)
+                    if x is not None:
+                        #fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
+                        fh.write(ET.tostring(x, pretty_print = True))
 
     def _parse_product(self, root):
         print(root.find('.//products/product/name').text)
@@ -382,7 +385,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def list_products(self):
         for fn in glob.glob('*.product'):
-            with open(fn, 'r') as fh:
+            with open(os.path.join(self.input_dir, fn), 'r') as fh:
                 logger.debug("reading %s", fn)
                 root = ET.parse(fh).getroot()
                 self._parse_product(root)
@@ -403,10 +406,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
                         help='project to process (default: %s)' % FACTORY,
                         default = FACTORY)
+        parser.add_option('-i', '--input-dir', dest='input_dir', metavar='DIR',
+                        help='input directory', default = '.')
+        parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
+                        help='input directory', default = '.')
         return parser
 
     def setup_tool(self):
         tool = PkgListGen(self.options.project)
+        tool.input_dir = self.options.input_dir
+        tool.output_dir = self.options.output_dir
         return tool
 
 
@@ -453,7 +462,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         repo = 'standard'
         project = FACTORY
         for arch in ARCHITECTURES:
-            d = 'repo-{}-{}-{}'.format(project, repo, arch)
+            d = os.path.join(CACHEDIR, 'repo-{}-{}-{}'.format(project, repo, arch))
             logger.debug('updating %s', d)
             subprocess.call([bs_mirrorfull, '{}/build/{}/{}/{}'.format(APIURL, project, repo, arch), d])
             files = [ os.path.join(d, f) for f in os.listdir(d) if f.endswith('.rpm') ]
