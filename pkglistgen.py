@@ -20,6 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# TODO: implement equivalent of namespace namespace:language(de) @SYSTEM
+# TODO: solve all devel packages to include
+
 from lxml import etree as ET
 from collections import namedtuple
 import sys
@@ -56,6 +59,9 @@ class Group(object):
         self.solved = False
         self.base = None
         self.missing = None
+        self.srcpkgs = None
+
+        pkglist.groups[name] = self
 
     def get_solved_packages_recursive(self, arch):
         if not self.solved:
@@ -107,6 +113,7 @@ class Group(object):
 
         solved = dict()
         missing = dict()
+        srcpkgs =  set()
         for arch in ARCHITECTURES:
             pool = self.pkglist._prepare_pool(arch)
 
@@ -161,13 +168,21 @@ class Group(object):
             if trans.isempty():
                 raise Exception('nothing to do')
 
-            solved[arch] = set([ s.name for s in trans.newsolvables() ])
+            for s in trans.newsolvables():
+                solved.setdefault(arch, set()).add(s.name)
+                # don't ask me why, but that's how it seems to work
+                if s.lookup_void(solv.SOLVABLE_SOURCENAME):
+                    src = s.name
+                else:
+                    src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
+                srcpkgs.add(src)
+
             if basepackages_solved:
                 self.base = list(base)
                 solved[arch] -= basepackages_solved
 
             if extra:
-                solved[arch].discard(extra)
+                solved[arch] -= extra
 
         common = None
         missing_common = None
@@ -199,6 +214,7 @@ class Group(object):
         self.solved_packages['*'] = common
 
         self.solved = True
+        self.srcpkgs = srcpkgs
 
     def architectures(self):
         return self.solved_packages.keys()
@@ -241,20 +257,24 @@ class Group(object):
                     c = ET.Comment(' missing {} '.format(name))
                     packagelist.append(c)
                 else:
-                    p = ET.SubElement(packagelist, 'package', {
-                        'name' : name,
-                        'supportstatus' : self.pkglist.supportstatus(name)
-                        })
+                    status = self.pkglist.supportstatus(name)
+                    if status:
+                        p = ET.SubElement(packagelist, 'package', {
+                            'name' : name,
+                            'supportstatus' : status
+                            })
 
         if autodeps:
             c = ET.Comment(' automatic dependencies ')
             packagelist.append(c)
 
             for name in sorted(autodeps):
-                p = ET.SubElement(packagelist, 'package', {
-                    'name' : name,
-                    'supportstatus' : self.pkglist.supportstatus(name)
-                    })
+                status = self.pkglist.supportstatus(name)
+                if status:
+                    p = ET.SubElement(packagelist, 'package', {
+                        'name' : name,
+                        'supportstatus' : self.pkglist.supportstatus(name)
+                        })
 
         return root
 
@@ -289,9 +309,11 @@ class PkgListGen(ToolBase.ToolBase):
         # XXX
         with open(os.path.join(self.input_dir, 'supportstatus.txt'), 'r') as fh:
             self._supportstatus = dict()
-            for l in fh.readlines():
-                group, pkg, status  = l.split(' ')
-                self._supportstatus[pkg] = status
+            for l in fh:
+                # group, pkg, status
+                a = l.rstrip().split(' ')
+                if len(a) > 2:
+                    self._supportstatus[a[1]] = a[2]
 
     # TODO: make per product
     def supportstatus(self, package):
@@ -332,7 +354,6 @@ class PkgListGen(ToolBase.ToolBase):
             logger.debug("reading %s", fn)
             root = ET.parse(fh).getroot()
             g = self._parse_group(root)
-            self.groups[g.name] = g
 
     def _load_groups_file(self, fn):
         with open(fn, 'r') as fh:
@@ -341,7 +362,6 @@ class PkgListGen(ToolBase.ToolBase):
             root = ET.fromstring(xml)
             for groupnode in root.findall("./group"):
                 g = self._parse_group(groupnode)
-                self.groups[g.name] = g
 
     def load_all_groups(self):
         for fn in glob.glob(os.path.join(self.input_dir, '*.group.in')):
@@ -405,7 +425,8 @@ class PkgListGen(ToolBase.ToolBase):
         for g in self.groups.values():
             if g.solved:
                 for arch in g.solved_packages.keys():
-                    all_grouped.update(g.solved_packages[arch])
+                    if g.solved_packages[arch]:
+                        all_grouped.update(g.solved_packages[arch])
 
         for p in tocheck - all_grouped:
             logger.warn('package %s has supplements but is not grouped', p)
@@ -424,6 +445,48 @@ class PkgListGen(ToolBase.ToolBase):
         pool.createwhatprovides()
 
         return pool
+
+    def _collect_devel_packages(self):
+        srcpkgs = set()
+        for g in self.groups.values():
+            if g.srcpkgs:
+                srcpkgs.update(g.srcpkgs)
+
+        develpkgs = dict()
+        for arch in ARCHITECTURES:
+            pool = self._prepare_pool(arch)
+            sel = pool.Selection()
+            for s in pool.solvables_iter():
+                if s.name.endswith('-devel'):
+                    # don't ask me why, but that's how it seems to work
+                    if s.lookup_void(solv.SOLVABLE_SOURCENAME):
+                        src = s.name
+                    else:
+                        src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
+
+                    if src in srcpkgs:
+                        develpkgs.setdefault(arch, set()).add(s.name)
+
+        common = None
+        # compute common packages across all architectures
+        for arch in develpkgs.keys():
+            if common is None:
+                common = set(develpkgs[arch])
+                continue
+            common &= develpkgs[arch]
+
+        # reduce arch specific set by common ones
+        for arch in develpkgs.keys():
+            develpkgs[arch] -= common
+
+        develpkgs['*'] = common
+
+        g = Group('all-devel-pkgs', self)
+        # XXX: would need to add to packages instead, then solve and
+        # subtract all other groups
+        g.solved_packages = develpkgs
+        g.solved = True
+
  
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
@@ -575,6 +638,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
 #        sle_base.dump()
 
+        self.tool._collect_devel_packages()
         self.tool._write_all_groups()
 
 if __name__ == "__main__":
