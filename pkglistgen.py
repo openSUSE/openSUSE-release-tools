@@ -108,17 +108,7 @@ class Group(object):
         solved = dict()
         missing = dict()
         for arch in ARCHITECTURES:
-            pool = solv.Pool()
-            pool.setarch(arch)
-
-            # XXX
-            repo = pool.add_repo(FACTORY)
-            r = repo.add_solv(os.path.join(CACHEDIR, 'repo-{}-standard-{}.solv'.format(FACTORY, arch)))
-            if not r:
-                raise Exception("failed to add repo. Need to run update first?")
-
-            pool.addfileprovides()
-            pool.createwhatprovides()
+            pool = self.pkglist._prepare_pool(arch)
 
             jobs = []
             toinstall = set(self.packages['*'])
@@ -360,6 +350,7 @@ class PkgListGen(ToolBase.ToolBase):
             self._load_groups_file(fn)
 
     def _write_all_groups(self):
+        self._check_supplements()
         for name in self.groups:
             group = self.groups[name]
             fn = '{}.group'.format(name)
@@ -395,6 +386,44 @@ class PkgListGen(ToolBase.ToolBase):
         group = self.groups[name]
         group.solve()
         return group
+
+    def _check_supplements(self):
+        tocheck = set()
+        for arch in ARCHITECTURES:
+            pool = self._prepare_pool(arch)
+            sel = pool.Selection()
+            for s in pool.solvables_iter():
+                sel.add_raw(solv.Job.SOLVER_SOLVABLE, s.id)
+
+            for s in sel.solvables():
+                for dep in s.lookup_deparray(solv.SOLVABLE_SUPPLEMENTS):
+                    for d in dep.str().split(' '):
+                        if d.startswith('namespace:modalias') or d.startswith('namespace:filesystem'):
+                            tocheck.add(s.name)
+
+        all_grouped = set()
+        for g in self.groups.values():
+            if g.solved:
+                for arch in g.solved_packages.keys():
+                    all_grouped.update(g.solved_packages[arch])
+
+        for p in tocheck - all_grouped:
+            logger.warn('package %s has supplements but is not grouped', p)
+
+    def _prepare_pool(self, arch):
+        pool = solv.Pool()
+        pool.setarch(arch)
+
+        # XXX
+        repo = pool.add_repo(FACTORY)
+        r = repo.add_solv(os.path.join(CACHEDIR, 'repo-{}-standard-{}.solv'.format(FACTORY, arch)))
+        if not r:
+            raise Exception("failed to add repo. Need to run update first?")
+
+        pool.addfileprovides()
+        pool.createwhatprovides()
+
+        return pool
  
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
