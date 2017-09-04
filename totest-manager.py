@@ -127,7 +127,7 @@ class ToTestBase(object):
         """
 
         url = makeurl('https://openqa.opensuse.org',
-                      ['api', 'v1', 'jobs'], {'group': self.openqa_group(), 'build': snapshot})
+                      ['api', 'v1', 'jobs'], {'group': self.openqa_group(), 'build': snapshot, 'latest': 1})
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
