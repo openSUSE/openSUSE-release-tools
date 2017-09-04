@@ -35,6 +35,7 @@ import solv
 from pprint import pprint, pformat
 import os
 import subprocess
+import re
 
 import ToolBase
 
@@ -51,6 +52,7 @@ class Group(object):
 
     def __init__(self, name, pkglist):
         self.name = name
+        self.safe_name = re.sub(r'\W', '_', name.lower())
         self.pkglist = pkglist
         self.conditional = None
         self.packages = dict()
@@ -61,7 +63,7 @@ class Group(object):
         self.missing = None
         self.srcpkgs = None
 
-        pkglist.groups[name] = self
+        pkglist.groups[self.safe_name] = self
 
     def get_solved_packages_recursive(self, arch):
         if not self.solved:
@@ -133,6 +135,7 @@ class Group(object):
                     logger.debug("{} adding packges from {}".format(self.name, b.name))
                     basepackages |= b.get_packages_recursive(arch)
                     basepackages_solved |= b.get_solved_packages_recursive(arch)
+                self.base = list(base)
             if without:
                 basepackages -= without
             toinstall |= basepackages
@@ -160,13 +163,14 @@ class Group(object):
                 for problem in problems:
                     # just ignore conflicts here
                     #if not ' conflicts with ' in str(problem):
-                    logger.error('%s.%s: %s', self.name, arch, problem)
-                    raise Exception('unresolvable')
+                    logger.error('unresolvable: %s.%s: %s', self.name, arch, problem)
                     #logger.warning(problem)
+                break
 
             trans = solver.transaction()
             if trans.isempty():
-                raise Exception('nothing to do')
+                logger.error('%s.%s: nothing to do', self.name, arch)
+                break
 
             for s in trans.newsolvables():
                 solved.setdefault(arch, set()).add(s.name)
@@ -178,7 +182,6 @@ class Group(object):
                 srcpkgs.add(src)
 
             if basepackages_solved:
-                self.base = list(base)
                 solved[arch] -= basepackages_solved
 
             if extra:
@@ -192,6 +195,9 @@ class Group(object):
                 common = set(solved[arch])
                 continue
             common &= solved[arch]
+
+        if common is None:
+            common = set()
 
         for arch in missing.keys():
             if missing_common is None:
@@ -303,16 +309,16 @@ class PkgListGen(ToolBase.ToolBase):
                 if status == self.default_support_status:
                     continue
                 for group in self.packages[name][status]:
-                    print group, name, status
+                    print name, status
 
     def _load_supportstatus(self):
         # XXX
         with open(os.path.join(self.input_dir, 'supportstatus.txt'), 'r') as fh:
             self._supportstatus = dict()
             for l in fh:
-                # group, pkg, status
+                # pkg, status
                 a = l.rstrip().split(' ')
-                if len(a) > 2:
+                if len(a) > 1:
                     self._supportstatus[a[1]] = a[2]
 
     # TODO: make per product
@@ -373,7 +379,7 @@ class PkgListGen(ToolBase.ToolBase):
         self._check_supplements()
         for name in self.groups:
             group = self.groups[name]
-            fn = '{}.group'.format(name)
+            fn = '{}.group'.format(group.name)
             if not group.solved:
                 logger.error('{} not solved'.format(name))
                 if os.path.exists(fn):
@@ -600,6 +606,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             p.wait()
             fh.close()
 
+
     def do_solve(self, subcmd, opts):
         """${cmd_name}: Solve groups
 
@@ -609,74 +616,27 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.tool.load_all_groups()
 
-        class G(object):
-            True
 
-        g = G()
-
-        for name in self.tool.groups.keys():
-            # FIXME: tolower, replace dashes?
-            setattr(g, name, self.tool.groups[name])
-
-        g.sle_minimal.solve()
-
-#        g.release_packages_sles.solve()
-#        g.release_packages_leanos.solve(base = g.sle_minimal)
-
-        g.sle_base.solve(base = g.sle_minimal)
-
-        g.x11_base.solve(base = g.sle_base)
-        g.x11_extended.solve(base = g.x11_base)
-        g.x11_wayland.solve(base = g.x11_base)
-
-        g.desktop_icewm.solve(base = g.x11_extended)
-
-        g.fonts.solve(base = g.sle_minimal)
-
-        g.fonts_initrd.solve(base = g.fonts)
-
-        g.bootloader.solve(base = g.sle_base)
-
-        g.python.solve(base = g.sle_base)
-
-        g.php7.solve(base = g.sle_base)
-
-        g.sle_databases.solve(base = g.sle_base)
-
-        g.sle_webserver.solve(base = g.sle_base)
-
-        g.admin_tools.solve(base = g.sle_base)
-
-        g.ima_applications.solve(base = g.sle_base)
-
-        g.sle_devtools.solve(base = g.sle_base)
-
-        g.gnome_minimal.solve(base = (g.x11_extended, g.php7))
-
-        g.sle_misc_applications.solve(base = g.gnome_minimal)
-        g.sle_misc_applications2.solve(base = g.sle_misc_applications, without = "targetcli")
-
-        g.java_base.solve(base = g.gnome_minimal)
-        g.java.solve(base = g.java_base)
-        g.java_ibm.solve(base = g.java_base)
-
-        g.documentation_minimal.solve(base = g.gnome_minimal)
-        g.documentation_sles_basic.solve(base = g.documentation_minimal)
-
-        g.sled.solve(base = g.gnome_minimal, without = 'sles-release')
-        g.release_packages_sled.solve(base = g.sled, without = 'sles-release')
-
-# NetworkManager unresolvable
-#        g.gnome_extended.solve(base = g.gnome_minimal)
-
-        g.qt_standard.solve(base = g.x11_extended)
-        g.qt_extended.solve(base = g.qt_standard)
+        self._solve()
 
 #        sle_base.dump()
 
         self.tool._collect_devel_packages()
         self.tool._collect_unsorted_packages()
         self.tool._write_all_groups()
+
+    def _solve(self):
+        """ imlement this"""
+
+        class G(object):
+            True
+
+        g = G()
+
+        for group in self.tool.groups.values():
+            setattr(g, group.safe_name, group)
+
+        raise Exception('implement me in subclass')
 
 if __name__ == "__main__":
     app = CommandLineInterface()
