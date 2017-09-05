@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 
+import io
 import os.path as opa
 import re
 import sys
@@ -32,7 +33,6 @@ from simplejson import JSONDecodeError
 
 import logging
 import requests
-from collections import namedtuple
 from pprint import pformat
 try:
     from xml.etree import cElementTree as ET
@@ -99,13 +99,13 @@ with open(opa.join(data_path, "data/repos.json"), 'r') as f:
 with open(opa.join(data_path, "data/apimap.json"), 'r') as f:
     API_MAP = json.load(f)
 
-MINIMALS = dict()
+MINIMALS = set()
 minimals = requests.get(
     'https://gitlab.suse.de/qa-maintenance/metadata/raw/master/packages-to-be-tested-on-minimal-systems')
 for line in minimals.text.split('\n'):
     if line.startswith('#') or line.startswith(' ') or len(line) == 0:
         continue
-    MINIMALS[line] = 1
+    MINIMALS.add(line)
 
 
 class Update(object):
@@ -174,15 +174,10 @@ class Update(object):
             './/{http://linux.duke.edu/metadata/repo}data[@type="updateinfo"]/{http://linux.duke.edu/metadata/repo}location')
         url = repo + cs.attrib['href']
 
-        # python 3 brings gzip.decompress, but with python 2 we need to store to
-        # temporary file to uncompress
+        # python 3 brings gzip.decompress, but with python 2 we need manual io.BytesIO
         repomd = requests.get(url).content
-        tfile = NamedTemporaryFile()
-        tfile.write(repomd)
-        tfile.flush()
-        with gzip.open(tfile.name, 'rb') as f:
-            repomd = f.read()
-        root = ET.fromstring(repomd)
+        with gzip.GzipFile(fileobj=io.BytesIO(repomd)) as f:
+            root = ET.fromstring(f.read())
         return root.find('.//id').text
 
     # take the first package name we find - often enough correct
