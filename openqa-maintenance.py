@@ -39,8 +39,9 @@ try:
 except ImportError:
     import cElementTree as ET
 
+from collections import namedtuple
 import gzip
-from tempfile import NamedTemporaryFile
+
 import osc.conf
 import osc.core
 from pprint import pprint
