@@ -35,7 +35,7 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         for group in self.tool.groups.values():
             setattr(g, group.safe_name, group)
 
-        g.sle_minimal.solve(ignore_recommended=True)
+        g.sle_minimal.solve(ignore_recommended=True, extra=['dummy-release'])
 
 #        g.release_packages_sles.solve()
 #        g.release_packages_leanos.solve(base = g.sle_minimal)
@@ -63,8 +63,6 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         g.fonts.solve(base = g.sle_minimal)
 
         g.fonts_initrd.solve(base = g.fonts)
-
-        g.bootloader.solve(base = g.sle_base)
 
         g.python.solve(base = g.sle_base)
 

@@ -244,9 +244,6 @@ class Group(object):
             if autodeps:
                 autodeps -= self.packages[arch]
 
-        if not packages and not autodeps:
-            return None
-
         name = self.name
         if arch != '*':
             name += '.' + arch
@@ -291,10 +288,10 @@ class Group(object):
         return root
 
     def dump(self):
-        for arch in sorted(self.architectures()):
+        archs = ('*') + ARCHITECTURES
+        for arch in archs:
             x = self.toxml(arch)
-            if x is not None:
-                print(ET.tostring(x, pretty_print = True))
+            print(ET.tostring(x, pretty_print = True))
 
 class PkgListGen(ToolBase.ToolBase):
 
@@ -365,6 +362,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _write_all_groups(self):
         self._check_supplements()
+        archs = ('*',) + ARCHITECTURES
         for name in self.groups:
             group = self.groups[name]
             fn = '{}.group'.format(group.name)
@@ -374,11 +372,10 @@ class PkgListGen(ToolBase.ToolBase):
                     os.unlink(fn)
                 continue
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
-                for arch in sorted(group.architectures()):
+                for arch in archs:
                     x = group.toxml(arch)
-                    if x is not None:
-                        #fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
-                        fh.write(ET.tostring(x, pretty_print = True))
+                    #fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
+                    fh.write(ET.tostring(x, pretty_print = True))
 
     def _parse_product(self, root):
         print(root.find('.//products/product/name').text)
