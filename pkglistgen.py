@@ -36,6 +36,7 @@ from pprint import pprint, pformat
 import os
 import subprocess
 import re
+import yaml
 
 import ToolBase
 
@@ -69,7 +70,9 @@ class Group(object):
         if not self.solved:
             raise Exception('group {} not solved'.format(self.name))
 
-        solved = self.solved_packages['*'] | self.solved_packages[arch]
+        solved = self.solved_packages.get('*', set())
+        if arch in self.solved_packages:
+            solved |= self.solved_packages[arch]
         logger.debug("{}.{} have {} packages".format(self.name, arch, len(solved)))
         if self.base:
             for b in self.base:
@@ -90,7 +93,7 @@ class Group(object):
 
         return packages
 
-    def solve(self, base = None, extra = None, without = None):
+    def solve(self, base = None, extra = None, without = None, ignore_recommended=False):
         """ base: list of base groups or None """
 
         if self.solved:
@@ -158,6 +161,9 @@ class Group(object):
 
 
             solver = pool.Solver()
+            if ignore_recommended:
+	        solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, 1)
+
             problems = solver.solve(jobs)
             if problems:
                 for problem in problems:
@@ -319,7 +325,7 @@ class PkgListGen(ToolBase.ToolBase):
                 # pkg, status
                 a = l.rstrip().split(' ')
                 if len(a) > 1:
-                    self._supportstatus[a[1]] = a[2]
+                    self._supportstatus[a[0]] = a[1]
 
     # TODO: make per product
     def supportstatus(self, package):
@@ -332,48 +338,30 @@ class PkgListGen(ToolBase.ToolBase):
             return self.default_support_status
 
     # XXX: move to group class. just here to check supportstatus
-    def _parse_group(self, root):
-        groupname = root.get('name')
+    def _parse_group(self, groupname, packages):
         group = Group(groupname, self)
-        for packagelist in root.findall(".//packagelist"):
-            rel = packagelist.get('relationship', 'requires')
+        for package in packages:
+            if isinstance(package, dict):
+                name = package.keys()[0]
+                for rel in package[name]:
+                    if rel == 'locks':
+                        group.locked.setdefault('*', set()).add(name)
+                    else:
+                        group.packages.setdefault(rel, set()).add(name)
+            else:
+                group.packages.setdefault('*', set()).add(package)
 
-            for node in packagelist.findall(".//package"):
-                name = node.get('name')
-                arch = node.get('arch', '*')
-                status = node.get('supportstatus', '')
-                logger.debug('group %s %s package %s, status %s', groupname, rel, name, status)
-                if rel in ('recommends', 'requires'):
-                    self.packages.setdefault(name, dict())
-                    self.packages[name].setdefault(status, set()).add(groupname)
-                    if len(self.packages[name]) > 1:
-                        logger.error("multiple supports states for {}: {}".format(name, pformat(self.packages[name])))
-                    group.packages.setdefault(arch, set()).add(name)
-                elif rel == 'locks':
-                    group.locked.setdefault(arch, set()).add(name)
-                else:
-                    raise Exception('{}: unhandled relation {}'.format(groupname, rel))
         return group
 
     def _load_group_file(self, fn):
         with open(fn, 'r') as fh:
             logger.debug("reading %s", fn)
-            root = ET.parse(fh).getroot()
-            g = self._parse_group(root)
-
-    def _load_groups_file(self, fn):
-        with open(fn, 'r') as fh:
-            logger.debug("reading %s", fn)
-            xml = '<groups>' + ''.join(fh.readlines()) + '</groups>'
-            root = ET.fromstring(xml)
-            for groupnode in root.findall("./group"):
-                g = self._parse_group(groupnode)
+            for groupname, group in yaml.safe_load(fh).items():
+                g = self._parse_group(groupname, group)
 
     def load_all_groups(self):
-        for fn in glob.glob(os.path.join(self.input_dir, '*.group.in')):
+        for fn in glob.glob(os.path.join(self.input_dir, 'group*.yml')):
             self._load_group_file(fn)
-        for fn in glob.glob(os.path.join(self.input_dir, '*.groups.in')):
-            self._load_groups_file(fn)
 
     def _write_all_groups(self):
         self._check_supplements()
@@ -529,7 +517,7 @@ class PkgListGen(ToolBase.ToolBase):
         g.solved_packages = packages
         g.solved = True
 
- 
+
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):

@@ -25,7 +25,7 @@ import sys
 
 class CommandLineInterface(pkglistgen.CommandLineInterface):
 
-        
+
     def _solve(self):
         class G(object):
             True
@@ -35,7 +35,7 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         for group in self.tool.groups.values():
             setattr(g, group.safe_name, group)
 
-        g.sle_minimal.solve()
+        g.sle_minimal.solve(ignore_recommended=True)
 
 #        g.release_packages_sles.solve()
 #        g.release_packages_leanos.solve(base = g.sle_minimal)
@@ -43,6 +43,10 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         g.sle_base.solve(base = g.sle_minimal)
 
         g.sle_base_32bit.solve(base = g.sle_minimal)
+
+        #g.ha.solve(base = g.sle_base)
+        #g.ha.dump()
+        #g.ha_geo.solve(base = g.ha)
 
         g.x11_base.solve(base = g.sle_base)
         g.x11_base_32bit.solve(base = g.x11_base)
@@ -110,12 +114,6 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
 
         g.qt_standard.solve(base = g.x11_extended)
         g.qt_extended.solve(base = g.qt_standard)
-
-        g.caasp_dvd_packages.solve(base = g.sle_minimal, without = 'sles-release')
-        g.caasp_dvd_packages2.solve(base = g.caasp_dvd_packages,
-                without = ('cracklib-dict-small', 'patterns-caasp-MicroOS'))
-
-        #g.caasp_dvd_packages2.dump()
 
         g.public_cloud.solve(base = g.python)
 
