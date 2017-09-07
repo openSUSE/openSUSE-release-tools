@@ -100,13 +100,11 @@ with open(opa.join(data_path, "data/repos.json"), 'r') as f:
 with open(opa.join(data_path, "data/apimap.json"), 'r') as f:
     API_MAP = json.load(f)
 
-MINIMALS = set()
-minimals = requests.get(
-    'https://gitlab.suse.de/qa-maintenance/metadata/raw/master/packages-to-be-tested-on-minimal-systems')
-for line in minimals.text.split('\n'):
-    if line.startswith('#') or line.startswith(' ') or len(line) == 0:
-        continue
-    MINIMALS.add(line)
+MINIMALS = {
+    x.rstrip()
+    for x in requests.get(
+        'https://gitlab.suse.de/qa-maintenance/metadata/raw/master/packages-to-be-tested-on-minimal-systems').iter_lines()
+    if len(x) > 0 and not(x.startswith("#") or x.startswith(' '))}
 
 
 class Update(object):
