@@ -278,7 +278,7 @@ class Leaper(ReviewBot.ReviewBot):
             elif origin.startswith('SUSE:SLE-15'):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
-                for v in ('15.0'):
+                for v in ('15.0',):
                     prj = 'openSUSE:Leap:{}:SLE-workarounds'.format(v)
                     if self.is_package_in_project( prj, target_package):
                         self.logger.info("found package in %s", prj)
