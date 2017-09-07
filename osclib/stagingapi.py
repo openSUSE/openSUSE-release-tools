@@ -79,6 +79,8 @@ class StagingAPI(object):
         self._ring_packages_for_links = None
         self._packages_staged = None
         self._package_metas = dict()
+        self._supersede = False
+        self._package_disabled = {}
 
         # If the project support rings, inititialize some variables.
         if self.crings:
@@ -660,6 +662,7 @@ class StagingAPI(object):
             target_requests = []
 
         # get all current pending requests
+        self._supersede = True
         requests = self.get_open_requests()
         requests_ignored = self.get_ignored_requests()
         # check if we can reduce it down by accepting some
@@ -672,6 +675,7 @@ class StagingAPI(object):
             stage_info, code = self.update_superseded_request(rq, target_requests)
             if stage_info:
                 yield (stage_info, code, rq)
+        self._supersede = False
 
     def get_prj_meta_revision(self, project):
         log = get_commitlog(self.apiurl, project, '_project', None, format='xml', meta=True)
@@ -828,14 +832,26 @@ class StagingAPI(object):
 
         self._remove_package_from_prj_pseudometa(project, package)
         subprj = self.map_ring_package_to_subject(project, package)
+        if self._supersede:
+            self.is_package_disabled(subprj, package, store=True)
         delete_package(self.apiurl, subprj, package, force=True, msg=msg)
 
         for sub_prj, sub_pkg in self.get_sub_packages(package):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            if self._supersede:
+                self.is_package_disabled(sub_prj, sub_pkg, store=True)
             if sub_prj != subprj:  # if different to the main package's prj
                 delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
 
         self.set_review(request_id, project, state=review, msg=msg)
+
+    def is_package_disabled(self, project, package, store=False):
+        meta = show_package_meta(self.apiurl, project, package)
+        meta = ET.fromstring(''.join(meta))
+        disabled = len(meta.xpath('build/disable[not(@*)]')) > 0
+        if store:
+            self._package_disabled['/'.join([project, package])] = disabled
+        return disabled
 
     def create_package_container(self, project, package, disable_build=False):
         """
@@ -1177,6 +1193,9 @@ class StagingAPI(object):
             else:
                 project = self.map_ring_package_to_subject(project, tar_pkg)
 
+            if self._supersede:
+                disable_build = self._package_disabled.get('/'.join([project, tar_pkg]), disable_build)
+
         self.create_package_container(project, tar_pkg,
                                       disable_build=disable_build)
 
@@ -1202,7 +1221,9 @@ class StagingAPI(object):
             # print project, tar_pkg, sub_pkg, sub_prj
             if sub_prj == project:  # skip inner-project links
                 continue
-            self.create_package_container(sub_prj, sub_pkg)
+            if self._supersede:
+                disable_build = self._package_disabled.get('/'.join([sub_prj, sub_pkg]), False)
+            self.create_package_container(sub_prj, sub_pkg, disable_build=disable_build)
 
             root = ET.Element('link', package=tar_pkg, project=project)
             url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
