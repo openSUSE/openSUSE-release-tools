@@ -833,19 +833,20 @@ class StagingAPI(object):
             return
 
         self._remove_package_from_prj_pseudometa(project, package)
-        subprj = self.map_ring_package_to_subject(project, package)
+        project = self.map_ring_package_to_subject(project, package)
         if self._supersede:
-            self.is_package_disabled(subprj, package, store=True)
+            self.is_package_disabled(project, package, store=True)
 
         for sub_prj, sub_pkg in self.get_sub_packages(package, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             if self._supersede:
                 self.is_package_disabled(sub_prj, sub_pkg, store=True)
-            if sub_prj != subprj:  # if different to the main package's prj
-                delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
+            # Skip inner-project links for letter staging
+            if not self.is_adi_project(project) and sub_prj == project: continue
+            delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
 
         # Delete the main package in the last
-        delete_package(self.apiurl, subprj, package, force=True, msg=msg)
+        delete_package(self.apiurl, project, package, force=True, msg=msg)
 
         self.set_review(request_id, project, state=review, msg=msg)
 
@@ -1237,9 +1238,8 @@ class StagingAPI(object):
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
-            # print project, tar_pkg, sub_pkg, sub_prj
-            if sub_prj == project:  # skip inner-project links
-                continue
+            # Skip inner-project links for letter staging
+            if not self.is_adi_project(project) and sub_prj == project: continue
             if self._supersede:
                 disable_build = self._package_disabled.get('/'.join([sub_prj, sub_pkg]), False)
             self.create_package_container(sub_prj, sub_pkg, disable_build=disable_build)
