@@ -836,7 +836,6 @@ class StagingAPI(object):
         subprj = self.map_ring_package_to_subject(project, package)
         if self._supersede:
             self.is_package_disabled(subprj, package, store=True)
-        delete_package(self.apiurl, subprj, package, force=True, msg=msg)
 
         for sub_prj, sub_pkg in self.get_sub_packages(package, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
@@ -844,6 +843,9 @@ class StagingAPI(object):
                 self.is_package_disabled(sub_prj, sub_pkg, store=True)
             if sub_prj != subprj:  # if different to the main package's prj
                 delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
+
+        # Delete the main package in the last
+        delete_package(self.apiurl, subprj, package, force=True, msg=msg)
 
         self.set_review(request_id, project, state=review, msg=msg)
 
