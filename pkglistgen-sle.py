@@ -36,6 +36,7 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
             setattr(g, group.safe_name, group)
 
         g.sle_minimal.solve(ignore_recommended=True)
+        g.sle_module_basesystem.solve(base=g.sle_minimal)
         g.leanos.solve(ignore_recommended=True)
         g.leanos.merge_solved_group(g.sle_minimal)
 
@@ -43,8 +44,7 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
 #        g.release_packages_leanos.solve(base = g.sle_minimal)
 
         g.sle_base.solve(base=g.sle_minimal)
-
-        g.sle_base_32bit.solve(base=g.sle_minimal)
+        g.sle_base_32bit.solve(base=g.sle_base)
 
         #g.ha.solve(base = g.sle_base)
         # g.ha.dump()
@@ -67,7 +67,7 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         g.fonts_initrd.solve(base=g.fonts)
 
         g.python.solve(base=g.sle_base)
-
+        g.perl.solve(base=g.sle_base)
         g.php7.solve(base=g.sle_base)
 
         g.sle_databases.solve(base=g.sle_base)
@@ -107,8 +107,8 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         g.documentation_sles_basic.solve(base=g.documentation_minimal)
         g.documentation_sled_basic.solve(base=g.documentation_minimal)
 
-        g.sled.solve(base=g.gnome_standard, without='sles-release')
-        g.release_packages_sled.solve(base=g.sled, without='sles-release')
+        #g.sled.solve(base=g.gnome_standard, without='sles-release')
+        #g.release_packages_sled.solve(base=g.sled, without='sles-release')
 
         g.gnome_extended.solve(base=g.gnome_standard)
 
@@ -116,21 +116,55 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         g.qt_extended.solve(base=g.qt_standard)
 
         #g.public_cloud.solve(base = g.python)
+	g.sles.solve()
 
-        g.sle_module_basesystem.solve(base=g.sle_minimal, without='sles-release')
+        g.sle_module_basesystem.solve(base=g.sle_minimal)
+        g.sle_module_basesystem.dump()
+        g.sle_module_basesystem.merge_solved_group(g.sle_minimal)
         g.sle_module_basesystem.merge_solved_group(g.sle_base)
         g.sle_module_basesystem.merge_solved_group(g.sle_base_32bit)
-
         g.sle_module_basesystem.merge_solved_group(g.dictionaries)
         g.sle_module_basesystem.merge_solved_group(g.fonts)
         g.sle_module_basesystem.merge_solved_group(g.fonts_initrd)
         g.sle_module_basesystem.merge_solved_group(g.x11_base)
         g.sle_module_basesystem.merge_solved_group(g.x11_base_32bit)
         g.sle_module_basesystem.merge_solved_group(g.x11_wayland)
-
         g.sle_module_basesystem.merge_solved_group(g.virtualization)
         g.sle_module_basesystem.merge_solved_group(g.java_base)
+	g.sles.merge_solved_group(g.sle_module_basesystem)
 
+        g.sle_module_scripting.solve(base=g.sle_module_basesystem)
+        g.sle_module_scripting.merge_solved_group(g.php7)
+        g.sle_module_scripting.merge_solved_group(g.perl)
+        g.sle_module_scripting.merge_solved_group(g.python, without=g.sle_module_basesystem)
+	g.sles.merge_solved_group(g.sle_module_scripting)
+
+	g.sle_module_desktop_applications.solve(base=g.x11_base)
+	g.sle_module_desktop_applications.merge_solved_group(g.gnome_minimal)
+	g.sle_module_desktop_applications.merge_solved_group(g.gnome_standard)
+	g.sle_module_desktop_applications.merge_solved_group(g.desktop_icewm)
+	g.sle_module_desktop_applications.merge_solved_group(g.desktop_base_apps)
+	g.sle_module_desktop_applications.merge_solved_group(g.x11_extended)
+	g.sle_module_desktop_applications.merge_solved_group(g.qt_standard)
+	g.sle_module_desktop_applications.merge_solved_group(g.qt_extended)
+	g.sle_module_desktop_applications.merge_solved_group(g.virtualization_gui)
+	g.sle_module_desktop_applications.merge_solved_group(g.java, without=g.sles)
+        g.sles.merge_solved_group(g.sle_module_desktop_applications)
+
+        g.sle_module_server_applications.solve(base=g.sle_module_desktop_applications)
+	g.sle_module_server_applications.merge_solved_group(g.admin_tools)
+	g.sle_module_server_applications.merge_solved_group(g.nvdimm)
+	g.sle_module_server_applications.merge_solved_group(g.ofed)
+	g.sle_module_server_applications.merge_solved_group(g.sle_databases)
+	g.sle_module_server_applications.merge_solved_group(g.sle_misc_applications)
+	g.sle_module_server_applications.merge_solved_group(g.sle_webserver)
+	g.sle_module_server_applications.merge_solved_group(g.ima_applications)
+	g.sle_module_server_applications.merge_solved_group(g.java_ibm)
+	g.sle_module_server_applications.merge_solved_group(g.tomcat8, without=g.sles)
+
+	g.sle_module_desktop_productivity.solve(base=g.sle_module_desktop_applications, without='sles-release')
+	g.sle_module_desktop_productivity.merge_solved_group(g.gnome_extended)
+	g.sle_module_desktop_productivity.merge_solved_group(g.desktop_extended_apps, without=g.sles)
 
 if __name__ == "__main__":
     app = CommandLineInterface()

@@ -58,12 +58,17 @@ class Group(object):
         self.pkglist = pkglist
         self.conditional = None
         self.packages = dict()
-        self.locked = dict()
+        self.locked = set()
         self.solved_packages = None
         self.solved = False
         self.base = None
-        self.missing = None
+        self.missing = dict()
+        for a in ('*', ) + ARCHITECTURES:
+                self.packages[a] = set()
+		self.missing[a] = set()
+
         self.srcpkgs = None
+        self.silents = set()
 
         pkglist.groups[self.safe_name] = self
 
@@ -71,13 +76,23 @@ class Group(object):
         if not self.solved:
             raise Exception('group {} not solved'.format(self.name))
 
-    def merge_solved_group(self, group):
+    def merge_solved_group(self, group, without=None):
         group._verify_solved()
         self._verify_solved()
 
-        for arch in group.solved_packages.keys():
+        for arch in ('*', ) + ARCHITECTURES:
+            self.missing[arch] = self.missing[arch] | group.missing[arch]
+	    packages = self.packages[arch]
+            packages = group.packages[arch] | packages
+            if without:
+               packages = packages - without.packages[arch]
+            self.packages[arch] = packages
+
             packages = self.solved_packages.get(arch, set())
-            packages = group.solved_packages[arch] | packages
+            packages = group.solved_packages.get(arch, set()) | packages
+	    if without:
+                packages = packages - without.solved_packages.get(arch, set())
+		packages = packages - without.packages[arch]
             self.solved_packages[arch] = packages
 
         # remove packages duplicated
@@ -85,12 +100,13 @@ class Group(object):
         for arch in ARCHITECTURES:
             arch_packages = self.solved_packages.get(arch, set())
             self.solved_packages[arch] = arch_packages - generic_packages
-        print self.solved_packages
+
+	self.silents.update(group.silents)
 
     def get_solved_packages_recursive(self, arch):
         self._verify_solved()
 
-        solved = self.solved_packages.get('*', set())
+        solved = set(self.solved_packages.get('*', set()))
         if arch in self.solved_packages:
             solved |= self.solved_packages[arch]
         logger.debug(
@@ -142,13 +158,17 @@ class Group(object):
 
         solved = dict()
         missing = dict()
+	for arch in ('*', ) + ARCHITECTURES:
+            missing[arch] = set()
+
         srcpkgs = set()
         for arch in ARCHITECTURES:
             pool = self.pkglist._prepare_pool(arch)
+	    #pool.set_debuglevel(10)
 
             jobs = []
             toinstall = set(self.packages['*'])
-            locked = set(self.locked.get('*', ()))
+            locked = set(self.locked)
             basepackages = set()
             basepackages_solved = set()
             logger.debug(
@@ -157,15 +177,14 @@ class Group(object):
                 logger.debug(
                     "{}: {} {} packages".format(self.name, arch, len(self.packages[arch])))
                 toinstall |= self.packages[arch]
-            if arch in self.locked:
-                locked |= self.locked[arch]
             if base:
                 for b in base:
+		    locked.update(b.locked)
                     logger.debug(
                         "{} adding packges from {}".format(self.name, b.name))
                     basepackages |= b.get_packages_recursive(arch)
-                    basepackages_solved |= b.get_solved_packages_recursive(
-                        arch)
+                    basepackages_solved |= b.get_solved_packages_recursive(arch)
+		    self.silents.update(b.silents)
                 self.base = list(base)
             if without:
                 basepackages -= without
@@ -177,7 +196,11 @@ class Group(object):
                 if sel.isempty():
                     logger.error(
                         '{}.{}: package {} not found'.format(self.name, arch, n))
-                    missing.setdefault(arch, set()).add(n)
+                    missing[arch].add(n)
+                    if str(n) in self.packages['*']:
+			self.packages['*'].remove(str(n))
+			for a in ARCHITECTURES:
+			   self.packages[a].add(n)
                 else:
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
@@ -211,8 +234,8 @@ class Group(object):
             for s in trans.newsolvables():
                 solved.setdefault(arch, set()).add(s.name)
                 reason, rule = solver.describe_decision(s)
-                #if rule:
-                #    print(s.name, reason, rule.info().problemstr())
+                if None:
+                   print(self.name, s.name, reason, rule.info().problemstr())
                 # don't ask me why, but that's how it seems to work
                 if s.lookup_void(solv.SOLVABLE_SOURCENAME):
                     src = s.name
@@ -295,7 +318,9 @@ class Group(object):
 
         if packages:
             for name in sorted(packages):
-                if arch in self.missing and name in self.missing[arch]:
+                if name in self.silents:
+                    continue
+                if name in (self.missing[arch] | self.missing['*']):
                     c = ET.Comment(' missing {} '.format(name))
                     packagelist.append(c)
                 else:
@@ -311,6 +336,8 @@ class Group(object):
             packagelist.append(c)
 
             for name in sorted(autodeps):
+                if name in self.silents:
+		    continue
                 status = self.pkglist.supportstatus(name)
                 if status:
                     p = ET.SubElement(packagelist, 'package', {
@@ -321,7 +348,8 @@ class Group(object):
         return root
 
     def dump(self):
-        archs = ('*',) + ARCHITECTURES
+	#pprint({'name': self.name, 'missing': self.missing, 'packages': self.packages, 'solved': self.solved_packages, 'silents': self.silents})
+	archs = ('*',) + ARCHITECTURES
         for arch in archs:
             x = self.toxml(arch)
             print(ET.tostring(x, pretty_print=True))
@@ -375,8 +403,11 @@ class PkgListGen(ToolBase.ToolBase):
             if isinstance(package, dict):
                 name = package.keys()[0]
                 for rel in package[name]:
-                    if rel == 'locks':
-                        group.locked.setdefault('*', set()).add(name)
+                    if rel == 'locked':
+                        group.locked.add(name)
+		    elif rel == 'silent':
+                        group.packages.setdefault('*', set()).add(name)
+			group.silents.add(name)
                     else:
                         group.packages.setdefault(rel, set()).add(name)
             else:
