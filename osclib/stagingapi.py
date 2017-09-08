@@ -260,7 +260,7 @@ class StagingAPI(object):
 
         return package_info
 
-    def get_filelist_for_package(self, pkgname, project, extension=None):
+    def get_filelist_for_package(self, pkgname, project, expand=None, extension=None):
         """
         Get a list of files inside a package container
         :param package: the base packagename to be linked to
@@ -272,6 +272,8 @@ class StagingAPI(object):
         query = {
             'extension': extension
         }
+        if expand:
+            query['expand'] = expand
 
         if extension:
             url = self.makeurl(['source', project, pkgname], query=query)
@@ -836,7 +838,7 @@ class StagingAPI(object):
             self.is_package_disabled(subprj, package, store=True)
         delete_package(self.apiurl, subprj, package, force=True, msg=msg)
 
-        for sub_prj, sub_pkg in self.get_sub_packages(package):
+        for sub_prj, sub_pkg in self.get_sub_packages(package, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             if self._supersede:
                 self.is_package_disabled(sub_prj, sub_pkg, store=True)
@@ -1111,27 +1113,42 @@ class StagingAPI(object):
 
         return project
 
-    def get_sub_packages(self, package, project=None):
+    def get_sub_packages(self, package, project):
         """
-        Returns a list of packages that need to be linked into rings
-        too. A package is actually a tuple of project and package name
+        Returns a list of packages that need to be linked to main package.
+        For adi package, check specfiles according to the main package.
         """
         ret = []
-        if not project:
+
+        # Started the logic. Note that, return empty tuple in case selecting
+        # non-ring package to a letter staging.
+        if self.is_adi_project(project):
+            if not self.item_exists(project, package):
+                return ret
+            # For adi package, do not trust the layout in the devel project, we
+            # must to guarantee the sub-pacakges are created according to the
+            # specfiles of main package. Therefore, main package must be
+            # created before through get_sub_packages().
+            filelist = self.get_filelist_for_package(pkgname=package, project=project, expand='1', extension='spec')
+            mainspec = "{}{}".format(package, '.spec')
+            if mainspec in filelist:
+                filelist.remove(mainspec)
+            for spec in filelist:
+                ret.append((project, spec[:-5]))
+        elif self.ring_packages.get(package):
             project = self.ring_packages.get(package)
-        if not project:
-            return ret
-        url = self.makeurl(['source', project, package],
-                           {'cmd': 'showlinked'})
 
-        # showlinked is a POST for rather bizzare reasons
-        f = http_POST(url)
-        root = ET.parse(f).getroot()
+            url = self.makeurl(['source', project, package],
+                               {'cmd': 'showlinked'})
 
-        for pkg in root.findall('package'):
-            # ensure sub-package is valid
-            if pkg.get('project') in self.rings and pkg.get('name') != package:
-                ret.append((pkg.get('project'), pkg.get('name')))
+            # showlinked is a POST for rather bizzare reasons
+            f = http_POST(url)
+            root = ET.parse(f).getroot()
+
+            for pkg in root.findall('package'):
+                # ensure sub-package is valid in rings
+                if pkg.get('project') in self.rings and pkg.get('name') != package:
+                    ret.append((pkg.get('project'), pkg.get('name')))
 
         return ret
 
@@ -1158,7 +1175,7 @@ class StagingAPI(object):
         project = self.map_ring_package_to_subject(project, tar_pkg)
         self.create_and_wipe_package(project, tar_pkg)
 
-        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg):
+        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             self.create_and_wipe_package(sub_prj, sub_pkg)
 
@@ -1216,7 +1233,7 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
 
-        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg):
+        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             # print project, tar_pkg, sub_pkg, sub_prj
             if sub_prj == project:  # skip inner-project links
