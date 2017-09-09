@@ -45,7 +45,6 @@ from osclib.memoize import CACHEDIR
 
 logger = logging.getLogger()
 
-FACTORY = "SUSE:SLE-15:GA"
 ARCHITECTURES = ('x86_64', 'ppc64le', 's390x', 'aarch64')
 APIURL = 'https://api.suse.de/public/'
 
@@ -64,8 +63,8 @@ class Group(object):
         self.base = None
         self.missing = dict()
         for a in ('*', ) + ARCHITECTURES:
-                self.packages[a] = set()
-		self.missing[a] = set()
+            self.packages[a] = set()
+            self.missing[a] = set()
 
         self.srcpkgs = None
         self.silents = set()
@@ -82,31 +81,36 @@ class Group(object):
 
         for arch in ('*', ) + ARCHITECTURES:
             self.missing[arch] = self.missing[arch] | group.missing[arch]
-	    packages = self.packages[arch]
+            packages = self.packages[arch]
             packages = group.packages[arch] | packages
-            if without:
-               packages = packages - without.packages[arch]
             self.packages[arch] = packages
 
-            packages = self.solved_packages.get(arch, set())
-            packages = group.solved_packages.get(arch, set()) | packages
-	    if without:
-                packages = packages - without.solved_packages.get(arch, set())
-		packages = packages - without.packages[arch]
+            packages = self.solved_packages[arch]
+            packages = group.solved_packages[arch] | packages
             self.solved_packages[arch] = packages
 
         # remove packages duplicated
-        generic_packages = self.solved_packages.get('*', set())
+        generic_packages = self.solved_packages['*']
         for arch in ARCHITECTURES:
-            arch_packages = self.solved_packages.get(arch, set())
+            arch_packages = self.solved_packages[arch]
             self.solved_packages[arch] = arch_packages - generic_packages
 
-	self.silents.update(group.silents)
+        self.silents.update(group.silents)
+
+    # do not repeat packages
+    def ignore(self, without):
+        for arch in ('*', ) + ARCHITECTURES:
+            self.packages[arch] -= without.packages[arch]
+            self.packages[arch] -= without.packages['*']
+            self.solved_packages[arch] -= without.packages[arch]
+            self.solved_packages[arch] -= without.solved_packages[arch]
+            self.solved_packages[arch] -= without.packages['*']
+            self.solved_packages[arch] -= without.solved_packages['*']
 
     def get_solved_packages_recursive(self, arch):
         self._verify_solved()
 
-        solved = set(self.solved_packages.get('*', set()))
+        solved = set(self.solved_packages['*'])
         if arch in self.solved_packages:
             solved |= self.solved_packages[arch]
         logger.debug(
@@ -158,33 +162,29 @@ class Group(object):
 
         solved = dict()
         missing = dict()
-	for arch in ('*', ) + ARCHITECTURES:
+        for arch in ('*', ) + ARCHITECTURES:
             missing[arch] = set()
+            solved[arch] = set()
 
         srcpkgs = set()
         for arch in ARCHITECTURES:
             pool = self.pkglist._prepare_pool(arch)
-	    #pool.set_debuglevel(10)
+            # pool.set_debuglevel(10)
 
             jobs = []
-            toinstall = set(self.packages['*'])
+            toinstall = self.packages['*'] | self.packages[arch]
             locked = set(self.locked)
             basepackages = set()
             basepackages_solved = set()
-            logger.debug(
-                "{}: {} common packages".format(self.name, len(toinstall)))
-            if arch in self.packages:
-                logger.debug(
-                    "{}: {} {} packages".format(self.name, arch, len(self.packages[arch])))
-                toinstall |= self.packages[arch]
             if base:
                 for b in base:
-		    locked.update(b.locked)
+                    locked.update(b.locked)
                     logger.debug(
                         "{} adding packges from {}".format(self.name, b.name))
                     basepackages |= b.get_packages_recursive(arch)
-                    basepackages_solved |= b.get_solved_packages_recursive(arch)
-		    self.silents.update(b.silents)
+                    basepackages_solved |= b.get_solved_packages_recursive(
+                        arch)
+                    self.silents.update(b.silents)
                 self.base = list(base)
             if without:
                 basepackages -= without
@@ -197,10 +197,10 @@ class Group(object):
                     logger.error(
                         '{}.{}: package {} not found'.format(self.name, arch, n))
                     missing[arch].add(n)
-                    if str(n) in self.packages['*']:
-			self.packages['*'].remove(str(n))
-			for a in ARCHITECTURES:
-			   self.packages[a].add(n)
+                    if n in self.packages['*']:
+                        self.packages['*'].remove(n)
+                        for a in ARCHITECTURES:
+                            self.packages[a].add(n)
                 else:
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
@@ -224,18 +224,18 @@ class Group(object):
                     logger.error(
                         'unresolvable: %s.%s: %s', self.name, arch, problem)
                     # logger.warning(problem)
-                break
+                continue
 
             trans = solver.transaction()
             if trans.isempty():
                 logger.error('%s.%s: nothing to do', self.name, arch)
-                break
+                continue
 
             for s in trans.newsolvables():
-                solved.setdefault(arch, set()).add(s.name)
+                solved[arch].add(s.name)
                 reason, rule = solver.describe_decision(s)
                 if None:
-                   print(self.name, s.name, reason, rule.info().problemstr())
+                    print(self.name, s.name, reason, rule.info().problemstr())
                 # don't ask me why, but that's how it seems to work
                 if s.lookup_void(solv.SOLVABLE_SOURCENAME):
                     src = s.name
@@ -252,7 +252,7 @@ class Group(object):
         common = None
         missing_common = None
         # compute common packages across all architectures
-        for arch in solved.keys():
+        for arch in ARCHITECTURES:
             if common is None:
                 common = set(solved[arch])
                 continue
@@ -287,6 +287,18 @@ class Group(object):
     def architectures(self):
         return self.solved_packages.keys()
 
+    def merge_missing(self):
+        all_arch_missing = None
+        for arch in ARCHITECTURES:
+            if all_arch_missing is None:
+                all_arch_missing = set(self.missing[arch])
+            all_arch_missing &= self.missing[arch]
+        for arch in ARCHITECTURES:
+            self.missing[arch] -= all_arch_missing
+	    self.packages[arch] -= all_arch_missing
+        self.packages['*'] |= all_arch_missing
+	self.missing['*'] |= all_arch_missing
+
     def toxml(self, arch):
 
         packages = None
@@ -309,12 +321,15 @@ class Group(object):
         root.append(c)
 
         if self.base:
-            c = ET.Comment(' based on {} '.format(', '.join([b.name for b in self.base])))
+            c = ET.Comment(' based on {} '.format(
+                ', '.join([b.name for b in self.base])))
             root.append(c)
 
         if arch != '*':
-            cond = ET.SubElement(root, 'conditional', {'name': 'only_{}'.format(arch)})
-        packagelist = ET.SubElement(root, 'packagelist', {'relationship': 'recommends'})
+            cond = ET.SubElement(root, 'conditional', {
+                                 'name': 'only_{}'.format(arch)})
+        packagelist = ET.SubElement(
+            root, 'packagelist', {'relationship': 'recommends'})
 
         if packages:
             for name in sorted(packages):
@@ -337,7 +352,7 @@ class Group(object):
 
             for name in sorted(autodeps):
                 if name in self.silents:
-		    continue
+                    continue
                 status = self.pkglist.supportstatus(name)
                 if status:
                     p = ET.SubElement(packagelist, 'package', {
@@ -348,8 +363,9 @@ class Group(object):
         return root
 
     def dump(self):
-	#pprint({'name': self.name, 'missing': self.missing, 'packages': self.packages, 'solved': self.solved_packages, 'silents': self.silents})
-	archs = ('*',) + ARCHITECTURES
+        pprint({'name': self.name, 'missing': self.missing, 'packages': self.packages,
+                'solved': self.solved_packages, 'silents': self.silents})
+        archs = ('*',) + ARCHITECTURES
         for arch in archs:
             x = self.toxml(arch)
             print(ET.tostring(x, pretty_print=True))
@@ -357,9 +373,12 @@ class Group(object):
 
 class PkgListGen(ToolBase.ToolBase):
 
-    def __init__(self, project):
+    def __init__(self, repostr):
         ToolBase.ToolBase.__init__(self)
-        self.project = project
+        self.repos = []
+        for repo in repostr.split(','):
+            project, reponame = repo.split('/')
+            self.repos.append({'project': project, 'repo': reponame})
         # package -> supportatus
         self.packages = dict()
         self.default_support_status = 'l3'
@@ -405,9 +424,9 @@ class PkgListGen(ToolBase.ToolBase):
                 for rel in package[name]:
                     if rel == 'locked':
                         group.locked.add(name)
-		    elif rel == 'silent':
+                    elif rel == 'silent':
                         group.packages.setdefault('*', set()).add(name)
-			group.silents.add(name)
+                        group.silents.add(name)
                     else:
                         group.packages.setdefault(rel, set()).add(name)
             else:
@@ -430,6 +449,7 @@ class PkgListGen(ToolBase.ToolBase):
         archs = ('*',) + ARCHITECTURES
         for name in self.groups:
             group = self.groups[name]
+            group.merge_missing()
             fn = '{}.group'.format(group.name)
             if not group.solved:
                 logger.error('{} not solved'.format(name))
@@ -491,11 +511,16 @@ class PkgListGen(ToolBase.ToolBase):
         pool = solv.Pool()
         pool.setarch(arch)
 
-        # XXX
-        repo = pool.add_repo(FACTORY)
-        r = repo.add_solv(os.path.join(CACHEDIR, 'repo-{}-standard-{}.solv'.format(FACTORY, arch)))
-        if not r:
-            raise Exception("failed to add repo. Need to run update first?")
+        for prp in self.repos:
+            project = prp['project']
+            reponame = prp['repo']
+            repo = pool.add_repo(project)
+            s = os.path.join(
+                CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
+            r = repo.add_solv(s)
+            if not r:
+                raise Exception(
+                    "failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
 
         pool.addfileprovides()
         pool.createwhatprovides()
@@ -510,6 +535,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         develpkgs = dict()
         for arch in ARCHITECTURES:
+            develpkgs[arch] = set()
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             for s in pool.solvables_iter():
@@ -521,7 +547,7 @@ class PkgListGen(ToolBase.ToolBase):
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
 
                     if src in srcpkgs:
-                        develpkgs.setdefault(arch, set()).add(s.name)
+                        develpkgs[arch].add(s.name)
 
         common = None
         # compute common packages across all architectures
@@ -557,8 +583,7 @@ class PkgListGen(ToolBase.ToolBase):
             for g in self.groups.values():
                 if g.solved:
                     for a in ('*', arch):
-                        if a in g.solved_packages:
-                            p -= g.solved_packages[a]
+                        p -= g.solved_packages[a]
             packages[arch] = p
 
         common = None
@@ -586,10 +611,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
 
     def get_optparser(self):
+        FACTORY_REPOS = "SUSE:SLE-15:GA/standard"
         parser = ToolBase.CommandLineInterface.get_optparser(self)
-        parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
-                          help='project to process (default: %s)' % FACTORY,
-                          default=FACTORY)
+        parser.add_option('-r', '--repositories', dest='repostr', metavar='REPOS',
+                          help='repositories to process (comma seperated list - default: %s)' % FACTORY_REPOS,
+                          default=FACTORY_REPOS)
         parser.add_option('-i', '--input-dir', dest='input_dir', metavar='DIR',
                           help='input directory', default='.')
         parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
@@ -597,7 +623,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         return parser
 
     def setup_tool(self):
-        tool = PkgListGen(self.options.project)
+        tool = PkgListGen(self.options.repostr)
         tool.input_dir = self.options.input_dir
         tool.output_dir = self.options.output_dir
         return tool
@@ -641,20 +667,27 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        bs_mirrorfull = os.path.join(os.path.dirname(__file__), 'bs_mirrorfull')
-        repo = 'standard'
-        project = FACTORY
-        for arch in ARCHITECTURES:
-            d = os.path.join(CACHEDIR, 'repo-{}-{}-{}'.format(project, repo, arch))
-            logger.debug('updating %s', d)
-            subprocess.call(
-                [bs_mirrorfull, '{}/build/{}/{}/{}'.format(APIURL, project, repo, arch), d])
-            files = [os.path.join(d, f) for f in os.listdir(d) if f.endswith('.rpm')]
-            fh = open(d + '.solv', 'w')
-            p = subprocess.Popen(['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
-            p.communicate('\0'.join(files))
-            p.wait()
-            fh.close()
+        # only there to parse the repos
+        tool = PkgListGen(self.options.repostr)
+        bs_mirrorfull = os.path.join(
+            os.path.dirname(__file__), 'bs_mirrorfull')
+        for prp in tool.repos:
+            project = prp['project']
+            repo = prp['repo']
+            for arch in ARCHITECTURES:
+                d = os.path.join(
+                    CACHEDIR, 'repo-{}-{}-{}'.format(project, repo, arch))
+                logger.debug('updating %s', d)
+                subprocess.call(
+                    [bs_mirrorfull, '{}/build/{}/{}/{}'.format(APIURL, project, repo, arch), d])
+                files = [os.path.join(d, f)
+                         for f in os.listdir(d) if f.endswith('.rpm')]
+                fh = open(d + '.solv', 'w')
+                p = subprocess.Popen(
+                    ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
+                p.communicate('\0'.join(files))
+                p.wait()
+                fh.close()
 
     def do_solve(self, subcmd, opts):
         """${cmd_name}: Solve groups
@@ -685,6 +718,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             setattr(g, group.safe_name, group)
 
         raise Exception('implement me in subclass')
+
 
 if __name__ == "__main__":
     app = CommandLineInterface()
