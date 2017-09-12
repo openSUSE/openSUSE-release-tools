@@ -60,10 +60,9 @@ class Group(object):
         self.locked = set()
         self.solved_packages = None
         self.solved = False
-        self.base = None
         self.missing = dict()
-        for a in ('*', ) + ARCHITECTURES:
-            self.packages[a] = set()
+        for a in ARCHITECTURES:
+            self.packages[a] = dict()
             self.missing[a] = set()
 
         self.srcpkgs = None
@@ -71,30 +70,39 @@ class Group(object):
 
         pkglist.groups[self.safe_name] = self
 
+    def parse_yml(self, packages):
+        # package less group is a rare exception
+        if packages is None:
+             return
+
+        commons = set()
+        for package in packages:
+            if not isinstance(package, dict):
+                commons.add(package)
+                continue
+            name = package.keys()[0]
+            for rel in package[name]:
+                if rel == 'locked':
+                    self.locked.add(name)
+                elif rel == 'silent':
+                    commons.add(name)
+                    self.silents.add(name)
+                else:
+                    self.packages[rel][name] = self.name
+
+        for package in commons:
+            for a in ARCHITECTURES:
+                self.packages[a][package] = self.name
+
     def _verify_solved(self):
         if not self.solved:
             raise Exception('group {} not solved'.format(self.name))
 
-    def merge_solved_group(self, group, without=None):
-        group._verify_solved()
-        self._verify_solved()
-
-        for arch in ('*', ) + ARCHITECTURES:
-            self.missing[arch] = self.missing[arch] | group.missing[arch]
-            packages = self.packages[arch]
-            packages = group.packages[arch] | packages
-            self.packages[arch] = packages
-
-            packages = self.solved_packages[arch]
-            packages = group.solved_packages[arch] | packages
-            self.solved_packages[arch] = packages
-
-        # remove packages duplicated
-        generic_packages = self.solved_packages['*']
+    def inherit(self, group):
         for arch in ARCHITECTURES:
-            arch_packages = self.solved_packages[arch]
-            self.solved_packages[arch] = arch_packages - generic_packages
+            self.packages[arch].update(group.packages[arch])
 
+        self.locked.update(group.locked)
         self.silents.update(group.silents)
 
     # do not repeat packages
@@ -107,156 +115,90 @@ class Group(object):
             self.solved_packages[arch] -= without.packages['*']
             self.solved_packages[arch] -= without.solved_packages['*']
 
-    def get_solved_packages_recursive(self, arch):
-        self._verify_solved()
-
-        solved = set(self.solved_packages['*'])
-        if arch in self.solved_packages:
-            solved |= self.solved_packages[arch]
-        logger.debug(
-            "{}.{} have {} packages".format(self.name, arch, len(solved)))
-        if self.base:
-            for b in self.base:
-                solved |= b.get_solved_packages_recursive(arch)
-
-        return solved
-
-    def get_packages_recursive(self, arch):
-        packages = set()
-        if '*' in self.packages:
-            packages.update(self.packages['*'])
-        if arch in self.packages:
-            packages.update(self.packages[arch])
-        logger.debug(
-            "{}.{} have {} packages".format(self.name, arch, len(packages)))
-        if self.base:
-            for b in self.base:
-                packages |= b.get_packages_recursive(arch)
-
-        return packages
-
-    def solve(self, base=None, extra=None, without=None, ignore_recommended=True):
+    def solve(self, ignore_recommended=True):
         """ base: list of base groups or None """
 
         if self.solved:
             return
 
-        if isinstance(base, Group):
-            base = [base]
-        if not (base is None or isinstance(base, list) or isinstance(base, tuple)):
-            raise Exception("base must be list but is {}".format(type(base)))
-        if extra:
-            if isinstance(extra, str):
-                extra = set((extra))
-            elif not (isinstance(extra, list) or isinstance(extra, tuple)):
-                raise Exception(
-                    "extra must be list but is {}".format(type(extra)))
-            extra = set(extra)
-        if without:
-            if isinstance(without, str):
-                without = set([without])
-            elif not (isinstance(without, list) or isinstance(without, tuple)):
-                raise Exception(
-                    "without must be list but is {}".format(type(without)))
-            without = set(without)
+        #self.dump()
 
         solved = dict()
         missing = dict()
-        for arch in ('*', ) + ARCHITECTURES:
+        for arch in ARCHITECTURES:
             missing[arch] = set()
-            solved[arch] = set()
+            solved[arch] = dict()
 
         srcpkgs = set()
         for arch in ARCHITECTURES:
             pool = self.pkglist._prepare_pool(arch)
-            # pool.set_debuglevel(10)
+            #pool.set_debuglevel(10)
 
-            jobs = []
-            toinstall = self.packages['*'] | self.packages[arch]
-            locked = set(self.locked)
-            basepackages = set()
-            basepackages_solved = set()
-            if base:
-                for b in base:
-                    locked.update(b.locked)
-                    logger.debug(
-                        "{} adding packges from {}".format(self.name, b.name))
-                    basepackages |= b.get_packages_recursive(arch)
-                    basepackages_solved |= b.get_solved_packages_recursive(
-                        arch)
-                    self.silents.update(b.silents)
-                self.base = list(base)
-            if without:
-                basepackages -= without
-            toinstall |= basepackages
-            if extra:
-                toinstall.update(extra)
-            for n in toinstall:
+            for n in sorted(self.packages[arch].keys()):
+                jobs = []
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
-                    logger.error(
-                        '{}.{}: package {} not found'.format(self.name, arch, n))
+                    logger.error('{}.{}: package {} not found'.format(self.name, arch, n))
                     missing[arch].add(n)
-                    if n in self.packages['*']:
-                        self.packages['*'].remove(n)
-                        for a in ARCHITECTURES:
-                            self.packages[a].add(n)
+                    continue
                 else:
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
-            for n in locked:
-                sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
-                if sel.isempty():
-                    logger.warn(
-                        '{}.{}: locked package {} not found'.format(self.name, arch, n))
-                else:
-                    jobs += sel.jobs(solv.Job.SOLVER_LOCK)
+                for l in self.locked:
+                    sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
+                    if sel.isempty():
+                        logger.warn('{}.{}: locked package {} not found'.format(self.name, arch, l))
+                    else:
+                        jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
-            solver = pool.Solver()
-            if ignore_recommended:
-                solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, 1)
+                for s in self.silents:
+                    sel = pool.select(str(s), solv.Selection.SELECTION_NAME)
+                    if sel.isempty():
+                        logger.warn('{}.{}: silent package {} not found'.format(self.name, arch, s))
+                    else:
+                        jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
-            problems = solver.solve(jobs)
-            if problems:
-                for problem in problems:
-                    # just ignore conflicts here
-                    # if not ' conflicts with ' in str(problem):
-                    logger.error(
-                        'unresolvable: %s.%s: %s', self.name, arch, problem)
-                    # logger.warning(problem)
-                continue
+                solver = pool.Solver()
+                if ignore_recommended:
+                    solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, 1)
 
-            trans = solver.transaction()
-            if trans.isempty():
-                logger.error('%s.%s: nothing to do', self.name, arch)
-                continue
+                problems = solver.solve(jobs)
+                if problems:
+                    for problem in problems:
+                        # just ignore conflicts here
+                        # if not ' conflicts with ' in str(problem):
+                        logger.error('unresolvable: %s.%s: %s', self.name, arch, problem)
+                        missing[arch].add(n)
+                        # logger.warning(problem)
+                    continue
 
-            for s in trans.newsolvables():
-                solved[arch].add(s.name)
-                reason, rule = solver.describe_decision(s)
-                if None:
-                    print(self.name, s.name, reason, rule.info().problemstr())
-                # don't ask me why, but that's how it seems to work
-                if s.lookup_void(solv.SOLVABLE_SOURCENAME):
-                    src = s.name
-                else:
-                    src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
-                srcpkgs.add(src)
+                trans = solver.transaction()
+                if trans.isempty():
+                    logger.error('%s.%s: nothing to do', self.name, arch)
+                    continue
 
-            if basepackages_solved:
-                solved[arch] -= basepackages_solved
+                for s in trans.newsolvables():
+                    solved[arch].setdefault(s.name, self.packages[arch][n] + ':' + n)
+                    reason, rule = solver.describe_decision(s)
+                    if None:
+                        print(self.name, s.name, reason, rule.info().problemstr())
+                    # don't ask me why, but that's how it seems to work
+                    if s.lookup_void(solv.SOLVABLE_SOURCENAME):
+                        src = s.name
+                    else:
+                        src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
+                    srcpkgs.add(src)
 
-            if extra:
-                solved[arch] -= extra
+        #pprint(solved)
 
         common = None
         missing_common = None
         # compute common packages across all architectures
         for arch in ARCHITECTURES:
             if common is None:
-                common = set(solved[arch])
+                common = set(solved[arch].keys())
                 continue
-            common &= solved[arch]
+            common &= set(solved[arch].keys())
 
         if common is None:
             common = set()
@@ -268,8 +210,10 @@ class Group(object):
             missing_common &= missing[arch]
 
         # reduce arch specific set by common ones
-        for arch in solved.keys():
-            solved[arch] -= common
+        solved['*'] = dict()
+        for arch in ARCHITECTURES:
+            for p in common:
+                solved['*'][p] = solved[arch].pop(p)
 
         for arch in missing.keys():
             missing[arch] -= missing_common
@@ -278,16 +222,14 @@ class Group(object):
         if missing_common:
             self.missing['*'] = missing_common
 
+        pprint(solved)
         self.solved_packages = solved
-        self.solved_packages['*'] = common
 
         self.solved = True
         self.srcpkgs = srcpkgs
 
-    def architectures(self):
-        return self.solved_packages.keys()
-
     def merge_missing(self):
+        return
         all_arch_missing = None
         for arch in ARCHITECTURES:
             if all_arch_missing is None:
@@ -297,20 +239,11 @@ class Group(object):
             self.missing[arch] -= all_arch_missing
 	    self.packages[arch] -= all_arch_missing
         self.packages['*'] |= all_arch_missing
-	self.missing['*'] |= all_arch_missing
+        self.missing['*'] |= all_arch_missing
 
     def toxml(self, arch):
-
-        packages = None
-        autodeps = None
-
-        if arch in self.solved_packages:
-            autodeps = self.solved_packages[arch]
-
-        if arch in self.packages:
-            packages = self.packages[arch]
-            if autodeps:
-                autodeps -= self.packages[arch]
+        packages = self.solved_packages[arch]
+        print packages
 
         name = self.name
         if arch != '*':
@@ -320,11 +253,6 @@ class Group(object):
         c = ET.Comment(' ### AUTOMATICALLY GENERATED, DO NOT EDIT ### ')
         root.append(c)
 
-        if self.base:
-            c = ET.Comment(' based on {} '.format(
-                ', '.join([b.name for b in self.base])))
-            root.append(c)
-
         if arch != '*':
             cond = ET.SubElement(root, 'conditional', {
                                  'name': 'only_{}'.format(arch)})
@@ -332,7 +260,7 @@ class Group(object):
             root, 'packagelist', {'relationship': 'recommends'})
 
         if packages:
-            for name in sorted(packages):
+            for name in sorted(set(packages.keys()) | self.missing[arch]):
                 if name in self.silents:
                     continue
                 if name in (self.missing[arch] | self.missing['*']):
@@ -340,31 +268,18 @@ class Group(object):
                     packagelist.append(c)
                 else:
                     status = self.pkglist.supportstatus(name)
-                    if status:
-                        p = ET.SubElement(packagelist, 'package', {
-                            'name': name,
-                            'supportstatus': status
-                        })
-
-        if autodeps:
-            c = ET.Comment(' automatic dependencies ')
-            packagelist.append(c)
-
-            for name in sorted(autodeps):
-                if name in self.silents:
-                    continue
-                status = self.pkglist.supportstatus(name)
-                if status:
                     p = ET.SubElement(packagelist, 'package', {
                         'name': name,
-                        'supportstatus': self.pkglist.supportstatus(name)
-                    })
+                        'supportstatus': status})
+                    c = ET.Comment(' reason: {} '.format(packages[name]))
+                    packagelist.append(c)
 
         return root
 
     def dump(self):
         pprint({'name': self.name, 'missing': self.missing, 'packages': self.packages,
                 'solved': self.solved_packages, 'silents': self.silents})
+        return
         archs = ('*',) + ARCHITECTURES
         for arch in archs:
             x = self.toxml(arch)
@@ -415,30 +330,12 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             return self.default_support_status
 
-    # XXX: move to group class. just here to check supportstatus
-    def _parse_group(self, groupname, packages):
-        group = Group(groupname, self)
-        for package in packages:
-            if isinstance(package, dict):
-                name = package.keys()[0]
-                for rel in package[name]:
-                    if rel == 'locked':
-                        group.locked.add(name)
-                    elif rel == 'silent':
-                        group.packages.setdefault('*', set()).add(name)
-                        group.silents.add(name)
-                    else:
-                        group.packages.setdefault(rel, set()).add(name)
-            else:
-                group.packages.setdefault('*', set()).add(package)
-
-        return group
-
     def _load_group_file(self, fn):
         with open(fn, 'r') as fh:
             logger.debug("reading %s", fn)
             for groupname, group in yaml.safe_load(fh).items():
-                g = self._parse_group(groupname, group)
+                g = Group(groupname, self)
+                g.parse_yml(group)
 
     def load_all_groups(self):
         for fn in glob.glob(os.path.join(self.input_dir, 'group*.yml')):
@@ -459,8 +356,10 @@ class PkgListGen(ToolBase.ToolBase):
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 for arch in archs:
                     x = group.toxml(arch)
+                    x = ET.tostring(x, pretty_print=True)
+                    x = re.sub('\s*<!-- reason:', ' <!-- reason:', x)
                     # fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
-                    fh.write(ET.tostring(x, pretty_print=True))
+                    fh.write(x)
 
     def _parse_product(self, root):
         print(root.find('.//products/product/name').text)
@@ -528,6 +427,7 @@ class PkgListGen(ToolBase.ToolBase):
         return pool
 
     def _collect_devel_packages(self):
+        return
         srcpkgs = set()
         for g in self.groups.values():
             if g.srcpkgs:
@@ -570,7 +470,7 @@ class PkgListGen(ToolBase.ToolBase):
         g.solved = True
 
     def _collect_unsorted_packages(self):
-
+        return
         packages = dict()
         for arch in ARCHITECTURES:
             pool = self._prepare_pool(arch)
