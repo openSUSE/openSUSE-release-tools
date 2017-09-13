@@ -108,20 +108,16 @@ class Group(object):
     # do not repeat packages
     def ignore(self, without):
         for arch in ('*', ) + ARCHITECTURES:
-            self.packages[arch] -= without.packages[arch]
-            self.packages[arch] -= without.packages['*']
-            self.solved_packages[arch] -= without.packages[arch]
-            self.solved_packages[arch] -= without.solved_packages[arch]
-            self.solved_packages[arch] -= without.packages['*']
-            self.solved_packages[arch] -= without.solved_packages['*']
+	    s = set(without.solved_packages[arch].keys()) 
+            s |= set(without.solved_packages['*'].keys())
+            for p in s:
+                self.solved_packages[arch].pop(p, None)
 
     def solve(self, ignore_recommended=True):
         """ base: list of base groups or None """
 
         if self.solved:
             return
-
-        #self.dump()
 
         solved = dict()
         missing = dict()
@@ -189,8 +185,6 @@ class Group(object):
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
                     srcpkgs.add(src)
 
-        #pprint(solved)
-
         common = None
         missing_common = None
         # compute common packages across all architectures
@@ -222,11 +216,26 @@ class Group(object):
         if missing_common:
             self.missing['*'] = missing_common
 
-        pprint(solved)
         self.solved_packages = solved
 
         self.solved = True
         self.srcpkgs = srcpkgs
+        develpkgs = set()
+        for arch in ARCHITECTURES:
+	    pool = self.pkglist._prepare_pool(arch)
+            sel = pool.Selection()
+            for s in pool.solvables_iter():
+                if s.name.endswith('-devel'):
+                    # don't ask me why, but that's how it seems to work
+                    if s.lookup_void(solv.SOLVABLE_SOURCENAME):
+                        src = s.name
+                    else:
+                        src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
+
+                    if src in srcpkgs:
+                        develpkgs.add(s.name)
+	for p in sorted(develpkgs):
+	    print '  - ', p
 
     def merge_missing(self):
         return
@@ -243,7 +252,6 @@ class Group(object):
 
     def toxml(self, arch):
         packages = self.solved_packages[arch]
-        print packages
 
         name = self.name
         if arch != '*':
@@ -259,20 +267,19 @@ class Group(object):
         packagelist = ET.SubElement(
             root, 'packagelist', {'relationship': 'recommends'})
 
-        if packages:
-            for name in sorted(set(packages.keys()) | self.missing[arch]):
-                if name in self.silents:
-                    continue
-                if name in (self.missing[arch] | self.missing['*']):
-                    c = ET.Comment(' missing {} '.format(name))
-                    packagelist.append(c)
-                else:
-                    status = self.pkglist.supportstatus(name)
-                    p = ET.SubElement(packagelist, 'package', {
-                        'name': name,
-                        'supportstatus': status})
-                    c = ET.Comment(' reason: {} '.format(packages[name]))
-                    packagelist.append(c)
+        for name in sorted(set(packages.keys()) | self.missing[arch]):
+            if name in self.silents:
+                continue
+            if name in (self.missing[arch] | self.missing['*']):
+                c = ET.Comment(' missing {} '.format(name))
+                packagelist.append(c)
+            else:
+                status = self.pkglist.supportstatus(name)
+                p = ET.SubElement(packagelist, 'package', {
+                    'name': name,
+                    'supportstatus': status})
+                c = ET.Comment(' reason: {} '.format(packages[name]))
+                packagelist.append(c)
 
         return root
 
@@ -349,10 +356,7 @@ class PkgListGen(ToolBase.ToolBase):
             group.merge_missing()
             fn = '{}.group'.format(group.name)
             if not group.solved:
-                logger.error('{} not solved'.format(name))
-                if os.path.exists(fn):
-                    os.unlink(fn)
-                continue
+		continue
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 for arch in archs:
                     x = group.toxml(arch)

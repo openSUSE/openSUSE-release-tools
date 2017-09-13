@@ -58,7 +58,6 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
         g.sle_module_scripting.solve()
         g.sle_module_scripting.ignore(g.sle_module_basesystem)
 
-	return
         g.sle_module_desktop_applications.inherit(g.sle_minimal)
         g.sle_module_desktop_applications.inherit(g.gnome_minimal)
         g.sle_module_desktop_applications.inherit(g.gnome_standard)
@@ -132,6 +131,11 @@ class CommandLineInterface(pkglistgen.CommandLineInterface):
 
         g.sle_module_sap_applications.inherit(g.sle_minimal)
         g.sle_module_sap_applications.solve()
+        g.sle_module_sap_applications.ignore(g.sle_module_basesystem)
+        g.sle_module_sap_applications.ignore(g.sle_module_scripting)
+        g.sle_module_sap_applications.ignore(g.sle_module_desktop_applications)
+        g.sle_module_sap_applications.ignore(g.sle_module_server_applications)
+
 
 if __name__ == "__main__":
     app = CommandLineInterface()
