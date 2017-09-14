@@ -65,7 +65,7 @@ class RequestFinder(object):
         :param package: name of the package
         """
 
-        query = 'states=new,review&project={}&view=collection&package={}'
+        query = 'types=submit,delete&states=new,review&project={}&view=collection&package={}'
         query = query.format(self.api.project, urllib2.quote(package))
         url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
@@ -100,7 +100,7 @@ class RequestFinder(object):
         :param newcand: the review state of staging-group must be new
         """
 
-        query = 'states=new,review&project={}&view=collection'.format(self.api.project)
+        query = 'types=submit,delete&states=new,review&project={}&view=collection'.format(self.api.project)
         url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
         root = ET.parse(f).getroot()
