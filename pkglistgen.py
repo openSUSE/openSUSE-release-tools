@@ -60,10 +60,11 @@ class Group(object):
         self.locked = set()
         self.solved_packages = None
         self.solved = False
-        self.missing = dict()
+        self.not_found = dict()
+        self.unresolvable = dict()
         for a in ARCHITECTURES:
             self.packages[a] = dict()
-            self.missing[a] = set()
+            self.unresolvable[a] = dict()
 
         self.srcpkgs = None
         self.silents = set()
@@ -112,6 +113,12 @@ class Group(object):
             s |= set(without.solved_packages['*'].keys())
             for p in s:
                 self.solved_packages[arch].pop(p, None)
+        for p in without.not_found.keys():
+            if not p in self.not_found:
+                continue
+            self.not_found[p] -= without.not_found[p]
+            if not self.not_found[p]:
+                self.not_found.pop(p)
 
     def solve(self, ignore_recommended=True):
         """ base: list of base groups or None """
@@ -120,9 +127,7 @@ class Group(object):
             return
 
         solved = dict()
-        missing = dict()
         for arch in ARCHITECTURES:
-            missing[arch] = set()
             solved[arch] = dict()
 
         srcpkgs = set()
@@ -134,8 +139,8 @@ class Group(object):
                 jobs = []
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
-                    logger.error('{}.{}: package {} not found'.format(self.name, arch, n))
-                    missing[arch].add(n)
+                    logger.debug('{}.{}: package {} not found'.format(self.name, arch, n))
+                    self.not_found.setdefault(n, set()).add(arch)
                     continue
                 else:
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
@@ -161,11 +166,8 @@ class Group(object):
                 problems = solver.solve(jobs)
                 if problems:
                     for problem in problems:
-                        # just ignore conflicts here
-                        # if not ' conflicts with ' in str(problem):
-                        logger.error('unresolvable: %s.%s: %s', self.name, arch, problem)
-                        missing[arch].add(n)
-                        # logger.warning(problem)
+                        logger.debug('unresolvable: %s.%s: %s', self.name, arch, problem)
+                        self.unresolvable[arch][n] = str(problem)
                     continue
 
                 trans = solver.transaction()
@@ -186,7 +188,6 @@ class Group(object):
                     srcpkgs.add(src)
 
         common = None
-        missing_common = None
         # compute common packages across all architectures
         for arch in ARCHITECTURES:
             if common is None:
@@ -197,27 +198,13 @@ class Group(object):
         if common is None:
             common = set()
 
-        for arch in missing.keys():
-            if missing_common is None:
-                missing_common = set(missing[arch])
-                continue
-            missing_common &= missing[arch]
-
         # reduce arch specific set by common ones
         solved['*'] = dict()
         for arch in ARCHITECTURES:
             for p in common:
                 solved['*'][p] = solved[arch].pop(p)
 
-        for arch in missing.keys():
-            missing[arch] -= missing_common
-
-        self.missing = missing
-        if missing_common:
-            self.missing['*'] = missing_common
-
         self.solved_packages = solved
-
         self.solved = True
         self.srcpkgs = srcpkgs
         develpkgs = set()
@@ -235,19 +222,8 @@ class Group(object):
                     if src in srcpkgs:
                         develpkgs.add(s.name)
 
-        for p in sorted(develpkgs):
-            print '  - ', p
-
-    def merge_missing(self):
-        all_arch_missing = None
-        for arch in ARCHITECTURES:
-            if all_arch_missing is None:
-                all_arch_missing = set(self.missing[arch])
-            all_arch_missing &= self.missing[arch]
-        for arch in ARCHITECTURES:
-            self.missing[arch] -= all_arch_missing
-        self.missing.setdefault('*', set())
-        self.missing['*'] |= all_arch_missing
+        #for p in sorted(develpkgs):
+        #    print '  - ', p
 
     def toxml(self, arch):
         packages = self.solved_packages[arch]
@@ -266,19 +242,27 @@ class Group(object):
         packagelist = ET.SubElement(
             root, 'packagelist', {'relationship': 'recommends'})
 
-        for name in sorted(set(packages.keys()) | self.missing[arch]):
+        missing = dict()
+        if arch == '*':
+            missing = self.not_found
+        unresolvable = self.unresolvable.get(arch, dict())
+        for name in sorted(packages.keys() + missing.keys() + unresolvable.keys()):
             if name in self.silents:
                 continue
-            if name in (self.missing[arch] | self.missing['*']):
-                c = ET.Comment(' missing {} '.format(name))
+            if name in missing:
+                c = ET.Comment(' {} not found on {}'.format(name, ','.join(sorted(missing[name]))))
                 packagelist.append(c)
-            else:
-                status = self.pkglist.supportstatus(name)
-                p = ET.SubElement(packagelist, 'package', {
-                    'name': name,
-                    'supportstatus': status})
-                c = ET.Comment(' reason: {} '.format(packages[name]))
+                continue
+            if name in unresolvable:
+                c = ET.Comment(' {} uninstallable: {}'.format(name, unresolvable[name]))
                 packagelist.append(c)
+                continue
+            status = self.pkglist.supportstatus(name)
+            p = ET.SubElement(packagelist, 'package', {
+                'name': name,
+                'supportstatus': status})
+            c = ET.Comment(' reason: {} '.format(packages[name]))
+            packagelist.append(c)
 
         return root
 
@@ -361,7 +345,6 @@ class PkgListGen(ToolBase.ToolBase):
         archs = ('*',) + ARCHITECTURES
         for name in self.groups:
             group = self.groups[name]
-            group.merge_missing()
             fn = '{}.group'.format(group.name)
             if not group.solved:
                 continue
@@ -394,7 +377,7 @@ class PkgListGen(ToolBase.ToolBase):
             g.inherit(self.groups[i])
         g.solve()
         for e in excludes:
-            g.excludes(self.groups[e])
+            g.ignore(self.groups[e])
 
     def _check_supplements(self):
         tocheck = set()
@@ -439,49 +422,6 @@ class PkgListGen(ToolBase.ToolBase):
         pool.createwhatprovides()
 
         return pool
-
-    def _collect_devel_packages(self):
-        return
-        srcpkgs = set()
-        for g in self.groups.values():
-            if g.srcpkgs:
-                srcpkgs.update(g.srcpkgs)
-
-        develpkgs = dict()
-        for arch in ARCHITECTURES:
-            develpkgs[arch] = set()
-            pool = self._prepare_pool(arch)
-            sel = pool.Selection()
-            for s in pool.solvables_iter():
-                if s.name.endswith('-devel'):
-                    # don't ask me why, but that's how it seems to work
-                    if s.lookup_void(solv.SOLVABLE_SOURCENAME):
-                        src = s.name
-                    else:
-                        src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
-
-                    if src in srcpkgs:
-                        develpkgs[arch].add(s.name)
-
-        common = None
-        # compute common packages across all architectures
-        for arch in develpkgs.keys():
-            if common is None:
-                common = set(develpkgs[arch])
-                continue
-            common &= develpkgs[arch]
-
-        # reduce arch specific set by common ones
-        for arch in develpkgs.keys():
-            develpkgs[arch] -= common
-
-        develpkgs['*'] = common
-
-        g = Group('all-devel-pkgs', self)
-        # XXX: would need to add to packages instead, then solve and
-        # subtract all other groups
-        g.solved_packages = develpkgs
-        g.solved = True
 
     def _collect_unsorted_packages(self):
         return
@@ -583,8 +523,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         # only there to parse the repos
         tool = PkgListGen(self.options.repostr)
-        bs_mirrorfull = os.path.join(
-            os.path.dirname(__file__), 'bs_mirrorfull')
+        bs_mirrorfull = os.path.join(os.path.dirname(__file__), 'bs_mirrorfull')
         for prp in tool.repos:
             project = prp['project']
             repo = prp['repo']
@@ -617,12 +556,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         # we loop a bit more than what we support
         for group in output:
             groupname = group.keys()[0]
-            settings=group[groupname][0]
+            settings=group[groupname]
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
             self.tool.solve_module(groupname, includes, excludes)
 
-        self.tool._collect_devel_packages()
         self.tool._collect_unsorted_packages()
         self.tool._write_all_groups()
 
