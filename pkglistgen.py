@@ -108,7 +108,7 @@ class Group(object):
     # do not repeat packages
     def ignore(self, without):
         for arch in ('*', ) + ARCHITECTURES:
-	    s = set(without.solved_packages[arch].keys()) 
+            s = set(without.solved_packages[arch].keys())
             s |= set(without.solved_packages['*'].keys())
             for p in s:
                 self.solved_packages[arch].pop(p, None)
@@ -222,7 +222,7 @@ class Group(object):
         self.srcpkgs = srcpkgs
         develpkgs = set()
         for arch in ARCHITECTURES:
-	    pool = self.pkglist._prepare_pool(arch)
+            pool = self.pkglist._prepare_pool(arch)
             sel = pool.Selection()
             for s in pool.solvables_iter():
                 if s.name.endswith('-devel'):
@@ -234,11 +234,11 @@ class Group(object):
 
                     if src in srcpkgs:
                         develpkgs.add(s.name)
-	for p in sorted(develpkgs):
-	    print '  - ', p
+
+        for p in sorted(develpkgs):
+            print '  - ', p
 
     def merge_missing(self):
-        return
         all_arch_missing = None
         for arch in ARCHITECTURES:
             if all_arch_missing is None:
@@ -246,8 +246,7 @@ class Group(object):
             all_arch_missing &= self.missing[arch]
         for arch in ARCHITECTURES:
             self.missing[arch] -= all_arch_missing
-	    self.packages[arch] -= all_arch_missing
-        self.packages['*'] |= all_arch_missing
+        self.missing.setdefault('*', set())
         self.missing['*'] |= all_arch_missing
 
     def toxml(self, arch):
@@ -338,15 +337,24 @@ class PkgListGen(ToolBase.ToolBase):
             return self.default_support_status
 
     def _load_group_file(self, fn):
+        output = None
         with open(fn, 'r') as fh:
             logger.debug("reading %s", fn)
             for groupname, group in yaml.safe_load(fh).items():
+                if groupname == 'OUTPUT':
+                    output = group
+                    continue
                 g = Group(groupname, self)
                 g.parse_yml(group)
+        return output
 
     def load_all_groups(self):
+        output = None
         for fn in glob.glob(os.path.join(self.input_dir, 'group*.yml')):
-            self._load_group_file(fn)
+            o = self._load_group_file(fn)
+            if not output:
+                output = o
+        return output
 
     def _write_all_groups(self):
         self._check_supplements()
@@ -356,7 +364,7 @@ class PkgListGen(ToolBase.ToolBase):
             group.merge_missing()
             fn = '{}.group'.format(group.name)
             if not group.solved:
-		continue
+                continue
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 for arch in archs:
                     x = group.toxml(arch)
@@ -380,11 +388,13 @@ class PkgListGen(ToolBase.ToolBase):
                 root = ET.parse(fh).getroot()
                 self._parse_product(root)
 
-    def solve_group(self, name):
-        self._load_all_groups()
-        group = self.groups[name]
-        group.solve()
-        return group
+    def solve_module(self, groupname, includes, excludes):
+        g = self.groups[groupname]
+        for i in includes:
+            g.inherit(self.groups[i])
+        g.solve()
+        for e in excludes:
+            g.excludes(self.groups[e])
 
     def _check_supplements(self):
         tocheck = set()
@@ -600,28 +610,21 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        self.tool.load_all_groups()
-
-        self._solve()
-
-#        sle_base.dump()
+        output = self.tool.load_all_groups()
+        if not output:
+            return
+        # the yml parser makes an array out of everything, so
+        # we loop a bit more than what we support
+        for group in output:
+            groupname = group.keys()[0]
+            settings=group[groupname][0]
+            includes = settings.get('includes', [])
+            excludes = settings.get('excludes', [])
+            self.tool.solve_module(groupname, includes, excludes)
 
         self.tool._collect_devel_packages()
         self.tool._collect_unsorted_packages()
         self.tool._write_all_groups()
-
-    def _solve(self):
-        """ imlement this"""
-
-        class G(object):
-            True
-
-        g = G()
-
-        for group in self.tool.groups.values():
-            setattr(g, group.safe_name, group)
-
-        raise Exception('implement me in subclass')
 
 
 if __name__ == "__main__":
