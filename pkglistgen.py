@@ -63,37 +63,41 @@ class Group(object):
         self.not_found = dict()
         self.unresolvable = dict()
         for a in ARCHITECTURES:
-            self.packages[a] = dict()
+            self.packages[a] = []
             self.unresolvable[a] = dict()
 
         self.srcpkgs = None
+        self.develpkgs = []
         self.silents = set()
 
         pkglist.groups[self.safe_name] = self
+
+    def _add_to_packages(self, package, arch=None):
+        archs = ARCHITECTURES
+        if arch:
+            archs = [arch]
+
+        for a in archs:
+            self.packages[a].append([package, self.name])
 
     def parse_yml(self, packages):
         # package less group is a rare exception
         if packages is None:
              return
 
-        commons = set()
         for package in packages:
             if not isinstance(package, dict):
-                commons.add(package)
+                self._add_to_packages(package)
                 continue
             name = package.keys()[0]
             for rel in package[name]:
                 if rel == 'locked':
                     self.locked.add(name)
                 elif rel == 'silent':
-                    commons.add(name)
+                    self._add_to_packages(name)
                     self.silents.add(name)
                 else:
-                    self.packages[rel][name] = self.name
-
-        for package in commons:
-            for a in ARCHITECTURES:
-                self.packages[a][package] = self.name
+                    self._add_to_packages(name, rel)
 
     def _verify_solved(self):
         if not self.solved:
@@ -101,7 +105,7 @@ class Group(object):
 
     def inherit(self, group):
         for arch in ARCHITECTURES:
-            self.packages[arch].update(group.packages[arch])
+            self.packages[arch] += group.packages[arch]
 
         self.locked.update(group.locked)
         self.silents.update(group.silents)
@@ -135,7 +139,7 @@ class Group(object):
             pool = self.pkglist._prepare_pool(arch)
             #pool.set_debuglevel(10)
 
-            for n in sorted(self.packages[arch].keys()):
+            for n, group in self.packages[arch]:
                 jobs = []
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
@@ -176,7 +180,7 @@ class Group(object):
                     continue
 
                 for s in trans.newsolvables():
-                    solved[arch].setdefault(s.name, self.packages[arch][n] + ':' + n)
+                    solved[arch].setdefault(s.name, group + ':' + n)
                     reason, rule = solver.describe_decision(s)
                     if None:
                         print(self.name, s.name, reason, rule.info().problemstr())
@@ -207,6 +211,8 @@ class Group(object):
         self.solved_packages = solved
         self.solved = True
         self.srcpkgs = srcpkgs
+
+    def collect_devel_packages(self, modules):
         develpkgs = set()
         for arch in ARCHITECTURES:
             pool = self.pkglist._prepare_pool(arch)
@@ -219,11 +225,18 @@ class Group(object):
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
 
-                    if src in srcpkgs:
+                    if src in self.srcpkgs:
                         develpkgs.add(s.name)
 
-        #for p in sorted(develpkgs):
-        #    print '  - ', p
+	self.develpkgs = []
+        for p in develpkgs:
+            already_present = False
+            for m in modules:
+               for arch in ('*', ) + ARCHITECTURES:
+                   already_present = already_present or (p in m.solved_packages[arch])
+               already_present = already_present or (p in m.develpkgs)
+	    if not already_present:
+               self.develpkgs.append(p)
 
     def toxml(self, arch):
         packages = self.solved_packages[arch]
@@ -263,6 +276,9 @@ class Group(object):
                 'supportstatus': status})
             c = ET.Comment(' reason: {} '.format(packages[name]))
             packagelist.append(c)
+        if arch == '*' and self.develpkgs:
+            c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)))
+            root.append(c)
 
         return root
 
@@ -552,6 +568,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         output = self.tool.load_all_groups()
         if not output:
             return
+
+        modules = []
         # the yml parser makes an array out of everything, so
         # we loop a bit more than what we support
         for group in output:
@@ -560,6 +578,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
             self.tool.solve_module(groupname, includes, excludes)
+            modules.append(self.tool.groups[groupname])
+
+        for module in modules:
+            module.collect_devel_packages(modules)
 
         self.tool._collect_unsorted_packages()
         self.tool._write_all_groups()
