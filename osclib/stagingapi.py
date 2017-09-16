@@ -832,6 +832,7 @@ class StagingAPI(object):
         if not package or not request_id:
             return
 
+        orig_project = project
         self._remove_package_from_prj_pseudometa(project, package)
         project = self.map_ring_package_to_subject(project, package)
         if self._supersede:
@@ -848,7 +849,7 @@ class StagingAPI(object):
         # Delete the main package in the last
         delete_package(self.apiurl, project, package, force=True, msg=msg)
 
-        self.set_review(request_id, project, state=review, msg=msg)
+        self.set_review(request_id, orig_project, state=review, msg=msg)
 
     def is_package_disabled(self, project, package, store=False):
         meta = show_package_meta(self.apiurl, project, package)
