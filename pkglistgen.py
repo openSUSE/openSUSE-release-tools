@@ -83,7 +83,7 @@ class Group(object):
     def parse_yml(self, packages):
         # package less group is a rare exception
         if packages is None:
-             return
+            return
 
         for package in packages:
             if not isinstance(package, dict):
@@ -134,10 +134,11 @@ class Group(object):
         for arch in ARCHITECTURES:
             solved[arch] = dict()
 
-        srcpkgs = set()
+        self.srcpkgs = set()
+        self.recommends = dict()
         for arch in ARCHITECTURES:
             pool = self.pkglist._prepare_pool(arch)
-            #pool.set_debuglevel(10)
+            # pool.set_debuglevel(10)
 
             for n, group in self.packages[arch]:
                 jobs = []
@@ -179,6 +180,9 @@ class Group(object):
                     logger.error('%s.%s: nothing to do', self.name, arch)
                     continue
 
+                for s in solver.get_recommended():
+                    self.recommends.setdefault(s.name, group + ':' + n)
+
                 for s in trans.newsolvables():
                     solved[arch].setdefault(s.name, group + ':' + n)
                     reason, rule = solver.describe_decision(s)
@@ -189,7 +193,7 @@ class Group(object):
                         src = s.name
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
-                    srcpkgs.add(src)
+                    self.srcpkgs.add(src)
 
         common = None
         # compute common packages across all architectures
@@ -210,7 +214,6 @@ class Group(object):
 
         self.solved_packages = solved
         self.solved = True
-        self.srcpkgs = srcpkgs
 
     def collect_devel_packages(self, modules):
         develpkgs = set()
@@ -228,15 +231,28 @@ class Group(object):
                     if src in self.srcpkgs:
                         develpkgs.add(s.name)
 
-	self.develpkgs = []
+        self.develpkgs = []
         for p in develpkgs:
             already_present = False
             for m in modules:
-               for arch in ('*', ) + ARCHITECTURES:
-                   already_present = already_present or (p in m.solved_packages[arch])
-               already_present = already_present or (p in m.develpkgs)
-	    if not already_present:
-               self.develpkgs.append(p)
+                for arch in ('*', ) + ARCHITECTURES:
+                    already_present = already_present or (p in m.solved_packages[arch])
+                    already_present = already_present or (p in m.develpkgs)
+            if not already_present:
+                self.develpkgs.append(p)
+
+    def filter_duplicated_recommends(self, modules):
+        recommends = self.recommends
+        # erase our own - so we don't filter our own
+        self.recommends = dict()
+        for p in recommends:
+            already_present = False
+            for m in modules:
+                for arch in ('*', ) + ARCHITECTURES:
+                    already_present = already_present or (p in m.solved_packages[arch])
+                    already_present = already_present or (p in m.recommends)
+            if not already_present:
+                self.recommends[p] = recommends[p]
 
     def toxml(self, arch):
         packages = self.solved_packages[arch]
@@ -277,7 +293,13 @@ class Group(object):
             c = ET.Comment(' reason: {} '.format(packages[name]))
             packagelist.append(c)
         if arch == '*' and self.develpkgs:
-            c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)))
+            c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)) + "\n")
+            root.append(c)
+        if arch == '*' and self.recommends:
+            comment = "\nRecommended packages:\n"
+            for p in sorted(self.recommends.keys()):
+                comment += "  - {} # {}\n".format(p, self.recommends[p])
+            c = ET.Comment(comment)
             root.append(c)
 
         return root
@@ -574,7 +596,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         # we loop a bit more than what we support
         for group in output:
             groupname = group.keys()[0]
-            settings=group[groupname]
+            settings = group[groupname]
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
             self.tool.solve_module(groupname, includes, excludes)
@@ -582,6 +604,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         for module in modules:
             module.collect_devel_packages(modules)
+            module.filter_duplicated_recommends(modules)
 
         self.tool._collect_unsorted_packages()
         self.tool._write_all_groups()
