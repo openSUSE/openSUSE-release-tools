@@ -141,7 +141,7 @@ class Group(object):
             # pool.set_debuglevel(10)
 
             for n, group in self.packages[arch]:
-                jobs = []
+                jobs = list(self.pkglist.lockjobs[arch])
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
                     logger.debug('{}.{}: package {} not found'.format(self.name, arch, n))
@@ -158,7 +158,7 @@ class Group(object):
                         jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
                 for s in self.silents:
-                    sel = pool.select(str(s), solv.Selection.SELECTION_NAME)
+                    sel = pool.select(str(s), solv.Selection.SELECTION_NAME | solv.Selection.SELECTION_FLAT)
                     if sel.isempty():
                         logger.warn('{}.{}: silent package {} not found'.format(self.name, arch, s))
                     else:
@@ -329,6 +329,7 @@ class PkgListGen(ToolBase.ToolBase):
         self._supportstatus = None
         self.input_dir = '.'
         self.output_dir = '.'
+        self.lockjobs = dict()
 
     def _dump_supportstatus(self):
         for name in self.packages.keys():
@@ -445,16 +446,20 @@ class PkgListGen(ToolBase.ToolBase):
         pool = solv.Pool()
         pool.setarch(arch)
 
+        self.lockjobs[arch] = []
+        solvables = set()
         for prp in self.repos:
             project = prp['project']
             reponame = prp['repo']
             repo = pool.add_repo(project)
-            s = os.path.join(
-                CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
+            s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
             r = repo.add_solv(s)
             if not r:
-                raise Exception(
-                    "failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
+                raise Exception("failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
+            for solvable in repo.solvables_iter():
+		if solvable.name in solvables:
+                     self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE|solv.Job.SOLVER_LOCK, solvable.id))
+                solvables.add(solvable.name)
 
         pool.addfileprovides()
         pool.createwhatprovides()
