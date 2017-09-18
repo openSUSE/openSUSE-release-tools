@@ -16,17 +16,14 @@
      <path project="openSUSE:Factory:Staging" repository="standard"/>
        <arch>i586</arch>
        <arch>x86_64</arch>
-       <arch>ppc64le</arch>
   </repository>
   <repository linkedbuild="all" name="standard" rebuild="direct">
     <path project="openSUSE:Factory:Staging:A" repository="bootstrap_copy"/>
     <arch>i586</arch>
     <arch>x86_64</arch>
-    <arch>ppc64le</arch>
   </repository>
   <repository linkedbuild="all" name="images">
     <path project="openSUSE:Factory:Staging:A" repository="standard"/>
     <arch>x86_64</arch>
-    <arch>ppc64le</arch>
   </repository>
 </project>

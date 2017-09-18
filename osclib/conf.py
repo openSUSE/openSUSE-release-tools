@@ -34,8 +34,8 @@ DEFAULT = {
     r'openSUSE:(?P<project>Factory)': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
-        'staging-archs': 'i586 x86_64 ppc64le',
-        'staging-dvd-archs': 'x86_64 ppc64le',
+        'staging-archs': 'i586 x86_64',
+        'staging-dvd-archs': 'x86_64',
         'nocleanup-packages': 'Test-DVD-x86_64 Test-DVD-ppc64le bootstrap-copy',
         'rings': 'openSUSE:%(project)s:Rings',
         'nonfree': 'openSUSE:%(project)s:NonFree',
