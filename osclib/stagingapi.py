@@ -1568,6 +1568,11 @@ class StagingAPI(object):
         self.set_prj_pseudometa(project, meta)
 
     def accept_status_comment(self, project, packages):
+        if not len(packages):
+            # Avoid making accept comments for empty projects which can occur
+            # when all requests are unselected or something like #1142.
+            return
+
         # A single comment should be enough to notify everybody, since they are
         # already mentioned in the comments created by select/unselect.
         comment = 'Project "{}" accepted. ' \
