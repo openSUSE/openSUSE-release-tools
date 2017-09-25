@@ -62,6 +62,7 @@ matrix:
         - pip install pycurl urlgrabber m2crypto
         - pip install -r requirements.txt
         - pip install python-coveralls
+        - pip install nose-exclude
       before_script:
         # travis-ci/travis-ci#7008: stop services to make room for OBS setup
         - sudo service mysql stop
@@ -70,7 +71,7 @@ matrix:
         # Needs python prefix to use the correct interpretor.
         - python ./obs_clone.py --cache --debug --apiurl-target local
       script:
-        - nosetests --with-coverage --cover-package=. --cover-inclusive
+        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint
       after_success:
         - coveralls
 
