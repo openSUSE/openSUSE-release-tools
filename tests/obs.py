@@ -228,8 +228,8 @@ class OBS(object):
             'C': {
                 'project': 'openSUSE:Factory:Staging:C',
                 'title': 'A project ready to be accepted',
-                'description': ('requests:\n- {id: 501, package: apparmor, author: Admin}\n'
-                                '- {id: 502, package: mariadb, author: Admin}'),
+                'description': ('requests:\n- {id: 501, package: apparmor, author: Admin, type: submit}\n'
+                    '- {id: 502, package: mariadb, author: Admin, type: submit}'),
             },
             'J': {
                 'project': 'openSUSE:Factory:Staging:J',
@@ -588,7 +588,7 @@ class OBS(object):
 
             meta = self.meta[key]
             # Simulate missing _meta revision missing puppet request.
-            meta = meta.replace('- {author: Admin, id: 321, package: puppet}', '')
+            meta = meta.replace('- {author: Admin, id: 321, package: puppet, type: submit}', '')
             response = (200, headers, meta)
         except Exception as e:
             if DEBUG:

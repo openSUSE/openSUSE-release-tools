@@ -232,7 +232,7 @@ class TestApiCalls(unittest.TestCase):
             self.assertEqual('new', self.obs.requests[rq]['review'])
             self.assertEqual('review', self.obs.requests[rq]['request'])
             self.assertEqual(self.api.get_prj_pseudometa('openSUSE:Factory:Staging:A'),
-                             {'requests': [{'id': 123, 'package': 'gcc', 'author': 'Admin'}]})
+                    {'requests': [{'id': 123, 'package': 'gcc', 'author': 'Admin', 'type': 'submit'}]})
 
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
