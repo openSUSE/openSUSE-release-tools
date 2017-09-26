@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import re
 import requests
 
@@ -45,8 +43,8 @@ class Update(object):
             crepo = repo + '/' + channel.replace(':', '_')
             xml = requests.get(crepo + '/repodata/repomd.xml')
             if not xml.ok:
+                self.logger.info("{} skipped .. need wait".format(crepo))
                 # if one fails, we skip it and wait
-                print(crepo, 'has no repodata - waiting')
                 return None
             root = ET.fromstring(xml.text)
             rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
@@ -123,6 +121,5 @@ class Update(object):
         if not shortest_pkg:
             shortest_pkg = 'unknown'
         match = re.match(r'^(.*)\.[^\.]*$', shortest_pkg)
-        if match:
-            return match.group(1)
-        return shortest_pkg
+
+        return match.group(1) if match else shortest_pkg

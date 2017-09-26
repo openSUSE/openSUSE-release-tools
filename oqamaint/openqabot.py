@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 from collections import namedtuple
 from datetime import date
 import md5
@@ -54,6 +52,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.openqa = None
         self.commentapi = CommentAPI(self.apiurl)
         self.update_test_builds = {}
+        self.pending_target_repos = set()
         self.openqa_jobs = {}
 
     def gather_test_builds(self):
@@ -79,7 +78,6 @@ class OpenQABot(ReviewBot.ReviewBot):
             self.check_suse_incidents()
 
         # first calculate the latest build number for current jobs
-        self.pending_target_repos = set()
         self.gather_test_builds()
 
         started = []
@@ -111,11 +109,6 @@ class OpenQABot(ReviewBot.ReviewBot):
             return
         self.logger.debug("Check all requests")
         super(OpenQABot, self).check_requests()
-
-    def check_action_maintenance_incident(self, req, a):
-        # override ReviewBot method  ?
-        self.logger.debug("is called !!!")
-        return None
 
     # check a set of repos for their primary checksums
     @staticmethod
@@ -186,7 +179,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         if build:
             values['build'] = build
         else:
-            # REALLY ?
             values['test'] = data['test']
         self.logger.debug("Get jobs: {}".format(pformat(values)))
         return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
@@ -221,7 +213,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     nr = int(build.split('-')[1])
                     if nr > buildnr:
                         buildnr = nr
-                except BaseException:
+                except ValueError:
                     continue
 
         buildnr = "{!s}-{:d}".format(today, buildnr + 1)
@@ -484,21 +476,29 @@ class OpenQABot(ReviewBot.ReviewBot):
             issues = pmap.get('issues', {})
             issues['OS_TEST_ISSUES'] = product_prefix
             for key, prefix in issues.items():
+                self.logger.debug("{} {}".format(key, prefix))
                 if prefix + arch in job['channels']:
                     settings[key] = str(job['id'])
                     need = True
             if need:
-                u = self.project_settings[product_prefix + arch]
-                u.apiurl = self.apiurl
-                for s in u.settings(u.maintenance_project + ':' + str(job['id']), product_prefix + arch, []):
-                    if job.get('openqa_build') is None:
-                        job['openqa_build'] = u.get_max_revision(job)
-                    if job.get('openqa_build') is None:
+                update = self.project_settings[product_prefix + arch]
+                update.apiurl = self.apiurl
+                update.logger = self.logger
+                for j in update.settings(
+                        update.maintenance_project + ':' + str(job['id']),
+                        product_prefix + arch, []):
+                    if not job.get('openqa_build'):
+                        job['openqa_build'] = update.get_max_revision(job)
+                    if not job.get('openqa_build'):
                         return []
-                    s['BUILD'] += '.' + str(job['openqa_build'])
-                    s.update(settings)
-                    posts.append(s)
-        self.logger.debug("Posts: {}".format(pformat(posts)))
+                    j['BUILD'] += '.' + str(job['openqa_build'])
+                    j.update(settings)
+                    # kGraft jobs can have different version
+                    if 'real_version' in j:
+                        j['VERSION'] = j['real_version']
+                        del j['real_version']
+                    posts.append(j)
+        self.logger.debug("Pmap: {} Posts: {}".format(pmap, posts))
         return posts
 
     def incident_openqa_jobs(self, s):
@@ -516,11 +516,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
-            # if not inc in ['5219']: continue
-            # if not inc.startswith('52'): continue
-            self.logger.debug("check suse incidents")
             self.logger.info("Incident number: {}".format(inc))
-            # continue
 
             job = requests.get('https://maintenance.suse.de/api/incident/' + inc).json()
 

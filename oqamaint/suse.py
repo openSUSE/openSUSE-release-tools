@@ -47,15 +47,6 @@ class SUSEUpdate(Update):
     def parse_kgraft_version(kgraft_target):
         return kgraft_target.lstrip('SLE').split('_')[0]
 
-    @staticmethod
-    def kernel_target(req):
-        if req:
-            for a in req.actions:
-                # kernel incidents have kernel-source package (suprise!)
-                if a.src_package.startswith('kernel-source'):
-                    return True, a
-        return None, None
-
     def add_minimal_settings(self, prj, settings):
         minimal = False
         for pkg in self.incident_packages(prj):
@@ -70,9 +61,25 @@ class SUSEUpdate(Update):
 
     def settings(self, src_prj, dst_prj, packages):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages)
+
+        # kGraft Handling - Fully supported kGraft lives in own space, but LTSS in standard LTSS channel
+        for x in range(len(settings)):
+            if settings[x]['FLAVOR'] == 'Server-DVD-Incidents' and settings[x]['BUILD'].split(
+                    ':')[-1].startswith('kgraft-patch'):
+                settings[x]['FLAVOR'] = 'Server-DVD-Incidents-Kernel'
+                self.logger.warning("kGraft started from INCIDENTS !!")
+            if settings[x]['FLAVOR'] == 'Server-DVD-Incidents-Kernel' and not settings[x]['BUILD'].split(
+                    ':')[-1].startswith('kgraft-patch'):
+                del settings[x]
+                continue
+            if settings[x]['FLAVOR'] == 'Server-DVD-Incidents-Kernel':
+                settings[x]['KGRAFT'] = "1"
+                if settings[x]['VERSION'] == '12':
+                    settings[x]['real_version'] = self.parse_kgraft_version(self.kgraft_target(self.apiurl, src_prj))
+
         if not len(settings):
             return []
 
         settings += self.add_minimal_settings(src_prj, settings[0])
-
+        self.logger.debug("settings are: {}".format(settings))
         return settings
