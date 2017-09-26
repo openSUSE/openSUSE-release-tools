@@ -70,5 +70,19 @@
          "ppc64le",
          "aarch64"
       ]
-   }
+   },
+   "SUSE:Updates:SLE-Live-Patching:12:" : {
+      "version" : "12",
+      "flavor" : "Server-DVD-Incidents-Kernel",
+      "archs" : [
+         "x86_64"
+      ]
+   },
+   "SUSE:Updates:SLE-Live-Patching:12-SP3:" : {
+      "version" : "12-SP3",
+      "flavor" : "Server-DVD-Incidents-Kernel",
+      "archs" : [
+         "x86_64"
+      ]
+      }
 }
