@@ -75,6 +75,8 @@ class StagingAPI(object):
         self.cproduct = conf.config[project]['product']
         self.copenqa = conf.config[project]['openqa']
         self.user = conf.get_apiurl_usr(apiurl)
+        self.delreq_review = conf.config[project]['delreq-review']
+        self.main_repo = conf.config[project]['main-repo']
         self._ring_packages = None
         self._ring_packages_for_links = None
         self._packages_staged = None
@@ -259,6 +261,11 @@ class StagingAPI(object):
         package_info['package'] = linkinfo.attrib['package']
 
         return package_info
+
+    def extract_specfile_short(self, filelist):
+        packages = [spec[:-5] for spec in filelist if re.search('\.spec$', spec)]
+
+        return packages
 
     def get_filelist_for_package(self, pkgname, project, expand=None, extension=None):
         """
@@ -748,7 +755,7 @@ class StagingAPI(object):
     def clear_prj_pseudometa(self, project):
         self.set_prj_pseudometa(project, {})
 
-    def _add_rq_to_prj_pseudometa(self, project, request_id, package):
+    def _add_rq_to_prj_pseudometa(self, project, request_id, package, act_type=None):
         """
         Records request as part of the project within metadata
         :param project: project to record into
@@ -761,13 +768,14 @@ class StagingAPI(object):
         for request in data['requests']:
             if request['package'] == package:
                 # Only update if needed (to save calls to get_request)
-                if request['id'] != request_id or not request.get('author'):
+                if request['id'] != request_id or not request.get('author') or not request.get('type'):
                     request['id'] = request_id
+                    request['type'] = act_type
                     request['author'] = get_request(self.apiurl, str(request_id)).get_creator()
                 append = False
         if append:
             author = get_request(self.apiurl, str(request_id)).get_creator()
-            data['requests'].append({'id': request_id, 'package': package, 'author': author})
+            data['requests'].append({'id': request_id, 'package': package, 'author': author, 'type': act_type})
         self.set_prj_pseudometa(project, data)
 
     def set_splitter_info_in_prj_pseudometa(self, project, group, strategy_info):
@@ -859,24 +867,27 @@ class StagingAPI(object):
             self._package_disabled['/'.join([project, package])] = disabled
         return disabled
 
-    def create_package_container(self, project, package, disable_build=False):
+    def create_package_container(self, project, package, meta=None, disable_build=False):
         """
         Creates a package container without any fields in project/package
         :param project: project to create it
         :param package: package name
+        :param meta: package metadata
         :param disable_build: should the package be created with build
                               flag disabled
         """
-        dst_meta = '<package name="{}"><title/><description/></package>'
-        dst_meta = dst_meta.format(package)
+        if not meta:
+            meta = '<package name="{}"><title/><description/></package>'
+            meta = meta.format(package)
+
         if disable_build:
-            root = ET.fromstring(dst_meta)
+            root = ET.fromstring(meta)
             elm = ET.SubElement(root, 'build')
             ET.SubElement(elm, 'disable')
-            dst_meta = ET.tostring(root)
+            meta = ET.tostring(root)
 
         url = self.makeurl(['source', project, package, '_meta'])
-        http_PUT(url, data=dst_meta)
+        http_PUT(url, data=meta)
 
     def check_ring_packages(self, project, requests):
         """
@@ -1057,6 +1068,7 @@ class StagingAPI(object):
         """
         # read info from sr
         tar_pkg = None
+        act_type = None
 
         req = get_request(self.apiurl, str(request_id))
         if not req:
@@ -1064,10 +1076,12 @@ class StagingAPI(object):
 
         act = req.get_actions('submit')
         if act:
+            act_type = 'submit'
             tar_pkg = self.submit_to_prj(act[0], project)
 
         act = req.get_actions('delete')
         if act:
+            act_type = 'delete'
             tar_pkg = self.delete_to_prj(act[0], project)
 
         if not tar_pkg:
@@ -1076,7 +1090,7 @@ class StagingAPI(object):
             raise oscerr.WrongArgs(msg)
 
         # register the package name
-        self._add_rq_to_prj_pseudometa(project, int(request_id), tar_pkg)
+        self._add_rq_to_prj_pseudometa(project, int(request_id), tar_pkg, act_type=act_type)
 
         # add review
         self.add_review(request_id, project)

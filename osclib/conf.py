@@ -44,6 +44,8 @@ DEFAULT = {
         'openqa': 'https://openqa.opensuse.org',
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
+        'delreq-review': 'factory-maintainers',
+        'main-repo': 'standard',
     },
     r'openSUSE:(?P<project>Leap:[\d.]+)': {
         'staging': 'openSUSE:%(project)s:Staging',
