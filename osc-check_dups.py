@@ -5,8 +5,11 @@
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc checker --help' to see the usage.
 
+import osc.conf
+
 def _checker_check_dups(self, project, opts):
-    url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&view=collection" % project)
+    user = osc.conf.get_configParser().get(opts.apiurl, "user")
+    url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&user=%s&view=collection" % (project, user))
     f = http_GET(url)
     root = ET.parse(f).getroot()
     rqs = {}
