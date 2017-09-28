@@ -8,7 +8,7 @@
 import osc.conf
 
 def _checker_check_dups(self, project, opts):
-    user = osc.conf.get_configParser().get(opts.apiurl, "user")
+    user = conf.config['api_host_options'][apiurl]['user']
     url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&user=%s&view=collection" % (project, user))
     f = http_GET(url)
     root = ET.parse(f).getroot()
