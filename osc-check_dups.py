@@ -6,10 +6,15 @@
 # Then try to run 'osc checker --help' to see the usage.
 
 import osc.conf
+import osc.cmdln
 
 def _checker_check_dups(self, project, opts):
-    user = conf.config['api_host_options'][apiurl]['user']
-    url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&user=%s&view=collection" % (project, user))
+    if opts.by_user:
+        print("filtering by current user")
+        user = osc.conf.get_configParser().get(opts.apiurl, "user")
+        url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&user=%s&view=collection" % (project, user))
+    else:
+        url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&view=collection" % project)
     f = http_GET(url)
     root = ET.parse(f).getroot()
     rqs = {}
@@ -41,7 +46,8 @@ def _checker_check_dups(self, project, opts):
                 print("DUPS found:", id, oldid)
             rqs[type + package] = [id, source]
 
-
+@osc.cmdln.option('--by-user',action='store_true',
+               dest='by_user')
 def do_check_dups(self, subcmd, opts, *args):
     """${cmd_name}: checker review of submit requests.
 
