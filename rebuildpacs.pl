@@ -165,7 +165,7 @@ if (%torebuild) {
   system("osc api -X POST '$api'");
 }
 
-my $pfile = tempdir() . "/packages";    # the filename is important ;(
+my $pfile = tempdir(CLEANUP => 1) . "/packages";    # the filename is important ;(
 
 sub mirror_repo($$$) {
 
