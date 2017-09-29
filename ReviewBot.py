@@ -437,7 +437,34 @@ class ReviewBot(object):
     def comment_write(self, state='done', result=None, project=None, package=None,
                       request=None, message=None, identical=False, only_replace=False,
                       info_extra=None):
-        """Write comment from log messages if not similar to previous comment."""
+        """Write comment if not similar to previous comment and replace old one.
+
+        The state, result, and info_extra (dict) are combined to create the info
+        that is passed to CommentAPI methods for creating a marker and finding
+        previous comments. self.bot_name, which defaults to class, will be used
+        as the primary matching key.
+
+        A comment from the same bot will be replaced when a new comment is
+        written. The only_replace flag will restrict to only writing a comment
+        if a prior one is being replaced. This can be useful for writing a final
+        comment that indicates a change from previous uncompleted state, but
+        only makes sense to post if a prior comment was posted.
+
+        The project, package, and request variables control where the comment is
+        placed. If no value is given the default is the request being reviewed.
+
+        If no message is provided the content will be extracted from
+        self.comment_handler.line which is provided by CommentFromLogHandler. To
+        use this call comment_handler_add() at the point which messages should
+        start being collected. Alternatively the self.comment_handler setting
+        may be set to True to automatically set one on each request.
+
+        The previous comment body line count is compared to see if too similar
+        to bother posting another comment which is useful for avoiding
+        re-posting comments that contain irrelevant minor changes. To force an
+        exact match use the identical flag to replace any non-identical
+        comment body.
+        """
         if project:
             kwargs = {'project_name': project}
             if package:
