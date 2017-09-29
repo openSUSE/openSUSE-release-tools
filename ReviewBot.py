@@ -435,7 +435,8 @@ class ReviewBot(object):
         self.comment_handler.lines = list(OrderedDict.fromkeys(self.comment_handler.lines))
 
     def comment_write(self, state='done', result=None, project=None, package=None,
-                      request=None, message=None, identical=False, only_replace=False):
+                      request=None, message=None, identical=False, only_replace=False,
+                      info_extra=None):
         """Write comment from log messages if not similar to previous comment."""
         if project:
             kwargs = {'project_name': project}
@@ -454,6 +455,8 @@ class ReviewBot(object):
             message = '\n\n'.join(self.comment_handler.lines)
 
         info = {'state': state, 'result': result}
+        if info_extra:
+            info.update(info_extra)
         message = self.comment_api.add_marker(message, self.bot_name, info)
 
         comments = self.comment_api.get_comments(**kwargs)
