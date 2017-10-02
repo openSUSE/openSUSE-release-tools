@@ -3,9 +3,9 @@ import urllib2
 import warnings
 from xml.etree import cElementTree as ET
 
-from osc.core import change_request_state
+from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
-from osc.core import delete_package
+from osc.core import delete_package, search, set_devel_project
 from datetime import date
 
 
@@ -14,7 +14,40 @@ class AcceptCommand(object):
         self.api = api
 
     def find_new_requests(self, project):
-        query = "match=state/@name='new'+and+(action/target/@project='{}'+and+action/@type='submit')".format(project)
+        query = "match=state/@name='new'+and+action/target/@project='{}'".format(project)
+        url = self.api.makeurl(['search', 'request'], query)
+
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+
+        rqs = []
+        for rq in root.findall('request'):
+            pkgs = []
+            act_type = None
+            actions = rq.findall('action')
+            for action in actions:
+                act_type = action.get('type')
+                targets = action.findall('target')
+                for t in targets:
+                    pkgs.append(str(t.get('package')))
+
+            rqs.append({'id': int(rq.get('id')), 'packages': pkgs, 'type': act_type})
+        return rqs
+
+    def virtual_accept_request_has_no_binary(self, project, package):
+        filelist = self.api.get_filelist_for_package(pkgname=package, project=self.api.project, expand='1', extension='spec')
+        pkgs = self.api.extract_specfile_short(filelist)
+
+        for pkg in pkgs:
+            query = {'view': 'binarylist', 'package': pkg, 'multibuild': '1'}
+            pkg_binarylist = ET.parse(http_GET(self.api.makeurl(['build', project, '_result'], query=query))).getroot()
+            for binary in pkg_binarylist.findall('./result/binarylist/binary'):
+                return False
+
+        return True
+
+    def find_virtually_accepted_requests(self, project):
+        query = "match=state/@name='review'+and+(action/target/@project='{}'+and+action/@type='delete')+and+(review/@state='new'+and+review/@by_group='{}')".format(project, self.api.delreq_review)
         url = self.api.makeurl(['search', 'request'], query)
 
         f = http_GET(url)
@@ -51,6 +84,24 @@ class AcceptCommand(object):
         content = ET.tostring(root)
         http_PUT(url + '?comment=accept+command+update', data=content)
 
+    def virtually_accept_delete(self, request_id, package):
+        self.api.add_review(request_id, by_group=self.api.delreq_review, msg='Request accepted. Cleanup in progress - DO NOT REVOKE!')
+
+        filelist = self.api.get_filelist_for_package(pkgname=package, project=self.api.project, expand='1', extension='spec')
+        pkgs = self.api.extract_specfile_short(filelist)
+
+        # Disable build and wipes the binary to the package and the sub-package
+        for pkg in pkgs:
+            meta = show_package_meta(self.api.apiurl, self.api.project, pkg)
+            meta = ''.join(meta)
+            # Update package meta to disable build
+            self.api.create_package_container(self.api.project, pkg, meta=meta, disable_build=True)
+            wipebinaries(self.api.apiurl, self.api.project, package=pkg, repo=self.api.main_repo)
+
+            # Remove package from Rings
+            if self.api.ring_packages.get(pkg):
+                delete_package(self.api.apiurl, self.api.ring_packages.get(pkg), pkg, force=True, msg="Cleanup package in Rings")
+
     def perform(self, project, force=False):
         """Accept the staging project for review and submit to Factory /
         openSUSE 13.2 ...
@@ -73,16 +124,22 @@ class AcceptCommand(object):
             self.api.rm_from_prj(project, request_id=req['id'], msg='ready to accept')
             packages.append(req['package'])
             msg = 'Accepting staging review for {}'.format(req['package'])
-            print(msg)
 
             oldspecs = self.api.get_filelist_for_package(pkgname=req['package'],
                                                          project=self.api.project,
                                                          extension='spec')
-            change_request_state(self.api.apiurl,
-                                 str(req['id']),
-                                 'accepted',
-                                 message='Accept to %s' % self.api.project)
-            self.create_new_links(self.api.project, req['package'], oldspecs)
+            if 'type' in req and req['type'] == 'delete' and self.api.delreq_review:
+                msg += ' and started handling of virtual accept process'
+                print(msg)
+                # Virtually accept the delete request
+                self.virtually_accept_delete(req['id'], req['package'])
+            else:
+                print(msg)
+                change_request_state(self.api.apiurl,
+                                     str(req['id']),
+                                     'accepted',
+                                     message='Accept to %s' % self.api.project)
+                self.create_new_links(self.api.project, req['package'], oldspecs)
 
         self.api.accept_status_comment(project, packages)
         self.api.staging_deactivate(project)
@@ -128,6 +185,16 @@ class AcceptCommand(object):
 
     def accept_other_new(self):
         changed = False
+
+        if self.api.delreq_review:
+            rqlist = self.find_virtually_accepted_requests(self.api.project)
+            for req in rqlist:
+                if self.virtual_accept_request_has_no_binary(self.api.project, req['packages'][0]):
+                    # Accepting delreq-review review
+                    self.api.do_change_review_state(req['id'], 'accepted',
+                                                    by_group=self.api.delreq_review,
+                                                    message='Virtually accepted delete {}'.format(req['packages'][0]))
+
         rqlist = self.find_new_requests(self.api.project)
         if self.api.cnonfree:
             rqlist += self.find_new_requests(self.api.cnonfree)
@@ -135,12 +202,23 @@ class AcceptCommand(object):
         for req in rqlist:
             oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project=self.api.project, extension='spec')
             print 'Accepting request %d: %s' % (req['id'], ','.join(req['packages']))
+            if req['type'] == 'delete':
+                # Remove devel project/package tag before accepting the request
+                self.remove_obsoleted_develtag(self.api.project, req['packages'][0])
             change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
             # Check if all .spec files of the package we just accepted has a package container to build
             self.create_new_links(self.api.project, req['packages'][0], oldspecs)
             changed = True
 
         return changed
+
+    def remove_obsoleted_develtag(self, project, package):
+        xpath = {
+            'package': "@project='%s' and devel/@project=@project and devel/@package='%s'" % (project, package),
+        }
+        collection = search(self.api.apiurl, **xpath)['package']
+        for pkg in collection.findall('package'):
+            set_devel_project(self.api.apiurl, project, pkg.attrib['name'], devprj=None)
 
     def create_new_links(self, project, pkgname, oldspeclist):
         filelist = self.api.get_filelist_for_package(pkgname=pkgname, project=project, extension='spec')
