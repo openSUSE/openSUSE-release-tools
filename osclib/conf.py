@@ -61,6 +61,7 @@ DEFAULT = {
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
         'delreq-review': None,
+        'main-repo': 'standard',
     },
     r'SUSE:(?P<project>SLE-15.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
@@ -75,6 +76,7 @@ DEFAULT = {
         'lock': 'SUSE:%(project)s:Staging',
         'lock-ns': 'SUSE',
         'delreq-review': None,
+        'main-repo': 'standard',
     },
     r'SUSE:(?P<project>.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
@@ -91,6 +93,7 @@ DEFAULT = {
         'lock-ns': 'SUSE',
         'remote-config': False,
         'delreq-review': None,
+        'main-repo': 'standard',
     },
 }
 
