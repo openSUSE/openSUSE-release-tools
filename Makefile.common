@@ -1,4 +1,5 @@
 prefix=/usr
+bindir=$(prefix)/bin
 datadir=$(prefix)/share
 sysconfdir=/etc
 unitdir=$(prefix)/lib/systemd/system
