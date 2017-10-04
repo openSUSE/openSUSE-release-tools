@@ -239,7 +239,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
         parser.add_option('--ignore-devel', action='store_true', default=False, help='ignore devel projects for target package')
-        parser.add_option('--review-team', metavar='GROUP', help='review team group added to requests with > 8 diff')
+        parser.add_option('--review-team', metavar='GROUP', help='review team group added to requests')
         parser.add_option('--repo-checker', metavar='USER', help='repo checker user added after accepted review')
         parser.add_option('--staging-group', metavar='GROUP', help='group used by staging process')
         parser.add_option('--skip-add-reviews', action='store_true', default=False, help='skip adding review after completing checks')
