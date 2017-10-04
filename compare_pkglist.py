@@ -32,8 +32,8 @@ import osc.core
 
 from osc import oscerr
 
-OPENSUSE = 'openSUSE:Leap:42.2'
-SLE = 'SUSE:SLE-12-SP2:GA'
+OPENSUSE = 'openSUSE:Leap:15.0'
+SLE = 'SUSE:SLE-15:GA'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -92,7 +92,7 @@ class CompareList(object):
 
         for pkg in old_packages:
             if pkg not in new_packages:
-                logging.debug('%s is not in %s' % (pkg, self.new_prj))
+                logging.info('%s is not in %s' % (pkg, self.new_prj))
             else:
                 # ignore the second specfile package
                 linked = self.is_linked_package(self.old_prj, pkg)
