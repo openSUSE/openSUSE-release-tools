@@ -252,8 +252,12 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         if self.options.ignore_devel:
             bot.ignore_devel = self.options.ignore_devel
         if self.options.review_team:
+            if self.options.review_team == 'None':
+                self.options.review_team = None
             bot.review_team = self.options.review_team
         if self.options.repo_checker:
+            if self.options.repo_checker == 'None':
+                self.options.repo_checker = None
             bot.repo_checker = self.options.repo_checker
         if self.options.staging_group:
             bot.staging_group = self.options.staging_group
