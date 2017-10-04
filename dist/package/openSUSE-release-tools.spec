@@ -65,6 +65,10 @@ Requires:       python-python-dateutil
 Requires:       python-pyxdg
 Requires:       python-urlgrabber
 
+# bs_mirrorfull
+Requires:       perl-XML-Parser
+Requires:       perl-Net-SSLeay
+
 # Spec related requirements.
 Requires:       osclib = %{version}
 
@@ -111,6 +115,9 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
+# repo_checker.pl
+Requires:       perl-XML-Simple
+Requires:       build
 Requires(pre):  shadow
 
 %description repo-checker
@@ -229,6 +236,7 @@ exit 0
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
+%exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
 %exclude %{_datadir}/%{source_dir}/totest-manager.py
 %exclude %{_datadir}/%{source_dir}/osclib
@@ -260,6 +268,7 @@ exit 0
 %files repo-checker
 %defattr(-,root,root,-)
 %{_bindir}/osrt-repo_checker
+%{_datadir}/%{source_dir}/repo_checker.pl
 %{_datadir}/%{source_dir}/repo_checker.py
 %{_unitdir}/osrt-repo-checker.service
 %{_unitdir}/osrt-repo-checker.timer
