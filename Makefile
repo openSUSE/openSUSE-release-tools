@@ -5,7 +5,7 @@ include Makefile.common
 pkgdata_BINS=repo_checker
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
-pkgdata_DATA+=bs_copy osclib $(wildcard *.pm *.testcase)
+pkgdata_DATA+=bs_copy metrics osclib $(wildcard *.pm *.testcase)
 package_name = openSUSE-release-tools
 VERSION = "build-$(shell date +%F)"
 

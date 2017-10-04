@@ -109,6 +109,17 @@ BuildArch:      noarch
 %description announcer
 OBS product release announcer for generating email diffs summaries.
 
+%package metrics
+Summary:        Ingest relevant data to generate insightful metrics
+Group:          Development/Tools/Other
+BuildArch:      noarch
+# TODO Update requirements.
+Requires:       osclib = %{version}
+# TODO Requires: python-influxdb, but package does not exist.
+
+%description metrics
+Ingest relevant OBS and annotation data to generate insightful metrics.
+
 %package repo-checker
 Summary:        Repository checker service
 Group:          Development/Tools/Other
@@ -203,6 +214,8 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %postun announcer
 %service_del_postun %{announcer_filename}.service
 
+# TODO Provide metrics service once #1006 is resolved.
+
 %pre repo-checker
 %service_add_pre osrt-repo-checker.service
 getent passwd osrt-repo-checker > /dev/null || \
@@ -236,6 +249,8 @@ exit 0
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
+%exclude %{_datadir}/%{source_dir}/metrics
+%exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
 %exclude %{_datadir}/%{source_dir}/totest-manager.py
@@ -264,6 +279,11 @@ exit 0
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
 %{_unitdir}/%{announcer_filename}.service
 %{_unitdir}/%{announcer_filename}.timer
+
+%files metrics
+%defattr(-,root,root,-)
+%{_datadir}/%{source_dir}/metrics
+%{_datadir}/%{source_dir}/metrics.py
 
 %files repo-checker
 %defattr(-,root,root,-)
