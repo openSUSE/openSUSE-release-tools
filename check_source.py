@@ -30,7 +30,6 @@ class CheckSource(ReviewBot.ReviewBot):
         self.ignore_devel = False
         self.review_team = 'opensuse-review-team'
         self.repo_checker = 'repo-checker'
-        self.staging_group = 'factory-staging'
         self.skip_add_reviews = False
 
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
@@ -113,14 +112,24 @@ class CheckSource(ReviewBot.ReviewBot):
 
             if self.only_changes():
                 self.logger.debug('only .changes modifications')
-                if not self.dryrun:
+                staging_group = self.staging_group(target_project)
+                if staging_group and not self.dryrun:
                     osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
-                        by_group=self.staging_group,
+                        by_group=staging_group,
                         message='skipping the staging process since only .changes modifications')
             elif self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
         return True
+
+    def staging_group(self, project):
+        try:
+            return self.staging_api(project).cstaging_group
+        except urllib2.HTTPError, e:
+            if e.code != 404:
+                raise e
+
+        return None
 
     def is_devel_project(self, source_project, target_project):
         # Load project config and allow for remote entries.
@@ -241,7 +250,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser.add_option('--ignore-devel', action='store_true', default=False, help='ignore devel projects for target package')
         parser.add_option('--review-team', metavar='GROUP', help='review team group added to requests')
         parser.add_option('--repo-checker', metavar='USER', help='repo checker user added after accepted review')
-        parser.add_option('--staging-group', metavar='GROUP', help='group used by staging process')
         parser.add_option('--skip-add-reviews', action='store_true', default=False, help='skip adding review after completing checks')
 
         return parser
@@ -259,8 +267,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             if self.options.repo_checker == 'None':
                 self.options.repo_checker = None
             bot.repo_checker = self.options.repo_checker
-        if self.options.staging_group:
-            bot.staging_group = self.options.staging_group
         bot.skip_add_reviews = self.options.skip_add_reviews
 
         return bot
