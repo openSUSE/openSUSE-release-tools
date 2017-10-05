@@ -480,7 +480,7 @@ class ReviewBot(object):
 
         self.logger.debug('adding comment to {}: {}'.format(debug_key, message))
         if not self.dryrun:
-            self.comment_api.add_comment(comment=str(message), **kwargs)
+            self.comment_api.add_comment(comment=message, **kwargs)
 
         self.comment_handler_remove()
 
