@@ -59,6 +59,14 @@ class SUSEUpdate(Update):
         settings['FLAVOR'] += '-Minimal'
         return [settings]
 
+    @staticmethod
+    def add_kernel_settings(settings):
+        settings = settings.copy()
+        if settings['BUILD'].split(":")[-1].startswith('kernel-') and settings['FLAVOR'] == 'Server-DVD-Incidents':
+            settings['FLAVOR'] += '-Kernel'
+            return [settings]
+        return []
+
     def settings(self, src_prj, dst_prj, packages):
         settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages)
 
@@ -79,7 +87,7 @@ class SUSEUpdate(Update):
 
         if not len(settings):
             return []
-
         settings += self.add_minimal_settings(src_prj, settings[0])
+        settings += self.add_kernel_settings(settings[0])
         self.logger.debug("settings are: {}".format(settings))
         return settings
