@@ -455,6 +455,7 @@ class ReviewBot(object):
 
         info = {'state': state, 'result': result}
         message = self.comment_api.add_marker(message, self.bot_name, info)
+        message = self.comment_api.truncate(message.strip())
 
         comments = self.comment_api.get_comments(**kwargs)
         comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
