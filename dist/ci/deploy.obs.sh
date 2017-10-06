@@ -24,6 +24,6 @@ OBS_TARGET_PACKAGE="$(osc info | grep -oP "Link info: .*, package \K[^\s,]+")"
 echo "checking for existing requests to $OBS_TARGET_PROJECT/$OBS_TARGET_PACKAGE..."
 if osc request list "$OBS_TARGET_PROJECT" "$OBS_TARGET_PACKAGE" | grep 'No results for package' ; then
   osc service wait
-  osc sr --diff
+  osc sr --diff | cat
   osc sr --yes -m "automatic update"
 fi
