@@ -19,8 +19,8 @@ osc addremove
 osc commit -m "$(grep -oP 'version: \K.*' *.obsinfo)"
 
 # Create submit request if none currently exists.
-OBS_TARGET_PROJECT="$(osc info | grep -oP "Link info: project \K[^\s,]+")"
-OBS_TARGET_PACKAGE="$(osc info | grep -oP "Link info: .*, package \K[^\s,]+")"
+OBS_TARGET_PROJECT="$(osc info | grep -oP "Link info:.*?project \K[^\s,]+")"
+OBS_TARGET_PACKAGE="$(osc info | grep -oP "Link info:.*?, package \K[^\s,]+")"
 echo "checking for existing requests to $OBS_TARGET_PROJECT/$OBS_TARGET_PACKAGE..."
 if osc request list "$OBS_TARGET_PROJECT" "$OBS_TARGET_PACKAGE" | grep 'No results for package' ; then
   osc service wait
