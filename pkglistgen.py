@@ -46,8 +46,6 @@ from osclib.memoize import CACHEDIR
 logger = logging.getLogger()
 
 ARCHITECTURES = ('x86_64', 'ppc64le', 's390x', 'aarch64')
-APIURL = 'https://api.suse.de/public/'
-
 
 class Group(object):
 
@@ -55,6 +53,7 @@ class Group(object):
         self.name = name
         self.safe_name = re.sub(r'\W', '_', name.lower())
         self.pkglist = pkglist
+        self.architectures = pkglist.architectures
         self.conditional = None
         self.packages = dict()
         self.locked = set()
@@ -62,7 +61,7 @@ class Group(object):
         self.solved = False
         self.not_found = dict()
         self.unresolvable = dict()
-        for a in ARCHITECTURES:
+        for a in self.architectures:
             self.packages[a] = []
             self.unresolvable[a] = dict()
 
@@ -73,7 +72,7 @@ class Group(object):
         pkglist.groups[self.safe_name] = self
 
     def _add_to_packages(self, package, arch=None):
-        archs = ARCHITECTURES
+        archs = self.architectures
         if arch:
             archs = [arch]
 
@@ -104,7 +103,7 @@ class Group(object):
             raise Exception('group {} not solved'.format(self.name))
 
     def inherit(self, group):
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             self.packages[arch] += group.packages[arch]
 
         self.locked.update(group.locked)
@@ -112,7 +111,7 @@ class Group(object):
 
     # do not repeat packages
     def ignore(self, without):
-        for arch in ('*', ) + ARCHITECTURES:
+        for arch in ['*'] + self.architectures:
             s = set(without.solved_packages[arch].keys())
             s |= set(without.solved_packages['*'].keys())
             for p in s:
@@ -131,12 +130,12 @@ class Group(object):
             return
 
         solved = dict()
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             solved[arch] = dict()
 
         self.srcpkgs = set()
         self.recommends = dict()
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             pool = self.pkglist._prepare_pool(arch)
             # pool.set_debuglevel(10)
 
@@ -180,8 +179,11 @@ class Group(object):
                     logger.error('%s.%s: nothing to do', self.name, arch)
                     continue
 
-                for s in solver.get_recommended():
-                    self.recommends.setdefault(s.name, group + ':' + n)
+                if 'get_recommended' in dir(solver):
+                    for s in solver.get_recommended():
+                        self.recommends.setdefault(s.name, group + ':' + n)
+                else:
+                    logger.warn('newer libsolv needed for recommends!')
 
                 for s in trans.newsolvables():
                     solved[arch].setdefault(s.name, group + ':' + n)
@@ -197,7 +199,7 @@ class Group(object):
 
         common = None
         # compute common packages across all architectures
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             if common is None:
                 common = set(solved[arch].keys())
                 continue
@@ -208,7 +210,7 @@ class Group(object):
 
         # reduce arch specific set by common ones
         solved['*'] = dict()
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             for p in common:
                 solved['*'][p] = solved[arch].pop(p)
 
@@ -217,7 +219,7 @@ class Group(object):
 
     def collect_devel_packages(self, modules):
         develpkgs = set()
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             pool = self.pkglist._prepare_pool(arch)
             sel = pool.Selection()
             for s in pool.solvables_iter():
@@ -235,7 +237,7 @@ class Group(object):
         for p in develpkgs:
             already_present = False
             for m in modules:
-                for arch in ('*', ) + ARCHITECTURES:
+                for arch in ['*'] + self.architectures:
                     already_present = already_present or (p in m.solved_packages[arch])
                     already_present = already_present or (p in m.develpkgs)
             if not already_present:
@@ -248,7 +250,7 @@ class Group(object):
         for p in recommends:
             already_present = False
             for m in modules:
-                for arch in ('*', ) + ARCHITECTURES:
+                for arch in ['*'] + self.architectures:
                     already_present = already_present or (p in m.solved_packages[arch])
                     already_present = already_present or (p in m.recommends)
             if not already_present:
@@ -287,9 +289,10 @@ class Group(object):
                 packagelist.append(c)
                 continue
             status = self.pkglist.supportstatus(name)
-            p = ET.SubElement(packagelist, 'package', {
-                'name': name,
-                'supportstatus': status})
+            attrs = { 'name': name }
+            if status is not None:
+                attrs['supportstatus'] = status
+            p = ET.SubElement(packagelist, 'package', attrs)
             c = ET.Comment(' reason: {} '.format(packages[name]))
             packagelist.append(c)
         if arch == '*' and self.develpkgs:
@@ -308,7 +311,7 @@ class Group(object):
         pprint({'name': self.name, 'missing': self.missing, 'packages': self.packages,
                 'solved': self.solved_packages, 'silents': self.silents})
         return
-        archs = ('*',) + ARCHITECTURES
+        archs = ['*'] + self.architectures
         for arch in archs:
             x = self.toxml(arch)
             print(ET.tostring(x, pretty_print=True))
@@ -341,13 +344,15 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _load_supportstatus(self):
         # XXX
-        with open(os.path.join(self.input_dir, 'supportstatus.txt'), 'r') as fh:
-            self._supportstatus = dict()
-            for l in fh:
-                # pkg, status
-                a = l.rstrip().split(' ')
-                if len(a) > 1:
-                    self._supportstatus[a[0]] = a[1]
+        fn = os.path.join(self.input_dir, 'supportstatus.txt')
+        self._supportstatus = dict()
+        if os.path.exists(fn):
+            with open(fn, 'r') as fh:
+                for l in fh:
+                    # pkg, status
+                    a = l.rstrip().split(' ')
+                    if len(a) > 1:
+                        self._supportstatus[a[0]] = a[1]
 
     # TODO: make per product
     def supportstatus(self, package):
@@ -381,7 +386,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _write_all_groups(self):
         self._check_supplements()
-        archs = ('*',) + ARCHITECTURES
+        archs = ['*'] + self.architectures
         for name in self.groups:
             group = self.groups[name]
             fn = '{}.group'.format(group.name)
@@ -420,7 +425,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _check_supplements(self):
         tocheck = set()
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             for s in pool.solvables_iter():
@@ -469,7 +474,7 @@ class PkgListGen(ToolBase.ToolBase):
     def _collect_unsorted_packages(self):
         return
         packages = dict()
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             p = set([s.name for s in
@@ -517,12 +522,21 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                           help='input directory', default='.')
         parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
                           help='input directory', default='.')
+        parser.add_option('-a', '--architecture', dest='architectures', metavar='ARCH',
+                          help='architecure', action='append')
+        parser.add_option('--default-support-status', dest='default_support_status', metavar='STATUS',
+                          help='default support status', default=None)
         return parser
 
     def setup_tool(self):
         tool = PkgListGen(self.options.repostr)
         tool.input_dir = self.options.input_dir
         tool.output_dir = self.options.output_dir
+        tool.default_support_status = self.options.default_support_status
+        if self.options.architectures:
+            tool.architectures = self.options.architectures
+        else:
+            tool.architectures = ARCHITECTURES
         return tool
 
     def do_list(self, subcmd, opts):
@@ -570,12 +584,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for prp in tool.repos:
             project = prp['project']
             repo = prp['repo']
-            for arch in ARCHITECTURES:
+            for arch in self.tool.architectures:
                 d = os.path.join(
                     CACHEDIR, 'repo-{}-{}-{}'.format(project, repo, arch))
                 logger.debug('updating %s', d)
+                # XXX
+                if 'opensuse' in self.tool.apiurl:
+                    apiurl = 'https://api.opensuse.org/public'
+                else:
+                    apiurl = 'https://api.suse.de/public'
                 subprocess.call(
-                    [bs_mirrorfull, '{}/build/{}/{}/{}'.format(APIURL, project, repo, arch), d])
+                    [bs_mirrorfull, '{}/build/{}/{}/{}'.format(apiurl, project, repo, arch), d])
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
                 fh = open(d + '.solv', 'w')
