@@ -37,7 +37,7 @@ matrix:
 
 deploy:
   provider: script
-  script: docker run -it -e OBS_PACKAGE="$OBS_PACKAGE" -e OBS_USER="$OBS_USER" -e OBS_PASS="$OBS_PASS" -e OBS_EMAIL="$OBS_EMAIL" spec ./dist/ci/deploy.obs.sh
+  script: docker run -it -e OBS_TARGET_PROJECT="$OBS_TARGET_PROJECT" -e OBS_PACKAGE="$OBS_PACKAGE" -e OBS_USER="$OBS_USER" -e OBS_PASS="$OBS_PASS" -e OBS_EMAIL="$OBS_EMAIL" spec ./dist/ci/deploy.obs.sh
   on:
     branch: master
     condition: $TEST_SUITE = distribution
