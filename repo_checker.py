@@ -52,7 +52,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             }
 
             if not all(result.success for _, result in results.items()):
-                self.result_comment(project, project, arch, results, comment)
+                self.result_comment(arch, results, comment)
 
         text = '\n'.join(comment).strip()
         api.dashboard_content_ensure('repo_checker', text, 'project_only run')

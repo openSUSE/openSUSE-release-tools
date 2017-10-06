@@ -2,6 +2,7 @@ SUBDIRS = factory-package-news abichecker
 
 include Makefile.common
 
+pkgdata_BINS=repo_checker
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy osclib $(wildcard *.pm *.testcase)
@@ -11,7 +12,7 @@ VERSION = "build-$(shell date +%F)"
 all:
 
 install:
-	install -d -m 755 $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir)
+	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir)
 	for i in $(pkgdata_SCRIPTS); do install -m 755 $$i $(DESTDIR)$(pkgdatadir); done
 	chmod 644 $(DESTDIR)$(pkgdatadir)/osc-*.py
 	for i in $(pkgdata_DATA); do cp -a $$i $(DESTDIR)$(pkgdatadir); done
@@ -20,6 +21,7 @@ install:
 	install -m 644 systemd/* $(DESTDIR)$(unitdir)
 	sed -i "s/OSC_STAGING_VERSION = '.*'/OSC_STAGING_VERSION = '$(VERSION)'/" \
 	  $(DESTDIR)$(pkgdatadir)/osc-staging.py
+	for i in $(pkgdata_BINS); do ln -s $(pkgdatadir)/$$i.py $(DESTDIR)$(bindir)/osrt-$$i; done
 
 check: test
 

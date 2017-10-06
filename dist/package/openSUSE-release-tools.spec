@@ -65,6 +65,10 @@ Requires:       python-python-dateutil
 Requires:       python-pyxdg
 Requires:       python-urlgrabber
 
+# bs_mirrorfull
+Requires:       perl-XML-Parser
+Requires:       perl-Net-SSLeay
+
 # Spec related requirements.
 Requires:       osclib = %{version}
 
@@ -104,6 +108,20 @@ BuildArch:      noarch
 
 %description announcer
 OBS product release announcer for generating email diffs summaries.
+
+%package repo-checker
+Summary:        Repository checker service
+Group:          Development/Tools/Other
+BuildArch:      noarch
+# TODO Update requirements.
+Requires:       osclib = %{version}
+# repo_checker.pl
+Requires:       perl-XML-Simple
+Requires:       build
+Requires(pre):  shadow
+
+%description repo-checker
+Repository checker service that inspects built RPMs from stagings.
 
 %package totest-manager
 Summary:        Manages \$product:ToTest repository
@@ -185,6 +203,21 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %postun announcer
 %service_del_postun %{announcer_filename}.service
 
+%pre repo-checker
+%service_add_pre osrt-repo-checker.service
+getent passwd osrt-repo-checker > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-repo-checker" osrt-repo-checker
+exit 0
+
+%post repo-checker
+%service_add_post osrt-repo-checker.service
+
+%preun repo-checker
+%service_del_preun osrt-repo-checker.service
+
+%postun repo-checker
+%service_del_postun osrt-repo-checker.service
+
 %pre totest-manager
 %service_add_pre opensuse-totest-manager.service
 
@@ -203,6 +236,8 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
+%exclude %{_datadir}/%{source_dir}/repo_checker.pl
+%exclude %{_datadir}/%{source_dir}/repo_checker.py
 %exclude %{_datadir}/%{source_dir}/totest-manager.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
@@ -229,6 +264,16 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
 %{_unitdir}/%{announcer_filename}.service
 %{_unitdir}/%{announcer_filename}.timer
+
+%files repo-checker
+%defattr(-,root,root,-)
+%{_bindir}/osrt-repo_checker
+%{_datadir}/%{source_dir}/repo_checker.pl
+%{_datadir}/%{source_dir}/repo_checker.py
+%{_unitdir}/osrt-repo-checker.service
+%{_unitdir}/osrt-repo-checker.timer
+%{_unitdir}/osrt-repo-checker-project_only@.service
+%{_unitdir}/osrt-repo-checker-project_only@.timer
 
 %files totest-manager
 %defattr(-,root,root,-)
