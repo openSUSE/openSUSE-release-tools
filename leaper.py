@@ -89,9 +89,15 @@ class Leaper(ReviewBot.ReviewBot):
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
         query = {'expand': 1} if expand else {}
-        root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl,['source', project],
-                                 query=query))).getroot()
-        packages = [i.get('name') for i in root.findall('entry')]
+        try:
+            root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl,['source', project],
+                                     query=query))).getroot()
+            packages = [i.get('name') for i in root.findall('entry')]
+        except urllib2.HTTPError, e:
+            # in case the project doesn't exist yet (like sle update)
+            if e.code != 404:
+                raise e
+            packages = []
 
         return packages
 
