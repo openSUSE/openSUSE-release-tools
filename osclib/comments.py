@@ -136,8 +136,7 @@ class CommentAPI(object):
         if not comment:
             raise ValueError('Empty comment.')
 
-        # Always encode as utf-8 to ensure truncate handles length properly.
-        comment = self.truncate(comment.strip().encode('utf-8'))
+        comment = self.truncate(comment.strip())
 
         query = {}
         if parent_id:
