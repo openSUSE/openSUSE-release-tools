@@ -1,5 +1,6 @@
 env:
   global:
+    - OBS_TARGET_PROJECT="openSUSE:Factory"
     - OBS_PACKAGE="openSUSE:Tools/openSUSE-release-tools"
     - OBS_USER="jberry"
     # OBS_PASS
