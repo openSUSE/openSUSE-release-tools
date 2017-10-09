@@ -1,0 +1,9 @@
+[Unit]
+Description=openSUSE Release Tools: staging-bot daily for %i
+
+[Timer]
+OnCalendar=daily
+Unit=osrt-staging-bot-daily@%i.service
+
+[Install]
+WantedBy=timers.target

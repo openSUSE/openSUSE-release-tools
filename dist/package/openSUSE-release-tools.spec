@@ -134,6 +134,18 @@ Requires(pre):  shadow
 %description repo-checker
 Repository checker service that inspects built RPMs from stagings.
 
+%package staging-bot
+Summary:        Staging bot services
+Group:          Development/Tools/Other
+BuildArch:      noarch
+# devel-project.py
+Requires:       %{name} = %{version}
+Requires:       osc-plugin-staging = %{version}
+Requires(pre):  shadow
+
+%description staging-bot
+Staging bot services and system user.
+
 %package totest-manager
 Summary:        Manages \$product:ToTest repository
 Group:          Development/Tools/Other
@@ -231,6 +243,29 @@ exit 0
 %postun repo-checker
 %service_del_postun osrt-repo-checker.service
 
+%pre staging-bot
+%service_add_pre osrt-staging-bot-daily@.service
+%service_add_pre osrt-staging-bot-regular@.service
+%service_add_pre osrt-staging-bot-reminder.service
+getent passwd osrt-staging-bot > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-staging-bot" osrt-staging-bot
+exit 0
+
+%post staging-bot
+%service_add_post osrt-staging-bot-daily@.service
+%service_add_post osrt-staging-bot-regular@.service
+%service_add_post osrt-staging-bot-reminder.service
+
+%preun staging-bot
+%service_del_preun osrt-staging-bot-daily@.service
+%service_del_preun osrt-staging-bot-regular@.service
+%service_del_preun osrt-staging-bot-reminder.service
+
+%postun staging-bot
+%service_del_postun osrt-staging-bot-daily@.service
+%service_del_postun osrt-staging-bot-regular@.service
+%service_del_postun osrt-staging-bot-reminder.service
+
 %pre totest-manager
 %service_add_pre opensuse-totest-manager.service
 
@@ -249,6 +284,7 @@ exit 0
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
+%exclude %{_datadir}/%{source_dir}/devel-project.py
 %exclude %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
@@ -294,6 +330,17 @@ exit 0
 %{_unitdir}/osrt-repo-checker.timer
 %{_unitdir}/osrt-repo-checker-project_only@.service
 %{_unitdir}/osrt-repo-checker-project_only@.timer
+
+%files staging-bot
+%defattr(-,root,root,-)
+%{_bindir}/osrt-devel-project
+%{_datadir}/%{source_dir}/devel-project.py
+%{_unitdir}/osrt-staging-bot-daily@.service
+%{_unitdir}/osrt-staging-bot-daily@.timer
+%{_unitdir}/osrt-staging-bot-regular@.service
+%{_unitdir}/osrt-staging-bot-regular@.timer
+%{_unitdir}/osrt-staging-bot-reminder.service
+%{_unitdir}/osrt-staging-bot-reminder.timer
 
 %files totest-manager
 %defattr(-,root,root,-)

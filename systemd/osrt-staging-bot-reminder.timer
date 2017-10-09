@@ -1,0 +1,9 @@
+[Unit]
+Description=openSUSE Release Tools: staging-bot reminder
+
+[Timer]
+OnCalendar=daily
+Unit=osrt-staging-bot-reminder.service
+
+[Install]
+WantedBy=timers.target

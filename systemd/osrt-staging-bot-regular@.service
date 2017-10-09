@@ -1,0 +1,19 @@
+[Unit]
+Description=openSUSE Release Tools: staging-bot regular for %i
+
+[Service]
+Type=oneshot
+User=osrt-staging-bot
+SyslogIdentifier=osrt-staging-bot
+ExecStart=/usr/bin/env bash -c ' \
+  osc staging -p "%i" rebuild && \
+  osc staging -p "%i" list --supersede && \
+  osc staging -p "%i" adi --by-develproject && \
+  osc staging -p "%i" select --non-interactive --merge --try-strategies && \
+  osc staging -p "%i" unselect --cleanup && \
+  osc staging -p "%i" repair --cleanup \
+  '
+TimeoutStartSec=5 hour
+
+[Install]
+WantedBy=multi-user.target
