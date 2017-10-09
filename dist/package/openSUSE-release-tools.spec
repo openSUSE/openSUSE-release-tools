@@ -230,18 +230,22 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 
 %pre repo-checker
 %service_add_pre osrt-repo-checker.service
+%service_add_pre osrt-repo-checker-project_only@.service
 getent passwd osrt-repo-checker > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-repo-checker" osrt-repo-checker
 exit 0
 
 %post repo-checker
 %service_add_post osrt-repo-checker.service
+%service_add_post osrt-repo-checker-project_only@.service
 
 %preun repo-checker
 %service_del_preun osrt-repo-checker.service
+%service_del_preun osrt-repo-checker-project_only@.service
 
 %postun repo-checker
 %service_del_postun osrt-repo-checker.service
+%service_del_postun osrt-repo-checker-project_only@.service
 
 %pre staging-bot
 %service_add_pre osrt-staging-bot-daily@.service
