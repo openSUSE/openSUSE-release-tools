@@ -153,7 +153,8 @@ class Group(object):
                 for l in self.locked:
                     sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
                     if sel.isempty():
-                        logger.warn('{}.{}: locked package {} not found'.format(self.name, arch, l))
+                        # if we can't find it, it probably is not as important
+                        logger.debug('{}.{}: locked package {} not found'.format(self.name, arch, l))
                     else:
                         jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
@@ -217,6 +218,18 @@ class Group(object):
 
         self.solved_packages = solved
         self.solved = True
+
+    def check_dups(self, modules):
+        packages = set(self.solved_packages['*'])
+        for arch in ARCHITECTURES:
+            packages.update(self.solved_packages[arch])
+        for m in modules:
+            if m == self: continue
+            mp = set(m.solved_packages['*'])
+            for arch in ARCHITECTURES:
+                mp.update(m.solved_packages[arch])
+            if len(packages & mp):
+                print self.name, m.name, sorted(packages & mp)
 
     def collect_devel_packages(self, modules):
         develpkgs = set()
@@ -479,41 +492,33 @@ class PkgListGen(ToolBase.ToolBase):
 
         return pool
 
-    def _collect_unsorted_packages(self):
-        return
+    def _collect_unsorted_packages(self, modules):
         packages = dict()
         for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             p = set([s.name for s in
                      pool.solvables_iter() if not
-                     (s.name.endswith('-debuginfo') or
+                     (s.name.endswith('-32bit') or
+                      s.name.endswith('-debuginfo') or
                       s.name.endswith('-debugsource'))])
 
-            for g in self.groups.values():
-                if g.solved:
-                    for a in ('*', arch):
-                        p -= g.solved_packages[a]
-            packages[arch] = p
+            for g in modules:
+                for a in ('*', arch):
+                    p -= set(g.solved_packages[a].keys())
+            for package in p:
+                packages.setdefault(package, []).append(arch)
 
-        common = None
-        # compute common packages across all architectures
-        for arch in packages.keys():
-            if common is None:
-                common = set(packages[arch])
-                continue
-            common &= packages[arch]
-
-        # reduce arch specific set by common ones
-        for arch in packages.keys():
-            packages[arch] -= common
-
-        packages['*'] = common
-
-        g = Group('unsorted', self)
-        g.solved_packages = packages
-        g.solved = True
-
+        with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
+            fh.write("unsorted:\n")
+            for p in sorted(packages.keys()):
+                fh.write("  - ")
+                fh.write(p)
+                if len(packages[p]) != len(ARCHITECTURES):
+                    fh.write(": [")
+                    fh.write(','.join(sorted(packages[p])))
+                    fh.write("]")
+                fh.write(" \n")
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
@@ -648,10 +653,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             modules.append(self.tool.groups[groupname])
 
         for module in modules:
+            module.check_dups(modules)
             module.collect_devel_packages(modules)
             module.filter_duplicated_recommends(modules)
 
-        self.tool._collect_unsorted_packages()
+        self.tool._collect_unsorted_packages(modules)
         self.tool._write_all_groups()
 
 
