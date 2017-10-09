@@ -80,6 +80,11 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (target_package, target_package, new_info['name'])
             return False
 
+        # We want to see the same package name in the devel project as in the distro; anything else calls for confusion
+        if source_package != target_package:
+            self.review_messages['declined'] = "No in-air renames: The package must be called the same in the devel project as in the target project"
+            return False
+
         # Run check_source.pl script and interpret output.
         source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
