@@ -141,6 +141,8 @@ BuildArch:      noarch
 # devel-project.py
 Requires:       %{name} = %{version}
 Requires:       osc-plugin-staging = %{version}
+# For supersede service.
+Requires:       osc-plugin-check_dups = %{version}
 Requires(pre):  shadow
 
 %description staging-bot
@@ -252,6 +254,7 @@ exit 0
 %service_add_pre osrt-staging-bot-devel-list.service
 %service_add_pre osrt-staging-bot-regular@.service
 %service_add_pre osrt-staging-bot-reminder.service
+%service_add_pre osrt-staging-bot-supersede@.service
 %service_add_pre osrt-staging-bot-support-rebuild@.service
 getent passwd osrt-staging-bot > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-staging-bot" osrt-staging-bot
@@ -262,6 +265,7 @@ exit 0
 %service_add_post osrt-staging-bot-devel-list.service
 %service_add_post osrt-staging-bot-regular@.service
 %service_add_post osrt-staging-bot-reminder.service
+%service_add_post osrt-staging-bot-supersede@.service
 %service_add_post osrt-staging-bot-support-rebuild@.service
 
 %preun staging-bot
@@ -269,6 +273,7 @@ exit 0
 %service_del_preun osrt-staging-bot-devel-list.service
 %service_del_preun osrt-staging-bot-regular@.service
 %service_del_preun osrt-staging-bot-reminder.service
+%service_del_preun osrt-staging-bot-supersede@.service
 %service_del_preun osrt-staging-bot-support-rebuild@.service
 
 %postun staging-bot
@@ -276,6 +281,7 @@ exit 0
 %service_del_postun osrt-staging-bot-devel-list.service
 %service_del_postun osrt-staging-bot-regular@.service
 %service_del_postun osrt-staging-bot-reminder.service
+%service_del_postun osrt-staging-bot-supersede@.service
 %service_del_postun osrt-staging-bot-support-rebuild@.service
 
 %pre totest-manager
@@ -358,6 +364,8 @@ exit 0
 %{_unitdir}/osrt-staging-bot-regular@.timer
 %{_unitdir}/osrt-staging-bot-reminder.service
 %{_unitdir}/osrt-staging-bot-reminder.timer
+%{_unitdir}/osrt-staging-bot-supersede@.service
+%{_unitdir}/osrt-staging-bot-supersede@.timer
 %{_unitdir}/osrt-staging-bot-support-rebuild@.service
 %{_unitdir}/osrt-staging-bot-support-rebuild@.timer
 
