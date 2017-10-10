@@ -252,6 +252,7 @@ exit 0
 %service_add_pre osrt-staging-bot-devel-list.service
 %service_add_pre osrt-staging-bot-regular@.service
 %service_add_pre osrt-staging-bot-reminder.service
+%service_add_pre osrt-staging-bot-support-rebuild@.service
 getent passwd osrt-staging-bot > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-staging-bot" osrt-staging-bot
 exit 0
@@ -261,18 +262,21 @@ exit 0
 %service_add_post osrt-staging-bot-devel-list.service
 %service_add_post osrt-staging-bot-regular@.service
 %service_add_post osrt-staging-bot-reminder.service
+%service_add_post osrt-staging-bot-support-rebuild@.service
 
 %preun staging-bot
 %service_del_preun osrt-staging-bot-daily@.service
 %service_del_preun osrt-staging-bot-devel-list.service
 %service_del_preun osrt-staging-bot-regular@.service
 %service_del_preun osrt-staging-bot-reminder.service
+%service_del_preun osrt-staging-bot-support-rebuild@.service
 
 %postun staging-bot
 %service_del_postun osrt-staging-bot-daily@.service
 %service_del_postun osrt-staging-bot-devel-list.service
 %service_del_postun osrt-staging-bot-regular@.service
 %service_del_postun osrt-staging-bot-reminder.service
+%service_del_postun osrt-staging-bot-support-rebuild@.service
 
 %pre totest-manager
 %service_add_pre opensuse-totest-manager.service
@@ -297,6 +301,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
+%exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
 %exclude %{_datadir}/%{source_dir}/totest-manager.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
@@ -342,7 +347,9 @@ exit 0
 %files staging-bot
 %defattr(-,root,root,-)
 %{_bindir}/osrt-devel-project
+%{_bindir}/osrt-suppkg_rebuild
 %{_datadir}/%{source_dir}/devel-project.py
+%{_datadir}/%{source_dir}/suppkg_rebuild.py
 %{_unitdir}/osrt-staging-bot-daily@.service
 %{_unitdir}/osrt-staging-bot-daily@.timer
 %{_unitdir}/osrt-staging-bot-devel-list.service
@@ -351,6 +358,8 @@ exit 0
 %{_unitdir}/osrt-staging-bot-regular@.timer
 %{_unitdir}/osrt-staging-bot-reminder.service
 %{_unitdir}/osrt-staging-bot-reminder.timer
+%{_unitdir}/osrt-staging-bot-support-rebuild@.service
+%{_unitdir}/osrt-staging-bot-support-rebuild@.timer
 
 %files totest-manager
 %defattr(-,root,root,-)
