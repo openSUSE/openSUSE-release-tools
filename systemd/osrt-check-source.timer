@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: check-source
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=3 min
+Unit=osrt-check-source.service
+
+[Install]
+WantedBy=timers.target

@@ -109,6 +109,17 @@ BuildArch:      noarch
 %description announcer
 OBS product release announcer for generating email diffs summaries.
 
+%package check-source
+Summary:        Check source review bot
+Group:          Development/Tools/Other
+BuildArch:      noarch
+# TODO Update requirements.
+Requires:       osclib = %{version}
+Requires(pre):  shadow
+
+%description check-source
+Check source review bot that performs basic source analysis and assigns reviews.
+
 %package leaper
 Summary:        Leap-style services
 Group:          Development/Tools/Other
@@ -251,6 +262,21 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %postun announcer
 %service_del_postun %{announcer_filename}.service
 
+%pre check-source
+%service_add_pre osrt-check-source.service
+getent passwd osrt-check-source > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-check-source" osrt-check-source
+exit 0
+
+%post check-source
+%service_add_post osrt-check-source.service
+
+%preun check-source
+%service_del_preun osrt-check-source.service
+
+%postun check-source
+%service_del_postun osrt-check-source.service
+
 %pre leaper
 %service_add_pre osrt-leaper-crawler@.service
 %service_add_pre osrt-leaper-manager@.service
@@ -367,6 +393,8 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
 %exclude %{_datadir}/%{source_dir}/check_maintenance_incidents.py
+%exclude %{_datadir}/%{source_dir}/check_source.pl
+%exclude %{_datadir}/%{source_dir}/check_source.py
 %exclude %{_datadir}/%{source_dir}/devel-project.py
 %exclude %{_datadir}/%{source_dir}/leaper.py
 %exclude %{_datadir}/%{source_dir}/manager_42.py
@@ -403,6 +431,14 @@ exit 0
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
 %{_unitdir}/%{announcer_filename}.service
 %{_unitdir}/%{announcer_filename}.timer
+
+%files check-source
+%defattr(-,root,root,-)
+%{_bindir}/osrt-check_source
+%{_datadir}/%{source_dir}/check_source.pl
+%{_datadir}/%{source_dir}/check_source.py
+%{_unitdir}/osrt-check-source.service
+%{_unitdir}/osrt-check-source.timer
 
 %files leaper
 %defattr(-,root,root,-)
