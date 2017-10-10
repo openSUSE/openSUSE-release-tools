@@ -46,6 +46,7 @@ from osclib.memoize import CACHEDIR
 logger = logging.getLogger()
 
 ARCHITECTURES = ('x86_64', 'ppc64le', 's390x', 'aarch64')
+DEFAULT_REPOS = ("openSUSE:Factory/standard")
 
 class Group(object):
 
@@ -319,12 +320,9 @@ class Group(object):
 
 class PkgListGen(ToolBase.ToolBase):
 
-    def __init__(self, repostr):
+    def __init__(self):
         ToolBase.ToolBase.__init__(self)
-        self.repos = []
-        for repo in repostr.split(','):
-            project, reponame = repo.split('/')
-            self.repos.append({'project': project, 'repo': reponame})
+        self.repos = DEFAULT_REPOS
         # package -> supportatus
         self.packages = dict()
         self.default_support_status = 'l3'
@@ -454,8 +452,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.lockjobs[arch] = []
         solvables = set()
         for prp in self.repos:
-            project = prp['project']
-            reponame = prp['repo']
+            project, reponame = prp.split('/')
             repo = pool.add_repo(project)
             s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
             r = repo.add_solv(s)
@@ -513,11 +510,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
 
     def get_optparser(self):
-        FACTORY_REPOS = "SUSE:SLE-15:GA/standard"
         parser = ToolBase.CommandLineInterface.get_optparser(self)
-        parser.add_option('-r', '--repositories', dest='repostr', metavar='REPOS',
-                          help='repositories to process (comma seperated list - default: %s)' % FACTORY_REPOS,
-                          default=FACTORY_REPOS)
+        parser.add_option('-r', '--repositories', dest='repos', metavar='REPOS', action='append',
+                          help='repositories to process (%s)' % DEFAULT_REPOS)
         parser.add_option('-i', '--input-dir', dest='input_dir', metavar='DIR',
                           help='input directory', default='.')
         parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
@@ -529,7 +524,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         return parser
 
     def setup_tool(self):
-        tool = PkgListGen(self.options.repostr)
+        tool = PkgListGen()
         tool.input_dir = self.options.input_dir
         tool.output_dir = self.options.output_dir
         tool.default_support_status = self.options.default_support_status
@@ -537,6 +532,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             tool.architectures = self.options.architectures
         else:
             tool.architectures = ARCHITECTURES
+        if self.options.repos:
+            repos = []
+            for r in self.options.repos:
+                # handle comas as well, easier for shell script for now
+                if ',' in r:
+                    repos += r.split(',')
+                else:
+                    repos.append(r)
+            tool.repos = repos
         return tool
 
     def do_list(self, subcmd, opts):
@@ -579,11 +583,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
 
         # only there to parse the repos
-        tool = PkgListGen(self.options.repostr)
         bs_mirrorfull = os.path.join(os.path.dirname(__file__), 'bs_mirrorfull')
-        for prp in tool.repos:
-            project = prp['project']
-            repo = prp['repo']
+        for prp in self.tool.repos:
+            project, repo = prp.split('/')
             for arch in self.tool.architectures:
                 d = os.path.join(
                     CACHEDIR, 'repo-{}-{}-{}'.format(project, repo, arch))
