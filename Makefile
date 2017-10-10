@@ -2,7 +2,7 @@ SUBDIRS = factory-package-news abichecker
 
 include Makefile.common
 
-pkgdata_BINS=devel-project leaper manager_42 repo_checker suppkg_rebuild update_crawler
+pkgdata_BINS=devel-project leaper manager_42 repo_checker suppkg_rebuild totest-manager update_crawler
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy metrics osclib $(wildcard *.pm *.testcase)
