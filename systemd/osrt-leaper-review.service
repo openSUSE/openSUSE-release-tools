@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: leaper review
+
+[Service]
+Type=oneshot
+User=osrt-leaper
+ExecStart=/usr/bin/osrt-leaper --verbose --manual-version-updates --manual-maintenance-updates review
+
+[Install]
+WantedBy=multi-user.target

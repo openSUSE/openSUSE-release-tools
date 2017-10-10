@@ -1,0 +1,14 @@
+#!/bin/bash
+
+TO=openSUSE:Leap:15.0
+
+osrt-update_crawler --to $TO \
+    --from SUSE:SLE-15:GA \
+    --only-from SUSE:SLE-15:GA \
+    --only-from SUSE:SLE-15:Update \
+    "$@"
+
+osrt-update_crawler --to $TO \
+    --from openSUSE:Factory \
+    --only-from openSUSE:Factory \
+    "$@"

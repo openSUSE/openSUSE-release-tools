@@ -1,0 +1,40 @@
+#!/bin/bash
+
+TO=openSUSE:Leap:42.3
+
+osrt-update_crawler --to $TO \
+    --from SUSE:SLE-12-SP3:GA \
+    --only-from SUSE:SLE-12:GA \
+    --only-from SUSE:SLE-12:Update \
+    --only-from SUSE:SLE-12-SP1:GA \
+    --only-from SUSE:SLE-12-SP1:Update \
+    --only-from SUSE:SLE-12-SP2:GA \
+    --only-from SUSE:SLE-12-SP2:Update \
+    --only-from SUSE:SLE-12-SP3:GA \
+    --only-from SUSE:SLE-12-SP3:Update \
+    "$@"
+
+osrt-update_crawler --to $TO \
+    --from openSUSE:Leap:42.3:Update \
+    --only-from openSUSE:Leap:42.1 \
+    --only-from openSUSE:Leap:42.1:Update \
+    --only-from openSUSE:Leap:42.2 \
+    --only-from openSUSE:Leap:42.2:Update \
+    --only-from openSUSE:Leap:42.3 \
+    --only-from openSUSE:Leap:42.3:Update \
+    "$@"
+
+osrt-update_crawler --to $TO \
+    --from openSUSE:Leap:42.3:NonFree:Update \
+    --only-from openSUSE:Leap:42.1:NonFree \
+    --only-from openSUSE:Leap:42.1:NonFree:Update \
+    --only-from openSUSE:Leap:42.2:NonFree \
+    --only-from openSUSE:Leap:42.2:NonFree:Update \
+    --only-from openSUSE:Leap:42.3:NonFree \
+    --only-from openSUSE:Leap:42.3:NonFree:Update \
+    "$@"
+
+osrt-update_crawler --to $TO \
+    --from openSUSE:Factory \
+    --only-from openSUSE:Factory \
+    "$@"

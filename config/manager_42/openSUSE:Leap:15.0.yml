@@ -1,0 +1,9 @@
+---
+project_preference_order:
+- SUSE:SLE-15:Update
+- SUSE:SLE-15:GA
+- openSUSE:Factory
+- openSUSE:Factory:NonFree
+- openSUSE:Leap:15.0:SLE-workarounds
+- openSUSE:Leap:15.0:SLE-workarounds
+

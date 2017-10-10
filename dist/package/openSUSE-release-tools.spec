@@ -109,6 +109,17 @@ BuildArch:      noarch
 %description announcer
 OBS product release announcer for generating email diffs summaries.
 
+%package leaper
+Summary:        Leap-style services
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       %{name} = %{version}
+Requires:       osclib = %{version}
+Requires(pre):  shadow
+
+%description leaper
+Leap-style services for non-Factory projects.
+
 %package metrics
 Summary:        Ingest relevant data to generate insightful metrics
 Group:          Development/Tools/Other
@@ -228,6 +239,29 @@ mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 %postun announcer
 %service_del_postun %{announcer_filename}.service
 
+%pre leaper
+%service_add_pre osrt-leaper-crawler@.service
+%service_add_pre osrt-leaper-manager@.service
+%service_add_pre osrt-leaper-review.service
+getent passwd osrt-leaper > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-leaper" osrt-leaper
+exit 0
+
+%post leaper
+%service_add_post osrt-leaper-crawler@.service
+%service_add_post osrt-leaper-manager@.service
+%service_add_post osrt-leaper-review.service
+
+%preun leaper
+%service_del_preun osrt-leaper-crawler@.service
+%service_del_preun osrt-leaper-manager@.service
+%service_del_preun osrt-leaper-review.service
+
+%postun leaper
+%service_del_postun osrt-leaper-crawler@.service
+%service_del_postun osrt-leaper-manager@.service
+%service_del_postun osrt-leaper-review.service
+
 # TODO Provide metrics service once #1006 is resolved.
 
 %pre repo-checker
@@ -303,6 +337,8 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
 %exclude %{_datadir}/%{source_dir}/devel-project.py
+%exclude %{_datadir}/%{source_dir}/leaper.py
+%exclude %{_datadir}/%{source_dir}/manager_42.py
 %exclude %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
@@ -313,6 +349,8 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
+%exclude %{_datadir}/%{source_dir}/update_crawler.py
+%dir %{_sysconfdir}/openSUSE-release-tools
 
 %files devel
 %defattr(-,root,root,-)
@@ -334,6 +372,23 @@ exit 0
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
 %{_unitdir}/%{announcer_filename}.service
 %{_unitdir}/%{announcer_filename}.timer
+
+%files leaper
+%defattr(-,root,root,-)
+%{_bindir}/osrt-leaper
+%{_bindir}/osrt-leaper-crawler-*
+%{_bindir}/osrt-manager_42
+%{_bindir}/osrt-update_crawler
+%{_datadir}/%{source_dir}/leaper.py
+%{_datadir}/%{source_dir}/manager_42.py
+%{_datadir}/%{source_dir}/update_crawler.py
+%{_unitdir}/osrt-leaper-crawler@.service
+%{_unitdir}/osrt-leaper-crawler@.timer
+%{_unitdir}/osrt-leaper-manager@.service
+%{_unitdir}/osrt-leaper-manager@.timer
+%{_unitdir}/osrt-leaper-review.service
+%{_unitdir}/osrt-leaper-review.timer
+%{_sysconfdir}/openSUSE-release-tools/manager_42
 
 %files metrics
 %defattr(-,root,root,-)
