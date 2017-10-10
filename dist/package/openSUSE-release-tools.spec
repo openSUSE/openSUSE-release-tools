@@ -160,14 +160,15 @@ Requires(pre):  shadow
 Staging bot services and system user.
 
 %package totest-manager
-Summary:        Manages \$product:ToTest repository
+Summary:        Manages product ToTest repository
 Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
+Requires:       python-openqa_client
 
 %description totest-manager
-Manages \$product:ToTest repository workflow and openQA interaction
+Manages product ToTest repository workflow and openQA interaction
 
 %package -n osclib
 Summary:        Supplemental osc libraries
@@ -319,16 +320,19 @@ exit 0
 %service_del_postun osrt-staging-bot-support-rebuild@.service
 
 %pre totest-manager
-%service_add_pre opensuse-totest-manager.service
+%service_add_pre osrt-totest-manager@.service
+getent passwd osrt-totest-manager > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-totest-manager" osrt-totest-manager
+exit 0
 
 %post totest-manager
-%service_add_post opensuse-totest-manager.service
+%service_add_post osrt-totest-manager@.service
 
 %preun totest-manager
-%service_del_preun opensuse-totest-manager.service
+%service_del_preun osrt-totest-manager@.service
 
 %postun totest-manager
-%service_del_postun opensuse-totest-manager.service
+%service_del_postun osrt-totest-manager@.service
 
 %files
 %defattr(-,root,root,-)
@@ -426,8 +430,9 @@ exit 0
 
 %files totest-manager
 %defattr(-,root,root,-)
-%{_unitdir}/opensuse-totest-manager.service
+%{_bindir}/osrt-totest-manager
 %{_datadir}/%{source_dir}/totest-manager.py
+%{_unitdir}/osrt-totest-manager@.service
 
 %files -n osclib
 %defattr(-,root,root,-)
