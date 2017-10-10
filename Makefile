@@ -2,7 +2,7 @@ SUBDIRS = factory-package-news abichecker
 
 include Makefile.common
 
-pkgdata_BINS=repo_checker
+pkgdata_BINS=devel-project repo_checker suppkg_rebuild
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy metrics osclib $(wildcard *.pm *.testcase)

@@ -1,0 +1,14 @@
+[Unit]
+Description=openSUSE Release Tools: staging-bot daily for %i
+
+[Service]
+Type=oneshot
+User=osrt-staging-bot
+SyslogIdentifier=osrt-staging-bot
+ExecStart=/usr/bin/env bash -c ' \
+  osc staging -p "%i" unignore --cleanup \
+  '
+TimeoutStartSec=3 hour
+
+[Install]
+WantedBy=multi-user.target
