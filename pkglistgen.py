@@ -124,7 +124,7 @@ class Group(object):
             if not self.not_found[p]:
                 self.not_found.pop(p)
 
-    def solve(self, ignore_recommended=True):
+    def solve(self, ignore_recommended=False):
         """ base: list of base groups or None """
 
         if self.solved:
@@ -171,7 +171,7 @@ class Group(object):
                 problems = solver.solve(jobs)
                 if problems:
                     for problem in problems:
-                        logger.debug('unresolvable: %s.%s: %s', self.name, arch, problem)
+                        logger.error('unresolvable: %s.%s: %s', self.name, arch, problem)
                         self.unresolvable[arch][n] = str(problem)
                     continue
 
@@ -257,7 +257,7 @@ class Group(object):
             if not already_present:
                 self.recommends[p] = recommends[p]
 
-    def toxml(self, arch):
+    def toxml(self, arch, ignore_broken = False):
         packages = self.solved_packages[arch]
 
         name = self.name
@@ -282,20 +282,29 @@ class Group(object):
             if name in self.silents:
                 continue
             if name in missing:
-                c = ET.Comment(' {} not found on {}'.format(name, ','.join(sorted(missing[name]))))
-                packagelist.append(c)
-                continue
+                msg = ' {} not found on {}'.format(name, ','.join(sorted(missing[name])))
+                if ignore_broken:
+                    c = ET.Comment(msg)
+                    packagelist.append(c)
+                    continue
+                name = msg
             if name in unresolvable:
-                c = ET.Comment(' {} uninstallable: {}'.format(name, unresolvable[name]))
-                packagelist.append(c)
-                continue
+                msg = ' {} uninstallable: {}'.format(name, unresolvable[name])
+                logger.error(msg)
+                if ignore_broken:
+                    c = ET.Comment(msg)
+                    packagelist.append(c)
+                    continue
+                else:
+                    name = msg
             status = self.pkglist.supportstatus(name)
             attrs = { 'name': name }
             if status is not None:
                 attrs['supportstatus'] = status
             p = ET.SubElement(packagelist, 'package', attrs)
-            c = ET.Comment(' reason: {} '.format(packages[name]))
-            packagelist.append(c)
+            if name in packages:
+                c = ET.Comment(' reason: {} '.format(packages[name]))
+                packagelist.append(c)
         if arch == '*' and self.develpkgs:
             c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)) + "\n")
             root.append(c)
@@ -331,6 +340,8 @@ class PkgListGen(ToolBase.ToolBase):
         self.input_dir = '.'
         self.output_dir = '.'
         self.lockjobs = dict()
+        self.ignore_broken = False
+        self.ignore_recommended = False
 
     def _dump_supportstatus(self):
         for name in self.packages.keys():
@@ -392,7 +403,7 @@ class PkgListGen(ToolBase.ToolBase):
                 continue
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 for arch in archs:
-                    x = group.toxml(arch)
+                    x = group.toxml(arch, self.ignore_broken)
                     x = ET.tostring(x, pretty_print=True)
                     x = re.sub('\s*<!-- reason:', ' <!-- reason:', x)
                     # fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
@@ -413,11 +424,11 @@ class PkgListGen(ToolBase.ToolBase):
                 root = ET.parse(fh).getroot()
                 self._parse_product(root)
 
-    def solve_module(self, groupname, includes, excludes):
+    def solve_module(self, groupname, includes, excludes= False):
         g = self.groups[groupname]
         for i in includes:
             g.inherit(self.groups[i])
-        g.solve()
+        g.solve(self.ignore_recommended)
         for e in excludes:
             g.ignore(self.groups[e])
 
@@ -606,6 +617,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 p.wait()
                 fh.close()
 
+
+    @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
+    @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
     def do_solve(self, subcmd, opts):
         """${cmd_name}: Solve groups
 
@@ -616,6 +630,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         output = self.tool.load_all_groups()
         if not output:
             return
+
+        if opts.ignore_unresolvable:
+            self.tool.ignore_broken = True
+        if opts.ignore_recommended:
+            self.tool.ignore_recommended = True
 
         modules = []
         # the yml parser makes an array out of everything, so
