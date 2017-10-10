@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: maintenance incidents
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=30 min
+Unit=osrt-maintenance-incidents.service
+
+[Install]
+WantedBy=timers.target
