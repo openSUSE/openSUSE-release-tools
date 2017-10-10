@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: leaper crawler for %i (creates SRs from upstream projects)
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=4 hour
+Unit=osrt-leaper-crawler@%i.service
+
+[Install]
+WantedBy=timers.target

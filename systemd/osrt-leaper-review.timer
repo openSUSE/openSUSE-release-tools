@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: leaper review
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=3 min
+Unit=osrt-leaper-review.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: leaper manager for %i
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=3 min
+Unit=osrt-leaper-manager@%i.service
+
+[Install]
+WantedBy=timers.target
