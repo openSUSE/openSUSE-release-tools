@@ -2,7 +2,17 @@ SUBDIRS = factory-package-news abichecker
 
 include Makefile.common
 
-pkgdata_BINS=check_maintenance_incidents check_source devel-project leaper manager_42 repo_checker suppkg_rebuild totest-manager update_crawler
+pkgdata_BINS = \
+	check_maintenance_incidents.py \
+	check_source.py \
+	devel-project.py \
+	leaper.py \
+	manager_42.py \
+	pkglistgen.sh \
+	repo_checker.py \
+	suppkg_rebuild.py \
+	totest-manager.py \
+	update_crawler.py
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy metrics osclib $(wildcard *.pm *.testcase)
@@ -21,7 +31,7 @@ install:
 	install -m 644 systemd/* $(DESTDIR)$(unitdir)
 	sed -i "s/OSC_STAGING_VERSION = '.*'/OSC_STAGING_VERSION = '$(VERSION)'/" \
 	  $(DESTDIR)$(pkgdatadir)/osc-staging.py
-	for i in $(pkgdata_BINS); do ln -s $(pkgdatadir)/$$i.py $(DESTDIR)$(bindir)/osrt-$$i; done
+	for i in $(pkgdata_BINS); do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(bindir)/osrt-$${i%.*}; done
 	install -m 755 script/* $(DESTDIR)$(bindir)
 	cp -R config/* $(DESTDIR)$(sysconfdir)/$(package_name)
 
