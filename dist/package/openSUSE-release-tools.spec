@@ -160,7 +160,7 @@ Requires(pre):  shadow
 Staging bot services and system user.
 
 %package totest-manager
-Summary:        Manages \$product:ToTest repository
+Summary:        Manages product ToTest repository
 Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
@@ -168,7 +168,7 @@ Requires:       osclib = %{version}
 Requires:       python-openqa_client
 
 %description totest-manager
-Manages \$product:ToTest repository workflow and openQA interaction
+Manages product ToTest repository workflow and openQA interaction
 
 %package -n osclib
 Summary:        Supplemental osc libraries
