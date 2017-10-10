@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: staging-bot devel list (stored in dashboard)
+
+[Timer]
+OnBootSec=120
+OnCalendar=daily
+Unit=osrt-staging-bot-devel-list.service
+
+[Install]
+WantedBy=timers.target

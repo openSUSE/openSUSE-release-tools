@@ -249,6 +249,7 @@ exit 0
 
 %pre staging-bot
 %service_add_pre osrt-staging-bot-daily@.service
+%service_add_pre osrt-staging-bot-devel-list.service
 %service_add_pre osrt-staging-bot-regular@.service
 %service_add_pre osrt-staging-bot-reminder.service
 getent passwd osrt-staging-bot > /dev/null || \
@@ -257,16 +258,19 @@ exit 0
 
 %post staging-bot
 %service_add_post osrt-staging-bot-daily@.service
+%service_add_post osrt-staging-bot-devel-list.service
 %service_add_post osrt-staging-bot-regular@.service
 %service_add_post osrt-staging-bot-reminder.service
 
 %preun staging-bot
 %service_del_preun osrt-staging-bot-daily@.service
+%service_del_preun osrt-staging-bot-devel-list.service
 %service_del_preun osrt-staging-bot-regular@.service
 %service_del_preun osrt-staging-bot-reminder.service
 
 %postun staging-bot
 %service_del_postun osrt-staging-bot-daily@.service
+%service_del_postun osrt-staging-bot-devel-list.service
 %service_del_postun osrt-staging-bot-regular@.service
 %service_del_postun osrt-staging-bot-reminder.service
 
@@ -341,6 +345,8 @@ exit 0
 %{_datadir}/%{source_dir}/devel-project.py
 %{_unitdir}/osrt-staging-bot-daily@.service
 %{_unitdir}/osrt-staging-bot-daily@.timer
+%{_unitdir}/osrt-staging-bot-devel-list.service
+%{_unitdir}/osrt-staging-bot-devel-list.timer
 %{_unitdir}/osrt-staging-bot-regular@.service
 %{_unitdir}/osrt-staging-bot-regular@.timer
 %{_unitdir}/osrt-staging-bot-reminder.service
