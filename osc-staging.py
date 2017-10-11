@@ -454,7 +454,7 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'select':
             # Include list of all stagings in short-hand and by full name.
             existing_stagings = api.get_staging_projects_short(None)
-            existing_stagings += [p for p in api.get_staging_projects() if not p.endswith(':DVD')]
+            existing_stagings += api.get_staging_projects(include_dvd=False)
             stagings = []
             requests = []
             for arg in args[1:]:

@@ -325,7 +325,7 @@ class StagingAPI(object):
 
         return True
 
-    def get_staging_projects(self):
+    def get_staging_projects(self, include_dvd=True):
         """
         Get all current running staging projects
         :return list of known staging projects
@@ -338,7 +338,10 @@ class StagingAPI(object):
         projxml = http_GET(url)
         root = ET.parse(projxml).getroot()
         for val in root.findall('project'):
-            projects.append(val.get('name'))
+            project = val.get('name')
+            if not include_dvd and project.endswith(':DVD'):
+                continue
+            projects.append(project)
         return projects
 
     def extract_staging_short(self, p):
@@ -361,9 +364,8 @@ class StagingAPI(object):
                     and None for both.
         """
         projects = []
-        for project in self.get_staging_projects():
-            if project.endswith(':DVD') or \
-               (adi is not None and self.is_adi_project(project) != adi):
+        for project in self.get_staging_projects(include_dvd=False):
+            if adi is not None and self.is_adi_project(project) != adi:
                 continue
             short = self.extract_staging_short(project)
             if adi is False and len(short) > 1:
