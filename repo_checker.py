@@ -247,6 +247,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         for key in [prefix, '-'.join([prefix, arch])]:
             whitelist.update(self.staging_config[project].get(key, '').split(' '))
             whitelist.update(additions.get(key, '').split(' '))
+        whitelist = filter(None, whitelist)
         return whitelist
 
     def install_check(self, project, directories, arch, ignore=[], whitelist=[], parse=False):
