@@ -738,7 +738,10 @@ class StagingAPI(object):
         description = root.find('description')
         # Order the requests and replace it with yaml
         meta['requests'] = sorted(meta.get('requests', []), key=lambda x: x['id'])
-        description.text = yaml.dump(meta)
+        yaml_new = yaml.dump(meta)
+        if yaml_new == description.text:
+            return
+        description.text = yaml_new
         # Find title
         title = root.find('title')
         # Put something nice into title as well
