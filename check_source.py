@@ -36,7 +36,7 @@ class CheckSource(ReviewBot.ReviewBot):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
 
         if not self.ignore_devel:
-            # Check if target package exists and has devel project.
+            self.logger.info('checking if target package exists and has devel project')
             devel_project, devel_package = self.get_devel_project(target_project, target_package)
             if devel_project:
                 if (source_project != devel_project or source_package != devel_package) and \
