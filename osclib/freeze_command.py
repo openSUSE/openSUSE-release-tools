@@ -14,6 +14,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from osclib.config_command import ConfigCommand
 import time
 import re
 from xml.etree import cElementTree as ET
@@ -118,6 +119,9 @@ class FreezeCommand(object):
 
     def perform(self, prj, copy_bootstrap=True):
         self.prj = prj
+
+        # Depending on what eventually lives in config this may need to change.
+        ConfigCommand(self.api).perform([prj], clear=True)
 
         if self.api.is_adi_project(prj):
             src_prj = self.api.find_devel_project_from_adi_frozenlinks(self.prj)
