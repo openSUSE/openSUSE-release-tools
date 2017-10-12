@@ -46,6 +46,10 @@ DEFAULT = {
         'lock-ns': 'openSUSE',
         'delreq-review': 'factory-maintainers',
         'main-repo': 'standard',
+        # check_source.py
+        'devel-project-enforce': 'True',
+        'review-team': 'opensuse-review-team',
+        'repo-checker': 'repo-checker',
     },
     r'openSUSE:(?P<project>Leap:[\d.]+)': {
         'staging': 'openSUSE:%(project)s:Staging',
@@ -62,6 +66,9 @@ DEFAULT = {
         'lock-ns': 'openSUSE',
         'delreq-review': None,
         'main-repo': 'standard',
+        # check_source.py
+        # review-team optionally added by leaper.py.
+        'repo-checker': 'repo-checker',
     },
     r'SUSE:(?P<project>SLE-15.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
@@ -77,6 +84,8 @@ DEFAULT = {
         'lock-ns': 'SUSE',
         'delreq-review': None,
         'main-repo': 'standard',
+        # check_source.py
+        'repo-checker': 'repo-checker',
     },
     r'SUSE:(?P<project>.*$)': {
         'staging': 'SUSE:%(project)s:Staging',

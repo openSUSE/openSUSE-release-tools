@@ -10,6 +10,7 @@ try:
 except ImportError:
     import cElementTree as ET
 
+import osc.conf
 import osc.core
 import urllib2
 import ReviewBot
@@ -27,13 +28,21 @@ class CheckSource(ReviewBot.ReviewBot):
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
 
-        self.ignore_devel = False
-        self.review_team = 'opensuse-review-team'
-        self.repo_checker = 'repo-checker'
         self.skip_add_reviews = False
+
+    def target_project_config(self, project):
+        # Load project config and allow for remote entries.
+        self.staging_api(project)
+        config = self.staging_config[project]
+
+        self.ignore_devel = not bool(config.get('devel-project-enforce', False))
+        self.review_team = config.get('review-team')
+        self.repo_checker = config.get('repo-checker')
+        self.devel_whitelist = config.get('devel-whitelist', '').split()
 
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
+        self.target_project_config(target_project)
 
         if not self.ignore_devel:
             self.logger.info('checking if target package exists and has devel project')
@@ -137,10 +146,7 @@ class CheckSource(ReviewBot.ReviewBot):
         return None
 
     def is_devel_project(self, source_project, target_project):
-        # Load project config and allow for remote entries.
-        self.staging_api(target_project)
-        devel_whitelist = self.staging_config[target_project].get('devel-whitelist', '').split()
-        if source_project in devel_whitelist:
+        if source_project in self.devel_whitelist:
             return True
 
         # Allow any projects already used as devel projects for other packages.
@@ -252,9 +258,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
-        parser.add_option('--ignore-devel', action='store_true', default=False, help='ignore devel projects for target package')
-        parser.add_option('--review-team', metavar='GROUP', help='review team group added to requests')
-        parser.add_option('--repo-checker', metavar='USER', help='repo checker user added after accepted review')
         parser.add_option('--skip-add-reviews', action='store_true', default=False, help='skip adding review after completing checks')
 
         return parser
@@ -262,16 +265,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def setup_checker(self):
         bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
-        if self.options.ignore_devel:
-            bot.ignore_devel = self.options.ignore_devel
-        if self.options.review_team:
-            if self.options.review_team == 'None':
-                self.options.review_team = None
-            bot.review_team = self.options.review_team
-        if self.options.repo_checker:
-            if self.options.repo_checker == 'None':
-                self.options.repo_checker = None
-            bot.repo_checker = self.options.repo_checker
         bot.skip_add_reviews = self.options.skip_add_reviews
 
         return bot
