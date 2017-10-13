@@ -24,11 +24,11 @@ from openqa_client.client import OpenQA_Client
 
 import osc
 
-logger = logging.getLogger()
-
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osc.core import makeurl
+
+logger = logging.getLogger()
 
 ISSUE_FILE = 'issues_to_ignore'
 
@@ -36,6 +36,10 @@ ISSUE_FILE = 'issues_to_ignore'
 QA_INPROGRESS = 1
 QA_FAILED = 2
 QA_PASSED = 3
+
+
+class NotFoundException(Exception):
+    pass
 
 
 class ToTestBase(object):
@@ -98,14 +102,14 @@ class ToTestBase(object):
             result = re.match(r'openSUSE.*Build(.*)-Media1.report', binary)
             if result:
                 return result.group(1)
-        raise Exception("can't find %s version" % self.project)
+        raise NotFoundException("can't find %s ftp version" % project)
 
     def iso_build_version(self, project, tree):
         for binary in self.binaries_of_product('openSUSE:%s' % project, tree):
             result = re.match(r'openSUSE.*Build(.*)-Media.iso', binary)
             if result:
                 return result.group(1)
-        raise Exception("can't find %s version" % self.project)
+        raise NotFoundException("can't find %s iso version" % project)
 
     def release_version(self):
         url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
@@ -118,7 +122,7 @@ class ToTestBase(object):
             if result:
                 return result.group(1)
 
-        raise Exception("can't find %s version" % self.project)
+        raise NotFoundException("can't find %s version" % self.project)
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -215,7 +219,6 @@ class ToTestBase(object):
                 f = self.api.retried_GET(url)
                 comments = json.load(f)
                 refs = set()
-                #pprint(comments)
                 labeled = 0
                 to_ignore = False
                 for comment in comments:
@@ -322,10 +325,10 @@ class ToTestBase(object):
         if re.match(r'.*-dvd9-dvd-.*', package):
             return 8539996159
 
-        if package.startswith('_product:openSUSE-ftp-ftp-'):
+        if ':openSUSE-ftp-ftp-' in package:
             return None
 
-        if package.startswith('_product:openSUSE-Addon-NonOss-ftp-ftp'):
+        if ':openSUSE-Addon-NonOss-ftp-ftp' in package:
             return None
 
         raise Exception('No maxsize for {}'.format(package))
@@ -389,7 +392,7 @@ class ToTestBase(object):
 
         return True
 
-    def release_package(self, project, package, set_release=None):
+    def _release_package(self, project, package, set_release=None):
         query = {'cmd': 'release'}
 
         if set_release:
@@ -408,6 +411,18 @@ class ToTestBase(object):
         else:
             self.api.retried_POST(url)
 
+    def _release(self, set_release=None):
+        for product in self.ftp_products:
+            self._release_package('openSUSE:%s' % self.project, product)
+
+        for cd in self.livecd_products:
+            self._release_package('openSUSE:%s:Live' %
+                                  self.project, cd, set_release=release)
+
+        for cd in self.main_products:
+            self._release_package('openSUSE:%s' %
+                                  self.project, cd, set_release=release)
+
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
@@ -415,16 +430,7 @@ class ToTestBase(object):
             self.api.switch_flag_in_prj(
                 'openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
 
-        for product in self.ftp_products:
-            self.release_package('openSUSE:%s' % self.project, product)
-
-        for cd in self.livecd_products:
-            self.release_package('openSUSE:%s:Live' %
-                                 self.project, cd, set_release=release)
-
-        for cd in self.main_products:
-            self.release_package(
-                'openSUSE:%s' % self.project, cd, set_release=release)
+        self._release(set_release=snapshot)
 
     def publish_factory_totest(self):
         logger.info('Publish ToTest')
@@ -450,7 +456,12 @@ class ToTestBase(object):
         return False
 
     def totest(self):
-        current_snapshot = self.get_current_snapshot()
+        try:
+            current_snapshot = self.get_current_snapshot()
+        except NotFoundException, e:
+            # nothing in :ToTest (yet)
+            logger.warn(e)
+            current_snapshot = None
         new_snapshot = self.current_version()
 
         current_result = self.overall_result(current_snapshot)
@@ -507,6 +518,45 @@ class ToTestBase(object):
             url = self.api.makeurl(
                 ['source', 'openSUSE:%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
             osc.core.http_PUT(url + '?comment=Update+version', data=version)
+
+
+class ToTestBaseNew(ToTestBase):
+
+    """Base class for new product builder"""
+    def _release(self, set_release=None):
+        query = {'cmd': 'release'}
+
+        package = '000product'
+        project = 'openSUSE:{}'.format(self.project)
+
+        if set_release:
+            query['setrelease'] = set_release
+
+        baseurl = ['source', project, package]
+
+        url = self.api.makeurl(baseurl, query=query)
+        if self.dryrun:
+            logger.info("release %s/%s (%s)" % (project, package, set_release))
+        else:
+            self.api.retried_POST(url)
+
+        # XXX still legacy
+        for cd in self.livecd_products:
+            self._release_package('openSUSE:%s:Live' %
+                                  self.project, cd, set_release=release)
+
+    def release_version(self):
+        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
+                                '000product:openSUSE-release'])
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        for binary in root.findall('binary'):
+            binary = binary.get('filename', '')
+            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
+            if result:
+                return result.group(1)
+
+        raise NotFoundException("can't find %s release version" % self.project)
 
 
 class ToTestFactory(ToTestBase):
@@ -607,19 +657,20 @@ class ToTestFactoryARM(ToTestFactory):
         return 2
 
 
-class ToTest423(ToTestBase):
+class ToTest150(ToTestBaseNew):
     main_products = [
-        '_product:openSUSE-cd-mini-x86_64',
-        '_product:openSUSE-dvd5-dvd-x86_64',
+        '000product:openSUSE-cd-mini-x86_64',
+        '000product:openSUSE-dvd5-dvd-x86_64',
     ]
 
-    ftp_products = ['_product:openSUSE-ftp-ftp-x86_64',
-                    '_product:openSUSE-Addon-NonOss-ftp-ftp-x86_64']
+    ftp_products = ['000product:openSUSE-ftp-ftp-x86_64',
+                    # TODO '000product:openSUSE-Addon-NonOss-ftp-ftp-x86_64'
+                    ]
 
     livecd_products = []
 
     def openqa_group(self):
-        return 'openSUSE Leap 42.3'
+        return 'openSUSE Leap 15.0'
 
     def current_version(self):
         return self.iso_build_version(self.project, self.main_products[0])
@@ -628,7 +679,7 @@ class ToTest423(ToTestBase):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
     def is_snapshottable(self):
-        ret = super(ToTest423, self).is_snapshottable()
+        ret = super(ToTest150, self).is_snapshottable()
         if ret:
             # make sure all medias have the same build number
             builds = set()
@@ -646,7 +697,7 @@ class ToTest423(ToTestBase):
 
     def update_totest(self, snapshot):
         # omit snapshot, we don't want to rename on release
-        super(ToTest423, self).update_totest()
+        super(ToTest150, self).update_totest()
 
 
 class CommandlineInterface(cmdln.Cmdln):
@@ -659,7 +710,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'Factory:PowerPC': ToTestFactoryPowerPC,
             'Factory:ARM': ToTestFactoryARM,
             'Factory:zSystems': ToTestFactoryzSystems,
-            'Leap:42.3': ToTest423,
+            'Leap:15.0': ToTest150,
         }
 
     def get_optparser(self):
