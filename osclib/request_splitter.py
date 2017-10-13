@@ -211,6 +211,7 @@ class RequestSplitter(object):
 
     def is_staging_considerable(self, project, pseudometa):
         return (len(pseudometa['requests']) == 0 and
+                pseudometa.get('autoselect', True) and
                 self.api.prj_frozen_enough(project))
 
     def stagings_load(self, stagings):
