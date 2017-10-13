@@ -231,6 +231,5 @@ if __name__ == '__main__':
     if args.staging:
         openQA.report(api.prj_from_letter(args.staging))
     else:
-        for staging in api.get_staging_projects():
-            if not staging.endswith(':DVD'):
-                openQA.report(staging)
+        for staging in api.get_staging_projects(include_dvd=False):
+            openQA.report(staging)

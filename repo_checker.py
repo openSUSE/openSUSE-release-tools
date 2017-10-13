@@ -170,7 +170,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Only bother if staging can match arch, but layered first.
             directories.insert(0, self.mirror(project, arch))
 
-            whitelist = self.binary_whitelist(project, arch)
+            whitelist = self.binary_whitelist(project, arch, group)
 
             # Perform checks on group.
             results = {
@@ -240,11 +240,14 @@ class RepoChecker(ReviewBot.ReviewBot):
             if binary.package in packages:
                 yield binary.name
 
-    def binary_whitelist(self, project, arch):
+    def binary_whitelist(self, project, arch, group):
+        additions = self.staging_api(project).get_prj_pseudometa(group).get('config', {})
         prefix = 'repo_checker-binary-whitelist'
         whitelist = set()
         for key in [prefix, '-'.join([prefix, arch])]:
             whitelist.update(self.staging_config[project].get(key, '').split(' '))
+            whitelist.update(additions.get(key, '').split(' '))
+        whitelist = filter(None, whitelist)
         return whitelist
 
     def install_check(self, project, directories, arch, ignore=[], whitelist=[], parse=False):

@@ -38,6 +38,7 @@ from osclib.check_command import CheckCommand
 from osclib.check_duplicate_binaries_command import CheckDuplicateBinariesCommand
 from osclib.cleanup_rings import CleanupRings
 from osclib.conf import Config
+from osclib.config_command import ConfigCommand
 from osclib.freeze_command import FreezeCommand
 from osclib.ignore_command import IgnoreCommand
 from osclib.unignore_command import UnignoreCommand
@@ -136,6 +137,8 @@ def clean_args(args):
 @cmdln.option('--strategy', help='apply a specific strategy')
 @cmdln.option('--no-color', action='store_true', help='strip colors from output (or add staging.color = 0 to the .oscrc general section')
 @cmdln.option('--save', action='store_true', help='save the result to the dashboard container')
+@cmdln.option('--append', action='store_true', help='append to existing value')
+@cmdln.option('--clear', action='store_true', help='clear value')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
 
@@ -160,6 +163,34 @@ def do_staging(self, subcmd, opts, *args):
     "check" will check if all packages are links without changes
 
     "check_duplicate_binaries" list binaries provided by multiple packages
+
+    "config" will modify or view staging specific configuration
+
+        Target project level configuration that applies to all stagings can be
+        found in the $PROJECT:Staging/dashboard container in file "config". Both
+        configuration locations follow the .oscrc format (space separated list).
+
+        config
+            Print all staging configuration.
+        config key
+            Print the value of key for stagings.
+        conf key value...
+            Set the value of key for stagings.
+        config --clear
+            Clear all staging configuration.
+        config --clear key
+            Clear (unset) a single key from staging configuration
+        config --append key value...
+            Append value to existing value or set if no existing value.
+
+        All of the above may be restricted to a set of stagings.
+
+        The staging configuration is automatically cleared anytime staging
+        psuedometa is cleared (accept, or unstage all requests).
+
+        The keys that may be set in staging configuration are:
+
+        - repo_checker-binary-whitelist[-arch]: appended to target project list
 
     "cleanup_rings" will try to cleanup rings content and print
         out problems
@@ -288,6 +319,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
         osc staging check [--old] [STAGING...]
         osc staging check_duplicate_binaries
+        osc staging config [--append] [--clear] [STAGING...] [key] [value]
         osc staging cleanup_rings
         osc staging freeze [--no-bootstrap] STAGING...
         osc staging frozenage [STAGING...]
@@ -320,6 +352,7 @@ def do_staging(self, subcmd, opts, *args):
         'accept',
         'adi',
         'check',
+        'config',
         'frozenage',
         'unignore',
         'select',
@@ -393,6 +426,25 @@ def do_staging(self, subcmd, opts, *args):
                     print()
         elif cmd == 'check_duplicate_binaries':
             CheckDuplicateBinariesCommand(api).perform(opts.save)
+        elif cmd == 'config':
+            projects = set()
+            key = value = None
+            stagings = api.get_staging_projects_short(None) + \
+                       api.get_staging_projects(include_dvd=False)
+            for arg in args[1:]:
+                if arg in stagings:
+                    projects.add(api.prj_from_short(arg))
+                elif key is None:
+                    key = arg
+                elif value is None:
+                    value = arg
+                else:
+                    value += ' ' + arg
+
+            if not len(projects):
+                projects = api.get_staging_projects(include_dvd=False)
+
+            ConfigCommand(api).perform(projects, key, value, opts.append, opts.clear)
         elif cmd == 'freeze':
             for prj in args[1:]:
                 prj = api.prj_from_short(prj)
@@ -454,7 +506,7 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'select':
             # Include list of all stagings in short-hand and by full name.
             existing_stagings = api.get_staging_projects_short(None)
-            existing_stagings += [p for p in api.get_staging_projects() if not p.endswith(':DVD')]
+            existing_stagings += api.get_staging_projects(include_dvd=False)
             stagings = []
             requests = []
             for arg in args[1:]:
