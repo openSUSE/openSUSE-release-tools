@@ -490,13 +490,10 @@ class StrategyQuick(StrategyNone):
 
 class StrategySpecial(StrategyNone):
     PACKAGES = [
-        'boost',
         'gcc',
-        'gcc6',
         'gcc7',
         'glibc',
         'kernel-source',
-        'util-linux',
     ]
 
     def apply(self, splitter):
