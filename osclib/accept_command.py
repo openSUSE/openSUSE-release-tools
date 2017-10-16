@@ -177,7 +177,7 @@ class AcceptCommand(object):
                     url = self.api.makeurl(['build', project], query)
                     try:
                         http_POST(url)
-                    except urllib2.HTTPError, err:
+                    except urllib2.HTTPError as err:
                         # failed to wipe isos but we can just continue
                         pass
 
@@ -229,7 +229,7 @@ class AcceptCommand(object):
             print "Deleting package %s from project %s" % (spec[:-5], project)
             try:
                 http_DELETE(url)
-            except urllib2.HTTPError, err:
+            except urllib2.HTTPError as err:
                 if err.code == 404:
                     # the package link was not yet created, which was likely a mistake from earlier
                     pass

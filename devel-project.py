@@ -199,7 +199,7 @@ def remind_comment(apiurl, repeat_age, request_id, project, package=None):
         # Repeat notification so remove old comment.
         try:
             comment_api.delete(comment['id'])
-        except HTTPError, e:
+        except HTTPError as e:
             if e.code == 403:
                 # Gracefully skip when previous reminder was by another user.
                 print('  unable to remove previous reminder')

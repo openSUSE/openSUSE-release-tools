@@ -54,8 +54,8 @@ class AdiCommand:
             self.api.accept_status_comment(project, packages)
             try:
                 delete_project(self.api.apiurl, project, force=True)
-            except urllib2.HTTPError, e:
-                print e
+            except urllib2.HTTPError as e:
+                print(e)
                 pass
         else:
             print query_project, Fore.GREEN + 'ready:', ', '.join(['{}[{}]'.format(

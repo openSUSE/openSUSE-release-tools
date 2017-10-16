@@ -79,7 +79,7 @@ def bug_owner(apiurl, package, entity='person'):
 def bug_meta_get(bugzilla_api, bug_id):
     try:
         bug = bugzilla_api.getbug(bug_id)
-    except Fault, e:
+    except Fault as e:
         print('bug_meta_get(): ' + str(e))
         return None
     return bug.component
@@ -382,7 +382,7 @@ def main(args):
                 try:
                     bug_id = bug_create(bugzilla_api, meta, owner, cc, summary, message)
                     break
-                except Fault, e:
+                except Fault as e:
                     if 'There is no component named' in e.faultString:
                         print('Invalid component {}, fallback to default'.format(meta[1]))
                         meta = (meta[0], bugzilla_defaults[1], meta[2])

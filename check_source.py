@@ -139,7 +139,7 @@ class CheckSource(ReviewBot.ReviewBot):
     def staging_group(self, project):
         try:
             return self.staging_api(project).cstaging_group
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code != 404:
                 raise e
 
@@ -176,7 +176,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         try:
             xml = ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             self.logger.error('ERROR in URL %s [%s]' % (url, e))
             return ret
 

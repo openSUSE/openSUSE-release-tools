@@ -123,7 +123,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': self.history_limit })
         try:
             r = osc.core.http_GET(u)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             self.logger.debug("package has no history!?")
             return None
 

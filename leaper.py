@@ -93,7 +93,7 @@ class Leaper(ReviewBot.ReviewBot):
             root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl,['source', project],
                                      query=query))).getroot()
             packages = [i.get('name') for i in root.findall('entry')]
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             # in case the project doesn't exist yet (like sle update)
             if e.code != 404:
                 raise e

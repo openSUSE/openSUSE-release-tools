@@ -237,16 +237,16 @@ class ABIChecker(ReviewBot.ReviewBot):
         try:
             # compute list of common repos to find out what to compare
             myrepos = self.findrepos(src_project, src_srcinfo, dst_project, dst_srcinfo)
-        except NoBuildSuccess, e:
+        except NoBuildSuccess as e:
             self.logger.info(e)
             self.text_summary += "**Error**: %s\n"%e
             self.reports.append(report)
             return False
-        except NotReadyYet, e:
+        except NotReadyYet as e:
             self.logger.info(e)
             self.reports.append(report)
             return None
-        except SourceBroken, e:
+        except SourceBroken as e:
             self.logger.error(e)
             self.text_summary += "**Error**: %s\n"%e
             self.reports.append(report)
@@ -271,21 +271,21 @@ class ABIChecker(ReviewBot.ReviewBot):
                 dst_srcinfo = origin_srcinfo
             if new_repo_map is not None:
                 myrepos = new_repo_map
-        except MaintenanceError, e:
+        except MaintenanceError as e:
             self.text_summary += "**Error**: %s\n\n"%e
             self.logger.error('%s', e)
             self.reports.append(report)
             return False
-        except NoBuildSuccess, e:
+        except NoBuildSuccess as e:
             self.logger.info(e)
             self.text_summary += "**Error**: %s\n"%e
             self.reports.append(report)
             return False
-        except NotReadyYet, e:
+        except NotReadyYet as e:
             self.logger.info(e)
             self.reports.append(report)
             return None
-        except SourceBroken, e:
+        except SourceBroken as e:
             self.logger.error(e)
             self.text_summary += "**Error**: %s\n"%e
             self.reports.append(report)
@@ -304,16 +304,16 @@ class ABIChecker(ReviewBot.ReviewBot):
                 # nothing to fetch, so no libs
                 if dst_libs is None:
                     continue
-            except DistUrlMismatch, e:
+            except DistUrlMismatch as e:
                 self.logger.error("%s/%s %s/%s: %s"%(dst_project, dst_package, mr.dstrepo, mr.arch, e))
                 if ret == True: # need to check again
                     ret = None
                 continue
-            except MissingDebugInfo, e:
+            except MissingDebugInfo as e:
                 missing_debuginfo.append(str(e))
                 ret = False
                 continue
-            except FetchError, e:
+            except FetchError as e:
                 self.logger.error(e)
                 if ret == True: # need to check again
                     ret = None
@@ -325,16 +325,16 @@ class ABIChecker(ReviewBot.ReviewBot):
                     if dst_libs:
                         self.text_summary += "*Warning*: the submission does not contain any libs anymore\n\n"
                     continue
-            except DistUrlMismatch, e:
+            except DistUrlMismatch as e:
                 self.logger.error("%s/%s %s/%s: %s"%(src_project, src_package, mr.srcrepo, mr.arch, e))
                 if ret == True: # need to check again
                     ret = None
                 continue
-            except MissingDebugInfo, e:
+            except MissingDebugInfo as e:
                 missing_debuginfo.append(str(e))
                 ret = False
                 continue
-            except FetchError, e:
+            except FetchError as e:
                 self.logger.error(e)
                 if ret == True: # need to check again
                     ret = None
@@ -530,7 +530,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         self.text_summary = ''
         try:
             ret = ReviewBot.ReviewBot.check_one_request(self, req)
-        except Exception, e:
+        except Exception as e:
             import traceback
             self.logger.error("unhandled exception in ABI checker")
             self.logger.error(traceback.format_exc())
@@ -572,7 +572,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             request = self.session.query(DB.Request).filter(DB.Request.id == reqid).one()
             if request.state == 'done':
                 return True
-        except sqlalchemy.orm.exc.NoResultFound, e:
+        except sqlalchemy.orm.exc.NoResultFound as e:
             pass
 
         return False
@@ -586,7 +586,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.session.flush()
             request.state = state
             request.result = result
-        except sqlalchemy.orm.exc.NoResultFound, e:
+        except sqlalchemy.orm.exc.NoResultFound as e:
             request = DB.Request(id = req.reqid,
                     state = state,
                     result = result,
@@ -771,7 +771,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         h = None
         try:
             h = self.ts.hdrFromFdno(fd)
-        except rpm.error, e:
+        except rpm.error as e:
             if str(e) == "public key not available":
                 print str(e)
             if str(e) == "public key not trusted":
@@ -786,7 +786,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             [ 'view=cpioheaders' ])
         try:
             r = osc.core.http_GET(u)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise FetchError('failed to fetch header information: %s'%e)
         tmpfile = NamedTemporaryFile(prefix="cpio-", delete=False)
         for chunk in r:
@@ -831,7 +831,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     'srcmd5' : rev }
             url = osc.core.makeurl(self.apiurl, ('build', src_project, '_result'), query)
             return ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code != 404:
                 self.logger.error('ERROR in URL %s [%s]' % (url, e))
                 raise

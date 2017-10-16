@@ -37,7 +37,7 @@ class RepairCommand(object):
         staging_project = reviews[0]
         try:
             data = self.api.get_prj_pseudometa(staging_project)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 data = None
 

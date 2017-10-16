@@ -128,7 +128,7 @@ class FccFreezer(object):
         l = ET.tostring(flink)
         try:
             http_PUT(url, data=l)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise e
 
 class FccSubmitter(object):
@@ -225,7 +225,7 @@ class FccSubmitter(object):
     def check_multiple_specfiles(self, project, package):
         try:
             url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 return None
             raise e
