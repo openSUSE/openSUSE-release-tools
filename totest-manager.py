@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 #
 # (C) 2014 mhrusecky@suse.cz, openSUSE.org
@@ -19,7 +19,6 @@ import signal
 import time
 
 from xml.etree import cElementTree as ET
-from pprint import pprint
 from openqa_client.client import OpenQA_Client
 
 import osc
@@ -417,11 +416,11 @@ class ToTestBase(object):
 
         for cd in self.livecd_products:
             self._release_package('openSUSE:%s:Live' %
-                                  self.project, cd, set_release=release)
+                                  self.project, cd, set_release=set_release)
 
         for cd in self.main_products:
             self._release_package('openSUSE:%s' %
-                                  self.project, cd, set_release=release)
+                                  self.project, cd, set_release=set_release)
 
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
@@ -430,7 +429,7 @@ class ToTestBase(object):
             self.api.switch_flag_in_prj(
                 'openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
 
-        self._release(set_release=snapshot)
+        self._release(set_release=release)
 
     def publish_factory_totest(self):
         logger.info('Publish ToTest')
@@ -543,7 +542,7 @@ class ToTestBaseNew(ToTestBase):
         # XXX still legacy
         for cd in self.livecd_products:
             self._release_package('openSUSE:%s:Live' %
-                                  self.project, cd, set_release=release)
+                                  self.project, cd, set_release=set_release)
 
     def release_version(self):
         url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
