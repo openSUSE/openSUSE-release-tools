@@ -586,7 +586,7 @@ def do_staging(self, subcmd, opts, *args):
                         temp.write('# remove the group, requests, staging, or strategy to skip\n')
                         temp.write('# stagings\n')
                         if opts.merge:
-                            temp.write('# - merged: {}\n'
+                            temp.write('# - mergeable: {}\n'
                                        .format(', '.join(sorted(splitter.stagings_mergeable +
                                                                 splitter.stagings_mergeable_none))))
                         temp.write('# - considered: {}\n'
