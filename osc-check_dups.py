@@ -5,6 +5,12 @@
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc checker --help' to see the usage.
 
+from xml.etree import cElementTree as ET
+from osc.core import change_request_state
+from osc.core import get_dependson
+from osc.core import http_GET
+from osc.core import makeurl
+
 def _checker_check_dups(self, project, opts):
     url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&view=collection" % project)
     f = http_GET(url)
