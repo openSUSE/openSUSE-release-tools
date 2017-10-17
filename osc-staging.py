@@ -573,12 +573,20 @@ def do_staging(self, subcmd, opts, *args):
                 if opts.interactive:
                     with tempfile.NamedTemporaryFile(suffix='.yml') as temp:
                         temp.write(yaml.safe_dump(splitter.proposal, default_flow_style=False) + '\n\n')
+
+                        if len(splitter.requests):
+                            temp.write('# remaining requests:\n')
+                            for request in splitter.requests:
+                                temp.write('#    {}: {}\n'.format(
+                                    request.get('id'), request.find('action/target').get('package')))
+                            temp.write('\n')
+
                         temp.write('# move requests between stagings or comment/remove them\n')
                         temp.write('# change the target staging for a group\n')
                         temp.write('# remove the group, requests, staging, or strategy to skip\n')
                         temp.write('# stagings\n')
                         if opts.merge:
-                            temp.write('# - merged: {}\n'
+                            temp.write('# - mergeable: {}\n'
                                        .format(', '.join(sorted(splitter.stagings_mergeable +
                                                                 splitter.stagings_mergeable_none))))
                         temp.write('# - considered: {}\n'
