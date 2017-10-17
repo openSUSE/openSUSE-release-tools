@@ -17,6 +17,12 @@ matrix:
         - docker build -f dist/ci/Dockerfile -t spec .
       script:
         - docker run -it spec ./dist/ci/spec.sh
+    - env: TEST_SUITE=flake8
+      language: python
+      install:
+        - pip install flake8
+      script:
+        - dist/ci/flake8.sh
     - env: TEST_SUITE=nosetests
       sudo: required
       language: python
