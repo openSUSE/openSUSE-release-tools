@@ -192,6 +192,17 @@ Requires:       python-openqa_client
 %description totest-manager
 Manages product ToTest repository workflow and openQA interaction
 
+%package pkglistgen
+Summary:        Generates package lists in 000product
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       osclib = %{version}
+
+%description pkglistgen
+Generates package lists based on 000package-groups and puts them
+in 000product, resp 000release-packages
+
+
 %package -n osclib
 Summary:        Supplemental osc libraries
 Group:          Development/Tools/Other
@@ -503,6 +514,13 @@ exit 0
 %{_bindir}/osrt-totest-manager
 %{_datadir}/%{source_dir}/totest-manager.py
 %{_unitdir}/osrt-totest-manager@.service
+
+%files pkglistgen
+%defattr(-,root,root,-)
+%{_bindir}/osrt-pkglistgen
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0.sh
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Rings.sh
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Staging.sh
 
 %files -n osclib
 %defattr(-,root,root,-)
