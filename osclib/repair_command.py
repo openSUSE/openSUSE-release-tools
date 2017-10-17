@@ -19,7 +19,7 @@ class RepairCommand(object):
         reqid = str(request)
         req = get_request(self.api.apiurl, reqid)
 
-        if not req: 
+        if not req:
             raise oscerr.WrongArgs('Request {} not found'.format(reqid))
 
         if req.state.name != 'review':

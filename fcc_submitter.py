@@ -160,7 +160,7 @@ class FccSubmitter(object):
         root = ET.parse(http_GET(makeurl(self.apiurl,['source', project],
                                  query=query))).getroot()
         packages = [i.get('name') for i in root.findall('entry')]
-        
+
         return packages
 
     def get_request_list(self, package):
@@ -263,7 +263,7 @@ class FccSubmitter(object):
         print 'Build succeeded packages:'
         print '-------------------------------------'
         for pkg in succeeded_packages:
-           print pkg
+            print pkg
 
         print '-------------------------------------'
         print "Found {} build succeded packages".format(len(succeeded_packages))

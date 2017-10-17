@@ -48,6 +48,7 @@ class RemindedPackage(object):
         self.reminded=reminded
         self.bug=bug
         self.remindCount=remindCount
+
     def __str__(self):
         return '{} {} {} {}'.format(self.firstfail, self.reminded, self.bug, self.remindCount)
 
@@ -135,7 +136,7 @@ def main(args):
     for package in data:
         # Only consider packages that failed for > seconds_to_remember days (7 days)
         if package["firstfail"] < now - seconds_to_remember:
-            if not package["name"]  in RemindedLoaded.keys():
+            if not package["name"] in RemindedLoaded.keys():
                 # This is the first time we see this package failing for > 7 days
                 reminded = now
                 bug=""

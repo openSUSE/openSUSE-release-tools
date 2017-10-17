@@ -158,7 +158,7 @@ class ReviewBot(object):
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
         if doit is None:
-           self.logger.info("can't change state, %s does not have the reviewer"%(req.reqid))
+            self.logger.info("can't change state, %s does not have the reviewer"%(req.reqid))
 
         newstate = state
 
@@ -267,8 +267,8 @@ class ReviewBot(object):
         dst_package = a.src_package
         # Ignoring patchinfo package for checking
         if self._is_patchinfo(a.src_package):
-          self.logger.info("package is patchinfo, ignoring")
-          return None
+            self.logger.info("package is patchinfo, ignoring")
+            return None
         # dirty obs crap
         if a.tgt_releaseproject is not None:
             ugly_suffix = '.'+a.tgt_releaseproject.replace(':', '_')
@@ -397,9 +397,9 @@ class ReviewBot(object):
 
     def set_request_ids_search_review(self):
         if self.review_user:
-           review = "@by_user='%s' and @state='new'" % self.review_user
+            review = "@by_user='%s' and @state='new'" % self.review_user
         else:
-           review = "@by_group='%s' and @state='new'" % self.review_group
+            review = "@by_group='%s' and @state='new'" % self.review_group
         url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1 } )
         root = ET.parse(osc.core.http_GET(url)).getroot()
 

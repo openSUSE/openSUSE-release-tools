@@ -40,7 +40,7 @@ class CpioFile(object):
     def __init__(self, off, buf):
         self.off = off
         self.buf = buf
-        
+
         if off&3:
             raise Exception("invalid offset %d"% off)
 
@@ -49,8 +49,8 @@ class CpioFile(object):
 
         fields = struct.unpack(fmt, buf[self.off:off])
 
-	if fields[0] != "070701":
-		raise Exception("invalid cpio header %s"%self.c_magic)
+        if fields[0] != "070701":
+            raise Exception("invalid cpio header %s"%self.c_magic)
 
         names = ("c_ino", "c_mode", "c_uid", "c_gid",
                 "c_nlink", "c_mtime", "c_filesize",

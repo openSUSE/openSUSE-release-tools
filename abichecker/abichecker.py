@@ -100,33 +100,42 @@ Report = namedtuple('Report', ('src_project', 'src_package', 'src_rev', 'dst_pro
 # report for a single library
 LibResult = namedtuple('LibResult', ('src_repo', 'src_lib', 'dst_repo', 'dst_lib', 'arch', 'htmlreport', 'result'))
 
+
 class DistUrlMismatch(Exception):
     def __init__(self, disturl, md5):
         Exception.__init__(self)
         self.msg = 'disturl mismatch has: %s wanted ...%s'%(disturl, md5)
+
     def __str__(self):
         return self.msg
+
 
 class SourceBroken(Exception):
     def __init__(self, project, package):
         Exception.__init__(self)
         self.msg = '%s/%s has broken sources, needs rebase'%(project, package)
+
     def __str__(self):
         return self.msg
+
 
 class NoBuildSuccess(Exception):
     def __init__(self, project, package, md5):
         Exception.__init__(self)
         self.msg = '%s/%s(%s) had no successful build'%(project, package, md5)
+
     def __str__(self):
         return self.msg
+
 
 class NotReadyYet(Exception):
     def __init__(self, project, package, reason):
         Exception.__init__(self)
         self.msg = '%s/%s not ready yet: %s'%(project, package, reason)
+
     def __str__(self):
         return self.msg
+
 
 class MissingDebugInfo(Exception):
     def __init__(self, missing_debuginfo):
@@ -137,22 +146,28 @@ class MissingDebugInfo(Exception):
                 self.msg += "%s/%s %s/%s %s %s\n"%i
             elif len(i) == 5:
                 self.msg += "%s/%s %s/%s %s\n"%i
+
     def __str__(self):
         return self.msg
+
 
 class FetchError(Exception):
     def __init__(self, msg):
         Exception.__init__(self)
         self.msg = msg
+
     def __str__(self):
         return self.msg
+
 
 class MaintenanceError(Exception):
     def __init__(self, msg):
         Exception.__init__(self)
         self.msg = msg
+
     def __str__(self):
         return self.msg
+
 
 class LogToDB(logging.Filter):
     def __init__(self, session):
@@ -165,6 +180,7 @@ class LogToDB(logging.Filter):
             self.session.add(logentry)
             self.session.commit()
         return True
+
 
 class ABIChecker(ReviewBot.ReviewBot):
     """ check ABI of library packages
@@ -649,7 +665,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 '-lib', libname,
                 '-old', old,
                 '-new', new,
-                '-report-path', output 
+                '-report-path', output
                 ]
         self.logger.debug(cmd)
         r = subprocess.Popen(cmd, close_fds=True, cwd=CACHEDIR).wait()

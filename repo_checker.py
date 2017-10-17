@@ -225,7 +225,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         self.logger.info('mirroring {}'.format(path))
         if os.system(' '.join(parts)):
-             raise Exception('failed to mirror {}'.format(path))
+            raise Exception('failed to mirror {}'.format(path))
 
         self.mirrored.add((project, arch))
         return directory

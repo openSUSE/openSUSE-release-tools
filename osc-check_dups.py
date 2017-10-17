@@ -17,15 +17,17 @@ def _checker_check_dups(self, project, opts):
             target = a.find('target')
             type = a.attrib['type']
             assert target != None
-            if target.attrib['project'] != project: continue
-	    #print(id)
-            #ET.dump(target)
-	    if not target.attrib.has_key('package'): continue
+            if target.attrib['project'] != project:
+                continue
+            # print(id)
+            # ET.dump(target)
+            if not target.attrib.has_key('package'):
+                continue
             package = target.attrib['package']
             if rqs.has_key(type + package):
                 [oldid, oldsource] = rqs[type + package]
-		if oldid > id:
-		    s = oldid
+                if oldid > id:
+                    s = oldid
                     oldid = id
                     id = s
                 assert oldid < id
@@ -52,7 +54,7 @@ def do_check_dups(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
 
     for p in args[:]:
-       self._checker_check_dups(p, opts)
+        self._checker_check_dups(p, opts)
 
 #Local Variables:
 #mode: python
