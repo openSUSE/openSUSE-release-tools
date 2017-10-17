@@ -32,7 +32,7 @@ Scripts
 * *link:docs/maintbot.asciidoc[maintbot].* script that checks maintenance
   incidents to make sure the Factory maintainer submitted the package.
 
-* *link:checknewer[checknewer].* script compares version numbers in repos to
+* *link:checknewer.py[checknewer.py].* script compares version numbers in repos to
   make sure all packages e.g. in a new distro are newer
 
 Installation

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2016 SUSE LLC
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,24 +29,24 @@ import solv
 pool = solv.Pool()
 args = sys.argv[1:]
 if len(args) < 2:
-   print("usage: checknewer NEWREPO OLDREPO1 [OLDREPO2...]")
-   sys.exit(1)
+    print("usage: checknewer NEWREPO OLDREPO1 [OLDREPO2...]")
+    sys.exit(1)
 
 firstrepo = None
 for arg in args:
-   argf = solv.xfopen(arg)
-   repo = pool.add_repo(arg)
-   if not firstrepo:
-      firstrepo = repo
-   if re.search(r'solv$', arg):
+    argf = solv.xfopen(arg)
+    repo = pool.add_repo(arg)
+    if not firstrepo:
+        firstrepo = repo
+    if re.search(r'solv$', arg):
         repo.add_solv(argf)
-   elif re.search(r'primary\.xml', arg):
+    elif re.search(r'primary\.xml', arg):
         repo.add_rpmmd(argf, None)
-   elif re.search(r'packages', arg):
+    elif re.search(r'packages', arg):
         repo.add_susetags(argf, 0, None)
-   else:
-       print("%s: unknown repo type" % (arg))
-       sys.exit(1)
+    else:
+        print("%s: unknown repo type" % (arg))
+        sys.exit(1)
 
 # we only want self-provides
 for p in pool.solvables:
@@ -67,7 +67,7 @@ for p in firstrepo.solvables:
             continue
         if p.identical(pp):
             continue
-	if p.archid != pp.archid and p.archid != solv.ARCH_NOARCH and pp.archid != solv.ARCH_NOARCH:
+        if p.archid != pp.archid and p.archid != solv.ARCH_NOARCH and pp.archid != solv.ARCH_NOARCH:
             continue
         src = p.name
         if not p.lookup_void(solv.SOLVABLE_SOURCENAME):
