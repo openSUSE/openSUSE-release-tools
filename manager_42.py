@@ -29,7 +29,6 @@ from xml.etree import cElementTree as ET
 import osc.conf
 import osc.core
 import urllib2
-import sys
 import time
 import yaml
 from collections import namedtuple
