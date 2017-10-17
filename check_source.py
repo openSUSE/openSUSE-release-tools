@@ -229,6 +229,16 @@ class CheckSource(ReviewBot.ReviewBot):
         except urllib2.HTTPError:
             return None
 
+        # Decline the delete request if there is another delete/submit request against the same package
+        query = "match=state/@name='new'+and+(action/target/@project='{}'+and+action/target/@package='{}')"\
+                "+and+(action/@type='delete'+or+action/@type='submit')".format(action.tgt_project, action.tgt_package)
+        url = osc.core.makeurl(self.apiurl, ['search', 'request'], query)
+        matches = ET.parse(osc.core.http_GET(url)).getroot()
+        if int(matches.attrib['matches']) > 1:
+            ids = [rq.attrib['id'] for rq in matches.findall('request')]
+            self.review_messages['declined'] = "There is a pending request %s to %s/%s in process." % (','.join(ids), action.tgt_project, action.tgt_package)
+            return False
+
         # Decline the delete request against linked package.
         links = root.findall('sourceinfo/linked')
         if links is None or len(links) == 0:
