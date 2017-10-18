@@ -225,7 +225,8 @@ OSC plugin for cycle visualization, see `osc cycle --help`.
 Summary:        OSC plugin for the staging workflow
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc >= 0.159.0
+# devel-project.py needs 0.160.0 for get_request_list(withfullhistory) param.
+Requires:       osc >= 0.160.0
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-staging
