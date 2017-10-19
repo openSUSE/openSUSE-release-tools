@@ -23,28 +23,6 @@ from osclib.stagingapi import StagingAPI
 BOT_NAME = 'devel-project'
 REMINDER = 'review reminder'
 
-# Short of either copying the two osc.core list functions to build the search
-# queries and call a different search function this is the only reasonable way
-# to add withhistory to the query. The base search function does not even have a
-# method for adding to the query. Alternatively, get_request() can be called for
-# each request to load the history, but obviously that is not very desirable.
-# Having the history allows for the age of the request to be determined.
-def search(apiurl, **kwargs):
-    res = {}
-    for urlpath, xpath in kwargs.items():
-        path = [ 'search' ]
-        path += urlpath.split('_')
-        query = {'match': xpath}
-        if urlpath == 'request':
-            query['withhistory'] = 1
-        u = makeurl(apiurl, path, query)
-        f = http_GET(u)
-        res[urlpath] = ET.parse(f).getroot()
-    return res
-
-osc.core._search = osc.core.search
-osc.core.search = search
-
 def staging_api(args):
     Config(args.project)
     return StagingAPI(osc.conf.config['apiurl'], args.project)
@@ -117,7 +95,8 @@ def requests(args):
                                     req_state=('new', 'review'),
                                     req_type='submit',
                                     # Seems to work backwards, as it includes only.
-                                    exclude_target_projects=[devel_project])
+                                    exclude_target_projects=[devel_project],
+                                    withfullhistory=True)
         for request in requests:
             action = request.actions[0]
             age = request_age(request)
