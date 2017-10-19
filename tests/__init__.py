@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
