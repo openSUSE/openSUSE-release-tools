@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -e
+
+OBS_DIRECTORY=${OBS_DIRECTORY:-.open-build-service}
+
+if [ ! -d "$OBS_DIRECTORY" ] ; then
+  git clone --depth 1 https://github.com/openSUSE/open-build-service.git "$OBS_DIRECTORY"
+
+  if [ ! -f ~/.oscrc ] ; then
+    # openSUSE/open-build-service#3946: would elevate the need, but rejected.
+    eval $(./dist/ci/osc-credentials-throwaway)
+    OBS_USER="$user" OBS_PASS="$pass" ./dist/ci/osc-init
+  fi
+
+cat <<EOF >> ~/.oscrc
+
+[http://0.0.0.0:3000]
+user = Admin
+pass = opensuse
+aliases = local
+EOF
+fi
+
+cd "$OBS_DIRECTORY"
+
+git pull origin master
+
+# https://github.com/openSUSE/open-build-service/blob/master/CONTRIBUTING.md
+git submodule init
+git submodule update
+
+rake docker:build
+
+# See `docker-compose logs` instead of changing output redirection.
+docker-compose up -d --remove-orphans
+
+osc='osc'
+if ! which osc &> /dev/null ; then
+  # Workaround for pip install that occurs on travis.
+  osc='osc-wrapper.py'
+fi
+
+until $osc -q -A local api /about 2> /dev/null ; do
+  echo "waiting for OBS to be responsive..."
+  ((c++)) && ((c==60)) && docker-compose logs && exit 1
+  sleep 1
+done
