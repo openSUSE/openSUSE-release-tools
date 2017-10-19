@@ -147,7 +147,7 @@ class BiArchTool(ToolBase.ToolBase):
             try:
                 x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev':'1'})))
             # catch deleted packages
-            except urllib2.HTTPError, e:
+            except urllib2.HTTPError as e:
                 if e.code == 404:
                     continue
                 raise e
@@ -188,7 +188,7 @@ class BiArchTool(ToolBase.ToolBase):
                     self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
                     if self.caching:
                         self._invalidate__cached_GET(pkgmetaurl)
-                except urllib2.HTTPError, e:
+                except urllib2.HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
     def add_explicit_disable(self, wipebinaries=False):
@@ -225,7 +225,7 @@ class BiArchTool(ToolBase.ToolBase):
                             'cmd' : 'wipe',
                             'arch': self.arch,
                             'package' : pkg }))
-                except urllib2.HTTPError, e:
+                except urllib2.HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
 
@@ -236,7 +236,7 @@ class BiArchTool(ToolBase.ToolBase):
             pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
             try:
                 pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
-            except urllib2.HTTPError, e:
+            except urllib2.HTTPError as e:
                 # catch deleted packages
                 if e.code == 404:
                     continue
@@ -303,7 +303,7 @@ class BiArchTool(ToolBase.ToolBase):
                             'cmd' : 'wipe',
                             'arch': self.arch,
                             'package' : pkg }))
-                except urllib2.HTTPError, e:
+                except urllib2.HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
 class CommandLineInterface(ToolBase.CommandLineInterface):

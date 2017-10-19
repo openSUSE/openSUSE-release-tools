@@ -67,7 +67,7 @@ class ToolBase(object):
     def retried_GET(self, url):
         try:
             return http_GET(url)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if 500 <= e.code <= 599:
                 print 'Retrying {}'.format(url)
                 time.sleep(1)
@@ -195,7 +195,7 @@ class CommandLineInterface(cmdln.Cmdln):
         while True:
             try:
                 workfunc()
-            except Exception, e:
+            except Exception as e:
                 logger.exception(e)
 
             if interval:

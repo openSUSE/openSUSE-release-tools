@@ -37,7 +37,7 @@ class Config(object):
         try:
             entry = self.session.query(DB.Config).filter(DB.Config.key == key).one()
             entry.value = value
-        except sqlalchemy.orm.exc.NoResultFound, e:
+        except sqlalchemy.orm.exc.NoResultFound as e:
             entry = DB.Config(key=key, value=value)
         self.session.add(entry)
         self.session.commit()
@@ -46,7 +46,7 @@ class Config(object):
         try:
             entry = self.session.query(DB.Config).filter(DB.Config.key == key).one()
             return entry.value
-        except sqlalchemy.orm.exc.NoResultFound, e:
+        except sqlalchemy.orm.exc.NoResultFound as e:
             pass
         return default
 
@@ -56,7 +56,7 @@ class Config(object):
             self.session.delete(entry)
             self.session.commit()
             return True
-        except sqlalchemy.orm.exc.NoResultFound, e:
+        except sqlalchemy.orm.exc.NoResultFound as e:
             pass
         return False
 

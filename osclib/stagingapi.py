@@ -152,7 +152,7 @@ class StagingAPI(object):
                 if data is not None:
                     return func(url, data=data)
                 return func(url)
-            except urllib2.HTTPError, e:
+            except urllib2.HTTPError as e:
                 if 500 <= e.code <= 599:
                     print 'Error {}, retrying {} in {}s'.format(e.code, url, retry_sleep_seconds)
                     time.sleep(retry_sleep_seconds)
@@ -290,7 +290,7 @@ class StagingAPI(object):
             content = http_GET(url)
             for entry in ET.parse(content).getroot().findall('entry'):
                 filelist.append(entry.attrib['name'])
-        except urllib2.HTTPError, err:
+        except urllib2.HTTPError as err:
             if err.code == 404:
                 # The package we were supposed to query does not exist
                 # we can pass this up and return the empty filelist
@@ -394,7 +394,7 @@ class StagingAPI(object):
         try:
             url = self.makeurl(['source', prj, '_project', '_frozenlinks'], {'meta': '1'})
             root = ET.parse(http_GET(url)).getroot()
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 return None
         packages = root.findall('./frozenlink/package')
@@ -1468,7 +1468,7 @@ class StagingAPI(object):
         url = self.makeurl(['build', project, repository, arch, '_repository', "%s?view=fileinfo" % rpm])
         try:
             return ET.parse(http_GET(url)).getroot().find('version').text
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 return None
             raise
@@ -1764,7 +1764,7 @@ class StagingAPI(object):
             node = ET.fromstring(''.join(m)).find('devel')
             if node is not None:
                 return node.get('project')
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 pass
         return None

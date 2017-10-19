@@ -44,7 +44,7 @@ class PrioCommand(object):
                 try:
                     osc.core.http_POST(url, data=message)
                     print reqid, r['by'], priority
-                except urllib2.HTTPError, e:
+                except urllib2.HTTPError as e:
                     print e
 
 

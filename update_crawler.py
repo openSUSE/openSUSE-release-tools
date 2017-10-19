@@ -99,7 +99,7 @@ class UpdateCrawler(object):
     def retried_GET(self, url):
         try:
             return http_GET(url)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if 500 <= e.code <= 599:
                 print 'Retrying {}'.format(url)
                 time.sleep(1)
@@ -211,7 +211,7 @@ class UpdateCrawler(object):
                 )))
             if root.get('project') is None and root.get('cicount'):
                 return True
-        except urllib2.HTTPError, err:
+        except urllib2.HTTPError as err:
             # if there is no link, it can't be a link
             if err.code == 404:
                 return False

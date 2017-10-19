@@ -457,7 +457,7 @@ class ToTestBase(object):
     def totest(self):
         try:
             current_snapshot = self.get_current_snapshot()
-        except NotFoundException, e:
+        except NotFoundException as e:
             # nothing in :ToTest (yet)
             logger.warn(e)
             current_snapshot = None
@@ -769,7 +769,7 @@ class CommandlineInterface(cmdln.Cmdln):
             try:
                 totest = self._setup_totest(project)
                 totest.totest()
-            except Exception, e:
+            except Exception as e:
                 logger.error(e)
 
             if opts.interval:

@@ -367,7 +367,7 @@ class ReviewBot(object):
             node = ET.fromstring(''.join(m)).find('devel')
             if node is not None:
                 return node.get('project'), node.get('package', None)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code != 404:
                 raise e
         return None, None
@@ -387,7 +387,7 @@ class ReviewBot(object):
             else:
                 return False
             states = set([review.get('state') for review in root.findall('review') if review.get(by_what) == reviewer])
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             print('ERROR in URL %s [%s]' % (url, e))
         if not states:
             return None
@@ -644,7 +644,7 @@ class CommandLineInterface(cmdln.Cmdln):
         while True:
             try:
                 workfunc()
-            except Exception, e:
+            except Exception as e:
                 self.logger.exception(e)
 
             if interval:

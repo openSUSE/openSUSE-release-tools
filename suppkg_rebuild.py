@@ -100,7 +100,7 @@ class StagingHelper(object):
             url = makeurl(self.apiurl, ['source', project, pkg], query=query)
             try:
                 root = ET.parse(http_GET(url)).getroot()
-            except urllib2.HTTPError, e:
+            except urllib2.HTTPError as e:
                 if e.code == 404:
                     continue
                 raise
