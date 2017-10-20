@@ -1,6 +1,11 @@
 #!/bin/bash
 
-eval $(./dist/ci/osc-credentials)
+if [ "$TRAVIS_PULL_REQUEST" == "false" ] ; then
+  eval $(./dist/ci/osc-credentials)
+else
+  # openSUSE/open-build-service#3946: would elevate the need, but rejected.
+  eval $(./dist/ci/osc-credentials-throwaway)
+fi
 
 docker run --privileged --rm -it \
   -v "$(realpath .)/.docker-tmp:/var/tmp" \
