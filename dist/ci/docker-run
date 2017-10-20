@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ "$TRAVIS_PULL_REQUEST" == "false" ] ; then
+  eval $(./dist/ci/osc-credentials)
+else
+  # openSUSE/open-build-service#3946: would elevate the need, but rejected.
+  eval $(./dist/ci/osc-credentials-throwaway)
+fi
+
+docker run --privileged --rm -it \
+  -v "$(realpath .)/.docker-tmp:/var/tmp" \
+  -e OBS_API="${apiurl:-$OBS_API}" \
+  -e OBS_USER="${user:-$OBS_USER}" \
+  -e OBS_PASS="${pass:-$OBS_PASS}" \
+  -e OBS_EMAIL="${email:-$OBS_EMAIL}" \
+  -e OBS_PACKAGE="${OBS_PACKAGE:-openSUSE:Tools/openSUSE-release-tools}" \
+  spec "${1:-obs-build-target}" "${2:-openSUSE_Factory}"

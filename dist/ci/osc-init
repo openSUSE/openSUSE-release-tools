@@ -1,0 +1,18 @@
+#!/bin/bash
+
+OBS_API="${OBS_API:-https://api.opensuse.org}"
+if [ -z ${OBS_PASS+x} ] || [ -z "$OBS_PASS" ] ; then
+  OBS_API="$OBS_API/public"
+fi
+
+echo "OBS_API=$OBS_API"
+echo "OBS_USER=$OBS_USER"
+
+cat << eom > ~/.oscrc
+[general]
+apiurl = $OBS_API
+[$OBS_API]
+user = ${OBS_USER:-example}
+pass = ${OBS_PASS:-example}
+email = ${OBS_EMAIL:-example@example.com}
+eom

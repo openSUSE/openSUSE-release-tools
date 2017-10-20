@@ -8,7 +8,7 @@ env:
 
 matrix:
   include:
-    - env: TEST_SUITE=distribution
+    - env: TEST_SUITE=distribution TARGET_REPO=openSUSE_Factory
       sudo: required
       services:
         - docker
@@ -16,7 +16,25 @@ matrix:
       before_install:
         - docker build -f dist/ci/Dockerfile -t spec .
       script:
-        - docker run -it spec ./dist/ci/spec.sh
+        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
+    - env: TEST_SUITE=distribution TARGET_REPO=openSUSE_42.3
+      sudo: required
+      services:
+        - docker
+      language: bash
+      before_install:
+        - docker build -f dist/ci/Dockerfile -t spec .
+      script:
+        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
+    - env: TEST_SUITE=distribution TARGET_REPO=SLE_12_SP3
+      sudo: required
+      services:
+        - docker
+      language: bash
+      before_install:
+        - docker build -f dist/ci/Dockerfile -t spec .
+      script:
+        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
     - env: TEST_SUITE=flake8
       language: python
       install:
@@ -42,7 +60,11 @@ matrix:
 
 deploy:
   provider: script
-  script: docker run -it -e OBS_PACKAGE="$OBS_PACKAGE" -e OBS_USER="$OBS_USER" -e OBS_PASS="$OBS_PASS" -e OBS_EMAIL="$OBS_EMAIL" spec ./dist/ci/deploy.obs.sh
+  script: ./dist/ci/docker-run obs-deploy
   on:
     branch: master
-    condition: $TEST_SUITE = distribution
+    condition: $TEST_SUITE = distribution && $TARGET_REPO = openSUSE_Factory
+
+cache:
+  directories:
+    - .docker-tmp
