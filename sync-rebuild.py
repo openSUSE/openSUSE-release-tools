@@ -11,9 +11,9 @@ import re
 
 results = []
 repo = ""
-architectures = ["x86_64","i586"]
+architectures = ["x86_64", "i586"]
 pkg = ""
-projects = ['openSUSE:Factory','openSUSE:Factory:Rebuild']
+projects = ['openSUSE:Factory', 'openSUSE:Factory:Rebuild']
 
 #initialize osc config
 osc.conf.get_config()

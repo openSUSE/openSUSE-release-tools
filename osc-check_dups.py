@@ -27,10 +27,10 @@ def _checker_check_dups(self, project, opts):
                 continue
             # print(id)
             # ET.dump(target)
-            if not target.attrib.has_key('package'):
+            if 'package' not in target.attrib:
                 continue
             package = target.attrib['package']
-            if rqs.has_key(type + package):
+            if type + package in rqs:
                 [oldid, oldsource] = rqs[type + package]
                 if oldid > id:
                     s = oldid

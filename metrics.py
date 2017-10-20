@@ -19,8 +19,9 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
 # Duplicate Leap config to handle 13.2 without issue.
-osclib.conf.DEFAULT[r'openSUSE:(?P<project>[\d.]+)'] = \
-osclib.conf.DEFAULT[r'openSUSE:(?P<project>Leap:[\d.]+)']
+osclib.conf.DEFAULT[
+    r'openSUSE:(?P<project>[\d.]+)'] = osclib.conf.DEFAULT[
+    r'openSUSE:(?P<project>Leap:[\d.]+)']
 
 # Provide osc.core.get_request_list() that swaps out search() implementation and
 # uses lxml ET to avoid having to reparse to peform complex xpaths.

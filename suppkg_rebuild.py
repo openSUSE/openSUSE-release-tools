@@ -67,7 +67,7 @@ class StagingHelper(object):
 
     def get_project_binarylist(self, project, repository, arch):
         query = {'view': 'binarylist', 'repository': repository, 'arch': arch}
-        root = ET.parse(http_GET(makeurl(self.apiurl,['build', project, '_result'],
+        root = ET.parse(http_GET(makeurl(self.apiurl, ['build', project, '_result'],
             query=query))).getroot()
         return root
 
