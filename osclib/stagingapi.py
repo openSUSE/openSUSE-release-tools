@@ -30,6 +30,7 @@ import yaml
 from osc import conf
 from osc import oscerr
 from osc.core import show_package_meta
+from osc.core import buildlog_strip_time
 from osc.core import change_review_state
 from osc.core import delete_package
 from osc.core import get_commitlog

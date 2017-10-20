@@ -5,6 +5,12 @@
 # Copy this script to ~/.osc-plugins/ or /var/lib/osc-plugins .
 # Then try to run 'osc checker --help' to see the usage.
 
+from xml.etree import cElementTree as ET
+from osc.core import change_request_state
+from osc.core import get_dependson
+from osc.core import http_GET
+from osc.core import makeurl
+
 def _checker_check_dups(self, project, opts):
     url = makeurl(opts.apiurl, ['request'], "states=new,review&project=%s&view=collection" % project)
     f = http_GET(url)
@@ -17,15 +23,17 @@ def _checker_check_dups(self, project, opts):
             target = a.find('target')
             type = a.attrib['type']
             assert target != None
-            if target.attrib['project'] != project: continue
-	    #print(id)
-            #ET.dump(target)
-	    if not target.attrib.has_key('package'): continue
+            if target.attrib['project'] != project:
+                continue
+            # print(id)
+            # ET.dump(target)
+            if not target.attrib.has_key('package'):
+                continue
             package = target.attrib['package']
             if rqs.has_key(type + package):
                 [oldid, oldsource] = rqs[type + package]
-		if oldid > id:
-		    s = oldid
+                if oldid > id:
+                    s = oldid
                     oldid = id
                     id = s
                 assert oldid < id
@@ -52,7 +60,7 @@ def do_check_dups(self, subcmd, opts, *args):
     opts.apiurl = self.get_api_url()
 
     for p in args[:]:
-       self._checker_check_dups(p, opts)
+        self._checker_check_dups(p, opts)
 
 #Local Variables:
 #mode: python

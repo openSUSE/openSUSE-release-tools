@@ -44,6 +44,7 @@ class AdiCommand:
                     Fore.CYAN + review['package'] + Fore.RESET,
                     review['request'])
                 return
+
         if self.api.is_user_member_of(self.api.user, self.api.cstaging_group):
             print query_project, Fore.GREEN + 'ready'
             packages = []
@@ -138,6 +139,6 @@ class AdiCommand:
                 requests.add(request)
             self.create_new_adi(requests, split=split)
         else:
-            self.check_adi_projects() 
+            self.check_adi_projects()
             if self.api.is_user_member_of(self.api.user, self.api.cstaging_group):
                 self.create_new_adi((), by_dp=by_dp, split=split)

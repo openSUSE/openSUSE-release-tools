@@ -470,8 +470,8 @@ class PkgListGen(ToolBase.ToolBase):
             if not r:
                 raise Exception("failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
             for solvable in repo.solvables_iter():
-		if solvable.name in solvables:
-                     self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE|solv.Job.SOLVER_LOCK, solvable.id))
+                if solvable.name in solvables:
+                    self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE|solv.Job.SOLVER_LOCK, solvable.id))
                 solvables.add(solvable.name)
 
         pool.addfileprovides()

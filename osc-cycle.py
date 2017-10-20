@@ -15,6 +15,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import osc.core
+from osc.core import get_dependson
+from xml.etree import cElementTree as ET
 
 def do_cycle(self, subcmd, opts, *args):
     """${cmd_name}: Try to visualize build dependencies between the package list specified

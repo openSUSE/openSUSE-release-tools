@@ -22,7 +22,7 @@
 
 
 from pprint import pprint
-import os, sys, re, io
+import os, sys, io
 import logging
 from optparse import OptionParser
 import rpm
