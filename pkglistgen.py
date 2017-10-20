@@ -45,7 +45,7 @@ from osclib.memoize import CACHEDIR
 
 logger = logging.getLogger()
 
-ARCHITECTURES = ('x86_64', 'ppc64le', 's390x', 'aarch64')
+ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
 DEFAULT_REPOS = ("openSUSE:Factory/standard")
 
 class Group(object):
@@ -172,7 +172,11 @@ class Group(object):
                 problems = solver.solve(jobs)
                 if problems:
                     for problem in problems:
-                        logger.error('unresolvable: %s.%s: %s', self.name, arch, problem)
+                        msg = 'unresolvable: %s.%s: %s', self.name, arch, problem
+                        if self.pkglist.ignore_broken:
+                            logger.debug(msg)
+                        else:
+                            logger.debug(msg)
                         self.unresolvable[arch][n] = str(problem)
                     continue
 
@@ -303,12 +307,12 @@ class Group(object):
                 name = msg
             if name in unresolvable:
                 msg = ' {} uninstallable: {}'.format(name, unresolvable[name])
-                logger.error(msg)
                 if ignore_broken:
                     c = ET.Comment(msg)
                     packagelist.append(c)
                     continue
                 else:
+                    logger.error(msg)
                     name = msg
             status = self.pkglist.supportstatus(name)
             attrs = { 'name': name }
@@ -600,6 +604,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         # only there to parse the repos
         bs_mirrorfull = os.path.join(os.path.dirname(__file__), 'bs_mirrorfull')
+        global_update = False
         for prp in self.tool.repos:
             project, repo = prp.split('/')
             for arch in self.tool.architectures:
@@ -611,8 +616,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     apiurl = 'https://api.opensuse.org/public'
                 else:
                     apiurl = 'https://api.suse.de/public'
-                subprocess.call(
-                    [bs_mirrorfull, '{}/build/{}/{}/{}'.format(apiurl, project, repo, arch), d])
+                args = [bs_mirrorfull]
+                args.append('{}/build/{}/{}/{}'.format(apiurl, project, repo, arch))
+                args.append(d)
+                p = subprocess.Popen(args, stdout=subprocess.PIPE)
+                repo_update = False
+                for line in p.stdout:
+                    print(line.rstrip())
+                    global_update = True
+                    repo_update = True
+                if not repo_update:
+                    continue
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
                 fh = open(d + '.solv', 'w')
@@ -621,6 +635,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 p.communicate('\0'.join(files))
                 p.wait()
                 fh.close()
+        return global_update
 
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
