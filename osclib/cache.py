@@ -176,7 +176,7 @@ class Cache(object):
             data = StringIO(text)
 
             if conf.config['debug']: print('CACHE_PUT', url, project, file=sys.stderr)
-            f = open(path,'w')
+            f = open(path, 'w')
             f.write(text)
             f.close()
 

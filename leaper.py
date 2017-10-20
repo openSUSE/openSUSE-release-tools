@@ -90,7 +90,7 @@ class Leaper(ReviewBot.ReviewBot):
         """Return the list of packages in a project."""
         query = {'expand': 1} if expand else {}
         try:
-            root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl,['source', project],
+            root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl, ['source', project],
                                      query=query))).getroot()
             packages = [i.get('name') for i in root.findall('entry')]
         except urllib2.HTTPError as e:

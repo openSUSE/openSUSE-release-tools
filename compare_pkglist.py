@@ -50,14 +50,14 @@ class CompareList(object):
     def get_source_packages(self, project):
         """Return the list of packages in a project."""
         query = {'expand': 1}
-        root = ET.parse(http_GET(makeurl(self.apiurl,['source', project],
+        root = ET.parse(http_GET(makeurl(self.apiurl, ['source', project],
                                  query=query))).getroot()
         packages = [i.get('name') for i in root.findall('entry')]
-        
+
         return packages
 
     def is_linked_package(self, project, package):
-        u = makeurl(self.apiurl,['source', project, package])
+        u = makeurl(self.apiurl, ['source', project, package])
         root = ET.parse(http_GET(u)).getroot()
         linked = root.find('linkinfo')
         return linked
@@ -68,7 +68,7 @@ class CompareList(object):
                  'view': 'xml',
                  'oproject': old_prj,
                  'opackage': package}
-        u = makeurl(self.apiurl,['source', new_prj, package], query=query)
+        u = makeurl(self.apiurl, ['source', new_prj, package], query=query)
         root = ET.parse(http_POST(u)).getroot()
         old_srcmd5 = root.findall('old')[0].get('srcmd5')
         logging.debug('%s old srcmd5 %s in %s' % (package, old_srcmd5, old_prj))

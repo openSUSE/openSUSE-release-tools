@@ -43,7 +43,7 @@ URL="https://build.opensuse.org/project/status?&project=%s&ignore_pending=true&l
 FACTORY='openSUSE:Factory'
 
 class RemindedPackage(object):
-    def __init__(self,firstfail,reminded,remindCount,bug):
+    def __init__(self, firstfail, reminded, remindCount, bug):
         self.firstfail=firstfail
         self.reminded=reminded
         self.bug=bug
@@ -190,7 +190,7 @@ def main(args):
                     msg['Date'] = email.utils.formatdate()
                     msg['Message-ID'] = email.utils.make_msgid()
                     msg.add_header('Precedence', 'bulk')
-                    msg.add_header('X-Mailer','%s - Failure Notification' % project)
+                    msg.add_header('X-Mailer', '%s - Failure Notification' % project)
                     logger.info("%s: %s", msg['To'], msg['Subject'])
                     if args.dry:
                         logger.debug(msg.as_string())

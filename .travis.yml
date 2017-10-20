@@ -40,7 +40,7 @@ matrix:
       install:
         - pip install flake8
       script:
-        - dist/ci/flake8.sh
+        - flake8
     - env: TEST_SUITE=nosetests
       sudo: required
       language: python

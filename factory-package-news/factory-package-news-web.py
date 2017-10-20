@@ -49,7 +49,7 @@ def list():
     for i in sorted(os.listdir(_dir), reverse=True):
         if not digits_re.match(i):
             continue
-        ret = ret + '<a href="diff/%s">%s</a>'%(i,i)
+        ret = ret + '<a href="diff/%s">%s</a>'%(i, i)
         if i == current:
             ret = ret + " &lt;--"
         ret = ret + '<br/>'
@@ -67,7 +67,7 @@ def current():
             return "malformed version", 400
         if not os.path.exists(os.path.join(_dir, version)):
             return "invalid version", 400
-        tmpfn = os.path.join(_dir,'.'+version)
+        tmpfn = os.path.join(_dir, '.'+version)
         app.logger.debug(tmpfn)
         if os.path.exists(tmpfn):
             os.unlink(tmpfn)

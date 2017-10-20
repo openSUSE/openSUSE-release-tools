@@ -172,7 +172,7 @@ class UpdateCrawler(object):
                 srcrev = a.src_rev
                 # sometimes requests only contain the decimal revision
                 if re.match(r'^\d+$', srcrev) is not None:
-                    xml = ET.fromstring(self._get_source_package(src_project,src_package, srcrev))
+                    xml = ET.fromstring(self._get_source_package(src_project, src_package, srcrev))
                     srcrev = xml.get('verifymd5')
                 logging.debug('rev {}'.format(srcrev))
                 if srcrev == rev:
@@ -349,7 +349,6 @@ def main(args):
     if uc.skipped:
         from pprint import pformat
         logging.debug("skipped packages: %s", pformat(uc.skipped))
-
 
 
 if __name__ == '__main__':

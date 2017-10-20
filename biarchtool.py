@@ -119,7 +119,7 @@ class BiArchTool(ToolBase.ToolBase):
         if self.rdeps is not None:
             return
         self.rdeps = dict()
-        url = self.makeurl(['build', self.project, 'standard', self.arch, '_builddepinfo' ], {'view':'revpkgnames'})
+        url = self.makeurl(['build', self.project, 'standard', self.arch, '_builddepinfo' ], {'view': 'revpkgnames'})
         x = ET.fromstring(self.cached_GET(url))
         for pnode in x.findall('package'):
             name = pnode.get('name')
@@ -141,11 +141,11 @@ class BiArchTool(ToolBase.ToolBase):
     # generator. Yield only packges that got checked in after that
     # point in time.
     def _filter_packages_by_time(self, packages):
-        x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '_product', '_history'], {'limit':'1'})))
+        x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '_product', '_history'], {'limit': '1'})))
         producttime = int(x.find('./revision/time').text)
         for pkg in packages:
             try:
-                x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev':'1'})))
+                x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev': '1'})))
             # catch deleted packages
             except urllib2.HTTPError as e:
                 if e.code == 404:

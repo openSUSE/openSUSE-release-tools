@@ -157,7 +157,7 @@ class FccSubmitter(object):
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
         query = {'expand': 1} if expand else {}
-        root = ET.parse(http_GET(makeurl(self.apiurl,['source', project],
+        root = ET.parse(http_GET(makeurl(self.apiurl, ['source', project],
                                  query=query))).getroot()
         packages = [i.get('name') for i in root.findall('entry')]
 
@@ -168,7 +168,7 @@ class FccSubmitter(object):
 
     def get_link(self, project, package):
         try:
-            link = http_GET(makeurl(self.apiurl,['source', project, package, '_link'])).read()
+            link = http_GET(makeurl(self.apiurl, ['source', project, package, '_link'])).read()
         except (urllib2.HTTPError, urllib2.URLError):
             return None
         return ET.fromstring(link)

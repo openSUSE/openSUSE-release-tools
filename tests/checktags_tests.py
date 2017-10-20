@@ -28,9 +28,9 @@ import urlparse
 import sys
 import re
 from osclib.cache import Cache
-sys.path.append(".")
-
 from check_tags_in_requests import TagChecker
+
+sys.path.append(".")
 
 APIURL = 'https://maintenancetest.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
@@ -208,7 +208,7 @@ Pico text editor while also offering a few enhancements.</description>
                                body=self._request_withhistory)
 
         httpretty.register_uri(httpretty.GET,
-                               re.compile (re.escape(APIURL + "/search/request?")),
+                               re.compile(re.escape(APIURL + "/search/request?")),
                                match_querystring=True,
                                body='<collection matches="0"></collection>')
 
