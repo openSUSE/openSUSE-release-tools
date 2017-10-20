@@ -270,7 +270,6 @@ class Group(object):
             for m in modules:
                 for arch in ['*'] + self.architectures:
                     already_present = already_present or (p in m.solved_packages[arch])
-                    already_present = already_present or (p in m.recommends)
             if not already_present:
                 self.recommends[p] = recommends[p]
 
