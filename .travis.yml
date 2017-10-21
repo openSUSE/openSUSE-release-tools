@@ -54,7 +54,7 @@ matrix:
         - pip install -r requirements.txt
         - pip install python-coveralls
       script:
-        - nosetests --with-coverage --cover-package=osclib --cover-inclusive
+        - nosetests --with-coverage --cover-package=. --cover-inclusive
       after_success:
         - coveralls
 
