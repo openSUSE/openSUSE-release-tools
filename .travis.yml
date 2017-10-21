@@ -1,3 +1,9 @@
+addons:
+  apt:
+    packages:
+      # Used by dist/ci/docker-run.
+      - realpath
+
 env:
   global:
     - OBS_PACKAGE="openSUSE:Tools/openSUSE-release-tools"
