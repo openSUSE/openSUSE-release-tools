@@ -70,6 +70,7 @@ class Group(object):
         self.srcpkgs = None
         self.develpkgs = []
         self.silents = set()
+        self.ignored = set()
 
         pkglist.groups[self.safe_name] = self
 
@@ -124,6 +125,9 @@ class Group(object):
             self.not_found[p] -= without.not_found[p]
             if not self.not_found[p]:
                 self.not_found.pop(p)
+        for g in without.ignored:
+            self.ignore(g)
+        self.ignored.add(without)
 
     def solve(self, ignore_recommended=False):
         """ base: list of base groups or None """
