@@ -75,5 +75,7 @@ cache:
   directories:
     - .docker-tmp
   pip: true
+  # 7 days
+  timeout: 604800
 before_cache:
   - sudo rm -rf .docker-tmp/build-root
