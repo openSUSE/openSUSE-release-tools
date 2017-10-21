@@ -75,3 +75,5 @@ cache:
   directories:
     - .docker-tmp
   pip: true
+before_cache:
+  - sudo rm -rf .docker-tmp/build-root
