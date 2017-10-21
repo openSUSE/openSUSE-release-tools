@@ -74,3 +74,4 @@ deploy:
 cache:
   directories:
     - .docker-tmp
+  pip: true
