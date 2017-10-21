@@ -62,6 +62,7 @@ class Group(object):
         self.solved = False
         self.not_found = dict()
         self.unresolvable = dict()
+        self.unwanted = set()
         for a in self.architectures:
             self.packages[a] = []
             self.unresolvable[a] = dict()
@@ -150,7 +151,8 @@ class Group(object):
                 else:
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
-                for l in self.locked:
+                locked = self.locked | self.pkglist.unwanted
+                for l in locked:
                     sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
                     if sel.isempty():
                         # if we can't find it, it probably is not as important
@@ -187,6 +189,8 @@ class Group(object):
 
                 if 'get_recommended' in dir(solver):
                     for s in solver.get_recommended():
+                        if s.name in locked:
+                            continue
                         self.recommends.setdefault(s.name, group + ':' + n)
                 else:
                     logger.warn('newer libsolv needed for recommends!')
@@ -391,23 +395,30 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _load_group_file(self, fn):
         output = None
+        unwanted = None
         with open(fn, 'r') as fh:
             logger.debug("reading %s", fn)
             for groupname, group in yaml.safe_load(fh).items():
                 if groupname == 'OUTPUT':
                     output = group
                     continue
+                if groupname == 'UNWANTED':
+                    unwanted = set(group)
+                    continue
                 g = Group(groupname, self)
                 g.parse_yml(group)
-        return output
+        return output, unwanted
 
     def load_all_groups(self):
         output = None
+        unwanted = set()
         for fn in glob.glob(os.path.join(self.input_dir, 'group*.yml')):
-            o = self._load_group_file(fn)
+            o, u = self._load_group_file(fn)
             if not output:
                 output = o
-        return output
+            if not unwanted:
+                unwanted = u
+        return output, unwanted
 
     def _write_all_groups(self):
         self._check_supplements()
@@ -506,6 +517,7 @@ class PkgListGen(ToolBase.ToolBase):
                       s.name.endswith('-debuginfo') or
                       s.name.endswith('-debugsource'))])
 
+            p -= self.unwanted
             for g in modules:
                 for a in ('*', arch):
                     p -= set(g.solved_packages[a].keys())
@@ -646,7 +658,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        output = self.tool.load_all_groups()
+        output, self.tool.unwanted = self.tool.load_all_groups()
         if not output:
             return
 
