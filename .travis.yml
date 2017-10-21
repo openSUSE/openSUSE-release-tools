@@ -79,3 +79,4 @@ cache:
   timeout: 604800
 before_cache:
   - sudo rm -rf .docker-tmp/build-root
+  - sudo chmod o+rw .docker-tmp
