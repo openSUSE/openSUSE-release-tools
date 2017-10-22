@@ -71,6 +71,7 @@ class Group(object):
         self.develpkgs = []
         self.silents = set()
         self.ignored = set()
+        self.recommended = set()
 
         pkglist.groups[self.safe_name] = self
 
@@ -93,13 +94,18 @@ class Group(object):
                 continue
             name = package.keys()[0]
             for rel in package[name]:
+                arch = None
                 if rel == 'locked':
                     self.locked.add(name)
+                    continue
                 elif rel == 'silent':
-                    self._add_to_packages(name)
                     self.silents.add(name)
+                elif rel == 'recommended':
+                    self.recommended.add(name)
                 else:
-                    self._add_to_packages(name, rel)
+                    arch = rel
+
+                self._add_to_packages(name, arch)
 
     def _verify_solved(self):
         if not self.solved:
@@ -111,6 +117,7 @@ class Group(object):
 
         self.locked.update(group.locked)
         self.silents.update(group.silents)
+        self.recommended.update(group.recommended)
 
     # do not repeat packages
     def ignore(self, without):
@@ -145,7 +152,9 @@ class Group(object):
             pool = self.pkglist._prepare_pool(arch)
             # pool.set_debuglevel(10)
 
-            for n, group in self.packages[arch]:
+            tosolv = self.packages[arch]
+            while tosolv:
+                n, group = tosolv.pop(0)
                 jobs = list(self.pkglist.lockjobs[arch])
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
@@ -153,6 +162,14 @@ class Group(object):
                     self.not_found.setdefault(n, set()).add(arch)
                     continue
                 else:
+                    if n in self.recommended:
+                        for s in sel.solvables():
+                            for dep in s.lookup_deparray(solv.SOLVABLE_RECOMMENDS):
+                                # only add recommends that exist as packages
+                                rec = pool.select(dep.str(), solv.Selection.SELECTION_NAME)
+                                if not rec.isempty():
+                                    tosolv.append([dep.str(), group + ":recommended:" + n])
+
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
                 locked = self.locked | self.pkglist.unwanted
