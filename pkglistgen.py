@@ -607,7 +607,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 else:
                     apiurl = 'https://api.suse.de/public'
                 subprocess.call(
-                    [bs_mirrorfull, '{}/build/{}/{}/{}'.format(apiurl, project, repo, arch), d])
+                    [bs_mirrorfull, '--nodebug', '{}/build/{}/{}/{}'.format(apiurl, project, repo, arch), d])
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
                 fh = open(d + '.solv', 'w')
