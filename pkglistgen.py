@@ -253,12 +253,17 @@ class Group(object):
         for arch in ARCHITECTURES:
             packages.update(self.solved_packages[arch])
         for m in modules:
-            if m == self: continue
+            # do not check with ourselves and only once for the rest
+            if m.name <= self.name: continue
+            if self.name in m.conflicts or m.name in self.conflicts:
+                continue
             mp = set(m.solved_packages['*'])
             for arch in ARCHITECTURES:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
-                print self.name, m.name, sorted(packages & mp)
+                print 'overlap_between_' + self.name + '_and_' + m.name + ':'
+                for p in sorted(packages & mp):
+                    print '  - ' + p
 
     def collect_devel_packages(self, modules):
         develpkgs = set()
@@ -697,7 +702,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
             self.tool.solve_module(groupname, includes, excludes)
-            modules.append(self.tool.groups[groupname])
+            g = self.tool.groups[groupname]
+            g.conflicts = settings.get('conflicts', [])
+            modules.append(g)
 
         for module in modules:
             module.check_dups(modules)
