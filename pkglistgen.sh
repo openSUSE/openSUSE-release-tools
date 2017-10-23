@@ -14,6 +14,7 @@ product="000product"
 releases="000release-packages"
 
 cachedir=${XDG_CACHE_HOME:-~/.cache}/opensuse-packagelists/$api/$project
+todo=("$product" "$groups")
 
 _osc=`type -p osc`
 osc()
@@ -30,10 +31,12 @@ checkin() {
 	fi
 }
 
-if [ -z "$FORCE" ]; then
-	if ! osc api "/source/$project/" | grep -q "$product"  ; then
-		osc undelete -m revive "$project/$product"
-	fi
+if ! osc api "/source/$project/" | grep -q "$product"  ; then
+	osc undelete -m revive "$project/$product"
+	# FIXME: build disable it
+	echo "$product undeleted, skip dvd until next cycle"
+	exit 0
+elif [ -z "$FORCE" ]; then
 	bs_status=`osc api "/build/$project/_result?package=$product&repository=standard"`
 	if echo "${bs_status}" | grep -q 'building\|dirty'; then
 		echo "$project build in progress, skipping."
@@ -44,11 +47,12 @@ fi
 mkdir -p "$cachedir"
 cd "$cachedir"
 
-todo=("$product" "$groups")
 if [ -z "$skip_releases" ]; then
 	todo+=("$releases")
 	if ! osc api "/source/$project/" | grep -q "$releases"  ; then
 		osc undelete -m revive "$project/$releases"
+		echo "$releases undeleted, skip dvd until next cycle"
+		exit 0
 	fi
 fi
 # update package checkouts
