@@ -41,7 +41,8 @@ def devel_projects_get(apiurl, project):
         devel_projects[devel.attrib['project']] = True
 
     # Ensure self does not end up in list.
-    del devel_projects[project]
+    if project in devel_projects:
+        del devel_projects[project]
 
     return sorted(devel_projects)
 

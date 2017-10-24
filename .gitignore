@@ -4,3 +4,4 @@
 .coverage
 .coveralls.yml
 .docker-tmp/
+.open-build-service/

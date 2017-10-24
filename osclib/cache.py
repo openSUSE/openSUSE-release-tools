@@ -167,6 +167,9 @@ class Cache(object):
         match, project = Cache.match(url)
         if match:
             path = Cache.path(url, project, include_file=True, makedirs=True)
+            ttl = Cache.PATTERNS[match]
+            if ttl == 0:
+                return data
 
             # Since urlopen does not return a seekable stream it cannot be reset
             # after writing to cache. As such a wrapper must be used. This could
