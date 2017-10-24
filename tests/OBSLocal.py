@@ -53,7 +53,7 @@ class OBSLocalTestCase(unittest.TestCase):
         conf.config['api_host_options'][self.apiurl]['user'] = userid
         self.oscrc(userid)
 
-    def execute(self, args):
+    def execute_script(self, args):
         if self.script:
             args.insert(0, self.script)
         if self.script_debug:
@@ -61,9 +61,19 @@ class OBSLocalTestCase(unittest.TestCase):
         if self.script_debug_osc:
             args.insert(1, '--osc-debug')
 
+        self.execute(args)
+
+    def execute_osc(self, args):
+        # The wrapper allows this to work properly when osc installed via pip.
+        args.insert(0, 'osc-wrapper.py')
+        self.execute(args)
+
+    def execute(self, args):
         print('$ ' + ' '.join(args)) # Print command for debugging.
         try:
-            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT)
+            env = os.environ
+            env['OSC_CONFIG'] = OSCRC
+            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT, env=env)
         except subprocess.CalledProcessError as e:
             print(e.output)
             raise e
