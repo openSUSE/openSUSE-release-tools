@@ -60,6 +60,9 @@ class OBSLocalTestCase(unittest.TestCase):
             args.insert(1, '--debug')
         if self.script_debug_osc:
             args.insert(1, '--osc-debug')
+        args.insert(0, '-p')
+        args.insert(0, 'run')
+        args.insert(0, 'coverage')
 
         self.execute(args)
 
