@@ -15,6 +15,9 @@ class OBSLocalTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # TODO #1214: Workaround for tests/obs.py's lack of cleanup.
+        import httpretty
+        httpretty.disable()
         if os.path.exists(OSCRC):
             os.rename(OSCRC, OSCRC + '.orig')
         cls.oscrc('Admin')
