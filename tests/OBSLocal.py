@@ -4,7 +4,7 @@ from osc.core import get_request
 import subprocess
 import unittest
 
-OSCRC = os.path.expanduser('~/.oscrc')
+OSCRC = os.path.expanduser('~/.oscrc-test')
 APIURL = 'local-test'
 
 class OBSLocalTestCase(unittest.TestCase):
@@ -18,18 +18,14 @@ class OBSLocalTestCase(unittest.TestCase):
         # TODO #1214: Workaround for tests/obs.py's lack of cleanup.
         import httpretty
         httpretty.disable()
-        if os.path.exists(OSCRC):
-            os.rename(OSCRC, OSCRC + '.orig')
-        cls.oscrc('Admin')
 
     def setUp(self):
-        conf.get_config(override_apiurl=APIURL)
-        self.apiurl = apiurl = conf.config['apiurl']
+        self.oscrc('Admin')
+        conf.get_config(override_conffile=OSCRC,
+                        override_no_keyring=True,
+                        override_no_gnome_keyring=True)
+        self.apiurl = conf.config['apiurl']
 
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(OSCRC + '.orig'):
-            os.rename(OSCRC + '.orig', OSCRC)
 
     @staticmethod
     def oscrc(userid):
@@ -55,9 +51,6 @@ class OBSLocalTestCase(unittest.TestCase):
             args.insert(1, '--debug')
         if self.script_debug_osc:
             args.insert(1, '--osc-debug')
-        if self.script_apiurl:
-            args.insert(1, '-A')
-            args.insert(2, APIURL)
 
         print('$ ' + ' '.join(args)) # Print command for debugging.
         try:
