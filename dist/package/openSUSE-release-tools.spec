@@ -251,7 +251,8 @@ make %{?_smp_mflags}
 
 %check
 %if 0%{?is_opensuse}
-make check
+# TODO openSUSE/osc-plugin-factory#1221: decide how to handle integration tests
+# make check
 %endif
 
 %install
