@@ -1,6 +1,9 @@
 import os
+from lxml import etree as ET
 from osc import conf
 from osc.core import get_request
+from osc.core import http_GET
+from osc.core import makeurl
 import subprocess
 import unittest
 
@@ -25,7 +28,12 @@ class OBSLocalTestCase(unittest.TestCase):
                         override_no_keyring=True,
                         override_no_gnome_keyring=True)
         self.apiurl = conf.config['apiurl']
+        self.assertOBS()
 
+    def assertOBS(self):
+        url = makeurl(self.apiurl, ['about'])
+        root = ET.parse(http_GET(url)).getroot()
+        self.assertEqual(root.tag, 'about')
 
     @staticmethod
     def oscrc(userid):
