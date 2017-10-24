@@ -111,7 +111,6 @@ class OBS(object):
         if not OBS._self:
             OBS._self = super(OBS, cls).__new__(cls, *args, **kwargs)
 
-        Cache.delete_all()
         httpretty.reset()
         httpretty.enable()
 
@@ -129,6 +128,7 @@ class OBS(object):
         if not hasattr(Cache, '_CACHE_DIR'):
             Cache._CACHE_DIR = True
             Cache.CACHE_DIR += '-test'
+        Cache.delete_all()
         httpretty.enable()
 
         oscrc = os.path.join(fixtures, 'oscrc')
