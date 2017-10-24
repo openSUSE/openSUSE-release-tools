@@ -34,9 +34,10 @@ class OBSLocalTestCase(unittest.TestCase):
                 '[general]',
                 'apiurl = http://0.0.0.0:3000',
                 '[http://0.0.0.0:3000]',
-                'user={}'.format(userid),
-                'pass=opensuse',
-                'aliases={}'.format(APIURL),
+                'user = {}'.format(userid),
+                'pass = opensuse',
+                'email = {}@example.com'.format(userid),
+                'aliases = {}'.format(APIURL),
                 '',
             ]))
 
