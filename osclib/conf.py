@@ -125,7 +125,7 @@ class Config(object):
     def __init__(self, project):
         self.project = project
 
-        conf_file = os.environ.get('OSC_CONFIG', '~/.oscrc')
+        conf_file = conf.config.get('conffile', os.environ.get('OSC_CONFIG', '~/.oscrc'))
         self.conf_file = os.path.expanduser(conf_file)
         self.remote_values = None
 

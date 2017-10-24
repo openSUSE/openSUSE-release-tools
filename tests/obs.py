@@ -135,7 +135,6 @@ class OBS(object):
         osc.core.conf.get_config(override_conffile=oscrc,
                                  override_no_keyring=True,
                                  override_no_gnome_keyring=True)
-        os.environ['OSC_CONFIG'] = oscrc
 
         # Internal status of OBS.  The mockup will use this data to
         # build the responses.  We will try to put responses as XML
