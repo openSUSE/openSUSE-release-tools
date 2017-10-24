@@ -92,13 +92,15 @@ def project_clone(apiurl_source, apiurl_target, project):
     http_PUT(url, data=ET.tostring(stripped))
 
     # Clone projects referenced in repository paths.
-    for target in project.findall('repository/releasetarget') + project.findall('repository/path'):
-        if not project_fence(target.get('project')):
-            target.getparent().remove(target)
-            continue
+    for repository in project.findall('repository'):
+        for target in repository.xpath('./path') + repository.xpath('./releasetarget'):
+            if not project_fence(target.get('project')):
+                project.remove(repository)
+                break
 
-        path = ['source', target.get('project'), '_meta']
-        entity_clone(apiurl_source, apiurl_target, path, clone=project_clone)
+            # Valid reference to project and thus should be cloned.
+            path = ['source', target.get('project'), '_meta']
+            entity_clone(apiurl_source, apiurl_target, path, clone=project_clone)
 
 def package_clone(apiurl_source, apiurl_target, package):
     # Clone project that contains the package.
