@@ -159,6 +159,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-S', '--apiurl-source', metavar='URL', help='source API URL')
     parser.add_argument('-T', '--apiurl-target', metavar='URL', help='target API URL')
+    parser.add_argument('-c', '--cache', action='store_true', help='cache source queries for 24 hours')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debuging')
     parser.add_argument('-p', '--project', default='openSUSE:Factory', help='project from which to clone')
 
@@ -172,6 +173,15 @@ if __name__ == '__main__':
     if apiurl_target == apiurl_source:
         print('target APIURL must not be the same as source APIURL')
         sys.exit(1)
+
+    if args.cache:
+        from osclib.cache import Cache
+        Cache.CACHE_DIR = Cache.CACHE_DIR + '-clone'
+        Cache.PATTERNS = {}
+        # Prevent caching source information from local clone.
+        Cache.PATTERNS['/source/[^/]+/[^/]+/[^/]+?rev'] = 0
+        Cache.PATTERNS['.*'] = Cache.TTL_LONG * 2
+        Cache.init()
 
     osc.conf.config['debug'] = args.debug
     project_fence.project = args.project
