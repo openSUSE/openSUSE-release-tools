@@ -175,7 +175,8 @@ def memoize(ttl=None, session=False, add_invalidate=False):
             if add_invalidate:
                 _self = args[0]
                 _add_invalidate_method(_self)
-            key = _key((args[1:], kwargs))
+            first = str(args[0]) if isinstance(args[0], object) else args[0]
+            key = _key((first, args[1:], kwargs))
             updated = False
             cache = _open_cache(cache_name)
             if key in cache:
