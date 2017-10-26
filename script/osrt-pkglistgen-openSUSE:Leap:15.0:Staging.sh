@@ -6,6 +6,7 @@ main=openSUSE:Leap:15.0
 export delete_kiwis="openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi"
 for l in $letter; do
 	export project=$main:Staging:$l
+	echo "checking $project..."
 	export repos=$project/standard
 	if [ "$l" != A -a "$l" != B ]; then
 		repos="$repos,$project/bootstrap_copy"
@@ -14,6 +15,5 @@ for l in $letter; do
 
 	export project=$project:DVD
 	export repos=$project/standard,$repos
-	export skip_releases=1
-	osrt-pkglistgen
+	skip_releases=1 osrt-pkglistgen
 done
