@@ -183,6 +183,8 @@ class Group(object):
                 if 'get_recommended' in dir(solver):
                     for s in solver.get_recommended():
                         self.recommends.setdefault(s.name, group + ':' + n)
+                    for s in solver.get_suggested():
+                        self.recommends.setdefault(s.name, group + ':' + n)
                 else:
                     logger.warn('newer libsolv needed for recommends!')
 
@@ -309,7 +311,7 @@ class Group(object):
             c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)) + "\n")
             root.append(c)
         if arch == '*' and self.recommends:
-            comment = "\nRecommended packages:\n"
+            comment = "\nRecommended and suggested packages:\n"
             for p in sorted(self.recommends.keys()):
                 comment += "  - {} # {}\n".format(p, self.recommends[p])
             c = ET.Comment(comment)
