@@ -1,4 +1,6 @@
 #!/bin/bash
+# FIXME: 000package-groups is not frozen, osc up doesn't do anything
+# when updated in underlying project
 
 set -e
 shopt -s nullglob
