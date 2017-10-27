@@ -415,7 +415,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if len(comment):
             # New cycles, post comment.
             self.logger.info('cycle check: failed')
-            return CheckResult(False, '\n'.join(comment))
+            return CheckResult(False, '\n'.join(comment) + '\n')
 
         self.logger.info('cycle check: passed')
         return CheckResult(True, None)
