@@ -44,6 +44,12 @@ class RepoChecker(ReviewBot.ReviewBot):
         # self.staging_config needed by target_archs().
         api = self.staging_api(project)
 
+        root = ET.fromstringlist(show_results_meta(
+            self.apiurl, project, multibuild=True, repository=['standard']))
+        if len(root.xpath('result[@state!="published"]')):
+            self.logger.info('{}/standard not published'.format(project))
+            return
+
         comment = []
         for arch in self.target_archs(project):
             directory_project = self.mirror(project, arch)
