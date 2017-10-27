@@ -64,7 +64,10 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.result_comment(arch, results, comment)
 
         text = '\n'.join(comment).strip()
-        api.dashboard_content_ensure('repo_checker', text, 'project_only run')
+        if not self.dryrun:
+            api.dashboard_content_ensure('repo_checker', text, 'project_only run')
+        else:
+            print(text)
 
         if post_comments:
             self.package_comments(project)
