@@ -3,13 +3,16 @@
 import cmdln
 from collections import namedtuple
 import hashlib
+from lxml import etree as ET
 import os
+from osc.core import show_results_meta
 import pipes
 import re
 import subprocess
 import sys
 import tempfile
 
+from osclib.comments import CommentAPI
 from osclib.core import binary_list
 from osclib.core import depends_on
 from osclib.core import package_binary_list
@@ -89,6 +92,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         # Reset for request batch.
         self.requests_map = {}
         self.groups = {}
+        self.groups_build = {}
 
         # Manipulated in ensure_group().
         self.group = None
@@ -98,6 +102,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.package_results = {}
 
         # Look for requests of interest and group by staging.
+        skip_build = set()
         for request in self.requests:
             # Only interesting if request is staged.
             group = request_staged(request)
@@ -118,6 +123,30 @@ class RepoChecker(ReviewBot.ReviewBot):
             selected = api.project_status_requests('selected')
             if request.reqid not in selected:
                 self.logger.debug('{}: inconsistent state'.format(request.reqid))
+
+            if group not in self.groups_build:
+                # Generate build hash based on hashes from relevant projects.
+                builds = []
+                for staging in api.staging_walk(group):
+                    builds.append(ET.fromstringlist(show_results_meta(
+                        self.apiurl, staging, multibuild=True, repository=['standard'])).get('state'))
+                builds.append(ET.fromstringlist(show_results_meta(
+                    self.apiurl, api.project, multibuild=True, repository=['standard'])).get('state'))
+
+                # Include meta revision for config changes (like whitelist).
+                builds.append(str(api.get_prj_meta_revision(group)))
+                self.groups_build[group] = hashlib.sha1(''.join(builds)).hexdigest()[:7]
+
+                # Determine if build has changed since last comment.
+                comment_api = CommentAPI(api.apiurl)
+                comments = comment_api.get_comments(project_name=group)
+                _, info = comment_api.comment_find(comments, self.bot_name)
+                if info and self.groups_build[group] == info.get('build'):
+                    skip_build.add(group)
+
+            if group in skip_build:
+                self.logger.debug('{}: {} build unchanged'.format(request.reqid, group))
+                continue
 
             self.requests_map[int(request.reqid)] = group
 
@@ -183,15 +212,18 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.group_pass = False
                 self.result_comment(arch, results, comment)
 
+        info_extra = {'build': self.groups_build[group]}
         if not self.group_pass:
             # Some checks in group did not pass, post comment.
             self.comment_write(state='seen', result='failed', project=group,
-                               message='\n'.join(comment).strip(), identical=True)
+                               message='\n'.join(comment).strip(), identical=True,
+                               info_extra=info_extra)
         else:
             # Post passed comment only if previous failed comment.
             text = 'Previously reported problems have been resolved.'
             self.comment_write(state='done', result='passed', project=group,
-                               message=text, identical=True, only_replace=True)
+                               message=text, identical=True, only_replace=True,
+                               info_extra=info_extra)
 
         return self.group_pass
 

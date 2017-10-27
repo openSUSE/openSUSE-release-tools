@@ -69,6 +69,7 @@ class Cache(object):
     TTL_SHORT = 5 * 60
     TTL_DUPLICATE = 3
     PATTERNS = {
+        '/build/[^/]+/_result': TTL_DUPLICATE,
         # Group members cannot be guaranteed, but change rarely.
         '/group/[^/?]+$': TTL_SHORT,
         # Clear target project cache upon request acceptance.
