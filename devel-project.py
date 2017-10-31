@@ -12,7 +12,6 @@ from osc.core import get_request_list
 from osc.core import get_review_list
 from osc.core import http_GET
 from osc.core import makeurl
-from osc.core import search
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.comments import CommentAPI
@@ -22,6 +21,20 @@ from osclib.stagingapi import StagingAPI
 
 BOT_NAME = 'devel-project'
 REMINDER = 'review reminder'
+
+def search(apiurl, queries=None, **kwargs):
+    if 'request' in kwargs:
+        # get_review_list() does not support withfullhistory, but search() does.
+        if queries is None:
+            queries = {}
+        request = queries.get('request', {})
+        request['withfullhistory'] = 1
+        queries['request'] = request
+
+    return osc.core._search(apiurl, queries, **kwargs)
+
+osc.core._search = osc.core.search
+osc.core.search = search
 
 def staging_api(args):
     Config(args.project)
