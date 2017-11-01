@@ -7,5 +7,10 @@ User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osrt-devel-project list -w
 
+# API query regularly times out, but will be cached if called again.
+Restart=on-failure
+StartLimitInterval=1 hour
+StartLimitBurst=3
+
 [Install]
 WantedBy=multi-user.target
