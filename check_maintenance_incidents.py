@@ -96,7 +96,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             pkgname = a.tgt_package
             project = a.tgt_project
 
-        if project.startswith('openSUSE:Leap:'):
+        if project.startswith('openSUSE:Leap:') and hasattr(a, 'src_project'):
             mapping = MaintenanceChecker._get_lookup_yml(self.apiurl, project)
             if mapping is None:
                 self.logger.error("error loading mapping for {}".format(project))
