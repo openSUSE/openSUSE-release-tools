@@ -243,6 +243,15 @@ Requires:       osclib = %{version}
 %description -n osc-plugin-staging
 OSC plugin for the staging workflow, see `osc staging --help`.
 
+%package -n osc-plugin-vdelreq
+Summary:        OSC plugin to check for virtually accepted request
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       osc >= 0.159.0
+
+%description -n osc-plugin-vdelreq
+OSC plugin to check for virtually accepted request, see `osc vdelreq --help`.
+
 %prep
 %setup -q
 
@@ -421,6 +430,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
+%exclude %{_datadir}/%{source_dir}/osc-vdelreq.py
 %exclude %{_datadir}/%{source_dir}/update_crawler.py
 %dir %{_sysconfdir}/openSUSE-release-tools
 
@@ -543,5 +553,10 @@ exit 0
 %defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-staging.py
 %{osc_plugin_dir}/osc-staging.py
+
+%files -n osc-plugin-vdelreq
+%defattr(-,root,root,-)
+%{_datadir}/%{source_dir}/osc-vdelreq.py
+%{osc_plugin_dir}/osc-vdelreq.py
 
 %changelog
