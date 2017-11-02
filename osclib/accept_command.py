@@ -237,6 +237,11 @@ class AcceptCommand(object):
                 else:
                     # If the package was there bug could not be delete, raise the error
                     raise
+
+            # Remove package from Rings in case 2nd specfile was removed
+            if self.api.ring_packages.get(spec[:-5]):
+                delete_package(self.api.apiurl, self.api.ring_packages.get(spec[:-5]), spec[:-5], force=True, msg="Cleanup package in Rings")
+
         if len(filelist) > 1:
             # There is more than one .spec file in the package; link package containers as needed
             origmeta = self.api.load_file_content(project, pkgname, '_meta')
