@@ -138,7 +138,8 @@ class AcceptCommand(object):
                 change_request_state(self.api.apiurl,
                                      str(req['id']),
                                      'accepted',
-                                     message='Accept to %s' % self.api.project)
+                                     message='Accept to %s' % self.api.project,
+                                     force=force)
                 self.create_new_links(self.api.project, req['package'], oldspecs)
 
         self.api.accept_status_comment(project, packages)
