@@ -151,6 +151,8 @@ Requires:       osclib = %{version}
 # TODO Requires: python-influxdb, but package does not exist in Factory, but
 # present in Cloud:OpenStack:Master/python-influxdb.
 Recommends:     python-influxdb
+Suggests:       grafana
+Suggests:       influxdb
 
 %description metrics
 Ingest relevant OBS and annotation data to generate insightful metrics.
@@ -268,6 +270,7 @@ make %{?_smp_mflags}
 
 %install
 %make_install \
+  grafana_dashboards_dir="%{_localstatedir}/lib/grafana/dashboards/%{name}" \
   oscplugindir="%{osc_plugin_dir}" \
   VERSION="%{version}"
 
@@ -340,6 +343,11 @@ exit 0
 %service_del_postun osrt-maintenance-incidents.service
 
 # TODO Provide metrics service once #1006 is resolved.
+%postun metrics
+# If grafana-server.service is enabled then restart it to load new dashboards.
+if [ -x /usr/bin/systemctl ] && systemctl is-enabled grafana-server ; then
+  /usr/bin/systemctl try-restart --no-block grafana-server
+fi
 
 %pre repo-checker
 %service_add_pre osrt-repo-checker.service

@@ -5,6 +5,7 @@ datadir=$(prefix)/share
 sysconfdir=/etc
 unitdir=$(prefix)/lib/systemd/system
 pkgdatadir=$(datadir)/osc-plugin-factory
+grafana_dashboards_dir="/var/lib/grafana/dashboards/$(package_name)"
 oscplugindir=$(prefix)/lib/osc-plugins
 apachevhostsdir=$(sysconfdir)/apache2/vhosts.d
 tmpfilesdir=$(prefix)/lib/tmpfiles.d

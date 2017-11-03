@@ -23,7 +23,8 @@ issues are documented in:
 
 - InfluxDB instance
 - Grafana instance
-  - import `metrics/grafana` dashboards
+  - `grafana.ini`:
+    - `[dashboards.json].enabled = true` to use the dashboards provided by rpm
   - create data sources for desired projects
     setting name and database to the project name (ex. `openSUSE:Factory`)
 
