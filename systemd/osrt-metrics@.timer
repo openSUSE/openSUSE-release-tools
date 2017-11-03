@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: metrics for %i
+
+[Timer]
+OnBootSec=120
+OnCalendar=daily
+Unit=osrt-metrics@%i.service
+
+[Install]
+WantedBy=timers.target

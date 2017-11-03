@@ -148,6 +148,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
+Requires(pre):  shadow
 # TODO Requires: python-influxdb, but package does not exist in Factory, but
 # present in Cloud:OpenStack:Master/python-influxdb.
 Recommends:     python-influxdb
@@ -342,8 +343,13 @@ exit 0
 %postun maintenance
 %service_del_postun osrt-maintenance-incidents.service
 
-# TODO Provide metrics service once #1006 is resolved.
+%pre metrics
+getent passwd osrt-metrics > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-metrics" osrt-metrics
+exit 0
+
 %postun metrics
+%systemd_postun
 # If grafana-server.service is enabled then restart it to load new dashboards.
 if [ -x /usr/bin/systemctl ] && systemctl is-enabled grafana-server ; then
   /usr/bin/systemctl try-restart --no-block grafana-server
@@ -502,6 +508,12 @@ exit 0
 %{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics
 %{_datadir}/%{source_dir}/metrics.py
+# To avoid adding grafana as BuildRequires since it does not live in same repo.
+%dir %{_localstatedir}/lib/grafana
+%dir %{_localstatedir}/lib/grafana/dashboards
+%{_localstatedir}/lib/grafana/dashboards/%{name}
+%{_unitdir}/osrt-metrics@.service
+%{_unitdir}/osrt-metrics@.timer
 
 %files repo-checker
 %defattr(-,root,root,-)

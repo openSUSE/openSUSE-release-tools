@@ -1,0 +1,12 @@
+[Unit]
+Description=openSUSE Release Tools: metrics for %i
+
+[Service]
+Type=oneshot
+User=osrt-metrics
+SyslogIdentifier=osrt-metrics
+ExecStart=/usr/bin/osrt-metrics --debug -p "%i"
+TimeoutStartSec=8 hour
+
+[Install]
+WantedBy=multi-user.target
