@@ -8,6 +8,7 @@ pkgdata_BINS = \
 	devel-project.py \
 	leaper.py \
 	manager_42.py \
+	metrics.py \
 	pkglistgen.sh \
 	repo_checker.py \
 	suppkg_rebuild.py \

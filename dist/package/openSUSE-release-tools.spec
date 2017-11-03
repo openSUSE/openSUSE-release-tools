@@ -148,7 +148,9 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
-# TODO Requires: python-influxdb, but package does not exist.
+# TODO Requires: python-influxdb, but package does not exist in Factory, but
+# present in Cloud:OpenStack:Master/python-influxdb.
+Recommends:     python-influxdb
 
 %description metrics
 Ingest relevant OBS and annotation data to generate insightful metrics.
@@ -489,6 +491,7 @@ exit 0
 
 %files metrics
 %defattr(-,root,root,-)
+%{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics
 %{_datadir}/%{source_dir}/metrics.py
 
