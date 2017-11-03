@@ -1,3 +1,4 @@
+package_name = openSUSE-release-tools
 prefix=/usr
 bindir=$(prefix)/bin
 datadir=$(prefix)/share
