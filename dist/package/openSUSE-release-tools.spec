@@ -509,7 +509,7 @@ exit 0
 %{_datadir}/%{source_dir}/metrics
 %{_datadir}/%{source_dir}/metrics.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
-%dir %{_localstatedir}/lib/grafana
+%dir %attr(0750, grafana, grafana) %{_localstatedir}/lib/grafana
 %dir %{_localstatedir}/lib/grafana/dashboards
 %{_localstatedir}/lib/grafana/dashboards/%{name}
 %{_unitdir}/osrt-metrics@.service
