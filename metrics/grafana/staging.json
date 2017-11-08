@@ -239,7 +239,7 @@
           "datasource": "$project",
           "fill": 1,
           "id": 1,
-          "interval": "1s",
+          "interval": null,
           "legend": {
             "alignAsTable": false,
             "avg": false,
