@@ -372,7 +372,7 @@
           "thresholds": [],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Project stats",
+          "title": "Totals",
           "tooltip": {
             "shared": true,
             "sort": 0,
