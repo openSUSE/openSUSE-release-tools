@@ -351,7 +351,7 @@ exit 0
 %postun metrics
 %systemd_postun
 # If grafana-server.service is enabled then restart it to load new dashboards.
-if [ -x /usr/bin/systemctl ] && systemctl is-enabled grafana-server ; then
+if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled grafana-server ; then
   /usr/bin/systemctl try-restart --no-block grafana-server
 fi
 
