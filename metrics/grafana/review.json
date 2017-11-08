@@ -2005,8 +2005,8 @@
     "list": [
       {
         "current": {
-          "text": "openSUSE:Leap:42.3v2",
-          "value": "openSUSE:Leap:42.3v2"
+          "text": "openSUSE:Factory",
+          "value": "openSUSE:Factory"
         },
         "hide": 0,
         "label": null,
