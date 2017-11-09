@@ -278,70 +278,32 @@ make %{?_smp_mflags}
 # TODO Correct makefile to actually install source.
 mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
 
-%pre announcer
-%service_add_pre %{announcer_filename}.service
-
-%post announcer
-%service_add_post %{announcer_filename}.service
-
-%preun announcer
-%service_del_preun %{announcer_filename}.service
-
 %postun announcer
-%service_del_postun %{announcer_filename}.service
+%systemd_postun
 
 %pre check-source
-%service_add_pre osrt-check-source.service
 getent passwd osrt-check-source > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-check-source" osrt-check-source
 exit 0
 
-%post check-source
-%service_add_post osrt-check-source.service
-
-%preun check-source
-%service_del_preun osrt-check-source.service
-
 %postun check-source
-%service_del_postun osrt-check-source.service
+%systemd_postun
 
 %pre leaper
-%service_add_pre osrt-leaper-crawler@.service
-%service_add_pre osrt-leaper-manager@.service
-%service_add_pre osrt-leaper-review.service
 getent passwd osrt-leaper > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-leaper" osrt-leaper
 exit 0
 
-%post leaper
-%service_add_post osrt-leaper-crawler@.service
-%service_add_post osrt-leaper-manager@.service
-%service_add_post osrt-leaper-review.service
-
-%preun leaper
-%service_del_preun osrt-leaper-crawler@.service
-%service_del_preun osrt-leaper-manager@.service
-%service_del_preun osrt-leaper-review.service
-
 %postun leaper
-%service_del_postun osrt-leaper-crawler@.service
-%service_del_postun osrt-leaper-manager@.service
-%service_del_postun osrt-leaper-review.service
+%systemd_postun
 
 %pre maintenance
-%service_add_pre osrt-maintenance-incidents.service
 getent passwd osrt-maintenance > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-maintenance" osrt-maintenance
 exit 0
 
-%post maintenance
-%service_add_post osrt-maintenance-incidents.service
-
-%preun maintenance
-%service_del_preun osrt-maintenance-incidents.service
-
 %postun maintenance
-%service_del_postun osrt-maintenance-incidents.service
+%systemd_postun
 
 %pre metrics
 getent passwd osrt-metrics > /dev/null || \
@@ -356,58 +318,20 @@ if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled grafana-server ; t
 fi
 
 %pre repo-checker
-%service_add_pre osrt-repo-checker.service
-%service_add_pre osrt-repo-checker-project_only@.service
 getent passwd osrt-repo-checker > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-repo-checker" osrt-repo-checker
 exit 0
 
-%post repo-checker
-%service_add_post osrt-repo-checker.service
-%service_add_post osrt-repo-checker-project_only@.service
-
-%preun repo-checker
-%service_del_preun osrt-repo-checker.service
-%service_del_preun osrt-repo-checker-project_only@.service
-
 %postun repo-checker
-%service_del_postun osrt-repo-checker.service
-%service_del_postun osrt-repo-checker-project_only@.service
+%systemd_postun
 
 %pre staging-bot
-%service_add_pre osrt-staging-bot-daily@.service
-%service_add_pre osrt-staging-bot-devel-list.service
-%service_add_pre osrt-staging-bot-regular@.service
-%service_add_pre osrt-staging-bot-reminder.service
-%service_add_pre osrt-staging-bot-supersede@.service
-%service_add_pre osrt-staging-bot-support-rebuild@.service
 getent passwd osrt-staging-bot > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-staging-bot" osrt-staging-bot
 exit 0
 
-%post staging-bot
-%service_add_post osrt-staging-bot-daily@.service
-%service_add_post osrt-staging-bot-devel-list.service
-%service_add_post osrt-staging-bot-regular@.service
-%service_add_post osrt-staging-bot-reminder.service
-%service_add_post osrt-staging-bot-supersede@.service
-%service_add_post osrt-staging-bot-support-rebuild@.service
-
-%preun staging-bot
-%service_del_preun osrt-staging-bot-daily@.service
-%service_del_preun osrt-staging-bot-devel-list.service
-%service_del_preun osrt-staging-bot-regular@.service
-%service_del_preun osrt-staging-bot-reminder.service
-%service_del_preun osrt-staging-bot-supersede@.service
-%service_del_preun osrt-staging-bot-support-rebuild@.service
-
 %postun staging-bot
-%service_del_postun osrt-staging-bot-daily@.service
-%service_del_postun osrt-staging-bot-devel-list.service
-%service_del_postun osrt-staging-bot-regular@.service
-%service_del_postun osrt-staging-bot-reminder.service
-%service_del_postun osrt-staging-bot-supersede@.service
-%service_del_postun osrt-staging-bot-support-rebuild@.service
+%systemd_postun
 
 %pre totest-manager
 %service_add_pre osrt-totest-manager@.service
