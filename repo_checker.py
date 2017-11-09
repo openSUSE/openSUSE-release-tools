@@ -125,8 +125,20 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Corrupted requests may reference non-existent projects and will
             # thus return a None status which should be considered not ready.
             if not status or str(status['overall_state']) not in ('testing', 'review', 'acceptable'):
-                self.logger.debug('{}: {} not ready'.format(request.reqid, group))
-                continue
+                # Not in a "ready" state.
+                openQA_only = False # Not relevant so set to False.
+                if str(status['overall_state']) == 'failed':
+                    # Exception to the rule is openQA only in failed state.
+                    openQA_only = True
+                    for project in api.project_status_walk(status):
+                        if len(project['broken_packages']):
+                            # Broken packages so not just openQA.
+                            openQA_only = False
+                            break
+
+                if not openQA_only:
+                    self.logger.debug('{}: {} not ready'.format(request.reqid, group))
+                    continue
 
             # Only interested if request is in consistent state.
             selected = api.project_status_requests('selected')
