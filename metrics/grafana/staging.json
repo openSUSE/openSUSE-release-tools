@@ -239,7 +239,7 @@
           "datasource": "$project",
           "fill": 1,
           "id": 1,
-          "interval": "1s",
+          "interval": null,
           "legend": {
             "alignAsTable": false,
             "avg": false,
@@ -372,7 +372,7 @@
           "thresholds": [],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Project stats",
+          "title": "Totals",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -3901,6 +3901,6 @@
     ]
   },
   "timezone": "",
-  "title": "Staging",
+  "title": "OSRT: Staging",
   "version": 20
 }

@@ -18,6 +18,8 @@ from osclib.cache import Cache
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
+SOURCE_DIR = os.path.dirname(os.path.realpath(__file__))
+
 # Duplicate Leap config to handle 13.2 without issue.
 osclib.conf.DEFAULT[
     r'openSUSE:(?P<project>[\d.]+)'] = osclib.conf.DEFAULT[
@@ -290,7 +292,7 @@ def walk_points(points, target):
 def ingest_release_schedule(project):
     points = []
     release_schedule = {}
-    release_schedule_file = 'metrics/annotation/{}.yaml'.format(project)
+    release_schedule_file = os.path.join(SOURCE_DIR, 'metrics/annotation/{}.yaml'.format(project))
     if project.endswith('Factory'):
         # Extract Factory "release schedule" from Tumbleweed snapshot list.
         command = 'rsync rsync.opensuse.org::opensuse-full/opensuse/tumbleweed/iso/Changes.* | ' \

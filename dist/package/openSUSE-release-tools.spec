@@ -351,7 +351,7 @@ exit 0
 %postun metrics
 %systemd_postun
 # If grafana-server.service is enabled then restart it to load new dashboards.
-if [ -x /usr/bin/systemctl ] && systemctl is-enabled grafana-server ; then
+if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled grafana-server ; then
   /usr/bin/systemctl try-restart --no-block grafana-server
 fi
 
@@ -509,7 +509,7 @@ exit 0
 %{_datadir}/%{source_dir}/metrics
 %{_datadir}/%{source_dir}/metrics.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
-%dir %{_localstatedir}/lib/grafana
+%dir %attr(0750, grafana, grafana) %{_localstatedir}/lib/grafana
 %dir %{_localstatedir}/lib/grafana/dashboards
 %{_localstatedir}/lib/grafana/dashboards/%{name}
 %{_unitdir}/osrt-metrics@.service
