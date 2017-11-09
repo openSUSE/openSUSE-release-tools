@@ -663,7 +663,7 @@ class ToTest150(ToTestBaseNew):
     ]
 
     ftp_products = ['000product:openSUSE-ftp-ftp-x86_64',
-                    # TODO '000product:openSUSE-Addon-NonOss-ftp-ftp-x86_64'
+                    '000product:openSUSE-Addon-NonOss-ftp-ftp-x86_64'
                     ]
 
     livecd_products = []
