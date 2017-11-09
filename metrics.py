@@ -25,48 +25,56 @@ osclib.conf.DEFAULT[
     r'openSUSE:(?P<project>[\d.]+)'] = osclib.conf.DEFAULT[
     r'openSUSE:(?P<project>Leap:[\d.]+)']
 
-# Provide osc.core.get_request_list() that swaps out search() implementation and
-# uses lxml ET to avoid having to reparse to peform complex xpaths.
+# Provide osc.core.get_request_list() that swaps out search() implementation to
+# capture the generated query, paginate over and yield each request to avoid
+# loading all requests at the same time. Additionally, use lxml ET to avoid
+# having to re-parse to perform complex xpaths.
 def get_request_list(*args, **kwargs):
-    global _requests
-
     osc.core._search = osc.core.search
-    osc.core.search = search
+    osc.core.search = search_capture
     osc.core._ET = osc.core.ET
     osc.core.ET = ET
 
     osc.core.get_request_list(*args, **kwargs)
 
     osc.core.search = osc.core._search
+
+    query = search_capture.query
+    for request in search_paginated_generator(query[0], query[1], **query[2]):
+        # Python 3 yield from.
+        yield request
+
     osc.core.ET = osc.core._ET
 
-    return _requests
+def search_capture(apiurl, queries=None, **kwargs):
+    search_capture.query = (apiurl, queries, kwargs)
+    return {'request': ET.fromstring('<collection matches="0"></collection>')}
 
 # Provides a osc.core.search() implementation for use with get_request_list()
-# that paginates in sets of 1000.
-def search(apiurl, queries=None, **kwargs):
-    global _requests
-
+# that paginates in sets of 1000 and yields each request.
+def search_paginated_generator(apiurl, queries=None, **kwargs):
     if "submit/target/@project='openSUSE:Factory'" in kwargs['request']:
         kwargs['request'] = osc.core.xpath_join(kwargs['request'], '@id>250000', op='and')
 
-    requests = []
+    request_count = 0
     queries['request']['limit'] = 1000
     queries['request']['offset'] = 0
     while True:
-        collection = osc.core._search(apiurl, queries, **kwargs)['request']
-        requests.extend(collection.findall('request'))
+        collection = osc.core.search(apiurl, queries, **kwargs)['request']
+        if not request_count:
+            print('processing {:,} requests'.format(int(collection.get('matches'))))
 
-        if len(requests) == int(collection.get('matches')):
+        for request in collection.findall('request'):
+            yield request
+            request_count += 1
+
+        if request_count == int(collection.get('matches')):
             # Stop paging once the expected number of items has been returned.
             break
 
         # Release memory as otherwise ET seems to hold onto it.
         collection.clear()
         queries['request']['offset'] += queries['request']['limit']
-
-    _requests = requests
-    return {'request': ET.fromstring('<collection matches="0"></collection>')}
 
 points = []
 
@@ -88,7 +96,6 @@ def ingest_requests(api, project):
                                 req_state=('accepted', 'revoked', 'superseded'),
                                 exclude_target_projects=[project],
                                 withfullhistory=True)
-    print('processing {:,} requests'.format(len(requests)))
     for request in requests:
         if request.find('action').get('type') not in ('submit', 'delete'):
             # TODO Handle non-stageable requests via different flow.
