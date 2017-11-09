@@ -334,19 +334,16 @@ exit 0
 %systemd_postun
 
 %pre totest-manager
-%service_add_pre osrt-totest-manager@.service
 getent passwd osrt-totest-manager > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-totest-manager" osrt-totest-manager
 exit 0
 
-%post totest-manager
-%service_add_post osrt-totest-manager@.service
-
-%preun totest-manager
-%service_del_preun osrt-totest-manager@.service
-
 %postun totest-manager
-%service_del_postun osrt-totest-manager@.service
+%systemd_postun
+if [ -x /usr/bin/systemctl ] ; then
+  /usr/bin/systemctl try-restart --no-block \
+    $(/usr/bin/systemctl list-units -t service --full | grep -oP osrt-totest-manager@[^.]+)
+fi
 
 %files
 %defattr(-,root,root,-)
