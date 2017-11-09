@@ -62,7 +62,6 @@ class Group(object):
         self.solved = False
         self.not_found = dict()
         self.unresolvable = dict()
-        self.unwanted = set()
         for a in self.architectures:
             self.packages[a] = []
             self.unresolvable[a] = dict()
@@ -252,7 +251,7 @@ class Group(object):
 
     def check_dups(self, modules):
         packages = set(self.solved_packages['*'])
-        for arch in ARCHITECTURES:
+        for arch in self.architectures:
             packages.update(self.solved_packages[arch])
         for m in modules:
             # do not check with ourselves and only once for the rest
@@ -260,7 +259,7 @@ class Group(object):
             if self.name in m.conflicts or m.name in self.conflicts:
                 continue
             mp = set(m.solved_packages['*'])
-            for arch in ARCHITECTURES:
+            for arch in self.architectures:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
                 print 'overlap_between_' + self.name + '_and_' + m.name + ':'
@@ -390,6 +389,8 @@ class PkgListGen(ToolBase.ToolBase):
         self.lockjobs = dict()
         self.ignore_broken = False
         self.ignore_recommended = False
+        self.unwanted = set()
+        self.output = None
 
     def _dump_supportstatus(self):
         for name in self.packages.keys():
@@ -438,15 +439,14 @@ class PkgListGen(ToolBase.ToolBase):
         return output, unwanted
 
     def load_all_groups(self):
-        output = None
-        unwanted = set()
         for fn in glob.glob(os.path.join(self.input_dir, 'group*.yml')):
             o, u = self._load_group_file(fn)
-            if not output:
-                output = o
-            if not unwanted:
-                unwanted = u
-        return output, unwanted
+            if o:
+                if self.output is not None:
+                    raise Exception('OUTPUT defined multiple times')
+                self.output = o
+            if u:
+                self.unwanted |= u
 
     def _write_all_groups(self):
         self._check_supplements()
@@ -557,7 +557,7 @@ class PkgListGen(ToolBase.ToolBase):
             for p in sorted(packages.keys()):
                 fh.write("  - ")
                 fh.write(p)
-                if len(packages[p]) != len(ARCHITECTURES):
+                if len(packages[p]) != len(self.architectures):
                     fh.write(": [")
                     fh.write(','.join(sorted(packages[p])))
                     fh.write("]")
@@ -687,8 +687,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        output, self.tool.unwanted = self.tool.load_all_groups()
-        if not output:
+        self.tool.load_all_groups()
+        if not self.tool.output:
+            logger.error('OUTPUT not defined')
             return
 
         if opts.ignore_unresolvable:
@@ -699,7 +700,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         modules = []
         # the yml parser makes an array out of everything, so
         # we loop a bit more than what we support
-        for group in output:
+        for group in self.tool.output:
             groupname = group.keys()[0]
             settings = group[groupname]
             includes = settings.get('includes', [])
