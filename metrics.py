@@ -61,6 +61,8 @@ def search(apiurl, queries=None, **kwargs):
             # Stop paging once the expected number of items has been returned.
             break
 
+        # Release memory as otherwise ET seems to hold onto it.
+        collection.clear()
         queries['request']['offset'] += queries['request']['limit']
 
     _requests = requests
