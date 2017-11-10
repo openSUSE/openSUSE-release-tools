@@ -341,8 +341,10 @@ exit 0
 %postun totest-manager
 %systemd_postun
 if [ -x /usr/bin/systemctl ] ; then
-  /usr/bin/systemctl try-restart --no-block \
-    $(/usr/bin/systemctl list-units -t service --full | grep -oP osrt-totest-manager@[^.]+)
+  instances=($(systemctl list-units -t service --full | grep -oP osrt-totest-manager@[^.]+ || true))
+  if [ ${#instances[@]} -gt 0 ] ; then
+    systemctl try-restart --no-block ${instances[@]}
+  fi
 fi
 
 %files
