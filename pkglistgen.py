@@ -45,7 +45,7 @@ from osclib.memoize import CACHEDIR
 
 logger = logging.getLogger()
 
-ARCHITECTURES = ('x86_64', 'ppc64le', 's390x', 'aarch64')
+ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
 DEFAULT_REPOS = ("openSUSE:Factory/standard")
 
 class Group(object):
@@ -69,6 +69,8 @@ class Group(object):
         self.srcpkgs = None
         self.develpkgs = []
         self.silents = set()
+        self.ignored = set()
+        self.recommended = set()
 
         pkglist.groups[self.safe_name] = self
 
@@ -91,13 +93,18 @@ class Group(object):
                 continue
             name = package.keys()[0]
             for rel in package[name]:
+                arch = None
                 if rel == 'locked':
                     self.locked.add(name)
+                    continue
                 elif rel == 'silent':
-                    self._add_to_packages(name)
                     self.silents.add(name)
+                elif rel == 'recommended':
+                    self.recommended.add(name)
                 else:
-                    self._add_to_packages(name, rel)
+                    arch = rel
+
+                self._add_to_packages(name, arch)
 
     def _verify_solved(self):
         if not self.solved:
@@ -109,6 +116,7 @@ class Group(object):
 
         self.locked.update(group.locked)
         self.silents.update(group.silents)
+        self.recommended.update(group.recommended)
 
     # do not repeat packages
     def ignore(self, without):
@@ -123,6 +131,9 @@ class Group(object):
             self.not_found[p] -= without.not_found[p]
             if not self.not_found[p]:
                 self.not_found.pop(p)
+        for g in without.ignored:
+            self.ignore(g)
+        self.ignored.add(without)
 
     def solve(self, ignore_recommended=False):
         """ base: list of base groups or None """
@@ -140,7 +151,9 @@ class Group(object):
             pool = self.pkglist._prepare_pool(arch)
             # pool.set_debuglevel(10)
 
-            for n, group in self.packages[arch]:
+            tosolv = self.packages[arch]
+            while tosolv:
+                n, group = tosolv.pop(0)
                 jobs = list(self.pkglist.lockjobs[arch])
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
@@ -148,12 +161,22 @@ class Group(object):
                     self.not_found.setdefault(n, set()).add(arch)
                     continue
                 else:
+                    if n in self.recommended:
+                        for s in sel.solvables():
+                            for dep in s.lookup_deparray(solv.SOLVABLE_RECOMMENDS):
+                                # only add recommends that exist as packages
+                                rec = pool.select(dep.str(), solv.Selection.SELECTION_NAME)
+                                if not rec.isempty():
+                                    tosolv.append([dep.str(), group + ":recommended:" + n])
+
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
-                for l in self.locked:
+                locked = self.locked | self.pkglist.unwanted
+                for l in locked:
                     sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
                     if sel.isempty():
-                        logger.warn('{}.{}: locked package {} not found'.format(self.name, arch, l))
+                        # if we can't find it, it probably is not as important
+                        logger.debug('{}.{}: locked package {} not found'.format(self.name, arch, l))
                     else:
                         jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
@@ -171,7 +194,11 @@ class Group(object):
                 problems = solver.solve(jobs)
                 if problems:
                     for problem in problems:
-                        logger.error('unresolvable: %s.%s: %s', self.name, arch, problem)
+                        msg = 'unresolvable: %s.%s: %s', self.name, arch, problem
+                        if self.pkglist.ignore_broken:
+                            logger.debug(msg)
+                        else:
+                            logger.debug(msg)
                         self.unresolvable[arch][n] = str(problem)
                     continue
 
@@ -182,6 +209,8 @@ class Group(object):
 
                 if 'get_recommended' in dir(solver):
                     for s in solver.get_recommended():
+                        if s.name in locked:
+                            continue
                         self.recommends.setdefault(s.name, group + ':' + n)
                     for s in solver.get_suggested():
                         self.recommends.setdefault(s.name, group + ':' + n)
@@ -220,6 +249,23 @@ class Group(object):
         self.solved_packages = solved
         self.solved = True
 
+    def check_dups(self, modules):
+        packages = set(self.solved_packages['*'])
+        for arch in self.architectures:
+            packages.update(self.solved_packages[arch])
+        for m in modules:
+            # do not check with ourselves and only once for the rest
+            if m.name <= self.name: continue
+            if self.name in m.conflicts or m.name in self.conflicts:
+                continue
+            mp = set(m.solved_packages['*'])
+            for arch in self.architectures:
+                mp.update(m.solved_packages[arch])
+            if len(packages & mp):
+                print 'overlap_between_' + self.name + '_and_' + m.name + ':'
+                for p in sorted(packages & mp):
+                    print '  - ' + p
+
     def collect_devel_packages(self, modules):
         develpkgs = set()
         for arch in self.architectures:
@@ -255,7 +301,6 @@ class Group(object):
             for m in modules:
                 for arch in ['*'] + self.architectures:
                     already_present = already_present or (p in m.solved_packages[arch])
-                    already_present = already_present or (p in m.recommends)
             if not already_present:
                 self.recommends[p] = recommends[p]
 
@@ -292,12 +337,12 @@ class Group(object):
                 name = msg
             if name in unresolvable:
                 msg = ' {} uninstallable: {}'.format(name, unresolvable[name])
-                logger.error(msg)
                 if ignore_broken:
                     c = ET.Comment(msg)
                     packagelist.append(c)
                     continue
                 else:
+                    logger.error(msg)
                     name = msg
             status = self.pkglist.supportstatus(name)
             attrs = { 'name': name }
@@ -344,6 +389,8 @@ class PkgListGen(ToolBase.ToolBase):
         self.lockjobs = dict()
         self.ignore_broken = False
         self.ignore_recommended = False
+        self.unwanted = set()
+        self.output = None
 
     def _dump_supportstatus(self):
         for name in self.packages.keys():
@@ -377,23 +424,29 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _load_group_file(self, fn):
         output = None
+        unwanted = None
         with open(fn, 'r') as fh:
             logger.debug("reading %s", fn)
             for groupname, group in yaml.safe_load(fh).items():
                 if groupname == 'OUTPUT':
                     output = group
                     continue
+                if groupname == 'UNWANTED':
+                    unwanted = set(group)
+                    continue
                 g = Group(groupname, self)
                 g.parse_yml(group)
-        return output
+        return output, unwanted
 
     def load_all_groups(self):
-        output = None
         for fn in glob.glob(os.path.join(self.input_dir, 'group*.yml')):
-            o = self._load_group_file(fn)
-            if not output:
-                output = o
-        return output
+            o, u = self._load_group_file(fn)
+            if o:
+                if self.output is not None:
+                    raise Exception('OUTPUT defined multiple times')
+                self.output = o
+            if u:
+                self.unwanted |= u
 
     def _write_all_groups(self):
         self._check_supplements()
@@ -481,41 +534,34 @@ class PkgListGen(ToolBase.ToolBase):
 
         return pool
 
-    def _collect_unsorted_packages(self):
-        return
+    def _collect_unsorted_packages(self, modules):
         packages = dict()
         for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             p = set([s.name for s in
                      pool.solvables_iter() if not
-                     (s.name.endswith('-debuginfo') or
+                     (s.name.endswith('-32bit') or
+                      s.name.endswith('-debuginfo') or
                       s.name.endswith('-debugsource'))])
 
-            for g in self.groups.values():
-                if g.solved:
-                    for a in ('*', arch):
-                        p -= g.solved_packages[a]
-            packages[arch] = p
+            p -= self.unwanted
+            for g in modules:
+                for a in ('*', arch):
+                    p -= set(g.solved_packages[a].keys())
+            for package in p:
+                packages.setdefault(package, []).append(arch)
 
-        common = None
-        # compute common packages across all architectures
-        for arch in packages.keys():
-            if common is None:
-                common = set(packages[arch])
-                continue
-            common &= packages[arch]
-
-        # reduce arch specific set by common ones
-        for arch in packages.keys():
-            packages[arch] -= common
-
-        packages['*'] = common
-
-        g = Group('unsorted', self)
-        g.solved_packages = packages
-        g.solved = True
-
+        with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
+            fh.write("unsorted:\n")
+            for p in sorted(packages.keys()):
+                fh.write("  - ")
+                fh.write(p)
+                if len(packages[p]) != len(self.architectures):
+                    fh.write(": [")
+                    fh.write(','.join(sorted(packages[p])))
+                    fh.write("]")
+                fh.write(" \n")
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
@@ -597,6 +643,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         # only there to parse the repos
         bs_mirrorfull = os.path.join(os.path.dirname(__file__), 'bs_mirrorfull')
+        global_update = False
         for prp in self.tool.repos:
             project, repo = prp.split('/')
             for arch in self.tool.architectures:
@@ -608,8 +655,18 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     apiurl = 'https://api.opensuse.org/public'
                 else:
                     apiurl = 'https://api.suse.de/public'
-                subprocess.call(
-                    [bs_mirrorfull, '--nodebug', '{}/build/{}/{}/{}'.format(apiurl, project, repo, arch), d])
+                args = [bs_mirrorfull]
+                args.append('--nodebug')
+                args.append('{}/build/{}/{}/{}'.format(apiurl, project, repo, arch))
+                args.append(d)
+                p = subprocess.Popen(args, stdout=subprocess.PIPE)
+                repo_update = False
+                for line in p.stdout:
+                    print(line.rstrip())
+                    global_update = True
+                    repo_update = True
+                if not repo_update:
+                    continue
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
                 fh = open(d + '.solv', 'w')
@@ -618,6 +675,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 p.communicate('\0'.join(files))
                 p.wait()
                 fh.close()
+        return global_update
 
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
@@ -629,8 +687,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        output = self.tool.load_all_groups()
-        if not output:
+        self.tool.load_all_groups()
+        if not self.tool.output:
+            logger.error('OUTPUT not defined')
             return
 
         if opts.ignore_unresolvable:
@@ -641,19 +700,22 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         modules = []
         # the yml parser makes an array out of everything, so
         # we loop a bit more than what we support
-        for group in output:
+        for group in self.tool.output:
             groupname = group.keys()[0]
             settings = group[groupname]
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
             self.tool.solve_module(groupname, includes, excludes)
-            modules.append(self.tool.groups[groupname])
+            g = self.tool.groups[groupname]
+            g.conflicts = settings.get('conflicts', [])
+            modules.append(g)
 
         for module in modules:
+            module.check_dups(modules)
             module.collect_devel_packages(modules)
             module.filter_duplicated_recommends(modules)
 
-        self.tool._collect_unsorted_packages()
+        self.tool._collect_unsorted_packages(modules)
         self.tool._write_all_groups()
 
 
