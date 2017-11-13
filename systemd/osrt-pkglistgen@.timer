@@ -1,0 +1,9 @@
+[Unit]
+Description=openSUSE Release Tools: generate package lists for %i
+
+[Timer]
+OnBootSec=130
+OnUnitInactiveSec=30 min
+
+[Install]
+WantedBy=timers.target

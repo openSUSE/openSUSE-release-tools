@@ -1,0 +1,9 @@
+[Unit]
+Description=openSUSE Release Tools: generate package lists for %i
+
+[Service]
+User=osrt-repo-checker
+ExecStart=/usr/bin/osrt-pkglistgen-%i-all
+
+[Install]
+WantedBy=multi-user.target
