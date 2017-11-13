@@ -647,29 +647,29 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for prp in self.tool.repos:
             project, repo = prp.split('/')
             for arch in self.tool.architectures:
-                d = os.path.join(
-                    CACHEDIR, 'repo-{}-{}-{}'.format(project, repo, arch))
+                # TODO: refactor to common function with repo_checker.py
+                d = os.path.join(CACHEDIR, project, repo, arch)
+                if not os.path.exists(d):
+                    os.makedirs(d)
+
                 logger.debug('updating %s', d)
-                # XXX
-                if 'opensuse' in self.tool.apiurl:
-                    apiurl = 'https://api.opensuse.org/public'
-                else:
-                    apiurl = 'https://api.suse.de/public'
                 args = [bs_mirrorfull]
                 args.append('--nodebug')
-                args.append('{}/build/{}/{}/{}'.format(apiurl, project, repo, arch))
+                args.append('{}/public/build/{}/{}/{}'.format(self.tool.apiurl, project, repo, arch))
                 args.append(d)
                 p = subprocess.Popen(args, stdout=subprocess.PIPE)
                 repo_update = False
                 for line in p.stdout:
-                    print(line.rstrip())
+                    logger.info(line.rstrip())
                     global_update = True
                     repo_update = True
-                if not repo_update:
+
+                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                if os.path.exists(solv_file) and not repo_update:
                     continue
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
-                fh = open(d + '.solv', 'w')
+                fh = open(solv_file, 'w')
                 p = subprocess.Popen(
                     ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
                 p.communicate('\0'.join(files))
