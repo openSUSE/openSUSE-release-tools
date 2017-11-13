@@ -202,6 +202,7 @@ Summary:        Generates package lists in 000product
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osclib = %{version}
+Requires:       obs-service-product_converter
 # we use the same user as repo-checker
 PreReq:         openSUSE-release-tools-repo-checker
 
