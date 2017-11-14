@@ -40,10 +40,11 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
 class CompareList(object):
-    def __init__(self, old_prj, new_prj, verbose):
+    def __init__(self, old_prj, new_prj, verbose, newonly):
         self.new_prj = new_prj
         self.old_prj = old_prj
         self.verbose = verbose
+        self.newonly = newonly
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
 
@@ -86,31 +87,34 @@ class CompareList(object):
         """Main method"""
         # get souce packages from target
         print 'Gathering the package list from %s' % self.old_prj
-        old_packages = self.get_source_packages(self.old_prj)
+        source = self.get_source_packages(self.old_prj)
         print 'Gathering the package list from %s' % self.new_prj
-        new_packages = self.get_source_packages(self.new_prj)
+        target = self.get_source_packages(self.new_prj)
 
-        for pkg in old_packages:
-            if pkg not in new_packages:
-                logging.info('%s is not in %s' % (pkg, self.new_prj))
-            else:
+        for pkg in source:
+            if pkg.startswith('000'):
+                continue
+
+            if pkg not in target:
                 # ignore the second specfile package
                 linked = self.is_linked_package(self.old_prj, pkg)
                 if linked is not None:
                     continue
 
+                print("New package than {:<8} - {}".format(self.new_prj, pkg))
+            elif not self.newonly:
                 diff = self.check_diff(pkg, self.old_prj, self.new_prj)
-                if diff is not False:
-                    print '%s/%s has different source than %s' % (self.new_prj, pkg, self.old_prj)
+                if diff:
+                    print("Different source in {:<8} - {}".format(self.new_prj, pkg))
                     if self.verbose:
-                        print diff
+                        print("=== Diff ===\n{}".format(diff))
 
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = CompareList(args.old_prj, args.new_prj, args.verbose)
+    uc = CompareList(args.old_prj, args.new_prj, args.verbose, args.newonly)
     uc.crawl()
 
 if __name__ == '__main__':
@@ -127,6 +131,8 @@ if __name__ == '__main__':
                         default=OPENSUSE)
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='show the diff')
+    parser.add_argument('--newonly', action='store_true',
+                        help='show new package only')
 
     args = parser.parse_args()
 
