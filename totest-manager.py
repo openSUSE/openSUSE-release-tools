@@ -5,6 +5,7 @@
 # (C) 2014 tchvatal@suse.cz, openSUSE.org
 # (C) 2014 aplanas@suse.de, openSUSE.org
 # (C) 2014 coolo@suse.de, openSUSE.org
+# (C) 2017 okurz@suse.de, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
 import cmdln
@@ -45,18 +46,24 @@ class ToTestBase(object):
 
     """Base class to store the basic interface"""
 
-    def __init__(self, project, dryrun=False):
+    def __init__(self, project, dryrun=False, api_url=None, openqa_server='https://openqa.opensuse.org', test_subproject=None):
         self.project = project
         self.dryrun = dryrun
-        self.api = StagingAPI(
-            osc.conf.config['apiurl'], project='openSUSE:%s' % project)
-        self.openqa = OpenQA_Client(server='https://openqa.opensuse.org')
+        if not api_url:
+            api_url = osc.conf.config['apiurl']
+        self.api = StagingAPI(api_url, project=project)
+        self.openqa_server = openqa_server
+        if not test_subproject:
+            test_subproject = 'ToTest'
+        self.test_project = '%s:%s' % (self.project, test_subproject)
+        self.openqa = OpenQA_Client(server=openqa_server)
         self.issues_to_ignore = []
         self.issuefile = "{}_{}".format(self.project, ISSUE_FILE)
         if os.path.isfile(self.issuefile):
             with open(self.issuefile, 'r') as f:
                 for line in f.readlines():
                     self.issues_to_ignore.append(line.strip())
+        self.project_base = project.split(':')[0]
 
     def openqa_group(self):
         return self.project
@@ -85,34 +92,37 @@ class ToTestBase(object):
         return ret
 
     def get_current_snapshot(self):
-        """Return the current snapshot in :ToTest"""
+        """Return the current snapshot in the test project"""
 
-        # for now we hardcode all kind of things
-        for binary in self.binaries_of_product('openSUSE:%s:ToTest' % self.project, '_product:openSUSE-cd-mini-%s' % self.arch()):
-            result = re.match(r'openSUSE-%s-NET-.*-Snapshot(.*)-Media.iso' % self.iso_prefix(),
+        for binary in self.binaries_of_product(self.test_project, '_product:%s-cd-mini-%s' % (self.project_base, self.arch())):
+            result = re.match(r'%s-%s-NET-.*-Snapshot(.*)-Media.iso' % (self.project_base, self.iso_prefix()),
                               binary)
             if result:
                 return result.group(1)
 
         return None
 
-    def ftp_build_version(self, project, tree):
-        for binary in self.binaries_of_product('openSUSE:%s' % project, tree):
-            result = re.match(r'openSUSE.*Build(.*)-Media1.report', binary)
+    def ftp_build_version(self, project, tree, base=None):
+        if not base:
+            base = self.project_base
+        for binary in self.binaries_of_product(project, tree):
+            result = re.match(r'%s.*Build(.*)-Media1.report' % base, binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s ftp version" % project)
 
-    def iso_build_version(self, project, tree):
-        for binary in self.binaries_of_product('openSUSE:%s' % project, tree):
-            result = re.match(r'openSUSE.*Build(.*)-Media.iso', binary)
+    def iso_build_version(self, project, tree, base=None):
+        if not base:
+            base = self.project_base
+        for binary in self.binaries_of_product(project, tree):
+            result = re.match(r'%s.*Build(.*)-Media(.*).iso' % base, binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s iso version" % project)
 
     def release_version(self):
-        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
-                                '_product:openSUSE-release'])
+        url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
+                                '_product:%s-release' % self.project_base])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for binary in root.findall('binary'):
@@ -129,7 +139,7 @@ class ToTestBase(object):
 
         """
 
-        url = makeurl('https://openqa.opensuse.org',
+        url = makeurl(self.openqa_server,
                       ['api', 'v1', 'jobs'], {'group': self.openqa_group(), 'build': snapshot, 'latest': 1})
         f = self.api.retried_GET(url)
         jobs = []
@@ -161,7 +171,7 @@ class ToTestBase(object):
                         (module['name'], module['result'], module['flags']))
 
     def update_ignored_issues(self):
-        url = makeurl('https://openqa.opensuse.org',
+        url = makeurl(self.openqa_server,
                       ['api', 'v1', 'job_groups'])
         f = self.api.retried_GET(url)
         job_groups = json.load(f)
@@ -176,7 +186,7 @@ class ToTestBase(object):
             issues = ' , '.join(self.issues_to_ignore)
             msg = "pinned-description: Ignored issues\r\n\r\n{}".format(issues)
             data = {'text': msg}
-            url = makeurl('https://openqa.opensuse.org',
+            url = makeurl(self.openqa_server,
                           ['api', 'v1', 'groups', str(group_id), 'comments'])
             f = self.api.retried_GET(url)
             comments = json.load(f)
@@ -210,10 +220,10 @@ class ToTestBase(object):
         update_pinned_descr = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
-            if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted'):
+            if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
                 jobname = job['name']
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
-                url = makeurl('https://openqa.opensuse.org',
+                url = makeurl(self.openqa_server,
                               ['api', 'v1', 'jobs', str(job['id']), 'comments'])
                 f = self.api.retried_GET(url)
                 comments = json.load(f)
@@ -253,7 +263,7 @@ class ToTestBase(object):
                 if ignored:
                     logger.info("job %s failed, but was ignored", jobname)
                 else:
-                    joburl = 'https://openqa.opensuse.org/tests/%s' % job['id']
+                    joburl = '%s/tests/%s' % (self.openqa_server, job['id'])
                     logger.info("job %s failed, see %s", jobname, joburl)
 
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
@@ -321,13 +331,13 @@ class ToTestBase(object):
         if re.match(r'livecd-.*', package):
             return 999999999  # a GB stick
 
-        if re.match(r'.*-dvd9-dvd-.*', package):
+        if re.match(r'.*-(dvd9-dvd|cd-DVD)-.*', package):
             return 8539996159
 
-        if ':openSUSE-ftp-ftp-' in package:
+        if re.match(r'.*-ftp-(ftp|POOL)-', package):
             return None
 
-        if ':openSUSE-Addon-NonOss-ftp-ftp' in package:
+        if ':%s-Addon-NonOss-ftp-ftp' % self.base in package:
             return None
 
         raise Exception('No maxsize for {}'.format(package))
@@ -372,21 +382,21 @@ class ToTestBase(object):
 
         """
 
-        if not self.all_repos_done('openSUSE:%s' % self.project):
+        if not self.all_repos_done(self.project):
             return False
 
         for product in self.ftp_products + self.main_products:
-            if not self.package_ok('openSUSE:%s' % self.project, product, 'images', 'local'):
+            if not self.package_ok(self.project, product, 'images', 'local'):
                 return False
 
             if len(self.livecd_products):
 
-                if not self.all_repos_done('openSUSE:%s:Live' % self.project):
+                if not self.all_repos_done('%s:Live' % self.project):
                     return False
 
                 for arch in ['i586', 'x86_64']:
                     for product in self.livecd_products:
-                        if not self.package_ok('openSUSE:%s:Live' % self.project, product, 'images', arch):
+                        if not self.package_ok('%s:Live' % self.project, product, 'images', arch):
                             return False
 
         return True
@@ -412,36 +422,34 @@ class ToTestBase(object):
 
     def _release(self, set_release=None):
         for product in self.ftp_products:
-            self._release_package('openSUSE:%s' % self.project, product)
+            self._release_package(self.project, product)
 
         for cd in self.livecd_products:
-            self._release_package('openSUSE:%s:Live' %
+            self._release_package('%s:Live' %
                                   self.project, cd, set_release=set_release)
 
         for cd in self.main_products:
-            self._release_package('openSUSE:%s' %
-                                  self.project, cd, set_release=set_release)
+            self._release_package(self.project, cd, set_release=set_release)
 
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
         if not self.dryrun:
-            self.api.switch_flag_in_prj(
-                'openSUSE:%s:ToTest' % self.project, flag='publish', state='disable')
+            self.api.switch_flag_in_prj(self.test_project, flag='publish', state='disable')
 
         self._release(set_release=release)
 
     def publish_factory_totest(self):
-        logger.info('Publish ToTest')
+        logger.info('Publish test project content')
         if not self.dryrun:
             self.api.switch_flag_in_prj(
-                'openSUSE:%s:ToTest' % self.project, flag='publish', state='enable')
+                self.test_project, flag='publish', state='enable')
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
 
         url = self.api.makeurl(
-            ['source', 'openSUSE:%s:ToTest' % self.project, '_meta'])
+            ['source', self.test_project, '_meta'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         if not root.find('publish'):  # default true
@@ -458,7 +466,7 @@ class ToTestBase(object):
         try:
             current_snapshot = self.get_current_snapshot()
         except NotFoundException as e:
-            # nothing in :ToTest (yet)
+            # nothing in test project (yet)
             logger.warn(e)
             current_snapshot = None
         new_snapshot = self.current_version()
@@ -479,7 +487,7 @@ class ToTestBase(object):
         if new_snapshot == current_snapshot:
             logger.debug("no change in snapshot version")
             can_release = False
-        elif not self.all_repos_done('openSUSE:%s:ToTest' % self.project):
+        elif not self.all_repos_done(self.test_project):
             logger.debug("not all repos done, can't release")
             # the repos have to be done, otherwise we better not touch them
             # with a new release
@@ -499,9 +507,9 @@ class ToTestBase(object):
                 can_release = False  # we have to wait
             else:
                 # We reached a very bad status: openQA testing is 'done', but not of the same version
-                # currently in :ToTest. This can happen when 'releasing' the
+                # currently in test project. This can happen when 'releasing' the
                 # product failed
-                raise Exception("Publishing stopped: tested version (%s) does not match :ToTest version (%s)"
+                raise Exception("Publishing stopped: tested version (%s) does not match version in test project (%s)"
                                 % (current_qa_version, current_snapshot))
 
         if can_release:
@@ -515,7 +523,7 @@ class ToTestBase(object):
     def write_version_to_dashboard(self, target, version):
         if not self.dryrun:
             url = self.api.makeurl(
-                ['source', 'openSUSE:%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
+                ['source', '%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
             osc.core.http_PUT(url + '?comment=Update+version', data=version)
 
 
@@ -526,7 +534,7 @@ class ToTestBaseNew(ToTestBase):
         query = {'cmd': 'release'}
 
         package = '000product'
-        project = 'openSUSE:{}'.format(self.project)
+        project = self.project
 
         if set_release:
             query['setrelease'] = set_release
@@ -541,12 +549,12 @@ class ToTestBaseNew(ToTestBase):
 
         # XXX still legacy
         for cd in self.livecd_products:
-            self._release_package('openSUSE:%s:Live' %
+            self._release_package('%s:Live' %
                                   self.project, cd, set_release=set_release)
 
     def release_version(self):
-        url = self.api.makeurl(['build', 'openSUSE:%s' % self.project, 'standard', self.arch(),
-                                '000product:openSUSE-release'])
+        url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
+                                '000product:%s-release' % self.project_base])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for binary in root.findall('binary'):
@@ -556,6 +564,30 @@ class ToTestBaseNew(ToTestBase):
                 return result.group(1)
 
         raise NotFoundException("can't find %s release version" % self.project)
+
+    def current_version(self):
+        return self.iso_build_version(self.project, self.main_products[0])
+
+    def is_snapshottable(self):
+        ret = super(ToTestBaseNew, self).is_snapshottable()
+        if ret:
+            # make sure all medias have the same build number
+            builds = set()
+            for p in self.ftp_products:
+                if 'Addon-NonOss' in p:
+                    # XXX: don't care about nonoss atm.
+                    continue
+                builds.add(self.ftp_build_version(self.project, p))
+            for p in self.main_products + self.livecd_products:
+                builds.add(self.iso_build_version(self.project, p))
+
+            ret = (len(builds) == 1)
+
+        return ret
+
+    def update_totest(self, snapshot):
+        # omit snapshot, we don't want to rename on release
+        super(ToTestBaseNew, self).update_totest()
 
 
 class ToTestFactory(ToTestBase):
@@ -671,32 +703,41 @@ class ToTest150(ToTestBaseNew):
     def openqa_group(self):
         return 'openSUSE Leap 15.0'
 
-    def current_version(self):
-        return self.iso_build_version(self.project, self.main_products[0])
-
     def get_current_snapshot(self):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
-    def is_snapshottable(self):
-        ret = super(ToTest150, self).is_snapshottable()
-        if ret:
-            # make sure all medias have the same build number
-            builds = set()
-            for p in self.ftp_products:
-                if 'Addon-NonOss' in p:
-                    # XXX: don't care about nonoss atm.
-                    continue
-                builds.add(self.ftp_build_version(self.project, p))
-            for p in self.main_products + self.livecd_products:
-                builds.add(self.iso_build_version(self.project, p))
 
-            ret = (len(builds) == 1)
+class ToTestSLE150(ToTestBaseNew):
+    main_products = [
+        '000product:SLES-cd-DVD-aarch64',
+        '000product:SLES-cd-DVD-ppc64le',
+        '000product:SLES-cd-DVD-s390x',
+        '000product:SLES-cd-DVD-x86_64',
+    ]
 
-        return ret
+    ftp_products = [
+        '000product:SLES-ftp-POOL-aarch64',
+        '000product:SLES-ftp-POOL-ppc64le',
+        '000product:SLES-ftp-POOL-s390x',
+        '000product:SLES-ftp-POOL-x86_64',
+                    ]
 
-    def update_totest(self, snapshot):
-        # omit snapshot, we don't want to rename on release
-        super(ToTest150, self).update_totest()
+    livecd_products = []
+
+    def __init__(self, *args, **kwargs):
+        ToTestBaseNew.__init__(self, test_subproject='TEST', *args, **kwargs)
+
+    def openqa_group(self):
+        return 'Functional'
+
+    def get_current_snapshot(self):
+        return self.iso_build_version(self.project + ':TEST', self.main_products[0])
+
+    def ftp_build_version(self, project, tree):
+        return super(ToTestSLE150, self).ftp_build_version(project, tree, base='SLE')
+
+    def iso_build_version(self, project, tree):
+        return super(ToTestSLE150, self).iso_build_version(project, tree, base='SLE')
 
 
 class CommandlineInterface(cmdln.Cmdln):
@@ -705,11 +746,20 @@ class CommandlineInterface(cmdln.Cmdln):
         cmdln.Cmdln.__init__(self, args, kwargs)
 
         self.totest_class = {
-            'Factory': ToTestFactory,
-            'Factory:PowerPC': ToTestFactoryPowerPC,
-            'Factory:ARM': ToTestFactoryARM,
-            'Factory:zSystems': ToTestFactoryzSystems,
-            'Leap:15.0': ToTest150,
+            'openSUSE:Factory': ToTestFactory,
+            'openSUSE:Factory:PowerPC': ToTestFactoryPowerPC,
+            'openSUSE:Factory:ARM': ToTestFactoryARM,
+            'openSUSE:Factory:zSystems': ToTestFactoryzSystems,
+            'openSUSE:Leap:15.0': ToTest150,
+            'SUSE:SLE-15:GA': ToTestSLE150,
+        }
+        self.openqa_server = {
+            'openSUSE': 'https://openqa.opensuse.org',
+            'SLE': 'https://openqa.suse.de',
+        }
+        self.api_url = {
+            'openSUSE': 'https://api.opensuse.org',
+            'SLE': 'https://api.suse.de',
         }
 
     def get_optparser(self):
@@ -719,6 +769,16 @@ class CommandlineInterface(cmdln.Cmdln):
         parser.add_option("--verbose", action="store_true", help="verbose")
         parser.add_option(
             "--osc-debug", action="store_true", help="osc debug output")
+        parser.add_option(
+            "--project-base", help="""Select base of OBS/IBS project as well as openQA server based on distribution family, e.g. 'openSUSE' or 'SLE', default:
+            'openSUSE'""")
+        parser.add_option(
+            "--openqa-server", help="""Full URL to the openQA server that should be queried, default based on '--project-base' selection, e.g.
+            'https://openqa.opensuse.org' for 'openSUSE'""")
+        parser.add_option(
+            "--obs-api-url", help="""Full URL to OBS instance to be queried, default based on '--project-base' selection, e.g.
+            'https://api.opensuse.org' for 'openSUSE'""")
+        return parser
         return parser
 
     def postoptparse(self):
@@ -737,19 +797,28 @@ class CommandlineInterface(cmdln.Cmdln):
         osc.conf.get_config()
         if (self.options.osc_debug):
             osc.conf.config['debug'] = True
+        if not self.options.project_base:
+            self.options.project_base = 'openSUSE'
+        if not self.options.openqa_server:
+            self.options.openqa_server = self.openqa_server[self.options.project_base]
+        if not self.options.obs_api_url:
+            self.options.obs_api_url = self.api_url[self.options.project_base]
+
 
     def _setup_totest(self, project):
-        Config('openSUSE:%s' % project)
-
+        fallback_project = 'openSUSE:%s' % project
+        if project not in self.totest_class and fallback_project in self.totest_class:
+            project = fallback_project
+        Config(project)
         if project not in self.totest_class:
             msg = 'Project %s not recognized. Possible values [%s]' % (
                 project, ', '.join(self.totest_class))
             raise cmdln.CmdlnUserError(msg)
 
-        return self.totest_class[project](project, self.options.dry)
+        return self.totest_class[project](project, self.options.dry, self.options.obs_api_url, self.options.openqa_server)
 
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
-    def do_run(self, subcmd, opts, project='Factory'):
+    def do_run(self, subcmd, opts, project='openSUSE:Factory'):
         """${cmd_name}: run the ToTest Manager
 
         ${cmd_usage}
@@ -790,7 +859,7 @@ class CommandlineInterface(cmdln.Cmdln):
                 continue
             break
 
-    def do_release(self, subcmd, opts, project='Factory'):
+    def do_release(self, subcmd, opts, project='openSUSE:Factory'):
         """${cmd_name}: manually release all media. Use with caution!
 
         ${cmd_usage}
