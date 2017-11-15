@@ -40,10 +40,12 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
 class CompareList(object):
-    def __init__(self, old_prj, new_prj, verbose):
+    def __init__(self, old_prj, new_prj, verbose, newonly, removedonly):
         self.new_prj = new_prj
         self.old_prj = old_prj
         self.verbose = verbose
+        self.newonly = newonly
+        self.removedonly = removedonly
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
 
@@ -53,6 +55,19 @@ class CompareList(object):
         root = ET.parse(http_GET(makeurl(self.apiurl, ['source', project],
                                  query=query))).getroot()
         packages = [i.get('name') for i in root.findall('entry')]
+
+        return packages
+
+    def removed_pkglist(self, project):
+        if project.startswith('SUSE:'):
+            apiurl = 'https://api.suse.de'
+        else:
+            apiurl = self.apiurl
+        query = "match=state/@name='accepted'+and+(action/target/@project='{}'+and+action/@type='delete')".format(project)
+        url = makeurl(apiurl, ['search', 'request'], query)
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        packages = [t.get('package') for t in root.findall('./request/action/target')]
 
         return packages
 
@@ -86,31 +101,41 @@ class CompareList(object):
         """Main method"""
         # get souce packages from target
         print 'Gathering the package list from %s' % self.old_prj
-        old_packages = self.get_source_packages(self.old_prj)
+        source = self.get_source_packages(self.old_prj)
         print 'Gathering the package list from %s' % self.new_prj
-        new_packages = self.get_source_packages(self.new_prj)
+        target = self.get_source_packages(self.new_prj)
+        removed_packages = self.removed_pkglist(self.old_prj)
 
-        for pkg in old_packages:
-            if pkg not in new_packages:
-                logging.info('%s is not in %s' % (pkg, self.new_prj))
-            else:
-                # ignore the second specfile package
-                linked = self.is_linked_package(self.old_prj, pkg)
-                if linked is not None:
+        if not self.removedonly:
+            for pkg in source:
+                if pkg.startswith('000'):
                     continue
 
-                diff = self.check_diff(pkg, self.old_prj, self.new_prj)
-                if diff is not False:
-                    print '%s/%s has different source than %s' % (self.new_prj, pkg, self.old_prj)
-                    if self.verbose:
-                        print diff
+                if pkg not in target:
+                    # ignore the second specfile package
+                    linked = self.is_linked_package(self.old_prj, pkg)
+                    if linked is not None:
+                        continue
+
+                    print("New package than {:<8} - {}".format(self.new_prj, pkg))
+                elif not self.newonly:
+                    diff = self.check_diff(pkg, self.old_prj, self.new_prj)
+                    if diff:
+                        print("Different source in {:<8} - {}".format(self.new_prj, pkg))
+                        if self.verbose:
+                            print("=== Diff ===\n{}".format(diff))
+
+        for pkg in removed_packages:
+            if pkg in target:
+                print("Deleted package in {:<8} - {}".format(self.old_prj, pkg))
 
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    uc = CompareList(args.old_prj, args.new_prj, args.verbose)
+    uc = CompareList(args.old_prj, args.new_prj, args.verbose, args.newonly,
+            args.removedonly)
     uc.crawl()
 
 if __name__ == '__main__':
@@ -127,6 +152,10 @@ if __name__ == '__main__':
                         default=OPENSUSE)
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='show the diff')
+    parser.add_argument('--newonly', action='store_true',
+                        help='show new package only')
+    parser.add_argument('--removedonly', action='store_true',
+                        help='show removed package but exists in target')
 
     args = parser.parse_args()
 
