@@ -11,9 +11,10 @@ for l in $letter; do
 	if [ "$l" != A -a "$l" != B ]; then
 		repos="$repos,$project/bootstrap_copy"
 	fi
-	osrt-pkglistgen
 
-	export project=$project:DVD
-	export repos=$project/standard,$repos
-	skip_releases=1 osrt-pkglistgen
+	# DVD project first as it depends on the project below, so might look
+	# busy if we update the other one first
+	project=$project:DVD repos=$project/standard,$repos skip_releases=1 osrt-pkglistgen
+
+	osrt-pkglistgen
 done

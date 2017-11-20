@@ -202,6 +202,9 @@ Summary:        Generates package lists in 000product
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osclib = %{version}
+Requires:       obs-service-product_converter
+# we use the same user as repo-checker
+PreReq:         openSUSE-release-tools-repo-checker
 
 %description pkglistgen
 Generates package lists based on 000package-groups and puts them
@@ -347,6 +350,9 @@ if [ -x /usr/bin/systemctl ] ; then
   fi
 fi
 
+%postun pkglistgen
+%systemd_postun
+
 %files
 %defattr(-,root,root,-)
 %doc README.asciidoc
@@ -476,9 +482,12 @@ fi
 %files pkglistgen
 %defattr(-,root,root,-)
 %{_bindir}/osrt-pkglistgen
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0.sh
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Rings.sh
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Staging.sh
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0-all
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Rings
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Staging
+%{_unitdir}/osrt-pkglistgen@.service
+%{_unitdir}/osrt-pkglistgen@.timer
 
 %files -n osclib
 %defattr(-,root,root,-)

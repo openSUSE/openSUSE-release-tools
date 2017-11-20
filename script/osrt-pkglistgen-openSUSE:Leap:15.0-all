@@ -1,0 +1,4 @@
+#!/bin/bash
+osrt-pkglistgen-openSUSE:Leap:15.0-main
+osrt-pkglistgen-openSUSE:Leap:15.0:Rings
+osrt-pkglistgen-openSUSE:Leap:15.0:Staging
