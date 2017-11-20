@@ -54,7 +54,7 @@ class StagingHelper(object):
         f = osc.core.get_buildconfig(self.apiurl, project, repository).splitlines()
         pkg_list = []
         for line in f:
-            if re.match('Preinstall', line) or re.match('VM[Ii]nstall', line):
+            if re.match('Preinstall', line) or re.match('VM[Ii]nstall', line) or re.match('Support', line):
                 content = line.split(':')
                 variables = [x.strip() for x in content[1].split(' ')]
                 for var in variables:
