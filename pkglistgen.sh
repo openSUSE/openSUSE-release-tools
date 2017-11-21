@@ -5,7 +5,7 @@
 set -e
 shopt -s nullglob
 
-self=$(readlink $(type -p "$0"))
+self=$(readlink -e $(type -p "$0"))
 
 : ${project:=openSUSE:Factory}
 : ${api:=api.opensuse.org}
