@@ -149,6 +149,9 @@ class Leaper(ReviewBot.ReviewBot):
             return False
 
         if self.ibs and target_project.startswith('SUSE:SLE'):
+
+            self.do_check_maintainer_review = False
+
             if package in self.lookup_sle15:
                 origin = self.lookup_sle15[package]
 
@@ -199,6 +202,10 @@ class Leaper(ReviewBot.ReviewBot):
 
         if package in self.lookup_150:
             origin = self.lookup_150[package]
+
+        # obviously
+        if src_project in ('openSUSE:Factory', 'openSUSE:Factory:NonFree'):
+            self.source_in_factory = True
 
         is_fine_if_factory = False
         not_in_factory_okish = False
@@ -327,7 +334,17 @@ class Leaper(ReviewBot.ReviewBot):
         else: # no origin
             # submission from SLE is ok
             if src_project.startswith('SUSE:SLE-15'):
+                self.do_check_maintainer_review = False
                 return True
+
+            # new package submitted from Factory. Check if it was in
+            # 42.3 before and skip maintainer review if so.
+            subprj = src_project[len('openSUSE:Factory'):]
+            if self.source_in_factory and target_project.startswith('openSUSE:Leap:15.0') \
+                and self.is_package_in_project('openSUSE:Leap:42.3'+subprj, package):
+                    self.logger.info('package was in 42.3')
+                    self.do_check_maintainer_review = False
+                    return True
 
             is_fine_if_factory = True
             self.needs_release_manager = True
@@ -409,10 +426,11 @@ class Leaper(ReviewBot.ReviewBot):
         self.needs_release_manager = False
         self.pending_factory_submission = False
         self.source_in_factory = None
+        self.do_check_maintainer_review = True
         self.packages = {}
 
         request_ok = ReviewBot.ReviewBot.check_one_request(self, req)
-        if not self.ibs:
+        if self.do_check_maintainer_review:
             has_correct_maintainer = self.maintbot.check_one_request(req)
             self.logger.debug("has_correct_maintainer: %s", has_correct_maintainer)
 
