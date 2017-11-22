@@ -40,11 +40,12 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
 class CompareList(object):
-    def __init__(self, old_prj, new_prj, verbose, newonly, removedonly):
+    def __init__(self, old_prj, new_prj, verbose, newonly, removedonly, submit):
         self.new_prj = new_prj
         self.old_prj = old_prj
         self.verbose = verbose
         self.newonly = newonly
+        self.submit = submit
         self.removedonly = removedonly
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
@@ -97,6 +98,18 @@ class CompareList(object):
                 return ET.tostring(root)
         return False
 
+    def submit_new_package(self, source, target, package):
+        req = osc.core.get_request_list(self.apiurl, target, package, req_state=('new', 'review', 'declined'))
+        if req:
+            print("There is a request to %s / %s already, skip!"%(target, package))
+        else:
+            msg = 'New package submitted by compare_pkglist'
+            res = osc.core.create_submit_request(self.apiurl, source, package, target, package, message=msg)
+            if res and res is not None:
+                print('Created request %s for %s' % (res, package))
+            else:
+                print('Error occurred when creating the submit request')
+
     def crawl(self):
         """Main method"""
         # get souce packages from target
@@ -118,6 +131,8 @@ class CompareList(object):
                         continue
 
                     print("New package than {:<8} - {}".format(self.new_prj, pkg))
+                    if self.submit:
+                        self.submit_new_package(self.old_prj, self.new_prj, pkg)
                 elif not self.newonly:
                     diff = self.check_diff(pkg, self.old_prj, self.new_prj)
                     if diff:
@@ -135,7 +150,7 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     uc = CompareList(args.old_prj, args.new_prj, args.verbose, args.newonly,
-            args.removedonly)
+            args.removedonly, args.submit)
     uc.crawl()
 
 if __name__ == '__main__':
@@ -156,6 +171,8 @@ if __name__ == '__main__':
                         help='show new package only')
     parser.add_argument('--removedonly', action='store_true',
                         help='show removed package but exists in target')
+    parser.add_argument('--submit', action='store_true',
+                        help='submit new package to target')
 
     args = parser.parse_args()
 
