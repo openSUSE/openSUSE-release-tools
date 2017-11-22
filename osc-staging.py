@@ -599,7 +599,7 @@ def do_staging(self, subcmd, opts, *args):
                         editor = os.getenv('EDITOR')
                         if not editor:
                             editor = 'xdg-open'
-                        return_code = subprocess.call([editor, temp.name])
+                        return_code = subprocess.call(editor.split(' ') + [temp.name])
 
                         proposal = yaml.safe_load(open(temp.name).read())
 

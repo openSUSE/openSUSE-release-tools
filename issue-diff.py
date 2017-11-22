@@ -131,7 +131,7 @@ def prompt_interactive(changes, project, package):
         editor = os.getenv('EDITOR')
         if not editor:
             editor = 'xdg-open'
-        subprocess.call([editor, temp.name])
+        subprocess.call(editor.split(' ') + [temp.name])
 
         changes_after = yaml.safe_load(open(temp.name).read())
         if changes_after is None:
