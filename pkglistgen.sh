@@ -25,6 +25,9 @@ fi
 if [ -n "$INCLUDE_SUGGESTED" ]; then
 	solveargs+=('--include-suggested')
 fi
+if [ -n "$LOCALES_FROM" ]; then
+	solveargs+=('--locales-from', "$LOCALES_FROM")
+fi
 
 _osc=`type -p osc`
 osc()

@@ -421,6 +421,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.include_suggested = False
         self.unwanted = set()
         self.output = None
+        self.locales = set()
 
     def _dump_supportstatus(self):
         for name in self.packages.keys():
@@ -547,6 +548,26 @@ class PkgListGen(ToolBase.ToolBase):
 
         self.lockjobs[arch] = []
         solvables = set()
+
+        def cb(name, evr):
+            ret = 0
+            if name == solv.NAMESPACE_MODALIAS:
+                ret = 1
+            elif name == solv.NAMESPACE_FILESYSTEM:
+                ret = 1
+            elif name == solv.NAMESPACE_LANGUAGE:
+                if pool.id2str(evr) in self.locales:
+                    ret = 1
+            else:
+                logger.warning('unhandled "{} {}"'.format(pool.id2str(name), pool.id2str(evr)))
+
+            return ret
+
+        if hasattr(pool, 'set_namespacecallback'):
+            pool.set_namespacecallback(cb)
+        else:
+            logger.warn('libsolv missing namespace callback')
+
         for prp in self.repos:
             project, reponame = prp.split('/')
             repo = pool.add_repo(project)
@@ -711,6 +732,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
     @cmdln.option('--include-suggested', action='store_true', help='include suggested packges also')
+    @cmdln.option('--locale', action='append', help='locales to inclues')
+    @cmdln.option('--locales-from', metavar='FILE', help='get supported locales from product file FILE')
     def do_solve(self, subcmd, opts):
         """${cmd_name}: Solve groups
 
@@ -731,6 +754,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             if opts.ignore_recommended:
                 raise cmdln.CmdlnUserError("--ignore-recommended and --include-suggested don't work together")
             self.tool.include_suggested = True
+        if opts.locale:
+            for l in opts.locale:
+                self.tool.locales |= set(l.split(','))
+        if opts.locales_from:
+            with open(os.path.join(self.tool.input_dir, opts.locales_from), 'r') as fh:
+                root = ET.parse(fh).getroot()
+                self.tool.locales |= set([ lang.text for lang in root.findall(".//linguas/language") ])
+
 
         modules = []
         # the yml parser makes an array out of everything, so
