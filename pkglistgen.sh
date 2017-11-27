@@ -17,6 +17,17 @@ releases="000release-packages"
 
 cachedir=${XDG_CACHE_HOME:-~/.cache}/opensuse-packagelists/$api/$project
 todo=("$product" "$groups")
+solveargs=()
+
+if [ -n "$IGNORE_RECOMMENDED" ]; then
+	solveargs+=('--ignore-recommended')
+fi
+if [ -n "$INCLUDE_SUGGESTED" ]; then
+	solveargs+=('--include-suggested')
+fi
+if [ -n "$LOCALES_FROM" ]; then
+	solveargs+=('--locales-from', "$LOCALES_FROM")
+fi
 
 _osc=`type -p osc`
 osc()
@@ -83,8 +94,10 @@ rm -f supportstatus.txt groups.yml package-groups.changes
 for i in *.spec.in; do
   mv -v $i "${i%.in}"
 done
-${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a x86_64 update
-${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a x86_64 solve
+if ! ${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a x86_64 update; then
+	echo "no change in packages"
+fi
+${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a x86_64 solve "${solveargs[@]}"
 for i in $delete_products; do
 	rm -vf -- "$i"
 done

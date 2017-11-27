@@ -70,7 +70,11 @@ class Group(object):
         self.develpkgs = []
         self.silents = set()
         self.ignored = set()
-        self.recommended = set()
+        # special feature for SLE. Patterns are marked for expansion
+        # of recommended packages, all others aren't. Only works
+        # with recommends on actual package names, not virtual
+        # provides.
+        self.expand_recommended = set()
 
         pkglist.groups[self.safe_name] = self
 
@@ -100,7 +104,7 @@ class Group(object):
                 elif rel == 'silent':
                     self.silents.add(name)
                 elif rel == 'recommended':
-                    self.recommended.add(name)
+                    self.expand_recommended.add(name)
                 else:
                     arch = rel
 
@@ -116,7 +120,7 @@ class Group(object):
 
         self.locked.update(group.locked)
         self.silents.update(group.silents)
-        self.recommended.update(group.recommended)
+        self.expand_recommended.update(group.expand_recommended)
 
     # do not repeat packages
     def ignore(self, without):
@@ -135,7 +139,7 @@ class Group(object):
             self.ignore(g)
         self.ignored.add(without)
 
-    def solve(self, ignore_recommended=False):
+    def solve(self, ignore_recommended=False, include_suggested = False):
         """ base: list of base groups or None """
 
         if self.solved:
@@ -147,27 +151,30 @@ class Group(object):
 
         self.srcpkgs = set()
         self.recommends = dict()
+        self.suggested = dict()
         for arch in self.architectures:
             pool = self.pkglist._prepare_pool(arch)
             # pool.set_debuglevel(10)
+            suggested = []
 
-            tosolv = self.packages[arch]
-            while tosolv:
-                n, group = tosolv.pop(0)
+            # packages resulting from explicit recommended expansion
+            extra = []
+
+            def solve_one_package(n, group):
                 jobs = list(self.pkglist.lockjobs[arch])
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
                     logger.debug('{}.{}: package {} not found'.format(self.name, arch, n))
                     self.not_found.setdefault(n, set()).add(arch)
-                    continue
+                    return
                 else:
-                    if n in self.recommended:
+                    if n in self.expand_recommended:
                         for s in sel.solvables():
                             for dep in s.lookup_deparray(solv.SOLVABLE_RECOMMENDS):
                                 # only add recommends that exist as packages
                                 rec = pool.select(dep.str(), solv.Selection.SELECTION_NAME)
                                 if not rec.isempty():
-                                    tosolv.append([dep.str(), group + ":recommended:" + n])
+                                    extra.append([dep.str(), group + ":recommended:" + n])
 
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
@@ -200,22 +207,23 @@ class Group(object):
                         else:
                             logger.debug(msg)
                         self.unresolvable[arch][n] = str(problem)
-                    continue
+                    return
 
-                trans = solver.transaction()
-                if trans.isempty():
-                    logger.error('%s.%s: nothing to do', self.name, arch)
-                    continue
-
-                if 'get_recommended' in dir(solver):
+                if hasattr(solver, 'get_recommended'):
                     for s in solver.get_recommended():
                         if s.name in locked:
                             continue
                         self.recommends.setdefault(s.name, group + ':' + n)
                     for s in solver.get_suggested():
-                        self.recommends.setdefault(s.name, group + ':' + n)
+                        suggested.append([s.name, group + ':suggested:' + n])
+                        self.suggested.setdefault(s.name, group + ':' + n)
                 else:
                     logger.warn('newer libsolv needed for recommends!')
+
+                trans = solver.transaction()
+                if trans.isempty():
+                    logger.error('%s.%s: nothing to do', self.name, arch)
+                    return
 
                 for s in trans.newsolvables():
                     solved[arch].setdefault(s.name, group + ':' + n)
@@ -228,6 +236,18 @@ class Group(object):
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
                     self.srcpkgs.add(src)
+
+            for n, group in self.packages[arch]:
+                solve_one_package(n, group)
+
+            if include_suggested:
+                seen = set()
+                while suggested:
+                    n, group = suggested.pop()
+                    if n in seen:
+                        continue
+                    seen.add(n)
+                    solve_one_package(n, group)
 
         common = None
         # compute common packages across all architectures
@@ -292,17 +312,19 @@ class Group(object):
             if not already_present:
                 self.develpkgs.append(p)
 
-    def filter_duplicated_recommends(self, modules):
-        recommends = self.recommends
+    def _filter_already_selected(self, modules, pkgdict):
         # erase our own - so we don't filter our own
-        self.recommends = dict()
-        for p in recommends:
+        for p in pkgdict.keys():
             already_present = False
             for m in modules:
                 for arch in ['*'] + self.architectures:
                     already_present = already_present or (p in m.solved_packages[arch])
-            if not already_present:
-                self.recommends[p] = recommends[p]
+            if already_present:
+                del pkgdict[p]
+
+    def filter_already_selected(self, modules):
+        self._filter_already_selected(modules, self.recommends)
+        self._filter_already_selected(modules, self.suggested)
 
     def toxml(self, arch, ignore_broken = False):
         packages = self.solved_packages[arch]
@@ -356,11 +378,18 @@ class Group(object):
             c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)) + "\n")
             root.append(c)
         if arch == '*' and self.recommends:
-            comment = "\nRecommended and suggested packages:\n"
+            comment = "\nRecommended packages:\n"
             for p in sorted(self.recommends.keys()):
                 comment += "  - {} # {}\n".format(p, self.recommends[p])
             c = ET.Comment(comment)
             root.append(c)
+        if arch == '*' and self.suggested:
+            comment = "\nSuggested packages:\n"
+            for p in sorted(self.suggested.keys()):
+                comment += "  - {} # {}\n".format(p, self.suggested[p])
+            c = ET.Comment(comment)
+            root.append(c)
+
 
         return root
 
@@ -389,8 +418,10 @@ class PkgListGen(ToolBase.ToolBase):
         self.lockjobs = dict()
         self.ignore_broken = False
         self.ignore_recommended = False
+        self.include_suggested = False
         self.unwanted = set()
         self.output = None
+        self.locales = set()
 
     def _dump_supportstatus(self):
         for name in self.packages.keys():
@@ -483,7 +514,7 @@ class PkgListGen(ToolBase.ToolBase):
         g = self.groups[groupname]
         for i in includes:
             g.inherit(self.groups[i])
-        g.solve(self.ignore_recommended)
+        g.solve(self.ignore_recommended, self.include_suggested)
         for e in excludes:
             g.ignore(self.groups[e])
 
@@ -517,6 +548,26 @@ class PkgListGen(ToolBase.ToolBase):
 
         self.lockjobs[arch] = []
         solvables = set()
+
+        def cb(name, evr):
+            ret = 0
+            if name == solv.NAMESPACE_MODALIAS:
+                ret = 1
+            elif name == solv.NAMESPACE_FILESYSTEM:
+                ret = 1
+            elif name == solv.NAMESPACE_LANGUAGE:
+                if pool.id2str(evr) in self.locales:
+                    ret = 1
+            else:
+                logger.warning('unhandled "{} {}"'.format(pool.id2str(name), pool.id2str(evr)))
+
+            return ret
+
+        if hasattr(pool, 'set_namespacecallback'):
+            pool.set_namespacecallback(cb)
+        else:
+            logger.warn('libsolv missing namespace callback')
+
         for prp in self.repos:
             project, reponame = prp.split('/')
             repo = pool.add_repo(project)
@@ -680,6 +731,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
+    @cmdln.option('--include-suggested', action='store_true', help='include suggested packges also')
+    @cmdln.option('--locale', action='append', help='locales to inclues')
+    @cmdln.option('--locales-from', metavar='FILE', help='get supported locales from product file FILE')
     def do_solve(self, subcmd, opts):
         """${cmd_name}: Solve groups
 
@@ -696,6 +750,18 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.tool.ignore_broken = True
         if opts.ignore_recommended:
             self.tool.ignore_recommended = True
+        if opts.include_suggested:
+            if opts.ignore_recommended:
+                raise cmdln.CmdlnUserError("--ignore-recommended and --include-suggested don't work together")
+            self.tool.include_suggested = True
+        if opts.locale:
+            for l in opts.locale:
+                self.tool.locales |= set(l.split(','))
+        if opts.locales_from:
+            with open(os.path.join(self.tool.input_dir, opts.locales_from), 'r') as fh:
+                root = ET.parse(fh).getroot()
+                self.tool.locales |= set([ lang.text for lang in root.findall(".//linguas/language") ])
+
 
         modules = []
         # the yml parser makes an array out of everything, so
@@ -713,7 +779,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for module in modules:
             module.check_dups(modules)
             module.collect_devel_packages(modules)
-            module.filter_duplicated_recommends(modules)
+            module.filter_already_selected(modules)
 
         self.tool._collect_unsorted_packages(modules)
         self.tool._write_all_groups()
