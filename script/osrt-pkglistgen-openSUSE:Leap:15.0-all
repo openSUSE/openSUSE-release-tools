@@ -1,4 +1,6 @@
 #!/bin/bash
+export LOCALES_FROM=openSUSE-product
+export INCLUDE_SUGGESTED=1
 osrt-pkglistgen-openSUSE:Leap:15.0
 osrt-pkglistgen-openSUSE:Leap:15.0:Rings
 osrt-pkglistgen-openSUSE:Leap:15.0:Staging
