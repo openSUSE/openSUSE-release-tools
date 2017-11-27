@@ -109,7 +109,12 @@ class CheckSource(ReviewBot.ReviewBot):
         output = '  '.join(checked).translate(None, '\033')
         os.chdir('/tmp')
 
-        if ret != 0:
+        # ret = 0 : Good
+        # ret = 1 : Bad
+        # ret = 2 : Bad but can be non-fatal in some cases
+        if ret > 1 and target_project.startswith('openSUSE:Leap:') and (source_project.startswith('SUSE:SLE-15:') or source_project.startswith('openSUSE:Factory')):
+            pass
+        elif ret != 0:
             shutil.rmtree(dir)
             self.review_messages['declined'] = "Output of check script:\n" + output
             return False
