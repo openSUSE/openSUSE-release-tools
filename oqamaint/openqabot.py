@@ -472,7 +472,8 @@ class OpenQABot(ReviewBot.ReviewBot):
         posts = []
         for arch in pmap['archs']:
             need = False
-            settings = {'VERSION': pmap['version'], 'ARCH': arch, 'DISTRI': 'sle'}
+            settings = {'VERSION': pmap['version'], 'ARCH': arch}
+            settings['DISTRI'] = 'sle' if 'distri' not in pmap else pmap['distri']
             issues = pmap.get('issues', {})
             issues['OS_TEST_ISSUES'] = product_prefix
             for key, prefix in issues.items():
@@ -534,6 +535,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         openqa_posts = []
         for prod in self.api_map.keys():
+            self.logger.debug("{} -- product in apimap".format(prod))
             openqa_posts += self.check_product(job, prod)
         openqa_jobs = []
         for s in openqa_posts:
