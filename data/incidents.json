@@ -127,5 +127,11 @@
       "FLAVOR" : "Server-DVD-Incidents",
       "ARCH" : "x86_64",
       "DISTRI" : "sle"
-   }
+   },
+   "SUSE:Updates:SUSE-CAASP:ALL:x86_64": {
+      "DISTRI" : "caasp",
+      "FLAVOR" : "CaaSP-DVD-Incidents",
+      "VERSION" : "2.0",
+      "ARCH": "x86_64"
+  }
 }
