@@ -63,6 +63,10 @@ class BiArchTool(ToolBase.ToolBase):
                     'openSUSE-EULAs', # translate-toolkit
                     'skelcd-openSUSE',
                     'plasma5-workspace',
+                    'patterns-base',
+                    'patterns-fonts',
+                    'patterns-rpm-macros',
+                    'patterns-yast',
                     ]),
                 }
 
