@@ -72,29 +72,37 @@ class CleanupRings(object):
         root = ET.parse(f).getroot()
 
         for package in root.findall('package'):
-            source = package.find('source').text
-            if package.attrib['name'].startswith('preinstall'):
+            # use main package name for multibuild. We can't just ignore
+            # multibuild as eg installation-images has no results for the main
+            # package itself
+            # https://github.com/openSUSE/open-build-service/issues/4198
+            name = package.attrib['name'].split(':')[0]
+            if name.startswith('preinstall'):
                 continue
-            self.sources.add(source)
+
+            source = package.find('source').text
+            if source != name:
+                print ("WARN {} != {}".format(source, name))
+            self.sources.add(name)
 
             for subpkg in package.findall('subpkg'):
                 subpkg = subpkg.text
                 if subpkg in self.bin2src:
-                    if self.bin2src[subpkg] == source:
+                    if self.bin2src[subpkg] == name:
                         # different archs
                         continue
-                    print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, source))
-                self.bin2src[subpkg] = source
+                    print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, name))
+                self.bin2src[subpkg] = name
 
         for package in root.findall('package'):
-            source = package.find('source').text
+            name = package.attrib['name'].split(':')[0]
             for pkg in package.findall('pkgdep'):
                 if pkg.text not in self.bin2src:
                     if not pkg.text.startswith('texlive-'): # XXX: texlive bullshit packaging
                         print('Package {} not found in place'.format(pkg.text))
                     continue
                 b = self.bin2src[pkg.text]
-                self.pkgdeps[b] = source
+                self.pkgdeps[b] = name
 
     def repo_state_acceptable(self, project):
         url = makeurl(self.api.apiurl, ['build', project, '_result'])
