@@ -66,10 +66,13 @@ class Cache(object):
 
     CACHE_DIR = os.path.expanduser('~/.cache/osc-plugin-factory')
     TTL_LONG = 12 * 60 * 60
+    TTL_MEDIUM = 30 * 60
     TTL_SHORT = 5 * 60
     TTL_DUPLICATE = 3
     PATTERNS = {
         '/build/[^/]+/_result': TTL_DUPLICATE,
+        # For cycles when run via repo-checker cache non-stagings.
+        '/build/(?:[^/](?!:Staging:))+/[^/]+/[^/]+/_builddepinfo$': TTL_MEDIUM,
         # Group members cannot be guaranteed, but change rarely.
         '/group/[^/?]+$': TTL_SHORT,
         # Clear target project cache upon request acceptance.

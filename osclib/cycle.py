@@ -150,7 +150,6 @@ class CycleDetector(object):
         # Store packages prevoiusly ignored. Don't pollute the screen.
         self._ignore_packages = set()
 
-    @memoize(ttl=60*60*6)
     def _builddepinfo(self, project, repository, arch):
         root = None
         try:
