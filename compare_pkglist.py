@@ -40,12 +40,15 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
 class CompareList(object):
-    def __init__(self, old_prj, new_prj, verbose, newonly, removedonly, submit):
+    def __init__(self, old_prj, new_prj, verbose, newonly, removedonly, existin, submit, submitfrom, submitto):
         self.new_prj = new_prj
         self.old_prj = old_prj
         self.verbose = verbose
         self.newonly = newonly
+        self.existin = existin
         self.submit = submit
+        self.submitfrom = submitfrom
+        self.submitto = submitto
         self.removedonly = removedonly
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
@@ -58,6 +61,20 @@ class CompareList(object):
         packages = [i.get('name') for i in root.findall('entry')]
 
         return packages
+
+    def item_exists(self, project, package=None):
+        """
+        Return true if the given project or package exists
+        """
+        if package:
+            url = makeurl(self.apiurl, ['source', project, package, '_meta'])
+        else:
+            url = makeurl(self.apiurl, ['source', project, '_meta'])
+        try:
+            http_GET(url)
+        except urllib2.HTTPError:
+            return False
+        return True
 
     def removed_pkglist(self, project):
         if project.startswith('SUSE:'):
@@ -112,16 +129,30 @@ class CompareList(object):
 
     def crawl(self):
         """Main method"""
+        if self.submit:
+            if (self.submitfrom and not self.submitto) or (self.submitto and not self.submitfrom):
+                print("** Please give both --submitfrom and --submitto parameter **")
+                return
+            if not self.item_exists(self.submitfrom):
+                print("Project %s is not exist"%self.submitfrom)
+                return
+            if not self.item_exists(self.submito):
+                print("Project %s is not exist"%self.submitto)
+                return
+
         # get souce packages from target
         print 'Gathering the package list from %s' % self.old_prj
         source = self.get_source_packages(self.old_prj)
         print 'Gathering the package list from %s' % self.new_prj
         target = self.get_source_packages(self.new_prj)
         removed_packages = self.removed_pkglist(self.old_prj)
+        if self.existin:
+            print 'Gathering the package list from %s' % self.existin
+            existin_packages = self.get_source_packages(self.existin)
 
         if not self.removedonly:
             for pkg in source:
-                if pkg.startswith('000'):
+                if pkg.startswith('000') or pkg.startswith('_'):
                     continue
 
                 if pkg not in target:
@@ -130,9 +161,19 @@ class CompareList(object):
                     if linked is not None:
                         continue
 
+                    if self.existin:
+                        if pkg not in existin_packages:
+                            continue
+
                     print("New package than {:<8} - {}".format(self.new_prj, pkg))
                     if self.submit:
-                        self.submit_new_package(self.old_prj, self.new_prj, pkg)
+                        if self.submitfrom and self.submitto:
+                            if not self.item_exists(self.submitfrom, pkg):
+                                print("%s not found in %s"%(pkg, self.submitfrom))
+                                continue
+                            self.submit_new_package(self.submitfrom, self.submitto, pkg)
+                        else:
+                            self.submit_new_package(self.old_prj, self.new_prj, pkg)
                 elif not self.newonly:
                     diff = self.check_diff(pkg, self.old_prj, self.new_prj)
                     if diff:
@@ -150,7 +191,7 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     uc = CompareList(args.old_prj, args.new_prj, args.verbose, args.newonly,
-            args.removedonly, args.submit)
+            args.removedonly, args.existin, args.submit, args.submitfrom, args.submitto)
     uc.crawl()
 
 if __name__ == '__main__':
@@ -171,8 +212,14 @@ if __name__ == '__main__':
                         help='show new package only')
     parser.add_argument('--removedonly', action='store_true',
                         help='show removed package but exists in target')
-    parser.add_argument('--submit', action='store_true',
-                        help='submit new package to target')
+    parser.add_argument('--existin', dest='existin', metavar='PROJECT',
+                        help='the package exists in the project')
+    parser.add_argument('--submit', action='store_true', default=False,
+                        help='submit new package to target, FROM and TO can re-configureable by --submitfrom and --submitto')
+    parser.add_argument('--submitfrom', dest='submitfrom', metavar='PROJECT',
+                        help='submit new package from, define --submitto is required')
+    parser.add_argument('--submitto', dest='submitto', metavar='PROJECT',
+                        help='submit new package to, define --submitfrom is required')
 
     args = parser.parse_args()
 
