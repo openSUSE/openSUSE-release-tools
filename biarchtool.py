@@ -67,6 +67,7 @@ class BiArchTool(ToolBase.ToolBase):
                     'patterns-fonts',
                     'patterns-rpm-macros',
                     'patterns-yast',
+                    '000release-packages',
                     ]),
                 }
 
