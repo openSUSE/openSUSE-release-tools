@@ -170,7 +170,7 @@ class ToTestBase(object):
             logger.info('%s %s %s' %
                         (module['name'], module['result'], module['flags']))
 
-    def update_ignored_issues(self):
+    def update_openqa_status_message(self):
         url = makeurl(self.openqa_server,
                       ['api', 'v1', 'job_groups'])
         f = self.api.retried_GET(url)
@@ -181,27 +181,37 @@ class ToTestBase(object):
                 group_id = jg['id']
                 break
 
-        if group_id:
-            pinned_ignored_issue = 0
-            issues = ' , '.join(self.issues_to_ignore)
-            msg = "pinned-description: Ignored issues\r\n\r\n{}".format(issues)
-            data = {'text': msg}
-            url = makeurl(self.openqa_server,
-                          ['api', 'v1', 'groups', str(group_id), 'comments'])
-            f = self.api.retried_GET(url)
-            comments = json.load(f)
-            for comment in comments:
-                if comment['userName'] == 'ttm' and \
-                        comment['text'].startswith('pinned-description: Ignored issues'):
-                    pinned_ignored_issue = comment['id']
+        if not group_id:
+            logger.debug('No openQA group id found for status comment update, ignoring')
+            return
 
-            if not self.dryrun:
-                if pinned_ignored_issue:
-                    self.openqa.openqa_request(
-                        'PUT', 'groups/%s/comments/%d' % (group_id, pinned_ignored_issue), data=data)
-                else:
-                    self.openqa.openqa_request(
-                        'POST', 'groups/%s/comments' % group_id, data=data)
+        pinned_ignored_issue = 0
+        issues = ' , '.join(self.issues_to_ignore)
+        status_flag = 'publishing' if self.status_for_openqa['is_publishing'] else \
+            'preparing' if self.status_for_openqa['can_release'] else \
+                'testing' if self.status_for_openqa['snapshotable'] else \
+                'building'
+        status_msg = "tag:{}:{}:{}".format(self.status_for_openqa['new_snapshot'], status_flag, status_flag)
+        msg = "pinned-description: Ignored issues\r\n\r\n{}\r\n\r\n{}".format(issues, status_msg)
+        data = {'text': msg}
+
+        url = makeurl(self.openqa_server,
+                      ['api', 'v1', 'groups', str(group_id), 'comments'])
+        f = self.api.retried_GET(url)
+        comments = json.load(f)
+        for comment in comments:
+            if comment['userName'] == 'ttm' and \
+                    comment['text'].startswith('pinned-description: Ignored issues'):
+                pinned_ignored_issue = comment['id']
+
+        logger.debug('Writing openQA status message: {}'.format(data))
+        if not self.dryrun:
+            if pinned_ignored_issue:
+                self.openqa.openqa_request(
+                    'PUT', 'groups/%s/comments/%d' % (group_id, pinned_ignored_issue), data=data)
+            else:
+                self.openqa.openqa_request(
+                    'POST', 'groups/%s/comments' % group_id, data=data)
 
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
@@ -217,7 +227,7 @@ class ToTestBase(object):
 
         number_of_fails = 0
         in_progress = False
-        update_pinned_descr = False
+        self.update_pinned_descr = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
@@ -242,7 +252,7 @@ class ToTestBase(object):
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
                             self.issues_to_ignore.append(ref)
-                            update_pinned_descr = True
+                            self.update_pinned_descr = True
                             with open(self.issuefile, 'a') as f:
                                 f.write("%s\n" % ref)
                         else:
@@ -273,9 +283,6 @@ class ToTestBase(object):
                     in_progress = True
             else:
                 raise Exception(job['result'])
-
-        if update_pinned_descr:
-            self.update_ignored_issues()
 
         if number_of_fails > 0:
             return QA_FAILED
@@ -496,9 +503,20 @@ class ToTestBase(object):
         can_publish = (current_result == QA_PASSED)
 
         # already published
-        if self.totest_is_publishing():
+        totest_is_publishing = self.totest_is_publishing()
+        if totest_is_publishing:
             logger.debug("totest already publishing")
             can_publish = False
+
+        if self.update_pinned_descr:
+            self.status_for_openqa = {
+                'current_snapshot': current_snapshot,
+                'new_snapshot': new_snapshot,
+                'snapshotable': snapshotable,
+                'can_release': can_release,
+                'is_publishing': totest_is_publishing,
+            }
+            self.update_openqa_status_message()
 
         if can_publish:
             if current_qa_version == current_snapshot:
