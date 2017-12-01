@@ -456,6 +456,12 @@ class RepoChecker(ReviewBot.ReviewBot):
         # TODO Ignore tgt_project packages that depend on this that are part of
         # ignore list as and instead look at output from staging for those.
         what_depends_on = depends_on(self.apiurl, action.tgt_project, 'standard', [action.tgt_package], True)
+
+        # filter out dependency on package itself (happens with eg
+        # java bootstrapping itself with previous build)
+        if action.tgt_package in what_depends_on:
+            what_depends_on.remove(action.tgt_package)
+
         if len(what_depends_on):
             self.logger.warn('{} is still a build requirement of {}'.format(action.tgt_package, ', '.join(what_depends_on)))
 
