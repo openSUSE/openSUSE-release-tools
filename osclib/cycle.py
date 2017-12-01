@@ -150,7 +150,6 @@ class CycleDetector(object):
         # Store packages prevoiusly ignored. Don't pollute the screen.
         self._ignore_packages = set()
 
-    @memoize(ttl=60*60*6)
     def _builddepinfo(self, project, repository, arch):
         root = None
         try:
@@ -160,13 +159,6 @@ class CycleDetector(object):
         except urllib2.HTTPError as e:
             print('ERROR in URL %s [%s]' % (url, e))
         return root
-
-    def _get_builddepinfo(self, project, repository, arch, package):
-        """Get the builddep info for a single package"""
-        root = ET.fromstring(self._builddepinfo(project, repository, arch))
-        packages = [Package(element=e) for e in root.findall('package')]
-        package = [p for p in packages if p.pkg == package]
-        return package[0] if package else None
 
     def _get_builddepinfo_graph(self, project, repository, arch):
         """Generate the buildepinfo graph for a given architecture."""
@@ -209,12 +201,6 @@ class CycleDetector(object):
         # Store the subpkgs dict in the graph. It will be used later.
         graph.subpkgs = subpkgs
         return graph
-
-    def _get_builddepinfo_cycles(self, package, repository, arch):
-        """Generate the buildepinfo cycle list for a given architecture."""
-        root = ET.fromstring(self._builddepinfo(package, repository, arch))
-        return frozenset(frozenset(e.text for e in cycle.findall('package'))
-                         for cycle in root.findall('cycle'))
 
     def cycles(self, staging, project=None, repository='standard', arch='x86_64'):
         """Detect cycles in a specific repository."""
