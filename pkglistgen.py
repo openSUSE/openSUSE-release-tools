@@ -729,6 +729,70 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         return global_update
 
 
+    def do_create_droplist(self, subcmd, opts, *oldsolv):
+        """${cmd_name}: generate list of obsolete packages
+
+        The globally specified repositories are taken as the current
+        package set. All solv files specified on the command line
+        are old versions of those repos.
+
+        The command outputs all package names that are no longer
+        contained in or provided by the current repos.
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        drops = dict()
+
+        for arch in self.tool.architectures:
+
+            for old in oldsolv:
+
+                logger.debug("%s: processing %s", arch, old)
+
+                pool = solv.Pool()
+                pool.setarch(arch)
+
+                for prp in self.tool.repos:
+                    project, repo = prp.split('/')
+                    fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                    r = pool.add_repo(prp)
+                    r.add_solv(fn)
+
+                sysrepo = pool.add_repo(os.path.basename(old).replace('.repo.solv', ''))
+                sysrepo.add_solv(old)
+
+                pool.createwhatprovides()
+
+                for s in sysrepo.solvables:
+                    haveit = False
+                    for s2 in pool.whatprovides(s.nameid):
+                        if s2.repo == sysrepo or s.nameid != s2.nameid:
+                            continue
+                        haveit = True
+                    if haveit:
+                        continue
+                    nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
+                    for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
+                        if s2.repo == sysrepo:
+                            continue
+                        haveit = True
+                    if haveit:
+                        continue
+                    if s.name not in drops:
+                        drops[s.name] = sysrepo.name
+
+                # mark it explicitly to avoid having 2 pools while GC is not run
+                del pool
+
+        for reponame in sorted(set(drops.values())):
+            print "<!-- %s -->" % reponame
+            for p in sorted(drops):
+                if drops[p] != reponame: continue
+                print "  <obsoletepackage>%s</obsoletepackage>" % p
+
+
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
     @cmdln.option('--include-suggested', action='store_true', help='include suggested packges also')
