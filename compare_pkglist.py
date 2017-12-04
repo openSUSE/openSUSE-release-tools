@@ -133,12 +133,13 @@ class CompareList(object):
             if (self.submitfrom and not self.submitto) or (self.submitto and not self.submitfrom):
                 print("** Please give both --submitfrom and --submitto parameter **")
                 return
-            if not self.item_exists(self.submitfrom):
-                print("Project %s is not exist"%self.submitfrom)
-                return
-            if not self.item_exists(self.submito):
-                print("Project %s is not exist"%self.submitto)
-                return
+            if self.submitfrom and self.submitto:
+                if not self.item_exists(self.submitfrom):
+                    print("Project %s is not exist"%self.submitfrom)
+                    return
+                if not self.item_exists(self.submito):
+                    print("Project %s is not exist"%self.submitto)
+                    return
 
         # get souce packages from target
         print 'Gathering the package list from %s' % self.old_prj
