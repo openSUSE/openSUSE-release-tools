@@ -39,6 +39,8 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         # RepoChecker options.
         self.skip_cycle = False
+        self.force = False
+        self.limit_group = None
 
     def project_only(self, project, post_comments=False):
         # self.staging_config needed by target_archs().
@@ -46,7 +48,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         root = ET.fromstringlist(show_results_meta(
             self.apiurl, project, multibuild=True, repository=['standard']))
-        if len(root.xpath('result[@state!="published"]')):
+        if not self.force and len(root.xpath('result[@state!="published"]')):
             self.logger.info('{}/standard not published'.format(project))
             return
 
@@ -119,6 +121,9 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.logger.debug('{}: not staged'.format(request.reqid))
                 continue
 
+            if self.limit_group and group != self.limit_group:
+                continue
+
             # Only interested if group has completed building.
             api = self.staging_api(request.actions[0].tgt_project)
             status = api.project_status(group, True)
@@ -136,7 +141,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                             openQA_only = False
                             break
 
-                if not openQA_only:
+                if not self.force and not openQA_only:
                     self.logger.debug('{}: {} not ready'.format(request.reqid, group))
                     continue
 
@@ -165,7 +170,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 if info and self.groups_build[group] == info.get('build'):
                     skip_build.add(group)
 
-            if group in skip_build:
+            if not self.force and group in skip_build:
                 self.logger.debug('{}: {} build unchanged'.format(request.reqid, group))
                 continue
 
@@ -451,6 +456,12 @@ class RepoChecker(ReviewBot.ReviewBot):
         # TODO Ignore tgt_project packages that depend on this that are part of
         # ignore list as and instead look at output from staging for those.
         what_depends_on = depends_on(self.apiurl, action.tgt_project, 'standard', [action.tgt_package], True)
+
+        # filter out dependency on package itself (happens with eg
+        # java bootstrapping itself with previous build)
+        if action.tgt_package in what_depends_on:
+            what_depends_on.remove(action.tgt_package)
+
         if len(what_depends_on):
             self.logger.warn('{} is still a build requirement of {}'.format(action.tgt_package, ', '.join(what_depends_on)))
 
@@ -476,6 +487,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
         parser.add_option('--skip-cycle', action='store_true', help='skip cycle check')
+        parser.add_option('--force', action='store_true', help='force review even if project is not ready')
+        parser.add_option('--limit-group', metavar='GROUP', help='only review requests in specific group')
 
         return parser
 
@@ -484,6 +497,9 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         if self.options.skip_cycle:
             bot.skip_cycle = self.options.skip_cycle
+
+        bot.force = self.options.force
+        bot.limit_group = self.options.limit_group
 
         return bot
 
