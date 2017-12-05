@@ -137,7 +137,7 @@ class CompareList(object):
                 if not self.item_exists(self.submitfrom):
                     print("Project %s is not exist"%self.submitfrom)
                     return
-                if not self.item_exists(self.submito):
+                if not self.item_exists(self.submitto):
                     print("Project %s is not exist"%self.submitto)
                     return
 
