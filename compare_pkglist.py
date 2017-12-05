@@ -116,12 +116,13 @@ class CompareList(object):
                 return ET.tostring(root)
         return False
 
-    def submit_new_package(self, source, target, package):
+    def submit_new_package(self, source, target, package, msg=None):
         req = osc.core.get_request_list(self.apiurl, target, package, req_state=('new', 'review', 'declined'))
         if req:
             print("There is a request to %s / %s already, skip!"%(target, package))
         else:
-            msg = 'New package submitted by compare_pkglist'
+            if not msg:
+                msg = 'New package submitted by compare_pkglist'
             res = osc.core.create_submit_request(self.apiurl, source, package, target, package, message=msg)
             if res and res is not None:
                 print('Created request %s for %s' % (res, package))
@@ -179,10 +180,14 @@ class CompareList(object):
                             if not self.item_exists(self.submitfrom, pkg):
                                 print("%s not found in %s"%(pkg, self.submitfrom))
                                 continue
-                            if self.submit_new_package(self.submitfrom, self.submitto, pkg):
+                            msg = "Automated submission of a package from %s to %s" % (self.submitfrom, self.submitto)
+                            if self.existin:
+                                msg += " that was included in %s" % (self.existin)
+                            if self.submit_new_package(self.submitfrom, self.submitto, pkg, msg):
                                 submit_counter += 1
                         else:
-                            if self.submit_new_package(self.old_prj, self.new_prj, pkg):
+                            msg = "Automated submission of a package from %s that is new in %s" % (self.old_prj, self.new_prj)
+                            if self.submit_new_package(self.old_prj, self.new_prj, pkg, msg):
                                 submit_counter += 1
                 elif not self.newonly:
                     diff = self.check_diff(pkg, self.old_prj, self.new_prj)
