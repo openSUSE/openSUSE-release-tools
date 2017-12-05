@@ -40,7 +40,7 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
 class CompareList(object):
-    def __init__(self, old_prj, new_prj, verbose, newonly, removedonly, existin, submit, submitfrom, submitto):
+    def __init__(self, old_prj, new_prj, verbose, newonly, removedonly, existin, submit, submitfrom, submitto, submit_limit):
         self.new_prj = new_prj
         self.old_prj = old_prj
         self.verbose = verbose
@@ -49,6 +49,7 @@ class CompareList(object):
         self.submit = submit
         self.submitfrom = submitfrom
         self.submitto = submitto
+        self.submit_limit = submit_limit
         self.removedonly = removedonly
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
@@ -124,8 +125,10 @@ class CompareList(object):
             res = osc.core.create_submit_request(self.apiurl, source, package, target, package, message=msg)
             if res and res is not None:
                 print('Created request %s for %s' % (res, package))
+                return True
             else:
                 print('Error occurred when creating the submit request')
+        return False
 
     def crawl(self):
         """Main method"""
@@ -152,6 +155,7 @@ class CompareList(object):
             existin_packages = self.get_source_packages(self.existin)
 
         if not self.removedonly:
+            submit_counter = 0
             for pkg in source:
                 if pkg.startswith('000') or pkg.startswith('_'):
                     continue
@@ -168,13 +172,18 @@ class CompareList(object):
 
                     print("New package than {:<8} - {}".format(self.new_prj, pkg))
                     if self.submit:
+                        if self.submit_limit and submit_counter > int(self.submit_limit):
+                            return
+
                         if self.submitfrom and self.submitto:
                             if not self.item_exists(self.submitfrom, pkg):
                                 print("%s not found in %s"%(pkg, self.submitfrom))
                                 continue
-                            self.submit_new_package(self.submitfrom, self.submitto, pkg)
+                            if self.submit_new_package(self.submitfrom, self.submitto, pkg):
+                                submit_counter += 1
                         else:
-                            self.submit_new_package(self.old_prj, self.new_prj, pkg)
+                            if self.submit_new_package(self.old_prj, self.new_prj, pkg):
+                                submit_counter += 1
                 elif not self.newonly:
                     diff = self.check_diff(pkg, self.old_prj, self.new_prj)
                     if diff:
@@ -192,7 +201,7 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     uc = CompareList(args.old_prj, args.new_prj, args.verbose, args.newonly,
-            args.removedonly, args.existin, args.submit, args.submitfrom, args.submitto)
+            args.removedonly, args.existin, args.submit, args.submitfrom, args.submitto, args.submit_limit)
     uc.crawl()
 
 if __name__ == '__main__':
@@ -221,6 +230,8 @@ if __name__ == '__main__':
                         help='submit new package from, define --submitto is required')
     parser.add_argument('--submitto', dest='submitto', metavar='PROJECT',
                         help='submit new package to, define --submitfrom is required')
+    parser.add_argument('--limit', dest='submit_limit', metavar='NUMBERS',
+                        help='limit numbers packages to submit')
 
     args = parser.parse_args()
 
