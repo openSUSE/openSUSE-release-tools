@@ -156,6 +156,11 @@ class CompareList(object):
             existin_packages = self.get_source_packages(self.existin)
 
         if not self.removedonly:
+            if self.submitto:
+                dest = self.submitto
+            else:
+                dest = self.new_prj
+            removed_pkgs_in_target = self.removed_pkglist(dest)
             submit_counter = 0
             for pkg in source:
                 if pkg.startswith('000') or pkg.startswith('_'):
@@ -171,7 +176,12 @@ class CompareList(object):
                         if pkg not in existin_packages:
                             continue
 
+                    if pkg in removed_pkgs_in_target:
+                        print("New package but has removed from {:<8} - {}".format(self.new_prj, pkg))
+                        continue
+
                     print("New package than {:<8} - {}".format(self.new_prj, pkg))
+
                     if self.submit:
                         if self.submit_limit and submit_counter > int(self.submit_limit):
                             return
