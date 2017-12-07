@@ -2,11 +2,9 @@
 Description=openSUSE Release Tools: repo-checker project_only for %i
 
 [Service]
-Type=oneshot
 User=osrt-repo-checker
 SyslogIdentifier=osrt-repo-checker
 ExecStart=/usr/bin/osrt-repo_checker --debug project_only --post-comments "%i"
-TimeoutStartSec=8 hour
 
 [Install]
 WantedBy=multi-user.target

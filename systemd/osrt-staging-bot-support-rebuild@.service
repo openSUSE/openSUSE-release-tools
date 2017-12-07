@@ -2,7 +2,6 @@
 Description=openSUSE Release Tools: staging-bot regular for %i (rebuild staging project if support package staged)
 
 [Service]
-Type=oneshot
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osrt-suppkg_rebuild -p "%i"
