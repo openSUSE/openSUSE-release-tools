@@ -33,6 +33,8 @@ def do_cycle(self, subcmd, opts, *args):
 
     print ("digraph depgraph {")
     for pkgname in args:
+        pkgname = pkgname.strip(',')
+        if len(pkgname) == 0: continue
         try:
             deps = ET.fromstring(get_dependson(apiurl, "openSUSE:Factory", "standard", "x86_64", [pkgname]))
 
