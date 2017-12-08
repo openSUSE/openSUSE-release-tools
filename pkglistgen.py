@@ -37,6 +37,13 @@ import os
 import subprocess
 import re
 import yaml
+import requests
+import urlparse
+from StringIO import StringIO
+import gzip
+import tempfile
+import random
+import string
 
 import ToolBase
 
@@ -728,6 +735,125 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 fh.close()
         return global_update
 
+    def do_create_droplist(self, subcmd, opts, *oldsolv):
+        """${cmd_name}: generate list of obsolete packages
+
+        The globally specified repositories are taken as the current
+        package set. All solv files specified on the command line
+        are old versions of those repos.
+
+        The command outputs all package names that are no longer
+        contained in or provided by the current repos.
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        drops = dict()
+
+        for arch in self.tool.architectures:
+
+            for old in oldsolv:
+
+                logger.debug("%s: processing %s", arch, old)
+
+                pool = solv.Pool()
+                pool.setarch(arch)
+
+                for prp in self.tool.repos:
+                    project, repo = prp.split('/')
+                    fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                    r = pool.add_repo(prp)
+                    r.add_solv(fn)
+
+                sysrepo = pool.add_repo(os.path.basename(old).replace('.repo.solv', ''))
+                sysrepo.add_solv(old)
+
+                pool.createwhatprovides()
+
+                for s in sysrepo.solvables:
+                    haveit = False
+                    for s2 in pool.whatprovides(s.nameid):
+                        if s2.repo == sysrepo or s.nameid != s2.nameid:
+                            continue
+                        haveit = True
+                    if haveit:
+                        continue
+                    nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
+                    for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
+                        if s2.repo == sysrepo:
+                            continue
+                        haveit = True
+                    if haveit:
+                        continue
+                    if s.name not in drops:
+                        drops[s.name] = sysrepo.name
+
+                # mark it explicitly to avoid having 2 pools while GC is not run
+                del pool
+
+        for reponame in sorted(set(drops.values())):
+            print "<!-- %s -->" % reponame
+            for p in sorted(drops):
+                if drops[p] != reponame: continue
+                print "  <obsoletepackage>%s</obsoletepackage>" % p
+
+    @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
+    def do_dump_solv(self, subcmd, opts, baseurl):
+        """${cmd_name}: fetch repomd and dump solv
+
+        If an output directory is specified, a file named according
+        to the build is created there. Otherwise the solv file is
+        dumped to stdout.
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        name = None
+        ofh = sys.stdout
+        if self.options.output_dir:
+            url = urlparse.urljoin(baseurl, 'media.1/media')
+            with requests.get(url) as media:
+                for i, line in enumerate(media.iter_lines()):
+                    if i != 1:
+                        continue
+                    name = line
+            if name is None or '-Build' not in name:
+                raise Exception('media.1/media includes no build number')
+
+            name = '{}/{}.solv'.format(self.options.output_dir, name)
+            if not opts.overwrite and os.path.exists(name):
+                logger.info("%s exists", name)
+                return
+            ofh = open(name + '.new', 'w')
+
+        pool = solv.Pool()
+        pool.setarch()
+
+        repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+        f = tempfile.TemporaryFile()
+        url = urlparse.urljoin(baseurl, 'repodata/repomd.xml')
+        repomd = requests.get(url)
+        ns = { 'r': 'http://linux.duke.edu/metadata/repo' }
+        root = ET.fromstring(repomd.content)
+        location = root.find('.//r:data[@type="primary"]/r:location', ns).get('href')
+        f.write(repomd.content)
+        os.lseek(f.fileno(), 0, os.SEEK_SET)
+        repo.add_repomdxml(f, 0)
+        url = urlparse.urljoin(baseurl, location)
+        with requests.get(url, stream=True) as primary:
+            content = gzip.GzipFile(fileobj=StringIO(primary.content))
+            os.lseek(f.fileno(), 0, os.SEEK_SET)
+            f.write(content.read())
+            os.lseek(f.fileno(), 0, os.SEEK_SET)
+            # TODO: verify checksum
+            repo.add_rpmmd(f, None, 0)
+            repo.create_stubs()
+            repo.write(ofh)
+
+        if name is not None:
+            os.rename(name + '.new', name)
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
