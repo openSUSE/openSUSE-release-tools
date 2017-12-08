@@ -3,6 +3,7 @@ from xml.etree import cElementTree as ET
 from osc.core import makeurl
 from osc.core import http_GET
 
+import urllib2
 
 class CleanupRings(object):
     def __init__(self, api):
@@ -80,9 +81,6 @@ class CleanupRings(object):
             if name.startswith('preinstall'):
                 continue
 
-            source = package.find('source').text
-            if source != name:
-                print ("WARN {} != {}".format(source, name))
             self.sources.add(name)
 
             for subpkg in package.findall('subpkg'):
@@ -91,7 +89,7 @@ class CleanupRings(object):
                     if self.bin2src[subpkg] == name:
                         # different archs
                         continue
-                    print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, name))
+                    print('# Binary {} is defined twice: {}/{}'.format(subpkg, prj, name))
                 self.bin2src[subpkg] = name
 
         for package in root.findall('package'):
@@ -120,16 +118,24 @@ class CleanupRings(object):
         return True
 
     def check_image_bdeps(self, project, arch):
-        url = makeurl(self.api.apiurl, ['build', project, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
-        root = ET.parse(http_GET(url)).getroot()
-        for bdep in root.findall('bdep'):
-            if 'name' not in bdep.attrib:
-                continue
-            b = bdep.attrib['name']
-            if b not in self.bin2src:
-                continue
-            b = self.bin2src[b]
-            self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+        for dvd in ('000product:openSUSE-dvd5-dvd-{}'.format(arch), 'Test-DVD-{}'.format(arch)):
+            try:
+                url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
+                root = ET.parse(http_GET(url)).getroot()
+            except urllib2.HTTPError as e:
+                if e.code == 404:
+                    continue
+                raise
+            for bdep in root.findall('bdep'):
+                if 'name' not in bdep.attrib:
+                    continue
+                b = bdep.attrib['name']
+                if b not in self.bin2src:
+                    print "{} not found in bin2src".format(b)
+                    continue
+                b = self.bin2src[b]
+                self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+            break
 
     def check_buildconfig(self, project):
         url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
