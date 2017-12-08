@@ -44,6 +44,7 @@ class BiArchTool(ToolBase.ToolBase):
         self.packages = []
         self.arch = 'i586'
         self.rdeps = None
+        self.package_metas = dict()
         self.whitelist = {
                 'i586': set([
                     'bzr',
@@ -62,6 +63,11 @@ class BiArchTool(ToolBase.ToolBase):
                     'openSUSE-EULAs', # translate-toolkit
                     'skelcd-openSUSE',
                     'plasma5-workspace',
+                    'patterns-base',
+                    'patterns-fonts',
+                    'patterns-rpm-macros',
+                    'patterns-yast',
+                    '000release-packages',
                     ]),
                 }
 
@@ -76,19 +82,31 @@ class BiArchTool(ToolBase.ToolBase):
         if package in self._has_baselibs:
             return self._has_baselibs[package]
 
+        is_multibuild = False
+        srcpkgname = package
+        if ':' in package:
+            is_multibuild = True
+            srcpkgname = package.split(':')[0]
+
         ret = False
-        files = self.get_filelist(self.project, package)
+        files = self.get_filelist(self.project, srcpkgname)
         if 'baselibs.conf' in files:
             logger.debug('%s has baselibs', package)
-            ret = True
+            if is_multibuild:
+                logger.warn('%s is multibuild and has baselibs. canot handle that!', package)
+            else:
+                ret = True
         elif '_link' in files:
-            files = self.get_filelist(self.project, package, expand = True)
+            files = self.get_filelist(self.project, srcpkgname, expand = True)
             if 'baselibs.conf' in files:
                 logger.warn('%s is linked to a baselibs package', package)
+        elif is_multibuild:
+            logger.warn('%s is multibuild', package)
         self._has_baselibs[package] = ret
         return ret
 
     def is_biarch_recursive(self, package):
+        logger.debug(package)
         if package in self.blacklist[self.arch]:
             logger.debug('%s is blacklisted', package)
             return False
@@ -110,10 +128,21 @@ class BiArchTool(ToolBase.ToolBase):
 
     def _init_biarch_packages(self):
         if self.biarch_packages is None:
-            self.biarch_packages = set(self.meta_get_packagelist("%s:Rings:0-Bootstrap"%self.project))
-            self.biarch_packages |= set(self.meta_get_packagelist("%s:Rings:1-MinimalX"%self.project))
+            if ':Rings' in self.project:
+                self.biarch_packages = set()
+            else:
+                self.biarch_packages = set(self.meta_get_packagelist("%s:Rings:0-Bootstrap"%self.project))
+                self.biarch_packages |= set(self.meta_get_packagelist("%s:Rings:1-MinimalX"%self.project))
 
         self._init_rdeps()
+        self.fill_package_meta()
+
+    def fill_package_meta(self):
+        url = self.makeurl(['search', 'package'], "match=[@project='%s']" % self.project)
+        root = ET.fromstring(self.cached_GET(url))
+        for p in root.findall('package'):
+            name = p.attrib['name']
+            self.package_metas[name] = p
 
     def _init_rdeps(self):
         if self.rdeps is not None:
@@ -125,6 +154,9 @@ class BiArchTool(ToolBase.ToolBase):
             name = pnode.get('name')
             for depnode in pnode.findall('pkgdep'):
                 depname = depnode.text
+                if depname == name:
+                    logger.warn('%s requires itself for build', name)
+                    continue
                 self.rdeps.setdefault(name, set()).add(depname)
 
     def select_packages(self, packages):
@@ -174,8 +206,10 @@ class BiArchTool(ToolBase.ToolBase):
             changed = False
 
             logger.debug("processing %s", pkg)
-            pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
-            pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
+            if not pkg in self.package_metas:
+                logger.error("%s not found", pkg)
+                continue
+            pkgmeta = self.package_metas[pkg]
 
             for build in pkgmeta.findall("./build"):
                 for n in build.findall("./enable[@arch='{}']".format(self.arch)):
@@ -185,6 +219,7 @@ class BiArchTool(ToolBase.ToolBase):
 
             if changed:
                 try:
+                    pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
                     self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
                     if self.caching:
                         self._invalidate__cached_GET(pkgmetaurl)
@@ -203,8 +238,10 @@ class BiArchTool(ToolBase.ToolBase):
             changed = False
 
             logger.debug("processing %s", pkg)
-            pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
-            pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
+            if not pkg in self.package_metas:
+                logger.error("%s not found", pkg)
+                continue
+            pkgmeta = self.package_metas[pkg]
 
             build = pkgmeta.findall("./build")
             if not build:
@@ -217,6 +254,7 @@ class BiArchTool(ToolBase.ToolBase):
 
             if changed:
                 try:
+                    pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
                     self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
                     if self.caching:
                         self._invalidate__cached_GET(pkgmetaurl)
@@ -231,16 +269,13 @@ class BiArchTool(ToolBase.ToolBase):
 
     def enable_baselibs_packages(self, force=False, wipebinaries=False):
         self._init_biarch_packages()
+        todo = dict()
         for pkg in self.packages:
             logger.debug("processing %s", pkg)
-            pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
-            try:
-                pkgmeta = ET.fromstring(self.cached_GET(pkgmetaurl))
-            except urllib2.HTTPError as e:
-                # catch deleted packages
-                if e.code == 404:
-                    continue
-                raise e
+            if not pkg in self.package_metas:
+                logger.error("%s not found", pkg)
+                continue
+            pkgmeta = self.package_metas[pkg]
 
             is_enabled = None
             is_disabled = None
@@ -294,17 +329,26 @@ class BiArchTool(ToolBase.ToolBase):
                     logger.error('build tag not found in %s/%s!?', pkg, self.arch)
 
             if changed:
-                try:
-                    self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
-                    if self.caching:
-                        self._invalidate__cached_GET(pkgmetaurl)
-                    if must_disable and wipebinaries:
-                        self.http_POST(self.makeurl(['build', self.project], {
-                            'cmd' : 'wipe',
-                            'arch': self.arch,
-                            'package' : pkg }))
-                except urllib2.HTTPError as e:
-                    logger.error('failed to update %s: %s', pkg, e)
+                todo[pkg] = pkgmeta
+
+        if todo:
+            logger.info("applying changes")
+        for pkg in sorted(todo.keys()):
+            pkgmeta = todo[pkg]
+            try:
+                pkgmetaurl = self.makeurl(['source', self.project, pkg, '_meta'])
+                self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
+                if self.caching:
+                    self._invalidate__cached_GET(pkgmetaurl)
+
+                if wipebinaries and pkgmeta.find("./build/disable[@arch='{}']".format(self.arch)) is not None:
+                    logger.debug("wiping %s", pkg)
+                    self.http_POST(self.makeurl(['build', self.project], {
+                        'cmd' : 'wipe',
+                        'arch': self.arch,
+                        'package' : pkg }))
+            except urllib2.HTTPError as e:
+                logger.error('failed to update %s: %s', pkg, e)
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
