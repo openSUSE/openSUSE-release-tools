@@ -1,4 +1,3 @@
 #!/bin/bash
 export project=openSUSE:Leap:15.0
-export repos=$project/standard
 osrt-pkglistgen

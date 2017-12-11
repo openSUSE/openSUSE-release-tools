@@ -10,6 +10,8 @@ self=$(readlink -e $(type -p "$0"))
 : ${project:=openSUSE:Factory}
 : ${api:=api.opensuse.org}
 : ${repos:=$project/standard}
+: ${productrepo:=standard}
+: ${arch:=x86_64}
 
 groups="000package-groups"
 product="000product"
@@ -50,7 +52,7 @@ if ! osc api "/source/$project/" | grep -q "$product"  ; then
 	echo "$product undeleted, skip dvd until next cycle"
 	exit 0
 elif [ -z "$FORCE" ]; then
-	bs_status=`osc api "/build/$project/_result?package=$product&repository=standard"`
+	bs_status=`osc api "/build/$project/_result?package=$product&repository=$productrepo"`
 	if echo "${bs_status}" | grep -q 'building\|dirty'; then
 		echo "$project build in progress, skipping."
 		exit 0
@@ -94,10 +96,10 @@ rm -f supportstatus.txt groups.yml package-groups.changes
 for i in *.spec.in; do
   mv -v $i "${i%.in}"
 done
-if ! ${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a x86_64 update; then
+if ! ${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a $arch update; then
 	echo "no change in packages"
 fi
-${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a x86_64 solve "${solveargs[@]}"
+${self%.sh}.py -i "$cachedir/$groups" -r $repos -o . -a $arch solve "${solveargs[@]}"
 for i in $delete_products; do
 	rm -vf -- "$i"
 done

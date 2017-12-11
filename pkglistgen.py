@@ -22,6 +22,7 @@
 
 # TODO: implement equivalent of namespace namespace:language(de) @SYSTEM
 # TODO: solve all devel packages to include
+from __future__ import print_function
 
 from lxml import etree as ET
 from collections import namedtuple
@@ -69,7 +70,7 @@ class Group(object):
         self.solved = False
         self.not_found = dict()
         self.unresolvable = dict()
-        for a in self.architectures:
+        for a in ARCHITECTURES:
             self.packages[a] = []
             self.unresolvable[a] = dict()
 
@@ -436,7 +437,7 @@ class PkgListGen(ToolBase.ToolBase):
                 if status == self.default_support_status:
                     continue
                 for group in self.packages[name][status]:
-                    print name, status
+                    print(name, status)
 
     def _load_supportstatus(self):
         # XXX
@@ -670,7 +671,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.tool.load_all_groups()
 
         for name in sorted(self.tool.groups.keys()):
-            print name
+            print(name)
 
     # to be called only once to bootstrap
     def do_dump_supportstatus(self, subcmd, opts):
