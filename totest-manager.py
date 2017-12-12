@@ -64,6 +64,7 @@ class ToTestBase(object):
                 for line in f.readlines():
                     self.issues_to_ignore.append(line.strip())
         self.project_base = project.split(':')[0]
+        self.update_pinned_descr = False
 
     def openqa_group(self):
         return self.project
@@ -227,7 +228,6 @@ class ToTestBase(object):
 
         number_of_fails = 0
         in_progress = False
-        self.update_pinned_descr = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
@@ -477,7 +477,7 @@ class ToTestBase(object):
             logger.warn(e)
             current_snapshot = None
         new_snapshot = self.current_version()
-
+        self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.api.dashboard_content_load('version_totest')
 
