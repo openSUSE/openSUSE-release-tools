@@ -73,6 +73,7 @@ class Group(object):
             self.packages[a] = []
             self.unresolvable[a] = dict()
 
+        self.comment = ' ### AUTOMATICALLY GENERATED, DO NOT EDIT ### '
         self.srcpkgs = None
         self.develpkgs = []
         self.silents = set()
@@ -148,9 +149,6 @@ class Group(object):
 
     def solve(self, ignore_recommended=False, include_suggested = False):
         """ base: list of base groups or None """
-
-        if self.solved:
-            return
 
         solved = dict()
         for arch in self.architectures:
@@ -276,7 +274,8 @@ class Group(object):
         self.solved_packages = solved
         self.solved = True
 
-    def check_dups(self, modules):
+    def check_dups(self, modules, overlap):
+        if not overlap: return
         packages = set(self.solved_packages['*'])
         for arch in self.architectures:
             packages.update(self.solved_packages[arch])
@@ -289,9 +288,10 @@ class Group(object):
             for arch in self.architectures:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
-                print 'overlap_between_' + self.name + '_and_' + m.name + ':'
+                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name
                 for p in sorted(packages & mp):
-                    print '  - ' + p
+                    overlap.comment += '\n  - ' + p
+                    overlap._add_to_packages(p)
 
     def collect_devel_packages(self, modules):
         develpkgs = set()
@@ -333,7 +333,7 @@ class Group(object):
         self._filter_already_selected(modules, self.recommends)
         self._filter_already_selected(modules, self.suggested)
 
-    def toxml(self, arch, ignore_broken = False):
+    def toxml(self, arch, ignore_broken = False, comment=None):
         packages = self.solved_packages[arch]
 
         name = self.name
@@ -341,8 +341,9 @@ class Group(object):
             name += '.' + arch
 
         root = ET.Element('group', {'name': name})
-        c = ET.Comment(' ### AUTOMATICALLY GENERATED, DO NOT EDIT ### ')
-        root.append(c)
+        if comment:
+            c = ET.Comment(comment)
+            root.append(c)
 
         if arch != '*':
             cond = ET.SubElement(root, 'conditional', {
@@ -491,12 +492,15 @@ class PkgListGen(ToolBase.ToolBase):
         archs = ['*'] + self.architectures
         for name in self.groups:
             group = self.groups[name]
-            fn = '{}.group'.format(group.name)
             if not group.solved:
                 continue
+            fn = '{}.group'.format(group.name)
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
+                comment = group.comment
                 for arch in archs:
-                    x = group.toxml(arch, self.ignore_broken)
+                    x = group.toxml(arch, self.ignore_broken, comment)
+                    # only comment first time
+                    comment = None
                     x = ET.tostring(x, pretty_print=True)
                     x = re.sub('\s*<!-- reason:', ' <!-- reason:', x)
                     # fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
@@ -517,7 +521,7 @@ class PkgListGen(ToolBase.ToolBase):
                 root = ET.parse(fh).getroot()
                 self._parse_product(root)
 
-    def solve_module(self, groupname, includes, excludes= False):
+    def solve_module(self, groupname, includes, excludes):
         g = self.groups[groupname]
         for i in includes:
             g.inherit(self.groups[i])
@@ -902,10 +906,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             g.conflicts = settings.get('conflicts', [])
             modules.append(g)
 
+        # not defined for openSUSE
+        overlap = self.tool.groups.get('overlap')
         for module in modules:
-            module.check_dups(modules)
+            module.check_dups(modules, overlap)
             module.collect_devel_packages(modules)
             module.filter_already_selected(modules)
+
+        if overlap:
+            ignores = [ x.name for x in overlap.ignored ]
+            self.tool.solve_module(overlap.name, [], ignores)
 
         self.tool._collect_unsorted_packages(modules)
         self.tool._write_all_groups()
