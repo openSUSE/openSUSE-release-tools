@@ -91,7 +91,10 @@ class Update(object):
 
         cs = root.find(
             './/{http://linux.duke.edu/metadata/repo}data[@type="updateinfo"]/{http://linux.duke.edu/metadata/repo}location')
-        url = repo + cs.attrib['href']
+        try:
+            url = repo + cs.attrib['href']
+        except AttributeError:
+            return None
 
         repomd = requests.get(url).content
         root = ET.fromstring(decompress(repomd))
