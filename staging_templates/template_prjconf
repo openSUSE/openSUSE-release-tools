@@ -1,0 +1,10 @@
+%if "%_repository" == "images"
+Type: kiwi
+Repotype: none
+Patterntype: none
+Prefer: openSUSE-release
+%endif
+
+# temporary for bootstrap
+Support: !rpmlint-mini !rpmlint-Factory
+VMinstall: !kernel-obs-build
