@@ -92,5 +92,21 @@
       "archs" : [
          "x86_64"
       ]
+      },
+   "SUSE:Updates:SLE-HA:12-SP3:" : {
+      "version" : "12-SP3",
+      "flavor" : "Server-DVD-Incidents-HA",
+      "distri" : "sle",
+      "archs" : [
+         "x86_64"
+      ]
+      },
+   "SUSE:Updates:SLE-HA:12-SP2:" : {
+      "version" : "12-SP2",
+      "flavor" : "Server-DVD-Incidents-HA",
+      "distri" : "sle",
+      "archs" : [
+         "x86_64"
+      ]
       }
 }
