@@ -268,7 +268,7 @@ while (<INSTALLCHECK>) {
 
     s,^\s*,,;
     # patterns are too spammy and rebuilding doesn't help
-    next if (grep { $_ eq $cproblem } qw(patterns-openSUSE installation-images:Kubic fftw3:gnu-openmpi-hpc hdf5:mvapich2 hdf5:openmpi scalapack:gnu-mvapich2-hpc scalapack:gnu-openmpi-hpc python-numpy:gnu-hpc petsc:serial netcdf:serial netcdf:openmpi netcdf:gnu-hpc netcdf:gnu-openmpi-hpc netcdf:gnu-mvapich2-hpc));
+    next if (grep { $_ eq $cproblem } qw(patterns-openSUSE installation-images:Kubic fftw3:gnu-openmpi-hpc hdf5:mvapich2 hdf5:openmpi hdf5:serial scalapack:gnu-mvapich2-hpc scalapack:gnu-openmpi-hpc python-numpy:gnu-hpc petsc:serial netcdf:serial netcdf:openmpi netcdf:gnu-hpc netcdf:gnu-openmpi-hpc netcdf:gnu-mvapich2-hpc));
     $problems{$cproblem}->{$_} = 1;
 
 }
