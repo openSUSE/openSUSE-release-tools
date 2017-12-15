@@ -916,6 +916,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if overlap:
             ignores = [ x.name for x in overlap.ignored ]
             self.tool.solve_module(overlap.name, [], ignores)
+            overlapped = set(overlap.solved_packages['*'])
+            for arch in overlap.architectures:
+                overlapped |= set(overlap.solved_packages[arch])
+            for module in modules:
+                if module.name == 'overlap': continue
+                for arch in ['*'] + module.architectures:
+                    for p in overlapped:
+                        module.solved_packages[arch].pop(p, None)
 
         self.tool._collect_unsorted_packages(modules)
         self.tool._write_all_groups()
