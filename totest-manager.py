@@ -725,6 +725,25 @@ class ToTest150(ToTestBaseNew):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
 
+class ToTest150Ports(ToTestBaseNew):
+    main_products = [
+        '000product:openSUSE-cd-mini-aarch64',
+        '000product:openSUSE-dvd5-dvd-aarch64',
+    ]
+
+    ftp_products = ['000product:openSUSE-ftp-ftp-aarch64',
+                    ]
+
+    livecd_products = []
+
+    def openqa_group(self):
+        return 'openSUSE Leap 15.0 Ports'
+
+    def get_current_snapshot(self):
+        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
+
+
+
 class ToTestSLE150(ToTestBaseNew):
     main_products = [
         '000product:SLES-cd-DVD-aarch64',
@@ -769,6 +788,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'openSUSE:Factory:ARM': ToTestFactoryARM,
             'openSUSE:Factory:zSystems': ToTestFactoryzSystems,
             'openSUSE:Leap:15.0': ToTest150,
+            'openSUSE:Leap:15.0:Ports': ToTest150Ports,
             'SUSE:SLE-15:GA': ToTestSLE150,
         }
         self.openqa_server = {
