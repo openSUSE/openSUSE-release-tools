@@ -2,7 +2,6 @@
 Description=openSUSE Release Tools: staging-bot regular for %i
 
 [Service]
-Type=oneshot
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/env bash -c ' \
@@ -13,7 +12,6 @@ ExecStart=/usr/bin/env bash -c ' \
   osc staging -p "%i" unselect --cleanup && \
   osc staging -p "%i" repair --cleanup \
   '
-TimeoutStartSec=5 hour
 
 [Install]
 WantedBy=multi-user.target
