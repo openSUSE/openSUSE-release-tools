@@ -1,0 +1,4 @@
+bootstrap=1 ./create_new_staging openSUSE:Leap:15.1 A
+bootstrap=1 ./create_new_staging openSUSE:Leap:15.1 B
+./create_new_staging openSUSE:Leap:15.1 D
+...

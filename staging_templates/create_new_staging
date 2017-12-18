@@ -1,0 +1,29 @@
+#!/bin/bash
+base="$1"
+letter="$2"
+shift 2
+set -e
+if ! osc meta prj "$base:Staging" > /dev/null 2>&1; then
+	echo "$base:Staging: does not exist"
+	exit 1
+fi
+for i in template_*; do
+	sed -e "s/:@LETTER@/:$letter/;s/@BASE@/$base/" < $i > "${letter}_${i#template_}"
+done
+if [ -z "$bootstrap" ]; then
+	sed -i -e "/0-Bootstrap/d" "${letter}_prj"
+fi
+if osc meta prj "$base:Staging:$letter" > /dev/null 2>&1; then
+	echo "$base:Staging:$letter already exists"
+else
+	osc meta prj     "$base:Staging:$letter" -F ${letter}_prj
+	osc meta prjconf "$base:Staging:$letter" -F ${letter}_prjconf
+fi
+if osc meta prj "$base:Staging:$letter:DVD" > /dev/null 2>&1; then
+	echo "$base:Staging:$letter:DVD already exists"
+else
+	osc meta prj     "$base:Staging:$letter:DVD" -F ${letter}_dvd_prj
+	osc meta prjconf "$base:Staging:$letter:DVD" -F ${letter}_dvd_prjconf
+fi
+
+echo "done. Don't forget the openQA templates"
