@@ -47,6 +47,8 @@ job install name inkscape
 job install name sddm
 job install name gnome-music
 job install name kexec-tools
+job install name firewalld
+job install name xfsprogs
 
 job lock name gtk2-branding-upstream
 job lock name gdm-branding-upstream
