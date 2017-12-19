@@ -487,6 +487,7 @@ fi
 %{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0-all
 %{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Rings
 %{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Staging
+%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Ports-aarch64.sh
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 
