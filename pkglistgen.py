@@ -798,10 +798,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 del pool
 
         for reponame in sorted(set(drops.values())):
-            print "<!-- %s -->" % reponame
+            print("<!-- %s -->" % reponame)
             for p in sorted(drops):
                 if drops[p] != reponame: continue
-                print "  <obsoletepackage>%s</obsoletepackage>" % p
+                print("  <obsoletepackage>%s</obsoletepackage>" % p)
 
     @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
     def do_dump_solv(self, subcmd, opts, baseurl):
