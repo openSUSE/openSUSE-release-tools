@@ -51,12 +51,12 @@ class FreezeCommand(object):
         self.create_bootstrap_aggregate_file()
 
     def bootstrap_packages(self):
-        url = self.api.makeurl(['source', '{}:0-Bootstrap'.format(self.api.crings)])
+        url = self.api.makeurl(['build', '{}:0-Bootstrap'.format(self.api.crings), '_result'])
         f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
+        root = ET.parse(f).getroot().find('result')
         l = list()
-        for e in root.findall('entry'):
-            name = e.get('name')
+        for e in root.findall('status'):
+            name = e.get('package')
             if name in ['rpmlint-mini-AGGR']:
                 continue
             l.append(name)
