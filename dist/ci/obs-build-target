@@ -13,6 +13,7 @@ cd "$OBS_PACKAGE"
 
 # point _service file to SOURCE_DIR instead of remote
 sed -i "s|$(cd "$SOURCE_DIR" && git remote get-url origin)|$SOURCE_DIR|" _service
+sed -i "s|<param name=\"scm\">git</param>|<param name=\"scm\">git</param><param name=\"revision\">$(cd "$SOURCE_DIR" && git describe --all)</param>|" _service
 
 rm *.obscpio
 osc service disabledrun
