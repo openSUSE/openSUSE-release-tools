@@ -84,6 +84,7 @@ my %parents = (
           openSUSE-images installation-images-openSUSE)
       ],
     "kdebase4-openSUSE" => [qw(bundle-lang-kde)],
+    "kernel-source" => [qw(perf)],
   );
 # for subsets (staging projects) we need to remember which are ignored
 my %ignored;
