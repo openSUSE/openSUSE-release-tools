@@ -245,7 +245,7 @@ class ToTestBase(object):
                         refs.add(str(ref))
                     if comment['userName'] == 'ttm' and comment['text'] == 'label:unknown_failure':
                         labeled = comment['id']
-                    if comment['text'].find('@ttm ignore') >= 0:
+                    if re.search(r'@ttm:? ignore', comment['text']):
                         to_ignore = True
                 ignored = len(refs) > 0
                 for ref in refs:
