@@ -132,7 +132,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             if not status or str(status['overall_state']) not in ('testing', 'review', 'acceptable'):
                 # Not in a "ready" state.
                 openQA_only = False # Not relevant so set to False.
-                if str(status['overall_state']) == 'failed':
+                if status and str(status['overall_state']) == 'failed':
                     # Exception to the rule is openQA only in failed state.
                     openQA_only = True
                     for project in api.project_status_walk(status):
