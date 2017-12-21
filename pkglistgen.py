@@ -24,13 +24,22 @@
 # TODO: solve all devel packages to include
 from __future__ import print_function
 
+import copy
 from lxml import etree as ET
 from collections import namedtuple
 import sys
 import cmdln
 import logging
 import urllib2
-import osc.core
+from osc.core import checkout_package
+from osc.core import http_GET
+from osc.core import makeurl
+from osc.core import Package
+from osc.core import show_results_meta
+from osc.core import undelete_package
+from osc import conf
+from osclib.conf import Config
+from osclib.stagingapi import StagingAPI
 import glob
 import solv
 from pprint import pprint, pformat
@@ -44,6 +53,7 @@ from StringIO import StringIO
 import gzip
 import tempfile
 import random
+import shutil
 import string
 
 import ToolBase
@@ -55,6 +65,7 @@ logger = logging.getLogger()
 
 ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
 DEFAULT_REPOS = ("openSUSE:Factory/standard")
+PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
 class Group(object):
 
@@ -627,6 +638,7 @@ class PkgListGen(ToolBase.ToolBase):
                 fh.write(" \n")
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
+    SCOPES = ['all', 'target', 'rings', 'staging', 'ports']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -928,6 +940,233 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.tool._collect_unsorted_packages(modules)
         self.tool._write_all_groups()
+
+    @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
+    @cmdln.option('-p', '--project', help='target project')
+    @cmdln.option('-s', '--scope', default='all', help='scope on which to operate ({})'.format(', '.join(SCOPES)))
+    def do_update_and_solve(self, subcmd, opts):
+        """${cmd_name}: update and solve for given scope
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        if not opts.project:
+            raise ValueError('project is required')
+        if opts.scope not in self.SCOPES:
+            raise ValueError('scope must be one of: {}'.format(', '.join(self.SCOPES)))
+
+        if opts.scope == 'all':
+            for scope in self.SCOPES[1:]:
+                opts.scope = scope
+                self.do_update_and_solve(subcmd, copy.deepcopy(opts))
+            return
+
+        # Store target project as opts.project will contain subprojects.
+        target_project = opts.project
+
+        config = Config(target_project)
+        apiurl = conf.config['apiurl']
+        api = StagingAPI(apiurl, target_project)
+        config.apply_remote(api)
+
+        target_config = conf.config[target_project]
+        archs_key = 'pkglistgen-archs' if opts.scope != 'ports' else 'pkglistgen-archs-ports'
+        if archs_key in target_config:
+            self.options.architectures = target_config.get(archs_key).split(' ')
+        main_repo = target_config['main-repo']
+
+        if opts.scope == 'target':
+            self.options.repos = ['/'.join([target_project, main_repo])]
+            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
+            return
+        elif opts.scope == 'ports':
+            # TODO Continue supporting #1297, but should be abstracted.
+            main_repo = 'ports'
+            opts.project += ':Ports'
+            self.options.repos = ['/'.join([opts.project, main_repo])]
+            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
+            return
+        elif opts.scope == 'rings':
+            opts.project = api.rings[1]
+            self.options.repos = [
+                '/'.join([api.rings[1], main_repo]),
+                '/'.join([api.rings[0], main_repo]),
+            ]
+            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
+
+            opts.project = api.rings[2]
+            self.options.repos.insert(0, '/'.join([api.rings[2], main_repo]))
+            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts, skip_release=True)
+            return
+        elif opts.scope == 'staging':
+            letters = api.get_staging_projects_short()
+            for letter in letters:
+                opts.project = api.prj_from_short(letter)
+                self.options.repos = ['/'.join([opts.project, main_repo])]
+
+                if not api.is_staging_bootstrapped(opts.project):
+                    self.options.repos.append('/'.join([opts.project, 'bootstrap_copy']))
+
+                # DVD project first since it depends on main.
+                if api.rings:
+                    opts_dvd = copy.deepcopy(opts)
+                    opts.project += ':DVD'
+                    self.options.repos.insert(0, '/'.join([opts.project, main_repo]))
+                    self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
+
+                self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
+            return
+
+    def update_and_solve_target(self, apiurl, target_project, target_config, main_repo, opts,
+                                skip_release=False):
+        group = target_config.get('pkglistgen-group', '000package-groups')
+        product = target_config.get('pkglistgen-product', '000product')
+        release = target_config.get('pkglistgen-release', '000release-packages')
+
+        url = makeurl(apiurl, ['source', opts.project])
+        packages = ET.parse(http_GET(url)).getroot()
+        if packages.find('entry[@name="{}"]'.format(product)) is None:
+            undelete_package(apiurl, opts.project, product, 'revive')
+            # TODO disable build.
+            print('{} undeleted, skip dvd until next cycle'.format(product))
+            return
+        elif not opts.force:
+            root = ET.fromstringlist(show_results_meta(apiurl, opts.project, product,
+                                                       repository=[main_repo], multibuild=True))
+            if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
+                print('{}/{} build in progress'.format(opts.project, product))
+                return
+
+        checkout_list = [group, product]
+        if not skip_release:
+            checkout_list.append(release)
+
+            if packages.find('entry[@name="{}"]'.format(release)) is None:
+                undelete_package(apiurl, opts.project, product, 'revive')
+                print('{} undeleted, skip dvd until next cycle'.format(release))
+                return
+
+        # Cache dir specific to hostname and project.
+        host = urlparse.urlparse(apiurl).hostname
+        cache_dir = os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
+        cache_dir = os.path.join(cache_dir, 'opensuse-packagelists', host, opts.project)
+
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+        os.makedirs(cache_dir)
+
+        group_dir = os.path.join(cache_dir, group)
+        product_dir = os.path.join(cache_dir, product)
+        release_dir = os.path.join(cache_dir, release)
+
+        for package in checkout_list:
+            checkout_package(apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
+
+        if not skip_release:
+            self.unlink_all_except(release_dir)
+        self.unlink_all_except(product_dir)
+        self.copy_directory_contents(group_dir, product_dir,
+                                     ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
+        self.change_extension(product_dir, '.spec.in', '.spec')
+
+        self.options.output_dir = product_dir
+        self.postoptparse()
+
+        self.do_update('update', opts)
+
+        opts.ignore_recommended = bool(target_config.get('pkglistgen-include-recommended'))
+        opts.include_suggested = bool(target_config.get('pkglistgen-include-suggested'))
+        opts.locales_from = target_config.get('pkglistgen-locals-from')
+        self.do_solve('solve', opts)
+
+        delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
+        self.unlink_list(product_dir, delete_products)
+
+        for product_file in glob.glob(os.path.join(product_dir, '*.product')):
+            print(subprocess.check_output(
+                [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
+
+        delete_kiwis = target_config.get('pkglistgen-delete-kiwis', '').split(' ')
+        self.unlink_list(product_dir, delete_kiwis)
+
+        spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
+        if skip_release:
+            self.unlink_list(None, spec_files)
+        else:
+            self.move_list(spec_files, release_dir)
+
+        self.multibuild_from_glob(product_dir, '*.kiwi')
+        self.build_stub(product_dir, 'kiwi')
+        self.commit_package(product_dir)
+
+        if not skip_release:
+            self.multibuild_from_glob(release_dir, '*.spec')
+            self.build_stub(release_dir, 'spec')
+            self.commit_package(release_dir)
+
+    def move_list(self, file_list, destination):
+        for name in file_list:
+            os.rename(name, os.path.join(destination, os.path.basename(name)))
+
+    def unlink_list(self, path, names):
+        for name in names:
+            if path is None:
+                name_path = name
+            else:
+                name_path = os.path.join(path, name)
+
+            if os.path.isfile(name_path):
+                os.unlink(name_path)
+
+    def unlink_all_except(self, path, ignore_list=['_service'], ignore_hidden=True):
+        for name in os.listdir(path):
+            if name in ignore_list or (ignore_hidden and name.startswith('.')):
+                continue
+
+            name_path = os.path.join(path, name)
+            if os.path.isfile(name_path):
+                os.unlink(name_path)
+
+    def copy_directory_contents(self, source, destination, ignore_list=[]):
+        for name in os.listdir(source):
+            name_path = os.path.join(source, name)
+            if name in ignore_list or not os.path.isfile(name_path):
+                continue
+
+            shutil.copy(name_path, os.path.join(destination, name))
+
+    def change_extension(self, path, original, final):
+        for name in glob.glob(os.path.join(path, '*{}'.format(original))):
+            # Assumes the extension is only found at the end.
+            os.rename(name, name.replace(original, final))
+
+    def multibuild_from_glob(self, destination, pathname):
+        root = ET.Element('multibuild')
+        for name in glob.glob(os.path.join(destination, pathname)):
+            package = ET.SubElement(root, 'package')
+            package.text = os.path.splitext(os.path.basename(name))[0]
+
+        with open(os.path.join(destination, '_multibuild'), 'w+b') as f:
+            f.write(ET.tostring(root, pretty_print=True))
+
+    def build_stub(self, destination, extension):
+        f = file(os.path.join(destination, '.'.join(['stub', extension])), 'w+')
+        f.write('# prevent building single {} files twice\n'.format(extension))
+        f.write('Name: stub\n')
+        f.write('Version: 0.0\n')
+        f.close()
+
+    def commit_package(self, path):
+        package = Package(path)
+        if self.options.dry:
+            for i in package.get_diff():
+                print(''.join(i))
+        else:
+            # No proper API function to perform the same operation.
+            print(subprocess.check_output(
+                ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True))
+            package.commit(msg='Automatic update')
 
 
 if __name__ == "__main__":
