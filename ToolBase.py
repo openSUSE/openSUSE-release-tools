@@ -140,7 +140,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser = cmdln.Cmdln.get_optparser(self)
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
         parser.add_option("--dry", action="store_true", help="dry run")
-        parser.add_option("--debug", action="store_true", help="debug output")
+        parser.add_option("-d", "--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")
         parser.add_option("--verbose", action="store_true", help="verbose")
 
