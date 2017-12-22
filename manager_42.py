@@ -62,7 +62,7 @@ class Manager42(object):
         self.fill_package_meta()
         self.packages = dict()
         for project in [self.config.from_prj] + self.config.project_preference_order:
-            self.packages[project] = self.get_source_packages(project)
+            self._fill_package_list(project)
 
     # FIXME: add to ToolBase and rebase Manager42 on that
     def _load_config(self, handle = None):
@@ -197,9 +197,13 @@ class Manager42(object):
                 return None
             raise
 
-    def check_source_in_project(self, project, package, verifymd5, deleted=False):
+    def _fill_package_list(self, project):
         if project not in self.packages:
             self.packages[project] = self.get_source_packages(project)
+
+    def check_source_in_project(self, project, package, verifymd5, deleted=False):
+
+        self._fill_package_list(project)
 
         if not deleted and not package in self.packages[project]:
             return None, None
