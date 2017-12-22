@@ -81,6 +81,9 @@ class Manager42(object):
                 packages.add(title[3:].split(' ')[0])
         return sorted(packages)
 
+    def all_packages(self):
+        return self.packages[self.config.from_prj]
+
     def parse_lookup(self, project):
         self.lookup_changes = 0
         self.lookup = {}
@@ -152,10 +155,8 @@ class Manager42(object):
                                 ['source', project, package], opts))
 
 
-    def crawl(self, given_packages = None):
+    def crawl(self, packages):
         """Main method of the class that runs the crawler."""
-
-        packages = given_packages or self.packages[self.config.from_prj]
 
         for package in sorted(packages):
             try:
@@ -170,6 +171,18 @@ class Manager42(object):
 
         if self.lookup_changes:
             self.store_lookup()
+
+    def get_inconsistent(self):
+        known = set(self.lookup.keys())
+        stale = known - set(self.packages[self.config.from_prj])
+        unknown = set(self.packages[self.config.from_prj]) - known
+
+        if (stale):
+            logger.info("stale packages: %s", ', '.join(stale))
+        if (unknown):
+            logger.info("unknown packages: %s", ', '.join(unknown))
+
+        return (stale|unknown)
 
     def get_package_history(self, project, package, deleted = False):
         try:
@@ -318,9 +331,15 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     uc = Manager42(caching = args.cache_requests, configfh = args.config )
-    given_packages = args.packages
-    if not args.all and not given_packages:
-        given_packages = uc.latest_packages()
+    given_packages = set(args.packages)
+    if args.all:
+        given_packages = set(uc.all_packages())
+    elif not given_packages:
+        given_packages = set(uc.latest_packages())
+
+    if args.check_inconsistent:
+        given_packages |= uc.get_inconsistent()
+
     if args.force:
         uc.force = True
     uc.crawl(given_packages)
@@ -342,6 +361,8 @@ if __name__ == '__main__':
                         help='don\'t take previous lookup information into consideration')
     parser.add_argument('--cache-requests', action='store_true', default=False,
                         help='cache GET requests. Not recommended for daily use.')
+    parser.add_argument('--check-inconsistent', action='store_true', default=False,
+                        help='also check insonsistent lookup entries')
     parser.add_argument("packages", nargs='*', help="packages to check")
 
     args = parser.parse_args()
