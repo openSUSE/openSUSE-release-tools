@@ -47,6 +47,7 @@ class Manager42(object):
 
     config_defaults = {
         'project_preference_order' : [],
+        'drop_if_vanished_from' : [],
         'from_prj' : 'openSUSE:Leap:42.3',
         'factory' : 'openSUSE:Factory',
         }
@@ -302,6 +303,8 @@ class Manager42(object):
         if not foundit:
             if lproject == 'FORK':
                 logger.debug("{}: lookup is correctly marked as fork".format(package))
+            elif lproject in self.config.drop_if_vanished_from:
+                logger.info('{} dropped from {}'.format(package, lproject))
             else:
                 logger.info('{} is a fork (was {})'.format(package, lproject))
                 self.lookup[package] = 'FORK'
