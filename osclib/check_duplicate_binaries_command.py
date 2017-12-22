@@ -60,14 +60,19 @@ class CheckDuplicateBinariesCommand(object):
 
                     binaries[arch][name] = package
 
+        # convert sets to lists for readable yaml
+        for arch in duplicates.keys():
+            for name in duplicates[arch].keys():
+                duplicates[arch][name] = list(duplicates[arch][name])
+
+        current = yaml.dump(duplicates, default_flow_style=False)
         if save:
             args = ['{}:Staging'.format(self.api.project), 'dashboard', 'duplicate_binaries']
             previous = self.api.load_file_content(*args)
-            current = yaml.dump(duplicates, default_flow_style=False)
             if current != previous:
                 args.append(current)
                 self.api.save_file_content(*args)
         else:
-            pprint(duplicates)
+            print(current)
 
 # vim: sw=4 et
