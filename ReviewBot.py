@@ -436,13 +436,15 @@ class ReviewBot(object):
 
     def comment_write(self, state='done', result=None, project=None, package=None,
                       request=None, message=None, identical=False, only_replace=False,
-                      info_extra=None):
+                      info_extra=None, info_extra_identical=True):
         """Write comment if not similar to previous comment and replace old one.
 
         The state, result, and info_extra (dict) are combined to create the info
         that is passed to CommentAPI methods for creating a marker and finding
         previous comments. self.bot_name, which defaults to class, will be used
-        as the primary matching key.
+        as the primary matching key. When info_extra_identical is set to False
+        info_extra will not be included when finding previous comments to
+        compare message against.
 
         A comment from the same bot will be replaced when a new comment is
         written. The only_replace flag will restrict to only writing a comment
@@ -482,15 +484,24 @@ class ReviewBot(object):
             message = '\n\n'.join(self.comment_handler.lines)
 
         info = {'state': state, 'result': result}
-        if info_extra:
+        if info_extra and info_extra_identical:
             info.update(info_extra)
-        message = self.comment_api.add_marker(message, self.bot_name, info)
-        message = self.comment_api.truncate(message.strip())
 
         comments = self.comment_api.get_comments(**kwargs)
         comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
+
+        if info_extra and not info_extra_identical:
+            # Add info_extra once comment has already been matched.
+            info.update(info_extra)
+
+        message = self.comment_api.add_marker(message, self.bot_name, info)
+        message = self.comment_api.truncate(message.strip())
+
         if (comment is not None and
-            ((identical and comment['comment'] == message) or
+            ((identical and
+              # Remove marker from comments since handled during comment_find().
+              self.comment_api.remove_marker(comment['comment']) ==
+              self.comment_api.remove_marker(message)) or
              (not identical and comment['comment'].count('\n') == message.count('\n')))
         ):
             # Assume same state/result and number of lines in message is duplicate.

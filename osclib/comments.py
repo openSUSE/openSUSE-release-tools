@@ -123,6 +123,12 @@ class CommentAPI(object):
         marker = '<!-- {}{} -->'.format(bot, ' ' + ' '.join(infos) if info else '')
         return marker + '\n\n' + comment
 
+    def remove_marker(self, comment):
+        if comment.startswith('<!--'):
+            comment = ''.join(comment.splitlines(True)[1:]).strip()
+
+        return comment
+
     def add_comment(self, request_id=None, project_name=None,
                     package_name=None, comment=None, parent_id=None):
         """Add a comment in an object in OBS.
