@@ -42,13 +42,16 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.force = False
         self.limit_group = None
 
+    def repository_published(self, project):
+        root = ET.fromstringlist(show_results_meta(
+            self.apiurl, project, multibuild=True, repository=['standard']))
+        return not len(root.xpath('result[@state!="published"]'))
+
     def project_only(self, project, post_comments=False):
         # self.staging_config needed by target_archs().
         api = self.staging_api(project)
 
-        root = ET.fromstringlist(show_results_meta(
-            self.apiurl, project, multibuild=True, repository=['standard']))
-        if not self.force and len(root.xpath('result[@state!="published"]')):
+        if not self.force and self.repository_published(project):
             self.logger.info('{}/standard not published'.format(project))
             return
 
@@ -241,9 +244,12 @@ class RepoChecker(ReviewBot.ReviewBot):
         info_extra = {'build': self.groups_build[group]}
         if not self.group_pass:
             # Some checks in group did not pass, post comment.
+            # Avoid identical comments with different build hash during target
+            # project build phase. Once published update regardless.
+            published = self.repository_published(project)
             self.comment_write(state='seen', result='failed', project=group,
                                message='\n'.join(comment).strip(), identical=True,
-                               info_extra=info_extra)
+                               info_extra=info_extra, info_extra_identical=published)
         else:
             # Post passed comment only if previous failed comment.
             text = 'Previously reported problems have been resolved.'
