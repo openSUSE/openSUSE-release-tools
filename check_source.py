@@ -59,7 +59,10 @@ class CheckSource(ReviewBot.ReviewBot):
                 # Check to see if other packages exist with the same source project
                 # which indicates that the project has already been used as devel.
                 if not self.is_devel_project(source_project, target_project):
-                    self.review_messages['declined'] = '%s is not a devel project of %s, submit the package to a devel project first' % (source_project, target_project)
+                    self.review_messages['declined'] = (
+                        '%s is not a devel project of %s, submit the package to a devel project first. '
+                        'See https://en.opensuse.org/openSUSE:How_to_contribute_to_Factory#How_to_request_a_new_devel_project for details.'
+                    ) % (source_project, target_project)
                     return False
 
         # Checkout and see if renaming package screws up version parsing.
