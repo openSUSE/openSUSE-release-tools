@@ -176,15 +176,6 @@ class RequestSplitter(object):
             return '00'
         return '__'.join(key)
 
-    def is_staging_bootstrapped(self, project):
-        if self.api.rings:
-            # Determine if staging is bootstrapped.
-            meta = self.api.get_prj_meta(project)
-            xpath = 'link[@project="{}"]'.format(self.api.rings[0])
-            return meta.find(xpath) is not None
-
-        return False
-
     def is_staging_mergeable(self, status, pseudometa):
         return len(pseudometa['requests']) > 0 and 'splitter_info' in pseudometa
 
@@ -238,7 +229,7 @@ class RequestSplitter(object):
         for staging in stagings:
             project = self.api.prj_from_short(staging)
             status, pseudometa = self.staging_status_load(project)
-            bootstrapped = self.is_staging_bootstrapped(project)
+            bootstrapped = self.api.is_staging_bootstrapped(project)
 
             # Store information about staging.
             self.stagings[staging] = {

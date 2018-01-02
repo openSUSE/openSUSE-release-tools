@@ -69,6 +69,11 @@ DEFAULT = {
         # check_source.py
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
+        'pkglistgen-archs': 'x86_64',
+        'pkglistgen-archs-ports': 'aarch64',
+        'pkglistgen-locals-from': 'openSUSE-product',
+        'pkglistgen-include-suggested': '1',
+        'pkglistgen-delete-kiwis': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
     },
     r'SUSE:(?P<project>SLE-15.*$)': {
         'staging': 'SUSE:%(project)s:Staging',

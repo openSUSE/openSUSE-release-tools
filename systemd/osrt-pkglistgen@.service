@@ -3,7 +3,7 @@ Description=openSUSE Release Tools: generate package lists for %i
 
 [Service]
 User=osrt-repo-checker
-ExecStart=/usr/bin/osrt-pkglistgen-%i-all
+ExecStart=/usr/bin/osrt-pkglistgen -p "%i"
 
 [Install]
 WantedBy=multi-user.target

@@ -1811,3 +1811,12 @@ class StagingAPI(object):
                                  break_long_words=False)
 
         return None
+
+    def is_staging_bootstrapped(self, project):
+        if self.rings:
+            # Determine if staging is bootstrapped.
+            meta = self.get_prj_meta(project)
+            xpath = 'link[@project="{}"]'.format(self.rings[0])
+            return meta.find(xpath) is not None
+
+        return False

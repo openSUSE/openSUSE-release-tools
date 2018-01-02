@@ -483,11 +483,6 @@ fi
 %files pkglistgen
 %defattr(-,root,root,-)
 %{_bindir}/osrt-pkglistgen
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0-all
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Rings
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Staging
-%{_bindir}/osrt-pkglistgen-openSUSE:Leap:15.0:Ports-aarch64.sh
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 

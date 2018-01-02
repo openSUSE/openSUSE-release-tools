@@ -9,7 +9,7 @@ pkgdata_BINS = \
 	leaper.py \
 	manager_42.py \
 	metrics.py \
-	pkglistgen.sh \
+	pkglistgen.py \
 	repo_checker.py \
 	suppkg_rebuild.py \
 	totest-manager.py \
