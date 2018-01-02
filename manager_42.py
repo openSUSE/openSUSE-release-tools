@@ -46,6 +46,13 @@ http_POST = osc.core.http_POST
 class Manager42(object):
 
     config_defaults = {
+        'ignored_packages' : [
+            '00Meta',
+            '00aggregates',
+            '000product',
+            '000package-groups',
+            '000release-packages',
+            ],
         'project_preference_order' : [],
         'drop_if_vanished_from' : [],
         'from_prj' : 'openSUSE:Leap:42.3',
@@ -197,9 +204,16 @@ class Manager42(object):
                 return None
             raise
 
+
+    def _is_ignored(self, project, package):
+        if package in self.config.ignored_packages:
+            logger.debug("%s in ignore list", package)
+            return True
+        return False
+
     def _fill_package_list(self, project):
         if project not in self.packages:
-            self.packages[project] = self.get_source_packages(project)
+            self.packages[project] = [ p for p in self.get_source_packages(project) if not self._is_ignored(project, p) ]
 
     def check_source_in_project(self, project, package, verifymd5, deleted=False):
 
