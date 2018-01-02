@@ -184,10 +184,25 @@ class FccSubmitter(object):
         root = ET.fromstring(''.join(f))
         #print ET.dump(root)
 
+        failed_multibuild_pacs = []
         pacs = []
         for node in root.findall('result'):
             if node.get('repository') == 'pure_42' and node.get('arch') == 'x86_64':
                 for pacnode in node.findall('status'):
+                    if ':' in pacnode.get('package'):
+                        mainpac = pacnode.get('package').split(':')[0]
+                        if pacnode.get('code') not in ['succeeded', 'excluded']:
+                            failed_multibuild_pacs.append(pacnode.get('package'))
+                            if mainpac not in failed_multibuild_pacs:
+                                failed_multibuild_pacs.append(mainpac)
+                            if mainpac in pacs:
+                                pacs.remove(mainpac)
+                        else:
+                            if mainpac in failed_multibuild_pacs:
+                                failed_multibuild_pacs.append(pacnode.get('package'))
+                            elif mainpac not in pacs:
+                                pacs.append(mainpac)
+                        continue
                     if pacnode.get('code') == 'succeeded':
                         pacs.append(pacnode.get('package'))
             else:
