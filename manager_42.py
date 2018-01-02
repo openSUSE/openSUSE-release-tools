@@ -46,7 +46,15 @@ http_POST = osc.core.http_POST
 class Manager42(object):
 
     config_defaults = {
+        'ignored_packages' : [
+            '00Meta',
+            '00aggregates',
+            '000product',
+            '000package-groups',
+            '000release-packages',
+            ],
         'project_preference_order' : [],
+        'drop_if_vanished_from' : [],
         'from_prj' : 'openSUSE:Leap:42.3',
         'factory' : 'openSUSE:Factory',
         }
@@ -61,7 +69,7 @@ class Manager42(object):
         self.fill_package_meta()
         self.packages = dict()
         for project in [self.config.from_prj] + self.config.project_preference_order:
-            self.packages[project] = self.get_source_packages(project)
+            self._fill_package_list(project)
 
     # FIXME: add to ToolBase and rebase Manager42 on that
     def _load_config(self, handle = None):
@@ -80,6 +88,9 @@ class Manager42(object):
             if title.startswith('In '):
                 packages.add(title[3:].split(' ')[0])
         return sorted(packages)
+
+    def all_packages(self):
+        return self.packages[self.config.from_prj]
 
     def parse_lookup(self, project):
         self.lookup_changes = 0
@@ -152,10 +163,8 @@ class Manager42(object):
                                 ['source', project, package], opts))
 
 
-    def crawl(self, given_packages = None):
+    def crawl(self, packages):
         """Main method of the class that runs the crawler."""
-
-        packages = given_packages or self.packages[self.config.from_prj]
 
         for package in sorted(packages):
             try:
@@ -171,6 +180,18 @@ class Manager42(object):
         if self.lookup_changes:
             self.store_lookup()
 
+    def get_inconsistent(self):
+        known = set(self.lookup.keys())
+        stale = known - set(self.packages[self.config.from_prj])
+        unknown = set(self.packages[self.config.from_prj]) - known
+
+        if (stale):
+            logger.info("stale packages: %s", ', '.join(stale))
+        if (unknown):
+            logger.info("unknown packages: %s", ', '.join(unknown))
+
+        return (stale|unknown)
+
     def get_package_history(self, project, package, deleted = False):
         try:
             query = {}
@@ -183,9 +204,20 @@ class Manager42(object):
                 return None
             raise
 
-    def check_source_in_project(self, project, package, verifymd5, deleted=False):
+
+    def _is_ignored(self, project, package):
+        if package in self.config.ignored_packages:
+            logger.debug("%s in ignore list", package)
+            return True
+        return False
+
+    def _fill_package_list(self, project):
         if project not in self.packages:
-            self.packages[project] = self.get_source_packages(project)
+            self.packages[project] = [ p for p in self.get_source_packages(project) if not self._is_ignored(project, p) ]
+
+    def check_source_in_project(self, project, package, verifymd5, deleted=False):
+
+        self._fill_package_list(project)
 
         if not deleted and not package in self.packages[project]:
             return None, None
@@ -289,6 +321,8 @@ class Manager42(object):
         if not foundit:
             if lproject == 'FORK':
                 logger.debug("{}: lookup is correctly marked as fork".format(package))
+            elif lproject in self.config.drop_if_vanished_from:
+                logger.info('{} dropped from {}'.format(package, lproject))
             else:
                 logger.info('{} is a fork (was {})'.format(package, lproject))
                 self.lookup[package] = 'FORK'
@@ -318,9 +352,15 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     uc = Manager42(caching = args.cache_requests, configfh = args.config )
-    given_packages = args.packages
-    if not args.all and not given_packages:
-        given_packages = uc.latest_packages()
+    given_packages = set(args.packages)
+    if args.all:
+        given_packages = set(uc.all_packages())
+    elif not given_packages:
+        given_packages = set(uc.latest_packages())
+
+    if args.check_inconsistent:
+        given_packages |= uc.get_inconsistent()
+
     if args.force:
         uc.force = True
     uc.crawl(given_packages)
@@ -342,6 +382,8 @@ if __name__ == '__main__':
                         help='don\'t take previous lookup information into consideration')
     parser.add_argument('--cache-requests', action='store_true', default=False,
                         help='cache GET requests. Not recommended for daily use.')
+    parser.add_argument('--check-inconsistent', action='store_true', default=False,
+                        help='also check insonsistent lookup entries')
     parser.add_argument("packages", nargs='*', help="packages to check")
 
     args = parser.parse_args()
