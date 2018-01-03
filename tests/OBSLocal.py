@@ -28,10 +28,7 @@ class OBSLocalTestCase(unittest.TestCase):
             # Avoid stale cookiejar since local OBS may be completely reset.
             os.remove(OSCCOOKIEJAR)
 
-        self.oscrc('Admin')
-        conf.get_config(override_conffile=OSCRC,
-                        override_no_keyring=True,
-                        override_no_gnome_keyring=True)
+        self.osc_user('Admin')
         self.apiurl = conf.config['apiurl']
         self.assertOBS()
 
@@ -56,8 +53,23 @@ class OBSLocalTestCase(unittest.TestCase):
             ]))
 
     def osc_user(self, userid):
-        conf.config['api_host_options'][self.apiurl]['user'] = userid
         self.oscrc(userid)
+
+        # Rather than modify userid and email, just re-parse entire config and
+        # reset authentication by clearing opener to avoid edge-cases.
+        self.oscParse()
+
+    def oscParse(self):
+        # Otherwise, will stick to first user for a given apiurl.
+        conf._build_opener.last_opener = (None, None)
+
+        # Otherwise, will not re-parse same config file.
+        if 'cp' in conf.get_configParser.__dict__:
+            del conf.get_configParser.cp
+
+        conf.get_config(override_conffile=OSCRC,
+                        override_no_keyring=True,
+                        override_no_gnome_keyring=True)
 
     def execute_script(self, args):
         if self.script:
