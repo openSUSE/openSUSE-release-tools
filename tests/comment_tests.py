@@ -61,3 +61,13 @@ handle
 
         comment_marked = self.api.add_marker(self.COMMENT, self.bot, self.COMMENT_INFO)
         self.assertEqual(comment_marked, self.comments[2]['comment'])
+
+    def test_remove_marker(self):
+        comment = self.api.remove_marker(self.COMMENT)
+        self.assertEqual(comment, self.COMMENT)
+
+        comment = self.api.remove_marker(self.comments[1]['comment'])
+        self.assertEqual(comment, self.COMMENT)
+
+        comment = self.api.remove_marker(self.comments[2]['comment'])
+        self.assertEqual(comment, self.COMMENT)
