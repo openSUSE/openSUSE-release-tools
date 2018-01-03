@@ -109,6 +109,29 @@ class TestReviewBotComment(OBSLocalTestCase):
                                       project=PROJECT, message=COMMENT)
         self.assertFalse(self.comments_filtered(self.bot)[0])
 
+    def test_dryrun(self):
+        # dryrun = True, no comment.
+        self.review_bot.dryrun = True
+        self.review_bot.comment_write(project=PROJECT, message=COMMENT)
+        self.assertFalse(self.comments_filtered(self.bot)[0])
+
+        # dryrun = False, a comment.
+        self.review_bot.dryrun = False
+        self.review_bot.comment_write(project=PROJECT, message=COMMENT)
+        self.assertTrue(self.comments_filtered(self.bot)[0])
+
+        # dryrun = True, no replacement.
+        self.review_bot.dryrun = True
+        self.review_bot.comment_write(state='changed', project=PROJECT, message=COMMENT)
+        _, info = self.comments_filtered(self.bot)
+        self.assertEqual(info['state'], 'done')
+
+        # dryrun = False, replacement.
+        self.review_bot.dryrun = False
+        self.review_bot.comment_write(state='changed', project=PROJECT, message=COMMENT)
+        _, info = self.comments_filtered(self.bot)
+        self.assertEqual(info['state'], 'changed')
+
     def comments_filtered(self, bot):
         comments = self.api.get_comments(project_name=PROJECT)
         return self.api.comment_find(comments, bot)
