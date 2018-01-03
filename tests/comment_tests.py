@@ -4,8 +4,16 @@ import unittest
 
 
 class TestComment(unittest.TestCase):
+    COMMENT = 'short comment'
+    COMMENT_INFO = {'foo': 'bar', 'distro': 'openSUSE'}
+
     def setUp(self):
         self.api = CommentAPI('bogus')
+        self.bot = type(self).__name__
+        self.comments = {
+            1: {'comment': '<!-- {} -->\n\nshort comment'.format(self.bot)},
+            2: {'comment': '<!-- {} foo=bar distro=openSUSE -->\n\nshort comment'.format(self.bot)}
+        }
 
     def test_truncate(self):
         comment = "string of text"
@@ -46,3 +54,10 @@ handle
             tag_count = truncated.count('<pre>') + truncated.count('</pre>')
             self.assertEqual(tag_count, truncated.count('<'))
             self.assertEqual(tag_count, truncated.count('>'))
+
+    def test_add_marker(self):
+        comment_marked = self.api.add_marker(self.COMMENT, self.bot)
+        self.assertEqual(comment_marked, self.comments[1]['comment'])
+
+        comment_marked = self.api.add_marker(self.COMMENT, self.bot, self.COMMENT_INFO)
+        self.assertEqual(comment_marked, self.comments[2]['comment'])
