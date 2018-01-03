@@ -1,10 +1,13 @@
+from OBSLocal import OBSLocalTestCase
 from osclib.comments import CommentAPI
+import random
 import re
 import unittest
 
 
 COMMENT = 'short comment'
 COMMENT_INFO = {'foo': 'bar', 'distro': 'openSUSE'}
+PROJECT = 'openSUSE:Factory:Staging'
 
 class TestComment(unittest.TestCase):
     def setUp(self):
@@ -85,3 +88,28 @@ handle
         comment, info = self.api.comment_find(self.comments, self.bot, info_partial)
         self.assertEqual(comment, self.comments[2])
         self.assertEqual(info, COMMENT_INFO)
+
+
+class TestCommentOBS(OBSLocalTestCase):
+    def setUp(self):
+        super(TestCommentOBS, self).setUp()
+        self.api = CommentAPI(self.apiurl)
+        # Ensure different test runs operate in unique namespace.
+        self.bot = '::'.join([type(self).__name__, str(random.getrandbits(8))])
+
+    def test_basic(self):
+        self.osc_user('staging-bot')
+
+        self.assertFalse(self.comments_filtered(self.bot)[0])
+
+        self.assertTrue(self.api.add_comment(
+            project_name=PROJECT, comment=self.api.add_marker(COMMENT, self.bot)))
+        comment, _ = self.comments_filtered(self.bot)
+        self.assertTrue(comment)
+
+        self.assertTrue(self.api.delete(comment['id']))
+        self.assertFalse(self.comments_filtered(self.bot)[0])
+
+    def comments_filtered(self, bot):
+        comments = self.api.get_comments(project_name=PROJECT)
+        return self.api.comment_find(comments, bot)
