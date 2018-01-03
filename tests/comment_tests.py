@@ -3,10 +3,10 @@ import re
 import unittest
 
 
-class TestComment(unittest.TestCase):
-    COMMENT = 'short comment'
-    COMMENT_INFO = {'foo': 'bar', 'distro': 'openSUSE'}
+COMMENT = 'short comment'
+COMMENT_INFO = {'foo': 'bar', 'distro': 'openSUSE'}
 
+class TestComment(unittest.TestCase):
     def setUp(self):
         self.api = CommentAPI('bogus')
         self.bot = type(self).__name__
@@ -56,30 +56,32 @@ handle
             self.assertEqual(tag_count, truncated.count('>'))
 
     def test_add_marker(self):
-        comment_marked = self.api.add_marker(self.COMMENT, self.bot)
+        comment_marked = self.api.add_marker(COMMENT, self.bot)
         self.assertEqual(comment_marked, self.comments[1]['comment'])
 
-        comment_marked = self.api.add_marker(self.COMMENT, self.bot, self.COMMENT_INFO)
+        comment_marked = self.api.add_marker(COMMENT, self.bot, COMMENT_INFO)
         self.assertEqual(comment_marked, self.comments[2]['comment'])
 
     def test_remove_marker(self):
-        comment = self.api.remove_marker(self.COMMENT)
-        self.assertEqual(comment, self.COMMENT)
+        comment = self.api.remove_marker(COMMENT)
+        self.assertEqual(comment, COMMENT)
 
         comment = self.api.remove_marker(self.comments[1]['comment'])
-        self.assertEqual(comment, self.COMMENT)
+        self.assertEqual(comment, COMMENT)
 
         comment = self.api.remove_marker(self.comments[2]['comment'])
-        self.assertEqual(comment, self.COMMENT)
+        self.assertEqual(comment, COMMENT)
 
     def test_comment_find(self):
         comment, info = self.api.comment_find(self.comments, self.bot)
         self.assertEqual(comment, self.comments[1])
 
-        comment, info = self.api.comment_find(self.comments, self.bot, self.COMMENT_INFO)
+        comment, info = self.api.comment_find(self.comments, self.bot, COMMENT_INFO)
         self.assertEqual(comment, self.comments[2])
+        self.assertEqual(info, COMMENT_INFO)
 
-        info_partial = self.COMMENT_INFO
+        info_partial = dict(COMMENT_INFO)
         del info_partial['foo']
         comment, info = self.api.comment_find(self.comments, self.bot, info_partial)
         self.assertEqual(comment, self.comments[2])
+        self.assertEqual(info, COMMENT_INFO)
