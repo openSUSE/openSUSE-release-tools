@@ -110,6 +110,34 @@ class TestCommentOBS(OBSLocalTestCase):
         self.assertTrue(self.api.delete(comment['id']))
         self.assertFalse(self.comments_filtered(self.bot)[0])
 
+    def test_delete_nested(self):
+        self.osc_user('staging-bot')
+        comment_marked = self.api.add_marker(COMMENT, self.bot)
+
+        # Allow for existing comments by basing assertion on delta from initial count.
+        comment_count = len(self.api.get_comments(project_name=PROJECT))
+        self.assertFalse(self.comments_filtered(self.bot)[0])
+
+        self.assertTrue(self.api.add_comment(project_name=PROJECT, comment=comment_marked))
+        comment, _ = self.comments_filtered(self.bot)
+        self.assertTrue(comment)
+
+        for i in range(0, 3):
+            self.assertTrue(self.api.add_comment(
+                project_name=PROJECT, comment=comment_marked, parent_id=comment['id']))
+
+        comments = self.api.get_comments(project_name=PROJECT)
+        parented_count = 0
+        for comment in comments.values():
+            if comment['parent']:
+                parented_count += 1
+
+        self.assertEqual(parented_count, 3)
+        self.assertTrue(len(comments) == comment_count + 4)
+
+        self.api.delete_from(project_name=PROJECT)
+        self.assertFalse(len(self.api.get_comments(project_name=PROJECT)))
+
     def test_delete_batch(self):
         users = ['factory-auto', 'repo-checker', 'staging-bot']
         for user in users:
