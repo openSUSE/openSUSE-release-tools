@@ -8,6 +8,7 @@ import subprocess
 import unittest
 
 OSCRC = os.path.expanduser('~/.oscrc-test')
+OSCCOOKIEJAR = os.path.expanduser('~/.osc_cookiejar-test')
 APIURL = 'local-test'
 
 class OBSLocalTestCase(unittest.TestCase):
@@ -23,6 +24,10 @@ class OBSLocalTestCase(unittest.TestCase):
         httpretty.disable()
 
     def setUp(self):
+        if os.path.exists(OSCCOOKIEJAR):
+            # Avoid stale cookiejar since local OBS may be completely reset.
+            os.remove(OSCCOOKIEJAR)
+
         self.oscrc('Admin')
         conf.get_config(override_conffile=OSCRC,
                         override_no_keyring=True,
@@ -41,6 +46,7 @@ class OBSLocalTestCase(unittest.TestCase):
             f.write('\n'.join([
                 '[general]',
                 'apiurl = http://0.0.0.0:3000',
+                'cookiejar = {}'.format(OSCCOOKIEJAR),
                 '[http://0.0.0.0:3000]',
                 'user = {}'.format(userid),
                 'pass = opensuse',
