@@ -71,3 +71,15 @@ handle
 
         comment = self.api.remove_marker(self.comments[2]['comment'])
         self.assertEqual(comment, self.COMMENT)
+
+    def test_comment_find(self):
+        comment, info = self.api.comment_find(self.comments, self.bot)
+        self.assertEqual(comment, self.comments[1])
+
+        comment, info = self.api.comment_find(self.comments, self.bot, self.COMMENT_INFO)
+        self.assertEqual(comment, self.comments[2])
+
+        info_partial = self.COMMENT_INFO
+        del info_partial['foo']
+        comment, info = self.api.comment_find(self.comments, self.bot, info_partial)
+        self.assertEqual(comment, self.comments[2])
