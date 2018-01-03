@@ -104,6 +104,11 @@ class TestReviewBotComment(OBSLocalTestCase):
         # Should never be more than one new comment.
         self.assertEqual(len(self.api.get_comments(project_name=PROJECT)), comment_count + 1)
 
+    def test_only_replace_none(self):
+        self.review_bot.comment_write(only_replace=True,
+                                      project=PROJECT, message=COMMENT)
+        self.assertFalse(self.comments_filtered(self.bot)[0])
+
     def comments_filtered(self, bot):
         comments = self.api.get_comments(project_name=PROJECT)
         return self.api.comment_find(comments, bot)
