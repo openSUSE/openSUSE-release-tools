@@ -1257,6 +1257,13 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, tar_pkg, '_link'])
         http_PUT(url, data=ET.tostring(root))
 
+        # If adi project, check for baselibs.conf in all specs to catch both
+        # dynamically generated and static baselibs.conf.
+        baselibs = False if self.is_adi_project(project) else None
+        if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
+            src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
+            baselibs = True
+
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             # Skip inner-project links for letter staging
@@ -1269,7 +1276,31 @@ class StagingAPI(object):
             url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
+            if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
+                src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
+                baselibs = True
+
+        if baselibs:
+            # Adi package has baselibs.conf, ensure all staging archs are enabled.
+            self.ensure_staging_archs(project)
+
         return tar_pkg
+
+    def ensure_staging_archs(self, project):
+        url = self.makeurl(['source', project, '_meta'])
+        meta = ET.parse(http_GET(url))
+
+        repository = meta.find('repository[@name="{}"]'.format(self.main_repo))
+        changed = False
+        for arch in self.cstaging_archs:
+            if not repository.xpath('./arch[text()="{}"]'.format(arch)):
+                elm = ET.SubElement(repository, 'arch')
+                elm.text = arch
+                changed = True
+
+        if changed:
+            meta = ET.tostring(meta)
+            http_PUT(url, data=meta)
 
     def prj_from_letter(self, letter):
         if ':' in letter:  # not a letter
