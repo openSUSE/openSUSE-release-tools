@@ -1481,7 +1481,8 @@ class StagingAPI(object):
         :param package:  The package to quert
         :param filename: The filename to query
         """
-        url = self.makeurl(['source', project, package, '{}?expand=1'.format(filename)])
+        query = {'expand': 1}
+        url = self.makeurl(['source', project, package, filename], query)
         try:
             return http_GET(url).read()
         except urllib2.HTTPError:
