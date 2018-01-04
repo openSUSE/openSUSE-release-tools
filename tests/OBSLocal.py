@@ -8,6 +8,7 @@ import subprocess
 import unittest
 
 OSCRC = os.path.expanduser('~/.oscrc-test')
+OSCCOOKIEJAR = os.path.expanduser('~/.osc_cookiejar-test')
 APIURL = 'local-test'
 
 class OBSLocalTestCase(unittest.TestCase):
@@ -23,10 +24,11 @@ class OBSLocalTestCase(unittest.TestCase):
         httpretty.disable()
 
     def setUp(self):
-        self.oscrc('Admin')
-        conf.get_config(override_conffile=OSCRC,
-                        override_no_keyring=True,
-                        override_no_gnome_keyring=True)
+        if os.path.exists(OSCCOOKIEJAR):
+            # Avoid stale cookiejar since local OBS may be completely reset.
+            os.remove(OSCCOOKIEJAR)
+
+        self.osc_user('Admin')
         self.apiurl = conf.config['apiurl']
         self.assertOBS()
 
@@ -41,6 +43,7 @@ class OBSLocalTestCase(unittest.TestCase):
             f.write('\n'.join([
                 '[general]',
                 'apiurl = http://0.0.0.0:3000',
+                'cookiejar = {}'.format(OSCCOOKIEJAR),
                 '[http://0.0.0.0:3000]',
                 'user = {}'.format(userid),
                 'pass = opensuse',
@@ -50,8 +53,23 @@ class OBSLocalTestCase(unittest.TestCase):
             ]))
 
     def osc_user(self, userid):
-        conf.config['api_host_options'][self.apiurl]['user'] = userid
         self.oscrc(userid)
+
+        # Rather than modify userid and email, just re-parse entire config and
+        # reset authentication by clearing opener to avoid edge-cases.
+        self.oscParse()
+
+    def oscParse(self):
+        # Otherwise, will stick to first user for a given apiurl.
+        conf._build_opener.last_opener = (None, None)
+
+        # Otherwise, will not re-parse same config file.
+        if 'cp' in conf.get_configParser.__dict__:
+            del conf.get_configParser.cp
+
+        conf.get_config(override_conffile=OSCRC,
+                        override_no_keyring=True,
+                        override_no_gnome_keyring=True)
 
     def execute_script(self, args):
         if self.script:
