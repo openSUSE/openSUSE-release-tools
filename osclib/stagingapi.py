@@ -1474,14 +1474,17 @@ class StagingAPI(object):
                 return None
             raise
 
-    def load_file_content(self, project, package, filename):
+    def load_file_content(self, project, package, filename, revision=None):
         """
         Load the content of a file and return the content as data. If the package is a link, it will be expanded
         :param project: The project to query
         :param package:  The package to quert
         :param filename: The filename to query
+        :param revision: The revision to query
         """
         query = {'expand': 1}
+        if revision:
+            query['rev'] = revision
         url = self.makeurl(['source', project, package, filename], query)
         try:
             return http_GET(url).read()
