@@ -218,6 +218,8 @@ class CheckSource(ReviewBot.ReviewBot):
         return False
 
     def check_action_delete(self, request, action):
+        self.target_project_config(action.tgt_project)
+
         if action.tgt_repository is not None:
             if action.tgt_project.startswith('openSUSE:'):
                 self.review_messages['declined'] = 'The repositories in the openSUSE:* namespace ' \
