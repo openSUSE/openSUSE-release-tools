@@ -1,5 +1,6 @@
 import unittest
 from osc import conf
+from osclib.conf import DEFAULT
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
@@ -32,3 +33,25 @@ class TestConfig(unittest.TestCase):
         self.config.apply_remote(self.api)
         # Ensure blank file not overridden.
         self.assertEqual(self.obs.dashboard_counts['config'], 1)
+
+    def test_pattern_order(self):
+        # Add pattern to defaults in order to identify which was matched.
+        for pattern in DEFAULT:
+            DEFAULT[pattern]['pattern'] = pattern
+
+        # A list of projects that should match each of the DEFAULT patterns.
+        projects = (
+            'openSUSE:Factory',
+            'openSUSE:Leap:15.0',
+            'SUSE:SLE-15:GA',
+            'SUSE:SLE-12:GA',
+            'GNOME:Factory',
+        )
+
+        # Ensure each pattern is match instead of catch-all pattern.
+        patterns = set()
+        for project in projects:
+            config = Config(project)
+            patterns.add(conf.config[project]['pattern'])
+
+        self.assertEqual(len(patterns), len(DEFAULT))
