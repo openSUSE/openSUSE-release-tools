@@ -60,6 +60,8 @@ Requires:       python-PyYAML
 Requires:       python-cmdln
 Requires:       python-colorama
 Requires:       python-lxml
+# issue-diff.py, legal-auto.py, and openqa-maintenance.py
+Requires:       python-requests
 Requires:       python-pycurl
 Requires:       python-python-dateutil
 Requires:       python-pyxdg
@@ -203,6 +205,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osclib = %{version}
 Requires:       obs-service-product_converter
+Requires:       python-requests
 Requires:       python-solv
 # we use the same user as repo-checker
 PreReq:         openSUSE-release-tools-repo-checker
@@ -368,6 +371,7 @@ fi
 %exclude %{_datadir}/%{source_dir}/manager_42.py
 %exclude %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics.py
+%exclude %{_datadir}/%{source_dir}/pkglistgen.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
 %exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
@@ -483,6 +487,7 @@ fi
 %files pkglistgen
 %defattr(-,root,root,-)
 %{_bindir}/osrt-pkglistgen
+%{_datadir}/%{source_dir}/pkglistgen.py
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 
