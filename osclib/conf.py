@@ -91,6 +91,9 @@ DEFAULT = {
         'main-repo': 'standard',
         # check_source.py
         'repo-checker': 'repo-checker',
+        'pkglistgen-archs': 'x86_64',
+        'pkglistgen-ignore-unresolvable': '1',
+        'pkglistgen-ignore-recommended': '1',
     },
     r'SUSE:(?P<project>.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
