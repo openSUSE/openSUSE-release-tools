@@ -1076,8 +1076,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.do_update('update', opts)
 
-        opts.ignore_recommended = bool(target_config.get('pkglistgen-include-recommended'))
+        opts.ignore_unresolvable = bool(target_config.get('pkglistgen-ignore-unresolvable'))
+        opts.ignore_recommended = bool(target_config.get('pkglistgen-ignore-recommended'))
         opts.include_suggested = bool(target_config.get('pkglistgen-include-suggested'))
+        opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locals-from')
         self.do_solve('solve', opts)
 
