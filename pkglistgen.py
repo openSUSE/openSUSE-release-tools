@@ -1012,7 +1012,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 # DVD project first since it depends on main.
                 if api.rings:
                     opts_dvd = copy.deepcopy(opts)
-                    opts.project += ':DVD'
+                    opts_dvd.project += ':DVD'
                     self.options.repos.insert(0, '/'.join([opts.project, main_repo]))
                     self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
 
