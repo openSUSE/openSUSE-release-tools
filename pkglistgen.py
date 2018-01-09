@@ -1020,6 +1020,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def update_and_solve_target(self, apiurl, target_project, target_config, main_repo, opts,
                                 skip_release=False):
+        print('[{}] {}/{}: update and solve'.format(opts.scope, opts.project, main_repo))
+
         group = target_config.get('pkglistgen-group', '000package-groups')
         product = target_config.get('pkglistgen-product', '000product')
         release = target_config.get('pkglistgen-release', '000release-packages')
@@ -1027,7 +1029,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         url = makeurl(apiurl, ['source', opts.project])
         packages = ET.parse(http_GET(url)).getroot()
         if packages.find('entry[@name="{}"]'.format(product)) is None:
-            undelete_package(apiurl, opts.project, product, 'revive')
+            if not self.options.dry:
+                undelete_package(apiurl, opts.project, product, 'revive')
             # TODO disable build.
             print('{} undeleted, skip dvd until next cycle'.format(product))
             return
@@ -1043,7 +1046,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             checkout_list.append(release)
 
             if packages.find('entry[@name="{}"]'.format(release)) is None:
-                undelete_package(apiurl, opts.project, product, 'revive')
+                if not self.options.dry:
+                    undelete_package(apiurl, opts.project, product, 'revive')
                 print('{} undeleted, skip dvd until next cycle'.format(release))
                 return
 
@@ -1070,19 +1074,25 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
         self.change_extension(product_dir, '.spec.in', '.spec')
 
+        self.options.input_dir = group_dir
         self.options.output_dir = product_dir
         self.postoptparse()
 
+        print('-> do_update')
         self.do_update('update', opts)
 
-        opts.ignore_recommended = bool(target_config.get('pkglistgen-include-recommended'))
+        print('-> do_solve')
+        opts.ignore_unresolvable = bool(target_config.get('pkglistgen-ignore-unresolvable'))
+        opts.ignore_recommended = bool(target_config.get('pkglistgen-ignore-recommended'))
         opts.include_suggested = bool(target_config.get('pkglistgen-include-suggested'))
+        opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locals-from')
         self.do_solve('solve', opts)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         self.unlink_list(product_dir, delete_products)
 
+        print('-> product service')
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
             print(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
