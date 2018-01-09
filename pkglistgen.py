@@ -1027,7 +1027,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         url = makeurl(apiurl, ['source', opts.project])
         packages = ET.parse(http_GET(url)).getroot()
         if packages.find('entry[@name="{}"]'.format(product)) is None:
-            undelete_package(apiurl, opts.project, product, 'revive')
+            if not self.options.dry:
+                undelete_package(apiurl, opts.project, product, 'revive')
             # TODO disable build.
             print('{} undeleted, skip dvd until next cycle'.format(product))
             return
@@ -1043,7 +1044,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             checkout_list.append(release)
 
             if packages.find('entry[@name="{}"]'.format(release)) is None:
-                undelete_package(apiurl, opts.project, product, 'revive')
+                if not self.options.dry:
+                    undelete_package(apiurl, opts.project, product, 'revive')
                 print('{} undeleted, skip dvd until next cycle'.format(release))
                 return
 
