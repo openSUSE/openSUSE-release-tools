@@ -1070,6 +1070,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
         self.change_extension(product_dir, '.spec.in', '.spec')
 
+        self.options.input_dir = group_dir
         self.options.output_dir = product_dir
         self.postoptparse()
 
