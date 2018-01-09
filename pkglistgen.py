@@ -1020,6 +1020,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def update_and_solve_target(self, apiurl, target_project, target_config, main_repo, opts,
                                 skip_release=False):
+        print('[{}] {}/{}: update and solve'.format(opts.scope, opts.project, main_repo))
+
         group = target_config.get('pkglistgen-group', '000package-groups')
         product = target_config.get('pkglistgen-product', '000product')
         release = target_config.get('pkglistgen-release', '000release-packages')
@@ -1076,8 +1078,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.options.output_dir = product_dir
         self.postoptparse()
 
+        print('-> do_update')
         self.do_update('update', opts)
 
+        print('-> do_solve')
         opts.ignore_unresolvable = bool(target_config.get('pkglistgen-ignore-unresolvable'))
         opts.ignore_recommended = bool(target_config.get('pkglistgen-ignore-recommended'))
         opts.include_suggested = bool(target_config.get('pkglistgen-include-suggested'))
@@ -1088,6 +1092,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         self.unlink_list(product_dir, delete_products)
 
+        print('-> product service')
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
             print(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
