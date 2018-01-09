@@ -63,6 +63,7 @@ from osclib.memoize import CACHEDIR
 
 logger = logging.getLogger()
 
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
 DEFAULT_REPOS = ("openSUSE:Factory/standard")
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
@@ -717,7 +718,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
 
         # only there to parse the repos
-        bs_mirrorfull = os.path.join(os.path.dirname(__file__), 'bs_mirrorfull')
+        bs_mirrorfull = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
         global_update = False
         for prp in self.tool.repos:
             project, repo = prp.split('/')
