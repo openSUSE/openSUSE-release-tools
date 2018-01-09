@@ -45,6 +45,7 @@ class TestConfig(unittest.TestCase):
             'openSUSE:Leap:15.0',
             'SUSE:SLE-15:GA',
             'SUSE:SLE-12:GA',
+            'GNOME:Factory',
         )
 
         # Ensure each pattern is match instead of catch-all pattern.

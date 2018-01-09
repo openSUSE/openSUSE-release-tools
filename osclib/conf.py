@@ -111,6 +111,25 @@ DEFAULT = {
         'main-repo': 'standard',
         'priority': 100, # Lower than SLE-15 since less specific.
     },
+    # Allows devel projects to utilize tools that require config, but not
+    # complete StagingAPI support.
+    r'(?P<project>.*$)': {
+        'staging': '%(project)s', # Allows for dashboard/config if desired.
+        'staging-group': None,
+        'staging-archs': '',
+        'staging-dvd-archs': '',
+        'rings': None,
+        'nonfree': None,
+        'rebuild': None,
+        'product': None,
+        'openqa': None,
+        'lock': None,
+        'lock-ns': None,
+        'delreq-review': None,
+        'main-repo': 'openSUSE_Factory',
+        'remote-config': False,
+        'priority': 1000, # Lowest priority as only a fallback.
+    },
 }
 
 #
