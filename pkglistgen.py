@@ -40,6 +40,7 @@ from osc.core import undelete_package
 from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
+from xdg.BaseDirectory import save_cache_path
 import glob
 import solv
 from pprint import pprint, pformat
@@ -1013,8 +1014,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 if api.rings:
                     opts_dvd = copy.deepcopy(opts)
                     opts_dvd.project += ':DVD'
-                    self.options.repos.insert(0, '/'.join([opts.project, main_repo]))
+                    self.options.repos.insert(0, '/'.join([opts_dvd.project, main_repo]))
                     self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
+                    self.options.repos.pop(0)
 
                 self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
             return
@@ -1054,8 +1056,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         # Cache dir specific to hostname and project.
         host = urlparse.urlparse(apiurl).hostname
-        cache_dir = os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
-        cache_dir = os.path.join(cache_dir, 'opensuse-packagelists', host, opts.project)
+        cache_dir = save_cache_path('opensuse-packagelists', host, opts.project)
 
         if os.path.exists(cache_dir):
             shutil.rmtree(cache_dir)
@@ -1087,7 +1088,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.ignore_recommended = bool(target_config.get('pkglistgen-ignore-recommended'))
         opts.include_suggested = bool(target_config.get('pkglistgen-include-suggested'))
         opts.locale = target_config.get('pkglistgen-local')
-        opts.locales_from = target_config.get('pkglistgen-locals-from')
+        opts.locales_from = target_config.get('pkglistgen-locales-from')
         self.do_solve('solve', opts)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
