@@ -72,7 +72,7 @@ DEFAULT = {
         'repo-checker': 'repo-checker',
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-archs-ports': 'aarch64',
-        'pkglistgen-locals-from': 'openSUSE.product',
+        'pkglistgen-locales-from': 'openSUSE.product',
         'pkglistgen-include-suggested': '1',
         'pkglistgen-delete-kiwis': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
     },

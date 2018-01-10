@@ -1088,7 +1088,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.ignore_recommended = bool(target_config.get('pkglistgen-ignore-recommended'))
         opts.include_suggested = bool(target_config.get('pkglistgen-include-suggested'))
         opts.locale = target_config.get('pkglistgen-local')
-        opts.locales_from = target_config.get('pkglistgen-locals-from')
+        opts.locales_from = target_config.get('pkglistgen-locales-from')
         self.do_solve('solve', opts)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
