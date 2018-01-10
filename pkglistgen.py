@@ -40,6 +40,7 @@ from osc.core import undelete_package
 from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
+from xdg.BaseDirectory import save_cache_path
 import glob
 import solv
 from pprint import pprint, pformat
@@ -1054,8 +1055,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         # Cache dir specific to hostname and project.
         host = urlparse.urlparse(apiurl).hostname
-        cache_dir = os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
-        cache_dir = os.path.join(cache_dir, 'opensuse-packagelists', host, opts.project)
+        cache_dir = save_cache_path('opensuse-packagelists', host, opts.project)
 
         if os.path.exists(cache_dir):
             shutil.rmtree(cache_dir)
