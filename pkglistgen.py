@@ -1014,8 +1014,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 if api.rings:
                     opts_dvd = copy.deepcopy(opts)
                     opts_dvd.project += ':DVD'
-                    self.options.repos.insert(0, '/'.join([opts.project, main_repo]))
+                    self.options.repos.insert(0, '/'.join([opts_dvd.project, main_repo]))
                     self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
+                    self.options.repos.pop(0)
 
                 self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
             return
