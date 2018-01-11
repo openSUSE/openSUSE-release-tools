@@ -154,6 +154,7 @@ def clone_do(apiurl_source, apiurl_target, project):
     except HTTPError as e:
         # Print full output for any errors since message can be cryptic.
         print(e.read())
+        return 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Clone projects and dependencies between OBS instances.')
