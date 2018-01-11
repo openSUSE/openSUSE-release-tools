@@ -84,6 +84,7 @@ def project_repositories_remove(project):
 #   - write real
 def project_clone(apiurl_source, apiurl_target, project):
     users_clone(apiurl_source, apiurl_target, project)
+    project_workaround(project)
 
     # Write stripped version that does not include repos with path references.
     url = makeurl(apiurl_target, ['source', project.get('name'), '_meta'])
@@ -101,6 +102,13 @@ def project_clone(apiurl_source, apiurl_target, project):
             # Valid reference to project and thus should be cloned.
             path = ['source', target.get('project'), '_meta']
             entity_clone(apiurl_source, apiurl_target, path, clone=project_clone)
+
+def project_workaround(project):
+    if project.get('name') == 'openSUSE:Factory':
+        # TODO #1335: temporary scariness from from revision 429.
+        scariness = project.xpath('repository[@name="standard"]/path[contains(@project, ":0-Bootstrap")]')
+        if len(scariness):
+            scariness[0].getparent().remove(scariness[0])
 
 def package_clone(apiurl_source, apiurl_target, package):
     # Clone project that contains the package.
@@ -154,6 +162,7 @@ def clone_do(apiurl_source, apiurl_target, project):
     except HTTPError as e:
         # Print full output for any errors since message can be cryptic.
         print(e.read())
+        return 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Clone projects and dependencies between OBS instances.')
