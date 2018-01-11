@@ -4,7 +4,9 @@ Description=openSUSE Release Tools: metrics for %i
 [Service]
 User=osrt-metrics
 SyslogIdentifier=osrt-metrics
-ExecStart=/usr/bin/osrt-metrics --debug -p "%i"
+# TODO #1244: improve incremental data ingest
+# ExecStart=/usr/bin/osrt-metrics --debug -p "%i"
+ExecStart=/usr/bin/osrt-metrics --debug -p "%i" --wipe-cache
 
 [Install]
 WantedBy=multi-user.target

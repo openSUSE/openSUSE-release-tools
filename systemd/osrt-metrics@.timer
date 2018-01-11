@@ -3,7 +3,9 @@ Description=openSUSE Release Tools: metrics for %i
 
 [Timer]
 OnBootSec=120
-OnCalendar=daily
+# TODO #1244: improve incremental data ingest
+# OnCalendar=daily
+OnCalendar=weekly
 Unit=osrt-metrics@%i.service
 
 [Install]
