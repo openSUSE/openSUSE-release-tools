@@ -118,7 +118,9 @@ def project_clone(apiurl_source, apiurl_target, project):
 
 def project_workaround(project):
     if project.get('name') == 'openSUSE:Factory':
-        # TODO #1335: temporary scariness from from revision 429.
+        # See #1335 for details about temporary workaround in revision 429, but
+        # suffice it to say that over-complicates clone with multiple loops and
+        # may be introduced from time to time when Factory repo is hosed.
         scariness = project.xpath('repository[@name="standard"]/path[contains(@project, ":0-Bootstrap")]')
         if len(scariness):
             scariness[0].getparent().remove(scariness[0])
