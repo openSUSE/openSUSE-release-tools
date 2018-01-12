@@ -73,6 +73,11 @@ class FccFreezer(object):
         if package.startswith('_') or package.startswith('Test-DVD') or package.startswith('000'):
             return None
 
+        # filter out multibuild package
+        for originpackage in si.findall('originpackage'):
+            if ':' in package and package.split(':')[0] == originpackage.text:
+                return package
+
         for linked in si.findall('linked'):
             if linked.get('project') == self.factory:
                 if linked.get('package') in pkglist or linked.get('package') in pkglist_prever:
