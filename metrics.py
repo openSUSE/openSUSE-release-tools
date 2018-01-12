@@ -349,6 +349,8 @@ def main(args):
 
     # Use separate cache since it is persistent.
     Cache.CACHE_DIR = os.path.expanduser('~/.cache/osc-plugin-factory-metrics')
+    if args.wipe_cache:
+        Cache.delete_all()
     Cache.PATTERNS['/search/request'] = sys.maxint
     Cache.init()
 
@@ -378,6 +380,7 @@ if __name__ == '__main__':
     parser.add_argument('--port', default=8086, help='InfluxDB post')
     parser.add_argument('--user', default='root', help='InfluxDB user')
     parser.add_argument('--password', default='root', help='InfluxDB password')
+    parser.add_argument('--wipe-cache', action='store_true', help='wipe GET request cache before executing')
     args = parser.parse_args()
 
     sys.exit(main(args))
