@@ -68,7 +68,11 @@ def users_clone(apiurl_source, apiurl_target, entity):
         path = ['group', group.get('groupid')]
         entity_clone(apiurl_source, apiurl_target, path, clone=group_clone)
 
-def project_repositories_remove(project):
+def project_references_remove(project):
+    # Remove links that reference other projects.
+    for link in project.xpath('link[@project]'):
+        link.getparent().remove(link)
+
     # Remove repositories that reference other projects.
     for repository in project.xpath('repository[releasetarget or path]'):
         repository.getparent().remove(repository)
@@ -89,8 +93,17 @@ def project_clone(apiurl_source, apiurl_target, project):
     # Write stripped version that does not include repos with path references.
     url = makeurl(apiurl_target, ['source', project.get('name'), '_meta'])
     stripped = deepcopy(project)
-    project_repositories_remove(stripped)
+    project_references_remove(stripped)
     http_PUT(url, data=ET.tostring(stripped))
+
+    for link in project.xpath('link[@project]'):
+        if not project_fence(link.get('project')):
+            project.remove(link)
+            break
+
+        # Valid reference to project and thus should be cloned.
+        path = ['source', link.get('project'), '_meta']
+        entity_clone(apiurl_source, apiurl_target, path, clone=project_clone)
 
     # Clone projects referenced in repository paths.
     for repository in project.findall('repository'):
