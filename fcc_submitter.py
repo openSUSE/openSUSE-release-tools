@@ -36,7 +36,7 @@ from osclib.memoize import memoize
 
 OPENSUSE = 'openSUSE:Leap:15.0'
 OPENSUSE_PREVERSION = 'openSUSE:Leap:42.3'
-FCC = 'openSUSE:42:Factory-Candidates-Check'
+FCC = '{}:Staging:FactoryCandidates'.format(OPENSUSE)
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -187,7 +187,7 @@ class FccSubmitter(object):
         failed_multibuild_pacs = []
         pacs = []
         for node in root.findall('result'):
-            if node.get('repository') == 'pure_42' and node.get('arch') == 'x86_64':
+            if node.get('repository') == 'standard' and node.get('arch') == 'x86_64':
                 for pacnode in node.findall('status'):
                     if ':' in pacnode.get('package'):
                         mainpac = pacnode.get('package').split(':')[0]
@@ -206,7 +206,7 @@ class FccSubmitter(object):
                     if pacnode.get('code') == 'succeeded':
                         pacs.append(pacnode.get('package'))
             else:
-                logging.error("Can not find pure_42/x86_64 results")
+                logging.error("Can not find standard/x86_64 results")
 
         return pacs
 
@@ -435,7 +435,7 @@ def main(args):
             uc.crawl()
 
 if __name__ == '__main__':
-    description = 'Create SR from openSUSE:42:Factory-Candidates-Check to '\
+    description = 'Create SR from FactoryCandidates to '\
                   'openSUSE Leap project for new build succeded packages.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
