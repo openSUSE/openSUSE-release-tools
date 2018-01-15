@@ -255,7 +255,7 @@ class FccSubmitter(object):
         root = ET.fromstring(http_GET(url).read())
         data = {}
         linkinfo = root.find('linkinfo')
-        if linkinfo:
+        if linkinfo is not None:
             data['linkinfo'] = linkinfo.attrib['package']
         else:
             data['linkinfo'] = None
