@@ -3,6 +3,7 @@ import dateutil.parser
 import hashlib
 from lxml import etree as ET
 from osc import conf
+from osc.core import show_project_meta
 import re
 
 class RequestSplitter(object):
@@ -476,8 +477,37 @@ class StrategySuper(StrategyDevel):
 class StrategyQuick(StrategyNone):
     def apply(self, splitter):
         super(StrategyQuick, self).apply(splitter)
+
+        # Leaper accepted which means any extra reviews have been added.
         splitter.filter_add('./review[@by_user="leaper" and @state="accepted"]')
-        splitter.filter_add('not(./review[not(@by_user="leaper" or @by_group="factory-staging")])')
+
+        # No @by_project reviews that are not accepted. If not first round stage
+        # this should also ignore previous staging project reviews or already
+        # accepted human reviews.
+        splitter.filter_add('not(./review[@by_project and @state!="accepted"])')
+
+        # Only allow reviews by whitelisted groups and users as all others will
+        # be considered non-quick (like @by_group="legal-auto"). The allowed
+        # groups are only those configured as reviewers on the target project.
+        meta = ET.fromstring(''.join(show_project_meta(splitter.api.apiurl, splitter.api.project)))
+        allowed_groups = meta.xpath('group[@role="reviewer"]/@groupid')
+        allowed_users = []
+        if 'repo-checker' in splitter.config:
+            allowed_users.append(splitter.config['repo-checker'])
+
+        self.filter_review_whitelist(splitter, 'by_group', allowed_groups)
+        self.filter_review_whitelist(splitter, 'by_user', allowed_users)
+
+    def filter_review_whitelist(self, splitter, attribute, allowed):
+        # Rather than generate a bunch of @attribute="allowed[0]" pairs
+        # contains is used, but the attribute must be asserted first since
+        # concat() loses that requirement.
+        allowed = ' ' + ' '.join(allowed) + ' '
+        splitter.filter_add(
+            # Assert that no(non-whitelisted and not accepted) review is found.
+            'not(./review[@{attribute} and '
+            'not(contains("{allowed}", concat(" ", @{attribute}, " "))) and '
+            '@state!="accepted"])'.format(attribute=attribute, allowed=allowed))
 
 class StrategySpecial(StrategyNone):
     PACKAGES = [
