@@ -68,7 +68,11 @@ def users_clone(apiurl_source, apiurl_target, entity):
         path = ['group', group.get('groupid')]
         entity_clone(apiurl_source, apiurl_target, path, clone=group_clone)
 
-def project_repositories_remove(project):
+def project_references_remove(project):
+    # Remove links that reference other projects.
+    for link in project.xpath('link[@project]'):
+        link.getparent().remove(link)
+
     # Remove repositories that reference other projects.
     for repository in project.xpath('repository[releasetarget or path]'):
         repository.getparent().remove(repository)
@@ -89,8 +93,17 @@ def project_clone(apiurl_source, apiurl_target, project):
     # Write stripped version that does not include repos with path references.
     url = makeurl(apiurl_target, ['source', project.get('name'), '_meta'])
     stripped = deepcopy(project)
-    project_repositories_remove(stripped)
+    project_references_remove(stripped)
     http_PUT(url, data=ET.tostring(stripped))
+
+    for link in project.xpath('link[@project]'):
+        if not project_fence(link.get('project')):
+            project.remove(link)
+            break
+
+        # Valid reference to project and thus should be cloned.
+        path = ['source', link.get('project'), '_meta']
+        entity_clone(apiurl_source, apiurl_target, path, clone=project_clone)
 
     # Clone projects referenced in repository paths.
     for repository in project.findall('repository'):
@@ -105,7 +118,9 @@ def project_clone(apiurl_source, apiurl_target, project):
 
 def project_workaround(project):
     if project.get('name') == 'openSUSE:Factory':
-        # TODO #1335: temporary scariness from from revision 429.
+        # See #1335 for details about temporary workaround in revision 429, but
+        # suffice it to say that over-complicates clone with multiple loops and
+        # may be introduced from time to time when Factory repo is hosed.
         scariness = project.xpath('repository[@name="standard"]/path[contains(@project, ":0-Bootstrap")]')
         if len(scariness):
             scariness[0].getparent().remove(scariness[0])
@@ -151,6 +166,14 @@ def clone_do(apiurl_source, apiurl_target, project):
 
     try:
         # TODO Decide how to choose what to clone via args.
+
+        # Rather than handle the self-referencing craziness with a proper solver
+        # the leaf can simple be used to start the chain and works as desired.
+        # Disable this when running clone repeatedly during developing as the
+        # projects cannot be cleanly re-created without more work.
+        entity_clone(apiurl_source, apiurl_target, ['source', project + ':Rings:2-TestDVD', '_meta'],
+                     clone=project_clone)
+
         entity_clone(apiurl_source, apiurl_target, ['source', project + ':Staging', 'dashboard', '_meta'],
                      clone=package_clone, after=package_clone_after)
 
