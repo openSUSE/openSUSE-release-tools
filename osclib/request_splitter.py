@@ -17,7 +17,7 @@ class RequestSplitter(object):
         self.request_age_threshold = int(self.config.get('splitter-request-age-threshold', 55 * 60))
         self.staging_age_max = int(self.config.get('splitter-staging-age-max', 8 * 60 * 60))
         special_packages= self.config.get('splitter-special-packages')
-        if special_packages:
+        if special_packages is not None:
             StrategySpecial.PACKAGES = special_packages.split(' ')
 
         self.requests_ignored = self.api.get_ignored_requests()
@@ -510,6 +510,7 @@ class StrategyQuick(StrategyNone):
             '@state!="accepted"])'.format(attribute=attribute, allowed=allowed))
 
 class StrategySpecial(StrategyNone):
+    # Configurable via splitter-special-packages.
     PACKAGES = [
         'gcc',
         'gcc7',
