@@ -74,7 +74,8 @@ DEFAULT = {
         'pkglistgen-archs-ports': 'aarch64',
         'pkglistgen-locales-from': 'openSUSE.product',
         'pkglistgen-include-suggested': '1',
-        'pkglistgen-delete-kiwis': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
+        'pkglistgen-delete-kiwis-rings': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
+        'pkglistgen-delete-kiwis-staging': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
     },
     r'SUSE:(?P<project>SLE-15.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
