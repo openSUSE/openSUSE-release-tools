@@ -144,9 +144,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         rqs = self.tool.find_requests(settings['query'])
         for r in rqs:
             if r.actions[0].type == 'submit':
-                print('#', r.reqid, r.actions[0].type, r.actions[0].src_project, r.actions[0].src_package, r.actions[0].tgt_project)
+                print(' '.join(('#', r.reqid, r.actions[0].type, r.actions[0].src_project, r.actions[0].src_package, r.actions[0].tgt_project)))
             else:
-                print('#', r.reqid, r.actions[0].type, r.actions[0].tgt_project)
+                print(' '. join(('#', r.reqid, r.actions[0].type, r.actions[0].tgt_project)))
             for review in r.reviews:
                 if review.state != 'new':
                     continue
