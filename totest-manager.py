@@ -724,6 +724,8 @@ class ToTest150(ToTestBaseNew):
     def get_current_snapshot(self):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
+    def current_version(self):
+        return self.iso_build_version(self.project, self.main_products[1])
 
 class ToTest150Ports(ToTestBaseNew):
     main_products = [
