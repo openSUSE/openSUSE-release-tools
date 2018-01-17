@@ -1099,7 +1099,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             print(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
 
-        delete_kiwis = target_config.get('pkglistgen-delete-kiwis', '').split(' ')
+        delete_kiwis = target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' ')
         self.unlink_list(product_dir, delete_kiwis)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
