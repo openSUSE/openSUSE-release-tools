@@ -28,7 +28,7 @@ import os
 import sys
 from urlparse import urlparse
 
-digits_re = re.compile('^[0-9]+$')
+digits_re = re.compile('^[0-9.]+$')
 
 BASE_DIR = '/var/lib'
 
