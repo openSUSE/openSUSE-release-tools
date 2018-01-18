@@ -30,6 +30,7 @@ from xml.etree import cElementTree as ET
 
 import osc.conf
 import osc.core
+from osclib.core import devel_project_get
 
 from osc import oscerr
 from osclib.memoize import memoize
@@ -223,14 +224,6 @@ class FccSubmitter(object):
             return True
         return False
 
-    def get_devel_project(self, package):
-        m = osc.core.show_package_meta(self.apiurl, self.factory, package)
-        node = ET.fromstring(''.join(m)).find('devel')
-        if node is None:
-            return None, None
-        else:
-            return node.get('project'), node.get('package', None)
-
     def create_submitrequest(self, package):
         """Create a submit request using the osc.commandline.Osc class."""
         src_project = self.factory # submit from Factory only
@@ -376,7 +369,7 @@ class FccSubmitter(object):
                 else:
                     logging.info("%d - Preparing submit %s to %s"%(i, package, self.to_prj))
                     # get devel project
-                    devel_prj, devel_pkg = self.get_devel_project(package)
+                    devel_prj, devel_pkg = devel_project_get(self.apiurl, self.factory, package)
                     # check devel project does not in the skip list
                     if devel_prj in self.skip_devel_project_list:
                         # check the except packages list
