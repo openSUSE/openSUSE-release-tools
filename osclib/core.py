@@ -153,7 +153,7 @@ def devel_project_get(apiurl, target_project, target_package):
 @memoize(session=True)
 def devel_project_fallback(apiurl, target_project, target_package):
     project, package = devel_project_get(apiurl, target_project, target_package)
-    if project is None:
+    if project is None and target_project != 'openSUSE:Factory':
         if target_project.startswith('openSUSE:'):
             project, package = devel_project_get(apiurl, 'openSUSE:Factory', target_package)
         elif target_project.startswith('SUSE:'):
