@@ -475,7 +475,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             settings = {'VERSION': pmap['version'], 'ARCH': arch}
             settings['DISTRI'] = 'sle' if 'distri' not in pmap else pmap['distri']
             issues = pmap.get('issues', {})
-            issues['OS_TEST_ISSUES'] = product_prefix
+            issues['OS_TEST_ISSUES'] = issues.get('OS_TEST_ISSUES', product_prefix)
             for key, prefix in issues.items():
                 self.logger.debug("{} {}".format(key, prefix))
                 if prefix + arch in job['channels']:
