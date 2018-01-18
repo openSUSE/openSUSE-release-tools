@@ -38,6 +38,7 @@ from urllib import quote_plus
 
 from osclib.memoize import memoize
 from osclib.conf import Config
+from osclib.core import devel_project_get
 from osclib.stagingapi import StagingAPI
 
 OPENSUSE = 'openSUSE:Leap:42.3'
@@ -283,7 +284,7 @@ class UpdateCrawler(object):
                 targetinfo = targets[package]
 
                 # XXX: make more generic :-)
-                devel_prj = self.api.get_devel_project(FACTORY, package)
+                devel_prj = devel_project_get(self.apiurl, FACTORY, package)
                 if devel_prj == 'devel:languages:haskell':
                     logging.info('skipping haskell package %s' % package)
                     continue
