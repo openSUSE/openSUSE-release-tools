@@ -149,3 +149,18 @@ def devel_project_get(apiurl, target_project, target_package):
             raise e
 
     return None, None
+
+@memoize(session=True)
+def devel_project_fallback(apiurl, target_project, target_package):
+    project, package = devel_project_get(apiurl, target_project, target_package)
+    if project is None:
+        if target_project.startswith('openSUSE:'):
+            project, package = devel_project_get(apiurl, 'openSUSE:Factory', target_package)
+        elif target_project.startswith('SUSE:'):
+            # For SLE (assume IBS), fallback to openSUSE:Factory devel projects.
+            project, package = devel_project_get(apiurl, 'openSUSE.org:openSUSE:Factory', target_package)
+            if project:
+                # Strip openSUSE.org: prefix since string since not used for lookup.
+                project = project.split(':', 1)[1]
+
+    return project, package
