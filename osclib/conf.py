@@ -93,6 +93,7 @@ DEFAULT = {
         'main-repo': 'standard',
         # check_source.py
         'repo-checker': 'repo-checker',
+        'repo_checker-package-comment-devel': '',
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-ignore-unresolvable': '1',
         'pkglistgen-ignore-recommended': '1',

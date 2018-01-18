@@ -82,8 +82,17 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('{} package comments'.format(len(self.package_results)))
 
         for package, sections in self.package_results.items():
-            message = 'The version of this package in [`{project}`](/package/show/{project}/{package}) ' \
-                'has installation issues and may not be installable:'.format(project=project, package=package)
+            if bool(self.staging_config[project].get('repo_checker-package-comment-devel', True)):
+                bot_name_suffix = project
+                comment_project, comment_package = devel_project_fallback(self.apiurl, project, package)
+                message = 'The version of this package in [`{project}`](/package/show/{project}/{package}) ' \
+                    'has installation issues and may not be installable:'.format(
+                        project=project, package=package)
+            else:
+                bot_name_suffix = None
+                comment_project = project
+                comment_package = package
+                message = 'This package has installation issues and may not be installable:'
 
             # Sort sections by text to group binaries together.
             sections = sorted(sections, key=lambda s: s.text)
@@ -99,10 +108,9 @@ class RepoChecker(ReviewBot.ReviewBot):
             info = ';'.join(['::'.join(sorted(binaries)), str(len(sections))])
             reference = hashlib.sha1(info).hexdigest()[:7]
 
-            # Post comment on devel package in order to notifiy maintainers.
-            devel_project, devel_package = devel_project_fallback(self.apiurl, project, package)
-            self.comment_write(state='seen', result=reference, bot_name_suffix=project,
-                               project=devel_project, package=devel_package, message=message)
+            # Post comment on package in order to notifiy maintainers.
+            self.comment_write(state='seen', result=reference, bot_name_suffix=bot_name_suffix,
+                               project=comment_project, package=comment_package, message=message)
 
     def prepare_review(self):
         # Reset for request batch.
