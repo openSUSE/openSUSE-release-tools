@@ -101,7 +101,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             # Post comment on devel package in order to notifiy maintainers.
             devel_project, devel_package = devel_project_get(self.apiurl, project, package)
-            self.comment_write(state='seen', result=reference,
+            self.comment_write(state='seen', result=reference, bot_name_suffix=project,
                                project=devel_project, package=devel_package, message=message)
 
     def prepare_review(self):
