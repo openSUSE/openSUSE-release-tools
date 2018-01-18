@@ -132,6 +132,30 @@ class TestReviewBotComment(OBSLocalTestCase):
         _, info = self.comments_filtered(self.bot)
         self.assertEqual(info['state'], 'changed')
 
+    def test_bot_name_suffix(self):
+        suffix1 = 'suffix1'
+        bot_suffixed1 = '::'.join([self.bot, suffix1])
+
+        suffix2 = 'suffix2'
+        bot_suffixed2 = '::'.join([self.bot, suffix2])
+
+        self.review_bot.comment_write(bot_name_suffix=suffix1, project=PROJECT, message=COMMENT)
+        self.assertFalse(self.comments_filtered(self.bot)[0])
+        self.assertTrue(self.comments_filtered(bot_suffixed1)[0])
+        self.assertFalse(self.comments_filtered(bot_suffixed2)[0])
+
+        self.review_bot.comment_write(bot_name_suffix=suffix2, project=PROJECT, message=COMMENT)
+        self.assertFalse(self.comments_filtered(self.bot)[0])
+        self.assertTrue(self.comments_filtered(bot_suffixed1)[0])
+        self.assertTrue(self.comments_filtered(bot_suffixed2)[0])
+
+        self.review_bot.comment_write(bot_name_suffix=suffix1, project=PROJECT, message=COMMENT + '\nnew')
+        comment, _ = self.comments_filtered(bot_suffixed1)
+        self.assertTrue(comment['comment'].endswith(COMMENT + '\nnew'))
+
+        comment, _ = self.comments_filtered(bot_suffixed2)
+        self.assertTrue(comment['comment'].endswith(COMMENT))
+
     def comments_filtered(self, bot):
         comments = self.api.get_comments(project_name=PROJECT)
         return self.api.comment_find(comments, bot)
