@@ -82,7 +82,8 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('{} package comments'.format(len(self.package_results)))
 
         for package, sections in self.package_results.items():
-            message = 'The version of this package in `{}` has installation issues and may not be installable:'.format(project)
+            message = 'The version of this package in [`{project}`](/package/show/{project}/{package}) ' \
+                'has installation issues and may not be installable:'.format(project=project, package=package)
 
             # Sort sections by text to group binaries together.
             sections = sorted(sections, key=lambda s: s.text)
