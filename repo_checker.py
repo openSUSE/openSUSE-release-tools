@@ -15,7 +15,7 @@ import tempfile
 from osclib.comments import CommentAPI
 from osclib.core import binary_list
 from osclib.core import depends_on
-from osclib.core import devel_project_get
+from osclib.core import devel_project_fallback
 from osclib.core import package_binary_list
 from osclib.core import request_staged
 from osclib.core import target_archs
@@ -100,7 +100,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             reference = hashlib.sha1(info).hexdigest()[:7]
 
             # Post comment on devel package in order to notifiy maintainers.
-            devel_project, devel_package = devel_project_get(self.apiurl, project, package)
+            devel_project, devel_package = devel_project_fallback(self.apiurl, project, package)
             self.comment_write(state='seen', result=reference, bot_name_suffix=project,
                                project=devel_project, package=devel_package, message=message)
 
