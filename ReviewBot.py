@@ -425,7 +425,7 @@ class ReviewBot(object):
 
     def comment_write(self, state='done', result=None, project=None, package=None,
                       request=None, message=None, identical=False, only_replace=False,
-                      info_extra=None, info_extra_identical=True):
+                      info_extra=None, info_extra_identical=True, bot_name_suffix=None):
         """Write comment if not similar to previous comment and replace old one.
 
         The state, result, and info_extra (dict) are combined to create the info
@@ -472,18 +472,22 @@ class ReviewBot(object):
                 return
             message = '\n\n'.join(self.comment_handler.lines)
 
+        bot_name = self.bot_name
+        if bot_name_suffix:
+            bot_name = '::'.join([bot_name, bot_name_suffix])
+
         info = {'state': state, 'result': result}
         if info_extra and info_extra_identical:
             info.update(info_extra)
 
         comments = self.comment_api.get_comments(**kwargs)
-        comment, _ = self.comment_api.comment_find(comments, self.bot_name, info)
+        comment, _ = self.comment_api.comment_find(comments, bot_name, info)
 
         if info_extra and not info_extra_identical:
             # Add info_extra once comment has already been matched.
             info.update(info_extra)
 
-        message = self.comment_api.add_marker(message, self.bot_name, info)
+        message = self.comment_api.add_marker(message, bot_name, info)
         message = self.comment_api.truncate(message.strip())
 
         if (comment is not None and
@@ -499,7 +503,7 @@ class ReviewBot(object):
 
         if comment is None:
             self.logger.debug('broadening search to include any state on {}'.format(debug_key))
-            comment, _ = self.comment_api.comment_find(comments, self.bot_name)
+            comment, _ = self.comment_api.comment_find(comments, bot_name)
         if comment is not None:
             self.logger.debug('removing previous comment on {}'.format(debug_key))
             if not self.dryrun:
