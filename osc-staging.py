@@ -302,7 +302,8 @@ def do_staging(self, subcmd, opts, *args):
     "unlock" will remove the staging lock in case it gets stuck or a manual hold
         If a command lock gets stuck while a hold is placed on a project the
         unlock command will need to be run twice since there are two layers of
-        locks.
+        locks. By default the Factory project gets unlocked if no other project
+        is selected with the "-p" parameter.
 
     "rebuild" will rebuild broken packages in the given stagings or all
         The rebuild command will only trigger builds for packages with less than
@@ -336,7 +337,7 @@ def do_staging(self, subcmd, opts, *args):
             [--merge] [--try-strategies] [--strategy]
             [STAGING...] [REQUEST...]
         osc staging unselect [--cleanup] [-m MESSAGE] [REQUEST...]
-        osc staging unlock
+        osc staging [-p PROJECT] unlock
         osc staging rebuild [--force] [STAGING...]
         osc staging repair [--cleanup] [REQUEST...]
         osc staging setprio [STAGING...]
