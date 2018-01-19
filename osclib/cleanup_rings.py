@@ -3,6 +3,7 @@ from xml.etree import cElementTree as ET
 from osc.core import makeurl
 from osc.core import http_GET
 
+import urllib2
 
 class CleanupRings(object):
     def __init__(self, api):
@@ -72,29 +73,34 @@ class CleanupRings(object):
         root = ET.parse(f).getroot()
 
         for package in root.findall('package'):
-            source = package.find('source').text
-            if package.attrib['name'].startswith('preinstall'):
+            # use main package name for multibuild. We can't just ignore
+            # multibuild as eg installation-images has no results for the main
+            # package itself
+            # https://github.com/openSUSE/open-build-service/issues/4198
+            name = package.attrib['name'].split(':')[0]
+            if name.startswith('preinstall'):
                 continue
-            self.sources.add(source)
+
+            self.sources.add(name)
 
             for subpkg in package.findall('subpkg'):
                 subpkg = subpkg.text
                 if subpkg in self.bin2src:
-                    if self.bin2src[subpkg] == source:
+                    if self.bin2src[subpkg] == name:
                         # different archs
                         continue
-                    print('Binary {} is defined twice: {}/{}'.format(subpkg, prj, source))
-                self.bin2src[subpkg] = source
+                    print('# Binary {} is defined twice: {}/{}'.format(subpkg, prj, name))
+                self.bin2src[subpkg] = name
 
         for package in root.findall('package'):
-            source = package.find('source').text
+            name = package.attrib['name'].split(':')[0]
             for pkg in package.findall('pkgdep'):
                 if pkg.text not in self.bin2src:
                     if not pkg.text.startswith('texlive-'): # XXX: texlive bullshit packaging
                         print('Package {} not found in place'.format(pkg.text))
                     continue
                 b = self.bin2src[pkg.text]
-                self.pkgdeps[b] = source
+                self.pkgdeps[b] = name
 
     def repo_state_acceptable(self, project):
         url = makeurl(self.api.apiurl, ['build', project, '_result'])
@@ -112,16 +118,24 @@ class CleanupRings(object):
         return True
 
     def check_image_bdeps(self, project, arch):
-        url = makeurl(self.api.apiurl, ['build', project, 'images', arch, 'Test-DVD-' + arch, '_buildinfo'])
-        root = ET.parse(http_GET(url)).getroot()
-        for bdep in root.findall('bdep'):
-            if 'name' not in bdep.attrib:
-                continue
-            b = bdep.attrib['name']
-            if b not in self.bin2src:
-                continue
-            b = self.bin2src[b]
-            self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+        for dvd in ('000product:openSUSE-dvd5-dvd-{}'.format(arch), 'Test-DVD-{}'.format(arch)):
+            try:
+                url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
+                root = ET.parse(http_GET(url)).getroot()
+            except urllib2.HTTPError as e:
+                if e.code == 404:
+                    continue
+                raise
+            for bdep in root.findall('bdep'):
+                if 'name' not in bdep.attrib:
+                    continue
+                b = bdep.attrib['name']
+                if b not in self.bin2src:
+                    print "{} not found in bin2src".format(b)
+                    continue
+                b = self.bin2src[b]
+                self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+            break
 
     def check_buildconfig(self, project):
         url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
