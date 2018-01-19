@@ -5,9 +5,7 @@
 The package list generator consists of two scripts:
 
 - pkglistgen.py - python script using libsolv to do the hard work
-- pkglistgen.sh - shell script for the dirty work. It calls the product
-  converter locally and then splits the output. See existing scripts in script/
-  for examples how to call it for Rings, Stagings etc.
+
 
 ## Input and Output
 
@@ -19,6 +17,7 @@ There is one input package and two output packages:
   meant to be included by the product files.
 - 000product: This is the output container where resulting kiwi files are put
 - 000release-packages: This is the output container for release package spec files.
+
 
 ## The groups.yml file
 
