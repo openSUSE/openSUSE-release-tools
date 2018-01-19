@@ -12,6 +12,7 @@ except ImportError:
 
 import osc.conf
 import osc.core
+from osclib.core import devel_project_get
 import urllib2
 import ReviewBot
 from check_maintenance_incidents import MaintenanceChecker
@@ -46,7 +47,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         if not self.ignore_devel:
             self.logger.info('checking if target package exists and has devel project')
-            devel_project, devel_package = self.get_devel_project(target_project, target_package)
+            devel_project, devel_package = devel_project_get(self.apiurl, target_project, target_package)
             if devel_project:
                 if (source_project != devel_project or source_package != devel_package) and \
                    not(source_project == target_project and source_package == target_package):
@@ -212,7 +213,8 @@ class CheckSource(ReviewBot.ReviewBot):
         message = 'Roles to packages are granted in the devel project, not in %s.' % action.tgt_project
 
         if action.tgt_package is not None:
-            message += ' Please send this request to %s/%s.' % self.get_devel_project(action.tgt_project, action.tgt_package)
+            project, package = devel_project_get(self.apiurl, action.tgt_project, action.tgt_package)
+            message += ' Send this request to {}/{}.'.format(project, package)
 
         self.review_messages['declined'] = message
         return False

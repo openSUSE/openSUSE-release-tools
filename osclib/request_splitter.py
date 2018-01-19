@@ -4,6 +4,7 @@ import hashlib
 from lxml import etree as ET
 from osc import conf
 from osc.core import show_project_meta
+from osclib.core import devel_project_fallback
 import re
 
 class RequestSplitter(object):
@@ -113,7 +114,7 @@ class RequestSplitter(object):
         target = request.find('./action/target')
         target_project = target.get('project')
         target_package = target.get('package')
-        devel = self.devel_project_get(target_project, target_package)
+        devel, _ = devel_project_fallback(self.api.apiurl, target_project, target_package)
         if not devel and request_type == 'submit':
             devel = request.find('./action/source').get('project')
         if devel:
@@ -145,18 +146,6 @@ class RequestSplitter(object):
             # Projects not using rings handle all requests as ring requests.
             return self.api.project
         return None
-
-    def devel_project_get(self, target_project, target_package):
-        devel = self.api.get_devel_project(target_project, target_package)
-        if devel is None and self.api.project.startswith('openSUSE:'):
-            devel = self.api.get_devel_project('openSUSE:Factory', target_package)
-        if devel is None and self.api.project.startswith('SUSE:'):
-            # For SLE, fallback to openSUSE:Factory devel projects.
-            devel = self.api.get_devel_project('openSUSE.org:openSUSE:Factory', target_package)
-            if devel:
-                # Strip openSUSE.org: prefix since string since not used for lookup.
-                devel = devel.split(':', 1)[1]
-        return devel
 
     def filter_check(self, request):
         for xpath in self.filters:

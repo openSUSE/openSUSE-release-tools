@@ -35,6 +35,7 @@ except ImportError:
 
 import osc.conf
 import osc.core
+from osclib.core import devel_project_get
 import urllib2
 import yaml
 import ReviewBot
@@ -181,7 +182,7 @@ class Leaper(ReviewBot.ReviewBot):
                 else:
                     self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
 
-            devel_project, devel_package = self.get_devel_project('openSUSE.org:openSUSE:Factory', package)
+            devel_project, devel_package = devel_project_get(self.apiurl, 'openSUSE.org:openSUSE:Factory', package)
             if devel_project is not None:
                 # specifying devel package is optional
                 if devel_package is None:

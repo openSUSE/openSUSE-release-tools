@@ -3,12 +3,14 @@ from datetime import datetime
 import dateutil.parser
 import re
 from xml.etree import cElementTree as ET
+from urllib2 import HTTPError
 
 from osc.core import get_binarylist
 from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import makeurl
 from osc.core import owner
+from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.memoize import memoize
 
@@ -134,3 +136,31 @@ def package_binary_list(apiurl, project, repository, arch, package=None):
             binary_map[result.group('filename')] = package
 
     return package_binaries, binary_map
+
+@memoize(session=True)
+def devel_project_get(apiurl, target_project, target_package):
+    try:
+        meta = ET.fromstring(''.join(show_package_meta(apiurl, target_project, target_package)))
+        node = meta.find('devel')
+        if node is not None:
+            return node.get('project'), node.get('package')
+    except HTTPError as e:
+        if e.code != 404:
+            raise e
+
+    return None, None
+
+@memoize(session=True)
+def devel_project_fallback(apiurl, target_project, target_package):
+    project, package = devel_project_get(apiurl, target_project, target_package)
+    if project is None and target_project != 'openSUSE:Factory':
+        if target_project.startswith('openSUSE:'):
+            project, package = devel_project_get(apiurl, 'openSUSE:Factory', target_package)
+        elif target_project.startswith('SUSE:'):
+            # For SLE (assume IBS), fallback to openSUSE:Factory devel projects.
+            project, package = devel_project_get(apiurl, 'openSUSE.org:openSUSE:Factory', target_package)
+            if project:
+                # Strip openSUSE.org: prefix since string since not used for lookup.
+                project = project.split(':', 1)[1]
+
+    return project, package

@@ -48,6 +48,7 @@ from osc.core import show_project_sourceinfo
 from osc.core import streamfile
 
 from osclib.cache import Cache
+from osclib.core import devel_project_get
 from osclib.comments import CommentAPI
 from osclib.ignore_command import IgnoreCommand
 from osclib.memoize import memoize
@@ -400,7 +401,7 @@ class StagingAPI(object):
                 return None
         packages = root.findall('./frozenlink/package')
         # the first package's devel project is good enough
-        return self.get_devel_project(self.project, packages[0].get('name'))
+        return devel_project_get(self.apiurl, self.project, packages[0].get('name'))[0]
 
     def do_change_review_state(self, request_id, newstate, message=None,
                                by_group=None, by_user=None, by_project=None):
@@ -1793,17 +1794,6 @@ class StagingAPI(object):
             return True
         else:
             return False
-
-    def get_devel_project(self, project, package):
-        try:
-            m = show_package_meta(self.apiurl, project, package)
-            node = ET.fromstring(''.join(m)).find('devel')
-            if node is not None:
-                return node.get('project')
-        except urllib2.HTTPError as e:
-            if e.code == 404:
-                pass
-        return None
 
     def staging_deactivate(self, project):
         """Cleanup staging after last request is removed and disable building."""
