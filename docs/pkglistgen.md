@@ -2,12 +2,16 @@
 
 ## Sources
 
-The package list generator consists of two scripts:
+The package list generator is contained within `pkglistgen.py` and consists of
+two phases.
 
-- pkglistgen.py - python script using libsolv to do the hard work
-- pkglistgen.sh - shell script for the dirty work. It calls the product
-  converter locally and then splits the output. See existing scripts in script/
-  for examples how to call it for Rings, Stagings etc.
+- `update`: updates local package cache
+- `solve`: uses libsolv to determine list of packages
+
+The two phases can be run together via the `update_and_solve` subcommand which
+also performs necessary initialization and post-processing. By default it will
+run against all _scopes_, but a specific scope such as `rings` or `staging` can
+be specified.
 
 ## Input and Output
 
