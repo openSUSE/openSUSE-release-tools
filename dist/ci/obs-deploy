@@ -21,8 +21,21 @@ fi
 OBS_TARGET_PROJECT="$(osc info | grep -oP "Link info:.*?project \K[^\s,]+")"
 OBS_TARGET_PACKAGE="$(osc info | grep -oP "Link info:.*?, package \K[^\s,]+")"
 echo "checking for existing requests to $OBS_TARGET_PROJECT/$OBS_TARGET_PACKAGE..."
-if osc request list "$OBS_TARGET_PROJECT" "$OBS_TARGET_PACKAGE" | grep 'No results for package' ; then
+# Limit by user in an attempt to avoid requests sourced from target project.
+# Unfortunately the command line provides no mechanism to do so and a full API
+# query is rather ungainly compared to this workaround.
+if osc request list -U "$OBS_USER" "$OBS_TARGET_PROJECT" "$OBS_TARGET_PACKAGE" |
+    grep 'No results for package' ; then
   osc service wait
-  osc sr --diff | cat
-  osc sr --yes -m "automatic update"
+  # Only bother making a request if there is a diff (always shows 3 lines).
+  if [ "$(osc sr --diff | tee temp.diff | wc -l)" -gt 3 ] ; then
+    echo "-> creating request"
+    cat temp.diff
+    rm temp.diff
+    osc sr --yes -m "automatic update"
+  else
+    echo "-> no difference (likely cron job)"
+  fi
+else
+  echo "-> existing request"
 fi
