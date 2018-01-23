@@ -220,4 +220,3 @@ if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit(app.main())
 
-# vim: sw=4 et

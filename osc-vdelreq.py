@@ -100,4 +100,3 @@ def do_vdelreq(self, subcmd, opts, *args):
     else:
         raise oscerr.WrongArgs('Unknown command: %s' % cmd)
 
-# vim: sw=4 et

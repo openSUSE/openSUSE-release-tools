@@ -290,4 +290,3 @@ class TestFactorySourceAccept(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 
-# vim: sw=4 et

@@ -75,4 +75,3 @@ class CheckDuplicateBinariesCommand(object):
         else:
             print(current)
 
-# vim: sw=4 et

@@ -215,7 +215,3 @@ class CommandLineInterface(cmdln.Cmdln):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit( app.main() )
-
-# vim: sw=4 et
-
-# vim: sw=4 et

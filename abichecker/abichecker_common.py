@@ -64,4 +64,3 @@ class Config(object):
         for entry in self.session.query(DB.Config).all():
             yield (entry.key, entry.value)
 
-# vim: sw=4 et

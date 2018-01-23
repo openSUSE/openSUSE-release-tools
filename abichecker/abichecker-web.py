@@ -68,4 +68,3 @@ if __name__ == '__main__':
     Base.metadata.create_all(db_engine())
     application.run(debug=True)
 
-# vim: sw=4 et

@@ -288,4 +288,3 @@ if __name__ == "__main__":
     app = ChangeLogger()
     sys.exit( app.main() )
 
-# vim: sw=4 et

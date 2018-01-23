@@ -913,4 +913,3 @@ if __name__ == "__main__":
     app = CommandlineInterface()
     sys.exit(app.main())
 
-# vim: sw=4 et
