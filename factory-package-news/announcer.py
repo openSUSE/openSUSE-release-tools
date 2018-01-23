@@ -177,4 +177,3 @@ else:
     os.symlink(version, tmpfn)
     os.rename(tmpfn, current_fn)
 
-# vim: sw=4 et

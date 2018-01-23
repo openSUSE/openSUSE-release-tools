@@ -99,4 +99,3 @@ if __name__ == '__main__':
             ofh.write(i.header())
             ofh.close()
 
-# vim: sw=4 et

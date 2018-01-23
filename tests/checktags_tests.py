@@ -296,4 +296,3 @@ Pico text editor while also offering a few enhancements.</description>
 if __name__ == '__main__':
     unittest.main()
 
-# vim: sw=4 et

@@ -183,4 +183,3 @@ if __name__ == "__main__":
     app.clazz = MaintenanceChecker
     sys.exit( app.main() )
 
-# vim: sw=4 et

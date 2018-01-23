@@ -1,0 +1,29 @@
+# http://EditorConfig.org
+root = true
+
+[**]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[abichecker/**.{conf,conf.in,html}]
+indent_style = space
+indent_size = 4
+
+[**.{asciidoc,json,md,service,spec}]
+indent_style = space
+indent_size = 2
+
+[dist/**]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[**.{pl,py}]
+indent_style = space
+indent_size = 4

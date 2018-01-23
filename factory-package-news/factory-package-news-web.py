@@ -105,4 +105,3 @@ if __name__ == '__main__':
 
 application = app
 
-# vim: sw=4 et
