@@ -52,7 +52,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         # self.staging_config needed by target_archs().
         api = self.staging_api(project)
 
-        if not self.force and self.repository_published(project):
+        if not self.force and not self.repository_published(project):
             self.logger.info('{}/standard not published'.format(project))
             return
 
