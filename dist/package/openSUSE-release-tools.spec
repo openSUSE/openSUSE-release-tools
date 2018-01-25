@@ -404,10 +404,10 @@ fi
 %{_bindir}/osrt-announcer
 %{apache_sysconfdir}/conf.d/%{announcer_filename}.conf.in
 %{_datadir}/%{source_dir}/%{announcer_filename}
+%config(noreplace) %{_sysconfdir}/openSUSE-release-tools/announcer
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
 %{_unitdir}/osrt-announcer@.service
 %{_unitdir}/osrt-announcer@.timer
-%{_sysconfdir}/openSUSE-release-tools/announcer
 
 %files check-source
 %defattr(-,root,root,-)
@@ -432,7 +432,7 @@ fi
 %{_unitdir}/osrt-leaper-manager@.timer
 %{_unitdir}/osrt-leaper-review.service
 %{_unitdir}/osrt-leaper-review.timer
-%{_sysconfdir}/openSUSE-release-tools/manager_42
+%config(noreplace) %{_sysconfdir}/openSUSE-release-tools/manager_42
 
 %files maintenance
 %defattr(-,root,root,-)
