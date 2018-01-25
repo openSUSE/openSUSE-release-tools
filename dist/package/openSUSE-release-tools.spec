@@ -282,8 +282,10 @@ make %{?_smp_mflags}
   oscplugindir="%{osc_plugin_dir}" \
   VERSION="%{version}"
 
-# TODO Correct makefile to actually install source.
-mkdir -p %{buildroot}%{_datadir}/%{source_dir}/%{announcer_filename}
+%pre announcer
+getent passwd osrt-announcer > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-leaper" osrt-announcer
+exit 0
 
 %postun announcer
 %systemd_postun
@@ -399,11 +401,13 @@ fi
 %files announcer
 %defattr(-,root,root,-)
 %doc %{announcer_filename}/README.asciidoc
+%{_bindir}/osrt-announcer
 %{apache_sysconfdir}/conf.d/%{announcer_filename}.conf.in
 %{_datadir}/%{source_dir}/%{announcer_filename}
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
-%{_unitdir}/%{announcer_filename}.service
-%{_unitdir}/%{announcer_filename}.timer
+%{_unitdir}/osrt-announcer@.service
+%{_unitdir}/osrt-announcer@.timer
+%{_sysconfdir}/openSUSE-release-tools/announcer
 
 %files check-source
 %defattr(-,root,root,-)

@@ -1,9 +1,0 @@
-[Unit]
-Description=Regular Factory snapshot announcer
-
-[Timer]
-OnCalendar=hourly
-AccuracySec=30m
-
-[Install]
-WantedBy=timers.target
