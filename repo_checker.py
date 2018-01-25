@@ -85,6 +85,10 @@ class RepoChecker(ReviewBot.ReviewBot):
             if bool(self.staging_config[project].get('repo_checker-package-comment-devel', True)):
                 bot_name_suffix = project
                 comment_project, comment_package = devel_project_fallback(self.apiurl, project, package)
+                if comment_project is None or comment_package is None:
+                    self.logger.warning('unable to find devel project for {}'.format(package))
+                    continue
+
                 message = 'The version of this package in [`{project}`](/package/show/{project}/{package}) ' \
                     'has installation issues and may not be installable:'.format(
                         project=project, package=package)
