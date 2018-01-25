@@ -26,11 +26,9 @@ fi
 OBS_TARGET_PROJECT="$(osc info | grep -oP "Link info:.*?project \K[^\s,]+")"
 OBS_TARGET_PACKAGE="$(osc info | grep -oP "Link info:.*?, package \K[^\s,]+")"
 echo "checking for existing requests to $OBS_TARGET_PROJECT/$OBS_TARGET_PACKAGE..."
-# Limit by user in an attempt to avoid requests sourced from target project.
-# Unfortunately the command line provides no mechanism to do so and a full API
-# query is rather ungainly compared to this workaround.
-if osc request list -U "$OBS_USER" "$OBS_TARGET_PROJECT" "$OBS_TARGET_PACKAGE" |
-    grep 'No results for package' ; then
+# `osc request list` is wholly inadequate for the task. :(
+if osc api "/search/request?match=(state/@name='declined'+or+state/@name='new'+or+state/@name='review')+and+action/target/@project='$OBS_TARGET_PROJECT'+and+action/target/@package='$OBS_TARGET_PACKAGE'" |
+    grep '<collection matches="0">' ; then
   osc service wait
   # Only bother making a request if there is a diff (always 6 lines since
   # binary source tarball dates changed after local run).
