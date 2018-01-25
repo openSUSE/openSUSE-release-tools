@@ -29,10 +29,7 @@ bodytemplate: '
 changesfile: Changes.{version}.txt
 iso: openSUSE-Leap-DVD-x86_64-Current.iso
 name: leap-423-announcer
-relay: null
-sender: null
 subject: Leap 42.3 Build {version} released!
-to: null
 url: http://download.opensuse.org/distribution/leap/42.3/iso/
 sender: Ludwig Nussel <ludwig.nussel@suse.de>
 relay: relay.suse.de
