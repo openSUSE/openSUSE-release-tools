@@ -13,8 +13,13 @@ tail -n1 _servicedata | read -r _ || echo >> _servicedata
 
 osc addremove
 
-if [ "$(osc status | wc -l)" -gt 0 ] ; then
+# Always produced modified files, but only want to bother if new source.
+if osc status | grep _servicedata ; then
+  echo "new revision found, committing..."
   osc commit -m "$(grep -oP 'version: \K.*' *.obsinfo)"
+else
+  echo "new revision not found, reverting local changes..."
+  osc revert .
 fi
 
 # Create submit request if none currently exists.
