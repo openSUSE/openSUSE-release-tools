@@ -26,11 +26,8 @@ bodytemplate: '
   {text}
 
   '
-changesfile: Changes.{version}.txt
 iso: openSUSE-Leap-15.0-DVD-x86_64-Current.iso
 name: openSUSE:Leap:15.0
 subject: Leap 15.0 Build {version} released!
 url: http://download.opensuse.org/distribution/leap/15.0/iso/
 sender: Ludwig Nussel <ludwig.nussel@suse.de>
-relay: relay.suse.de
-to: opensuse-factory@opensuse.org

@@ -38,9 +38,9 @@ logger = logging.getLogger()
 
 # map of default config entries
 config_defaults = {
-    'sender': None,
-    'to': None,
-    'relay': None,
+    'sender': 'noreply@opensuse.org',
+    'to': 'opensuse-factory@opensuse.org',
+    'relay': 'relay.suse.de',
     'url' : "http://download.opensuse.org/tumbleweed/iso/",
     'iso' : "openSUSE-Tumbleweed-DVD-x86_64-Current.iso",
     'name' : 'factory-announcer',
