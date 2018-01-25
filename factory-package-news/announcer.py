@@ -119,7 +119,7 @@ if not options.version:
     if loc is None:
         raise Exception("empty location!")
 
-    m = re.search('(?:Snapshot|Build)(\d+)-Media', loc)
+    m = re.search('(?:Snapshot|Build)([\d.]+)-Media', loc)
     if m is None:
         raise Exception("failed to parse %s"%loc)
 
