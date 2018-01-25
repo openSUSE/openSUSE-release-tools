@@ -1,8 +1,0 @@
-[Unit]
-Description=Announce new Factory snapshots
-
-[Service]
-ExecStart=/usr/share/osc-plugin-factory/factory-package-news/announcer.py --from "Ludwig Nussel <ludwig.nussel@suse.de>" --to opensuse-factory@opensuse.org --relay relay.suse.de
-WorkingDirectory=/var/lib/factory-package-news
-User=factoryauto
-SyslogIdentifier=factory-package-news

@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: announce new %i build
+
+[Service]
+User=osrt-announcer
+SyslogIdentifier=osrt-announcer
+ExecStart=/usr/bin/osrt-announcer --config "/etc/openSUSE-release-tools/announcer/%i.yml" --verbose
+
+[Install]
+WantedBy=multi-user.target

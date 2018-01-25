@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: announce new %i build
+
+[Timer]
+OnBootSec=120
+OnCalendar=hourly
+Unit=osrt-announcer@%i.service
+
+[Install]
+WantedBy=timers.target
