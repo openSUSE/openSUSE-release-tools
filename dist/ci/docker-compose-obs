@@ -43,6 +43,11 @@ fi
 
 until $osc -q -A local api /about 2> /dev/null ; do
   echo "waiting for OBS to be responsive..."
-  ((c++)) && ((c==60)) && docker-compose logs && exit 1
+  # Print osc output incase of failure and container logs for debugging.
+  ((c++)) && ((c==60)) && (
+    docker-compose logs
+    $osc -q -A local api /about
+    exit 1
+  )
   sleep 1
 done
