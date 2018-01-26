@@ -1,6 +1,6 @@
 from collections import namedtuple
 from datetime import datetime
-import dateutil.parser
+from dateutil.parser import parse as date_parse
 import re
 from xml.etree import cElementTree as ET
 from urllib2 import HTTPError
@@ -78,7 +78,7 @@ def request_when_staged(request, project, first=False):
         if project in history.comment:
             when = history.when
 
-    return dateutil.parser.parse(when)
+    return date_parse(when)
 
 def request_staged(request):
     for review in request.reviews:
@@ -164,3 +164,8 @@ def devel_project_fallback(apiurl, target_project, target_package):
                 project = project.split(':', 1)[1]
 
     return project, package
+
+def request_age(request):
+    created = date_parse(request.find('history').get('when'))
+    delta = datetime.utcnow() - created
+    return delta.total_seconds()
