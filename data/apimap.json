@@ -82,7 +82,8 @@
       "version" : "12-SP3",
       "flavor" : "Server-DVD-Incidents-Kernel",
       "archs" : [
-         "x86_64"
+         "x86_64",
+         "ppc64le"
       ]
       },
    "SUSE:Updates:SUSE-CAASP:ALL:" : {
