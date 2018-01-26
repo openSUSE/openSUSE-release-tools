@@ -192,6 +192,7 @@ def do_staging(self, subcmd, opts, *args):
         The keys that may be set in staging configuration are:
 
         - repo_checker-binary-whitelist[-arch]: appended to target project list
+        - todo: text to be printed after staging is accepted
 
     "cleanup_rings" will try to cleanup rings content and print
         out problems
