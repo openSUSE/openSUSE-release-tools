@@ -16,6 +16,7 @@ from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.core import request_age
 from osclib.stagingapi import StagingAPI
 
 
@@ -94,11 +95,6 @@ def maintainer(args):
         intersection = set(groups).intersection(desired)
         if len(intersection) != len(desired):
             print('{} missing {}'.format(devel_project, ', '.join(desired - intersection)))
-
-def request_age(request):
-    date = dateutil.parser.parse(request.statehistory[0].when)
-    delta = datetime.utcnow() - date
-    return delta.days
 
 def requests(args):
     apiurl = osc.conf.config['apiurl']

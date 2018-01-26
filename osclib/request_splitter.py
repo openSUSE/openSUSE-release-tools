@@ -5,6 +5,7 @@ from lxml import etree as ET
 from osc import conf
 from osc.core import show_project_meta
 from osclib.core import devel_project_fallback
+from osclib.core import request_age
 import re
 
 class RequestSplitter(object):
@@ -106,9 +107,8 @@ class RequestSplitter(object):
 
         history = request.find('history')
         if history is not None:
-            created = dateutil.parser.parse(request.find('history').get('when'))
-            delta = datetime.utcnow() - created
-            request.set('aged', str(delta.total_seconds() >= self.request_age_threshold))
+            age = request_age(request)
+            request.set('aged', str(age >= self.request_age_threshold))
 
         request_type = request.find('./action').get('type')
         target = request.find('./action/target')
