@@ -97,7 +97,6 @@ def check(apiurl, entity, entity_type='group', comment=False, bot=None,
     print_debug('all comments: {}'.format(all_comment))
     return all_comment
 
-
 def status(apiurl):
     # TODO If request ordering via api (openSUSE/open-build-service#4108) is
     # provided this can be implemented much more cleanly by looking for positive
@@ -115,14 +114,20 @@ def status(apiurl):
         ['staging-bot', 'user', False, None, 24 * 3600],
     ]
 
+    all_alive = True
     for bot in bots:
-        print('{} = {}'.format(bot[0], check(apiurl, *bot)))
+        result = check(apiurl, *bot)
+        if not result:
+            all_alive = False
+        print('{} = {}'.format(bot[0], result))
+
+    return all_alive
 
 def main(args):
     conf.get_config(override_apiurl=args.apiurl)
     conf.config['debug'] = args.debug
     apiurl = conf.config['apiurl']
-    status(apiurl)
+    return not status(apiurl)
 
 
 if __name__ == '__main__':
