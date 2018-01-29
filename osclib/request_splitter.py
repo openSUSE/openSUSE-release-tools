@@ -107,7 +107,7 @@ class RequestSplitter(object):
 
         history = request.find('history')
         if history is not None:
-            age = request_age(request)
+            age = request_age(request).total_seconds()
             request.set('aged', str(age >= self.request_age_threshold))
 
         request_type = request.find('./action').get('type')

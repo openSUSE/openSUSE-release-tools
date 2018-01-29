@@ -44,7 +44,7 @@ def check(apiurl, entity, entity_type='group', comment=False, bot=None,
 
         requests = search(apiurl, queries, request=xpath)['request']
         for request in requests:
-            age = request_age(request)
+            age = request_age(request).total_seconds()
             request_debug(request, age, threshold)
 
             if age <= threshold:
@@ -77,7 +77,7 @@ def check(apiurl, entity, entity_type='group', comment=False, bot=None,
         elif comment:
             kwargs['request_id'] = request.get('id')
 
-        age = request_age(request)
+        age = request_age(request).total_seconds()
         request_debug(request, age, threshold)
         comment_age = check_comment(apiurl, bot, **kwargs)
         if comment_age:
