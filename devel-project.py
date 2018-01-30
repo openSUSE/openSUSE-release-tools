@@ -109,7 +109,7 @@ def requests(args):
                                     withfullhistory=True)
         for request in requests:
             action = request.actions[0]
-            age = request_age(request)
+            age = request_age(request).days
             if age < args.min_age:
                 continue
 
@@ -134,7 +134,7 @@ def reviews(args):
             if action.type != 'submit':
                 continue
 
-            age = request_age(request)
+            age = request_age(request).days
             if age < args.min_age:
                 continue
 

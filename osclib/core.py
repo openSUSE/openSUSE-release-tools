@@ -10,6 +10,7 @@ from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import makeurl
 from osc.core import owner
+from osc.core import Request
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.memoize import memoize
@@ -166,6 +167,9 @@ def devel_project_fallback(apiurl, target_project, target_package):
     return project, package
 
 def request_age(request):
-    created = date_parse(request.find('history').get('when'))
-    delta = datetime.utcnow() - created
-    return delta.total_seconds()
+    if isinstance(request, Request):
+        created = request.statehistory[0].when
+    else:
+        created = request.find('history').get('when')
+    created = date_parse(created)
+    return datetime.utcnow() - created
