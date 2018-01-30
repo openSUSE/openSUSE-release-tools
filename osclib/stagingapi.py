@@ -1739,7 +1739,7 @@ class StagingAPI(object):
         l = ET.tostring(flink)
         http_PUT(url, data=l)
 
-    def create_adi_project(self, name, use_frozenlinks=False, src_prj=None):
+    def create_adi_project(self, name, use_frozenlinks=False, src_prj=None, nonfree_repo_required=False):
         """Create an ADI project."""
         if not name:
             name = self._candidate_adi_project()
@@ -1757,6 +1757,11 @@ class StagingAPI(object):
             linkproject = ''
             repository = '<repository name="standard">'
 
+        if nonfree_repo_required:
+            nonfree_repo = "<path project=\"{}\" repository=\"standard\"/>".format(self.cnonfree)
+        else:
+            nonfree_repo = ''
+
         meta = """
         <project name="{0}">
           <title></title>
@@ -1770,12 +1775,13 @@ class StagingAPI(object):
             <enable/>
           </debuginfo>
           {4}
+            {6}
             <path project="{5}" repository="standard"/>
             <path project="{1}" repository="standard"/>
             <arch>x86_64</arch>
           </repository>
         </project>""".format(name, self.project, self.extract_adi_number(name), linkproject, repository,
-                             self.cstaging)
+                             self.cstaging, nonfree_repo)
 
         url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)

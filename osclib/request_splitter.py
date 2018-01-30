@@ -115,6 +115,8 @@ class RequestSplitter(object):
         target_project = target.get('project')
         target_package = target.get('package')
         devel, _ = devel_project_fallback(self.api.apiurl, target_project, target_package)
+        if self.api.cnonfree and self.api.cnonfree == target_project:
+            devel = 'NonFree'
         if not devel and request_type == 'submit':
             devel = request.find('./action/source').get('project')
         if devel:
