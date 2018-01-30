@@ -87,9 +87,13 @@ class AdiCommand:
             print(Fore.YELLOW + (group if group != '' else 'wanted') + Fore.RESET)
 
             name = None
+            nonfree_repo_required = False
             for request in splitter.grouped[group]['requests']:
                 request_id = int(request.get('id'))
                 target_package = request.find('./action/target').get('package')
+                target_project = request.find('./action/target').get('project')
+                if self.api.cnonfree and self.api.cnonfree == target_project:
+                    nonfree_repo_required = True
                 line = '- {} {}{:<30}{}'.format(request_id, Fore.CYAN, target_package, Fore.RESET)
 
                 message = self.api.ignore_format(request_id)
@@ -108,7 +112,7 @@ class AdiCommand:
                 if name is None:
                     use_frozenlinks = group in source_projects_expand and not split
                     name = self.api.create_adi_project(None,
-                            use_frozenlinks, group)
+                            use_frozenlinks, group, nonfree_repo_required)
 
                 if not self.api.rq_to_prj(request_id, name):
                     return False
