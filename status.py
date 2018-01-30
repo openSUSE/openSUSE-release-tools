@@ -61,9 +61,6 @@ def check(apiurl, entity, entity_type='group', comment=False, bot=None,
         # Could check to see that a review has been performed in the last week.
         return True
 
-    if not comment:
-        return False
-
     all_comment = True
     for request in requests:
         kwargs = {}
