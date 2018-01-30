@@ -81,6 +81,9 @@ class AdiCommand:
                 splitter.group_by('./action/target/@devel_project')
             else:
                 splitter.group_by('./action/source/@project')
+
+            if not split:
+                splitter.group_by('./action/target/@nonfree')
         splitter.split()
 
         for group in sorted(splitter.grouped.keys()):
@@ -89,7 +92,8 @@ class AdiCommand:
             name = None
             for request in splitter.grouped[group]['requests']:
                 request_id = int(request.get('id'))
-                target_package = request.find('./action/target').get('package')
+                target = request.find('./action/target')
+                target_package = target.get('package')
                 line = '- {} {}{:<30}{}'.format(request_id, Fore.CYAN, target_package, Fore.RESET)
 
                 message = self.api.ignore_format(request_id)
@@ -107,8 +111,9 @@ class AdiCommand:
                 # request is processed from a particular group.
                 if name is None:
                     use_frozenlinks = group in source_projects_expand and not split
+                    nonfree = bool(target.get('nonfree'))
                     name = self.api.create_adi_project(None,
-                            use_frozenlinks, group)
+                            use_frozenlinks, group, nonfree)
 
                 if not self.api.rq_to_prj(request_id, name):
                     return False
