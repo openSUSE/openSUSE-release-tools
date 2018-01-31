@@ -79,7 +79,7 @@ Kind regards,
 """,
 u"""Dear %(recepient)s,
 
-Despite the reminder of one week ago, we have to inform you that
+Following-up the reminder of one week ago, we have to inform you that
 '%(package)s' is still failing in %(project)s. See
 https://build.opensuse.org/package/show/%(project)s/%(package)s
 
