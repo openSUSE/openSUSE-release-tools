@@ -127,10 +127,7 @@ sub package_snippet($) {
             && $prv eq "/usr/bin/mplayer" );
         next if ( $prv eq "this-is-only-for-build-envs" );
         next
-          if ( $name eq "installation-images-debuginfodeps"
-            && $prv =~ m/debuginfo.build/ );
-        next
-          if ( $name eq "installation-images-debuginfodeps-openSUSE"
+          if ( $name =~ "^installation-images-debuginfodeps.*"
             && $prv =~ m/debuginfo.build/ );
         $out .= "$prv\n";
     }
