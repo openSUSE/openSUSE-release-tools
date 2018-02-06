@@ -1,27 +1,5 @@
 {
   "https://openqa.opensuse.org": {
-    "openSUSE:Leap:42.2:Update": {
-      "repos": [
-        "http://download.opensuse.org/update/leap/42.2-test/", 
-        "http://download.opensuse.org/update/leap/42.2/oss/", 
-        "http://download.opensuse.org/update/leap/42.2/non-oss/"
-      ], 
-      "settings": [
-        {
-          "ARCH": "x86_64", 
-          "DISTRI": "opensuse", 
-          "FLAVOR": "UpdateTest", 
-          "VERSION": "42.2"
-        }, 
-        {
-          "ARCH": "x86_64", 
-          "DISTRI": "opensuse", 
-          "FLAVOR": "Updates", 
-          "VERSION": "42.2"
-        }
-      ], 
-      "test": "kde"
-    }, 
     "openSUSE:Leap:42.3:Update": {
       "repos": [
         "http://download.opensuse.org/update/leap/42.3-test/", 
