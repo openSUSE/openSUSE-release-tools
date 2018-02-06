@@ -40,6 +40,8 @@ from osc.core import undelete_package
 from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
+from osclib.util import project_list_family
+from osclib.util import project_list_family_prior
 from xdg.BaseDirectory import save_cache_path
 import glob
 import solv
@@ -867,7 +869,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             name = '{}/{}.solv'.format(self.options.output_dir, build)
             if not opts.overwrite and os.path.exists(name):
                 logger.info("%s exists", name)
-                return
+                return name
             ofh = open(name + '.new', 'w')
 
         pool = solv.Pool()
@@ -897,6 +899,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if name is not None:
             os.rename(name + '.new', name)
+            return name
 
     def dump_solv_build(self, baseurl):
         """Determine repo format and build string from remote repository."""
@@ -1025,14 +1028,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if opts.scope == 'target':
             self.options.repos = ['/'.join([target_project, main_repo])]
-            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
+            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
             return
         elif opts.scope == 'ports':
             # TODO Continue supporting #1297, but should be abstracted.
             main_repo = 'ports'
             opts.project += ':Ports'
             self.options.repos = ['/'.join([opts.project, main_repo])]
-            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
+            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
             return
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
@@ -1067,7 +1070,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             return
 
     def update_and_solve_target(self, apiurl, target_project, target_config, main_repo, opts,
-                                skip_release=False):
+                                skip_release=False, drop_list=False):
         print('[{}] {}/{}: update and solve'.format(opts.scope, opts.project, main_repo))
 
         group = target_config.get('pkglistgen-group', '000package-groups')
@@ -1128,6 +1131,26 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         print('-> do_update')
         self.do_update('update', opts)
 
+        nonfree = target_config.get('nonfree')
+        if nonfree and drop_list:
+            print('-> do_update nonfree')
+
+            # Switch to nonfree repo (ugly, but that's how the code was setup).
+            self.options.repos_ = self.options.repos
+            self.options.repos = ['/'.join([nonfree, main_repo])]
+            self.postoptparse()
+
+            opts_nonfree = copy.deepcopy(opts)
+            opts_nonfree.project = nonfree
+            self.do_update('update', opts_nonfree)
+
+            # Switch repo back to main target project.
+            self.options.repos = self.options.repos_
+            self.postoptparse()
+
+        print('-> update_merge')
+        self.update_merge(nonfree if drop_list else False)
+
         print('-> do_solve')
         opts.ignore_unresolvable = bool(target_config.get('pkglistgen-ignore-unresolvable'))
         opts.ignore_recommended = bool(target_config.get('pkglistgen-ignore-recommended'))
@@ -1135,6 +1158,26 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
         self.do_solve('solve', opts)
+
+        if drop_list:
+            # Ensure solv files from all releases in product family are updated.
+            print('-> solv_cache_update')
+            cache_dir_solv = save_cache_path('opensuse-packagelists', 'solv')
+            family_include = target_config.get('pkglistgen-product-family-include')
+            solv_prior = self.solv_cache_update(
+                apiurl, cache_dir_solv, target_project, family_include, opts)
+
+            # Include pre-final release solv files for target project. These
+            # files will only exist from previous runs.
+            cache_dir_solv_current = os.path.join(cache_dir_solv, target_project)
+            solv_prior.update(glob.glob(os.path.join(cache_dir_solv_current, '*.merged.solv')))
+            for solv_file in solv_prior:
+                logger.debug(solv_file.replace(cache_dir_solv, ''))
+
+            print('-> do_create_droplist')
+            # Reset to product after solv_cache_update().
+            self.options.output_dir = product_dir
+            self.do_create_droplist('create_droplist', opts, *solv_prior)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         self.unlink_list(product_dir, delete_products)
@@ -1161,6 +1204,55 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.multibuild_from_glob(release_dir, '*.spec')
             self.build_stub(release_dir, 'spec')
             self.commit_package(release_dir)
+
+    def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_include, opts):
+        """Dump solv files (do_dump_solv) for all products in family."""
+        prior = set()
+
+        project_family = project_list_family_prior(apiurl, target_project, include_self=True)
+        if family_include:
+            # Include projects from a different family if desired.
+            project_family.extend(project_list_family(apiurl, family_include))
+
+        for project in project_family:
+            config = Config(project)
+            project_config = conf.config[project]
+
+            baseurl = project_config.get('download-baseurl')
+            if not baseurl:
+                logger.warning('no baseurl configured for {}'.format(project))
+                continue
+
+            urls = [urlparse.urljoin(baseurl, 'repo/oss/')]
+            if project_config.get('nonfree'):
+                urls.append(urlparse.urljoin(baseurl, 'repo/non-oss/'))
+
+            names = []
+            for url in urls:
+                print('-> do_dump_solv for {}/{}'.format(
+                    project, os.path.basename(os.path.normpath(url))))
+                logger.debug(url)
+
+                self.options.output_dir = os.path.join(cache_dir_solv, project)
+                if not os.path.exists(self.options.output_dir):
+                    os.makedirs(self.options.output_dir)
+
+                opts.overwrite = False
+                names.append(self.do_dump_solv('dump_solv', opts, url))
+
+            if not len(names):
+                logger.warning('no solv files were dumped for {}'.format(project))
+                continue
+
+            # Merge nonfree solv with free solv or copy free solv as merged.
+            merged = names[0].replace('.solv', '.merged.solv')
+            if len(names) == 2:
+                self.solv_merge(names[0], names[1], merged)
+            else:
+                shutil.copyfile(names[0], merged)
+            prior.add(merged)
+
+        return prior
 
     def move_list(self, file_list, destination):
         for name in file_list:
