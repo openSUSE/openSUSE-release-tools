@@ -74,6 +74,10 @@ DEFAULT = {
         'splitter-staging-age-max': '57600',
         # No special packages since they will pass through SLE first.
         'splitter-special-packages': '',
+        # Allow `unselect --cleanup` to operate immediately on:
+        # - Update crawler requests (leaper)
+        # - F-C-C submitter requests (maxlin_factory)
+        'unselect-cleanup-whitelist': 'leaper maxlin_factory',
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-archs-ports': 'aarch64',
         'pkglistgen-locales-from': 'openSUSE.product',
