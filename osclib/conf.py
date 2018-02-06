@@ -180,6 +180,8 @@ class Config(object):
                         defaults[k] = v % {'project': project}
                     elif isinstance(v, basestring) and '%(project.lower)s' in v:
                         defaults[k] = v % {'project.lower': project.lower()}
+                    elif isinstance(v, basestring) and '%(version)s' in v:
+                        defaults[k] = v % {'version': match.group('version')}
                     else:
                         defaults[k] = v
                 break
