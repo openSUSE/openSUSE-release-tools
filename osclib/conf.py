@@ -70,6 +70,10 @@ DEFAULT = {
         # check_source.py
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
+        # 16 hour staging window for follow-ups since lower throughput.
+        'splitter-staging-age-max': '57600',
+        # No special packages since they will pass through SLE first.
+        'splitter-special-packages': '',
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-archs-ports': 'aarch64',
         'pkglistgen-locales-from': 'openSUSE.product',
