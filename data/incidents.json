@@ -109,13 +109,6 @@
       "DISTRI" : "sle",
       "ARCH" : "x86_64"
    },
-   "openSUSE:Leap:42.2:Update" : {
-      "DISTRI" : "opensuse",
-      "ARCH" : "x86_64",
-      "ISO" : "openSUSE-Leap-42.2-DVD-x86_64.iso",
-      "FLAVOR" : "Maintenance",
-      "VERSION" : "42.2"
-   },
    "SUSE:Updates:SLE-SERVER:12-SP2:x86_64" : {
       "VERSION" : "12-SP2",
       "FLAVOR" : "Server-DVD-Incidents",
