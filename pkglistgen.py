@@ -754,6 +754,32 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 fh.close()
         return global_update
 
+    def update_merge(self, nonfree):
+        """Merge free and nonfree solv files or copy free to merged"""
+        for prp in self.tool.repos:
+            project, repo = prp.split('/')
+            for arch in self.tool.architectures:
+                solv_file = os.path.join(
+                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                solv_file_merged = os.path.join(
+                    CACHEDIR, 'repo-{}-{}-{}.merged.solv'.format(project, repo, arch))
+
+                if not nonfree:
+                    shutil.copyfile(solv_file, solv_file_merged)
+                    continue
+
+                solv_file_nonfree = os.path.join(
+                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
+                self.solv_merge(solv_file, solv_file_nonfree, solv_file_merged)
+
+    def solv_merge(self, solv1, solv2, solv_merged):
+        with open(solv_merged, 'w') as handle:
+            p = subprocess.Popen(['mergesolv', solv1, solv2], stdout=handle)
+            p.communicate()
+
+        if p.returncode:
+            raise Exception('failed to create merged solv file')
+
     def do_create_droplist(self, subcmd, opts, *oldsolv):
         """${cmd_name}: generate list of obsolete packages
 
@@ -785,7 +811,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     r = pool.add_repo(prp)
                     r.add_solv(fn)
 
-                sysrepo = pool.add_repo(os.path.basename(old).replace('.repo.solv', ''))
+                sysrepo = pool.add_repo(os.path.basename(old).replace('.merged.solv', ''))
                 sysrepo.add_solv(old)
 
                 pool.createwhatprovides()
