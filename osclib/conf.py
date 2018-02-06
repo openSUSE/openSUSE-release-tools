@@ -47,12 +47,13 @@ DEFAULT = {
         'lock-ns': 'openSUSE',
         'delreq-review': 'factory-maintainers',
         'main-repo': 'standard',
+        'download-baseurl': 'http://download.opensuse.org/tumbleweed/',
         # check_source.py
         'devel-project-enforce': 'True',
         'review-team': 'opensuse-review-team',
         'repo-checker': 'repo-checker',
     },
-    r'openSUSE:(?P<project>Leap:[\d.]+)': {
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64',
@@ -67,6 +68,7 @@ DEFAULT = {
         'lock-ns': 'openSUSE',
         'delreq-review': None,
         'main-repo': 'standard',
+        'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
         # check_source.py
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
