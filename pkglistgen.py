@@ -854,6 +854,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def do_dump_solv(self, subcmd, opts, baseurl):
         """${cmd_name}: fetch repomd and dump solv
 
+        Dumps solv from published repository. Use solve to generate from
+        pre-published repository.
+
         If an output directory is specified, a file named according
         to the build is created there. Otherwise the solv file is
         dumped to stdout.
@@ -929,6 +932,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--locales-from', metavar='FILE', help='get supported locales from product file FILE')
     def do_solve(self, subcmd, opts):
         """${cmd_name}: Solve groups
+
+        Generates solv from pre-published repository contained in local cache.
+        Use dump_solv to extract solv from published repository.
 
         ${cmd_usage}
         ${cmd_option_list}
