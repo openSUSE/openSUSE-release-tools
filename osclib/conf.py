@@ -52,6 +52,7 @@ DEFAULT = {
         'devel-project-enforce': 'True',
         'review-team': 'opensuse-review-team',
         'repo-checker': 'repo-checker',
+        'pkglistgen-product-family-include': 'openSUSE:Leap:N',
     },
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))': {
         'staging': 'openSUSE:%(project)s:Staging',
