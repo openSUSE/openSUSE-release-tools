@@ -863,16 +863,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         name = None
         ofh = sys.stdout
         if self.options.output_dir:
-            url = urlparse.urljoin(baseurl, 'media.1/media')
-            with requests.get(url) as media:
-                for i, line in enumerate(media.iter_lines()):
-                    if i != 1:
-                        continue
-                    name = line
-            if name is None or '-Build' not in name:
-                raise Exception('media.1/media includes no build number')
-
-            name = '{}/{}.solv'.format(self.options.output_dir, name)
+            build, repo_style = self.dump_solv_build(baseurl)
+            name = '{}/{}.solv'.format(self.options.output_dir, build)
             if not opts.overwrite and os.path.exists(name):
                 logger.info("%s exists", name)
                 return
@@ -883,7 +875,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
         f = tempfile.TemporaryFile()
-        url = urlparse.urljoin(baseurl, 'repodata/repomd.xml')
+        path_prefix = 'suse/' if name and repo_style == 'build' else ''
+        url = urlparse.urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
         repomd = requests.get(url)
         ns = { 'r': 'http://linux.duke.edu/metadata/repo' }
         root = ET.fromstring(repomd.content)
@@ -891,7 +884,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         f.write(repomd.content)
         os.lseek(f.fileno(), 0, os.SEEK_SET)
         repo.add_repomdxml(f, 0)
-        url = urlparse.urljoin(baseurl, location)
+        url = urlparse.urljoin(baseurl, path_prefix + location)
         with requests.get(url, stream=True) as primary:
             content = gzip.GzipFile(fileobj=StringIO(primary.content))
             os.lseek(f.fileno(), 0, os.SEEK_SET)
@@ -904,6 +897,27 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if name is not None:
             os.rename(name + '.new', name)
+
+    def dump_solv_build(self, baseurl):
+        """Determine repo format and build string from remote repository."""
+        url = urlparse.urljoin(baseurl, 'media.1/media')
+        with requests.get(url) as media:
+            for i, line in enumerate(media.iter_lines()):
+                if i != 1:
+                    continue
+                name = line
+
+        if name is not None and '-Build' in name:
+            return name, 'media'
+
+        url = urlparse.urljoin(baseurl, 'media.1/build')
+        with requests.get(url) as build:
+            name = build.content.strip()
+
+        if name is not None and '-Build' in name:
+            return name, 'build'
+
+        raise Exception('media.1/{media,build} includes no build number')
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
