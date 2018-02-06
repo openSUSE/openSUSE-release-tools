@@ -837,11 +837,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 # mark it explicitly to avoid having 2 pools while GC is not run
                 del pool
 
+        ofh = sys.stdout
+        if self.options.output_dir:
+            name = os.path.join(self.options.output_dir, 'obsoletepackages.inc')
+            ofh = open(name, 'w')
+
         for reponame in sorted(set(drops.values())):
-            print("<!-- %s -->" % reponame)
+            print("<!-- %s -->" % reponame, file=ofh)
             for p in sorted(drops):
                 if drops[p] != reponame: continue
-                print("  <obsoletepackage>%s</obsoletepackage>" % p)
+                print("  <obsoletepackage>%s</obsoletepackage>" % p, file=ofh)
 
     @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
     def do_dump_solv(self, subcmd, opts, baseurl):
