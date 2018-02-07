@@ -241,8 +241,11 @@ def do_staging(self, subcmd, opts, *args):
         normal request node.
 
         - ./action/target/@devel_project: the devel project for the package
+        - ./action/target/@devel_project_super: super devel project if relevant
         - ./action/target/@ring: the ring to which the package belongs
-        - ./@ignored: either false or the provided message
+        - ./@aged: either True or False based on splitter-request-age-threshold
+        - ./@nonfree: set to nonfree if targetting nonfree sub project
+        - ./@ignored: either False or the provided message
 
         Some useful examples:
 
