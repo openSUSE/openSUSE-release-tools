@@ -250,6 +250,7 @@ def do_staging(self, subcmd, opts, *args):
         --filter-by './action/target/[@devel_project="YaST:Head"]'
         --filter-by './action/target[starts-with(@ring, "1")]'
         --filter-by '@id!="1234567"'
+        --filter-by 'contains(description, "#Portus")'
 
         --group-by='./action/target/@devel_project'
         --group-by='./action/target/@ring'
