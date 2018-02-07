@@ -49,6 +49,7 @@ from osc.core import streamfile
 
 from osclib.cache import Cache
 from osclib.core import devel_project_get
+from osclib.core import project_list_prefix
 from osclib.comments import CommentAPI
 from osclib.ignore_command import IgnoreCommand
 from osclib.memoize import memoize
@@ -333,17 +334,10 @@ class StagingAPI(object):
         :return list of known staging projects
         """
 
-        projects = []
+        projects = project_list_prefix(self.apiurl, self.cstaging + ':')
+        if not include_dvd:
+            projects = filter(lambda p: not p.endswith(':DVD'), projects)
 
-        query = "id?match=starts-with(@name,'{}:')".format(self.cstaging)
-        url = self.makeurl(['search', 'project', query])
-        projxml = http_GET(url)
-        root = ET.parse(projxml).getroot()
-        for val in root.findall('project'):
-            project = val.get('name')
-            if not include_dvd and project.endswith(':DVD'):
-                continue
-            projects.append(project)
         return projects
 
     def extract_staging_short(self, p):

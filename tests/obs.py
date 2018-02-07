@@ -19,6 +19,7 @@ import os
 import re
 import string
 import time
+import urllib
 import urllib2
 import urlparse
 import xml.etree.cElementTree as ET
@@ -810,7 +811,8 @@ class OBS(object):
     @GET('/search/project/id')
     def search_project_id(self, request, uri, headers):
         """Return a search result /search/project/id."""
-        assert urlparse.urlparse(uri).query == "match=starts-with(@name,'openSUSE:Factory:Staging:')"
+        assert urlparse.urlparse(uri).query == urllib.urlencode(
+            {'match': 'starts-with(@name, "openSUSE:Factory:Staging:")'})
 
         response = (404, headers, '<result>Not found</result>')
         try:

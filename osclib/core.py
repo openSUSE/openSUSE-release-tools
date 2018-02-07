@@ -3,6 +3,7 @@ from datetime import datetime
 from dateutil.parser import parse as date_parse
 import re
 from xml.etree import cElementTree as ET
+from lxml import etree as ETL
 from urllib2 import HTTPError
 
 from osc.core import get_binarylist
@@ -173,3 +174,10 @@ def request_age(request):
         created = request.find('history').get('when')
     created = date_parse(created)
     return datetime.utcnow() - created
+
+def project_list_prefix(apiurl, prefix):
+    """Get a list of project with the same prefix."""
+    query = {'match': 'starts-with(@name, "{}")'.format(prefix)}
+    url = makeurl(apiurl, ['search', 'project', 'id'], query)
+    root = ETL.parse(http_GET(url)).getroot()
+    return root.xpath('project/@name')
