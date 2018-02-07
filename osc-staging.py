@@ -237,12 +237,19 @@ def do_staging(self, subcmd, opts, *args):
         Requests may either be the target package or the request ID.
 
         When using --filter-by or --group-by the xpath will be applied to the
-        request node as returned by OBS. Several values will supplement the
-        normal request node.
+        request node as returned by OBS. Use the following on a current request
+        to see the XML structure.
+
+        osc api /request/1337
+
+        A number of additional values will supplement the normal request node.
 
         - ./action/target/@devel_project: the devel project for the package
+        - ./action/target/@devel_project_super: super devel project if relevant
         - ./action/target/@ring: the ring to which the package belongs
-        - ./@ignored: either false or the provided message
+        - ./@aged: either True or False based on splitter-request-age-threshold
+        - ./@nonfree: set to nonfree if targetting nonfree sub project
+        - ./@ignored: either False or the provided message
 
         Some useful examples:
 
@@ -250,6 +257,7 @@ def do_staging(self, subcmd, opts, *args):
         --filter-by './action/target/[@devel_project="YaST:Head"]'
         --filter-by './action/target[starts-with(@ring, "1")]'
         --filter-by '@id!="1234567"'
+        --filter-by 'contains(description, "#Portus")'
 
         --group-by='./action/target/@devel_project'
         --group-by='./action/target/@ring'
@@ -278,6 +286,7 @@ def do_staging(self, subcmd, opts, *args):
         Built in strategies may be specified as well. For example:
 
         select --strategy devel
+        select --strategy quick
         select --strategy special
         select --strategy super
 
