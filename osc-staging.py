@@ -237,8 +237,12 @@ def do_staging(self, subcmd, opts, *args):
         Requests may either be the target package or the request ID.
 
         When using --filter-by or --group-by the xpath will be applied to the
-        request node as returned by OBS. Several values will supplement the
-        normal request node.
+        request node as returned by OBS. Use the following on a current request
+        to see the XML structure.
+
+        osc api /request/1337
+
+        A number of additional values will supplement the normal request node.
 
         - ./action/target/@devel_project: the devel project for the package
         - ./action/target/@devel_project_super: super devel project if relevant
