@@ -279,6 +279,7 @@ def do_staging(self, subcmd, opts, *args):
         Built in strategies may be specified as well. For example:
 
         select --strategy devel
+        select --strategy quick
         select --strategy special
         select --strategy super
 
