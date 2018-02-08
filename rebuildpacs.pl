@@ -244,11 +244,15 @@ foreach my $package (@rpms) {
 close(PACKAGES);
 
 # read the problems out of installcheck
-open( INSTALLCHECK, "installcheck $arch $pfile|" );
+my $rpmarch = $arch;
+$rpmarch = "armv7hl" if ($arch eq "armv7l");
+$rpmarch = "armv6hl" if ($arch eq "armv6l");
+
+open( INSTALLCHECK, "/usr/bin/installcheck $rpmarch $pfile|" );
 while (<INSTALLCHECK>) {
     chomp;
 
-    if (m/^can't install (.*)\-[^-]*\-[^-]*\.($arch|noarch):/) {
+    if (m/^can't install (.*)\-[^-]*\-[^-]*\.($rpmarch|noarch):/) {
         $cproblem = $1;
         $cproblem =~ s/kmp-([^-]*)/kmp-default/;
         $cproblem = find_source_container($cproblem);
@@ -265,7 +269,7 @@ while (<INSTALLCHECK>) {
     # very thin ice here
     s,\(\)\(64bit\),,;
 
-    s,(needed by [^ ]*)\-[^-]*\-[^-]*\.($arch|noarch)$,$1,;
+    s,(needed by [^ ]*)\-[^-]*\-[^-]*\.($rpmarch|noarch)$,$1,;
 
     s,^\s*,,;
     # patterns are too spammy and rebuilding doesn't help
