@@ -161,6 +161,7 @@ if (%torebuild) {
   my $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
   for my $package (sort keys %torebuild) {
     next if (defined $ignored{$package});
+    last if (length($api) > 32767);
     $api .= "&package=" . uri_escape( $package );
   }
   system("osc api -X POST '$api'");
@@ -207,7 +208,7 @@ sub get_paths($$$) {
   open(OSC, "osc api /build/$project/$repo/$arch/$package/_buildinfo|");
   my $xml = join('', <OSC>);
   if ($xml !~ m/^</) {
-     die "failed to open /build/$project/$repo/$arch/$package/_buildinfo"; 
+     die "failed to open /build/$project/$repo/$arch/$package/_buildinfo";
   }
   $xml = XMLin($xml, ForceArray => 1);
   close(OSC);
@@ -320,6 +321,7 @@ my $rebuildit = 0;
 $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
 for my $package (@packages) {
     $package = $package->{package};
+    last if (length($api) > 32767);
 
     if (!$problems{$package}) {
       # it can go
@@ -329,8 +331,8 @@ for my $package (@packages) {
 
     my $oproblem = $oproblems{$package} || '';
     if ($problems{$package} eq $oproblem) {
-	# rebuild won't help
-	next;
+        # rebuild won't help
+        next;
     }
     $rebuildit = 1;
     print "rebuild ", $package, ": ",
