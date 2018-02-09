@@ -234,6 +234,11 @@ class Leaper(ReviewBot.ReviewBot):
                     self.needs_release_manager = True
                 if origin == src_project:
                     self.source_in_factory = True
+                    # no need to approve submissions from Factory if
+                    # the lookup file points to Factory. Just causes
+                    # spam for many maintainers
+                    # https://github.com/openSUSE/osc-plugin-factory/issues/1393
+                    self.do_check_maintainer_review = False
                 is_fine_if_factory = True
                 # fall through to check history and requests
             elif origin == 'FORK':
