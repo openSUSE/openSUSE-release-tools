@@ -1065,7 +1065,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     self.options.repos.append('/'.join([opts.project, 'bootstrap_copy']))
 
                 # DVD project first since it depends on main.
-                if api.rings:
+                if api.item_exists(opts.project + ':DVD'):
                     opts_dvd = copy.deepcopy(opts)
                     opts_dvd.project += ':DVD'
                     self.options.repos.insert(0, '/'.join([opts_dvd.project, main_repo]))
