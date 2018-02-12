@@ -25,12 +25,7 @@ class TestUtil(unittest.TestCase):
                 ]
             elif prefix == 'SUSE':
                 return [
-                    'SUSE:SLE-10',
-                    'SUSE:SLE-10:SP2',
-                    'SUSE:SLE-11',
-                    'SUSE:SLE-11:GA',
-                    'SUSE:SLE-11:SP1',
-                    'SUSE:SLE-11:SP1:Update',
+                    # Names reflect IBS as OBS differs for no apparent reason.
                     'SUSE:SLE-12:GA',
                     'SUSE:SLE-12-SP1:GA',
                     'SUSE:SLE-12-SP1:Update',

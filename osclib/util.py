@@ -13,7 +13,7 @@ def project_list_family(apiurl, project):
     count_original = project.count(':')
     if project.startswith('SUSE:SLE'):
         project = ':'.join(project.split(':')[:2])
-        family_filter = lambda p: p.endswith(':GA') and not p.startswith('SUSE:SLE-11')
+        family_filter = lambda p: p.count(':') == count_original and p.endswith(':GA')
     else:
         family_filter = lambda p: p.count(':') == count_original
 
