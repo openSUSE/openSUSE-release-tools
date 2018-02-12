@@ -47,6 +47,7 @@ import glob
 import solv
 from pprint import pprint, pformat
 import os
+import os.path
 import subprocess
 import re
 import yaml
@@ -612,22 +613,36 @@ class PkgListGen(ToolBase.ToolBase):
 
         return pool
 
+    # parse file and merge all groups
+    def _parse_unneeded(self, filename):
+        filename = os.path.join(self.input_dir, filename)
+        if not os.path.isfile(filename):
+            return set()
+        fh = open(filename, 'r')
+        logger.debug("reading %s", filename)
+        result = set()
+        for groupname, group in yaml.safe_load(fh).items():
+            result.update(group)
+        return result
+
     def _collect_unsorted_packages(self, modules):
+        uneeded_regexps = [re.compile(r)
+                           for r in self._parse_unneeded('unneeded.yml')]
+
         packages = dict()
         for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
-            p = set([s.name for s in
-                     pool.solvables_iter() if not
-                     (s.name.endswith('-32bit') or
-                      s.name.endswith('-debuginfo') or
-                      s.name.endswith('-debugsource'))])
+            archpacks = [s.name for s in pool.solvables_iter()]
+            for r in uneeded_regexps:
+                archpacks = [p for p in archpacks if not r.match(p)]
 
-            p -= self.unwanted
+            # convert to set
+            archpacks = set(archpacks) - self.unwanted
             for g in modules:
                 for a in ('*', arch):
-                    p -= set(g.solved_packages[a].keys())
-            for package in p:
+                    archpacks -= set(g.solved_packages[a].keys())
+            for package in archpacks:
                 packages.setdefault(package, []).append(arch)
 
         with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
@@ -1329,4 +1344,3 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit(app.main())
-
