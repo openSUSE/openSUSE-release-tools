@@ -66,6 +66,9 @@ class TestUtil(unittest.TestCase):
         projects = project_list_family_prior(None, 'openSUSE:Leap:15.0')
         self.assertEqual(projects, ['openSUSE:Leap:42.3', 'openSUSE:Leap:42.2'])
 
+        projects = project_list_family_prior(None, 'openSUSE:Leap:15.0', last='openSUSE:Leap:42.3')
+        self.assertEqual(projects, ['openSUSE:Leap:42.3'])
+
         projects = project_list_family_prior(None, 'openSUSE:Leap:42.3')
         self.assertEqual(projects, ['openSUSE:Leap:42.2'])
 
