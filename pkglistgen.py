@@ -1169,9 +1169,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # Ensure solv files from all releases in product family are updated.
             print('-> solv_cache_update')
             cache_dir_solv = save_cache_path('opensuse-packagelists', 'solv')
+            family_last = target_config.get('pkglistgen-product-family-last')
             family_include = target_config.get('pkglistgen-product-family-include')
             solv_prior = self.solv_cache_update(
-                apiurl, cache_dir_solv, target_project, family_include, opts)
+                apiurl, cache_dir_solv, target_project, family_last, family_include, opts)
 
             # Include pre-final release solv files for target project. These
             # files will only exist from previous runs.
@@ -1211,11 +1212,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.build_stub(release_dir, 'spec')
             self.commit_package(release_dir)
 
-    def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_include, opts):
+    def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
         prior = set()
 
-        project_family = project_list_family_prior(apiurl, target_project, include_self=True)
+        project_family = project_list_family_prior(
+            apiurl, target_project, include_self=True, last=family_last)
         if family_include:
             # Include projects from a different family if desired.
             project_family.extend(project_list_family(apiurl, family_include))
