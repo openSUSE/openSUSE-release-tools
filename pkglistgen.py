@@ -92,7 +92,7 @@ class Group(object):
 
         self.comment = ' ### AUTOMATICALLY GENERATED, DO NOT EDIT ### '
         self.srcpkgs = None
-        self.develpkgs = []
+        self.develpkgs = dict()
         self.silents = set()
         self.ignored = set()
         # special feature for SLE. Patterns are marked for expansion
@@ -171,7 +171,7 @@ class Group(object):
         for arch in self.architectures:
             solved[arch] = dict()
 
-        self.srcpkgs = set()
+        self.srcpkgs = dict()
         self.recommends = dict()
         self.suggested = dict()
         for arch in self.architectures:
@@ -257,7 +257,7 @@ class Group(object):
                         src = s.name
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
-                    self.srcpkgs.add(src)
+                    self.srcpkgs[src] = group + ':' + s.name
 
             for n, group in self.packages[arch]:
                 solve_one_package(n, group)
@@ -310,8 +310,7 @@ class Group(object):
                     overlap.comment += '\n  - ' + p
                     overlap._add_to_packages(p)
 
-    def collect_devel_packages(self, modules):
-        develpkgs = set()
+    def collect_devel_packages(self):
         for arch in self.architectures:
             pool = self.pkglist._prepare_pool(arch)
             sel = pool.Selection()
@@ -323,18 +322,8 @@ class Group(object):
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
 
-                    if src in self.srcpkgs:
-                        develpkgs.add(s.name)
-
-        self.develpkgs = []
-        for p in develpkgs:
-            already_present = False
-            for m in modules:
-                for arch in ['*'] + self.architectures:
-                    already_present = already_present or (p in m.solved_packages[arch])
-                    already_present = already_present or (p in m.develpkgs)
-            if not already_present:
-                self.develpkgs.append(p)
+                    if src in self.srcpkgs.keys():
+                        self.develpkgs[s.name] = self.srcpkgs[src]
 
     def _filter_already_selected(self, modules, pkgdict):
         # erase our own - so we don't filter our own
@@ -399,22 +388,6 @@ class Group(object):
             if name in packages:
                 c = ET.Comment(' reason: {} '.format(packages[name]))
                 packagelist.append(c)
-        if arch == '*' and self.develpkgs:
-            c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)) + "\n")
-            root.append(c)
-        if arch == '*' and self.recommends:
-            comment = "\nRecommended packages:\n"
-            for p in sorted(self.recommends.keys()):
-                comment += "  - {} # {}\n".format(p, self.recommends[p])
-            c = ET.Comment(comment)
-            root.append(c)
-        if arch == '*' and self.suggested:
-            comment = "\nSuggested packages:\n"
-            for p in sorted(self.suggested.keys()):
-                comment += "  - {} # {}\n".format(p, self.suggested[p])
-            c = ET.Comment(comment)
-            root.append(c)
-
 
         return root
 
@@ -594,7 +567,7 @@ class PkgListGen(ToolBase.ToolBase):
         if hasattr(pool, 'set_namespacecallback'):
             pool.set_namespacecallback(cb)
         else:
-            logger.warn('libsolv missing namespace callback')
+            logger.debug('libsolv missing namespace callback')
 
         for prp in self.repos:
             project, reponame = prp.split('/')
@@ -654,7 +627,24 @@ class PkgListGen(ToolBase.ToolBase):
                     fh.write(": [")
                     fh.write(','.join(sorted(packages[p])))
                     fh.write("]")
+                    reason = self._find_reason(p, modules)
+                    if reason:
+                        fh.write(' # ' + reason)
                 fh.write(" \n")
+
+    # give a hint if the package is related to a group
+    def _find_reason(self, package, modules):
+        # go through the modules multiple times to find the "best"
+        for g in modules:
+           if package in g.recommends:
+               return 'recommended by ' + g.recommends[package]
+        for g in modules:
+           if package in g.suggested:
+               return 'suggested by ' + g.suggested[package]
+        for g in modules:
+           if package in g.develpkgs:
+               return 'devel package of ' + g.develpkgs[package]
+        return None
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging', 'ports']
@@ -994,7 +984,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         overlap = self.tool.groups.get('overlap')
         for module in modules:
             module.check_dups(modules, overlap)
-            module.collect_devel_packages(modules)
+            module.collect_devel_packages()
             module.filter_already_selected(modules)
 
         if overlap:
