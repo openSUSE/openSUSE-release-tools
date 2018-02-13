@@ -161,6 +161,7 @@ if (%torebuild) {
   my $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
   for my $package (sort keys %torebuild) {
     next if (defined $ignored{$package});
+    last if (length($api) > 32767);
     $api .= "&package=" . uri_escape( $package );
   }
   system("osc api -X POST '$api'");
@@ -207,7 +208,7 @@ sub get_paths($$$) {
   open(OSC, "osc api /build/$project/$repo/$arch/$package/_buildinfo|");
   my $xml = join('', <OSC>);
   if ($xml !~ m/^</) {
-     die "failed to open /build/$project/$repo/$arch/$package/_buildinfo"; 
+     die "failed to open /build/$project/$repo/$arch/$package/_buildinfo";
   }
   $xml = XMLin($xml, ForceArray => 1);
   close(OSC);
@@ -244,11 +245,15 @@ foreach my $package (@rpms) {
 close(PACKAGES);
 
 # read the problems out of installcheck
-open( INSTALLCHECK, "installcheck $arch $pfile|" );
+my $rpmarch = $arch;
+$rpmarch = "armv7hl" if ($arch eq "armv7l");
+$rpmarch = "armv6hl" if ($arch eq "armv6l");
+
+open( INSTALLCHECK, "/usr/bin/installcheck $rpmarch $pfile|" );
 while (<INSTALLCHECK>) {
     chomp;
 
-    if (m/^can't install (.*)\-[^-]*\-[^-]*\.($arch|noarch):/) {
+    if (m/^can't install (.*)\-[^-]*\-[^-]*\.($rpmarch|noarch):/) {
         $cproblem = $1;
         $cproblem =~ s/kmp-([^-]*)/kmp-default/;
         $cproblem = find_source_container($cproblem);
@@ -265,11 +270,18 @@ while (<INSTALLCHECK>) {
     # very thin ice here
     s,\(\)\(64bit\),,;
 
-    s,(needed by [^ ]*)\-[^-]*\-[^-]*\.($arch|noarch)$,$1,;
+    s,(needed by [^ ]*)\-[^-]*\-[^-]*\.($rpmarch|noarch)$,$1,;
 
     s,^\s*,,;
     # patterns are too spammy and rebuilding doesn't help
-    next if (grep { $_ eq $cproblem } qw(patterns-openSUSE installation-images:Kubic fftw3:gnu-openmpi-hpc hdf5:mvapich2 hdf5:openmpi hdf5:serial scalapack:gnu-mvapich2-hpc scalapack:gnu-openmpi-hpc python-numpy:gnu-hpc petsc:serial netcdf:serial netcdf:openmpi netcdf:gnu-hpc netcdf:gnu-openmpi-hpc netcdf:gnu-mvapich2-hpc));
+    next if (grep { $_ eq $cproblem } qw(
+        patterns-openSUSE patterns-base patterns-haskell
+        patterns-mate patterns-media patterns-yast
+        installation-images:Kubic fftw3:gnu-openmpi-hpc hdf5:mvapich2
+        hdf5:openmpi hdf5:serial scalapack:gnu-mvapich2-hpc
+        scalapack:gnu-openmpi-hpc python-numpy:gnu-hpc
+        petsc:serial netcdf:serial netcdf:openmpi netcdf:gnu-hpc
+        netcdf:gnu-openmpi-hpc netcdf:gnu-mvapich2-hpc));
     $problems{$cproblem}->{$_} = 1;
 
 }
@@ -316,6 +328,7 @@ my $rebuildit = 0;
 $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
 for my $package (@packages) {
     $package = $package->{package};
+    last if (length($api) > 32767);
 
     if (!$problems{$package}) {
       # it can go
@@ -325,8 +338,8 @@ for my $package (@packages) {
 
     my $oproblem = $oproblems{$package} || '';
     if ($problems{$package} eq $oproblem) {
-	# rebuild won't help
-	next;
+        # rebuild won't help
+        next;
     }
     $rebuildit = 1;
     print "rebuild ", $package, ": ",
