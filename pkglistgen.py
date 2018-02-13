@@ -72,6 +72,7 @@ ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
 DEFAULT_REPOS = ("openSUSE:Factory/standard")
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
+
 class Group(object):
 
     def __init__(self, name, pkglist):
@@ -164,7 +165,7 @@ class Group(object):
             self.ignore(g)
         self.ignored.add(without)
 
-    def solve(self, ignore_recommended=False, include_suggested = False):
+    def solve(self, ignore_recommended=False, include_suggested=False):
         """ base: list of base groups or None """
 
         solved = dict()
@@ -292,13 +293,15 @@ class Group(object):
         self.solved = True
 
     def check_dups(self, modules, overlap):
-        if not overlap: return
+        if not overlap:
+            return
         packages = set(self.solved_packages['*'])
         for arch in self.architectures:
             packages.update(self.solved_packages[arch])
         for m in modules:
             # do not check with ourselves and only once for the rest
-            if m.name <= self.name: continue
+            if m.name <= self.name:
+                continue
             if self.name in m.conflicts or m.name in self.conflicts:
                 continue
             mp = set(m.solved_packages['*'])
@@ -339,7 +342,7 @@ class Group(object):
         self._filter_already_selected(modules, self.recommends)
         self._filter_already_selected(modules, self.suggested)
 
-    def toxml(self, arch, ignore_broken = False, comment=None):
+    def toxml(self, arch, ignore_broken=False, comment=None):
         packages = self.solved_packages[arch]
 
         name = self.name
@@ -381,7 +384,7 @@ class Group(object):
                     logger.error(msg)
                     name = msg
             status = self.pkglist.supportstatus(name)
-            attrs = { 'name': name }
+            attrs = {'name': name}
             if status is not None:
                 attrs['supportstatus'] = status
             p = ET.SubElement(packagelist, 'package', attrs)
@@ -578,7 +581,7 @@ class PkgListGen(ToolBase.ToolBase):
                 raise Exception("failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
             for solvable in repo.solvables_iter():
                 if solvable.name in solvables:
-                    self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE|solv.Job.SOLVER_LOCK, solvable.id))
+                    self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE | solv.Job.SOLVER_LOCK, solvable.id))
                 solvables.add(solvable.name)
 
         pool.addfileprovides()
@@ -636,15 +639,16 @@ class PkgListGen(ToolBase.ToolBase):
     def _find_reason(self, package, modules):
         # go through the modules multiple times to find the "best"
         for g in modules:
-           if package in g.recommends:
-               return 'recommended by ' + g.recommends[package]
+            if package in g.recommends:
+                return 'recommended by ' + g.recommends[package]
         for g in modules:
-           if package in g.suggested:
-               return 'suggested by ' + g.suggested[package]
+            if package in g.suggested:
+                return 'suggested by ' + g.suggested[package]
         for g in modules:
-           if package in g.develpkgs:
-               return 'devel package of ' + g.develpkgs[package]
+            if package in g.develpkgs:
+                return 'devel package of ' + g.develpkgs[package]
         return None
+
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging', 'ports']
@@ -852,7 +856,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for reponame in sorted(set(drops.values())):
             print("<!-- %s -->" % reponame, file=ofh)
             for p in sorted(drops):
-                if drops[p] != reponame: continue
+                if drops[p] != reponame:
+                    continue
                 print("  <obsoletepackage>%s</obsoletepackage>" % p, file=ofh)
 
     @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
@@ -888,7 +893,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         path_prefix = 'suse/' if name and repo_style == 'build' else ''
         url = urlparse.urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
         repomd = requests.get(url)
-        ns = { 'r': 'http://linux.duke.edu/metadata/repo' }
+        ns = {'r': 'http://linux.duke.edu/metadata/repo'}
         root = ET.fromstring(repomd.content)
         location = root.find('.//r:data[@type="primary"]/r:location', ns).get('href')
         f.write(repomd.content)
@@ -964,8 +969,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.locales_from:
             with open(os.path.join(self.tool.input_dir, opts.locales_from), 'r') as fh:
                 root = ET.parse(fh).getroot()
-                self.tool.locales |= set([ lang.text for lang in root.findall(".//linguas/language") ])
-
+                self.tool.locales |= set([lang.text for lang in root.findall(".//linguas/language")])
 
         modules = []
         # the yml parser makes an array out of everything, so
@@ -988,13 +992,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             module.filter_already_selected(modules)
 
         if overlap:
-            ignores = [ x.name for x in overlap.ignored ]
+            ignores = [x.name for x in overlap.ignored]
             self.tool.solve_module(overlap.name, [], ignores)
             overlapped = set(overlap.solved_packages['*'])
             for arch in overlap.architectures:
                 overlapped |= set(overlap.solved_packages[arch])
             for module in modules:
-                if module.name == 'overlap' or module in overlap.ignored: continue
+                if module.name == 'overlap' or module in overlap.ignored:
+                    continue
                 for arch in ['*'] + module.architectures:
                     for p in overlapped:
                         module.solved_packages[arch].pop(p, None)
