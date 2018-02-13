@@ -155,7 +155,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 if review.by_project:
                     skip = False
                     if settings['exclude-project']:
-                        for p in settings['exclude-project']:
+                        for p in settings['exclude-project'].split(' '):
                             if review.by_project.startswith(p):
                                 skip = True
                                 break
