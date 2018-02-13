@@ -1156,6 +1156,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.copy_directory_contents(group_dir, product_dir,
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
         self.change_extension(product_dir, '.spec.in', '.spec')
+        self.change_extension(product_dir, '.product.in', '.product')
 
         self.options.input_dir = group_dir
         self.options.output_dir = product_dir
@@ -1223,6 +1224,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         delete_kiwis = target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' ')
         self.unlink_list(product_dir, delete_kiwis)
+        if opts.scope == 'staging':
+            self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
         if skip_release:
@@ -1297,6 +1300,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         return prior
 
+    # staging projects don't need source and debug medium - and the glibc source
+    # rpm conflicts between standard and bootstrap_copy repository causing the
+    # product builder to fail
+    def strip_medium_from_staging(self, path):
+        medium = re.compile('name="(DEBUG|SOURCE)MEDIUM"')
+        for name in glob.glob(os.path.join(path, '*.kiwi')):
+            lines = open(name).readlines()
+            lines = [l for l in lines if not medium.search(l)]
+            open(name, 'w').writelines(lines)
+
     def move_list(self, file_list, destination):
         for name in file_list:
             os.rename(name, os.path.join(destination, os.path.basename(name)))
@@ -1335,7 +1348,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def multibuild_from_glob(self, destination, pathname):
         root = ET.Element('multibuild')
-        for name in glob.glob(os.path.join(destination, pathname)):
+        for name in sorted(glob.glob(os.path.join(destination, pathname))):
             package = ET.SubElement(root, 'package')
             package.text = os.path.splitext(os.path.basename(name))[0]
 
