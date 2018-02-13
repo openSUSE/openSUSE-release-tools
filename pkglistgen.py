@@ -47,6 +47,7 @@ import glob
 import solv
 from pprint import pprint, pformat
 import os
+import os.path
 import subprocess
 import re
 import yaml
@@ -71,6 +72,7 @@ ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
 DEFAULT_REPOS = ("openSUSE:Factory/standard")
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
+
 class Group(object):
 
     def __init__(self, name, pkglist):
@@ -91,7 +93,7 @@ class Group(object):
 
         self.comment = ' ### AUTOMATICALLY GENERATED, DO NOT EDIT ### '
         self.srcpkgs = None
-        self.develpkgs = []
+        self.develpkgs = dict()
         self.silents = set()
         self.ignored = set()
         # special feature for SLE. Patterns are marked for expansion
@@ -163,14 +165,14 @@ class Group(object):
             self.ignore(g)
         self.ignored.add(without)
 
-    def solve(self, ignore_recommended=False, include_suggested = False):
+    def solve(self, ignore_recommended=False, include_suggested=False):
         """ base: list of base groups or None """
 
         solved = dict()
         for arch in self.architectures:
             solved[arch] = dict()
 
-        self.srcpkgs = set()
+        self.srcpkgs = dict()
         self.recommends = dict()
         self.suggested = dict()
         for arch in self.architectures:
@@ -256,7 +258,7 @@ class Group(object):
                         src = s.name
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
-                    self.srcpkgs.add(src)
+                    self.srcpkgs[src] = group + ':' + s.name
 
             for n, group in self.packages[arch]:
                 solve_one_package(n, group)
@@ -291,13 +293,15 @@ class Group(object):
         self.solved = True
 
     def check_dups(self, modules, overlap):
-        if not overlap: return
+        if not overlap:
+            return
         packages = set(self.solved_packages['*'])
         for arch in self.architectures:
             packages.update(self.solved_packages[arch])
         for m in modules:
             # do not check with ourselves and only once for the rest
-            if m.name <= self.name: continue
+            if m.name <= self.name:
+                continue
             if self.name in m.conflicts or m.name in self.conflicts:
                 continue
             mp = set(m.solved_packages['*'])
@@ -309,8 +313,7 @@ class Group(object):
                     overlap.comment += '\n  - ' + p
                     overlap._add_to_packages(p)
 
-    def collect_devel_packages(self, modules):
-        develpkgs = set()
+    def collect_devel_packages(self):
         for arch in self.architectures:
             pool = self.pkglist._prepare_pool(arch)
             sel = pool.Selection()
@@ -322,18 +325,8 @@ class Group(object):
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
 
-                    if src in self.srcpkgs:
-                        develpkgs.add(s.name)
-
-        self.develpkgs = []
-        for p in develpkgs:
-            already_present = False
-            for m in modules:
-                for arch in ['*'] + self.architectures:
-                    already_present = already_present or (p in m.solved_packages[arch])
-                    already_present = already_present or (p in m.develpkgs)
-            if not already_present:
-                self.develpkgs.append(p)
+                    if src in self.srcpkgs.keys():
+                        self.develpkgs[s.name] = self.srcpkgs[src]
 
     def _filter_already_selected(self, modules, pkgdict):
         # erase our own - so we don't filter our own
@@ -349,7 +342,7 @@ class Group(object):
         self._filter_already_selected(modules, self.recommends)
         self._filter_already_selected(modules, self.suggested)
 
-    def toxml(self, arch, ignore_broken = False, comment=None):
+    def toxml(self, arch, ignore_broken=False, comment=None):
         packages = self.solved_packages[arch]
 
         name = self.name
@@ -391,29 +384,13 @@ class Group(object):
                     logger.error(msg)
                     name = msg
             status = self.pkglist.supportstatus(name)
-            attrs = { 'name': name }
+            attrs = {'name': name}
             if status is not None:
                 attrs['supportstatus'] = status
             p = ET.SubElement(packagelist, 'package', attrs)
             if name in packages:
                 c = ET.Comment(' reason: {} '.format(packages[name]))
                 packagelist.append(c)
-        if arch == '*' and self.develpkgs:
-            c = ET.Comment("\nDevelopment packages:\n  - " + "\n  - ".join(sorted(self.develpkgs)) + "\n")
-            root.append(c)
-        if arch == '*' and self.recommends:
-            comment = "\nRecommended packages:\n"
-            for p in sorted(self.recommends.keys()):
-                comment += "  - {} # {}\n".format(p, self.recommends[p])
-            c = ET.Comment(comment)
-            root.append(c)
-        if arch == '*' and self.suggested:
-            comment = "\nSuggested packages:\n"
-            for p in sorted(self.suggested.keys()):
-                comment += "  - {} # {}\n".format(p, self.suggested[p])
-            c = ET.Comment(comment)
-            root.append(c)
-
 
         return root
 
@@ -593,7 +570,7 @@ class PkgListGen(ToolBase.ToolBase):
         if hasattr(pool, 'set_namespacecallback'):
             pool.set_namespacecallback(cb)
         else:
-            logger.warn('libsolv missing namespace callback')
+            logger.debug('libsolv missing namespace callback')
 
         for prp in self.repos:
             project, reponame = prp.split('/')
@@ -604,7 +581,7 @@ class PkgListGen(ToolBase.ToolBase):
                 raise Exception("failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
             for solvable in repo.solvables_iter():
                 if solvable.name in solvables:
-                    self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE|solv.Job.SOLVER_LOCK, solvable.id))
+                    self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE | solv.Job.SOLVER_LOCK, solvable.id))
                 solvables.add(solvable.name)
 
         pool.addfileprovides()
@@ -612,22 +589,36 @@ class PkgListGen(ToolBase.ToolBase):
 
         return pool
 
+    # parse file and merge all groups
+    def _parse_unneeded(self, filename):
+        filename = os.path.join(self.input_dir, filename)
+        if not os.path.isfile(filename):
+            return set()
+        fh = open(filename, 'r')
+        logger.debug("reading %s", filename)
+        result = set()
+        for groupname, group in yaml.safe_load(fh).items():
+            result.update(group)
+        return result
+
     def _collect_unsorted_packages(self, modules):
+        uneeded_regexps = [re.compile(r)
+                           for r in self._parse_unneeded('unneeded.yml')]
+
         packages = dict()
         for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
-            p = set([s.name for s in
-                     pool.solvables_iter() if not
-                     (s.name.endswith('-32bit') or
-                      s.name.endswith('-debuginfo') or
-                      s.name.endswith('-debugsource'))])
+            archpacks = [s.name for s in pool.solvables_iter()]
+            for r in uneeded_regexps:
+                archpacks = [p for p in archpacks if not r.match(p)]
 
-            p -= self.unwanted
+            # convert to set
+            archpacks = set(archpacks) - self.unwanted
             for g in modules:
                 for a in ('*', arch):
-                    p -= set(g.solved_packages[a].keys())
-            for package in p:
+                    archpacks -= set(g.solved_packages[a].keys())
+            for package in archpacks:
                 packages.setdefault(package, []).append(arch)
 
         with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
@@ -639,7 +630,25 @@ class PkgListGen(ToolBase.ToolBase):
                     fh.write(": [")
                     fh.write(','.join(sorted(packages[p])))
                     fh.write("]")
+                    reason = self._find_reason(p, modules)
+                    if reason:
+                        fh.write(' # ' + reason)
                 fh.write(" \n")
+
+    # give a hint if the package is related to a group
+    def _find_reason(self, package, modules):
+        # go through the modules multiple times to find the "best"
+        for g in modules:
+            if package in g.recommends:
+                return 'recommended by ' + g.recommends[package]
+        for g in modules:
+            if package in g.suggested:
+                return 'suggested by ' + g.suggested[package]
+        for g in modules:
+            if package in g.develpkgs:
+                return 'devel package of ' + g.develpkgs[package]
+        return None
+
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging', 'ports']
@@ -847,7 +856,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for reponame in sorted(set(drops.values())):
             print("<!-- %s -->" % reponame, file=ofh)
             for p in sorted(drops):
-                if drops[p] != reponame: continue
+                if drops[p] != reponame:
+                    continue
                 print("  <obsoletepackage>%s</obsoletepackage>" % p, file=ofh)
 
     @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
@@ -883,7 +893,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         path_prefix = 'suse/' if name and repo_style == 'build' else ''
         url = urlparse.urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
         repomd = requests.get(url)
-        ns = { 'r': 'http://linux.duke.edu/metadata/repo' }
+        ns = {'r': 'http://linux.duke.edu/metadata/repo'}
         root = ET.fromstring(repomd.content)
         location = root.find('.//r:data[@type="primary"]/r:location', ns).get('href')
         f.write(repomd.content)
@@ -959,8 +969,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.locales_from:
             with open(os.path.join(self.tool.input_dir, opts.locales_from), 'r') as fh:
                 root = ET.parse(fh).getroot()
-                self.tool.locales |= set([ lang.text for lang in root.findall(".//linguas/language") ])
-
+                self.tool.locales |= set([lang.text for lang in root.findall(".//linguas/language")])
 
         modules = []
         # the yml parser makes an array out of everything, so
@@ -979,17 +988,18 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         overlap = self.tool.groups.get('overlap')
         for module in modules:
             module.check_dups(modules, overlap)
-            module.collect_devel_packages(modules)
+            module.collect_devel_packages()
             module.filter_already_selected(modules)
 
         if overlap:
-            ignores = [ x.name for x in overlap.ignored ]
+            ignores = [x.name for x in overlap.ignored]
             self.tool.solve_module(overlap.name, [], ignores)
             overlapped = set(overlap.solved_packages['*'])
             for arch in overlap.architectures:
                 overlapped |= set(overlap.solved_packages[arch])
             for module in modules:
-                if module.name == 'overlap' or module in overlap.ignored: continue
+                if module.name == 'overlap' or module in overlap.ignored:
+                    continue
                 for arch in ['*'] + module.architectures:
                     for p in overlapped:
                         module.solved_packages[arch].pop(p, None)
@@ -1329,4 +1339,3 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit(app.main())
-
