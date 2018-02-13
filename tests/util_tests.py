@@ -25,12 +25,7 @@ class TestUtil(unittest.TestCase):
                 ]
             elif prefix == 'SUSE':
                 return [
-                    'SUSE:SLE-10',
-                    'SUSE:SLE-10:SP2',
-                    'SUSE:SLE-11',
-                    'SUSE:SLE-11:GA',
-                    'SUSE:SLE-11:SP1',
-                    'SUSE:SLE-11:SP1:Update',
+                    # Names reflect IBS as OBS differs for no apparent reason.
                     'SUSE:SLE-12:GA',
                     'SUSE:SLE-12-SP1:GA',
                     'SUSE:SLE-12-SP1:Update',
@@ -70,6 +65,9 @@ class TestUtil(unittest.TestCase):
 
         projects = project_list_family_prior(None, 'openSUSE:Leap:15.0')
         self.assertEqual(projects, ['openSUSE:Leap:42.3', 'openSUSE:Leap:42.2'])
+
+        projects = project_list_family_prior(None, 'openSUSE:Leap:15.0', last='openSUSE:Leap:42.3')
+        self.assertEqual(projects, ['openSUSE:Leap:42.3'])
 
         projects = project_list_family_prior(None, 'openSUSE:Leap:42.3')
         self.assertEqual(projects, ['openSUSE:Leap:42.2'])

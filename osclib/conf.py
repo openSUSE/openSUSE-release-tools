@@ -108,6 +108,7 @@ DEFAULT = {
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-ignore-unresolvable': '1',
         'pkglistgen-ignore-recommended': '1',
+        'pkglistgen-product-family-last': 'SUSE:SLE-11:GA',
     },
     r'SUSE:(?P<project>.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
