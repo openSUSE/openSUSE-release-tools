@@ -46,6 +46,11 @@ class ToTestBase(object):
 
     """Base class to store the basic interface"""
 
+    product_repo = 'images'
+    product_arch = 'local'
+    livecd_repo = 'images'
+    livecd_archs = ['i586', 'x86_64']
+
     def __init__(self, project, dryrun=False, api_url=None, openqa_server='https://openqa.opensuse.org', test_subproject=None):
         self.project = project
         self.dryrun = dryrun
@@ -79,7 +84,7 @@ class ToTestBase(object):
         return self.release_version()
 
     def binaries_of_product(self, project, product):
-        url = self.api.makeurl(['build', project, 'images', 'local', product])
+        url = self.api.makeurl(['build', project, self.product_repo, self.product_arch, product])
         try:
             f = self.api.retried_GET(url)
         except urllib2.HTTPError:
@@ -133,6 +138,9 @@ class ToTestBase(object):
                 return result.group(1)
 
         raise NotFoundException("can't find %s version" % self.project)
+
+    def current_qa_version(self):
+        return self.api.dashboard_content_load('version_totest')
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -393,7 +401,7 @@ class ToTestBase(object):
             return False
 
         for product in self.ftp_products + self.main_products:
-            if not self.package_ok(self.project, product, 'images', 'local'):
+            if not self.package_ok(self.project, product, self.product_repo, self.product_arch):
                 return False
 
             if len(self.livecd_products):
@@ -401,9 +409,9 @@ class ToTestBase(object):
                 if not self.all_repos_done('%s:Live' % self.project):
                     return False
 
-                for arch in ['i586', 'x86_64']:
+                for arch in self.livecd_archs:
                     for product in self.livecd_products:
-                        if not self.package_ok('%s:Live' % self.project, product, 'images', arch):
+                        if not self.package_ok('%s:Live' % self.project, product, self.livecd_repo, arch):
                             return False
 
         return True
@@ -479,7 +487,7 @@ class ToTestBase(object):
         new_snapshot = self.current_version()
         self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
-        current_qa_version = self.api.dashboard_content_load('version_totest')
+        current_qa_version = self.current_qa_version()
 
         logger.info('current_snapshot %s: %s' %
                     (current_snapshot, self._result2str(current_result)))
@@ -488,7 +496,7 @@ class ToTestBase(object):
 
         snapshotable = self.is_snapshottable()
         logger.debug("snapshotable: %s", snapshotable)
-        can_release = (current_result != QA_INPROGRESS and snapshotable)
+        can_release = ((current_snapshot is None or current_result != QA_INPROGRESS) and snapshotable)
 
         # not overwriting
         if new_snapshot == current_snapshot:
@@ -600,6 +608,8 @@ class ToTestBaseNew(ToTestBase):
                 builds.add(self.iso_build_version(self.project, p))
 
             ret = (len(builds) == 1)
+            if ret is False:
+                logger.debug("not all medias have the same build number")
 
         return ret
 
@@ -743,6 +753,35 @@ class ToTest150Ports(ToTestBaseNew):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
 
+class ToTest150Images(ToTestBaseNew):
+    main_products = [
+        'livecd-leap-gnome',
+        'livecd-leap-kde',
+        'livecd-leap-x11',
+    ]
+
+    ftp_products = []
+
+    livecd_products = []
+    product_arch = 'x86_64'
+
+    def openqa_group(self):
+        return 'openSUSE Leap 15.0 Images'
+
+    def current_qa_version(self):
+        return self.api.dashboard_content_load('version_totest_images')
+
+    def write_version_to_dashboard(self, target, version):
+        super(ToTest150Images, self).write_version_to_dashboard('{}_images'.format(target), version)
+
+    def get_current_snapshot(self):
+        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
+
+    def _release(self, set_release=None):
+        ToTestBase._release(self, set_release)
+
+    def jobs_num(self):
+        return 13
 
 class ToTestSLE150(ToTestBaseNew):
     main_products = [
@@ -789,6 +828,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'openSUSE:Factory:zSystems': ToTestFactoryzSystems,
             'openSUSE:Leap:15.0': ToTest150,
             'openSUSE:Leap:15.0:Ports': ToTest150Ports,
+            'openSUSE:Leap:15.0:Images': ToTest150Images,
             'SUSE:SLE-15:GA': ToTestSLE150,
         }
         self.openqa_server = {
