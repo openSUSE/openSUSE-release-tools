@@ -73,6 +73,7 @@ DEFAULT = {
         # check_source.py
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
+        'repo_checker-arch-whitelist': 'x86_64',
         # 16 hour staging window for follow-ups since lower throughput.
         'splitter-staging-age-max': '57600',
         # No special packages since they will pass through SLE first.
