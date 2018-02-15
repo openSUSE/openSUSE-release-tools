@@ -784,6 +784,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 self.solv_merge(solv_file, solv_file_nonfree, solv_file_merged)
 
     def solv_merge(self, solv1, solv2, solv_merged):
+        if os.path.exists(solv_merged):
+            modified = map(os.path.getmtime, [solv1, solv2, solv_merged])
+            if max(modified) <= modified[2]:
+                # The two inputs were modified before or at the same as merged.
+                logger.debug('merge skipped for {}'.format(solv_merged))
+                return
+
         with open(solv_merged, 'w') as handle:
             p = subprocess.Popen(['mergesolv', solv1, solv2], stdout=handle)
             p.communicate()
