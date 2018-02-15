@@ -31,6 +31,7 @@ import sys
 import cmdln
 import logging
 import urllib2
+import filecmp
 from osc.core import checkout_package
 from osc.core import http_GET
 from osc.core import makeurl
@@ -889,7 +890,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if self.options.output_dir:
             build, repo_style = self.dump_solv_build(baseurl)
             name = '{}/{}.solv'.format(self.options.output_dir, build)
-            if not opts.overwrite and os.path.exists(name):
+            # For update repo name never changes so always update.
+            if not opts.overwrite and repo_style != 'update' and os.path.exists(name):
                 logger.info("%s exists", name)
                 return name
             ofh = open(name + '.new', 'w')
@@ -920,11 +922,21 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             repo.write(ofh)
 
         if name is not None:
-            os.rename(name + '.new', name)
+            # Only update file if overwrite or different.
+            ofh.flush() # Ensure entirely written before comparing.
+            if not opts.overwrite and os.path.exists(name) and filecmp.cmp(name + '.new', name, shallow=False):
+                logger.debug('file identical, skip dumping')
+                os.remove(name + '.new')
+            else:
+                os.rename(name + '.new', name)
             return name
 
     def dump_solv_build(self, baseurl):
         """Determine repo format and build string from remote repository."""
+        if 'update' in baseurl:
+            # Could look at .repo file or repomd.xml, but larger change.
+            return 'update-' + os.path.basename(os.path.normpath(baseurl)), 'update'
+
         url = urlparse.urljoin(baseurl, 'media.1/media')
         with requests.get(url) as media:
             for i, line in enumerate(media.iter_lines()):
