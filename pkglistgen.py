@@ -781,18 +781,20 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
                 solv_file_nonfree = os.path.join(
                     CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
-                self.solv_merge(solv_file, solv_file_nonfree, solv_file_merged)
+                self.solv_merge(solv_file_merged, solv_file, solv_file_nonfree)
 
-    def solv_merge(self, solv1, solv2, solv_merged):
+    def solv_merge(self, solv_merged, *solvs):
+        solvs = list(solvs) # From tuple.
+
         if os.path.exists(solv_merged):
-            modified = map(os.path.getmtime, [solv1, solv2, solv_merged])
-            if max(modified) <= modified[2]:
+            modified = map(os.path.getmtime, [solv_merged] + solvs)
+            if max(modified) <= modified[0]:
                 # The two inputs were modified before or at the same as merged.
                 logger.debug('merge skipped for {}'.format(solv_merged))
                 return
 
         with open(solv_merged, 'w') as handle:
-            p = subprocess.Popen(['mergesolv', solv1, solv2], stdout=handle)
+            p = subprocess.Popen(['mergesolv'] + solvs, stdout=handle)
             p.communicate()
 
         if p.returncode:
@@ -1272,7 +1274,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # Merge nonfree solv with free solv or copy free solv as merged.
             merged = names[0].replace('.solv', '.merged.solv')
             if len(names) == 2:
-                self.solv_merge(names[0], names[1], merged)
+                self.solv_merge(merged, *names)
             else:
                 shutil.copyfile(names[0], merged)
             prior.add(merged)
