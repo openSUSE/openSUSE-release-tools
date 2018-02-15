@@ -1258,18 +1258,26 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             project_config = conf.config[project]
 
             baseurl = project_config.get('download-baseurl')
+            baseurl_update = project_config.get('download-baseurl-update')
             if not baseurl:
                 logger.warning('no baseurl configured for {}'.format(project))
                 continue
 
             urls = [urlparse.urljoin(baseurl, 'repo/oss/')]
+            if baseurl_update:
+                urls.append(urlparse.urljoin(baseurl_update, 'oss/'))
             if project_config.get('nonfree'):
                 urls.append(urlparse.urljoin(baseurl, 'repo/non-oss/'))
+                if baseurl_update:
+                    urls.append(urlparse.urljoin(baseurl_update, 'non-oss/'))
 
             names = []
             for url in urls:
+                project_display = project
+                if 'update' in url:
+                    project_display += ':Update'
                 print('-> do_dump_solv for {}/{}'.format(
-                    project, os.path.basename(os.path.normpath(url))))
+                    project_display, os.path.basename(os.path.normpath(url))))
                 logger.debug(url)
 
                 self.options.output_dir = os.path.join(cache_dir_solv, project)
@@ -1285,7 +1293,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
             # Merge nonfree solv with free solv or copy free solv as merged.
             merged = names[0].replace('.solv', '.merged.solv')
-            if len(names) == 2:
+            if len(names) >= 2:
                 self.solv_merge(merged, *names)
             else:
                 shutil.copyfile(names[0], merged)
