@@ -70,6 +70,7 @@ DEFAULT = {
         'delreq-review': None,
         'main-repo': 'standard',
         'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
+        'download-baseurl-update': 'http://download.opensuse.org/update/leap/%(version)s/',
         # check_source.py
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
