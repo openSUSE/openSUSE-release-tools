@@ -24,7 +24,7 @@ Point = namedtuple('Point', ['measurement', 'tags', 'fields', 'time', 'delta'])
 # Duplicate Leap config to handle 13.2 without issue.
 osclib.conf.DEFAULT[
     r'openSUSE:(?P<project>[\d.]+)'] = osclib.conf.DEFAULT[
-    r'openSUSE:(?P<project>Leap:[\d.]+)']
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))']
 
 # Provide osc.core.get_request_list() that swaps out search() implementation to
 # capture the generated query, paginate over and yield each request to avoid
