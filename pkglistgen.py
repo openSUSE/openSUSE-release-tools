@@ -553,25 +553,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.lockjobs[arch] = []
         solvables = set()
 
-        def cb(name, evr):
-            ret = 0
-            if name == solv.NAMESPACE_MODALIAS:
-                ret = 1
-            elif name == solv.NAMESPACE_FILESYSTEM:
-                ret = 1
-            elif name == solv.NAMESPACE_LANGUAGE:
-                if pool.id2str(evr) in self.locales:
-                    ret = 1
-            else:
-                logger.warning('unhandled "{} {}"'.format(pool.id2str(name), pool.id2str(evr)))
-
-            return ret
-
-        if hasattr(pool, 'set_namespacecallback'):
-            pool.set_namespacecallback(cb)
-        else:
-            logger.debug('libsolv missing namespace callback')
-
         for prp in self.repos:
             project, reponame = prp.split('/')
             repo = pool.add_repo(project)
@@ -586,6 +567,13 @@ class PkgListGen(ToolBase.ToolBase):
 
         pool.addfileprovides()
         pool.createwhatprovides()
+
+        # https://github.com/openSUSE/libsolv/issues/231
+        if hasattr(pool, 'set_namespaceproviders'):
+            for l in self.locales:
+                pool.set_namespaceproviders(solv.NAMESPACE_LANGUAGE, pool.Dep(l), True)
+        else:
+            logger.warn('libsolv missing set_namespaceproviders()')
 
         return pool
 
