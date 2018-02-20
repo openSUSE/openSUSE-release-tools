@@ -24,7 +24,7 @@ Point = namedtuple('Point', ['measurement', 'tags', 'fields', 'time', 'delta'])
 # Duplicate Leap config to handle 13.2 without issue.
 osclib.conf.DEFAULT[
     r'openSUSE:(?P<project>[\d.]+)'] = osclib.conf.DEFAULT[
-    r'openSUSE:(?P<project>Leap:[\d.]+)']
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))']
 
 # Provide osc.core.get_request_list() that swaps out search() implementation to
 # capture the generated query, paginate over and yield each request to avoid
@@ -319,6 +319,9 @@ def ingest_release_schedule(project):
     release_schedule = {}
     release_schedule_file = os.path.join(SOURCE_DIR, 'metrics/annotation/{}.yaml'.format(project))
     if project.endswith('Factory'):
+        # TODO Pending resolution to #1250 regarding deployment.
+        return 0
+
         # Extract Factory "release schedule" from Tumbleweed snapshot list.
         command = 'rsync rsync.opensuse.org::opensuse-full/opensuse/tumbleweed/iso/Changes.* | ' \
             'grep -oP "Changes\.\K\d{5,}"'
