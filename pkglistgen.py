@@ -31,6 +31,7 @@ import sys
 import cmdln
 import logging
 import urllib2
+import filecmp
 from osc.core import checkout_package
 from osc.core import http_GET
 from osc.core import makeurl
@@ -769,11 +770,20 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
                 solv_file_nonfree = os.path.join(
                     CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
-                self.solv_merge(solv_file, solv_file_nonfree, solv_file_merged)
+                self.solv_merge(solv_file_merged, solv_file, solv_file_nonfree)
 
-    def solv_merge(self, solv1, solv2, solv_merged):
+    def solv_merge(self, solv_merged, *solvs):
+        solvs = list(solvs) # From tuple.
+
+        if os.path.exists(solv_merged):
+            modified = map(os.path.getmtime, [solv_merged] + solvs)
+            if max(modified) <= modified[0]:
+                # The two inputs were modified before or at the same as merged.
+                logger.debug('merge skipped for {}'.format(solv_merged))
+                return
+
         with open(solv_merged, 'w') as handle:
-            p = subprocess.Popen(['mergesolv', solv1, solv2], stdout=handle)
+            p = subprocess.Popen(['mergesolv'] + solvs, stdout=handle)
             p.communicate()
 
         if p.returncode:
@@ -868,7 +878,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if self.options.output_dir:
             build, repo_style = self.dump_solv_build(baseurl)
             name = '{}/{}.solv'.format(self.options.output_dir, build)
-            if not opts.overwrite and os.path.exists(name):
+            # For update repo name never changes so always update.
+            if not opts.overwrite and repo_style != 'update' and os.path.exists(name):
                 logger.info("%s exists", name)
                 return name
             ofh = open(name + '.new', 'w')
@@ -899,11 +910,21 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             repo.write(ofh)
 
         if name is not None:
-            os.rename(name + '.new', name)
+            # Only update file if overwrite or different.
+            ofh.flush() # Ensure entirely written before comparing.
+            if not opts.overwrite and os.path.exists(name) and filecmp.cmp(name + '.new', name, shallow=False):
+                logger.debug('file identical, skip dumping')
+                os.remove(name + '.new')
+            else:
+                os.rename(name + '.new', name)
             return name
 
     def dump_solv_build(self, baseurl):
         """Determine repo format and build string from remote repository."""
+        if 'update' in baseurl:
+            # Could look at .repo file or repomd.xml, but larger change.
+            return 'update-' + os.path.basename(os.path.normpath(baseurl)), 'update'
+
         url = urlparse.urljoin(baseurl, 'media.1/media')
         with requests.get(url) as media:
             for i, line in enumerate(media.iter_lines()):
@@ -1225,18 +1246,26 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             project_config = conf.config[project]
 
             baseurl = project_config.get('download-baseurl')
+            baseurl_update = project_config.get('download-baseurl-update')
             if not baseurl:
                 logger.warning('no baseurl configured for {}'.format(project))
                 continue
 
             urls = [urlparse.urljoin(baseurl, 'repo/oss/')]
+            if baseurl_update:
+                urls.append(urlparse.urljoin(baseurl_update, 'oss/'))
             if project_config.get('nonfree'):
                 urls.append(urlparse.urljoin(baseurl, 'repo/non-oss/'))
+                if baseurl_update:
+                    urls.append(urlparse.urljoin(baseurl_update, 'non-oss/'))
 
             names = []
             for url in urls:
+                project_display = project
+                if 'update' in url:
+                    project_display += ':Update'
                 print('-> do_dump_solv for {}/{}'.format(
-                    project, os.path.basename(os.path.normpath(url))))
+                    project_display, os.path.basename(os.path.normpath(url))))
                 logger.debug(url)
 
                 self.options.output_dir = os.path.join(cache_dir_solv, project)
@@ -1252,8 +1281,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
             # Merge nonfree solv with free solv or copy free solv as merged.
             merged = names[0].replace('.solv', '.merged.solv')
-            if len(names) == 2:
-                self.solv_merge(names[0], names[1], merged)
+            if len(names) >= 2:
+                self.solv_merge(merged, *names)
             else:
                 shutil.copyfile(names[0], merged)
             prior.add(merged)
