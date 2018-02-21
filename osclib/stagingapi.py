@@ -198,7 +198,7 @@ class StagingAPI(object):
             for si in ET.parse(root).getroot().findall('sourceinfo'):
                 pkg = si.get('package')
                 # XXX TODO - Test-DVD-x86_64 is hardcoded here
-                if pkg in ret and not pkg.startswith('Test-DVD-') and not pkg.startswith('000'):
+                if pkg in ret and not pkg.startswith('Test-DVD-'):
                     msg = '{} is defined in two projects ({} and {})'
                     if checklinks and pkg in except_pkgs and prj == except_pkgs[pkg]:
                         msg = ''

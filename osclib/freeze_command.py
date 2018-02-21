@@ -257,8 +257,6 @@ class FreezeCommand(object):
         # If the package is an internal one (e.g _product)
         if package.startswith('_'):
             return None
-        if package.startswith('000'):
-            return None
 
         # Ignore packages with an origing (i.e. with an origin
         # different from the current project)
