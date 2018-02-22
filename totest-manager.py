@@ -618,9 +618,9 @@ class ToTestFactory(ToTestBase):
     ftp_products = ['_product:openSUSE-ftp-ftp-i586_x86_64',
                     '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
 
-    livecd_products = ['livecd-kde',
-                       'livecd-gnome',
-                       'livecd-x11']
+    livecd_products = ['livecd-tumbleweed-kde',
+                       'livecd-tumbleweed-gnome',
+                       'livecd-tumbleweed-x11']
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
