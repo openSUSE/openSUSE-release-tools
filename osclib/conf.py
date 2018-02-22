@@ -47,7 +47,7 @@ DEFAULT = {
         'lock-ns': 'openSUSE',
         'delreq-review': 'factory-maintainers',
         'main-repo': 'standard',
-        'download-baseurl': 'http://download.opensuse.org/tumbleweed/',
+        'download-baseurl': 'http://downloadcontent.opensuse.org/tumbleweed/',
         # check_source.py
         'devel-project-enforce': 'True',
         'review-team': 'opensuse-review-team',
@@ -69,8 +69,8 @@ DEFAULT = {
         'lock-ns': 'openSUSE',
         'delreq-review': None,
         'main-repo': 'standard',
-        'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
-        'download-baseurl-update': 'http://download.opensuse.org/update/leap/%(version)s/',
+        'download-baseurl': 'http://downloadcontent.opensuse.org/distribution/leap/%(version)s/',
+        'download-baseurl-update': 'http://downloadcontent.opensuse.org/update/leap/%(version)s/',
         # check_source.py
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
