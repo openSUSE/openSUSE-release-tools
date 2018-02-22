@@ -200,7 +200,7 @@ class StagingAPI(object):
                 # XXX TODO - Test-DVD-x86_64 is hardcoded here
                 if pkg in ret and not pkg.startswith('Test-DVD-'):
                     msg = '{} is defined in two projects ({} and {})'
-                    if checklinks and pkg in except_pkgs and prj == except_pkgs[pkg]:
+                    if pkg.startswith('000') or (checklinks and pkg in except_pkgs and prj == except_pkgs[pkg]):
                         msg = ''
                     if len(msg):
                         raise Exception(msg.format(pkg, ret[pkg], prj))
