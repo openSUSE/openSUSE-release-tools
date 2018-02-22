@@ -93,3 +93,6 @@ job install name bind
 
 ## required for ppc64 test
 job install name mariadb
+
+## we newly want to start glxgears in Staging tests (sync up with SLE)
+job install name Mesa-demo
