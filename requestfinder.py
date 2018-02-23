@@ -123,6 +123,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             'query': None,
             'exclude-project': None,
             'exclude-user': None,
+            'exclude-group': None,
         }
 
         if opts.settings:
@@ -154,7 +155,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 if review.by_project:
                     skip = False
                     if settings['exclude-project']:
-                        for p in settings['exclude-project']:
+                        for p in settings['exclude-project'].split(' '):
                             if review.by_project.startswith(p):
                                 skip = True
                                 break
@@ -164,11 +165,20 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                         else:
                             print("osc review %s -m '%s' -P %s %s" % (settings['action'], settings['message'], review.by_project, r.reqid))
                 elif review.by_group:
-                    print("osc review %s -m '%s' -G %s %s" % (settings['action'], settings['message'], review.by_group, r.reqid))
+                    skip = False
+                    if settings['exclude-group']:
+                        groups = settings['exclude-group'].split(' ')
+                        for g in groups:
+                            if review.by_group == g:
+                                skip = True
+                                break
+                    if not skip:
+                        print("osc review %s -m '%s' -G %s %s" % (settings['action'], settings['message'], review.by_group, r.reqid))
                 elif review.by_user:
                     skip = False
                     if settings['exclude-user']:
-                        for u in settings['exclude-user']:
+                        users = settings['exclude-user'].split(' ')
+                        for u in users:
                             if review.by_user == u:
                                 skip = True
                                 break
