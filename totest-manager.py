@@ -548,9 +548,7 @@ class ToTestBase(object):
 
     def write_version_to_dashboard(self, target, version):
         if not self.dryrun:
-            url = self.api.makeurl(
-                ['source', '%s:Staging' % self.project, 'dashboard', 'version_%s' % target])
-            osc.core.http_PUT(url + '?comment=Update+version', data=version)
+            self.api.dashboard_content_ensure('version_%s' % target, version, comment='Update version')
 
 
 class ToTestBaseNew(ToTestBase):
