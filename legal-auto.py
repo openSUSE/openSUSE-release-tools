@@ -205,7 +205,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         bot.do_comments = self.options.comment
         bot.legaldb = self.options.legaldb
         if self.options.token:
-            self.legaldb_headers['Authorization'] = 'Token ' + self.options.token
+            bot.legaldb_headers['Authorization'] = 'Token ' + self.options.token
         return bot
 
 if __name__ == "__main__":
