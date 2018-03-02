@@ -17,7 +17,9 @@ import sys
 import urllib2
 import logging
 import signal
+import tempfile
 import time
+import zlib
 
 from xml.etree import cElementTree as ET
 from openqa_client.client import OpenQA_Client
@@ -37,6 +39,9 @@ QA_INPROGRESS = 1
 QA_FAILED = 2
 QA_PASSED = 3
 
+REPOMD_NAMESPACES = {'md': "http://linux.duke.edu/metadata/common",
+                     'repo': "http://linux.duke.edu/metadata/repo",
+                     'rpm': "http://linux.duke.edu/metadata/rpm"}
 
 class NotFoundException(Exception):
     pass
@@ -221,6 +226,56 @@ class ToTestBase(object):
             else:
                 self.openqa.openqa_request(
                     'POST', 'groups/%s/comments' % group_id, data=data)
+
+    def _get_repo_mirror(self, snapshot):
+        """Get the URL of the repo mirror from openQA"""
+        jobs = self.find_openqa_results(snapshot)
+        # Find the MIRROR_HTTP variable, most jobs have it
+        http_mirror = None
+        for job in jobs:
+            if 'settings' in job and 'MIRROR_HTTP' in job['settings']:
+                return job['settings']['SUSEMIRROR']
+
+    def _download_file(self, url):
+        try:
+            req = urllib2.Request(url=url)
+            f = urllib2.urlopen(req)
+            return f.read()
+        except urllib2.HTTPError:
+            return None
+
+    def _get_repo_primary(self, baseurl):
+        repoindex_xml = self._download_file(baseurl + "/repodata/repomd.xml")
+        repoindex = ET.fromstring(repoindex_xml)
+        primary_elem = repoindex.find("./repo:data[@type='primary']/repo:location",
+                                    REPOMD_NAMESPACES)
+        path_primary = primary_elem.attrib['href']
+        primary_xml = self._download_file(baseurl + "/" + path_primary)
+        return zlib.decompress(primary_xml, zlib.MAX_WBITS|32)
+
+    def _download_snapshot_rpm(self, name, baseurl, primary_tree):
+        """Download the RPM package for a given package name from openQA's mirror.
+        The local path is returned, it's the responsibility of the caller to clean it up."""
+
+        packages = primary_tree.findall("md:package[@type='rpm']",
+                                  REPOMD_NAMESPACES)
+
+        pkg_location = None
+        for pkg in packages:
+            pkg_name = pkg.find("md:name", REPOMD_NAMESPACES).text
+            if pkg_name != name:
+                continue
+
+            pkg_location = pkg.find("md:location", REPOMD_NAMESPACES).attrib['href']
+            break
+
+        if not pkg_location:
+            logger.fatal('could not find the location for the %s package' % (name))
+            return None
+
+        destination = tempfile.NamedTemporaryFile(delete=False)
+        destination.write(self._download_file(baseurl + '/' + pkg_location))
+        return destination.name
 
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
@@ -435,7 +490,11 @@ class ToTestBase(object):
         else:
             self.api.retried_POST(url)
 
-    def _release(self, set_release=None):
+    def _release_docker_image(self, name, snapshot, repo_url, primary_tree):
+        """The docker image is wrapped in an RPM in the ToTest repo"""
+        print self._download_snapshot_rpm(name, repo_url, primary_tree)
+
+    def _release(self, snapshot, set_release=None):
         for product in self.ftp_products:
             self._release_package(self.project, product)
 
@@ -446,13 +505,18 @@ class ToTestBase(object):
         for cd in self.main_products:
             self._release_package(self.project, cd, set_release=set_release)
 
+        repo_url = self._get_repo_mirror(snapshot) + "/suse"
+        primary_tree = ET.fromstring(self._get_repo_primary(repo_url))
+        for pkg in self.docker_packages:
+            self._release_docker_image(pkg, snapshot, repo_url, primary_tree)
+
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
         if not self.dryrun:
             self.api.switch_flag_in_prj(self.test_project, flag='publish', state='disable')
-
-        self._release(set_release=release)
+        snapshot = "20180228"
+        self._release(snapshot, set_release=release)
 
     def publish_factory_totest(self):
         logger.info('Publish test project content')
@@ -629,6 +693,10 @@ class ToTestFactory(ToTestBase):
     livecd_products = ['livecd-tumbleweed-kde',
                        'livecd-tumbleweed-gnome',
                        'livecd-tumbleweed-x11']
+
+    docker_packages = ['opensuse-image']
+
+    docker_openqa_tests = ['ext4']
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
