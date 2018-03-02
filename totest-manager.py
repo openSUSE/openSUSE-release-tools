@@ -10,13 +10,16 @@
 
 import cmdln
 import datetime
+import glob
 import json
 import os
 import re
 import sys
 import urllib2
 import logging
+import shutil
 import signal
+import subprocess
 import tempfile
 import time
 import zlib
@@ -490,9 +493,26 @@ class ToTestBase(object):
         else:
             self.api.retried_POST(url)
 
-    def _release_docker_image(self, name, snapshot, repo_url, primary_tree):
+    def _release_docker_image(self, pkg, snapshot, repo_url, primary_tree):
         """The docker image is wrapped in an RPM in the ToTest repo"""
-        print self._download_snapshot_rpm(name, repo_url, primary_tree)
+
+        # Download the RPM to a temporary location
+        rpm_path = self._download_snapshot_rpm(pkg['pkg'], repo_url, primary_tree)
+        # Create a temporary dir for extraction
+        tmp_path = tempfile.mkdtemp()
+        # Extract the .tar.xz inside the RPM into the dir
+        subprocess.call("rpm2cpio '%s' | cpio -i --to-stdout \*.tar.xz | tar -xJf - -C '%s'" % (rpm_path, tmp_path), shell=True)
+        # Remove the RPM file again
+        os.unlink(rpm_path)
+        # Parse the manifest to get the name of the root tar.xz
+        manifest_path = glob.glob(tmp_path + '/manifest.json')[0]
+        manifest = json.loads(open(manifest_path).read())
+        root_path = tmp_path + '/' + manifest[0]['Layers'][0]
+        # TODO: Copy it into the repo and push.
+        print root_path
+        # And remove the temporary directory
+        shutil.rmtree(tmp_path)
+
 
     def _release(self, snapshot, set_release=None):
         for product in self.ftp_products:
@@ -505,10 +525,11 @@ class ToTestBase(object):
         for cd in self.main_products:
             self._release_package(self.project, cd, set_release=set_release)
 
-        repo_url = self._get_repo_mirror(snapshot) + "/suse"
-        primary_tree = ET.fromstring(self._get_repo_primary(repo_url))
-        for pkg in self.docker_packages:
-            self._release_docker_image(pkg, snapshot, repo_url, primary_tree)
+        if self.docker_packages:
+            repo_url = self._get_repo_mirror(snapshot) + "/suse"
+            primary_tree = ET.fromstring(self._get_repo_primary(repo_url))
+            for docker_pkg in self.docker_packages:
+                self._release_docker_image(docker_pkg, snapshot, repo_url, primary_tree)
 
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
@@ -694,7 +715,10 @@ class ToTestFactory(ToTestBase):
                        'livecd-tumbleweed-gnome',
                        'livecd-tumbleweed-x11']
 
-    docker_packages = ['opensuse-image']
+    docker_packages = [{'pkg': 'opensuse-image',
+                        'repo': 'docker-images-build',
+                        'branch': 'openSUSE-Tumbleweed',
+                        'filename': 'x86_64/openSUSE-Tumbleweed.base.x86_64.tar.xz'}]
 
     docker_openqa_tests = ['ext4']
 
