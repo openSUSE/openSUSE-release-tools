@@ -121,6 +121,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.requests_map = {}
         self.groups = {}
         self.groups_build = {}
+        self.groups_skip_cycle = []
 
         # Manipulated in ensure_group().
         self.group = None
@@ -185,6 +186,14 @@ class RepoChecker(ReviewBot.ReviewBot):
                 _, info = self.comment_api.comment_find(comments, self.bot_name)
                 if info and self.groups_build[group] == info.get('build'):
                     skip_build.add(group)
+
+                # Look for skip-cycle comment command.
+                users = self.request_override_check_users(request.actions[0].tgt_project)
+                for _, who in self.comment_api.command_find(
+                    comments, self.review_user, 'skip-cycle', users):
+                    self.logger.debug('comment command: skip-cycle by {}'.format(who))
+                    self.groups_skip_cycle.append(group)
+                    break
 
             if not self.force and group in skip_build:
                 self.logger.debug('{}: {} build unchanged'.format(request.reqid, group))
@@ -418,8 +427,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             yield InstallSection(section, text)
 
     def cycle_check(self, project, stagings, arch):
-        if self.skip_cycle:
-            self.logger.info('cycle check: skip due to --skip-cycle')
+        if self.skip_cycle or self.group in self.groups_skip_cycle:
+            self.logger.info('cycle check: skip due to --skip-cycle or comment command')
             return CheckResult(True, None)
 
         self.logger.info('cycle check: start')
