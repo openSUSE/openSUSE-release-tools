@@ -20,6 +20,15 @@ BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*?)-(?P<version>[^-]+)-(?P<rele
 RPM_REGEX = BINARY_REGEX + '\.rpm'
 BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
 
+@memoize(session=True)
+def group_members(apiurl, group, maintainers=False):
+    url = makeurl(apiurl, ['group', group])
+    root = ETL.parse(http_GET(url)).getroot()
+
+    if maintainers:
+        return root.xpath('maintainer/@userid')
+
+    return root.xpath('person/person/@userid')
 
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
