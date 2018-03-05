@@ -181,9 +181,8 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.groups_build[group] = hashlib.sha1(''.join(builds)).hexdigest()[:7]
 
                 # Determine if build has changed since last comment.
-                comment_api = CommentAPI(api.apiurl)
-                comments = comment_api.get_comments(project_name=group)
-                _, info = comment_api.comment_find(comments, self.bot_name)
+                comments = self.comment_api.get_comments(project_name=group)
+                _, info = self.comment_api.comment_find(comments, self.bot_name)
                 if info and self.groups_build[group] == info.get('build'):
                     skip_build.add(group)
 
