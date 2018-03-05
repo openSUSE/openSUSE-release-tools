@@ -67,6 +67,7 @@ DEFAULT = {
         'openqa': 'https://openqa.opensuse.org',
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
+        'leaper-override-group': 'leap-reviewers',
         'delreq-review': None,
         'main-repo': 'standard',
         'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',

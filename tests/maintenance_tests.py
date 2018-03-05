@@ -55,6 +55,7 @@ class TestMaintenance(unittest.TestCase):
         self.checker = MaintenanceChecker(apiurl = APIURL, \
                 user = 'maintbot', \
                 logger = self.logger)
+        self.checker.override_allow = False # Test setup cannot handle.
 
     def test_non_maintainer_submit(self):
         """same as above but already has devel project as reviewer

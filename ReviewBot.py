@@ -28,6 +28,7 @@ from collections import namedtuple
 from collections import OrderedDict
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.core import group_members
 from osclib.memoize import memoize
 from osclib.stagingapi import StagingAPI
 import signal
@@ -84,6 +85,8 @@ class ReviewBot(object):
         self.only_one_action = False
         self.request_default_return = None
         self.comment_handler = False
+        self.override_allow = True
+        self.override_group_key = '{}-override-group'.format(self.bot_name.lower())
 
         self.load_config()
 
@@ -141,7 +144,12 @@ class ReviewBot(object):
         for req in self.requests:
             self.logger.info("checking %s"%req.reqid)
             self.request = req
-            good = self.check_one_request(req)
+
+            override = self.request_override_check(req)
+            if override is not None:
+                good = override
+            else:
+                good = self.check_one_request(req)
 
             if self.review_mode == 'no':
                 good = None
@@ -154,6 +162,40 @@ class ReviewBot(object):
                 self._set_review(req, 'accepted')
             elif self.review_mode != 'accept-onpass':
                 self._set_review(req, 'declined')
+
+    @memoize(session=True)
+    def request_override_check_users(self, project):
+        """Determine users allowed to override review in a comment command."""
+        self.staging_api(project)
+        config = self.staging_config[project]
+
+        users = group_members(self.apiurl, config['staging-group'])
+
+        if self.override_group_key:
+            override_group = config.get(self.override_group_key)
+            if override_group:
+                users += group_members(self.apiurl, override_group)
+
+        return users
+
+    def request_override_check(self, request):
+        """Check for a comment command requesting review override."""
+        if not self.override_allow:
+            return None
+
+        comments = self.comment_api.get_comments(request_id=request.reqid)
+        users = self.request_override_check_users(request.actions[0].tgt_project)
+        for args, who in self.comment_api.command_find(
+            comments, self.review_user, 'override', users):
+            message = 'overridden by {}'.format(who)
+            override = args[1] or None
+            if override == 'accept':
+                self.review_messages['accepted'] = message
+                return True
+
+            if override == 'decline':
+                self.review_messages['declined'] = message
+                return False
 
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
