@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: Docker image publisher
+
+[Service]
+User=osrt-docker-publisher
+EnvironmentFile=/home/osrt-docker-publisher/.config/osrt-docker_publisher
+ExecStart=/usr/bin/osrt-docker_publisher
+
+[Install]
+WantedBy=multi-user.target
