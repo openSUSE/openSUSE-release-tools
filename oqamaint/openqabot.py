@@ -5,7 +5,7 @@ from datetime import date
 import md5
 from pprint import pformat
 import re
-
+from urllib2 import HTTPError
 
 import requests
 import osc.core
@@ -313,7 +313,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     # escape markdown
     @staticmethod
     def emd(str):
-        return str.replace('_', '\_')
+        return str.replace('_', r'\_')
 
     @staticmethod
     def get_step_url(testurl, modulename):
@@ -529,7 +529,11 @@ class OpenQABot(ReviewBot.ReviewBot):
     def test_job(self, job):
         self.logger.debug("Called test_job with: {}".format(job))
         incident_project = str(job['project'])
-        comment_info = self.find_obs_request_comment(project_name=incident_project)
+        try:
+            comment_info = self.find_obs_request_comment(project_name=incident_project)
+        except HTTPError as e:
+            self.logger.debug("Couldn't loaadd comments - {}".format(e))
+            return
         comment_id = comment_info.get('id', None)
         comment_build = str(comment_info.get('revision', ''))
 
