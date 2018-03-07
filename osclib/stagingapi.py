@@ -68,7 +68,6 @@ class StagingAPI(object):
 
         # Store some prefix / data used in the code.
         self.user = conf.get_apiurl_usr(apiurl)
-        self.main_repo = conf.config[project]['main-repo']
         self._ring_packages = None
         self._ring_packages_for_links = None
         self._packages_staged = None
@@ -1284,7 +1283,7 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, '_meta'])
         meta = ET.parse(http_GET(url))
 
-        repository = meta.find('repository[@name="{}"]'.format(self.main_repo))
+        repository = meta.find('repository[@name="{}"]'.format(self.cmain_repo))
         changed = False
         for arch in self.cstaging_archs:
             if not repository.xpath('./arch[text()="{}"]'.format(arch)):

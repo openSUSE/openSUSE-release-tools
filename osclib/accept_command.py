@@ -97,7 +97,7 @@ class AcceptCommand(object):
             meta = ''.join(meta)
             # Update package meta to disable build
             self.api.create_package_container(self.api.project, pkg, meta=meta, disable_build=True)
-            wipebinaries(self.api.apiurl, self.api.project, package=pkg, repo=self.api.main_repo)
+            wipebinaries(self.api.apiurl, self.api.project, package=pkg, repo=self.api.cmain_repo)
 
             # Remove package from Rings
             if self.api.ring_packages.get(pkg):
