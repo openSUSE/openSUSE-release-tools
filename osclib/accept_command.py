@@ -154,7 +154,7 @@ class AcceptCommand(object):
             return False
 
         pkglist = self.api.list_packages(project)
-        clean_list = set(pkglist) - set(self.api.cstaging_nocleanup)
+        clean_list = set(pkglist) - set(self.api.cnocleanup_packages)
 
         for package in clean_list:
             print "[cleanup] deleted %s/%s" % (project, package)

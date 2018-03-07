@@ -67,7 +67,6 @@ class StagingAPI(object):
         self.project = project
 
         # Store some prefix / data used in the code.
-        self._cstaging_nocleanup = None
         self.user = conf.get_apiurl_usr(apiurl)
         self.delreq_review = conf.config[project]['delreq-review']
         self.main_repo = conf.config[project]['main-repo']
@@ -98,7 +97,7 @@ class StagingAPI(object):
 
             # This will intentionally cause error if key does not exists.
             value = conf.config[self.project][key]
-            if key.endswith('archs'):
+            if key.endswith('archs') or key == 'nocleanup-packages':
                 value = value.split()
 
             # This code will only be called for the first access.
@@ -107,14 +106,6 @@ class StagingAPI(object):
 
         # Raise AttributeError like normal.
         return self.__getattribute__(attr)
-
-    @property
-    def cstaging_nocleanup(self):
-        """Lazy-load value to allow for placement in remote config."""
-        if self._cstaging_nocleanup is None:
-            self._cstaging_nocleanup = conf.config[self.project]['nocleanup-packages'].split()
-
-        return self._cstaging_nocleanup
 
     @property
     def ring_packages(self):
