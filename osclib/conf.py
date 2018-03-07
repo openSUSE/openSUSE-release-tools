@@ -129,7 +129,7 @@ DEFAULT = {
         'remote-config': False,
         'delreq-review': None,
         'main-repo': 'standard',
-        'priority': 100, # Lower than SLE-15 since less specific.
+        'priority': '100', # Lower than SLE-15 since less specific.
     },
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.
@@ -148,7 +148,7 @@ DEFAULT = {
         'delreq-review': None,
         'main-repo': 'openSUSE_Factory',
         'remote-config': False,
-        'priority': 1000, # Lowest priority as only a fallback.
+        'priority': '1000', # Lowest priority as only a fallback.
     },
 }
 
@@ -185,7 +185,7 @@ class Config(object):
     def populate_conf(self):
         """Add sane default into the configuration."""
         defaults = {}
-        default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: i[1].get('priority', 99)))
+        default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: int(i[1].get('priority', 99))))
         for prj_pattern in default_ordered:
             match = re.match(prj_pattern, self.project)
             if match:
