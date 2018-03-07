@@ -491,7 +491,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             what_depends_on.remove(action.tgt_package)
 
         if len(what_depends_on):
-            self.logger.warn('{} is still a build requirement of {}'.format(action.tgt_package, ', '.join(what_depends_on)))
+            self.logger.warn('{} is still a build requirement of:\n\n- {}'.format(
+                action.tgt_package, '\n- '.join(sorted(what_depends_on))))
 
         if len(self.comment_handler.lines):
             self.comment_write(state='seen', result='failed')
