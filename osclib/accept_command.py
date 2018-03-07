@@ -48,7 +48,7 @@ class AcceptCommand(object):
         return True
 
     def find_virtually_accepted_requests(self, project):
-        query = "match=state/@name='review'+and+(action/target/@project='{}'+and+action/@type='delete')+and+(review/@state='new'+and+review/@by_group='{}')".format(project, self.api.delreq_review)
+        query = "match=state/@name='review'+and+(action/target/@project='{}'+and+action/@type='delete')+and+(review/@state='new'+and+review/@by_group='{}')".format(project, self.api.cdelreq_review)
         url = self.api.makeurl(['search', 'request'], query)
 
         f = http_GET(url)
@@ -86,7 +86,7 @@ class AcceptCommand(object):
         http_PUT(url + '?comment=accept+command+update', data=content)
 
     def virtually_accept_delete(self, request_id, package):
-        self.api.add_review(request_id, by_group=self.api.delreq_review, msg='Request accepted. Cleanup in progress - DO NOT REVOKE!')
+        self.api.add_review(request_id, by_group=self.api.cdelreq_review, msg='Request accepted. Cleanup in progress - DO NOT REVOKE!')
 
         filelist = self.api.get_filelist_for_package(pkgname=package, project=self.api.project, expand='1', extension='spec')
         pkgs = self.api.extract_specfile_short(filelist)
@@ -129,7 +129,7 @@ class AcceptCommand(object):
             oldspecs = self.api.get_filelist_for_package(pkgname=req['package'],
                                                          project=self.api.project,
                                                          extension='spec')
-            if 'type' in req and req['type'] == 'delete' and self.api.delreq_review:
+            if 'type' in req and req['type'] == 'delete' and self.api.cdelreq_review:
                 msg += ' and started handling of virtual accept process'
                 print(msg)
                 # Virtually accept the delete request
@@ -189,13 +189,13 @@ class AcceptCommand(object):
     def accept_other_new(self):
         changed = False
 
-        if self.api.delreq_review:
+        if self.api.cdelreq_review:
             rqlist = self.find_virtually_accepted_requests(self.api.project)
             for req in rqlist:
                 if self.virtual_accept_request_has_no_binary(self.api.project, req['packages'][0]):
                     # Accepting delreq-review review
                     self.api.do_change_review_state(req['id'], 'accepted',
-                                                    by_group=self.api.delreq_review,
+                                                    by_group=self.api.cdelreq_review,
                                                     message='Virtually accepted delete {}'.format(req['packages'][0]))
 
         rqlist = self.find_new_requests(self.api.project)

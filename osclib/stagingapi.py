@@ -68,7 +68,6 @@ class StagingAPI(object):
 
         # Store some prefix / data used in the code.
         self.user = conf.get_apiurl_usr(apiurl)
-        self.delreq_review = conf.config[project]['delreq-review']
         self.main_repo = conf.config[project]['main-repo']
         self._ring_packages = None
         self._ring_packages_for_links = None
