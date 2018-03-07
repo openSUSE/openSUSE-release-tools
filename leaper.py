@@ -199,6 +199,13 @@ class Leaper(ReviewBot.ReviewBot):
             #self.logger.info('no matching sources in Factory, Leap:15.0, nor devel project')
             self.logger.info('no matching sources in Factory, nor devel project')
 
+            if origin_same is False:
+                # Rather than decline, leave review open in-case of change and
+                # ask release manager for input via override comment.
+                self.logger.info('Comment `(at){} override accept` to force accept.'.format(self.review_user))
+                self.needs_release_manager = True
+                return None
+
             return origin_same
 
         if package in self.lookup_150:
