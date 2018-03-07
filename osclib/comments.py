@@ -112,6 +112,33 @@ class CommentAPI(object):
                 return c, info
         return None, None
 
+    def command_find(self, comments, user, command=None, who_allowed=None):
+        """
+        Find comment commands with the optional conditions.
+
+        Usage (in comment):
+            @<user> <command> [args...]
+        """
+        command_re = re.compile(r'^@(?P<user>[^ ]+) (?P<args>.*)$')
+
+        # Search for commands in the order the comment was created.
+        for comment in sorted(comments.values(), key=lambda c: c['when']):
+            if who_allowed and comment['who'] not in who_allowed:
+                continue
+
+            match = command_re.search(comment['comment'])
+            if not match:
+                continue
+
+            if match.group('user') != user:
+                continue
+
+            args = match.group('args').strip().split(' ')
+            if command and (args[0] or None) != command:
+                continue
+
+            yield args, comment['who']
+
     def add_marker(self, comment, bot, info=None):
         """Add bot marker to comment that can be used to find comment."""
 

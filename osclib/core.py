@@ -20,6 +20,15 @@ BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*?)-(?P<version>[^-]+)-(?P<rele
 RPM_REGEX = BINARY_REGEX + '\.rpm'
 BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
 
+@memoize(session=True)
+def group_members(apiurl, group, maintainers=False):
+    url = makeurl(apiurl, ['group', group])
+    root = ETL.parse(http_GET(url)).getroot()
+
+    if maintainers:
+        return root.xpath('maintainer/@userid')
+
+    return root.xpath('person/person/@userid')
 
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
@@ -40,9 +49,7 @@ def maintainers_get(apiurl, project, package=None):
     maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
     if not maintainers:
         for group in [p.get('name') for p in root.findall('.//group') if p.get('role') == 'maintainer']:
-            url = makeurl(apiurl, ('group', group))
-            root = ET.parse(http_GET(url)).getroot()
-            maintainers = maintainers + [p.get('userid') for p in root.findall('./person/person')]
+            maintainers = maintainers + group_members(apiurl, group)
     return maintainers
 
 @memoize(session=True)

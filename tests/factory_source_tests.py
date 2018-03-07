@@ -57,6 +57,7 @@ class TestFactorySourceAccept(unittest.TestCase):
         self.checker = FactorySourceChecker(apiurl = APIURL, \
                 user = 'factory-source', \
                 logger = self.logger)
+        self.checker.override_allow = False # Test setup cannot handle.
 
     def test_accept_request(self):
 

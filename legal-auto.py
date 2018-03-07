@@ -59,6 +59,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             self.apinick = 'ibs#'
         else:
             self.apinick = 'obs#'
+        self.override_allow = False # Handled via external tool.
 
     def request_priority(self):
         prio = self.request.priority or 'moderate'
