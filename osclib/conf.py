@@ -106,6 +106,7 @@ DEFAULT = {
         'openqa': None,
         'lock': 'SUSE:%(project)s:Staging',
         'lock-ns': 'SUSE',
+        'leaper-override-group': 'sle-release-managers',
         'delreq-review': None,
         'main-repo': 'standard',
         # check_source.py
