@@ -427,10 +427,11 @@ class ReviewBot(object):
         return False
 
     def set_request_ids_search_review(self):
+        review = None
         if self.review_user:
             review = "@by_user='%s' and @state='new'" % self.review_user
-        else:
-            review = "@by_group='%s' and @state='new'" % self.review_group
+        if self.review_group:
+            review = osc.core.xpath_join(review, "@by_group='%s' and @state='new'" % self.review_group)
         url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1 } )
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
