@@ -243,7 +243,7 @@ def main(args):
 
     git_repo_url = 'git@github.com:jberry-suse/osc-plugin-factory-issue-db.git'
     git_message = 'Sync issue-diff.py changes.'
-    db_dir = sync(args.config_dir, git_repo_url, git_message)
+    db_dir = sync(args.cache_dir, git_repo_url, git_message)
     db_file = os.path.join(db_dir, '{}.yml'.format(args.project))
 
     if os.path.exists(db_file):
@@ -393,7 +393,7 @@ def main(args):
             print('stopped at limit')
             break
 
-    sync(args.config_dir, git_repo_url, git_message)
+    sync(args.cache_dir, git_repo_url, git_message)
 
 
 if __name__ == '__main__':
@@ -412,11 +412,11 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
     parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
-    parser.add_argument('--config-dir', help='configuration directory containing git-sync tool and issue db')
+    parser.add_argument('--cache-dir', help='cache directory containing git-sync tool and issue db')
     parser.add_argument('--print-stats', action='store_true', help='print statistics based on database')
     args = parser.parse_args()
 
-    if args.config_dir is None:
-        args.config_dir = CACHE_DIR
+    if args.cache_dir is None:
+        args.cache_dir = CACHE_DIR
 
     sys.exit(main(args))
