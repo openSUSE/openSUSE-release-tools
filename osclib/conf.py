@@ -51,6 +51,7 @@ DEFAULT = {
         # check_source.py
         'devel-project-enforce': 'True',
         'review-team': 'opensuse-review-team',
+        'legal-review-group': 'legal-auto',
         'repo-checker': 'repo-checker',
         'pkglistgen-product-family-include': 'openSUSE:Leap:N',
     },
@@ -72,6 +73,8 @@ DEFAULT = {
         'main-repo': 'standard',
         'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
         'download-baseurl-update': 'http://download.opensuse.org/update/leap/%(version)s/',
+        'review-team': 'opensuse-review-team',
+        'legal-review-group': 'legal-auto',
         # check_source.py
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
@@ -103,6 +106,7 @@ DEFAULT = {
         'openqa': None,
         'lock': 'SUSE:%(project)s:Staging',
         'lock-ns': 'SUSE',
+        'leaper-override-group': 'sle-release-managers',
         'delreq-review': None,
         'main-repo': 'standard',
         # check_source.py

@@ -63,9 +63,9 @@ class Leaper(ReviewBot.ReviewBot):
         self.pending_factory_submission = False
         self.source_in_factory = None
         self.needs_release_manager = False
-        self.release_manager_group = 'leap-reviewers'
-        self.review_team_group = 'opensuse-review-team'
-        self.legal_review_group = 'legal-auto'
+        self.release_manager_group = None
+        self.review_team_group = None
+        self.legal_review_group = None
         self.must_approve_version_updates = False
         self.must_approve_maintenance_updates = False
         self.needs_check_source = False
@@ -198,6 +198,13 @@ class Leaper(ReviewBot.ReviewBot):
 
             #self.logger.info('no matching sources in Factory, Leap:15.0, nor devel project')
             self.logger.info('no matching sources in Factory, nor devel project')
+
+            if origin_same is False:
+                # Rather than decline, leave review open in-case of change and
+                # ask release manager for input via override comment.
+                self.logger.info('Comment `(at){} override accept` to force accept.'.format(self.review_user))
+                self.needs_release_manager = True
+                return None
 
             return origin_same
 
@@ -427,6 +434,8 @@ class Leaper(ReviewBot.ReviewBot):
         return False
 
     def check_one_request(self, req):
+        api = self.staging_api(req.actions[0].tgt_project)
+        config = self.staging_config[api.project]
         self.needs_legal_review = False
         self.needs_reviewteam = False
         self.needs_release_manager = False
@@ -472,11 +481,14 @@ class Leaper(ReviewBot.ReviewBot):
 
         add_review_groups = []
         if self.needs_release_manager:
-            add_review_groups.append(self.release_manager_group)
+            add_review_groups.append(self.release_manager_group or
+                                     config.get(self.override_group_key))
         if self.needs_reviewteam:
-            add_review_groups.append(self.review_team_group)
+            add_review_groups.append(self.review_team_group or
+                                     config.get('review-team'))
         if self.needs_legal_review:
-            add_review_groups.append(self.legal_review_group)
+            add_review_groups.append(self.legal_review_group or
+                                     config.get('legal-review-group'))
         if self.needs_check_source and self.check_source_group is not None:
             add_review_groups.append(self.check_source_group)
 
@@ -507,9 +519,9 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser.add_option("--manual-version-updates", action="store_true", help="release manager must approve version updates")
         parser.add_option("--manual-maintenance-updates", action="store_true", help="release manager must approve maintenance updates")
         parser.add_option("--check-source-group", dest="check_source_group", metavar="GROUP", help="group used by check_source.py bot which will be added as a reviewer should leaper checks pass")
-        parser.add_option("--review-team-group", dest="review_team_group", metavar="GROUP", help="group used for package reviews", default="opensuse-review-team")
-        parser.add_option("--release-manager-group", dest="release_manager_group", metavar="GROUP", help="group used for release manager reviews", default="leap-reviewers")
-        parser.add_option("--legal-review-group", dest="legal_review_group", metavar="GROUP", help="group used for legal reviews", default="legal-auto")
+        parser.add_option("--review-team-group", dest="review_team_group", metavar="GROUP", help="group used for package reviews")
+        parser.add_option("--release-manager-group", dest="release_manager_group", metavar="GROUP", help="group used for release manager reviews")
+        parser.add_option("--legal-review-group", dest="legal_review_group", metavar="GROUP", help="group used for legal reviews")
 
         return parser
 
