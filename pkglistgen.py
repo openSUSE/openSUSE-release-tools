@@ -878,7 +878,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ofh = sys.stdout
         if self.options.output_dir:
             build, repo_style = self.dump_solv_build(baseurl)
-            name = '{}/{}.solv'.format(self.options.output_dir, build)
+            name = os.path.join(self.options.output_dir, '{}.solv'.format(build))
             # For update repo name never changes so always update.
             if not opts.overwrite and repo_style != 'update' and os.path.exists(name):
                 logger.info("%s exists", name)
