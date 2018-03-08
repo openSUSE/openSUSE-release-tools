@@ -55,7 +55,6 @@ job lock name gdm-branding-upstream
 job lock name kdebase4-workspace-branding-upstream
 job lock name kdm-branding-upstream
 job lock name kdebase4-runtime-branding-upstream
-job lock name kdelibs4-branding-upstream
 job lock name sddm-branding-upstream
 job lock name plasma5-desktop-branding-upstream
 job lock name plasma5-workspace-branding-upstream
