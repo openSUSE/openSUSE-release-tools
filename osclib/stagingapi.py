@@ -67,19 +67,7 @@ class StagingAPI(object):
         self.project = project
 
         # Store some prefix / data used in the code.
-        self.cstaging = conf.config[project]['staging']
-        self.cstaging_group = conf.config[project]['staging-group']
-        self.cstaging_archs = conf.config[project]['staging-archs'].split()
-        self.cstaging_dvd_archs = conf.config[project]['staging-dvd-archs'].split()
-        self._cstaging_nocleanup = None
-        self.crings = conf.config[project]['rings']
-        self.cnonfree = conf.config[project]['nonfree']
-        self.crebuild = conf.config[project]['rebuild']
-        self.cproduct = conf.config[project]['product']
-        self.copenqa = conf.config[project]['openqa']
         self.user = conf.get_apiurl_usr(apiurl)
-        self.delreq_review = conf.config[project]['delreq-review']
-        self.main_repo = conf.config[project]['main-repo']
         self._ring_packages = None
         self._ring_packages_for_links = None
         self._packages_staged = None
@@ -99,13 +87,23 @@ class StagingAPI(object):
 
         Cache.init()
 
-    @property
-    def cstaging_nocleanup(self):
-        """Lazy-load value to allow for placement in remote config."""
-        if self._cstaging_nocleanup is None:
-            self._cstaging_nocleanup = conf.config[self.project]['nocleanup-packages'].split()
+    def __getattr__(self, attr):
+        """Lazy-load all config values to allow for placement in remote config."""
+        if attr.startswith('c'):
+            # Drop 'c' prefix and change to config key format.
+            key = attr[1:].replace('_', '-')
 
-        return self._cstaging_nocleanup
+            # This will intentionally cause error if key does not exists.
+            value = conf.config[self.project][key]
+            if key.endswith('archs') or key == 'nocleanup-packages':
+                value = value.split()
+
+            # This code will only be called for the first access.
+            setattr(self, attr, value)
+            return value
+
+        # Raise AttributeError like normal.
+        return self.__getattribute__(attr)
 
     @property
     def ring_packages(self):
@@ -1285,7 +1283,7 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, '_meta'])
         meta = ET.parse(http_GET(url))
 
-        repository = meta.find('repository[@name="{}"]'.format(self.main_repo))
+        repository = meta.find('repository[@name="{}"]'.format(self.cmain_repo))
         changed = False
         for arch in self.cstaging_archs:
             if not repository.xpath('./arch[text()="{}"]'.format(arch)):
