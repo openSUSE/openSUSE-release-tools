@@ -45,6 +45,7 @@ from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
 from xdg.BaseDirectory import save_cache_path
 import glob
+import io
 import solv
 from pprint import pprint, pformat
 import os
@@ -54,7 +55,6 @@ import re
 import yaml
 import requests
 import urlparse
-from StringIO import StringIO
 import gzip
 import tempfile
 import random
@@ -900,7 +900,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         repo.add_repomdxml(f, 0)
         url = urlparse.urljoin(baseurl, path_prefix + location)
         with requests.get(url, stream=True) as primary:
-            content = gzip.GzipFile(fileobj=StringIO(primary.content))
+            content = gzip.GzipFile(fileobj=io.BytesIO(primary.content))
             os.lseek(f.fileno(), 0, os.SEEK_SET)
             f.write(content.read())
             os.lseek(f.fileno(), 0, os.SEEK_SET)
