@@ -403,27 +403,26 @@ class ReviewBot(object):
 
         return (None, None)
 
+    def _has_open_review_by(self, root, by_what, reviewer):
+        states = set([review.get('state') for review in root.findall('review') if review.get(by_what) == reviewer])
+        if not states:
+            return None
+        elif 'new' in states:
+            return True
+        return False
+
     def can_accept_review(self, request_id):
         """return True if there is a new review for the specified reviewer"""
         states = set()
         url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-            if self.review_user:
-                by_what = 'by_user'
-                reviewer = self.review_user
-            elif self.review_group:
-                by_what = 'by_group'
-                reviewer = self.review_group
-            else:
-                return False
-            states = set([review.get('state') for review in root.findall('review') if review.get(by_what) == reviewer])
+            if self.review_user and self._has_open_review_by(root, 'by_user', self.review_user):
+                return True
+            if self.review_group and self._has_open_review_by(root, 'by_group', self.review_group):
+                return True
         except urllib2.HTTPError as e:
             print('ERROR in URL %s [%s]' % (url, e))
-        if not states:
-            return None
-        elif 'new' in states:
-            return True
         return False
 
     def set_request_ids_search_review(self):
