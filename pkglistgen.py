@@ -45,6 +45,8 @@ from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
 from xdg.BaseDirectory import save_cache_path
 import glob
+import hashlib
+import io
 import solv
 from pprint import pprint, pformat
 import os
@@ -54,7 +56,6 @@ import re
 import yaml
 import requests
 import urlparse
-from StringIO import StringIO
 import gzip
 import tempfile
 import random
@@ -894,17 +895,24 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         repomd = requests.get(url)
         ns = {'r': 'http://linux.duke.edu/metadata/repo'}
         root = ET.fromstring(repomd.content)
-        location = root.find('.//r:data[@type="primary"]/r:location', ns).get('href')
+        primary_element = root.find('.//r:data[@type="primary"]', ns)
+        location = primary_element.find('r:location', ns).get('href')
         f.write(repomd.content)
+        f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
         repo.add_repomdxml(f, 0)
         url = urlparse.urljoin(baseurl, path_prefix + location)
         with requests.get(url, stream=True) as primary:
-            content = gzip.GzipFile(fileobj=StringIO(primary.content))
+            sha256 = hashlib.sha256(primary.content).hexdigest()
+            sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
+            if sha256 != sha256_expected:
+                raise Exception('checksums do not match {} != {}'.format(sha256, sha256_expected))
+
+            content = gzip.GzipFile(fileobj=io.BytesIO(primary.content))
             os.lseek(f.fileno(), 0, os.SEEK_SET)
             f.write(content.read())
+            f.flush()
             os.lseek(f.fileno(), 0, os.SEEK_SET)
-            # TODO: verify checksum
             repo.add_rpmmd(f, None, 0)
             repo.create_stubs()
             repo.write(ofh)
