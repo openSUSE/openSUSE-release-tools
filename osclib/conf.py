@@ -169,6 +169,10 @@ DEFAULT = {
 #
 
 
+def str2bool(v):
+    return v.lower() in ("yes", "true", "t", "1")
+
+
 class Config(object):
     """Helper class to configuration file."""
 
