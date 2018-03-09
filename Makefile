@@ -22,7 +22,7 @@ VERSION = "build-$(shell date +%F)"
 all:
 
 install:
-	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir) $(DESTDIR)$(sysconfdir)/$(package_name) $(DESTDIR)$(grafana_dashboards_dir)
+	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir) $(DESTDIR)$(sysconfdir)/$(package_name) $(DESTDIR)$(grafana_provisioning_dir)/dashboards $(DESTDIR)$(grafana_provisioning_dir)/datasources
 	for i in $(pkgdata_SCRIPTS); do install -m 755 $$i $(DESTDIR)$(pkgdatadir); done
 	chmod 644 $(DESTDIR)$(pkgdatadir)/osc-*.py
 	for i in $(pkgdata_DATA); do cp -a $$i $(DESTDIR)$(pkgdatadir); done
@@ -34,7 +34,9 @@ install:
 	for i in $(pkgdata_BINS); do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(bindir)/osrt-$${i%.*}; done
 	install -m 755 script/* $(DESTDIR)$(bindir)
 	cp -R config/* $(DESTDIR)$(sysconfdir)/$(package_name)
-	for i in metrics/grafana/* ; do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(grafana_dashboards_dir)/osrt-$$(basename $$i); done
+	for dir in dashboards datasources ; do ln -s $(pkgdatadir)/metrics/grafana/provisioning/$$dir.yaml \
+	  $(DESTDIR)$(grafana_provisioning_dir)/$$dir/$(package_name).yaml ; done
+	sed -i "s|OSRT_DATA_DIR|$(pkgdatadir)|" $(DESTDIR)$(pkgdatadir)/metrics/grafana/provisioning/dashboards.yaml
 
 check: test
 
