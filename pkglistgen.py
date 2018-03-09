@@ -1350,7 +1350,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # No proper API function to perform the same operation.
             print(subprocess.check_output(
                 ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True))
-            package.commit(msg='Automatic update')
+            package.commit(msg='Automatic update', skip_local_service_run=True)
 
 
 if __name__ == "__main__":
