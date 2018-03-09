@@ -73,6 +73,7 @@ DEFAULT = {
         'main-repo': 'standard',
         'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
         'download-baseurl-update': 'http://download.opensuse.org/update/leap/%(version)s/',
+        'check-source-add-review-team': 'False',
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
         # check_source.py
