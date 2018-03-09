@@ -11,6 +11,7 @@ import subprocess
 import sys
 import yaml
 
+import metrics_release
 import osc.conf
 import osc.core
 import osclib.conf
@@ -350,6 +351,10 @@ def main(args):
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
+    metrics_release.ingest(client)
+    if args.release_only:
+        return
+
     # Use separate cache since it is persistent.
     Cache.CACHE_DIR = os.path.expanduser('~/.cache/osc-plugin-factory-metrics')
     if args.wipe_cache:
@@ -384,6 +389,7 @@ if __name__ == '__main__':
     parser.add_argument('--user', default='root', help='InfluxDB user')
     parser.add_argument('--password', default='root', help='InfluxDB password')
     parser.add_argument('--wipe-cache', action='store_true', help='wipe GET request cache before executing')
+    parser.add_argument('--release-only', action='store_true', help='ingest release metrics only')
     args = parser.parse_args()
 
     sys.exit(main(args))
