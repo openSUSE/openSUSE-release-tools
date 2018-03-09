@@ -17,6 +17,7 @@ from osclib.core import devel_project_fallback
 import urllib2
 import ReviewBot
 from check_maintenance_incidents import MaintenanceChecker
+from osclib.conf import str2bool
 
 class CheckSource(ReviewBot.ReviewBot):
 
@@ -37,7 +38,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.staging_api(project)
         config = self.staging_config[project]
 
-        self.ignore_devel = not bool(config.get('devel-project-enforce', False))
+        self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))
         self.review_team = config.get('review-team')
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
