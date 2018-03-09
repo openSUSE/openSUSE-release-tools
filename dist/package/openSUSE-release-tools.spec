@@ -373,6 +373,7 @@ fi
 %exclude %{_datadir}/%{source_dir}/manager_42.py
 %exclude %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics.py
+%exclude %{_datadir}/%{source_dir}/metrics_release.py
 %exclude %{_datadir}/%{source_dir}/pkglistgen.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
@@ -446,12 +447,15 @@ fi
 %{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics
 %{_datadir}/%{source_dir}/metrics.py
+%{_datadir}/%{source_dir}/metrics_release.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
 %dir %attr(0750, grafana, grafana) %{_localstatedir}/lib/grafana
 %dir %{_localstatedir}/lib/grafana/dashboards
 %{_localstatedir}/lib/grafana/dashboards/%{name}
 %{_unitdir}/osrt-metrics@.service
 %{_unitdir}/osrt-metrics@.timer
+%{_unitdir}/osrt-metrics-release@.service
+%{_unitdir}/osrt-metrics-release@.timer
 
 %files repo-checker
 %defattr(-,root,root,-)

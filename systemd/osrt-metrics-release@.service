@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: metrics release for %i
+
+[Service]
+User=osrt-metrics
+SyslogIdentifier=osrt-metrics
+ExecStart=/usr/bin/osrt-metrics --debug --release-only -p "%i"
+
+[Install]
+WantedBy=multi-user.target
