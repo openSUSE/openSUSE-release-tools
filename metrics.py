@@ -267,15 +267,18 @@ def who_workaround(request, review, relax=False):
 # allocating memory for entire incoming data set at once.
 def walk_points(points, target):
     global client
-    # Wait until just before writing to drop database.
-    client.drop_database(client._database)
-    client.create_database(client._database)
 
+    measurements = set()
     counters = {}
     final = []
     time_last = None
     wrote = 0
     for point in sorted(points, key=lambda l: l.time):
+        if point.measurement not in measurements:
+            # Wait until just before writing to drop measurement.
+            client.drop_measurement(point.measurement)
+            measurements.add(point.measurement)
+
         if point.time != time_last and len(final) >= 1000:
             # Write final point in batches of ~1000, but guard against writing
             # when in the middle of points at the same time as they may end up
@@ -350,6 +353,9 @@ def main(args):
 
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
+
+    # Ensure database exists.
+    client.create_database(client._database)
 
     metrics_release.ingest(client)
     if args.release_only:
