@@ -22,6 +22,8 @@ import osc.core
 
 from osclib.cache import Cache
 from osclib.core import package_list
+from osclib.git import CACHE_DIR
+from osclib.git import sync
 
 # Issue summary can contain unicode characters and therefore a string containing
 # either summary or one in which ISSUE_SUMMARY is then placed must be unicode.
@@ -205,40 +207,6 @@ def issues_get(apiurl, project, package, trackers, db):
 
     return issues
 
-def git_clone(url, directory):
-    return_code = subprocess.call(['git', 'clone', url, directory])
-    if return_code != 0:
-        raise Exception('Failed to clone {}'.format(url))
-
-def sync(config_dir, db_dir):
-    cwd = os.getcwd()
-    devnull = open(os.devnull, 'wb')
-
-    git_sync_dir = os.path.join(config_dir, 'git-sync')
-    git_sync_exec = os.path.join(git_sync_dir, 'git-sync')
-    if not os.path.exists(git_sync_dir):
-        os.makedirs(git_sync_dir)
-        git_clone('https://github.com/simonthum/git-sync.git', git_sync_dir)
-    else:
-        os.chdir(git_sync_dir)
-        subprocess.call(['git', 'pull', 'origin', 'master'], stdout=devnull, stderr=devnull)
-
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
-        git_clone('git@github.com:jberry-suse/osc-plugin-factory-issue-db.git', db_dir)
-
-        os.chdir(db_dir)
-        subprocess.call(['git', 'config', '--bool', 'branch.master.sync', 'true'])
-        subprocess.call(['git', 'config', '--bool', 'branch.master.syncNewFiles', 'true'])
-        subprocess.call(['git', 'config', 'branch.master.syncCommitMsg', 'Sync issue-diff.py changes.'])
-
-    os.chdir(db_dir)
-    return_code = subprocess.call([git_sync_exec])
-    if return_code != 0:
-        raise Exception('Failed to sync local db changes.')
-
-    os.chdir(cwd)
-
 def print_stats(db):
     bug_ids = []
     reported = 0
@@ -273,9 +241,10 @@ def main(args):
 
     Cache.init()
 
-    db_dir = os.path.join(args.config_dir, 'issue-db')
+    git_repo_url = 'git@github.com:jberry-suse/osc-plugin-factory-issue-db.git'
+    git_message = 'Sync issue-diff.py changes.'
+    db_dir = sync(args.cache_dir, git_repo_url, git_message)
     db_file = os.path.join(db_dir, '{}.yml'.format(args.project))
-    sync(args.config_dir, db_dir)
 
     if os.path.exists(db_file):
         db = yaml.safe_load(open(db_file).read())
@@ -424,7 +393,7 @@ def main(args):
             print('stopped at limit')
             break
 
-    sync(args.config_dir, db_dir)
+    sync(args.cache_dir, git_repo_url, git_message)
 
 
 if __name__ == '__main__':
@@ -443,11 +412,11 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
     parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
-    parser.add_argument('--config-dir', help='configuration directory containing git-sync tool and issue db')
+    parser.add_argument('--cache-dir', help='cache directory containing git-sync tool and issue db')
     parser.add_argument('--print-stats', action='store_true', help='print statistics based on database')
     args = parser.parse_args()
 
-    if args.config_dir is None:
-        args.config_dir = os.path.expanduser('~/.osc-plugin-factory')
+    if args.cache_dir is None:
+        args.cache_dir = CACHE_DIR
 
     sys.exit(main(args))
