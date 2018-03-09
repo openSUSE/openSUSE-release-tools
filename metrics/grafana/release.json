@@ -47,7 +47,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1520567435112,
+  "iteration": 1520633066212,
   "links": [],
   "panels": [
     {
@@ -649,6 +649,6 @@
   },
   "timezone": "",
   "title": "OSRT: Release",
-  "uid": "3Hg0iSgiz",
-  "version": 14
+  "uid": "osrt_release",
+  "version": 1
 }
