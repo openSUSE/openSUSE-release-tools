@@ -169,7 +169,10 @@ class ReviewBot(object):
         self.staging_api(project)
         config = self.staging_config[project]
 
-        users = group_members(self.apiurl, config['staging-group'])
+        users = []
+        group = config.get('staging-group')
+        if group:
+            users += group_members(self.apiurl, group)
 
         if self.override_group_key:
             override_group = config.get(self.override_group_key)
