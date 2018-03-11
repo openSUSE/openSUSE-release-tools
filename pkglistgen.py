@@ -39,7 +39,7 @@ from osc.core import Package
 from osc.core import show_results_meta
 from osc.core import undelete_package
 from osc import conf
-from osclib.conf import Config
+from osclib.conf import Config, str2bool
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
@@ -1186,9 +1186,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.update_merge(nonfree if drop_list else False)
 
         print('-> do_solve')
-        opts.ignore_unresolvable = bool(target_config.get('pkglistgen-ignore-unresolvable'))
-        opts.ignore_recommended = bool(target_config.get('pkglistgen-ignore-recommended'))
-        opts.include_suggested = bool(target_config.get('pkglistgen-include-suggested'))
+        opts.ignore_unresolvable = str2bool(target_config.get('pkglistgen-ignore-unresolvable'))
+        opts.ignore_recommended = str2bool(target_config.get('pkglistgen-ignore-recommended'))
+        opts.include_suggested = str2bool(target_config.get('pkglistgen-include-suggested'))
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
         self.do_solve('solve', opts)

@@ -17,6 +17,7 @@ from osclib.core import devel_project_fallback
 import urllib2
 import ReviewBot
 from check_maintenance_incidents import MaintenanceChecker
+from osclib.conf import str2bool
 
 class CheckSource(ReviewBot.ReviewBot):
 
@@ -37,7 +38,8 @@ class CheckSource(ReviewBot.ReviewBot):
         self.staging_api(project)
         config = self.staging_config[project]
 
-        self.ignore_devel = not bool(config.get('devel-project-enforce', False))
+        self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))
+        self.add_review_team = str2bool(config.get('check-source-add-review-team', 'True'))
         self.review_team = config.get('review-team')
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
@@ -131,7 +133,7 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['accepted'] += "\n\nOutput of check script (non-fatal):\n" + output
 
         if not self.skip_add_reviews:
-            if self.review_team is not None:
+            if self.add_review_team and self.review_team is not None:
                 self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
 
             if self.only_changes():
