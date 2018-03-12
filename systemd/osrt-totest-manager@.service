@@ -6,3 +6,7 @@ Type=simple
 User=osrt-totest-manager
 WorkingDirectory=~
 ExecStart=/usr/bin/osrt-totest-manager --verbose run --interval 5 "%i"
+
+[Install]
+WantedBy=multi-user.target
+
