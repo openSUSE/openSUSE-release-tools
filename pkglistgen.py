@@ -878,18 +878,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ofh = sys.stdout
         if self.options.output_dir:
             build, repo_style = self.dump_solv_build(baseurl)
-            name = '{}/{}.solv'.format(self.options.output_dir, build)
+            name = os.path.join(self.options.output_dir, '{}.solv'.format(build))
             # For update repo name never changes so always update.
             if not opts.overwrite and repo_style != 'update' and os.path.exists(name):
                 logger.info("%s exists", name)
                 return name
-            ofh = open(name + '.new', 'w')
 
         pool = solv.Pool()
         pool.setarch()
 
         repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
-        f = tempfile.TemporaryFile()
         path_prefix = 'suse/' if name and repo_style == 'build' else ''
         url = urlparse.urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
         repomd = requests.get(url)
@@ -897,6 +895,23 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         root = ET.fromstring(repomd.content)
         primary_element = root.find('.//r:data[@type="primary"]', ns)
         location = primary_element.find('r:location', ns).get('href')
+        sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
+
+        # No build information in update repo to use repomd checksum in name.
+        if repo_style == 'update':
+            name = os.path.join(self.options.output_dir, '{}::{}.solv'.format(build, sha256_expected))
+            if not opts.overwrite and os.path.exists(name):
+                logger.info("%s exists", name)
+                return name
+
+            # Only consider latest update repo so remove old versions.
+            # Pre-release builds only make sense for non-update repos and once
+            # releases then only relevant for next product which does not
+            # consider pre-release from previous version.
+            for old_solv in glob.glob(os.path.join(self.options.output_dir, '{}::*.solv'.format(build))):
+                os.remove(old_solv)
+
+        f = tempfile.TemporaryFile()
         f.write(repomd.content)
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
@@ -904,7 +919,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         url = urlparse.urljoin(baseurl, path_prefix + location)
         with requests.get(url, stream=True) as primary:
             sha256 = hashlib.sha256(primary.content).hexdigest()
-            sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
             if sha256 != sha256_expected:
                 raise Exception('checksums do not match {} != {}'.format(sha256, sha256_expected))
 
@@ -915,6 +929,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             os.lseek(f.fileno(), 0, os.SEEK_SET)
             repo.add_rpmmd(f, None, 0)
             repo.create_stubs()
+
+            ofh = open(name + '.new', 'w')
             repo.write(ofh)
 
         if name is not None:
