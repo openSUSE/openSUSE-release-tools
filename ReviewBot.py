@@ -33,6 +33,7 @@ from osclib.memoize import memoize
 from osclib.stagingapi import StagingAPI
 import signal
 import datetime
+import time
 import yaml
 
 try:
@@ -697,14 +698,18 @@ class CommandLineInterface(cmdln.Cmdln):
                 self.logger.exception(e)
 
             if interval:
-                self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
-                signal.alarm(interval*60)
-                try:
-                    raw_input()
-                except ExTimeout:
-                    pass
-                signal.alarm(0)
-                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                if os.isatty(0):
+                    self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
+                    signal.alarm(interval*60)
+                    try:
+                        raw_input()
+                    except ExTimeout:
+                        pass
+                    signal.alarm(0)
+                    self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                else:
+                    self.logger.info("sleeping %d minutes." % interval)
+                    time.sleep(interval * 60)
                 continue
             break
 
