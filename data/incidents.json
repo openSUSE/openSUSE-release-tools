@@ -134,6 +134,12 @@
       "VERSION" : "2.0",
       "ARCH": "x86_64"
   },
+  "SUSE:Updates:Storage:5:x86_64": {
+     "DISTRI" : "sle",
+     "FLAVOR" : "Server-DVD-SES-Updates",
+     "VERSION" : "12-SP3",
+     "ARCH" : "x86_64"
+  },
   "SUSE:Updates:SLE-HA:12-SP3:x86_64": {
       "DISTRI" : "sle",
       "FLAVOR" : "Server-DVD-Incidents-HA",

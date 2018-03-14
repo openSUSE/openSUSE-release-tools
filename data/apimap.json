@@ -117,5 +117,17 @@
       "archs" : [
          "x86_64"
       ]
-      }
+      },
+  "SUSE:Updates:Storage:5:" : {
+     "version" : "12-SP3",
+     "issues" : {
+        "OS_TEST_ISSUES" : "SUSE:Updates:SLE-SERVER:12-SP3:",
+        "SES_TEST_ISSUES" : "SUSE:Updates:Storage:5:"
+     },
+     "flavor" : "Server-DVD-SES-Updates",
+     "distri" : "sle",
+     "archs" : [
+        "x86_64"
+    ]
+    }
 }
