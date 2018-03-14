@@ -476,11 +476,16 @@ class OpenQABot(ReviewBot.ReviewBot):
             settings['DISTRI'] = 'sle' if 'distri' not in pmap else pmap['distri']
             issues = pmap.get('issues', {})
             issues['OS_TEST_ISSUES'] = issues.get('OS_TEST_ISSUES', product_prefix)
+            required_issue = pmap.get('required_issue', False)
             for key, prefix in issues.items():
                 self.logger.debug("{} {}".format(key, prefix))
                 if prefix + arch in job['channels']:
                     settings[key] = str(job['id'])
                     need = True
+            if required_issue:
+                if required_issue not in settings:
+                    need = False
+
             if need:
                 update = self.project_settings[product_prefix + arch]
                 update.apiurl = self.apiurl

@@ -100,6 +100,7 @@
         "OS_TEST_ISSUES" : "SUSE:Updates:SLE-SERVER:12-SP3:",
         "HA_TEST_ISSUES" : "SUSE:Updates:SLE-HA:12-SP3:"
       },
+      "required_issue" : "HA_TEST_ISSUES",
       "flavor" : "Server-DVD-Incidents-HA",
       "distri" : "sle",
       "archs" : [
@@ -113,6 +114,7 @@
         "HA_TEST_ISSUES" : "SUSE:Updates:SLE-HA:12-SP2:"
       },
       "flavor" : "Server-DVD-Incidents-HA",
+      "required_issue" : "HA_TEST_ISSUES",
       "distri" : "sle",
       "archs" : [
          "x86_64"
@@ -124,6 +126,7 @@
         "OS_TEST_ISSUES" : "SUSE:Updates:SLE-SERVER:12-SP3:",
         "SES_TEST_ISSUES" : "SUSE:Updates:Storage:5:"
      },
+     "required_issue" : "SES_TEST_ISSUES",
      "flavor" : "Server-DVD-SES-Updates",
      "distri" : "sle",
      "archs" : [
