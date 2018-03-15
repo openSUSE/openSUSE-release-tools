@@ -1,7 +1,7 @@
 # https://docs.docker.com/engine/reference/builder/
 # Used for TEST_SUITE=distribution and deployment to OBS.
 
-FROM opensuse:tumbleweed
+FROM opensuse/tumbleweed
 MAINTAINER Jimmy Berry <jberry@suse.com>
 
 # https://github.com/openSUSE/obs-service-set_version/issues/44 python-packaging
