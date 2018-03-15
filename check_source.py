@@ -48,6 +48,10 @@ class CheckSource(ReviewBot.ReviewBot):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
 
+        if target_package.startswith('00'):
+            self.review_messages['accepted'] = 'Skipping all checks for 00* packages'
+            return True
+
         if not self.ignore_devel:
             self.logger.info('checking if target package exists and has devel project')
             devel_project, devel_package = devel_project_get(self.apiurl, target_project, target_package)
