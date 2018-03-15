@@ -278,7 +278,7 @@ make %{?_smp_mflags}
 
 %install
 %make_install \
-  grafana_dashboards_dir="%{_localstatedir}/lib/grafana/dashboards/%{name}" \
+  grafana_provisioning_dir="%{_sysconfdir}/grafana/provisioning" \
   oscplugindir="%{osc_plugin_dir}" \
   VERSION="%{version}"
 
@@ -449,9 +449,12 @@ fi
 %{_datadir}/%{source_dir}/metrics.py
 %{_datadir}/%{source_dir}/metrics_release.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
-%dir %attr(0750, grafana, grafana) %{_localstatedir}/lib/grafana
-%dir %{_localstatedir}/lib/grafana/dashboards
-%{_localstatedir}/lib/grafana/dashboards/%{name}
+%dir %attr(0750, root grafana) %{_sysconfdir}/grafana
+%dir %{_sysconfdir}/grafana/provisioning
+%dir %{_sysconfdir}/grafana/provisioning/dashboards
+%dir %{_sysconfdir}/grafana/provisioning/datasources
+%{_sysconfdir}/grafana/provisioning/dashboards/%{name}.yaml
+%{_sysconfdir}/grafana/provisioning/datasources/%{name}.yaml
 %{_unitdir}/osrt-metrics@.service
 %{_unitdir}/osrt-metrics@.timer
 %{_unitdir}/osrt-metrics-release@.service

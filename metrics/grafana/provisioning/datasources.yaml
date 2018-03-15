@@ -1,0 +1,38 @@
+apiVersion: 1
+
+datasources:
+- name: openSUSE:Factory
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:Factory
+
+- name: openSUSE:Leap:15.0
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:Leap:15.0
+
+- name: openSUSE:Leap:42.3
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:Leap:42.3
+
+- name: openSUSE:Leap:42.2
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:Leap:42.2
+
+- name: openSUSE:Leap:42.1
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:Leap:42.1
+
+- name: openSUSE:13.2
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:13.2

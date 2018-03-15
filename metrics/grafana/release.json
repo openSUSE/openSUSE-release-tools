@@ -1,14 +1,5 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_TUMBLEWEED_SNAPSHOTS - AWS",
-      "label": "Tumbleweed Snapshots - AWS",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "cloudwatch",
-      "pluginName": "CloudWatch"
-    }
-  ],
+  "__inputs": [],
   "__requires": [
     {
       "type": "datasource",
@@ -47,7 +38,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1520567435112,
+  "iteration": 1520633066212,
   "links": [],
   "panels": [
     {
@@ -486,115 +477,6 @@
           "show": true
         }
       ]
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_TUMBLEWEED_SNAPSHOTS - AWS}",
-      "description": "The combined storage used by all Tumbleweed Snapshots stored as part of download.tumbleweed.boombatower.com.",
-      "fill": 1,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 36
-      },
-      "id": 2,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "connected",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "count",
-          "yaxis": 2
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "alias": "size",
-          "dimensions": {
-            "BucketName": "download.tumbleweed.boombatower.com",
-            "StorageType": "StandardStorage"
-          },
-          "metricName": "BucketSizeBytes",
-          "namespace": "AWS/S3",
-          "period": "",
-          "refId": "A",
-          "region": "default",
-          "statistics": [
-            "Average"
-          ]
-        },
-        {
-          "alias": "count",
-          "dimensions": {
-            "BucketName": "download.tumbleweed.boombatower.com",
-            "StorageType": "AllStorageTypes"
-          },
-          "metricName": "NumberOfObjects",
-          "namespace": "AWS/S3",
-          "period": "",
-          "refId": "B",
-          "region": "default",
-          "statistics": [
-            "Average"
-          ]
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "S3 Storage Consumption",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "decbytes",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ]
     }
   ],
   "schemaVersion": 16,
@@ -649,6 +531,6 @@
   },
   "timezone": "",
   "title": "OSRT: Release",
-  "uid": "3Hg0iSgiz",
-  "version": 14
+  "uid": "osrt_release",
+  "version": 1
 }

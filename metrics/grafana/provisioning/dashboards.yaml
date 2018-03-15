@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+- name: openSUSE-release-tools
+  orgId: 1
+  folder: 'OSRT'
+  type: file
+  options:
+    path: OSRT_DATA_DIR/metrics/grafana

@@ -51,5 +51,9 @@ def map_snapshot(details):
     }
 
 def ingest(client):
+    if client._database != 'openSUSE:Factory':
+        print('skipping release ingest for unsupported project')
+        return
+
     for name in ['bug', 'mail', 'score', 'snapshot']:
         ingest_data(client, name)
