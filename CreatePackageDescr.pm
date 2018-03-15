@@ -141,6 +141,8 @@ sub package_snippet($) {
 
     $out .= "+Rec:\n";
     foreach my $prv ( @{ $qq{5046} || [] } ) {
+        # ignore boolean dependencies
+        next if $prv =~ m/^\(/;
         $out .= "$prv\n";
     }
     $out .= "-Rec:\n";
