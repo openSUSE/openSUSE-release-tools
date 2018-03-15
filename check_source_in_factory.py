@@ -181,9 +181,15 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                             self.logger.error("%s in state review but no reviews?", srref(req.reqid))
                             return False
                         for r in req.reviews:
-                            if r.by_project and r.state == 'new' and r.by_project.startswith('openSUSE:Factory:Staging:'):
-                                self.logger.info("%s review by %s ok", srref(req.reqid), r.by_project)
-                                continue
+                            if r.state == 'new':
+                                if r.by_project and r.by_project.startswith('openSUSE:Factory:Staging:'):
+                                    self.logger.info("%s review by %s ok", srref(req.reqid), r.by_project)
+                                    continue
+
+                                if r.by_user == 'repo-checker':
+                                    self.logger.info('%s review by %s ok', srref(req.reqid), r.by_user)
+                                    continue
+
                             if r.state != 'accepted':
                                 if r.by_user:
                                     self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_user)
