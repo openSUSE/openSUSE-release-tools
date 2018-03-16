@@ -28,6 +28,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         # ReviewBot options.
         self.only_one_action = True
+        self.request_default_return = True
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
 
@@ -273,10 +274,6 @@ class CheckSource(ReviewBot.ReviewBot):
             linked_package = linked.get('package')
             self.review_messages['declined'] = "This is an incorrect request, it's a linked package to %s/%s" % (linked_project, linked_package)
             return False
-
-    def check_action__default(self, request, action):
-        self.review_messages['accepted'] = 'Unhandled request type %s.' % (action.type)
-        return True
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
