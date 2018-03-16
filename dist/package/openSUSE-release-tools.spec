@@ -17,7 +17,7 @@
 
 
 %global __provides_exclude ^perl.*
-%define source_dir osc-plugin-factory
+%define source_dir openSUSE-release-tools
 %define announcer_filename factory-package-news
 Name:           openSUSE-release-tools
 Version:        0
@@ -25,7 +25,7 @@ Release:        0
 Summary:        Tools to aid in staging and release work for openSUSE/SUSE
 License:        GPL-2.0+ AND MIT
 Group:          Development/Tools/Other
-Url:            https://github.com/openSUSE/osc-plugin-factory
+Url:            https://github.com/openSUSE/openSUSE-release-tools
 Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
 # Requires sr#512849 which provides osc_plugin_dir.
@@ -272,7 +272,7 @@ make %{?_smp_mflags}
 
 %check
 %if 0%{?is_opensuse}
-# TODO openSUSE/osc-plugin-factory#1221: decide how to handle integration tests
+# TODO openSUSE/openSUSE-release-tools#1221: decide how to handle integration tests
 # make check
 %endif
 

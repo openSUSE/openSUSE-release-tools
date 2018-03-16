@@ -241,7 +241,7 @@ def main(args):
 
     Cache.init()
 
-    git_repo_url = 'git@github.com:jberry-suse/osc-plugin-factory-issue-db.git'
+    git_repo_url = 'git@github.com:jberry-suse/openSUSE-release-tools-issue-db.git'
     git_message = 'Sync issue-diff.py changes.'
     db_dir = sync(args.cache_dir, git_repo_url, git_message)
     db_file = os.path.join(db_dir, '{}.yml'.format(args.project))

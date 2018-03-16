@@ -1,12 +1,12 @@
 <VirtualHost *:80>
     ServerName abichecker.suse.de
 
-    WSGIDaemonProcess opensuse-abi-checker user=_opensuse.org-abi-checker group=nogroup display-name=%{GROUP} home=/usr/share/osc-plugin-factory/abichecker
+    WSGIDaemonProcess opensuse-abi-checker user=_opensuse.org-abi-checker group=nogroup display-name=%{GROUP} home=/usr/share/openSUSE-release-tools/abichecker
     WSGIProcessGroup opensuse-abi-checker
 
-    WSGIScriptAlias / /usr/share/osc-plugin-factory/abichecker/abichecker-web.py
+    WSGIScriptAlias / /usr/share/openSUSE-release-tools/abichecker/abichecker-web.py
 
-    <Directory "/usr/share/osc-plugin-factory/abichecker">
+    <Directory "/usr/share/openSUSE-release-tools/abichecker">
         <Files abichecker-web.py>
             <IfModule !mod_access_compat.c>
                 Require all granted

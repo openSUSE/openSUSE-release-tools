@@ -64,7 +64,7 @@ class Cache(object):
     cache, but obviously not for other contributors.
     """
 
-    CACHE_DIR = os.path.expanduser('~/.cache/osc-plugin-factory')
+    CACHE_DIR = os.path.expanduser('~/.cache/openSUSE-release-tools')
     TTL_LONG = 12 * 60 * 60
     TTL_MEDIUM = 30 * 60
     TTL_SHORT = 5 * 60

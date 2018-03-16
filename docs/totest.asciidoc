@@ -33,13 +33,13 @@ Installation
 Clone this repository:
 
 -------------------------------------------------------------------------------
-git clone https://github.com/openSUSE/osc-plugin-factory.git
+git clone https://github.com/openSUSE/openSUSE-release-tools.git
 -------------------------------------------------------------------------------
 
 Link the plugin and the library in +~/.osc-plugins+ or +/var/lib/osc-plugins+.
 
 -------------------------------------------------------------------------------
-cd osc-plugin-factory
+cd openSUSE-release-tools
 ln -sr ./osc-totest.py ./osclib ~/.osc-plugins
 -------------------------------------------------------------------------------
 
