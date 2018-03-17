@@ -111,6 +111,7 @@ DEFAULT = {
         'delreq-review': None,
         'main-repo': 'standard',
         # check_source.py
+        'check-source-in-air-rename-allow': 'True',
         'repo-checker': 'repo-checker',
         'repo_checker-package-comment-devel': '',
         'pkglistgen-archs': 'x86_64',

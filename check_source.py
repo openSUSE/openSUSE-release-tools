@@ -39,6 +39,7 @@ class CheckSource(ReviewBot.ReviewBot):
         config = self.staging_config[project]
 
         self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))
+        self.in_air_rename_allow = str2bool(config.get('check-source-in-air-rename-allow', 'False'))
         self.add_review_team = str2bool(config.get('check-source-add-review-team', 'True'))
         self.review_team = config.get('review-team')
         self.repo_checker = config.get('repo-checker')
@@ -101,7 +102,7 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         # We want to see the same package name in the devel project as in the distro; anything else calls for confusion
-        if source_package != target_package:
+        if not self.in_air_rename_allow and source_package != target_package:
             self.review_messages['declined'] = "No in-air renames: The package must be called the same in the devel project as in the target project"
             return False
 
@@ -261,8 +262,9 @@ class CheckSource(ReviewBot.ReviewBot):
         # Decline the delete request against linked package.
         links = root.findall('sourceinfo/linked')
         if links is None or len(links) == 0:
-            # Utilize maintbot to add devel project review if necessary.
-            self.maintbot.check_one_request(request)
+            if not self.ignore_devel:
+                # Utilize maintbot to add devel project review if necessary.
+                self.maintbot.check_one_request(request)
 
             if not self.skip_add_reviews and self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')
