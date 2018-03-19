@@ -362,7 +362,7 @@ def main(args):
         return
 
     # Use separate cache since it is persistent.
-    Cache.CACHE_DIR = os.path.expanduser('~/.cache/osc-plugin-factory-metrics')
+    Cache.CACHE_DIR = Cache.CACHE_DIR + '-metrics'
     if args.wipe_cache:
         Cache.delete_all()
     Cache.PATTERNS['/search/request'] = sys.maxint

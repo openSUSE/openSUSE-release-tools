@@ -3,7 +3,7 @@ from os import path
 import subprocess
 from xdg.BaseDirectory import save_cache_path
 
-CACHE_DIR = save_cache_path('osc-plugin-factory', 'git')
+CACHE_DIR = save_cache_path('openSUSE-release-tools', 'git')
 
 def clone(url, directory):
     return_code = subprocess.call(['git', 'clone', url, directory])

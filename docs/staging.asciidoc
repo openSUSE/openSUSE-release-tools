@@ -39,14 +39,14 @@ Installation
 Clone this repository:
 
 --------------------------------------------------------------------------------
-git clone https://github.com/openSUSE/osc-plugin-factory.git
+git clone https://github.com/openSUSE/openSUSE-release-tools.git
 --------------------------------------------------------------------------------
 
 Link +osc-staging.py+ and the library either to +~/.osc-plugins+ or
 +/var/lib/osc-plugins+
 
 --------------------------------------------------------------------------------
-cd osc-plugin-factory
+cd openSUSE-release-tools
 ln -sr ./osc-staging.py ./osclib ~/.osc-plugins
 --------------------------------------------------------------------------------
 

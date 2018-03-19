@@ -1,7 +1,7 @@
 Factory workflow plugins
 ========================
 
-image:https://travis-ci.org/openSUSE/osc-plugin-factory.png?branch=master["Build Status", link="https://travis-ci.org/openSUSE/osc-plugin-factory"] image:https://coveralls.io/repos/openSUSE/osc-plugin-factory/badge.png?branch=master["Coverage Status", link="https://coveralls.io/r/openSUSE/osc-plugin-factory"]
+image:https://travis-ci.org/openSUSE/openSUSE-release-tools.png?branch=master["Build Status", link="https://travis-ci.org/openSUSE/openSUSE-release-tools"] image:https://coveralls.io/repos/openSUSE/osc-plugin-factory/badge.png?branch=master["Coverage Status", link="https://coveralls.io/r/openSUSE/osc-plugin-factory"]
 
 This repository contains various OSC plugins and scripts used for the
 maintenance of openSUSE distributions like Factory.
@@ -41,7 +41,7 @@ Installation
 Clone this repository:
 
 -------------------------------------------------------------------------------
-git clone https://github.com/openSUSE/osc-plugin-factory.git
+git clone https://github.com/openSUSE/openSUSE-release-tools.git
 -------------------------------------------------------------------------------
 
 Create links for the different plugins that you want to install in
@@ -49,7 +49,7 @@ Create links for the different plugins that you want to install in
 the staging plugin:
 
 -------------------------------------------------------------------------------
-cd osc-plugin-factory
+cd openSUSE-release-tools
 ln -sr ./osc-staging.py ./osclib ~/.osc-plugins
 -------------------------------------------------------------------------------
 
