@@ -29,13 +29,13 @@ if (-f "$dir/_service") {
     rename("$dir/_service", "$dir/_service.bak") || die "rename failed";
 }
 
-if (!-f "$dir/$bname.changes") {
-    print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
-    $ret = 1;
-}
-
 if (!-f "$dir/$bname.spec") {
     print "A $bname.spec is missing. Packages submitted as FooBar, need to have a FooBar.spec file\n";
+    exit(0);
+}
+
+if (!-f "$dir/$bname.changes") {
+    print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
     $ret = 1;
 }
 
