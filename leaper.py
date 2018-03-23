@@ -413,22 +413,17 @@ class Leaper(ReviewBot.ReviewBot):
         return False
 
     def _check_factory(self, target_package, src_srcinfo, target_project='openSUSE:Factory'):
-            good = self.factory._check_project(target_project, target_package, src_srcinfo.verifymd5)
+        for subprj in ('', ':NonFree', ':Live'):
+            prj = ''.join((target_project, subprj))
+            good = self.factory._check_project(prj, target_package, src_srcinfo.verifymd5)
             if good:
                 return good
-            good = self.factory._check_requests(target_project, target_package, src_srcinfo.verifymd5)
+            good = self.factory._check_requests(prj, target_package, src_srcinfo.verifymd5)
             if good or good == None:
-                self.logger.debug("found request to Factory")
+                self.logger.debug("found request to %s", prj)
                 return good
-            target_project_nonfree = '{}:NonFree'.format(target_project)
-            good = self.factory._check_project(target_project_nonfree, target_package, src_srcinfo.verifymd5)
-            if good:
-                return good
-            good = self.factory._check_requests(target_project_nonfree, target_package, src_srcinfo.verifymd5)
-            if good or good == None:
-                self.logger.debug('found request to {}'.format(target_project_nonfree))
-                return good
-            return False
+
+        return False
 
     def _check_project_and_request(self, project, target_package, src_srcinfo):
         good = self.factory._check_project(project, target_package, src_srcinfo.verifymd5)
