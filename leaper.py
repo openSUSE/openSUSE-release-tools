@@ -403,6 +403,13 @@ class Leaper(ReviewBot.ReviewBot):
                 self.needs_legal_review = True
                 return True
 
+        if self.override_allow:
+            # Rather than decline, leave review open and ask release
+            # manager for input via override comment.
+            self.logger.info('Comment `(at){} override accept` to force accept.'.format(self.review_user))
+            self.needs_release_manager = True
+            return None
+
         return False
 
     def _check_factory(self, target_package, src_srcinfo, target_project='openSUSE:Factory'):
