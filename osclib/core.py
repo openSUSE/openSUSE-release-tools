@@ -188,3 +188,22 @@ def project_list_prefix(apiurl, prefix):
     url = makeurl(apiurl, ['search', 'project', 'id'], query)
     root = ETL.parse(http_GET(url)).getroot()
     return root.xpath('project/@name')
+
+#
+# Depdendency helpers
+#
+def fileinfo_ext_all(apiurl, project, repo, arch, package):
+    url = makeurl(apiurl, ['build', project, repo, arch, package])
+    binaries = ET.parse(http_GET(url)).getroot()
+    for binary in binaries.findall('binary'):
+        filename = binary.get('filename')
+        if not filename.endswith('.rpm'):
+            continue
+
+        yield fileinfo_ext(apiurl, project, repo, arch, package, filename)
+
+def fileinfo_ext(apiurl, project, repo, arch, package, filename):
+    url = makeurl(apiurl,
+                  ['build', project, repo, arch, package, filename],
+                  {'view': 'fileinfo_ext'})
+    return ET.parse(http_GET(url)).getroot()

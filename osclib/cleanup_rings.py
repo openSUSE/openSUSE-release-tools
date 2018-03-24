@@ -2,6 +2,7 @@ from xml.etree import cElementTree as ET
 
 from osc.core import makeurl
 from osc.core import http_GET
+from osclib.core import fileinfo_ext_all
 
 import urllib2
 
@@ -150,7 +151,7 @@ class CleanupRings(object):
     def check_requiredby(self, project, package):
         # Prioritize x86_64 bit.
         for arch in reversed(self.api.ring_archs(project)):
-            for fileinfo in self.api.fileinfo_ext_all(project, 'standard', arch, package):
+            for fileinfo in fileinfo_ext_all(self.api.apiurl, project, 'standard', arch, package):
                 for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
                     b = self.bin2src[requiredby.get('name')]
                     if b == package:
