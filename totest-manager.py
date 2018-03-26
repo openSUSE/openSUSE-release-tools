@@ -756,6 +756,7 @@ class ToTest150Images(ToTestBaseNew):
         'livecd-leap-gnome',
         'livecd-leap-kde',
         'livecd-leap-x11',
+        'opensuse-leap-image',
     ]
 
     ftp_products = []
