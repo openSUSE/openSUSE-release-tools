@@ -100,7 +100,7 @@ class ToTestBase(object):
     def get_current_snapshot(self):
         """Return the current snapshot in the test project"""
 
-        for binary in self.binaries_of_product(self.test_project, '_product:%s-cd-mini-%s' % (self.project_base, self.arch())):
+        for binary in self.binaries_of_product(self.test_project, '000product:%s-cd-mini-%s' % (self.project_base, self.arch())):
             result = re.match(r'%s-%s-NET-.*-Snapshot(.*)-Media.iso' % (self.project_base, self.iso_prefix()),
                               binary)
             if result:
@@ -128,7 +128,7 @@ class ToTestBase(object):
 
     def release_version(self):
         url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
-                                '_product:%s-release' % self.project_base])
+                                '000product:%s-release' % self.project_base])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for binary in root.findall('binary'):
@@ -617,14 +617,14 @@ class ToTestBaseNew(ToTestBase):
 
 
 class ToTestFactory(ToTestBase):
-    main_products = ['_product:openSUSE-dvd5-dvd-i586',
-                     '_product:openSUSE-dvd5-dvd-x86_64',
-                     '_product:openSUSE-cd-mini-i586',
-                     '_product:openSUSE-cd-mini-x86_64',
-                     '_product:openSUSE-Tumbleweed-Kubic-dvd5-dvd-x86_64']
+    main_products = ['000product:openSUSE-dvd5-dvd-i586',
+                     '000product:openSUSE-dvd5-dvd-x86_64',
+                     '000product:openSUSE-cd-mini-i586',
+                     '000product:openSUSE-cd-mini-x86_64',
+                     '000product:openSUSE-Tumbleweed-Kubic-dvd5-dvd-x86_64']
 
-    ftp_products = ['_product:openSUSE-ftp-ftp-i586_x86_64',
-                    '_product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
+    ftp_products = ['000product:openSUSE-ftp-ftp-i586_x86_64',
+                    '000product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
 
     livecd_products = ['livecd-tumbleweed-kde',
                        'livecd-tumbleweed-gnome',
@@ -644,12 +644,12 @@ class ToTestFactory(ToTestBase):
 
 
 class ToTestFactoryPowerPC(ToTestBase):
-    main_products = ['_product:openSUSE-dvd5-dvd-ppc64',
-                     '_product:openSUSE-dvd5-dvd-ppc64le',
-                     '_product:openSUSE-cd-mini-ppc64',
-                     '_product:openSUSE-cd-mini-ppc64le']
+    main_products = ['000product:openSUSE-dvd5-dvd-ppc64',
+                     '000product:openSUSE-dvd5-dvd-ppc64le',
+                     '000product:openSUSE-cd-mini-ppc64',
+                     '000product:openSUSE-cd-mini-ppc64le']
 
-    ftp_products = ['_product:openSUSE-ftp-ftp-ppc64_ppc64le']
+    ftp_products = ['000product:openSUSE-ftp-ftp-ppc64_ppc64le']
 
     livecd_products = []
 
@@ -694,10 +694,10 @@ class ToTestFactoryzSystems(ToTestBase):
 
 
 class ToTestFactoryARM(ToTestFactory):
-    main_products = ['_product:openSUSE-cd-mini-aarch64',
-                     '_product:openSUSE-dvd5-dvd-aarch64']
+    main_products = ['000product:openSUSE-cd-mini-aarch64',
+                     '000product:openSUSE-dvd5-dvd-aarch64']
 
-    ftp_products = ['_product:openSUSE-ftp-ftp-aarch64']
+    ftp_products = ['000product:openSUSE-ftp-ftp-aarch64']
 
     livecd_products = []
 
