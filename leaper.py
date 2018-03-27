@@ -151,8 +151,6 @@ class Leaper(ReviewBot.ReviewBot):
 
         if self.ibs and target_project.startswith('SUSE:SLE'):
 
-            self.do_check_maintainer_review = False
-
             if package in self.lookup_sle15:
                 origin = self.lookup_sle15[package]
 
@@ -442,7 +440,7 @@ class Leaper(ReviewBot.ReviewBot):
         self.needs_release_manager = False
         self.pending_factory_submission = False
         self.source_in_factory = None
-        self.do_check_maintainer_review = True
+        self.do_check_maintainer_review = not self.ibs
         self.packages = {}
 
         request_ok = ReviewBot.ReviewBot.check_one_request(self, req)
