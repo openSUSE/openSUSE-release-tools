@@ -121,7 +121,7 @@ class ToTestBase(object):
         if not base:
             base = self.project_base
         for binary in self.binaries_of_product(project, tree):
-            result = re.match(r'%s.*Build(.*)-Media(.*).iso' % base, binary)
+            result = re.match(r'.*-Build([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz)', binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s iso version" % project)
@@ -198,8 +198,8 @@ class ToTestBase(object):
         issues = ' , '.join(self.issues_to_ignore)
         status_flag = 'publishing' if self.status_for_openqa['is_publishing'] else \
             'preparing' if self.status_for_openqa['can_release'] else \
-                'testing' if self.status_for_openqa['snapshotable'] else \
-                'building'
+            'testing' if self.status_for_openqa['snapshotable'] else \
+            'building'
         status_msg = "tag:{}:{}:{}".format(self.status_for_openqa['new_snapshot'], status_flag, status_flag)
         msg = "pinned-description: Ignored issues\r\n\r\n{}\r\n\r\n{}".format(issues, status_msg)
         data = {'text': msg}
@@ -352,7 +352,11 @@ class ToTestBase(object):
         if re.match(r'.*-ftp-(ftp|POOL)-', package):
             return None
 
-        if ':%s-Addon-NonOss-ftp-ftp' % self.base in package:
+        # docker container has no size limit
+        if package == 'opensuse-leap-image':
+            return None
+
+        if '-Addon-NonOss-ftp-ftp' in package:
             return None
 
         raise Exception('No maxsize for {}'.format(package))
@@ -553,6 +557,12 @@ class ToTestBase(object):
 
 class ToTestBaseNew(ToTestBase):
 
+    # whether all medias need to have the same build number
+    need_same_build_number = True
+
+    # whether to set a snapshot number on release
+    set_snapshot_number = False
+
     """Base class for new product builder"""
     def _release(self, set_release=None):
         query = {'cmd': 'release'}
@@ -594,7 +604,7 @@ class ToTestBaseNew(ToTestBase):
 
     def is_snapshottable(self):
         ret = super(ToTestBaseNew, self).is_snapshottable()
-        if ret:
+        if ret and self.need_same_build_number:
             # make sure all medias have the same build number
             builds = set()
             for p in self.ftp_products:
@@ -612,8 +622,10 @@ class ToTestBaseNew(ToTestBase):
         return ret
 
     def update_totest(self, snapshot):
+        if not self.set_snapshot_number:
+            snapshot = None
         # omit snapshot, we don't want to rename on release
-        super(ToTestBaseNew, self).update_totest()
+        super(ToTestBaseNew, self).update_totest(snapshot)
 
 
 class ToTestFactory(ToTestBase):
@@ -764,6 +776,10 @@ class ToTest150Images(ToTestBaseNew):
     livecd_products = []
     product_arch = 'x86_64'
 
+    # docker image has a different number
+    need_same_build_number = False
+    set_snapshot_number = True
+
     def openqa_group(self):
         return 'openSUSE Leap 15.0 Images'
 
@@ -781,6 +797,7 @@ class ToTest150Images(ToTestBaseNew):
 
     def jobs_num(self):
         return 13
+
 
 class ToTestSLE150(ToTestBaseNew):
     main_products = [
@@ -881,7 +898,6 @@ class CommandlineInterface(cmdln.Cmdln):
         if not self.options.obs_api_url:
             self.options.obs_api_url = self.api_url[self.options.project_base]
 
-
     def _setup_totest(self, project):
         fallback_project = 'openSUSE:%s' % project
         if project not in self.totest_class and fallback_project in self.totest_class:
@@ -951,4 +967,3 @@ class CommandlineInterface(cmdln.Cmdln):
 if __name__ == "__main__":
     app = CommandlineInterface()
     sys.exit(app.main())
-
