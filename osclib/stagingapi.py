@@ -1808,22 +1808,6 @@ class StagingAPI(object):
             return self.cstaging_dvd_archs
         return self.cstaging_archs
 
-    def fileinfo_ext_all(self, project, repo, arch, package):
-        url = makeurl(self.apiurl, ['build', project, repo, arch, package])
-        binaries = ET.parse(http_GET(url)).getroot()
-        for binary in binaries.findall('binary'):
-            filename = binary.get('filename')
-            if not filename.endswith('.rpm'):
-                continue
-
-            yield self.fileinfo_ext(project, repo, arch, package, filename)
-
-    def fileinfo_ext(self, project, repo, arch, package, filename):
-        url = makeurl(self.apiurl,
-                      ['build', project, repo, arch, package, filename],
-                      {'view': 'fileinfo_ext'})
-        return ET.parse(http_GET(url)).getroot()
-
     def ignore_format(self, request_id):
         requests_ignored = self.get_ignored_requests()
         if request_id in requests_ignored:

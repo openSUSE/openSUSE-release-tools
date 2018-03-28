@@ -16,6 +16,7 @@ from osclib.comments import CommentAPI
 from osclib.core import binary_list
 from osclib.core import depends_on
 from osclib.core import devel_project_fallback
+from osclib.core import fileinfo_ext_all
 from osclib.core import package_binary_list
 from osclib.core import request_staged
 from osclib.core import target_archs
@@ -480,9 +481,17 @@ class RepoChecker(ReviewBot.ReviewBot):
         return True
 
     def check_action_delete(self, request, action):
-        # TODO Include runtime dependencies instead of just build dependencies.
         # TODO Ignore tgt_project packages that depend on this that are part of
         # ignore list as and instead look at output from staging for those.
+
+        built_binaries = set([])
+        revdeps = set([])
+        for fileinfo in fileinfo_ext_all(self.apiurl, action.tgt_project, 'standard', 'x86_64', action.tgt_package):
+            built_binaries.add(fileinfo.find('name').text)
+            for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
+                revdeps.add(requiredby.get('name'))
+        runtime_deps = sorted(revdeps - built_binaries)
+
         what_depends_on = depends_on(self.apiurl, action.tgt_project, 'standard', [action.tgt_package], True)
 
         # filter out dependency on package itself (happens with eg
@@ -493,6 +502,10 @@ class RepoChecker(ReviewBot.ReviewBot):
         if len(what_depends_on):
             self.logger.warn('{} is still a build requirement of:\n\n- {}'.format(
                 action.tgt_package, '\n- '.join(sorted(what_depends_on))))
+
+        if len(runtime_deps):
+            self.logger.warn('{} provides runtime dependencies to:\n\n- {}'.format(
+                action.tgt_package, '\n- '.join(runtime_deps)))
 
         if len(self.comment_handler.lines):
             self.comment_write(state='seen', result='failed')
