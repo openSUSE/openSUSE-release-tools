@@ -301,7 +301,7 @@ class AcceptCommand(object):
         for ports in ports_prjs:
             project = self.api.project + ':' + ports
             if self.api.item_exists(project):
-                baseurl = ['source', project, '_product']
+                baseurl = ['source', project, '000product']
                 url = self.api.makeurl(baseurl, query=service)
                 self.api.retried_POST(url)
 
