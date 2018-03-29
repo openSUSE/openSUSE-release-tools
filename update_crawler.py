@@ -128,7 +128,7 @@ class UpdateCrawler(object):
 
     def meta_get_packagelist(self, prj, deleted=None, expand=False):
         root = ET.fromstring(self._meta_get_packagelist(prj, deleted, expand))
-        return [ node.get('name') for node in root.findall('entry') if not node.get('name') == '_product' and not node.get('name').startswith('_product:') and not node.get('name').startswith('patchinfo.') ]
+        return [ node.get('name') for node in root.findall('entry') if not node.get('name') == '000product' and not node.get('name').startswith('patchinfo.') ]
 
     def _get_source_infos(self, project, packages):
         query = [ 'view=info' ]

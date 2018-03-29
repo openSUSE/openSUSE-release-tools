@@ -169,11 +169,11 @@ class BiArchTool(ToolBase.ToolBase):
         else:
             self.packages = packages
 
-    # check when _product was last changed, eg by packagelist
+    # check when 000product was last changed, eg by packagelist
     # generator. Yield only packges that got checked in after that
     # point in time.
     def _filter_packages_by_time(self, packages):
-        x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '_product', '_history'], {'limit': '1'})))
+        x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '000product', '_history'], {'limit': '1'})))
         producttime = int(x.find('./revision/time').text)
         for pkg in packages:
             try:
