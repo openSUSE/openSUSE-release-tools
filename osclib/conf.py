@@ -172,7 +172,7 @@ DEFAULT = {
 
 
 def str2bool(v):
-    return v.lower() in ("yes", "true", "t", "1")
+    return (v is not None and v.lower() in ("yes", "true", "t", "1"))
 
 
 class Config(object):
