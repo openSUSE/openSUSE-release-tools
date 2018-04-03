@@ -118,7 +118,10 @@ class OpenQABot(ReviewBot.ReviewBot):
         m.update('b')
         for url in repos:
             url += '/repodata/repomd.xml'
-            root = ET.parse(osc.core.http_GET(url)).getroot()
+            try:
+                root = ET.parse(osc.core.http_GET(url)).getroot()
+            except HTTPError:
+                raise
             cs = root.find(
                 './/{http://linux.duke.edu/metadata/repo}data[@type="primary"]/{http://linux.duke.edu/metadata/repo}checksum')
             m.update(cs.text)
@@ -189,7 +192,13 @@ class OpenQABot(ReviewBot.ReviewBot):
     # and then we know the build
     def trigger_build_for_target(self, prj, data):
         today = date.today().strftime("%Y%m%d")
-        repohash = self.calculate_repo_hash(data['repos'])
+
+        try:
+            repohash = self.calculate_repo_hash(data['repos'])
+        except HTTPError as e:
+            self.logger.debug("REPOHAS not calculated with response {}".format(e))
+            return
+
         buildnr = None
         jobs = self.jobs_for_target(data)
         for job in jobs:
