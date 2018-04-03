@@ -29,18 +29,29 @@ if (-f "$dir/_service") {
     rename("$dir/_service", "$dir/_service.bak") || die "rename failed";
 }
 
-if (!-f "$dir/$bname.changes") {
-    print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
+for my $file (glob("$dir/_service:*")) {
+    $file=basename($file);
+    print "Found _service generate file $file in checkout. Please clean this up first.";
     $ret = 1;
 }
 
-if (!-f "$dir/$bname.spec") {
-    print "A $bname.spec is missing. Packages submitted as FooBar, need to have a FooBar.spec file\n";
-    $ret = 1;
-}
+my @specs = map basename($_), glob("$dir/*.spec");
 
-# further we can't check
-exit($ret) if ($ret);
+if (@specs) {
+    if (!-f "$dir/$bname.changes") {
+        print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
+        $ret = 1;
+    }
+
+    if (!-f "$dir/$bname.spec") {
+        print "A $bname.spec is missing. Packages submitted as FooBar, need to have a FooBar.spec file\n";
+        $ret = 1;
+    }
+    exit($ret) if ($ret);
+} else {
+    # package without spec files, eg kiwi only
+    exit($ret);
+}
 
 open(SPEC, "$dir/$bname.spec");
 my $spec = join("", <SPEC>);
@@ -58,17 +69,11 @@ if ($spec =~ m/\nVendor:/) {
     $ret = 1;
 }
 
-foreach my $file (glob("$dir/_service:*")) {
-    $file=basename($file);
-    print "Found _service generate file $file in checkout. Please clean this up first.";
-    $ret = 1;
-}
-
 # Check that we have for each spec file a changes file - and that at least one
 # contains changes
 my $changes_updated = 0;
-for my $spec (glob("$dir/*.spec")) {
-    $changes = basename($spec);
+for my $spec (@specs) {
+    $changes = $spec;
     $changes =~ s/\.spec$/.changes/;
     if (!-f "$dir/$changes") {
         print "A $changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
@@ -104,7 +109,7 @@ if ($spec !~ m/(#[^\n]*license)/i) {
 
 my %patches = ();
 
-foreach my $test (glob("/usr/lib/obs/service/source_validators/*")) {
+for my $test (glob("/usr/lib/obs/service/source_validators/*")) {
     next if (!-f "$test");
     my $checkivsd = `/bin/bash $test --batchmode $dir $old < /dev/null 2>&1`;
     if ($?) {
@@ -242,7 +247,7 @@ if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--
 }
 chdir($odir);
 
-foreach my $rpmlint (glob("$dir/*rpmlintrc")) {
+for my $rpmlint (glob("$dir/*rpmlintrc")) {
     open(RPMLINTRC, $rpmlint);
     while (<RPMLINTRC>) {
         if (m/^\s*setBadness/) {
