@@ -14,7 +14,6 @@ job install provides pattern() = enhanced_base
 job install provides pattern() = gnome
 job install provides pattern() = gnome_games
 job install provides pattern() = gnome_internet
-job install provides pattern() = gnome_laptop
 job install provides pattern() = gnome_multimedia
 job install provides pattern() = gnome_office
 job install provides pattern() = gnome_utilities
