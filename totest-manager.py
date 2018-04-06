@@ -121,7 +121,7 @@ class ToTestBase(object):
         if not base:
             base = self.project_base
         for binary in self.binaries_of_product(project, tree):
-            result = re.match(r'.*-Build([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz)', binary)
+            result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz)', binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s iso version" % project)
