@@ -1,3 +1,4 @@
+from osc import conf
 from osclib.core import project_list_prefix
 
 
@@ -79,3 +80,27 @@ def project_version(project):
         return version
 
     return None
+
+def mail_send(project, to, subject, body, from_key='maintainer', followup_to_key='release-list', dry=False):
+    from email.mime.text import MIMEText
+    import email.utils
+    import smtplib
+
+    config = conf.config[project]
+    msg = MIMEText(body)
+    msg['Message-ID'] = email.utils.make_msgid()
+    msg['Date'] = email.utils.formatdate(localtime=1)
+    msg['From'] = config['mail-{}'.format(from_key)]
+    msg['To'] = to
+    followup_to = config.get('mail-{}'.format(followup_to_key))
+    if followup_to:
+        msg['Mail-Followup-To'] = followup_to
+    msg['Subject'] = subject
+
+    if dry:
+        print(msg.as_string())
+        return
+
+    s = smtplib.SMTP(config.get('mail-relay', 'relay.suse.de'))
+    s.sendmail(msg['From'], [msg['To']], msg.as_string())
+    s.quit()

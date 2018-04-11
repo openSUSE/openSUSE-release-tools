@@ -21,6 +21,7 @@ import osc.conf
 import osc.core
 
 from osclib.cache import Cache
+from osclib.core import entity_email
 from osclib.core import package_list
 from osclib.git import CACHE_DIR
 from osclib.git import sync
@@ -54,12 +55,6 @@ def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
 
     return newbug.id
 
-def entity_email(apiurl, entity, key):
-    url = osc.core.makeurl(apiurl, (entity, key))
-    root = ET.parse(osc.core.http_GET(url)).getroot()
-    email = root.find('email')
-    return email.text if email is not None else None
-
 def bug_owner(apiurl, package, entity='person'):
     query = {
         'binary': package,
@@ -69,10 +64,10 @@ def bug_owner(apiurl, package, entity='person'):
 
     bugowner = root.find('.//{}[@role="bugowner"]'.format(entity))
     if bugowner is not None:
-        return entity_email(apiurl, entity, bugowner.get('name'))
+        return entity_email(apiurl, bugowner.get('name'), entity)
     maintainer = root.find('.//{}[@role="maintainer"]'.format(entity))
     if maintainer is not None:
-        return entity_email(apiurl, entity, maintainer.get('name'))
+        return entity_email(apiurl, maintainer.get('name'), entity)
     if entity == 'person':
         return bug_owner(apiurl, package, 'group')
 

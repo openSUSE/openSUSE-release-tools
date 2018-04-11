@@ -12,12 +12,16 @@ from osc.core import get_request_list
 from osc.core import get_review_list
 from osc.core import http_GET
 from osc.core import makeurl
+from osc.core import meta_get_packagelist
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.core import devel_project_fallback
+from osclib.core import entity_email
 from osclib.core import request_age
 from osclib.stagingapi import StagingAPI
+from osclib.util import mail_send
 
 
 BOT_NAME = 'devel-project'
@@ -95,6 +99,32 @@ def maintainer(args):
         intersection = set(groups).intersection(desired)
         if len(intersection) != len(desired):
             print('{} missing {}'.format(devel_project, ', '.join(desired - intersection)))
+
+def notify(args):
+    apiurl = osc.conf.config['apiurl']
+
+    # devel_projects_get() only works for Factory as such
+    # devel_project_fallback() must be used on a per package basis.
+    packages = meta_get_packagelist(apiurl, args.project)
+    maintainer_map = {}
+    for package in packages:
+        devel_project, devel_package = devel_project_fallback(apiurl, args.project, package)
+        if devel_project and devel_package:
+            devel_package_identifier = '/'.join([devel_project, devel_package])
+            userids = maintainers_get(apiurl, devel_project, devel_package)
+            for userid in userids:
+                maintainer_map.setdefault(userid, set())
+                maintainer_map[userid].add(devel_package_identifier)
+
+    Config(args.project) # Ensure mail-* options are loaded for mail_send().
+    subject = 'Packages you maintain are present in {}'.format(args.project)
+    for userid, package_identifiers in maintainer_map.items():
+        email = entity_email(apiurl, userid)
+        message = 'The following packages you maintain are in {}:\n\n- {}'.format(
+            args.project, '\n- '.join(sorted(package_identifiers)))
+
+        mail_send(args.project, email, subject, message, dry=args.dry)
+        print('notified {} of {} packages'.format(userid, len(package_identifiers)))
 
 def requests(args):
     apiurl = osc.conf.config['apiurl']
@@ -226,6 +256,10 @@ if __name__ == '__main__':
     parser_maintainer = subparsers.add_parser('maintainer', help='Check for relevant groups as maintainer.')
     parser_maintainer.set_defaults(func=maintainer)
     parser_maintainer.add_argument('-g', '--group', action='append', help='group for which to check')
+
+    parser_notify = subparsers.add_parser('notify', help='notify maintainers of their packages')
+    parser_notify.set_defaults(func=notify)
+    parser_notify.add_argument('--dry', action='store_true',  help='dry run emails')
 
     parser_requests = subparsers.add_parser('requests', help='List open requests.')
     parser_requests.set_defaults(func=requests)
