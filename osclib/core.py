@@ -207,3 +207,18 @@ def fileinfo_ext(apiurl, project, repo, arch, package, filename):
                   ['build', project, repo, arch, package, filename],
                   {'view': 'fileinfo_ext'})
     return ET.parse(http_GET(url)).getroot()
+
+def entity_email(apiurl, key, entity_type='person', include_name=False):
+    url = makeurl(apiurl, [entity_type, key])
+    root = ET.parse(http_GET(url)).getroot()
+
+    email = root.find('email')
+    if email is None:
+        return None
+    email = email.text
+
+    realname = root.find('realname')
+    if include_name and realname is not None:
+        email = '{} <{}>'.format(realname.text, email)
+
+    return email
