@@ -54,6 +54,10 @@ DEFAULT = {
         'legal-review-group': 'legal-auto',
         'repo-checker': 'repo-checker',
         'pkglistgen-product-family-include': 'openSUSE:Leap:N',
+        'mail-list': 'opensuse-factory@opensuse.org',
+        'mail-maintainer': 'Dominique Leuenberger <dimstar@suse.de>',
+        'mail-noreply': 'noreply@opensuse.org',
+        'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))': {
         'staging': 'openSUSE:%(project)s:Staging',
@@ -94,6 +98,10 @@ DEFAULT = {
         'pkglistgen-include-suggested': '1',
         'pkglistgen-delete-kiwis-rings': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
         'pkglistgen-delete-kiwis-staging': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
+        'mail-list': 'opensuse-factory@opensuse.org',
+        'mail-maintainer': 'Ludwig Nussel <ludwig.nussel@suse.de>',
+        'mail-noreply': 'noreply@opensuse.org',
+        'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
     r'SUSE:(?P<project>SLE-15.*$)': {
         'staging': 'SUSE:%(project)s:Staging',
