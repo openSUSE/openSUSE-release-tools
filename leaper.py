@@ -111,7 +111,7 @@ class Leaper(ReviewBot.ReviewBot):
         if target_package is None:
             target_package = src_package
 
-        return '[%(target_project)s/%(target_package)s](/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s)'%{
+        return '[%(target_project)s/%(target_package)s](/package/show/%(target_project)s/%(target_package)s) ([diff](/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s))'%{
                 'src_project': src_project,
                 'src_package': src_package,
                 'src_rev': src_rev,
