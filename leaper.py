@@ -308,7 +308,7 @@ class Leaper(ReviewBot.ReviewBot):
                         if not self.factory._check_project(prj,
                                 target_package,
                                 src_srcinfo.verifymd5):
-                            self.logger.info("sources in %s are [NOT identical](%s)", prj,
+                            self.logger.info("sources in %s are NOT identical",
                                     self.rdiff_link(src_project, src_package, src_rev, prj, package))
 
                         self.needs_release_manager = True
