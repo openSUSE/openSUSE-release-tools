@@ -58,6 +58,7 @@ import requests
 import urlparse
 import gzip
 import tempfile
+import traceback
 import random
 import shutil
 import string
@@ -1110,6 +1111,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
+        self.error_occured = False
+
         if not opts.project:
             raise ValueError('project is required')
         if opts.scope not in self.SCOPES:
@@ -1119,7 +1122,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             for scope in self.SCOPES[1:]:
                 opts.scope = scope
                 self.do_update_and_solve(subcmd, copy.deepcopy(opts))
-            return
+            return self.error_occured
 
         # Store target project as opts.project will contain subprojects.
         target_project = opts.project
@@ -1137,27 +1140,27 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if opts.scope == 'target':
             self.options.repos = ['/'.join([target_project, main_repo])]
-            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
-            return
+            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
+            return self.error_occured
         elif opts.scope == 'ports':
             # TODO Continue supporting #1297, but should be abstracted.
             main_repo = 'ports'
             opts.project += ':Ports'
             self.options.repos = ['/'.join([opts.project, main_repo])]
-            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
-            return
+            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
+            return self.error_occured
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
             self.options.repos = [
                 '/'.join([api.rings[1], main_repo]),
                 '/'.join([api.rings[0], main_repo]),
             ]
-            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
+            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
 
             opts.project = api.rings[2]
             self.options.repos.insert(0, '/'.join([api.rings[2], main_repo]))
-            self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts, skip_release=True)
-            return
+            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, skip_release=True)
+            return self.error_occured
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
             for letter in letters:
@@ -1172,11 +1175,23 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     opts_dvd = copy.deepcopy(opts)
                     opts_dvd.project += ':DVD'
                     self.options.repos.insert(0, '/'.join([opts_dvd.project, main_repo]))
-                    self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
+                    self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
                     self.options.repos.pop(0)
 
-                self.update_and_solve_target(apiurl, target_project, target_config, main_repo, opts)
-            return
+                self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
+            return self.error_occured
+
+    def update_and_solve_target_wrapper(self, *args, **kwargs):
+        try:
+            self.update_and_solve_target(*args, **kwargs)
+        except Exception as e:
+            # Print exception, but continue to prevent problems effecting one
+            # project from killing the whole process. Downside being a common
+            # error will be duplicated for each project. Common exceptions could
+            # be excluded if a set list is determined, but that is likely not
+            # practical.
+            traceback.print_exc()
+            self.error_occured = True
 
     def update_and_solve_target(self, apiurl, target_project, target_config, main_repo, opts,
                                 skip_release=False, drop_list=False):
