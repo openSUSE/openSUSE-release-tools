@@ -222,3 +222,13 @@ def entity_email(apiurl, key, entity_type='person', include_name=False):
         email = '{} <{}>'.format(realname.text, email)
 
     return email
+
+def source_file_load(apiurl, project, package, filename, revision=None):
+    query = {'expand': 1}
+    if revision:
+        query['rev'] = revision
+    url = makeurl(apiurl, ['source', project, package, filename], query)
+    try:
+        return http_GET(url).read()
+    except HTTPError:
+        return None
