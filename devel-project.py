@@ -103,7 +103,9 @@ def notify(args):
 
     # devel_projects_get() only works for Factory as such
     # devel_project_fallback() must be used on a per package basis.
-    packages = package_list_without_links(apiurl, args.project)
+    packages = args.packages
+    if not packages:
+        packages = package_list_without_links(apiurl, args.project)
     maintainer_map = {}
     for package in packages:
         devel_project, devel_package = devel_project_fallback(apiurl, args.project, package)
@@ -118,7 +120,22 @@ def notify(args):
     subject = 'Packages you maintain are present in {}'.format(args.project)
     for userid, package_identifiers in maintainer_map.items():
         email = entity_email(apiurl, userid)
-        message = 'The following packages you maintain are in {}:\n\n- {}'.format(
+        message = """This is a friendly reminder about your packages in {}.
+
+Please verify that the included packages are working as intended and
+have versions appropriate for a stable release. Changes may be submitted until
+April 26th [at the latest].
+
+Keep in mind that some packages may be shared with SUSE Linux
+Enterprise. Concerns with those should be raised via Bugzilla.
+
+Please contact opensuse-releaseteam@opensuse.org if your package
+needs special attention by the release team.
+
+According to the information in OBS ("osc maintainer") you are
+in charge of the following packages:
+
+- {}""".format(
             args.project, '\n- '.join(sorted(package_identifiers)))
 
         mail_send(args.project, email, subject, message, dry=args.dry)
@@ -258,6 +275,7 @@ if __name__ == '__main__':
     parser_notify = subparsers.add_parser('notify', help='notify maintainers of their packages')
     parser_notify.set_defaults(func=notify)
     parser_notify.add_argument('--dry', action='store_true',  help='dry run emails')
+    parser_notify.add_argument("packages", nargs='*', help="packages to check")
 
     parser_requests = subparsers.add_parser('requests', help='List open requests.')
     parser_requests.set_defaults(func=requests)
