@@ -50,6 +50,7 @@ from osc.core import streamfile
 from osclib.cache import Cache
 from osclib.core import devel_project_get
 from osclib.core import project_list_prefix
+from osclib.core import source_file_load
 from osclib.comments import CommentAPI
 from osclib.ignore_command import IgnoreCommand
 from osclib.memoize import memoize
@@ -1506,14 +1507,7 @@ class StagingAPI(object):
         :param filename: The filename to query
         :param revision: The revision to query
         """
-        query = {'expand': 1}
-        if revision:
-            query['rev'] = revision
-        url = self.makeurl(['source', project, package, filename], query)
-        try:
-            return http_GET(url).read()
-        except urllib2.HTTPError:
-            return None
+        return source_file_load(self.apiurl, project, package, filename, revision)
 
     def save_file_content(self, project, package, filename, content, comment='script updated'):
         """
