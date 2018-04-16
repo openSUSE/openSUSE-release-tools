@@ -343,6 +343,10 @@ class ReviewBot(object):
         return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
 
     def check_action__default(self, req, a):
+        # Disable any comment handler to avoid making a comment even if
+        # comment_write() is called by another bot wrapping __default().
+        self.comment_handler_remove()
+
         message = 'unhandled request type {}'.format(a.type)
         self.logger.error(message)
         self.review_messages['accepted'] += ': ' + message
