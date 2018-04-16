@@ -42,7 +42,7 @@ check: test
 
 test:
 	# to see more add -v -d -s --nologcapture
-	$(wildcard /usr/bin/nosetests-2.*)
+	$(wildcard /usr/bin/nosetests-2.*) -c .noserc
 
 package:
 	touch dist/package/$(package_name).changes

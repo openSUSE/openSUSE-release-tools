@@ -71,7 +71,7 @@ matrix:
         # Needs python prefix to use the correct interpretor.
         - python ./obs_clone.py --cache --debug --apiurl-target local
       script:
-        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint
+        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint -c .noserc
       after_success:
         - coveralls
 
