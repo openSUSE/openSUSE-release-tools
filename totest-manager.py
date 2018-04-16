@@ -756,6 +756,8 @@ class ToTest150Ports(ToTestBaseNew):
 
     livecd_products = []
 
+    product_repo = 'images_arm'
+
     def openqa_group(self):
         return 'openSUSE Leap 15.0 Ports'
 
