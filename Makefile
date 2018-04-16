@@ -2,18 +2,7 @@ SUBDIRS = factory-package-news abichecker
 
 include Makefile.common
 
-pkgdata_BINS = \
-	check_maintenance_incidents.py \
-	check_source.py \
-	devel-project.py \
-	leaper.py \
-	manager_42.py \
-	metrics.py \
-	pkglistgen.py \
-	repo_checker.py \
-	suppkg_rebuild.py \
-	totest-manager.py \
-	update_crawler.py
+pkgdata_BINS = $(shell find * -maxdepth 0 -executable -type f)
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=bs_mirrorfull findfileconflicts
 pkgdata_DATA+=bs_copy metrics osclib $(wildcard *.pm *.testcase)
