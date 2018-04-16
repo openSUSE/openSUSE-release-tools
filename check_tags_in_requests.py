@@ -67,6 +67,7 @@ See also https://en.opensuse.org/openSUSE:Packaging_Patches_guidelines#Current_s
 Note that not all of the tags listed there are necessarily supported
 by OBS on which this bot relies.
 """
+        self.request_default_return = True
 
     def isNewPackage(self, tgt_project, tgt_package):
         try:
@@ -142,13 +143,6 @@ by OBS on which this bot relies.
 
     def check_action_maintenance_release(self, req, a):
         return self.checkTagInRequest(req, a)
-
-    def check_action__default(self, req, a):
-        # accept all other requests
-        self.logger.debug("auto accept request type %s"%a.type)
-        return True
-
-
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
