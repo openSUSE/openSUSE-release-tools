@@ -362,6 +362,26 @@ fi
 %files
 %defattr(-,root,root,-)
 %doc README.asciidoc
+%{_bindir}/osrt-biarchtool
+%{_bindir}/osrt-bs_mirrorfull
+%{_bindir}/osrt-build-fail-reminder
+%{_bindir}/osrt-checknewer
+%{_bindir}/osrt-check_source_in_factory
+%{_bindir}/osrt-check_tags_in_requests
+%{_bindir}/osrt-compare_pkglist
+%{_bindir}/osrt-create_test_dvds
+%{_bindir}/osrt-fcc_submitter
+%{_bindir}/osrt-findfileconflicts
+%{_bindir}/osrt-issue-diff
+%{_bindir}/osrt-legal-auto
+%{_bindir}/osrt-obs_clone
+%{_bindir}/osrt-openqa-maintenance
+%{_bindir}/osrt-openqa-maintenance2
+%{_bindir}/osrt-rebuildpacs
+%{_bindir}/osrt-requestfinder
+%{_bindir}/osrt-status
+%{_bindir}/osrt-sync-rebuild
+%{_bindir}/osrt-unmaintained
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
