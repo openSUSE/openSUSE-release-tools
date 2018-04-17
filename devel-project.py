@@ -10,8 +10,6 @@ import osc.conf
 from osc.core import HTTPError
 from osc.core import get_request_list
 from osc.core import get_review_list
-from osc.core import http_GET
-from osc.core import makeurl
 from osc.core import meta_get_packagelist
 from osc.core import show_package_meta
 from osc.core import show_project_meta
