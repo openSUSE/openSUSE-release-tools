@@ -24,19 +24,13 @@
       "ARCH" : "x86_64",
       "ISO" : "openSUSE-Leap-42.3-DVD-x86_64.iso"
    },
-   "SUSE:Updates:SLE-DESKTOP:12-SP2:x86_64" : {
-      "FLAVOR" : "Desktop-DVD-Incidents",
-      "VERSION" : "12-SP2",
-      "DISTRI" : "sle",
-      "ARCH" : "x86_64"
-   },
    "SUSE:Updates:SLE-DESKTOP:12-SP3:x86_64" : {
       "FLAVOR" : "Desktop-DVD-Incidents",
       "VERSION" : "12-SP3",
       "DISTRI" : "sle",
       "ARCH" : "x86_64"
    },
-   "SUSE:Updates:SLE-SERVER:12-SP2:s390x" : {
+   "SUSE:Updates:SLE-SERVER:12-SP2-LTSS:s390x" : {
       "DISTRI" : "sle",
       "ARCH" : "s390x",
       "VERSION" : "12-SP2",
@@ -55,11 +49,12 @@
       "FLAVOR" : "Server-DVD-Incidents-Kernel",
       "KGRAFT" : "1"
    },
-   "SUSE:Updates:SLE-SERVER:12-SP2:aarch64" : {
+   "SUSE:Updates:SLE-Live-Patching:12-SP3:ppc64le" : {
       "DISTRI" : "sle",
-      "ARCH" : "aarch64",
-      "FLAVOR" : "Server-DVD-Incidents",
-      "VERSION" : "12-SP2"
+      "ARCH" : "ppc64le",
+      "VERSION" : "12-SP3",
+      "FLAVOR" : "Server-DVD-Incidents-Kernel",
+      "KGRAFT" : "1"
    },
    "SUSE:Updates:SLE-SERVER:12-SP3:x86_64" : {
       "VERSION" : "12-SP3",
@@ -73,8 +68,14 @@
       "ARCH" : "ppc64le",
       "DISTRI" : "sle"
    },
+   "SUSE:Updates:SLE-Live-Patching:12-SP3:x86_64" : {
+      "FLAVOR" : "Server-DVD-Incidents-Kernel",
+      "VERSION" : "12-SP3",
+      "ARCH" : "x86_64",
+      "DISTRI" : "sle"
+   },
    "SUSE:Updates:SLE-Live-Patching:12:x86_64" : {
-      "FLAVOR" : "KGraft",
+      "FLAVOR" : "Server-DVD-Incidents-Kernel",
       "VERSION" : "12",
       "ARCH" : "x86_64",
       "DISTRI" : "sle"
@@ -91,7 +92,7 @@
       "DISTRI" : "sle",
       "ARCH" : "x86_64"
    },
-   "SUSE:Updates:SLE-SERVER:12-SP2:ppc64le" : {
+   "SUSE:Updates:SLE-SERVER:12-SP2-LTSS:ppc64le" : {
       "VERSION" : "12-SP2",
       "FLAVOR" : "Server-DVD-Incidents",
       "ARCH" : "ppc64le",
@@ -109,10 +110,34 @@
       "DISTRI" : "sle",
       "ARCH" : "x86_64"
    },
-   "SUSE:Updates:SLE-SERVER:12-SP2:x86_64" : {
+   "SUSE:Updates:SLE-SERVER:12-SP2-LTSS:x86_64" : {
       "VERSION" : "12-SP2",
       "FLAVOR" : "Server-DVD-Incidents",
       "ARCH" : "x86_64",
       "DISTRI" : "sle"
-   }
+   },
+   "SUSE:Updates:SUSE-CAASP:ALL:x86_64": {
+      "DISTRI" : "caasp",
+      "FLAVOR" : "CaaSP-DVD-Incidents",
+      "VERSION" : "2.0",
+      "ARCH": "x86_64"
+  },
+  "SUSE:Updates:Storage:5:x86_64": {
+     "DISTRI" : "sle",
+     "FLAVOR" : "Server-DVD-SES-Updates",
+     "VERSION" : "12-SP3",
+     "ARCH" : "x86_64"
+  },
+  "SUSE:Updates:SLE-HA:12-SP3:x86_64": {
+      "DISTRI" : "sle",
+      "FLAVOR" : "Server-DVD-Incidents-HA",
+      "VERSION" : "12-SP3",
+      "ARCH" : "x86_64"
+  },
+  "SUSE:Updates:SLE-HA:12-SP2:x86_64": {
+      "DISTRI" : "sle",
+      "FLAVOR" : "Server-DVD-Incidents-HA",
+      "VERSION" : "12-SP2",
+      "ARCH" : "x86_64"
+  }
 }
