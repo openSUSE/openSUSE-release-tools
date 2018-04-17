@@ -10,13 +10,13 @@ import osc.conf
 from osc.core import HTTPError
 from osc.core import get_request_list
 from osc.core import get_review_list
-from osc.core import meta_get_packagelist
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.core import devel_project_fallback
 from osclib.core import entity_email
+from osclib.core import package_list_without_links
 from osclib.core import request_age
 from osclib.stagingapi import StagingAPI
 from osclib.util import mail_send
@@ -103,7 +103,7 @@ def notify(args):
 
     # devel_projects_get() only works for Factory as such
     # devel_project_fallback() must be used on a per package basis.
-    packages = meta_get_packagelist(apiurl, args.project)
+    packages = package_list_without_links(apiurl, args.project)
     maintainer_map = {}
     for package in packages:
         devel_project, devel_package = devel_project_fallback(apiurl, args.project, package)
