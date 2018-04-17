@@ -60,6 +60,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         else:
             self.apinick = 'obs#'
         self.override_allow = False # Handled via external tool.
+        self.request_default_return = True
 
     def request_priority(self):
         prio = self.request.priority or 'moderate'
@@ -133,10 +134,6 @@ class LegalAuto(ReviewBot.ReviewBot):
                 return False
             # print url, json.dumps(report)
         self.message = 'ok'
-        return True
-
-    def check_action__default(self, req, a):
-        self.logger.error("unhandled request type %s" % a.type)
         return True
 
     def prepare_review(self):
