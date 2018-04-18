@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from collections import namedtuple
 from datetime import date
 import md5
 from pprint import pformat
@@ -31,7 +30,6 @@ QA_INPROGRESS = 1
 QA_FAILED = 2
 QA_PASSED = 3
 
-Package = namedtuple('Package', ('name', 'version', 'release'))
 pkgname_re = re.compile(r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^.]+)\.rpm')
 comment_marker_re = re.compile(
     r'<!-- openqa state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined|none))?(?: revision=(?P<revision>\d+))? -->')
@@ -494,7 +492,6 @@ class OpenQABot(ReviewBot.ReviewBot):
             if channel in job['channels']:
                 settings[key] = str(job['id'])
                 need = True
-                print("NEED")
         if required_issue:
             if required_issue not in settings:
                 need = False
@@ -511,7 +508,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         posts = []
         for j in update.settings(
                 update.maintenance_project + ':' + str(job['id']),
-                product_key, []):
+                product_key):
             if not job.get('openqa_build'):
                 job['openqa_build'] = update.get_max_revision(job)
             if not job.get('openqa_build'):

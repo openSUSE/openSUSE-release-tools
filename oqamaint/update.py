@@ -53,7 +53,7 @@ class Update(object):
                 max_revision = rev
         return max_revision
 
-    def settings(self, src_prj, dst_prj, packages):
+    def settings(self, src_prj, dst_prj):
         s = self._settings.copy()
 
         # start with a colon so it looks cool behind 'Build' :/
@@ -114,12 +114,16 @@ class Update(object):
                 continue
             if package.endswith('SUSE_Channels'):
                 continue
-            # other tools on SLE have data from SMELT without acces to this attrib
+            # other tools on SLE have data from SMELT without access to this attrib
             if self.opensuse:
                 url = osc.core.makeurl(self.apiurl, ('source', prj, package, '_link'))
                 root = ET.parse(osc.core.http_GET(url)).getroot()
                 if root.attrib.get('cicount'):
                     continue
+                # super hack, but we need to strip the suffix from the package name
+                # but bash.openSUSE_Leap_42.3_Update doesn't leave many options
+                # without reverse engineering OBS :(
+                package = re.sub(r'\.openSUSE_Leap_.*$', '.openSUSE', package)
             if not shortest_pkg or len(package) < len(shortest_pkg):
                 shortest_pkg = package
         if not shortest_pkg:
