@@ -232,3 +232,15 @@ def source_file_load(apiurl, project, package, filename, revision=None):
         return http_GET(url).read()
     except HTTPError:
         return None
+
+# Should be an API call that says give me "real" packages that does not include
+# multibuild entries nor linked packages.
+def package_list_without_links(apiurl, project):
+    query = {
+        'view': 'info',
+        'nofilename': '1',
+    }
+    url = makeurl(apiurl, ['source', project], query)
+    root = ETL.parse(http_GET(url)).getroot()
+    return root.xpath(
+        '//sourceinfo[not(./linked[@project="{}"]) and not(contains(@package, ":"))]/@package'.format(project))
