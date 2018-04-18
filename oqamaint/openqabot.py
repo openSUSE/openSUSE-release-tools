@@ -551,7 +551,23 @@ class OpenQABot(ReviewBot.ReviewBot):
     # for SUSE we use mesh for openSUSE we limit the jobs to open release requests
     def check_opensuse_incidents(self):
         for req in self.requests:
-            self.test_job({'project': 'openSUSE:Maintenance:8003', 'id': 8003, 'channels': ['openSUSE:Leap:42.3:Update']})
+            types = set([a.type for a in req.actions])
+            if not 'maintenance_release' in types:
+                next
+
+            src_prjs = set([a.src_project for a in req.actions])
+            if len(src_prjs) != 1:
+               raise Exception("can't handle maintenance_release from different incidents")
+            build = src_prjs.pop()
+            tgt_prjs = set([a.tgt_project for a in req.actions])
+            ret = []
+            for prj in tgt_prjs:
+                # ignore e.g. Backports
+                if not prj in self.project_settings:
+                    next
+
+                incident_id = build.split(':')[-1]
+                self.test_job({'project': build, 'id': incident_id, 'channels': [prj]})
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
