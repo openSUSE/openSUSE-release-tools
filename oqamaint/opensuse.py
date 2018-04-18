@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from update import Update
-
+import re
 
 class openSUSEUpdate(Update):
 
@@ -9,6 +9,8 @@ class openSUSEUpdate(Update):
     maintenance_project = 'openSUSE:Maintenance'
 
     def settings(self, src_prj, dst_prj, packages):
+        # strip the architecture for openSUSE - we do them all in one
+        dst_prj = re.sub(r':x86_64$', '', dst_prj)
         settings = super(openSUSEUpdate, self).settings(src_prj, dst_prj, packages)
         settings = settings[0]
 
