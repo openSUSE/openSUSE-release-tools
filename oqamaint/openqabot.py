@@ -523,7 +523,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         return posts
 
     def check_product(self, job, product_prefix):
-        print("CHECK_PRODUCT", job, product_prefix)
         pmap = self.api_map[product_prefix]
         posts = []
         if 'archs' in pmap:
