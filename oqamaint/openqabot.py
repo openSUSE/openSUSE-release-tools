@@ -170,7 +170,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         return l_incidents
 
     def jobs_for_target(self, data, build=None):
-        settings = data['settings'][0]
+        settings = data['settings']
         values = {
             'distri': settings['DISTRI'],
             'version': settings['VERSION'],
@@ -227,20 +227,20 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         buildnr = "{!s}-{:d}".format(today, buildnr + 1)
 
-        for s in data['settings']:
-            # now schedule it for real
-            if 'incidents' in data.keys():
-                for x, y in self.calculate_incidents(data['incidents']):
-                    s[x] = y
-            s['BUILD'] = buildnr
-            s['REPOHASH'] = repohash
-            self.logger.debug("Prepared: {}".format(pformat(s)))
-            if not self.dryrun:
-                try:
-                    self.logger.info("Openqa isos POST {}".format(pformat(s)))
-                    self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
-                except Exception as e:
-                    self.logger.error(e)
+        s = data['settings']:
+        # now schedule it for real
+        if 'incidents' in data.keys():
+            for x, y in self.calculate_incidents(data['incidents']):
+                s[x] = y
+        s['BUILD'] = buildnr
+        s['REPOHASH'] = repohash
+        self.logger.debug("Prepared: {}".format(pformat(s)))
+        if not self.dryrun:
+            try:
+                self.logger.info("Openqa isos POST {}".format(pformat(s)))
+                self.openqa.openqa_request('POST', 'isos', data=s, retries=1)
+            except Exception as e:
+                self.logger.error(e)
         self.update_test_builds[prj] = buildnr
 
     def request_get_openqa_jobs(self, req, incident=True, test_repo=False):
@@ -567,6 +567,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
                 incident_id = build.split(':')[-1]
                 self.test_job({'project': build, 'id': incident_id, 'channels': [prj]})
+                print("TGT", self.tgt_repo[self.openqa.baseurl][prj]['settings']) #['OS_TEST_ISSUES'])
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
