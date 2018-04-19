@@ -709,7 +709,9 @@ class ToTestFactoryARM(ToTestFactory):
     main_products = ['000product:openSUSE-cd-mini-aarch64',
                      '000product:openSUSE-dvd5-dvd-aarch64']
 
-    ftp_products = ['000product:openSUSE-ftp-ftp-aarch64']
+    ftp_products = ['000product:openSUSE-ftp-ftp-aarch64',
+                    '000product:openSUSE-ftp-ftp-armv7hl',
+                    '000product:openSUSE-ftp-ftp-armv6hl']
 
     livecd_products = []
 
