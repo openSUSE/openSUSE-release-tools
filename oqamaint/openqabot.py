@@ -227,7 +227,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         buildnr = "{!s}-{:d}".format(today, buildnr + 1)
 
-        s = data['settings']:
+        s = data['settings']
         # now schedule it for real
         if 'incidents' in data.keys():
             for x, y in self.calculate_incidents(data['incidents']):
@@ -254,7 +254,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             tgt_prjs = {a.tgt_project for a in req.actions}
             ret = []
             if incident:
-                ret += self.openqa_jobs[build]
+                ret += self.openqa_jobs.get(build, [])
             for prj in sorted(tgt_prjs):
                 repo_settings = self.tgt_repo.get(self.openqa.baseurl, {})
                 if test_repo and prj in repo_settings:
@@ -552,7 +552,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         for req in self.requests:
             types = set([a.type for a in req.actions])
             if not 'maintenance_release' in types:
-                next
+                continue
 
             src_prjs = set([a.src_project for a in req.actions])
             if len(src_prjs) != 1:
@@ -563,11 +563,15 @@ class OpenQABot(ReviewBot.ReviewBot):
             for prj in tgt_prjs:
                 # ignore e.g. Backports
                 if not prj in self.project_settings:
-                    next
+                    continue
 
                 incident_id = build.split(':')[-1]
                 self.test_job({'project': build, 'id': incident_id, 'channels': [prj]})
-                print("TGT", self.tgt_repo[self.openqa.baseurl][prj]['settings']) #['OS_TEST_ISSUES'])
+                issues = self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'].split(',')
+                # filter empty values
+                issues = filter(None, issues)
+                issues.append(incident_id)
+                self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'] = ','.join(issues)
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():

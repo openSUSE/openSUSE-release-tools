@@ -62,7 +62,6 @@ class Update(object):
         repo = dst_prj.replace(':', '_')
         repo = '{!s}/{!s}/{!s}/'.format(self.repo_prefix, src_prj.replace(':', ':/'), repo)
         patch_id = self.patch_id(repo)
-        print("SETTINGS", dst_prj, repo,patch_id)
         if patch_id:
             s['INCIDENT_REPO'] = repo
             s['INCIDENT_PATCH'] = patch_id
