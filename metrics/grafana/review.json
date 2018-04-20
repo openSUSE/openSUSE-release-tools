@@ -1521,7 +1521,7 @@
       "datasource": "$project",
       "fontSize": "100%",
       "gridPos": {
-        "h": 7,
+        "h": 14,
         "w": 12,
         "x": 0,
         "y": 63
@@ -1611,7 +1611,7 @@
       "datasource": "$project",
       "fontSize": "100%",
       "gridPos": {
-        "h": 7,
+        "h": 14,
         "w": 12,
         "x": 12,
         "y": 63
