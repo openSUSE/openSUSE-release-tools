@@ -14,6 +14,7 @@ import yaml
 import metrics_release
 import osc.conf
 import osc.core
+from osc.core import get_commitlog
 import osclib.conf
 from osclib.cache import Cache
 from osclib.conf import Config
@@ -347,6 +348,51 @@ def ingest_release_schedule(project):
     client.write_points(points, 's')
     return len(points)
 
+def revision_index(api):
+    if not hasattr(revision_index, 'index'):
+        root = ET.fromstring(''.join(
+            get_commitlog(api.apiurl, api.cstaging, 'dashboard', None, format='xml')))
+
+        revision_index.index = {}
+        for logentry in root.findall('logentry'):
+            date = date_parse(logentry.find('date').text)
+            revision_index.index[date] = logentry.get('revision')
+
+    return revision_index.index
+
+def revision_at(api, datetime):
+    index = revision_index(api)
+    for made, revision in sorted(index.items(), reverse=True):
+        if made <= datetime:
+            return revision
+
+    return None
+
+def dashboard_at(api, filename, datetime=None, revision=None):
+    if datetime:
+        revision = revision_at(api, datetime)
+    if not revision:
+        return revision
+
+    content = api.dashboard_content_load(filename, revision)
+    if filename in ('ignored_requests'):
+        if content:
+            return yaml.safe_load(content)
+        return {}
+    elif filename in ('config'):
+        if content:
+            # TODO re-use from osclib.conf.
+            from ConfigParser import ConfigParser
+            import io
+
+            cp = ConfigParser()
+            config = '[remote]\n' + content
+            cp.readfp(io.BytesIO(config))
+            return dict(cp.items('remote'))
+        return {}
+
+    return content
+
 def main(args):
     global client
     client = InfluxDBClient(args.host, args.port, args.user, args.password, args.project)
@@ -367,6 +413,8 @@ def main(args):
         Cache.delete_all()
     if args.heavy_cache:
         Cache.PATTERNS['/search/request'] = sys.maxint
+        Cache.PATTERNS['/source/[^/]+/dashboard/_history'] = sys.maxint
+    Cache.PATTERNS['/source/[^/]+/dashboard/[^/]+\?rev=.*'] = sys.maxint
     Cache.init()
 
     Config(args.project)
