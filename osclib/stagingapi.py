@@ -1520,8 +1520,8 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, package, filename], {'comment': comment})
         http_PUT(url, data=content)
 
-    def dashboard_content_load(self, filename):
-        return self.load_file_content(self.cstaging, 'dashboard', filename)
+    def dashboard_content_load(self, filename, revision=None):
+        return self.load_file_content(self.cstaging, 'dashboard', filename, revision)
 
     def dashboard_content_save(self, filename, content, comment='script updated'):
         return self.save_file_content(self.cstaging, 'dashboard', filename, content, comment)
