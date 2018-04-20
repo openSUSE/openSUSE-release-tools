@@ -365,7 +365,8 @@ def main(args):
     Cache.CACHE_DIR = Cache.CACHE_DIR + '-metrics'
     if args.wipe_cache:
         Cache.delete_all()
-    Cache.PATTERNS['/search/request'] = sys.maxint
+    if args.heavy_cache:
+        Cache.PATTERNS['/search/request'] = sys.maxint
     Cache.init()
 
     Config(args.project)
@@ -395,6 +396,8 @@ if __name__ == '__main__':
     parser.add_argument('--user', default='root', help='InfluxDB user')
     parser.add_argument('--password', default='root', help='InfluxDB password')
     parser.add_argument('--wipe-cache', action='store_true', help='wipe GET request cache before executing')
+    parser.add_argument('--heavy-cache', action='store_true',
+                        help='cache ephemeral queries indefinitely (useful for development)')
     parser.add_argument('--release-only', action='store_true', help='ingest release metrics only')
     args = parser.parse_args()
 
