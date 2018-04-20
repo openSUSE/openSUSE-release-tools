@@ -5,12 +5,12 @@ import md5
 from pprint import pformat
 import re
 from urllib2 import HTTPError
+from osclib.comments import CommentAPI
 
 import requests
 import osc.core
 
 import ReviewBot
-from osclib.comments import CommentAPI
 
 from suse import SUSEUpdate
 
@@ -30,11 +30,6 @@ QA_INPROGRESS = 1
 QA_FAILED = 2
 QA_PASSED = 3
 
-pkgname_re = re.compile(r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^.]+)\.rpm')
-comment_marker_re = re.compile(
-    r'<!-- openqa state=(?P<state>done|seen)(?: result=(?P<result>accepted|declined|none))?(?: revision=(?P<revision>\d+))? -->')
-
-
 class OpenQABot(ReviewBot.ReviewBot):
 
     """ check ABI of library packages
@@ -45,6 +40,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.tgt_repo = {}
         self.project_settings = {}
         self.api_map = {}
+        self.bot_name = 'openqa'
 
         self.force = False
         self.openqa = None
@@ -295,30 +291,6 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         return QA_PASSED
 
-    def add_comment(self, msg, state, request_id=None, result=None):
-        if not self.do_comments:
-            return
-
-        comment = "<!-- openqa state={!s}{!s} -->\n".format(state, ' result={!s}'.format(result) if result else '')
-        comment += "\n" + msg
-
-        info = self.find_obs_request_comment(request_id=request_id)
-        comment_id = info.get('id', None)
-
-        if state == info.get('state', 'missing'):
-            lines_before = len(info['comment'].split('\n'))
-            lines_after = len(comment.split('\n'))
-            if lines_before == lines_after:
-                self.logger.info("not worth the update, previous comment %s is state %s", comment_id, info['state'])
-                return
-
-        self.logger.info("adding comment to %s, state %s result %s", request_id, state, result)
-        self.logger.info("message: %s", msg)
-        if not self.dryrun:
-            if comment_id:
-                self.commentapi.delete(comment_id)
-            self.commentapi.add_comment(request_id=request_id, comment=str(comment))
-
     # escape markdown
     @staticmethod
     def emd(str):
@@ -427,7 +399,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                                                  message='now testing in openQA')
                 else:
                     msg = "no openQA tests defined"
-                    self.add_comment(msg, 'done', request_id=req.reqid, result='accepted')
+                    self.comment_write(state='done', message=msg, request=req, result='accepted')
                     ret = True
             elif qa_state == QA_FAILED or qa_state == QA_PASSED:
                 # don't take test repo results into the calculation of total
@@ -447,7 +419,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     ret = False
 
                 msg += self.summarize_openqa_jobs(jobs)
-                self.add_comment(msg, 'done', result=result, request_id=req.reqid)
+                self.comment_write(state='done', message=msg, result=result, request=req)
             elif qa_state == QA_INPROGRESS:
                 self.logger.info("request %s still in progress", req.reqid)
             else:
@@ -463,17 +435,12 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def find_obs_request_comment(self, request_id=None, project_name=None):
         """Return previous comments (should be one)."""
-        if self.do_comments:
-            comments = self.commentapi.get_comments(request_id=request_id, project_name=project_name)
-            for c in comments.values():
-                m = comment_marker_re.match(c['comment'])
-                if m:
-                    return {
-                        'id': c['id'],
-                        'state': m.group('state'),
-                        'result': m.group('result'),
-                        'comment': c['comment'],
-                        'revision': m.group('revision')}
+        comments = self.commentapi.get_comments(request_id=request_id, project_name=project_name)
+        comment, info = self.commentapi.comment_find(comments, self.bot_name)
+        if comment:
+            # we only care for two fields
+            return { 'id': comment['id'], 'revision': info['revision']}
+
         return {}
 
     def check_product_arch(self, job, product_prefix, pmap, arch):
@@ -592,7 +559,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         except HTTPError as e:
             self.logger.debug("Couldn't load comments - {}".format(e))
             return
-        comment_id = comment_info.get('id', None)
         comment_build = str(comment_info.get('revision', ''))
 
         openqa_posts = []
@@ -630,20 +596,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         if qa_status == QA_FAILED:
             result = 'declined'
             state = 'done'
-        comment = "<!-- openqa state={!s} result={!s} revision={!s} -->\n".format(
-            state, result, mesh_job.get('openqa_build'))
-        comment += msg
-
-        if comment_id and state != 'done':
-            self.logger.info("%s is already commented, wait until done", incident_project)
-            return
-        if comment_info.get('comment', '').rstrip('\n') == comment.rstrip('\n'):
-            self.logger.info("%s comment did not change", incident_project)
-            return
-
-        self.logger.info("adding comment to %s, state %s", incident_project, state)
-        if not self.dryrun:
-            if comment_id:
-                self.logger.debug("delete comment: {}".format(comment_id))
-                self.commentapi.delete(comment_id)
-            self.commentapi.add_comment(project_name=str(incident_project), comment=str(comment))
+        self.comment_write(project=str(incident_project), state=state,
+                    result=result, message=msg,
+                    info_extra={'revision': str(mesh_job.get('openqa_build'))})
