@@ -119,5 +119,10 @@
     "version": "42.3",
     "flavor": "DVD-Incidents",
     "distri": "opensuse"
+  },
+  "openSUSE:Leap:15.0:Update" : {
+    "version": "15.0",
+    "flavor": "DVD-Incidents",
+    "distri": "opensuse"
   }
 }

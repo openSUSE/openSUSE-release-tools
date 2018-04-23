@@ -13,6 +13,20 @@
             "http://download.opensuse.org/update/leap/42.3/oss/",
             "http://download.opensuse.org/update/leap/42.3/non-oss/"
          ]
+      },
+      "openSUSE:Leap:15.0:Update" : {
+         "settings" : {
+            "OS_TEST_ISSUES" : "",
+            "FLAVOR" : "DVD-Updates",
+            "DISTRI" : "opensuse",
+            "VERSION" : "15.0",
+            "ARCH" : "x86_64"
+         },
+         "test" : "kde",
+         "repos" : [
+            "http://download.opensuse.org/update/leap/15.0/oss/",
+            "http://download.opensuse.org/update/leap/15.0/non-oss/"
+         ]
       }
    },
    "https://openqa.suse.de" : {
