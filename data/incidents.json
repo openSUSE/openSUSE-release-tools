@@ -24,6 +24,13 @@
       "ARCH" : "x86_64",
       "ISO" : "openSUSE-Leap-42.3-DVD-x86_64.iso"
    },
+   "openSUSE:Leap:15.0:Update" : {
+      "FLAVOR" : "Maintenance",
+      "VERSION" : "15.0",
+      "DISTRI" : "opensuse",
+      "ARCH" : "x86_64",
+      "ISO" : "openSUSE-Leap-15.0-DVD-x86_64.iso"
+   },
    "SUSE:Updates:SLE-DESKTOP:12-SP3:x86_64" : {
       "FLAVOR" : "Desktop-DVD-Incidents",
       "VERSION" : "12-SP3",
@@ -144,6 +151,12 @@
      "DISTRI": "opensuse",
      "FLAVOR": "DVD-Incidents",
      "VERSION": "42.3",
+     "ARCH": "x86_64"
+  },
+  "openSUSE:Leap:15.0:Update": {
+     "DISTRI": "opensuse",
+     "FLAVOR": "DVD-Incidents",
+     "VERSION": "15.0",
      "ARCH": "x86_64"
   }
 }
