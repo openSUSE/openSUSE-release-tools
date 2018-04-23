@@ -30,6 +30,7 @@ QA_INPROGRESS = 1
 QA_FAILED = 2
 QA_PASSED = 3
 
+
 class OpenQABot(ReviewBot.ReviewBot):
 
     """ check ABI of library packages
@@ -156,7 +157,8 @@ class OpenQABot(ReviewBot.ReviewBot):
                 req_.read(req)
                 src_prjs = {a.src_project for a in req_.actions}
                 if SUSEUpdate.kgraft_target(self.apiurl, src_prjs.pop()):
-                    self.logger.debug("calculate_incidents: Incident is kgraft - {} ".format(incident))
+                    self.logger.debug(
+                        "calculate_incidents: Incident is kgraft - {} ".format(incident))
                     continue
 
                 incidents.append(incident)
@@ -439,7 +441,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         comment, info = self.commentapi.comment_find(comments, self.bot_name)
         if comment:
             # we only care for two fields
-            return { 'id': comment['id'], 'revision': info['revision']}
+            return {'id': comment['id'], 'revision': info['revision']}
 
         return {}
 
@@ -523,7 +525,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
             src_prjs = set([a.src_project for a in req.actions])
             if len(src_prjs) != 1:
-               raise Exception("can't handle maintenance_release from different incidents")
+                raise Exception("can't handle maintenance_release from different incidents")
             build = src_prjs.pop()
             tgt_prjs = set([a.tgt_project for a in req.actions])
             ret = []
@@ -534,11 +536,13 @@ class OpenQABot(ReviewBot.ReviewBot):
 
                 incident_id = build.split(':')[-1]
                 self.test_job({'project': build, 'id': incident_id, 'channels': [prj]})
-                issues = self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'].split(',')
+                issues = self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'].split(
+                    ',')
                 # filter empty values
                 issues = filter(None, issues)
                 issues.append(incident_id)
-                self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'] = ','.join(issues)
+                self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'] = ','.join(
+                    issues)
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
@@ -597,5 +601,5 @@ class OpenQABot(ReviewBot.ReviewBot):
             result = 'declined'
             state = 'done'
         self.comment_write(project=str(incident_project), state=state,
-                    result=result, message=msg,
-                    info_extra={'revision': str(mesh_job.get('openqa_build'))})
+                           result=result, message=msg,
+                           info_extra={'revision': str(mesh_job.get('openqa_build'))})
