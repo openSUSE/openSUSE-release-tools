@@ -111,7 +111,7 @@ class Leaper(ReviewBot.ReviewBot):
         if target_package is None:
             target_package = src_package
 
-        return '[%(target_project)s/%(target_package)s](/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s)'%{
+        return '[%(target_project)s/%(target_package)s](/package/show/%(target_project)s/%(target_package)s) ([diff](/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s))'%{
                 'src_project': src_project,
                 'src_package': src_package,
                 'src_rev': src_rev,
@@ -308,7 +308,7 @@ class Leaper(ReviewBot.ReviewBot):
                         if not self.factory._check_project(prj,
                                 target_package,
                                 src_srcinfo.verifymd5):
-                            self.logger.info("sources in %s are [NOT identical](%s)", prj,
+                            self.logger.info("sources in %s are NOT identical",
                                     self.rdiff_link(src_project, src_package, src_rev, prj, package))
 
                         self.needs_release_manager = True
