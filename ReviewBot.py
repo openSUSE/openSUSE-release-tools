@@ -449,18 +449,23 @@ class ReviewBot(object):
             req.read(request)
             self.requests.append(req)
 
-    def set_request_ids_project(self, project, typename):
+    # also used by openqabot
+    def ids_project(self, project, typename):
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
                                { 'match': "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename),
                                  'withfullhistory': 1 })
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
-        self.requests = []
+        ret = []
 
         for request in root.findall('request'):
             req = osc.core.Request()
             req.read(request)
-            self.requests.append(req)
+            ret.append(req)
+        return ret
+
+    def set_request_ids_project(self, project, typename):
+        self.requests = self.ids_project(project, typename)
 
     def comment_handler_add(self, level=logging.INFO):
         """Add handler to start recording log messages for comment."""
@@ -720,4 +725,3 @@ class CommandLineInterface(cmdln.Cmdln):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit( app.main() )
-

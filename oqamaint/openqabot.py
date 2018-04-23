@@ -524,7 +524,11 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     # for SUSE we use mesh for openSUSE we limit the jobs to open release requests
     def check_opensuse_incidents(self):
-        for req in self.requests:
+        requests = []
+        for prj in self.tgt_repo[self.openqa.baseurl].keys():
+            requests += self.ids_project(prj, 'maintenance_release')
+
+        for req in requests:
             types = set([a.type for a in req.actions])
             if not 'maintenance_release' in types:
                 continue
