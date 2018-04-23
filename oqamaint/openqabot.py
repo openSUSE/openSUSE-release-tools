@@ -69,6 +69,9 @@ class OpenQABot(ReviewBot.ReviewBot):
     # reimplemention from baseclass
     def check_requests(self):
 
+        # to be filled by repos of active
+        self.incident_repos = dict()
+
         if self.ibs:
             self.check_suse_incidents()
         else:
@@ -109,7 +112,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     # check a set of repos for their primary checksums
     @staticmethod
-    def calculate_repo_hash(repos):
+    def calculate_repo_hash(repos, incidents):
         m = md5.new()
         # if you want to force it, increase this number
         m.update('b')
@@ -122,6 +125,8 @@ class OpenQABot(ReviewBot.ReviewBot):
             cs = root.find(
                 './/{http://linux.duke.edu/metadata/repo}data[@type="primary"]/{http://linux.duke.edu/metadata/repo}checksum')
             m.update(cs.text)
+        # now add the open incidents
+        m.update(json.dumps(incidents, sort_keys=True))
         return m.hexdigest()
 
     def is_incident_in_testing(self, incident):
@@ -192,9 +197,9 @@ class OpenQABot(ReviewBot.ReviewBot):
         today = date.today().strftime("%Y%m%d")
 
         try:
-            repohash = self.calculate_repo_hash(data['repos'])
+            repohash = self.calculate_repo_hash(data['repos'], self.incident_repos.get(prj, {}))
         except HTTPError as e:
-            self.logger.debug("REPOHAS not calculated with response {}".format(e))
+            self.logger.debug("REPOHASH not calculated with response {}".format(e))
             return
 
         buildnr = None
@@ -449,7 +454,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         need = False
         settings = {'VERSION': pmap['version']}
         settings['ARCH'] = arch if arch else 'x86_64'
-        settings['DISTRI'] = 'sle' if 'distri' not in pmap else pmap['distri']
+        settings['DISTRI'] = pmap.get('distri', 'sle')
         issues = pmap.get('issues', {})
         issues['OS_TEST_ISSUES'] = issues.get('OS_TEST_ISSUES', product_prefix)
         required_issue = pmap.get('required_issue', False)
@@ -482,6 +487,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                 job['openqa_build'] = update.get_max_revision(job)
             if not job.get('openqa_build'):
                 return []
+            self.incident_repos.setdefault(product_prefix, dict())[str(job['id'])] = job.get('openqa_build')
             j['BUILD'] += '.' + str(job['openqa_build'])
             j.update(settings)
             # kGraft jobs can have different version
