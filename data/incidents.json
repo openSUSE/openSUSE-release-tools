@@ -139,5 +139,11 @@
       "FLAVOR" : "Server-DVD-Incidents-HA",
       "VERSION" : "12-SP2",
       "ARCH" : "x86_64"
+  },
+  "openSUSE:Leap:42.3:Update": {
+     "DISTRI": "opensuse",
+     "FLAVOR": "DVD-Incidents",
+     "VERSION": "42.3",
+     "ARCH": "x86_64"
   }
 }

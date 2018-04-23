@@ -114,5 +114,10 @@
      "archs" : [
         "x86_64"
     ]
-    }
+    },
+  "openSUSE:Leap:42.3:Update" : {
+    "version": "42.3",
+    "flavor": "DVD-Incidents",
+    "distri": "opensuse"
+  }
 }

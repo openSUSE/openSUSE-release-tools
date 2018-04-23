@@ -25,7 +25,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
-        parser.add_option("--force", action="store_true", help="recheck requests that are already considered done")
+        parser.add_option("--force", action="store_true",
+                          help="recheck requests that are already considered done")
         parser.add_option("--no-comment", dest='comment', action="store_false",
                           default=True, help="don't actually post comments to obs")
         parser.add_option("--openqa", metavar='HOST', help="openqa api host")

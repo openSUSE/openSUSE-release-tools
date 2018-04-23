@@ -376,7 +376,6 @@ fi
 %{_bindir}/osrt-legal-auto
 %{_bindir}/osrt-obs_clone
 %{_bindir}/osrt-openqa-maintenance
-%{_bindir}/osrt-openqa-maintenance2
 %{_bindir}/osrt-rebuildpacs
 %{_bindir}/osrt-requestfinder
 %{_bindir}/osrt-status

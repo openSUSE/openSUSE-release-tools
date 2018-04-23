@@ -67,8 +67,8 @@ class SUSEUpdate(Update):
             return [settings]
         return []
 
-    def settings(self, src_prj, dst_prj, packages):
-        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj, packages)
+    def settings(self, src_prj, dst_prj):
+        settings = super(SUSEUpdate, self).settings(src_prj, dst_prj)
 
         # kGraft Handling - Fully supported kGraft lives in own space, but LTSS in standard LTSS channel
         for x in range(len(settings)):
