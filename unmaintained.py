@@ -29,9 +29,9 @@ def unmaintained(apiurl, project_target):
     lookup = {k: v for k, v in lookup.iteritems() if v.startswith('SUSE:SLE')}
 
     package_binaries, _ = package_binary_list(
-        apiurl, project_target, 'standard', 'x86_64')
+        apiurl, project_target, 'standard', 'x86_64', exclude_src_debug=True)
     package_binaries_total = len(package_binaries)
-    package_binaries = [pb for pb in package_binaries if pb.arch != 'src' and pb.package in lookup]
+    package_binaries = [pb for pb in package_binaries if pb.package in lookup]
 
     # Determine max length possible for each column.
     maxes = [
