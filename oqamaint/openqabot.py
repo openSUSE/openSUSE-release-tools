@@ -528,6 +528,8 @@ class OpenQABot(ReviewBot.ReviewBot):
         for prj in self.tgt_repo[self.openqa.baseurl].keys():
             requests += self.ids_project(prj, 'maintenance_release')
 
+        # to be stored in settings
+        issues = dict()
         for req in requests:
             types = set([a.type for a in req.actions])
             if not 'maintenance_release' in types:
@@ -546,13 +548,11 @@ class OpenQABot(ReviewBot.ReviewBot):
 
                 incident_id = build.split(':')[-1]
                 self.test_job({'project': build, 'id': incident_id, 'channels': [prj]})
-                issues = self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'].split(
-                    ',')
-                # filter empty values
-                issues = filter(None, issues)
-                issues.append(incident_id)
-                self.tgt_repo[self.openqa.baseurl][prj]['settings']['OS_TEST_ISSUES'] = ','.join(
-                    issues)
+                issues.setdefault(prj, set()).add(incident_id)
+
+        for prj in self.tgt_repo[self.openqa.baseurl].keys():
+            s = self.tgt_repo[self.openqa.baseurl][prj]['settings']
+            s['OS_TEST_ISSUES'] = ','.join(sorted(issues.get(prj, set())))
 
     def check_suse_incidents(self):
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
