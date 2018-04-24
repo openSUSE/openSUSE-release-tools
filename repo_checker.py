@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import cmdln
 from collections import namedtuple
 import hashlib
@@ -518,6 +520,77 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.review_messages['accepted'] = 'delete request is safe'
         return True
 
+    def whitelist_clean(self, project):
+        from copy import copy
+        from difflib import unified_diff
+        from osclib.core import BINARY_REGEX
+
+        api = self.staging_api(project)
+
+        # Determine which binaries are mentioned in repo_checker output.
+        content = api.dashboard_content_load('repo_checker')
+        sections = self.install_check_parse(content)
+        binaries = set()
+        for section in sections:
+            for binary in section.binaries:
+                match = re.match(BINARY_REGEX, binary)
+                if match:
+                    binaries.add(match.group('name'))
+
+        # Find whitelist config entries and filter list to only those mentioned.
+        prefix = 'repo_checker-binary-whitelist'
+        binaries_common = None
+        whitelists = {}
+        whitelists_remaining = {}
+        for key, value in self.staging_config[project].items():
+            if not key.startswith(prefix):
+                continue
+
+            whitelists[key] = set(value.split())
+            whitelists_remaining[key] = whitelists[key].intersection(binaries)
+
+            if key != prefix:
+                if binaries_common is None:
+                    binaries_common = whitelists_remaining[key]
+                else:
+                    binaries_common = binaries_common.intersection(whitelists_remaining[key])
+
+        if len(binaries_common):
+            # Remove entries common to all archs and place in common whitelist.
+            whitelists_remaining[prefix].update(binaries_common)
+
+            for key, value in whitelists_remaining.items():
+                if key == prefix:
+                    continue
+
+                whitelists_remaining[key] = whitelists_remaining[key] - binaries_common
+
+        # Update whitelist entries with new values.
+        config = api.dashboard_content_load('config').splitlines(True)
+        config_new = copy(config)
+        for key, value in whitelists_remaining.items():
+            if value != whitelists[key]:
+                self.whitelist_clean_set(config_new, key, ' '.join(value))
+
+        if config == config_new:
+            print('No changes')
+            return
+
+        # Present diff and prompt to apply.
+        print(''.join(unified_diff(config, config_new, fromfile='config.orig', tofile='config.new')))
+        print('Apply config changes? [y/n] (y): ',  end='')
+        response = raw_input().lower()
+        if response == '' or response == 'y':
+            api.dashboard_content_save('config', ''.join(config_new), 'repo_checker whitelist clean')
+
+    def whitelist_clean_set(self, config, key, value):
+        # Unfortunately even OscConfigParser does not preserve empty lines.
+        for i, line in enumerate(config):
+            if line.startswith(key + ' ='):
+                config[i] = '{} = {}\n'.format(key, value) if value else '{} =\n'.format(key)
+
+        return config
+
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
@@ -549,6 +622,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def do_project_only(self, subcmd, opts, project):
         self.checker.check_requests() # Needed to properly init ReviewBot.
         self.checker.project_only(project, opts.post_comments)
+
+    def do_whitelist_clean(self, subcmd, opts, project):
+        self.checker.check_requests() # Needed to properly init ReviewBot.
+        self.checker.whitelist_clean(project)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
