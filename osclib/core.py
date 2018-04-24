@@ -16,7 +16,7 @@ from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osclib.memoize import memoize
 
-BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*?)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
+BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
 RPM_REGEX = BINARY_REGEX + '\.rpm'
 BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
 
