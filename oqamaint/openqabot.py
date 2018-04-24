@@ -46,9 +46,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.force = False
         self.openqa = None
         self.commentapi = CommentAPI(self.apiurl)
-        self.update_test_builds = {}
-        self.pending_target_repos = set()
-        self.openqa_jobs = {}
 
     def gather_test_builds(self):
         for prj, u in self.tgt_repo[self.openqa.baseurl].items():
@@ -71,6 +68,9 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         # to be filled by repos of active
         self.incident_repos = dict()
+        self.update_test_builds = {}
+        self.pending_target_repos = set()
+        self.openqa_jobs = {}
 
         if self.ibs:
             self.check_suse_incidents()
