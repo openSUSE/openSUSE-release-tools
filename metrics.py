@@ -14,6 +14,7 @@ import yaml
 import metrics_release
 import osc.conf
 import osc.core
+from osc.core import get_commitlog
 import osclib.conf
 from osclib.cache import Cache
 from osclib.conf import Config
@@ -347,6 +348,170 @@ def ingest_release_schedule(project):
     client.write_points(points, 's')
     return len(points)
 
+def revision_index(api):
+    if not hasattr(revision_index, 'index'):
+        root = ET.fromstring(''.join(
+            get_commitlog(api.apiurl, api.cstaging, 'dashboard', None, format='xml')))
+
+        revision_index.index = {}
+        for logentry in root.findall('logentry'):
+            date = date_parse(logentry.find('date').text)
+            revision_index.index[date] = logentry.get('revision')
+
+    return revision_index.index
+
+def revision_at(api, datetime):
+    index = revision_index(api)
+    for made, revision in sorted(index.items(), reverse=True):
+        if made <= datetime:
+            return revision
+
+    return None
+
+def dashboard_at(api, filename, datetime=None, revision=None):
+    if datetime:
+        revision = revision_at(api, datetime)
+    if not revision:
+        return revision
+
+    content = api.dashboard_content_load(filename, revision)
+    if filename in ('ignored_requests'):
+        if content:
+            return yaml.safe_load(content)
+        return {}
+    elif filename in ('config'):
+        if content:
+            # TODO re-use from osclib.conf.
+            from ConfigParser import ConfigParser
+            import io
+
+            cp = ConfigParser()
+            config = '[remote]\n' + content
+            cp.readfp(io.BytesIO(config))
+            return dict(cp.items('remote'))
+        return {}
+
+    return content
+
+def dashboard_at_changed(api, filename, revision=None):
+    if not hasattr(dashboard_at_changed, 'previous'):
+        dashboard_at_changed.previous = {}
+
+    content = dashboard_at(api, filename, revision=revision)
+
+    if content is None and filename == 'repo_checker' and api.project == 'openSUSE:Factory':
+        # Special case to fallback to installcheck pre repo_checker file.
+        return dashboard_at_changed(api, 'installcheck', revision)
+
+    if content and content != dashboard_at_changed.previous.get(filename):
+        dashboard_at_changed.previous[filename] = content
+        return content
+
+    return None
+
+def ingest_dashboard_config(content):
+    if not hasattr(ingest_dashboard_config, 'seen'):
+        ingest_dashboard_config.seen = set()
+
+    fields = {}
+    for key, value in content.items():
+        if key.startswith('repo_checker-binary-whitelist'):
+            ingest_dashboard_config.seen.add(key)
+
+            fields[key] = len(value.split())
+
+    # Ensure any previously seen key are filled with zeros if no longer present
+    # to allow graphs to fill with previous.
+    missing = ingest_dashboard_config.seen - set(fields.keys())
+    for key in missing:
+        fields[key] = 0
+
+    return fields
+
+def ingest_dashboard_devel_projects(content):
+    return {
+        'count': len(content.strip().split()),
+    }
+
+def ingest_dashboard_repo_checker(content):
+    return {
+        'install_count': content.count("can't install "),
+        'conflict_count': content.count('found conflict of '),
+        'line_count': content.count('\n'),
+    }
+
+def ingest_dashboard_version_snapshot(content):
+    return {
+        'version': content.strip(),
+    }
+
+def ingest_dashboard_revision_get():
+    result = client.query('SELECT revision FROM dashboard ORDER BY time DESC LIMIT 1')
+    if result:
+        return next(result.get_points())['revision']
+
+    return None
+
+def ingest_dashboard_revision_put(revision):
+    client.drop_measurement('dashboard')
+    client.write_points([{
+        'measurement': 'dashboard',
+        'fields': {
+            'revision': revision,
+        },
+        'time': timestamp(datetime.now()),
+    }], 's')
+
+def ingest_dashboard(api):
+    index = revision_index(api)
+
+    revision_last = ingest_dashboard_revision_get()
+    past = True if revision_last is None else False
+    print('dashboard ingest: processing {:,} revisions starting after {}'.format(
+        len(index), 'the beginning' if past else revision_last))
+
+    filenames = ['config', 'repo_checker', 'version_snapshot']
+    if api.project == 'openSUSE:Factory':
+        filenames.append('devel_projects')
+
+    count = 0
+    points = []
+    for made, revision in sorted(index.items()):
+        if not past:
+            if revision == revision_last:
+                past = True
+            continue
+
+        time = timestamp(made)
+        for filename in filenames:
+            content = dashboard_at_changed(api, filename, revision)
+            if content:
+                map_func = globals()['ingest_dashboard_{}'.format(filename)]
+                fields = map_func(content)
+                if not len(fields):
+                    continue
+
+                points.append({
+                    'measurement': 'dashboard_{}'.format(filename),
+                    'fields': fields,
+                    'time': time,
+                })
+
+        if len(points) >= 1000:
+            client.write_points(points, 's')
+            count += len(points)
+            points = []
+
+    if len(points):
+        client.write_points(points, 's')
+        count += len(points)
+
+    # Keep track of last revision process to start after that next time.
+    print('storing last revision processed: {}'.format(revision))
+    ingest_dashboard_revision_put(revision)
+
+    return count
+
 def main(args):
     global client
     client = InfluxDBClient(args.host, args.port, args.user, args.password, args.project)
@@ -365,11 +530,16 @@ def main(args):
     Cache.CACHE_DIR = Cache.CACHE_DIR + '-metrics'
     if args.wipe_cache:
         Cache.delete_all()
-    Cache.PATTERNS['/search/request'] = sys.maxint
+    if args.heavy_cache:
+        Cache.PATTERNS['/search/request'] = sys.maxint
+        Cache.PATTERNS['/source/[^/]+/dashboard/_history'] = sys.maxint
+    Cache.PATTERNS['/source/[^/]+/dashboard/[^/]+\?rev=.*'] = sys.maxint
     Cache.init()
 
     Config(args.project)
     api = StagingAPI(osc.conf.config['apiurl'], args.project)
+
+    print('dashboard: wrote {:,} points'.format(ingest_dashboard(api)))
 
     global who_workaround_swap, who_workaround_miss
     who_workaround_swap = who_workaround_miss = 0
@@ -395,6 +565,8 @@ if __name__ == '__main__':
     parser.add_argument('--user', default='root', help='InfluxDB user')
     parser.add_argument('--password', default='root', help='InfluxDB password')
     parser.add_argument('--wipe-cache', action='store_true', help='wipe GET request cache before executing')
+    parser.add_argument('--heavy-cache', action='store_true',
+                        help='cache ephemeral queries indefinitely (useful for development)')
     parser.add_argument('--release-only', action='store_true', help='ingest release metrics only')
     args = parser.parse_args()
 
