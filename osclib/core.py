@@ -121,7 +121,7 @@ def binary_list(apiurl, project, repository, arch, package=None):
     return parsed
 
 @memoize(session=True)
-def package_binary_list(apiurl, project, repository, arch, package=None):
+def package_binary_list(apiurl, project, repository, arch, package=None, exclude_src_debug=False):
     path = ['build', project, repository, arch]
     if package:
         path.append(package)
@@ -140,11 +140,22 @@ def package_binary_list(apiurl, project, repository, arch, package=None):
             if not result:
                 continue
 
-            package_binaries.append(BinaryParsed(package, result.group('filename'),
-                                                 result.group('name'), result.group('arch')))
+            binary = BinaryParsed(package, result.group('filename'),
+                                  result.group('name'), result.group('arch'))
+            if exclude_src_debug and binary_src_debug(binary):
+                continue
+
+            package_binaries.append(binary)
             binary_map[result.group('filename')] = package
 
     return package_binaries, binary_map
+
+def binary_src_debug(binary):
+    return (
+        binary.arch == 'src' or
+        binary.name.endswith('-debuginfo') or
+        binary.name.endswith('-debugsource')
+    )
 
 @memoize(session=True)
 def devel_project_get(apiurl, target_project, target_package):
