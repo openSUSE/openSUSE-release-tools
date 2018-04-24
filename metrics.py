@@ -411,7 +411,14 @@ def dashboard_at_changed(api, filename, revision=None):
 
 def ingest_dashboard_config(content):
     if not hasattr(ingest_dashboard_config, 'seen'):
-        ingest_dashboard_config.seen = set()
+        result = client.query('SELECT * FROM dashboard_config ORDER BY time DESC LIMIT 1')
+        if result:
+            # Extract last point and remove zero values since no need to fill.
+            point = next(result.get_points())
+            point = {k: v for (k, v) in point.iteritems() if k != 'time' and v != 0}
+            ingest_dashboard_config.seen = set(point.keys())
+        else:
+            ingest_dashboard_config.seen = set()
 
     fields = {}
     for key, value in content.items():
