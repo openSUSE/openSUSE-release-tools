@@ -422,9 +422,13 @@ def ingest_dashboard_config(content):
 
     # Ensure any previously seen key are filled with zeros if no longer present
     # to allow graphs to fill with previous.
-    missing = ingest_dashboard_config.seen - set(fields.keys())
-    for key in missing:
-        fields[key] = 0
+    fields_keys = set(fields.keys())
+    missing = ingest_dashboard_config.seen - fields_keys
+    if len(missing):
+        ingest_dashboard_config.seen = fields_keys
+
+        for key in missing:
+            fields[key] = 0
 
     return fields
 
