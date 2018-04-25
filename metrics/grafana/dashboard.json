@@ -27,6 +27,7 @@
       }
     ]
   },
+  "description": "Metrics pertaining to data extracted from the dashboard container.",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
