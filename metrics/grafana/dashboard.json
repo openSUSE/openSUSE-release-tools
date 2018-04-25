@@ -24,6 +24,15 @@
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
+      },
+      {
+        "datasource": "$project",
+        "enable": false,
+        "hide": false,
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "name": "Release Schedule",
+        "query": "select description from release_schedule where $timeFilter",
+        "showIn": 0
       }
     ]
   },
