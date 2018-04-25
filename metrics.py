@@ -446,21 +446,11 @@ def ingest_dashboard_version_snapshot(content):
     }
 
 def ingest_dashboard_revision_get():
-    result = client.query('SELECT revision FROM dashboard ORDER BY time DESC LIMIT 1')
+    result = client.query('SELECT revision FROM dashboard_revision ORDER BY time DESC LIMIT 1')
     if result:
         return next(result.get_points())['revision']
 
     return None
-
-def ingest_dashboard_revision_put(revision):
-    client.drop_measurement('dashboard')
-    client.write_points([{
-        'measurement': 'dashboard',
-        'fields': {
-            'revision': revision,
-        },
-        'time': timestamp(datetime.now()),
-    }], 's')
 
 def ingest_dashboard(api):
     index = revision_index(api)
@@ -514,9 +504,7 @@ def ingest_dashboard(api):
         client.write_points(points, 's')
         count += len(points)
 
-    # Keep track of last revision process to start after that next time.
-    print('storing last revision processed: {}'.format(revision))
-    ingest_dashboard_revision_put(revision)
+    print('last revision processed: {}'.format(revision))
 
     return count
 
