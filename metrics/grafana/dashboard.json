@@ -103,7 +103,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
@@ -221,7 +221,7 @@
               },
               {
                 "params": [],
-                "type": "mean"
+                "type": "last"
               },
               {
                 "params": [
@@ -239,7 +239,7 @@
               },
               {
                 "params": [],
-                "type": "mean"
+                "type": "last"
               },
               {
                 "params": [
@@ -257,7 +257,7 @@
               },
               {
                 "params": [],
-                "type": "mean"
+                "type": "last"
               },
               {
                 "params": [
@@ -375,7 +375,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
@@ -393,7 +393,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
@@ -411,7 +411,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
