@@ -67,13 +67,11 @@ class AcceptCommand(object):
         return rqs
 
     def reset_rebuild_data(self, project):
-        url = self.api.makeurl(['source', self.api.cstaging, 'dashboard', 'support_pkg_rebuild?expand=1'])
-        try:
-            data = http_GET(url)
-        except urllib2.HTTPError:
+        data = self.api.dashboard_content_load('support_pkg_rebuild')
+        if data is None:
             return
-        tree = ET.parse(data)
-        root = tree.getroot()
+
+        root = ET.fromstring(data)
         for stg in root.findall('staging'):
             if stg.get('name') == project:
                 stg.find('rebuild').text = 'unknown'
@@ -81,9 +79,9 @@ class AcceptCommand(object):
 
         # reset accpted staging project rebuild state to unknown and clean up
         # supportpkg list
-        url = self.api.makeurl(['source', self.api.cstaging, 'dashboard', 'support_pkg_rebuild'])
         content = ET.tostring(root)
-        http_PUT(url + '?comment=accept+command+update', data=content)
+        if content != data:
+            self.api.dashboard_content_save('support_pkg_rebuild', content, 'accept command update')
 
     def virtually_accept_delete(self, request_id, package):
         self.api.add_review(request_id, by_group=self.api.cdelreq_review, msg='Request accepted. Cleanup in progress - DO NOT REVOKE!')
