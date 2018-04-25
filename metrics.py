@@ -497,6 +497,14 @@ def ingest_dashboard(api):
                     'time': time,
                 })
 
+        points.append({
+            'measurement': 'dashboard_revision',
+            'fields': {
+                'revision': revision,
+            },
+            'time': time,
+        })
+
         if len(points) >= 1000:
             client.write_points(points, 's')
             count += len(points)
