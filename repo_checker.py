@@ -75,6 +75,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         text = '\n'.join(comment).strip()
         if not self.dryrun:
             api.dashboard_content_ensure('repo_checker', text, 'project_only run')
+            self.whitelist_clean(project)
         else:
             print(text)
 
