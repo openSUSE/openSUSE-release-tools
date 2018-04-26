@@ -410,21 +410,32 @@ def dashboard_at_changed(api, filename, revision=None):
     return None
 
 def ingest_dashboard_config(content):
-    if not hasattr(ingest_dashboard_config, 'seen'):
-        ingest_dashboard_config.seen = set()
+    if not hasattr(ingest_dashboard_config, 'previous'):
+        result = client.query('SELECT * FROM dashboard_config ORDER BY time DESC LIMIT 1')
+        if result:
+            # Extract last point and remove zero values since no need to fill.
+            point = next(result.get_points())
+            point = {k: v for (k, v) in point.iteritems() if k != 'time' and v != 0}
+            ingest_dashboard_config.previous = set(point.keys())
+        else:
+            ingest_dashboard_config.previous = set()
 
     fields = {}
     for key, value in content.items():
         if key.startswith('repo_checker-binary-whitelist'):
-            ingest_dashboard_config.seen.add(key)
+            ingest_dashboard_config.previous.add(key)
 
             fields[key] = len(value.split())
 
     # Ensure any previously seen key are filled with zeros if no longer present
     # to allow graphs to fill with previous.
-    missing = ingest_dashboard_config.seen - set(fields.keys())
-    for key in missing:
-        fields[key] = 0
+    fields_keys = set(fields.keys())
+    missing = ingest_dashboard_config.previous - fields_keys
+    if len(missing):
+        ingest_dashboard_config.previous = fields_keys
+
+        for key in missing:
+            fields[key] = 0
 
     return fields
 
