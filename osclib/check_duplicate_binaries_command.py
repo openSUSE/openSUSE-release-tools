@@ -1,9 +1,7 @@
 from __future__ import print_function
 from osc.core import http_GET
-from osclib.core import package_list
 from osclib.core import target_archs
 from xml.etree import cElementTree as ET
-from pprint import pprint
 import re
 import urllib2
 import yaml
