@@ -43,6 +43,9 @@ class FreezeCommand(object):
         meta = ET.fromstring(self.prj_meta_for_bootstrap_copy(self.prj))
         meta.find('title').text = oldmeta.find('title').text
         meta.find('description').text = oldmeta.find('description').text
+        for person in oldmeta.findall('person'):
+            # the xml has a fixed structure
+            meta.insert(2, ET.Element('person', role=person.get('role'), userid=person.get('userid')))
 
         self.api.retried_PUT(url, ET.tostring(meta))
 
