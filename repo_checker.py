@@ -59,7 +59,16 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.logger.info('{}/standard not published'.format(project))
             return
 
-        comment = []
+        build = ET.fromstringlist(show_results_meta(
+            self.apiurl, project, multibuild=True, repository=['standard'])).get('state')
+        dashboard_content = api.dashboard_content_load('repo_checker')
+        if not self.force and dashboard_content:
+            build_previous = dashboard_content.splitlines()[0]
+            if build == build_previous:
+                self.logger.info('{} build unchanged'.format(project))
+                return
+
+        comment = [build]
         for arch in self.target_archs(project):
             directory_project = self.mirror(project, arch)
 
