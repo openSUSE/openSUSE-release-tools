@@ -24,9 +24,19 @@
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
+      },
+      {
+        "datasource": "$project",
+        "enable": false,
+        "hide": false,
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "name": "Release Schedule",
+        "query": "select description from release_schedule where $timeFilter",
+        "showIn": 0
       }
     ]
   },
+  "description": "Metrics pertaining to data extracted from the dashboard container.",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
@@ -103,7 +113,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
@@ -221,7 +231,7 @@
               },
               {
                 "params": [],
-                "type": "mean"
+                "type": "last"
               },
               {
                 "params": [
@@ -239,7 +249,7 @@
               },
               {
                 "params": [],
-                "type": "mean"
+                "type": "last"
               },
               {
                 "params": [
@@ -257,7 +267,7 @@
               },
               {
                 "params": [],
-                "type": "mean"
+                "type": "last"
               },
               {
                 "params": [
@@ -375,7 +385,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
@@ -393,7 +403,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
@@ -411,7 +421,7 @@
               },
               {
                 "params": [],
-                "type": "max"
+                "type": "last"
               },
               {
                 "params": [
