@@ -16,7 +16,7 @@ class CheckDuplicateBinariesCommand(object):
         # different architecture than built for.
         self.ignore_extra_archs = {
             'i586': {
-                'glibc.i686': ('i686',)
+                'glibc:i686': ('i686',)
             },
             'x86_64': {
                 'syslinux': ('s390x', 'ppc64le',)
