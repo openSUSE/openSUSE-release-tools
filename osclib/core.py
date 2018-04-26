@@ -154,6 +154,7 @@ def package_binary_list(apiurl, project, repository, arch, package=None, strip_m
 def binary_src_debug(binary):
     return (
         binary.arch == 'src' or
+        binary.arch == 'nosrc' or
         binary.name.endswith('-debuginfo') or
         binary.name.endswith('-debugsource')
     )
