@@ -520,7 +520,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.review_messages['accepted'] = 'delete request is safe'
         return True
 
-    def whitelist_clean(self, project):
+    def whitelist_clean(self, project, interactive=False):
         from copy import copy
         from difflib import unified_diff
         from osclib.core import BINARY_REGEX
@@ -579,9 +579,15 @@ class RepoChecker(ReviewBot.ReviewBot):
         # Present diff and prompt to apply.
         print(''.join(unified_diff(config, config_new, fromfile='config.orig', tofile='config.new')))
         print('Apply config changes? [y/n] (y): ',  end='')
-        response = raw_input().lower()
-        if response == '' or response == 'y':
-            api.dashboard_content_save('config', ''.join(config_new), 'repo_checker whitelist clean')
+        if interactive:
+            response = raw_input().lower()
+            if response != '' and response != 'y':
+                print('quit')
+                return
+        else:
+            print('y')
+
+        api.dashboard_content_save('config', ''.join(config_new), 'repo_checker whitelist clean')
 
     def whitelist_clean_set(self, config, key, value):
         # Unfortunately even OscConfigParser does not preserve empty lines.
@@ -625,7 +631,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def do_whitelist_clean(self, subcmd, opts, project):
         self.checker.check_requests() # Needed to properly init ReviewBot.
-        self.checker.whitelist_clean(project)
+        self.checker.whitelist_clean(project, interactive=True)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
