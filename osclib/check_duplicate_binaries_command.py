@@ -7,16 +7,6 @@ import yaml
 class CheckDuplicateBinariesCommand(object):
     def __init__(self, api):
         self.api = api
-        # some packages create packages with the same name but
-        # different architecture than built for.
-        self.ignore_extra_archs = {
-            'i586': {
-                'glibc:i686': ('i686',)
-            },
-            'x86_64': {
-                'syslinux': ('s390x', 'ppc64le',)
-            }
-        }
 
     def perform(self, save=False):
         duplicates = {}
@@ -26,9 +16,7 @@ class CheckDuplicateBinariesCommand(object):
                 strip_multibuild=False, exclude_src_debug=True)
             binaries = {}
             for pb in package_binaries:
-                if arch in self.ignore_extra_archs \
-                    and pb.package in self.ignore_extra_archs[arch] \
-                    and pb.arch in self.ignore_extra_archs[arch][pb.package]:
+                if pb.arch != 'noarch' and pb.arch != arch:
                     continue
 
                 binaries.setdefault(arch, {})
