@@ -680,7 +680,7 @@
           "format": "short",
           "label": "",
           "logBase": 1,
-          "max": "7",
+          "max": null,
           "min": null,
           "show": true
         },
