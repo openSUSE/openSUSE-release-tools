@@ -4,7 +4,11 @@ from osc.core import makeurl
 from osc.core import http_GET
 from osclib.core import fileinfo_ext_all
 
-import urllib2
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
 
 class CleanupRings(object):
     def __init__(self, api):
@@ -40,31 +44,31 @@ class CleanupRings(object):
             links = si.findall('linked')
             pkg = si.get('package')
             if links is None or len(links) == 0:
-                print '# {} not a link'.format(pkg)
+                print('# {} not a link'.format(pkg))
             else:
                 linked = links[0]
                 dprj = linked.get('project')
                 dpkg = linked.get('package')
                 if dprj != self.api.project:
                     if not dprj.startswith(self.api.crings):
-                        print "#{} not linking to base {} but {}".format(pkg, self.api.project, dprj)
+                        print("#{} not linking to base {} but {}".format(pkg, self.api.project, dprj))
                     self.links[dpkg] = pkg
                 # multi spec package must link to ring
                 elif len(links) > 1:
                     mainpkg = links[1].get('package')
                     mainprj = links[1].get('project')
                     if mainprj != self.api.project:
-                        print '# FIXME: {} links to {}'.format(pkg, mainprj)
+                        print('# FIXME: {} links to {}'.format(pkg, mainprj))
                     else:
                         destring = None
                         if mainpkg in self.api.ring_packages:
                             destring = self.api.ring_packages[mainpkg]
                         if not destring:
-                            print '# {} links to {} but is not in a ring'.format(pkg, mainpkg)
-                            print "osc linkpac {}/{} {}/{}".format(mainprj, mainpkg, prj, mainpkg)
+                            print('# {} links to {} but is not in a ring'.format(pkg, mainpkg))
+                            print("osc linkpac {}/{} {}/{}".format(mainprj, mainpkg, prj, mainpkg))
                         else:
                             if pkg != 'glibc.i686': # FIXME: ugly exception
-                                print "osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg)
+                                print("osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg))
                                 self.links[mainpkg] = pkg
 
 
@@ -123,7 +127,7 @@ class CleanupRings(object):
             try:
                 url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
                 root = ET.parse(http_GET(url)).getroot()
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 if e.code == 404:
                     continue
                 raise
@@ -132,7 +136,7 @@ class CleanupRings(object):
                     continue
                 b = bdep.attrib['name']
                 if b not in self.bin2src:
-                    print "{} not found in bin2src".format(b)
+                    print("{} not found in bin2src".format(b))
                     continue
                 b = self.bin2src[b]
                 self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))

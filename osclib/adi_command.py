@@ -1,5 +1,12 @@
+from __future__ import print_function
+
 import json
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
 
 from colorama import Fore
 
@@ -24,43 +31,43 @@ class AdiCommand:
         info = self.api.project_status(project, True)
         if len(info['selected_requests']):
             if len(info['building_repositories']):
-                print query_project, Fore.MAGENTA + 'building'
+                print(query_project + " " + Fore.MAGENTA + 'building')
                 return
             if len(info['untracked_requests']):
-                print query_project, Fore.YELLOW + 'untracked:', ', '.join(['{}[{}]'.format(
-                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['untracked_requests']])
+                print(query_project + " " + Fore.YELLOW + 'untracked: ' + ', '.join(['{}[{}]'.format(
+                    Fore.CYAN + req['package'] + Fore.RESET + " " + req['number']) for req in info['untracked_requests']]))
                 return
             if len(info['obsolete_requests']):
-                print query_project, Fore.YELLOW + 'obsolete:', ', '.join(['{}[{}]'.format(
-                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['obsolete_requests']])
+                print(query_project + " " + Fore.YELLOW + 'obsolete: ' + ', '.join(['{}[{}]'.format(
+                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['obsolete_requests']]))
                 return
             if len(info['broken_packages']):
-                print query_project, Fore.RED + 'broken:', ', '.join([
-                    Fore.CYAN + p['package'] + Fore.RESET for p in info['broken_packages']])
+                print(query_project + " " + Fore.RED + 'broken: ' + ', '.join([
+                    Fore.CYAN + p['package'] + Fore.RESET for p in info['broken_packages']]))
                 return
             for review in info['missing_reviews']:
-                print query_project, Fore.WHITE + 'review:', '{} for {}[{}]'.format(
+                print(query_project + " " + Fore.WHITE + 'review: ' + '{} for {}[{}]'.format(
                     Fore.YELLOW + review['by'] + Fore.RESET,
                     Fore.CYAN + review['package'] + Fore.RESET,
-                    review['request'])
+                    review['request']))
                 return
 
         if self.api.is_user_member_of(self.api.user, self.api.cstaging_group):
-            print query_project, Fore.GREEN + 'ready'
+            print(query_project + " " + Fore.GREEN + 'ready')
             packages = []
             for req in info['selected_requests']:
-                print ' - {} [{}]'.format(Fore.CYAN + req['package'] + Fore.RESET, req['number'])
+                print(' - {} [{}]'.format(Fore.CYAN + req['package'] + Fore.RESET, req['number']))
                 self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
                 packages.append(req['package'])
             self.api.accept_status_comment(project, packages)
             try:
                 delete_project(self.api.apiurl, project, force=True)
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 print(e)
                 pass
         else:
-            print query_project, Fore.GREEN + 'ready:', ', '.join(['{}[{}]'.format(
-                Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['selected_requests']])
+            print(query_project, Fore.GREEN + 'ready:', ', '.join(['{}[{}]'.format(
+                Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['selected_requests']]))
 
     def check_adi_projects(self):
         for p in self.api.get_adi_projects():
@@ -132,7 +139,7 @@ class AdiCommand:
             requests = set()
             if move:
                 items = RequestFinder.find_staged_sr(packages, self.api).items()
-                print items
+                print(items)
                 for request, request_project in items:
                     staging_project = request_project['staging']
                     self.api.rm_from_prj(staging_project, request_id=request)

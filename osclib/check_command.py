@@ -1,6 +1,5 @@
 import json
 
-
 class CheckCommand(object):
     def __init__(self, api):
         self.api = api
@@ -134,6 +133,6 @@ class CheckCommand(object):
                         # newline to split multiple prjs at once
                         print('')
         else:
-            print '\n'.join(self._check_project(project))
+            print('\n'.join(self._check_project(project)))
 
         return True

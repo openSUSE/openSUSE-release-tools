@@ -1,4 +1,10 @@
-import urllib2
+try:
+    from urllib.parse import quote
+    from urllib.error import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError, quote
+
 from xml.etree import cElementTree as ET
 
 from osc import oscerr
@@ -42,7 +48,7 @@ class RequestFinder(object):
         url = makeurl(self.api.apiurl, ['request', str(request_id)])
         try:
             f = http_GET(url)
-        except urllib2.HTTPError:
+        except HTTPError:
             return None
 
         root = ET.parse(f).getroot()
@@ -66,7 +72,7 @@ class RequestFinder(object):
         """
 
         query = 'types=submit,delete&states=new,review&project={}&view=collection&package={}'
-        query = query.format(self.api.project, urllib2.quote(package))
+        query = query.format(self.api.project, quote(package))
         url = makeurl(self.api.apiurl, ['request'], query)
         f = http_GET(url)
 

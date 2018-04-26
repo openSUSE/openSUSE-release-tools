@@ -4,7 +4,12 @@ from dateutil.parser import parse as date_parse
 import re
 from xml.etree import cElementTree as ET
 from lxml import etree as ETL
-from urllib2 import HTTPError
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
 
 from osc.core import get_binarylist
 from osc.core import get_dependson
