@@ -100,6 +100,7 @@ def memoize(ttl=None, session=False, add_invalidate=False):
     SLOTS = 4096            # Number of slots in the cache file
     NCLEAN = 1024           # Number of slots to remove when limit reached
     TIMEOUT = 60*60*2       # Time to live for every cache slot (seconds)
+    memoize.session_functions = []
 
     def _memoize(fn):
         # Implement a POSIX lock / unlock extension for shelves. Inspired
@@ -123,6 +124,7 @@ def memoize(ttl=None, session=False, add_invalidate=False):
             else:
                 if not hasattr(fn, '_memoize_session_cache'):
                     fn._memoize_session_cache = {}
+                    memoize.session_functions.append(fn)
                 cache = fn._memoize_session_cache
             return cache
 
@@ -197,3 +199,8 @@ def memoize(ttl=None, session=False, add_invalidate=False):
 
     ttl = ttl if ttl else TIMEOUT
     return _memoize
+
+def memoize_session_reset():
+    """Reset all session caches."""
+    for i, _ in enumerate(memoize.session_functions):
+        memoize.session_functions[i]._memoize_session_cache = {}
