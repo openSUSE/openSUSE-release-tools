@@ -121,7 +121,7 @@ def binary_list(apiurl, project, repository, arch, package=None):
     return parsed
 
 @memoize(session=True)
-def package_binary_list(apiurl, project, repository, arch, package=None, exclude_src_debug=False):
+def package_binary_list(apiurl, project, repository, arch, package=None, strip_multibuild=True, exclude_src_debug=False):
     path = ['build', project, repository, arch]
     if package:
         path.append(package)
@@ -131,9 +131,10 @@ def package_binary_list(apiurl, project, repository, arch, package=None, exclude
     package_binaries = []
     binary_map = {} # last duplicate wins
     for binary_list in root:
-        # Strip off multibuild extra to provide actual package name. The full
-        # value may be useful for duplicate check.
-        package = binary_list.get('package').split(':', 1)[0]
+        package = binary_list.get('package')
+        if strip_multibuild:
+            package = package.split(':', 1)[0]
+
         for binary in binary_list:
             filename = binary.get('name')
             result = re.match(RPM_REGEX, filename)
@@ -153,6 +154,7 @@ def package_binary_list(apiurl, project, repository, arch, package=None, exclude
 def binary_src_debug(binary):
     return (
         binary.arch == 'src' or
+        binary.arch == 'nosrc' or
         binary.name.endswith('-debuginfo') or
         binary.name.endswith('-debugsource')
     )

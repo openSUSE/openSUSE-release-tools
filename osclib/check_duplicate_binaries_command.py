@@ -1,64 +1,35 @@
 from __future__ import print_function
-from osc.core import http_GET
-from osclib.core import package_list
+from osclib.core import package_binary_list
 from osclib.core import target_archs
-from xml.etree import cElementTree as ET
-from pprint import pprint
-import re
-import urllib2
 import yaml
 
 
 class CheckDuplicateBinariesCommand(object):
     def __init__(self, api):
         self.api = api
-        # some packages create packages with the same name but
-        # different architecture than built for.
-        self.ignore_extra_archs = {
-            'i586': {
-                'glibc:i686': ('i686',)
-            },
-            'x86_64': {
-                'syslinux': ('s390x', 'ppc64le',)
-            }
-        }
 
     def perform(self, save=False):
         duplicates = {}
         for arch in sorted(target_archs(self.api.apiurl, self.api.project), reverse=True):
-            url = self.api.makeurl(['build', self.api.project, 'standard', arch], { 'view': 'binaryversions' })
-            data = http_GET(url)
-            root = ET.parse(data).getroot()
-
+            package_binaries, _ = package_binary_list(
+                self.api.apiurl, self.api.project, 'standard', arch,
+                strip_multibuild=False, exclude_src_debug=True)
             binaries = {}
-            for packagenode in root.findall('.//binaryversionlist'):
-                package = packagenode.get('package')
-                for binarynode in packagenode.findall('binary'):
-                    binary = binarynode.get('name')
-                    # StagingAPI.fileinfo_ext(), but requires lots of calls.
-                    match = re.match(r'(.*)-([^-]+)-([^-]+)\.([^-\.]+)\.rpm', binary)
-                    if not match:
-                        continue
-                    parch = match.group(4)
-                    if parch in ('src', 'nosrc'):
-                        continue
+            for pb in package_binaries:
+                if pb.arch != 'noarch' and pb.arch != arch:
+                    continue
 
-                    name = match.group(1)
+                binaries.setdefault(arch, {})
 
-                    if arch in self.ignore_extra_archs \
-                        and package in self.ignore_extra_archs[arch] \
-                        and parch in self.ignore_extra_archs[arch][package]:
-                        continue
+                if pb.name in binaries[arch]:
+                    duplicates.setdefault(arch, {})
+                    duplicates[arch].setdefault(pb.name, set())
+                    duplicates[arch][pb.name].add(pb.package)
+                    duplicates[arch][pb.name].add(binaries[arch][pb.name])
 
-                    binaries.setdefault(arch, {})
-                    if name in binaries[arch]:
-                        duplicates.setdefault(arch, {})
-                        duplicates[arch].setdefault(name, set()).add(package)
-                        duplicates[arch][name].add(binaries[arch][name])
+                    continue
 
-                        continue
-
-                    binaries[arch][name] = package
+                binaries[arch][pb.name] = pb.package
 
         # convert sets to lists for readable yaml
         for arch in duplicates.keys():
