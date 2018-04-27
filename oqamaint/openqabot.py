@@ -3,7 +3,6 @@
 from datetime import date
 import md5
 from pprint import pformat
-import re
 from urllib2 import HTTPError
 from osclib.comments import CommentAPI
 
@@ -42,7 +41,6 @@ class OpenQABot(ReviewBot.ReviewBot):
         self.project_settings = {}
         self.api_map = {}
         self.bot_name = 'openqa'
-
         self.force = False
         self.openqa = None
         self.commentapi = CommentAPI(self.apiurl)
@@ -227,7 +225,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     def request_get_openqa_status(self, req):
         types = {a.type for a in req.actions}
-        if not 'maintenance_release' in types:
+        if 'maintenance_release' not in types:
             return [], QA_UNKNOWN
 
         src_prjs = {a.src_project for a in req.actions}
@@ -256,7 +254,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             if not foundissue:
                 self.logger.info("Repo job {} not for {} - ignoring".format(job['id'], incident_id))
                 return jobs, QA_INPROGRESS
-            #print(foundissue, incident_id, json.dumps(job['settings'], indent=4))
+            # print(foundissue, incident_id, json.dumps(job['settings'], indent=4))
 
         jobs += repo_jobs
         return jobs, self.calculate_qa_status(jobs)
@@ -375,17 +373,18 @@ class OpenQABot(ReviewBot.ReviewBot):
         return msg.rstrip('\n')
 
     def check_one_request(self, req):
-        ret = None
-
         try:
             jobs, qa_state = self.request_get_openqa_status(req)
             self.logger.debug("request %s state %s", req.reqid, qa_state)
             msg = None
             if qa_state == QA_UNKNOWN:
-                if not jobs:
+                incident_id = req.findall('.action/source')[0].get('project').split(":")[-1]
+                if not jobs and incident_id not in self.wait_for_build:
                     msg = "no openQA tests defined"
                     self.comment_write(state='done', message=msg, request=req, result='accepted')
                     return True
+                else:
+                    self.logger.debug("request {} waits for build".format(req.request_id))
             elif qa_state == QA_FAILED or qa_state == QA_PASSED:
                 if qa_state == QA_PASSED:
                     msg = "openQA tests passed\n"
@@ -430,7 +429,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         issues['OS_TEST_ISSUES'] = issues.get('OS_TEST_ISSUES', product_prefix)
         required_issue = pmap.get('required_issue', False)
         for key, prefix in issues.items():
-            #self.logger.debug("KP {} {}".format(key, prefix) + str(job))
+            # self.logger.debug("KP {} {}".format(key, prefix) + str(job))
             channel = prefix
             if arch:
                 channel += arch
@@ -457,6 +456,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             if not job.get('openqa_build'):
                 job['openqa_build'] = update.get_max_revision(job)
             if not job.get('openqa_build'):
+                self.wait_for_build.add(str(job['id']))
                 return []
             self.incident_repos.setdefault(product_prefix, dict())[
                 str(job['id'])] = job.get('openqa_build')
@@ -497,6 +497,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     # for SUSE we use mesh for openSUSE we limit the jobs to open release requests
     def check_opensuse_incidents(self):
         requests = []
+        self.wait_for_build = set()
         for prj in self.tgt_repo[self.openqa.baseurl].keys():
             requests += self.ids_project(prj, 'maintenance_release')
 
@@ -504,7 +505,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         issues = dict()
         for req in requests:
             types = set([a.type for a in req.actions])
-            if not 'maintenance_release' in types:
+            if 'maintenance_release' not in types:
                 continue
 
             src_prjs = set([a.src_project for a in req.actions])
@@ -512,10 +513,9 @@ class OpenQABot(ReviewBot.ReviewBot):
                 raise Exception("can't handle maintenance_release from different incidents")
             build = src_prjs.pop()
             tgt_prjs = set([a.tgt_project for a in req.actions])
-            ret = []
             for prj in tgt_prjs:
                 # ignore e.g. Backports
-                if not prj in self.project_settings:
+                if prj not in self.project_settings:
                     continue
 
                 incident_id = build.split(':')[-1]
@@ -527,6 +527,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             s['OS_TEST_ISSUES'] = ','.join(sorted(issues.get(prj, set())))
 
     def check_suse_incidents(self):
+        self.wait_for_build = set()
         for inc in requests.get('https://maintenance.suse.de/api/incident/active/').json():
             self.logger.info("Incident number: {}".format(inc))
 
