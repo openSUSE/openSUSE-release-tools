@@ -30,6 +30,7 @@ from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.core import group_members
 from osclib.memoize import memoize
+from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
 import signal
 import datetime
@@ -719,7 +720,17 @@ class CommandLineInterface(cmdln.Cmdln):
                 else:
                     self.logger.info("sleeping %d minutes." % interval)
                     time.sleep(interval * 60)
+
+                # Reset all memoize session caches which are designed for single
+                # tool run and not extended usage.
+                memoize_session_reset()
+
+                # Reload checker to flush instance variables and thus any config
+                # or caches they may contain.
+                self.postoptparse()
+
                 continue
+
             break
 
 if __name__ == "__main__":
