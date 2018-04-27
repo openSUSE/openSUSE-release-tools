@@ -45,7 +45,7 @@ class Update(object):
             if not xml.ok:
                 self.logger.info("{} skipped .. need wait".format(crepo))
                 # if one fails, we skip it and wait
-                return None
+                return False
             root = ET.fromstring(xml.text)
             rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
             rev = int(rev.text)
