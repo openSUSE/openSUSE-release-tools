@@ -373,12 +373,13 @@ class OpenQABot(ReviewBot.ReviewBot):
         return msg.rstrip('\n')
 
     def check_one_request(self, req):
+        ret = None
         try:
             jobs, qa_state = self.request_get_openqa_status(req)
             self.logger.debug("request %s state %s", req.reqid, qa_state)
             msg = None
             if qa_state == QA_UNKNOWN:
-                incident_id = req.findall('.action/source')[0].get('project').split(":")[-1]
+                incident_id = req.to_xml().findall('.action/source')[0].get('project').split(":")[-1]
                 if not jobs and incident_id not in self.wait_for_build:
                     msg = "no openQA tests defined"
                     self.comment_write(state='done', message=msg, request=req, result='accepted')
