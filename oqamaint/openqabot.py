@@ -397,6 +397,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
                 msg += self.summarize_openqa_jobs(jobs)
                 self.comment_write(state='done', message=msg, result=result, request=req)
+                return ret
             elif qa_state == QA_INPROGRESS:
                 self.logger.info("request %s still in progress", req.reqid)
             else:
@@ -408,7 +409,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             self.logger.error(traceback.format_exc())
             return None
 
-        return ret
+        return
 
     def find_obs_request_comment(self, request_id=None, project_name=None):
         """Return previous comments (should be one)."""
