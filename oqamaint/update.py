@@ -56,15 +56,18 @@ class Update(object):
     def settings(self, src_prj, dst_prj):
         s = self._settings.copy()
 
+        build = src_prj.split(':')[-1]
         # start with a colon so it looks cool behind 'Build' :/
-        s['BUILD'] = ':' + src_prj.split(':')[-1]
+        s['BUILD'] = ':' + build
         name = self.incident_name(src_prj)
         repo = dst_prj.replace(':', '_')
         repo = '{!s}/{!s}/{!s}/'.format(self.repo_prefix, src_prj.replace(':', ':/'), repo)
         patch_id = self.patch_id(repo)
-        if patch_id:
-            s['INCIDENT_REPO'] = repo
-            s['INCIDENT_PATCH'] = patch_id
+        if not patch_id:
+            # hot fix for openSUSE
+            patch_id = build
+        s['INCIDENT_REPO'] = repo
+        s['INCIDENT_PATCH'] = patch_id
         s['BUILD'] += ':' + name
         return [s]
 
