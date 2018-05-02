@@ -68,10 +68,4 @@ class openSUSEUpdate(Update):
         settings['VERIFY_PACKAGE_VERSIONS'] = ' '.join(
                 ['{} {}-{}'.format(p.name, p.version, p.release) for p in packages.values()])
 
-        settings['ZYPPER_ADD_REPOS'] = settings['INCIDENT_REPO']
-        settings['ADDONURL'] = settings['INCIDENT_REPO']
-
-        settings['WITH_MAIN_REPO'] = 1
-        settings['WITH_UPDATE_REPO'] = 1
-
         return [settings]
