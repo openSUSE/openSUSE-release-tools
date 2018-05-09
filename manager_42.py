@@ -21,6 +21,8 @@
 # SOFTWARE.
 
 import argparse
+from dateutil.parser import parse as date_parse
+from datetime import datetime
 import itertools
 import logging
 import sys
@@ -28,7 +30,10 @@ from xml.etree import cElementTree as ET
 
 import osc.conf
 import osc.core
+from osc.core import get_commitlog
+from osc.core import get_request_list
 import urllib2
+import subprocess
 import time
 import yaml
 from collections import namedtuple
@@ -68,8 +73,12 @@ class Manager42(object):
         self.parse_lookup(self.config.from_prj)
         self.fill_package_meta()
         self.packages = dict()
+        self.sle_workarounds = None
         for project in [self.config.from_prj] + self.config.project_preference_order:
             self._fill_package_list(project)
+
+            if project.endswith(':SLE-workarounds'):
+                self.sle_workarounds = project
 
     # FIXME: add to ToolBase and rebase Manager42 on that
     def _load_config(self, handle = None):
@@ -177,8 +186,45 @@ class Manager42(object):
             if self.lookup_changes > 50:
                 self.store_lookup()
 
+            self.sle_workarounds_unneeded_check(package)
+
         if self.lookup_changes:
             self.store_lookup()
+
+    def sle_workarounds_unneeded_check(self, package):
+        # If SLE-workarounds project and package was not sourced from
+        # SLE-workarounds, but it does exist in SLE-workarounds.
+        if (self.sle_workarounds and not self.sle_workarounds_sourced and
+            package in self.packages[self.sle_workarounds]):
+            # Determine how recently the package was updated.
+            root = ET.fromstring(''.join(
+                get_commitlog(self.apiurl, self.sle_workarounds, package, None, format='xml')))
+            updated_last = date_parse(root.find('logentry/date').text)
+            age = datetime.now() - updated_last
+            if age.total_seconds() < 3600 * 24:
+                logger.debug('skip removal of {}/{} since updated within 24 hours'.format(
+                    self.sle_workarounds, package))
+                return
+
+            requests = get_request_list(self.apiurl, self.sle_workarounds, package, req_type='submit')
+            if len(requests):
+                logger.debug('existing submit request involving {}/{}'.format(self.sle_workarounds, package))
+                return
+
+            self.delete_request(self.sle_workarounds, package,
+                                'sourced from {}'.format(self.lookup.get(package)))
+
+    def delete_request(self, project, package, message):
+        requests = get_request_list(self.apiurl, project, package, req_type='delete')
+        if len(requests):
+            logger.debug('existing delete request for {}/{}'.format(project, package))
+            return
+
+        logger.info('creating delete request for {}/{}'.format(project, package))
+        # No proper API function to perform the same operation.
+        message = '"{}"'.format(message)
+        print(subprocess.check_output(
+            ' '.join(['osc', 'dr', '-m', message, project, package]), shell=True))
 
     def get_inconsistent(self):
         known = set(self.lookup.keys())
@@ -246,6 +292,7 @@ class Manager42(object):
     # check if we can find the srcmd5 in any of our underlay
     # projects
     def check_one_package(self, package):
+        self.sle_workarounds_sourced = False
         lproject = self.lookup.get(package, None)
         if not package in self.packages[self.config.from_prj]:
             logger.info("{} vanished".format(package))
@@ -309,6 +356,7 @@ class Manager42(object):
                 if project != lproject:
                     if project.endswith(':SLE-workarounds'):
                         logger.info('{} is from {} but should come from {}'.format(package, project, lproject))
+                        self.sle_workarounds_sourced = True
                     else:
                         logger.info('{} -> {} (was {})'.format(package, project, lproject))
                         self.lookup[package] = project
