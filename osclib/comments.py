@@ -119,14 +119,15 @@ class CommentAPI(object):
         Usage (in comment):
             @<user> <command> [args...]
         """
-        command_re = re.compile(r'^@(?P<user>[^ ]+) (?P<args>.*)$')
+        command_re = re.compile(r'^@(?P<user>[^ ]+) (?P<args>.*)$', re.MULTILINE)
 
         # Search for commands in the order the comment was created.
         for comment in sorted(comments.values(), key=lambda c: c['when']):
             if who_allowed and comment['who'] not in who_allowed:
                 continue
 
-            match = command_re.search(comment['comment'])
+            # Handle stupid line endings returned in comments.
+            match = command_re.search(comment['comment'].replace('\r', ''))
             if not match:
                 continue
 
