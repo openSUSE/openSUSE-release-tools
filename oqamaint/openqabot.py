@@ -384,7 +384,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                     self.comment_write(state='done', message=msg, request=req, result='accepted')
                     return True
                 else:
-                    self.logger.debug("request {} waits for build".format(req.request_id))
+                    self.logger.debug("request {} waits for build".format(req.reqid))
             elif qa_state == QA_FAILED or qa_state == QA_PASSED:
                 if qa_state == QA_PASSED:
                     msg = "openQA tests passed\n"
@@ -555,6 +555,9 @@ class OpenQABot(ReviewBot.ReviewBot):
             openqa_posts += self.check_product(mesh_job, prod)
         openqa_jobs = []
         for s in openqa_posts:
+            if 'skip_job' in s:
+                self.wait_for_build.add(str(mesh_job['id']))
+                continue
             jobs = self.incident_openqa_jobs(s)
             # take the project comment as marker for not posting jobs
             if not len(jobs) and comment_build != str(mesh_job['openqa_build']):
