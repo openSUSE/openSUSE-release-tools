@@ -126,7 +126,8 @@ class CommentAPI(object):
             if who_allowed and comment['who'] not in who_allowed:
                 continue
 
-            match = command_re.search(comment['comment'])
+            # Handle stupid line endings returned in comments.
+            match = command_re.search(comment['comment'].replace('\r', ''))
             if not match:
                 continue
 
