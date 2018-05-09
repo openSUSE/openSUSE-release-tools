@@ -1,9 +1,11 @@
 ---
 from_prj: openSUSE:Leap:15.0
 project_preference_order:
-- SUSE:SLE-15:Update
 - SUSE:SLE-15:GA
 - openSUSE:Factory
 - openSUSE:Factory:NonFree
 - openSUSE:Leap:15.0:SLE-workarounds
-
+drop_if_vanished_from:
+- SUSE:SLE-15:GA
+- openSUSE:Factory
+- openSUSE:Factory:NonFree
