@@ -499,6 +499,8 @@ fi
 %{_bindir}/osrt-suppkg_rebuild
 %{_datadir}/%{source_dir}/devel-project.py
 %{_datadir}/%{source_dir}/suppkg_rebuild.py
+%{_unitdir}/osrt-staging-bot-check_duplicate_binaries@.service
+%{_unitdir}/osrt-staging-bot-check_duplicate_binaries@.timer
 %{_unitdir}/osrt-staging-bot-daily@.service
 %{_unitdir}/osrt-staging-bot-daily@.timer
 %{_unitdir}/osrt-staging-bot-devel-list.service
