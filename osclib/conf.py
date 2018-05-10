@@ -64,7 +64,7 @@ DEFAULT = {
         'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64',
         'staging-dvd-archs': 'x86_64',
-        'nocleanup-packages': 'Test-DVD-x86_64 bootstrap-copy',
+        'nocleanup-packages': 'bootstrap-copy 000product 000release-packages',
         'rings': 'openSUSE:%(project)s:Rings',
         'nonfree': 'openSUSE:%(project)s:NonFree',
         'rebuild': 'openSUSE:%(project)s:Rebuild',
