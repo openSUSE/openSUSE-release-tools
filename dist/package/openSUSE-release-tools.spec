@@ -395,6 +395,7 @@ fi
 %exclude %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/metrics_release.py
+%exclude %{_bindir}/osrt-openqa-comments
 %exclude %{_datadir}/%{source_dir}/pkglistgen.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
@@ -494,6 +495,7 @@ fi
 %files staging-bot
 %defattr(-,root,root,-)
 %{_bindir}/osrt-devel-project
+%{_bindir}/osrt-openqa-comments
 %{_bindir}/osrt-suppkg_rebuild
 %{_datadir}/%{source_dir}/devel-project.py
 %{_datadir}/%{source_dir}/suppkg_rebuild.py
@@ -501,6 +503,8 @@ fi
 %{_unitdir}/osrt-staging-bot-daily@.timer
 %{_unitdir}/osrt-staging-bot-devel-list.service
 %{_unitdir}/osrt-staging-bot-devel-list.timer
+%{_unitdir}/osrt-staging-bot-openqa-comments@.service
+%{_unitdir}/osrt-staging-bot-openqa-comments@.timer
 %{_unitdir}/osrt-staging-bot-regular@.service
 %{_unitdir}/osrt-staging-bot-regular@.timer
 %{_unitdir}/osrt-staging-bot-reminder.service
