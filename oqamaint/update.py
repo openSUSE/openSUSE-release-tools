@@ -63,9 +63,11 @@ class Update(object):
         repo = dst_prj.replace(':', '_')
         repo = '{!s}/{!s}/{!s}/'.format(self.repo_prefix, src_prj.replace(':', ':/'), repo)
         patch_id = self.patch_id(repo)
-        if not patch_id:
+        if not patch_id and self.opensuse:
             # hot fix for openSUSE
             patch_id = build
+        elif not patch_id and not self.opensuse:
+            s['skip_job'] = 1
         s['INCIDENT_REPO'] = repo
         s['INCIDENT_PATCH'] = patch_id
         s['BUILD'] += ':' + name

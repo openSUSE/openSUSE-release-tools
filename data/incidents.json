@@ -61,17 +61,12 @@
       "ARCH" : "ppc64le",
       "DISTRI" : "sle"
    },
-   "SUSE:Updates:SLE-Live-Patching:12-SP3:x86_64" : {
-      "FLAVOR" : "Server-DVD-Incidents-Kernel",
-      "VERSION" : "12-SP3",
-      "ARCH" : "x86_64",
-      "DISTRI" : "sle"
-   },
    "SUSE:Updates:SLE-Live-Patching:12:x86_64" : {
       "FLAVOR" : "Server-DVD-Incidents-Kernel",
       "VERSION" : "12",
       "ARCH" : "x86_64",
-      "DISTRI" : "sle"
+      "DISTRI" : "sle",
+      "KGRAFT" : "1"
    },
    "SUSE:Updates:SLE-SERVER:12-SP3:aarch64" : {
       "VERSION" : "12-SP3",
