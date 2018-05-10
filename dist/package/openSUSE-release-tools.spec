@@ -84,6 +84,10 @@ plugins, and automation aids.
 Summary:        Development requirements for openSUSE-release-tools
 Group:          Development/Tools/Other
 BuildArch:      noarch
+# Avoid needlessly building on s390x and such in various repos.
+# Must include noarch for older systems even though it makes no sense due to
+# https://bugzilla.redhat.com/show_bug.cgi?id=1298668.
+ExclusiveArch:  noarch x86_64
 Requires:       libxml2-tools
 Requires:       python-httpretty
 Requires:       python-mock
