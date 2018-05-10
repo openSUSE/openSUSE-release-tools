@@ -95,7 +95,7 @@ DEFAULT = {
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-archs-ports': 'aarch64',
         'pkglistgen-locales-from': 'openSUSE.product',
-        'pkglistgen-include-suggested': '1',
+        'pkglistgen-include-suggested': 'False',
         'pkglistgen-delete-kiwis-rings': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
         'pkglistgen-delete-kiwis-staging': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
         'mail-list': 'opensuse-factory@opensuse.org',
