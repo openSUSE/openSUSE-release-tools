@@ -5,6 +5,7 @@ Description=openSUSE Release Tools: metrics release for %i
 User=osrt-metrics
 SyslogIdentifier=osrt-metrics
 ExecStart=/usr/bin/osrt-metrics --debug --release-only -p "%i"
+RuntimeMaxSec=2 hour
 
 [Install]
 WantedBy=multi-user.target

@@ -3,7 +3,9 @@ Description=openSUSE Release Tools: generate package lists for %i
 
 [Service]
 User=osrt-repo-checker
+SyslogIdentifier=osrt-pkglistgen
 ExecStart=/usr/bin/osrt-pkglistgen update_and_solve -p "%i"
+RuntimeMaxSec=24 hour
 
 [Install]
 WantedBy=multi-user.target

@@ -8,6 +8,7 @@ ExecStart=/usr/bin/env bash -c ' \
   /usr/bin/osrt-devel-project reviews --min-age 3 --remind && \
   /usr/bin/osrt-devel-project requests --min-age 3 --remind \
   '
+RuntimeMaxSec=16 hour
 
 [Install]
 WantedBy=multi-user.target

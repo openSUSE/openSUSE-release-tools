@@ -2,9 +2,10 @@
 Description=openSUSE Release Tools: maintenance incidents
 
 [Service]
-Type=simple
 User=osrt-maintenance
+SyslogIdentifier=osrt-maintenance
 ExecStart=/usr/bin/osrt-check_maintenance_incidents --verbose review
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target

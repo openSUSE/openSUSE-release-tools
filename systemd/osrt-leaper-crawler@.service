@@ -2,9 +2,10 @@
 Description=openSUSE Release Tools: leaper crawler for %i (creates SRs from upstream projects)
 
 [Service]
-Type=simple
 User=osrt-leaper
+SyslogIdentifier=osrt-leaper
 ExecStart=/bin/bash "/usr/bin/osrt-leaper-crawler-%i"
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target

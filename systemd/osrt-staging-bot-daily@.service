@@ -7,6 +7,7 @@ SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/env bash -c ' \
   osc staging -p "%i" unignore --cleanup \
   '
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target

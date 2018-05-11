@@ -5,6 +5,7 @@ Description=openSUSE Release Tools: announce new %i build
 User=osrt-announcer
 SyslogIdentifier=osrt-announcer
 ExecStart=/usr/bin/osrt-announcer --config "/etc/openSUSE-release-tools/announcer/%i.yml" --verbose
+RuntimeMaxSec=3 hour
 
 [Install]
 WantedBy=multi-user.target

@@ -2,11 +2,11 @@
 Description=openSUSE Release Tools: check-source
 
 [Service]
-Type=simple
 User=osrt-check-source
 SyslogIdentifier=osrt-check-source
 # TODO Drop group flag once #1181 is resolved.
 ExecStart=/usr/bin/osrt-check_source --verbose --group factory-auto review
+RuntimeMaxSec=2 hour
 
 [Install]
 WantedBy=multi-user.target

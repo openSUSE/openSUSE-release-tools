@@ -2,10 +2,10 @@
 Description=openSUSE Release Tools: staging-bot devel list (stored in dashboard)
 
 [Service]
-Type=simple
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osrt-devel-project list -w
+RuntimeMaxSec=16 hour
 
 # API query regularly times out, but will be cached if called again.
 Restart=on-failure
