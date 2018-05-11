@@ -3,6 +3,7 @@ Description=openSUSE Release Tools: ToTest Manager for %i
 
 [Service]
 User=osrt-totest-manager
+SyslogIdentifier=osrt-totest-manager
 WorkingDirectory=~
 ExecStart=/usr/bin/osrt-totest-manager --verbose run --interval 5 "%i"
 
