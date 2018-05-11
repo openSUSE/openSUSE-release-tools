@@ -1,7 +1,7 @@
 #
 # spec file for package openSUSE-release-tools
 #
-# Copyright (c) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2018 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -23,7 +23,7 @@ Name:           openSUSE-release-tools
 Version:        0
 Release:        0
 Summary:        Tools to aid in staging and release work for openSUSE/SUSE
-License:        GPL-2.0+ AND MIT
+License:        GPL-2.0-or-later AND MIT
 Group:          Development/Tools/Other
 Url:            https://github.com/openSUSE/openSUSE-release-tools
 Source:         %{name}-%{version}.tar.xz
@@ -61,18 +61,23 @@ Requires:       python-cmdln
 Requires:       python-colorama
 Requires:       python-lxml
 # issue-diff.py, legal-auto.py, and openqa-maintenance.py
-Requires:       python-requests
 Requires:       python-pycurl
 Requires:       python-python-dateutil
 Requires:       python-pyxdg
+Requires:       python-requests
 Requires:       python-urlgrabber
 
 # bs_mirrorfull
-Requires:       perl-XML-Parser
 Requires:       perl-Net-SSLeay
+Requires:       perl-XML-Parser
 
 # Spec related requirements.
 Requires:       osclib = %{version}
+
+# Avoid needlessly building on s390x and such in various repos.
+# Must include noarch for older systems even though it makes no sense due to
+# https://bugzilla.redhat.com/show_bug.cgi?id=1298668.
+ExclusiveArch:  noarch x86_64
 
 %description
 Tools to aid in staging and release work for openSUSE/SUSE
@@ -84,10 +89,6 @@ plugins, and automation aids.
 Summary:        Development requirements for openSUSE-release-tools
 Group:          Development/Tools/Other
 BuildArch:      noarch
-# Avoid needlessly building on s390x and such in various repos.
-# Must include noarch for older systems even though it makes no sense due to
-# https://bugzilla.redhat.com/show_bug.cgi?id=1298668.
-ExclusiveArch:  noarch x86_64
 Requires:       libxml2-tools
 Requires:       python-httpretty
 Requires:       python-mock
@@ -173,8 +174,8 @@ BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
 # repo_checker.pl
-Requires:       perl-XML-Simple
 Requires:       build
+Requires:       perl-XML-Simple
 Requires(pre):  shadow
 
 %description repo-checker
@@ -209,8 +210,8 @@ Manages product ToTest repository workflow and openQA interaction
 Summary:        Generates package lists in 000product
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osclib = %{version}
 Requires:       obs-service-product_converter
+Requires:       osclib = %{version}
 Requires:       python-requests
 Requires:       python-solv
 # we use the same user as repo-checker
