@@ -2,7 +2,6 @@
 Description=openSUSE Release Tools: staging-bot devel list (stored in dashboard)
 
 [Service]
-Type=simple
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osrt-devel-project list -w
