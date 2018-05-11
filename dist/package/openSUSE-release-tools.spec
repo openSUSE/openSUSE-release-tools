@@ -61,15 +61,15 @@ Requires:       python-cmdln
 Requires:       python-colorama
 Requires:       python-lxml
 # issue-diff.py, legal-auto.py, and openqa-maintenance.py
-Requires:       python-requests
 Requires:       python-pycurl
 Requires:       python-python-dateutil
 Requires:       python-pyxdg
+Requires:       python-requests
 Requires:       python-urlgrabber
 
 # bs_mirrorfull
-Requires:       perl-XML-Parser
 Requires:       perl-Net-SSLeay
+Requires:       perl-XML-Parser
 
 # Spec related requirements.
 Requires:       osclib = %{version}
@@ -174,8 +174,8 @@ BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
 # repo_checker.pl
-Requires:       perl-XML-Simple
 Requires:       build
+Requires:       perl-XML-Simple
 Requires(pre):  shadow
 
 %description repo-checker
@@ -210,8 +210,8 @@ Manages product ToTest repository workflow and openQA interaction
 Summary:        Generates package lists in 000product
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osclib = %{version}
 Requires:       obs-service-product_converter
+Requires:       osclib = %{version}
 Requires:       python-requests
 Requires:       python-solv
 # we use the same user as repo-checker
