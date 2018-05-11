@@ -12,6 +12,7 @@ ExecStart=/usr/bin/env bash -c ' \
   osc staging -p "%i" unselect --cleanup && \
   osc staging -p "%i" repair --cleanup \
   '
+RuntimeMaxSec=24 hour
 
 [Install]
 WantedBy=multi-user.target

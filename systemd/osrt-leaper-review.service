@@ -4,6 +4,7 @@ Description=openSUSE Release Tools: leaper review
 [Service]
 User=osrt-leaper
 ExecStart=/usr/bin/osrt-leaper --verbose --manual-version-updates --manual-maintenance-updates review
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target

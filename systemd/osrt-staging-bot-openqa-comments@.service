@@ -5,6 +5,7 @@ Description=openSUSE Release Tools: staging-bot comment openQA/build results on 
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osrt-openqa-comments -p "%i"
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target

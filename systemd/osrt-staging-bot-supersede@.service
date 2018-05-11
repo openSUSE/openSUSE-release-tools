@@ -5,6 +5,7 @@ Description=openSUSE Release Tools: supersede duplicate submissions for %i
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osc check_dups "%i"
+RuntimeMaxSec=3 hour
 
 [Install]
 WantedBy=multi-user.target

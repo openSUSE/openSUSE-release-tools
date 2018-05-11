@@ -4,6 +4,7 @@ Description=openSUSE Release Tools: leaper manager for %i (set source projects)
 [Service]
 User=osrt-leaper
 ExecStart=/usr/bin/osrt-manager_42 -c /etc/openSUSE-release-tools/manager_42/%i.yml
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target

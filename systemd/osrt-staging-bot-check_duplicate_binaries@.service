@@ -5,6 +5,7 @@ Description=openSUSE Release Tools: staging-bot check for duplicate binaries pro
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osc staging -p "%i" check_duplicate_binaries --save
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target

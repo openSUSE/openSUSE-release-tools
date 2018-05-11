@@ -5,6 +5,7 @@ Description=openSUSE Release Tools: repo-checker
 User=osrt-repo-checker
 SyslogIdentifier=osrt-repo-checker
 ExecStart=/usr/bin/osrt-repo_checker --debug review
+RuntimeMaxSec=24 hour
 
 [Install]
 WantedBy=multi-user.target

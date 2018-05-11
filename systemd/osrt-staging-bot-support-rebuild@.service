@@ -5,6 +5,7 @@ Description=openSUSE Release Tools: staging-bot regular for %i (rebuild staging 
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osrt-suppkg_rebuild -p "%i"
+RuntimeMaxSec=6 hour
 
 [Install]
 WantedBy=multi-user.target
