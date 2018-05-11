@@ -7,5 +7,10 @@ SyslogIdentifier=osrt-staging-bot
 ExecStart=/usr/bin/osrt-suppkg_rebuild -p "%i"
 RuntimeMaxSec=6 hour
 
+# API regularly 502s.
+Restart=on-failure
+StartLimitInterval=1 hour
+StartLimitBurst=3
+
 [Install]
 WantedBy=multi-user.target
