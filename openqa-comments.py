@@ -225,8 +225,8 @@ if __name__ == '__main__':
     if args.force:
         MARGIN_HOURS = 0
 
-    Config('openSUSE:%s' % args.project)
-    api = StagingAPI(osc.conf.config['apiurl'], 'openSUSE:%s' % args.project)
+    Config(args.project)
+    api = StagingAPI(osc.conf.config['apiurl'], args.project)
     openQA = OpenQAReport(api)
 
     if args.staging:
