@@ -1257,7 +1257,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.do_update('update', opts)
 
         nonfree = target_config.get('nonfree')
-        if nonfree and drop_list:
+        if opts.scope != 'ports' and nonfree and drop_list:
             print('-> do_update nonfree')
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
