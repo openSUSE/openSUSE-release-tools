@@ -255,7 +255,8 @@ class ToTestBase(object):
                         labeled = comment['id']
                     if re.search(r'@ttm:? ignore', comment['text']):
                         to_ignore = True
-                ignored = len(refs) > 0
+                # to_ignore can happen with or without refs
+                ignored = True if to_ignore else len(refs) > 0
                 for ref in refs:
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
@@ -268,13 +269,17 @@ class ToTestBase(object):
 
                 if not ignored:
                     number_of_fails += 1
-                    if not labeled and len(refs) > 0 and not self.dryrun:
+                    if not labeled and len(refs) > 0:
                         data = {'text': 'label:unknown_failure'}
-                        self.openqa.openqa_request(
-                            'POST', 'jobs/%s/comments' % job['id'], data=data)
+                        if self.dryrun:
+                            logger.info("Would label {} as unknown".format(job['id']))
+                        else:
+                            self.openqa.openqa_request(
+                                'POST', 'jobs/%s/comments' % job['id'], data=data)
                 elif labeled:
+                    text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
                     # remove flag - unfortunately can't delete comment unless admin
-                    data = {'text': 'Ignored issue'}
+                    data = {'text': text}
                     self.openqa.openqa_request(
                         'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
 
@@ -816,7 +821,7 @@ class ToTestSLE150(ToTestBaseNew):
         '000product:SLES-ftp-POOL-ppc64le',
         '000product:SLES-ftp-POOL-s390x',
         '000product:SLES-ftp-POOL-x86_64',
-                    ]
+    ]
 
     livecd_products = []
 
