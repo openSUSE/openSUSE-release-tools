@@ -33,8 +33,6 @@ from osc.core import makeurl
 
 logger = logging.getLogger()
 
-ISSUE_FILE = 'issues_to_ignore'
-
 # QA Results
 QA_INPROGRESS = 1
 QA_FAILED = 2
@@ -65,13 +63,30 @@ class ToTestBase(object):
             test_subproject = 'ToTest'
         self.test_project = '%s:%s' % (self.project, test_subproject)
         self.openqa = OpenQA_Client(server=openqa_server)
-        self.issues_to_ignore = dict()
-        self.issuefile = "{}_{}".format(self.project, ISSUE_FILE)
-        if os.path.isfile(self.issuefile):
-            with open(self.issuefile, 'r') as stream:
-                self.issues_to_ignore = yaml.load(stream)['last_seen']
+        self.load_issues_to_ignore()
         self.project_base = project.split(':')[0]
         self.update_pinned_descr = False
+
+    def load_issues_to_ignore(self):
+        url = self.api.makeurl(['source', self.project, '_attribute', 'OSRT:IgnoredIssues'])
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        root = root.find('./attribute/value')
+        if root is not None:
+            root = yaml.load(root.text)
+            self.issues_to_ignore = root.get('last_seen')
+        else:
+            self.issues_to_ignore = dict()
+
+    def save_issues_to_ignore(self):
+        if self.dryrun:
+            return
+        text = yaml.dump({'last_seen': self.issues_to_ignore}, default_flow_style=False)
+        root = ET.fromstring('<attributes><attribute name="IgnoredIssues" namespace="OSRT">' +
+                             '<value/></attribute></attributes>')
+        root.find('./attribute/value').text = text
+        url = self.api.makeurl(['source', self.project, '_attribute'])
+        self.api.retried_POST(url, data=ET.tostring(root))
 
     def openqa_group(self):
         return self.project
@@ -197,7 +212,7 @@ class ToTestBase(object):
             return
 
         pinned_ignored_issue = 0
-        issues = ' , '.join(self.issues_to_ignore)
+        issues = ' , '.join(self.issues_to_ignore.keys())
         status_flag = 'publishing' if self.status_for_openqa['is_publishing'] else \
             'preparing' if self.status_for_openqa['can_release'] else \
             'testing' if self.status_for_openqa['snapshotable'] else \
@@ -301,8 +316,7 @@ class ToTestBase(object):
             else:
                 raise Exception(job['result'])
 
-        with open(self.issuefile, 'w') as stream:
-            yaml.dump({'last_seen': self.issues_to_ignore}, stream, default_flow_style=False)
+        self.save_issues_to_ignore()
 
         if number_of_fails > 0:
             return QA_FAILED
