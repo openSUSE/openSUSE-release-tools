@@ -267,7 +267,16 @@ class ToTestBase(object):
                         else:
                             ignored = False
 
-                if not ignored:
+                if ignored:
+                    if labeled:
+                        text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
+                        # remove flag - unfortunately can't delete comment unless admin
+                        data = {'text': text}
+                        self.openqa.openqa_request(
+                            'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+
+                    logger.info("job %s failed, but was ignored", jobname)
+                else:
                     number_of_fails += 1
                     if not labeled and len(refs) > 0:
                         data = {'text': 'label:unknown_failure'}
@@ -276,16 +285,7 @@ class ToTestBase(object):
                         else:
                             self.openqa.openqa_request(
                                 'POST', 'jobs/%s/comments' % job['id'], data=data)
-                elif labeled:
-                    text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
-                    # remove flag - unfortunately can't delete comment unless admin
-                    data = {'text': text}
-                    self.openqa.openqa_request(
-                        'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
 
-                if ignored:
-                    logger.info("job %s failed, but was ignored", jobname)
-                else:
                     joburl = '%s/tests/%s' % (self.openqa_server, job['id'])
                     logger.info("job %s failed, see %s", jobname, joburl)
 
