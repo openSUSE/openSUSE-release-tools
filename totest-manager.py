@@ -364,6 +364,9 @@ class ToTestBase(object):
         if '-Addon-NonOss-ftp-ftp' in package:
             return None
 
+        if 'JeOS' in package:
+            return 4700372992
+
         raise Exception('No maxsize for {}'.format(package))
 
     def package_ok(self, project, package, repository, arch):
