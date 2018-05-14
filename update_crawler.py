@@ -177,7 +177,7 @@ class UpdateCrawler(object):
                     srcrev = xml.get('verifymd5')
                 logging.debug('rev {}'.format(srcrev))
                 if srcrev == rev:
-                    logging.debug('{}: found existing request {}'.format(dst_package, r.reqid))
+                    logging.debug('{}: found existing request {} {}/{}'.format(dst_package, r.reqid, a.src_project, src_project))
                     foundrev = True
         return foundrev
 
