@@ -55,7 +55,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
                 elif i.startswith('openSUSE'):
                     project[i] = openSUSEUpdate(j)
                 else:
-                    raise "Unknown openQA", i
+                    raise Exception("Unknown openQA", i)
         return project, target, api
 
     def postoptparse(self):

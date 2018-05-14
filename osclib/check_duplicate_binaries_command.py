@@ -3,7 +3,6 @@ from osclib.core import package_binary_list
 from osclib.core import target_archs
 import yaml
 
-
 class CheckDuplicateBinariesCommand(object):
     def __init__(self, api):
         self.api = api
@@ -45,4 +44,3 @@ class CheckDuplicateBinariesCommand(object):
                 self.api.save_file_content(*args)
         else:
             print(current)
-

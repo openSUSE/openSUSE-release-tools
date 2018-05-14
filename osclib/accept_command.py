@@ -1,5 +1,11 @@
 import re
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
+
 import warnings
 from xml.etree import cElementTree as ET
 
@@ -155,7 +161,7 @@ class AcceptCommand(object):
         clean_list = set(pkglist) - set(self.api.cnocleanup_packages)
 
         for package in clean_list:
-            print "[cleanup] deleted %s/%s" % (project, package)
+            print("[cleanup] deleted %s/%s" % (project, package))
             delete_package(self.api.apiurl, project, package, force=True, msg="autocleanup")
 
         # wipe Test-DVD binaries and breaks kiwi build
@@ -178,7 +184,7 @@ class AcceptCommand(object):
                     url = self.api.makeurl(['build', project], query)
                     try:
                         http_POST(url)
-                    except urllib2.HTTPError as err:
+                    except HTTPError as err:
                         # failed to wipe isos but we can just continue
                         pass
 
@@ -202,7 +208,7 @@ class AcceptCommand(object):
 
         for req in rqlist:
             oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project=self.api.project, extension='spec')
-            print 'Accepting request %d: %s' % (req['id'], ','.join(req['packages']))
+            print('Accepting request %d: %s' % (req['id'], ','.join(req['packages'])))
             if req['type'] == 'delete':
                 # Remove devel project/package tag before accepting the request
                 self.remove_obsoleted_develtag(self.api.project, req['packages'][0])
@@ -227,10 +233,10 @@ class AcceptCommand(object):
         for spec in removedspecs:
             # Deleting all the packages that no longer have a .spec file
             url = self.api.makeurl(['source', project, spec[:-5]])
-            print "Deleting package %s from project %s" % (spec[:-5], project)
+            print("Deleting package %s from project %s" % (spec[:-5], project))
             try:
                 http_DELETE(url)
-            except urllib2.HTTPError as err:
+            except HTTPError as err:
                 if err.code == 404:
                     # the package link was not yet created, which was likely a mistake from earlier
                     pass
@@ -252,7 +258,7 @@ class AcceptCommand(object):
                     continue
                 # Check if the target package already exists, if it does not, we get a HTTP error 404 to catch
                 if not self.api.item_exists(project, package):
-                    print "Creating new package %s linked to %s" % (package, pkgname)
+                    print("Creating new package %s linked to %s" % (package, pkgname))
                     # new package does not exist. Let's link it with new metadata
                     newmeta = re.sub(r'(<package.*name=.){}'.format(pkgname),
                                      r'\1{}'.format(package),
@@ -318,7 +324,7 @@ class AcceptCommand(object):
             rebuild_result = self.api.check_pkgs(rebuild_result)
             result = set(rebuild_result) ^ set(fact_result)
 
-            print sorted(result)
+            print(sorted(result))
 
             for package in result:
                 self.api.rebuild_pkg(package, self.api.project, arch, None)

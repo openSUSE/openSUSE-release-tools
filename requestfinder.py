@@ -26,9 +26,7 @@ from xml.etree import cElementTree as ET
 import sys
 import cmdln
 import logging
-import urllib2
 import osc.core
-import yaml
 import os
 
 import ToolBase
@@ -229,4 +227,3 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit(app.main())
-

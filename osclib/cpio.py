@@ -94,7 +94,7 @@ if __name__ == '__main__':
         fh = open(fn, 'rb')
         cpio = Cpio(fh.read())
         for i in cpio:
-            print i
+            print(i)
             ofh = open(i.name, 'wb')
             ofh.write(i.header())
             ofh.close()
