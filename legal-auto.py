@@ -52,6 +52,7 @@ from osclib.comments import CommentAPI
 
 http_GET = osc.core.http_GET
 
+
 class LegalAuto(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
@@ -65,7 +66,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             self.apinick = 'ibs#'
         else:
             self.apinick = 'obs#'
-        self.override_allow = False # Handled via external tool.
+        self.override_allow = False  # Handled via external tool.
         self.request_default_return = True
 
     def retried_GET(self, url):
@@ -113,7 +114,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                                                 src_package, src_rev, target_project, target_package))
         to_review = self.open_reviews.get(self.request_nick(), None)
         if to_review:
-           self.logger.info("Found " + json.dumps(to_review))
+            self.logger.info("Found " + json.dumps(to_review))
         to_review = to_review or self.create_db_entry(
             src_project, src_package, src_rev)
         if not to_review:
@@ -220,7 +221,7 @@ class LegalAuto(ReviewBot.ReviewBot):
 
         self.packages = []
         # we can't create packages for requests - we need a nonewpackages=1 first
-        #self._query_requests(project)
+        # self._query_requests(project)
         self._query_sources(project)
         self._save_pkl()
         url = osc.core.makeurl(self.legaldb, ['products', project])
@@ -252,21 +253,22 @@ class LegalAuto(ReviewBot.ReviewBot):
                     continue
             match = re.match(r'(\S+)\.imported_\d+$', package)
             if match:
-               continue
+                continue
             skip = False
             for l in si.findall('linked'):
-		lpackage = l.get('package')
+                lpackage = l.get('package')
                 # strip sle11's .imported_ suffix
-		lpackage = re.sub(r'\.imported_\d+$', '', lpackage)
+                lpackage = re.sub(r'\.imported_\d+$', '', lpackage)
                 # check if the lpackage is origpackage.NUMBER
-		match = re.match(r'(\S+)\.\d+$', lpackage)
-		if match and match.group(1) == package:
-                   lpackage = package
+                match = re.match(r'(\S+)\.\d+$', lpackage)
+                if match and match.group(1) == package:
+                    lpackage = package
                 if package != lpackage:
-                   print "SKIP", package, "it links to", lpackage
-                   skip = True
-                   break
-            if skip: continue
+                    print "SKIP", package, "it links to", lpackage
+                    skip = True
+                    break
+            if skip:
+                continue
             self.packages.append(self._add_source(project, project, package, si.get('rev')))
 
     def _query_requests(self, project):
@@ -339,6 +341,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.legaldb_headers['Authorization'] = 'Token ' + self.options.token
         return bot
 
+
 if __name__ == "__main__":
     requests_log = logging.getLogger("requests.packages.urllib3")
     requests_log.setLevel(logging.WARNING)
@@ -346,4 +349,3 @@ if __name__ == "__main__":
 
     app = CommandLineInterface()
     sys.exit(app.main())
-
