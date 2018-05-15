@@ -168,8 +168,8 @@ class StagingAPI(object):
     def retried_GET(self, url):
         return self._retried_request(url, http_GET)
 
-    def retried_POST(self, url):
-        return self._retried_request(url, http_POST)
+    def retried_POST(self, url, data=None):
+        return self._retried_request(url, http_POST, data)
 
     def retried_PUT(self, url, data):
         return self._retried_request(url, http_PUT, data)

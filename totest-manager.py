@@ -8,6 +8,8 @@
 # (C) 2017 okurz@suse.de, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
+from __future__ import print_function
+
 import cmdln
 import datetime
 import json
@@ -18,6 +20,7 @@ import urllib2
 import logging
 import signal
 import time
+import yaml
 
 from xml.etree import cElementTree as ET
 from openqa_client.client import OpenQA_Client
@@ -29,8 +32,6 @@ from osclib.stagingapi import StagingAPI
 from osc.core import makeurl
 
 logger = logging.getLogger()
-
-ISSUE_FILE = 'issues_to_ignore'
 
 # QA Results
 QA_INPROGRESS = 1
@@ -62,14 +63,30 @@ class ToTestBase(object):
             test_subproject = 'ToTest'
         self.test_project = '%s:%s' % (self.project, test_subproject)
         self.openqa = OpenQA_Client(server=openqa_server)
-        self.issues_to_ignore = []
-        self.issuefile = "{}_{}".format(self.project, ISSUE_FILE)
-        if os.path.isfile(self.issuefile):
-            with open(self.issuefile, 'r') as f:
-                for line in f.readlines():
-                    self.issues_to_ignore.append(line.strip())
+        self.load_issues_to_ignore()
         self.project_base = project.split(':')[0]
         self.update_pinned_descr = False
+
+    def load_issues_to_ignore(self):
+        url = self.api.makeurl(['source', self.project, '_attribute', 'OSRT:IgnoredIssues'])
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        root = root.find('./attribute/value')
+        if root is not None:
+            root = yaml.load(root.text)
+            self.issues_to_ignore = root.get('last_seen')
+        else:
+            self.issues_to_ignore = dict()
+
+    def save_issues_to_ignore(self):
+        if self.dryrun:
+            return
+        text = yaml.dump({'last_seen': self.issues_to_ignore}, default_flow_style=False)
+        root = ET.fromstring('<attributes><attribute name="IgnoredIssues" namespace="OSRT">' +
+                             '<value/></attribute></attributes>')
+        root.find('./attribute/value').text = text
+        url = self.api.makeurl(['source', self.project, '_attribute'])
+        self.api.retried_POST(url, data=ET.tostring(root))
 
     def openqa_group(self):
         return self.project
@@ -195,7 +212,7 @@ class ToTestBase(object):
             return
 
         pinned_ignored_issue = 0
-        issues = ' , '.join(self.issues_to_ignore)
+        issues = ' , '.join(self.issues_to_ignore.keys())
         status_flag = 'publishing' if self.status_for_openqa['is_publishing'] else \
             'preparing' if self.status_for_openqa['can_release'] else \
             'testing' if self.status_for_openqa['snapshotable'] else \
@@ -257,17 +274,28 @@ class ToTestBase(object):
                         to_ignore = True
                 # to_ignore can happen with or without refs
                 ignored = True if to_ignore else len(refs) > 0
+                build_nr = str(job['settings']['BUILD'])
                 for ref in refs:
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
-                            self.issues_to_ignore.append(ref)
+                            self.issues_to_ignore[ref] = build_nr
                             self.update_pinned_descr = True
-                            with open(self.issuefile, 'a') as f:
-                                f.write("%s\n" % ref)
                         else:
                             ignored = False
+                    else:
+                        # update reference
+                        self.issues_to_ignore[ref] = build_nr
 
-                if not ignored:
+                if ignored:
+                    if labeled:
+                        text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
+                        # remove flag - unfortunately can't delete comment unless admin
+                        data = {'text': text}
+                        self.openqa.openqa_request(
+                            'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+
+                    logger.info("job %s failed, but was ignored", jobname)
+                else:
                     number_of_fails += 1
                     if not labeled and len(refs) > 0:
                         data = {'text': 'label:unknown_failure'}
@@ -276,16 +304,7 @@ class ToTestBase(object):
                         else:
                             self.openqa.openqa_request(
                                 'POST', 'jobs/%s/comments' % job['id'], data=data)
-                elif labeled:
-                    text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
-                    # remove flag - unfortunately can't delete comment unless admin
-                    data = {'text': text}
-                    self.openqa.openqa_request(
-                        'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
 
-                if ignored:
-                    logger.info("job %s failed, but was ignored", jobname)
-                else:
                     joburl = '%s/tests/%s' % (self.openqa_server, job['id'])
                     logger.info("job %s failed, see %s", jobname, joburl)
 
@@ -296,6 +315,8 @@ class ToTestBase(object):
                     in_progress = True
             else:
                 raise Exception(job['result'])
+
+        self.save_issues_to_ignore()
 
         if number_of_fails > 0:
             return QA_FAILED
@@ -572,6 +593,7 @@ class ToTestBaseNew(ToTestBase):
     set_snapshot_number = False
 
     """Base class for new product builder"""
+
     def _release(self, set_release=None):
         query = {'cmd': 'release'}
 
