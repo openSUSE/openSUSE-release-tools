@@ -92,7 +92,7 @@
    "SUSE:Updates:SLE-HA:12-SP2:" : {
       "version" : "12-SP2",
       "issues" : {
-        "OS_TEST_ISSUES" : "SUSE:Updates:SLE-SERVER:12-SP2:",
+        "OS_TEST_ISSUES" : "SUSE:Updates:SLE-SERVER:12-SP2-LTSS:",
         "HA_TEST_ISSUES" : "SUSE:Updates:SLE-HA:12-SP2:"
       },
       "flavor" : "Server-DVD-Incidents-HA",
