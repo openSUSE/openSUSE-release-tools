@@ -83,7 +83,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         text = '\n'.join(comment).strip()
         if not self.dryrun:
-            api.dashboard_content_ensure('repo_checker', text, 'project_only run')
+            api.dashboard_content_ensure('repo_checker', text + '\n', 'project_only run')
             self.whitelist_clean(project)
         else:
             print(text)
@@ -580,7 +580,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         config_new = copy(config)
         for key, value in whitelists_remaining.items():
             if value != whitelists[key]:
-                self.whitelist_clean_set(config_new, key, ' '.join(value))
+                self.whitelist_clean_set(config_new, key, ' '.join(sorted(value)))
 
         if config == config_new:
             print('No changes')
