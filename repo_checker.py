@@ -565,7 +565,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 else:
                     binaries_common = binaries_common.intersection(whitelists_remaining[key])
 
-        if len(binaries_common):
+        if binaries_common is not None and len(binaries_common):
             # Remove entries common to all archs and place in common whitelist.
             whitelists_remaining[prefix].update(binaries_common)
 
