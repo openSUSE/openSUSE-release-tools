@@ -392,9 +392,9 @@ class StagingAPI(object):
         except urllib2.HTTPError as e:
             if e.code == 404:
                 return None
-        packages = root.findall('./frozenlink/package')
+        meta = self.get_prj_pseudometa(prj)
         # the first package's devel project is good enough
-        return devel_project_get(self.apiurl, self.project, packages[0].get('name'))[0]
+        return devel_project_get(self.apiurl, self.project, meta['requests'][0].get('package'))[0]
 
     def do_change_review_state(self, request_id, newstate, message=None,
                                by_group=None, by_user=None, by_project=None):
