@@ -345,6 +345,7 @@ def ingest_release_schedule(project):
             'time': timestamp(date),
         })
 
+    client.drop_measurement('release_schedule')
     client.write_points(points, 's')
     return len(points)
 
