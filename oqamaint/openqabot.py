@@ -4,6 +4,7 @@ from datetime import date
 import md5
 from pprint import pformat
 from urllib2 import HTTPError
+from urllib import quote_plus
 from osclib.comments import CommentAPI
 
 import requests
@@ -298,7 +299,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     @staticmethod
     def get_step_url(testurl, modulename):
-        failurl = testurl + '/modules/{!s}/fails'.format(modulename)
+        failurl = testurl + '/modules/{!s}/fails'.format(quote_plus(modulename))
         fails = requests.get(failurl).json()
         failed_step = fails.get('first_failed_step', 1)
         return "[{!s}]({!s}#step/{!s}/{:d})".format(OpenQABot.emd(modulename), testurl, modulename, failed_step)
