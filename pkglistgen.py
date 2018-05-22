@@ -1146,6 +1146,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # TODO Continue supporting #1297, but should be abstracted.
             main_repo = 'ports'
             opts.project += ':Ports'
+            target_project += ':Ports'
             self.options.repos = ['/'.join([opts.project, main_repo])]
             self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
             return self.error_occured
