@@ -827,10 +827,16 @@ class ToTest150Ports(ToTestBaseNew):
 
     livecd_products = []
 
+    # product_repo openqa_group jobs_num values are specific to aarch64
+    # TODO: How to handle the other entries of main_products ?
+
     product_repo = 'images_arm'
 
     def openqa_group(self):
-        return 'openSUSE Leap 15.0 Ports'
+        return 'openSUSE Leap 15.0 AArch64'
+
+    def jobs_num(self):
+        return 10
 
     def get_current_snapshot(self):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
