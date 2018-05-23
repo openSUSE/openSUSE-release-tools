@@ -1,4 +1,18 @@
 {
+   "SUSE:Updates:SLE-SERVER:11-SP1:" : {
+      "version" : "11-SP1",
+      "flavor" : "Server-DVD-Incidents",
+      "archs" : [
+         "x86_64"
+      ]
+      },
+   "SUSE:Updates:SLE-SERVER:11-SP3:" : {
+      "version" : "11-SP3",
+      "flavor" : "Server-DVD-Incidents",
+      "archs" : [
+         "x86_64"
+      ]
+      },
    "SUSE:Updates:SLE-SERVER:12-SP1-LTSS:" : {
       "flavor" : "Server-DVD-Incidents",
       "version" : "12-SP1",
