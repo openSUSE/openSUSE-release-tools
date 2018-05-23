@@ -827,6 +827,9 @@ class ToTest150Ports(ToTestBaseNew):
 
     livecd_products = []
 
+    # Leap 15.0 Ports still need to update snapshot
+    set_snapshot_number = True
+
     # product_repo openqa_group jobs_num values are specific to aarch64
     # TODO: How to handle the other entries of main_products ?
 
