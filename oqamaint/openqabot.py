@@ -496,16 +496,18 @@ class OpenQABot(ReviewBot.ReviewBot):
                 'latest': '1'
             })['jobs']
 
-    # for SUSE we use mesh for openSUSE we limit the jobs to open release requests
+    # for SUSE we use mesh, for openSUSE we limit the jobs to open release requests
     def check_opensuse_incidents(self):
-        requests = []
+        requests = dict() # collecting unique requests
         self.wait_for_build = set()
         for prj in self.tgt_repo[self.openqa.baseurl].keys():
-            requests += self.ids_project(prj, 'maintenance_release')
+            for r in self.ids_project(prj, 'maintenance_release'):
+                requests[r.reqid] = r
 
         # to be stored in settings
         issues = dict()
-        for req in requests:
+        for req in sorted(requests.keys()):
+            req = requests[req]
             types = set([a.type for a in req.actions])
             if 'maintenance_release' not in types:
                 continue
@@ -514,15 +516,18 @@ class OpenQABot(ReviewBot.ReviewBot):
             if len(src_prjs) != 1:
                 raise Exception("can't handle maintenance_release from different incidents")
             build = src_prjs.pop()
-            tgt_prjs = set([a.tgt_project for a in req.actions])
-            for prj in tgt_prjs:
+            incident_id = build.split(':')[-1]
+            tgt_prjs = set()
+            for a in req.actions:
+                prj = a.tgt_project
                 # ignore e.g. Backports
                 if prj not in self.project_settings:
                     continue
 
-                incident_id = build.split(':')[-1]
-                self.test_job({'project': build, 'id': incident_id, 'channels': [prj]})
                 issues.setdefault(prj, set()).add(incident_id)
+                tgt_prjs.add(prj)
+
+            self.test_job({'project': build, 'id': incident_id, 'channels': list(tgt_prjs)})
 
         for prj in self.tgt_repo[self.openqa.baseurl].keys():
             s = self.tgt_repo[self.openqa.baseurl][prj]['settings']
