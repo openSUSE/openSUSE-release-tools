@@ -1,4 +1,16 @@
 {
+   "SUSE:Updates:SLE-SERVER:11-SP1:x86_64" : {
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "11-SP1"
+   },
+   "SUSE:Updates:SLE-SERVER:11-SP3:x86_64" : {
+      "DISTRI" : "sle",
+      "ARCH" : "x86_64",
+      "FLAVOR" : "Server-DVD-Incidents",
+      "VERSION" : "11-SP3"
+   },
    "SUSE:Updates:SLE-SERVER:12-LTSS:s390x" : {
       "DISTRI" : "sle",
       "ARCH" : "s390x",
