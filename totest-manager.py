@@ -296,8 +296,11 @@ class ToTestBase(object):
                         text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
                         # remove flag - unfortunately can't delete comment unless admin
                         data = {'text': text}
-                        self.openqa.openqa_request(
-                            'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+                        if self.dryrun:
+                            logger.info("Would label {} with: {}".format(job['id'], text))
+                        else:
+                            self.openqa.openqa_request(
+                                'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
 
                     logger.info("job %s failed, but was ignored", job['name'])
                 else:
