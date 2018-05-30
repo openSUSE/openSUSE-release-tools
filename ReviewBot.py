@@ -45,6 +45,8 @@ except ImportError:
 from osc import conf
 import osc.core
 import urllib2
+from itertools import count
+
 
 class ReviewBot(object):
     """
@@ -573,6 +575,50 @@ class ReviewBot(object):
             self.comment_api.add_comment(comment=message, **kwargs)
 
         self.comment_handler_remove()
+
+    def _check_matching_srcmd5(self, project, package, rev, history_limit = 5):
+        """check if factory sources contain the package and revision. check head and history"""
+        self.logger.debug("checking %s in %s"%(package, project))
+        try:
+            si = osc.core.show_package_meta(self.apiurl, project, package)
+        except (urllib2.HTTPError, urllib2.URLError):
+            si = None
+        if si is None:
+            self.logger.debug("new package")
+            return None
+        else:
+            si = self.get_sourceinfo(project, package)
+            if rev == si.verifymd5:
+                self.logger.debug("srcmd5 matches")
+                return True
+
+        if history_limit:
+            self.logger.debug("%s not the latest version, checking history", rev)
+            u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': history_limit })
+            try:
+                r = osc.core.http_GET(u)
+            except urllib2.HTTPError as e:
+                self.logger.debug("package has no history!?")
+                return None
+
+            root = ET.parse(r).getroot()
+            # we need this complicated construct as obs doesn't honor
+            # the 'limit' parameter use above for obs interconnect:
+            # https://github.com/openSUSE/open-build-service/issues/2545
+            for revision, i in zip(reversed(root.findall('revision')), count()):
+                node = revision.find('srcmd5')
+                if node is None:
+                    continue
+                self.logger.debug("checking %s"%node.text)
+                if node.text == rev:
+                    self.logger.debug("got it, rev %s"%revision.get('rev'))
+                    return True
+                if i == history_limit:
+                    break
+
+            self.logger.debug("srcmd5 not found in history either")
+
+        return False
 
 
 class CommentFromLogHandler(logging.Handler):
