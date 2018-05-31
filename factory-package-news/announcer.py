@@ -55,7 +55,7 @@ Please check the known defects of this snapshot before upgrading:
 https://openqa.opensuse.org/tests/overview?distri=opensuse&groupid=1&version=Tumbleweed&build={version}
 
 Please do not reply to this email to report issues, rather file a bug
-on bugzilla.opensuse.org for more information on filing bugs please
+on bugzilla.opensuse.org. For more information on filing bugs please
 see https://en.opensuse.org/openSUSE:Submitting_bug_reports
 
 {text}
