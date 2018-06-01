@@ -103,8 +103,9 @@ class OpenQABot(ReviewBot.ReviewBot):
             cs = root.find(
                 './/{http://linux.duke.edu/metadata/repo}data[@type="primary"]/{http://linux.duke.edu/metadata/repo}checksum')
             m.update(cs.text)
+            # now add the open incidents
+            m.update(json.dumps(incidents, sort_keys=True))
         # now add the open incidents
-        m.update(json.dumps(incidents, sort_keys=True))
         return m.hexdigest()
 
     def is_incident_in_testing(self, incident):
@@ -173,9 +174,13 @@ class OpenQABot(ReviewBot.ReviewBot):
     # and then we know the build
     def trigger_build_for_target(self, prj, data):
         today = date.today().strftime("%Y%m%d")
+        incidents = {}
+        if 'incidents' in data.keys():
+            for x, y in self.calculate_incidents(data['incidents']):
+                incidents[x] = y
 
         try:
-            repohash = self.calculate_repo_hash(data['repos'], self.incident_repos.get(prj, {}))
+            repohash = self.calculate_repo_hash(data['repos'], incidents)
         except HTTPError as e:
             self.logger.debug("REPOHASH not calculated with response {}".format(e))
             return
@@ -208,11 +213,9 @@ class OpenQABot(ReviewBot.ReviewBot):
 
         buildnr = "{!s}-{:d}".format(today, buildnr + 1)
 
-        s = data['settings']
         # now schedule it for real
-        if 'incidents' in data.keys():
-            for x, y in self.calculate_incidents(data['incidents']):
-                s[x] = y
+        s = data['settings']
+        s.update(incidents)
         s['BUILD'] = buildnr
         s['REPOHASH'] = repohash
         self.logger.debug("Prepared: {}".format(pformat(s)))
