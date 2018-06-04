@@ -105,7 +105,11 @@ class OpenQABot(ReviewBot.ReviewBot):
             m.update(cs.text)
         # now add the open incidents
         m.update(json.dumps(incidents, sort_keys=True))
-        return m.hexdigest()
+        digest = m.hexdigest()
+        open_incidents = sorted(incidents.keys())
+        if open_incidents:
+          digest += ':' + ','.join(open_incidents)
+        return digest
 
     def is_incident_in_testing(self, incident):
         # hard coded for now as we only run this code for SUSE Maintenance workflow
