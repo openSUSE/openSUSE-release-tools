@@ -108,7 +108,7 @@ class OpenQABot(ReviewBot.ReviewBot):
         digest = m.hexdigest()
         open_incidents = sorted(incidents.keys())
         if open_incidents:
-          digest += ':' + ','.join(open_incidents)
+            digest += ':' + ','.join(open_incidents)
         return digest
 
     def is_incident_in_testing(self, incident):
@@ -464,7 +464,7 @@ class OpenQABot(ReviewBot.ReviewBot):
             if not job.get('openqa_build'):
                 self.wait_for_build.add(str(job['id']))
                 return []
-            self.incident_repos.setdefault(product_prefix, dict())[
+            self.incident_repos.setdefault(product_key, dict())[
                 str(job['id'])] = job.get('openqa_build')
             j['BUILD'] += '.' + str(job['openqa_build'])
             j.update(settings)
@@ -502,7 +502,7 @@ class OpenQABot(ReviewBot.ReviewBot):
 
     # for SUSE we use mesh, for openSUSE we limit the jobs to open release requests
     def check_opensuse_incidents(self):
-        requests = dict() # collecting unique requests
+        requests = dict()  # collecting unique requests
         self.wait_for_build = set()
         for prj in self.tgt_repo[self.openqa.baseurl].keys():
             for r in self.ids_project(prj, 'maintenance_release'):
