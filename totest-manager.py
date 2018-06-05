@@ -54,7 +54,7 @@ class ToTestBase(object):
     livecd_repo = 'images'
     livecd_archs = ['i586', 'x86_64']
 
-    def __init__(self, project, dryrun=False, api_url=None, openqa_server='https://openqa.opensuse.org', test_subproject=None):
+    def __init__(self, project, dryrun=False, norelease=False, api_url=None, openqa_server='https://openqa.opensuse.org', test_subproject=None):
         self.project = project
         self.dryrun = dryrun
         if not api_url:
@@ -468,7 +468,7 @@ class ToTestBase(object):
         baseurl = ['source', project, package]
 
         url = self.api.makeurl(baseurl, query=query)
-        if self.dryrun:
+        if self.dryrun or self.norelease:
             logger.info("release %s/%s (%s)" % (project, package, set_release))
         else:
             self.api.retried_POST(url)
@@ -487,14 +487,14 @@ class ToTestBase(object):
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
-        if not self.dryrun:
+        if not (self.dryrun or self.norelease):
             self.api.switch_flag_in_prj(self.test_project, flag='publish', state='disable')
 
         self._release(set_release=release)
 
     def publish_factory_totest(self):
         logger.info('Publish test project content')
-        if not self.dryrun:
+        if not (self.dryrun or self.norelease):
             self.api.switch_flag_in_prj(
                 self.test_project, flag='publish', state='enable')
 
@@ -619,7 +619,7 @@ class ToTestBase(object):
         self.update_totest(new_snapshot)
 
     def write_version_to_dashboard(self, target, version):
-        if not self.dryrun:
+        if not (self.dryrun or self.norelease):
             self.api.dashboard_content_ensure('version_%s' % target, version, comment='Update version')
 
 
@@ -645,7 +645,7 @@ class ToTestBaseNew(ToTestBase):
         baseurl = ['source', project, package]
 
         url = self.api.makeurl(baseurl, query=query)
-        if self.dryrun:
+        if self.dryrun or self.norelease:
             logger.info("release %s/%s (%s)" % (project, package, set_release))
         else:
             self.api.retried_POST(url)
@@ -933,6 +933,7 @@ class CommandlineInterface(cmdln.Cmdln):
         parser = cmdln.CmdlnOptionParser(self)
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
+        parser.add_option("--norelease", action="store_true", help="do not trigger release in build service")
         parser.add_option("--verbose", action="store_true", help="verbose")
         parser.add_option(
             "--osc-debug", action="store_true", help="osc debug output")
@@ -981,7 +982,7 @@ class CommandlineInterface(cmdln.Cmdln):
                 project, ', '.join(self.totest_class))
             raise cmdln.CmdlnUserError(msg)
 
-        return self.totest_class[project](project, self.options.dry, self.options.obs_api_url, self.options.openqa_server)
+        return self.totest_class[project](project, self.options.dry, self.options.norelease, self.options.obs_api_url, self.options.openqa_server)
 
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_run(self, subcmd, opts, project='openSUSE:Factory'):
