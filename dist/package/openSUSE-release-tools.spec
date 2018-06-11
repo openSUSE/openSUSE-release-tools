@@ -202,6 +202,7 @@ BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
 Requires:       python-openqa_client
+Requires:       python2-pika
 
 %description totest-manager
 Manages product ToTest repository workflow and openQA interaction
