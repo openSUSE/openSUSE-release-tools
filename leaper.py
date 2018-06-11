@@ -186,7 +186,7 @@ class Leaper(ReviewBot.ReviewBot):
                 if devel_package is None:
                     devel_package = package
                 if self.is_package_in_project(devel_project, devel_package):
-                    if self.factory._check_project(devel_project, devel_package, src_srcinfo.verifymd5) == True:
+                    if self._check_matching_srcmd5(devel_project, devel_package, src_srcinfo.verifymd5) == True:
                         self.logger.info('matching sources in {}/{}'.format(devel_project, devel_package))
                         return True
                     else:
@@ -266,7 +266,7 @@ class Leaper(ReviewBot.ReviewBot):
                     return True
                 # submitted from elsewhere but is in :Update
                 else:
-                    good = self.factory._check_project('openSUSE:Leap:15.0:Update', target_package, src_srcinfo.verifymd5)
+                    good = self._check_matching_srcmd5('openSUSE:Leap:15.0:Update', target_package, src_srcinfo.verifymd5)
                     if good:
                         self.logger.info("submission found in 15.0")
                         return good
@@ -285,7 +285,7 @@ class Leaper(ReviewBot.ReviewBot):
                     if oldorigin.startswith('openSUSE:Factory'):
                         # check if an attempt to switch to SLE package is made
                         for sp in ('SP1:GA', 'SP1:Update'):
-                            good = self.factory._check_project('SUSE:SLE-15-{}'.format(sp), target_package, src_srcinfo.verifymd5)
+                            good = self._check_matching_srcmd5('SUSE:SLE-15-{}'.format(sp), target_package, src_srcinfo.verifymd5)
                             if good:
                                 self.logger.info("request sources come from SLE")
                                 self.needs_release_manager = True
@@ -305,7 +305,7 @@ class Leaper(ReviewBot.ReviewBot):
                     prj = 'openSUSE:Leap:{}:SLE-workarounds'.format(v)
                     if self.is_package_in_project( prj, target_package):
                         self.logger.info("found package in %s", prj)
-                        if not self.factory._check_project(prj,
+                        if not self._check_matching_srcmd5(prj,
                                 target_package,
                                 src_srcinfo.verifymd5):
                             self.logger.info("sources in %s are NOT identical",
@@ -413,7 +413,7 @@ class Leaper(ReviewBot.ReviewBot):
     def _check_factory(self, target_package, src_srcinfo, target_project='openSUSE:Factory'):
         for subprj in ('', ':NonFree', ':Live'):
             prj = ''.join((target_project, subprj))
-            good = self.factory._check_project(prj, target_package, src_srcinfo.verifymd5)
+            good = self._check_matching_srcmd5(prj, target_package, src_srcinfo.verifymd5)
             if good:
                 return good
             good = self.factory._check_requests(prj, target_package, src_srcinfo.verifymd5)
@@ -424,7 +424,7 @@ class Leaper(ReviewBot.ReviewBot):
         return False
 
     def _check_project_and_request(self, project, target_package, src_srcinfo):
-        good = self.factory._check_project(project, target_package, src_srcinfo.verifymd5)
+        good = self._check_matching_srcmd5(project, target_package, src_srcinfo.verifymd5)
         if good:
             return good
         good = self.factory._check_requests(project, target_package, src_srcinfo.verifymd5)

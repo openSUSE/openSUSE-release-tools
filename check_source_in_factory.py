@@ -35,7 +35,6 @@ import osc.core
 import urllib2
 import yaml
 import ReviewBot
-from itertools import count
 
 
 class FactorySourceChecker(ReviewBot.ReviewBot):
@@ -77,7 +76,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         self.review_messages['declined'] = 'the package needs to be accepted in {} first'.format(' or '.join(projects))
         for project in projects:
             self.logger.info("Checking in project %s" % project)
-            good = self._check_project(project, target_package, src_srcinfo.verifymd5)
+            good = self._check_matching_srcmd5(project, target_package, src_srcinfo.verifymd5, self.history_limit)
             if good:
                 self.logger.info("{} is in {}".format(target_package, project))
                 return good
@@ -102,48 +101,6 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
             projects = [projects]
 
         return projects
-
-    def _check_project(self, project, package, rev):
-        """check if factory sources contain the package and revision. check head and history"""
-        self.logger.debug("checking %s in %s"%(package, project))
-        try:
-            si = osc.core.show_package_meta(self.apiurl, project, package)
-        except (urllib2.HTTPError, urllib2.URLError):
-            si = None
-        if si is None:
-            self.logger.debug("new package")
-            return None
-        else:
-            si = self.get_sourceinfo(project, package)
-            if rev == si.verifymd5:
-                self.logger.debug("srcmd5 matches")
-                return True
-
-        self.logger.debug("%s not the latest version, checking history", rev)
-        u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': self.history_limit })
-        try:
-            r = osc.core.http_GET(u)
-        except urllib2.HTTPError as e:
-            self.logger.debug("package has no history!?")
-            return None
-
-        root = ET.parse(r).getroot()
-        # we need this complicated construct as obs doesn't honor
-        # the 'limit' parameter use above for obs interconnect:
-        # https://github.com/openSUSE/open-build-service/issues/2545
-        for revision, i in zip(reversed(root.findall('revision')), count()):
-            node = revision.find('srcmd5')
-            if node is None:
-                continue
-            self.logger.debug("checking %s"%node.text)
-            if node.text == rev:
-                self.logger.debug("got it, rev %s"%revision.get('rev'))
-                return True
-            if i == self.history_limit:
-                break
-
-        self.logger.debug("srcmd5 not found in history either")
-        return False
 
     def _check_requests(self, project, package, rev):
         self.logger.debug("checking requests")
