@@ -249,7 +249,7 @@ class Config(object):
         if not conf.config[self.project].get('remote-config', True):
             return
 
-        config = api.dashboard_content_load('config')
+        config = None # api.dashboard_content_load('config')
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config

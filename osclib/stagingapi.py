@@ -524,7 +524,7 @@ class StagingAPI(object):
                 replace_old = request_old.find('state').get('name') in ['revoked', 'superseded']
 
                 if (request_new.find('action').get('type') == 'delete' and
-                    request_old.find('action').get('type') == 'delete'):
+                        request_old.find('action').get('type') == 'delete'):
                     # Both delete requests.
                     if replace_old:
                         # Pointless since identical requests, but user desires.
@@ -534,11 +534,11 @@ class StagingAPI(object):
                         message = 'sr#{} is an identical delete and is already staged'.format(
                             request_old.get('id'))
                         self.do_change_review_state(request_id, 'declined',
-                            by_group=self.cstaging_group, message=message)
+                                                    by_group=self.cstaging_group, message=message)
                         return stage_info, True
 
                 if (request_new.find('action').get('type') !=
-                    request_old.find('action').get('type')):
+                        request_old.find('action').get('type')):
                     # One delete and one submit.
                     if replace_old:
                         if self.ring_packages.get(target_package):
@@ -554,7 +554,7 @@ class StagingAPI(object):
                         message = 'sr#{} of a different type should be revoked first'.format(
                             request_old.get('id'))
                         self.do_change_review_state(request_id, 'declined',
-                            by_group=self.cstaging_group, message=message)
+                                                    by_group=self.cstaging_group, message=message)
                         return stage_info, True
 
                 # If both submits are from different source projects then check
@@ -578,7 +578,7 @@ class StagingAPI(object):
                 if source_same:
                     # Keep the original request and decline this identical one.
                     self.do_change_review_state(request_id, 'declined',
-                        by_group=self.cstaging_group, message=message)
+                                                by_group=self.cstaging_group, message=message)
                 else:
                     # Ingore the new request pending manual review.
                     IgnoreCommand(self).perform([str(request_id)], message)
@@ -851,7 +851,8 @@ class StagingAPI(object):
             if self._supersede:
                 self.is_package_disabled(sub_prj, sub_pkg, store=True)
             # Skip inner-project links for letter staging
-            if not self.is_adi_project(project) and sub_prj == project: continue
+            if not self.is_adi_project(project) and sub_prj == project:
+                continue
             delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
 
         # Delete the main package in the last
@@ -957,9 +958,9 @@ class StagingAPI(object):
         # to protect us against control characters
         import string
         all_bytes = string.maketrans('', '')
-        remove_bytes = all_bytes[:8] + all_bytes[14:32] # accept tabs and newlines
+        remove_bytes = all_bytes[:8] + all_bytes[14:32]  # accept tabs and newlines
 
-        query = {'nostream' : '1', 'start' : '%s' % offset}
+        query = {'nostream': '1', 'start': '%s' % offset}
         if last:
             query['last'] = 1
         log = StringIO()
@@ -1255,13 +1256,14 @@ class StagingAPI(object):
         # dynamically generated and static baselibs.conf.
         baselibs = False if self.is_adi_project(project) else None
         if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
-            src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
+                src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
             baselibs = True
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
             sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
             # Skip inner-project links for letter staging
-            if not self.is_adi_project(project) and sub_prj == project: continue
+            if not self.is_adi_project(project) and sub_prj == project:
+                continue
             if self._supersede:
                 disable_build = self._package_disabled.get('/'.join([sub_prj, sub_pkg]), False)
             self.create_package_container(sub_prj, sub_pkg, disable_build=disable_build)
@@ -1271,7 +1273,7 @@ class StagingAPI(object):
             http_PUT(url, data=ET.tostring(root))
 
             if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
-                src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
+                    src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
                 baselibs = True
 
         if baselibs:
@@ -1530,6 +1532,31 @@ class StagingAPI(object):
         if content != self.dashboard_content_load(filename):
             self.dashboard_content_save(filename, content, comment)
 
+    def attribute_value_load(self, attribute):
+        url = self.makeurl(['source', self.project, '_attribute', 'OSRT:' + attribute])
+        f = self.retried_GET(url)
+        root = ET.parse(f).getroot()
+        root = root.find('./attribute/value')
+        if root is None:
+            return None
+        return root.text
+
+    # to create a new attribute 'type' you need to do some manual step
+    # create a xml file analoge to what
+    # osc api /attribute/OSRT/IgnoredIssues/_meta outputs
+    # you need to think about roles, groups and users that should be
+    # able to write the attribute
+    # after that osc api -T $xml /attribute/OSRT/$NEWATTRIBUTE/_meta
+    # (preferably do this right away for ibs and obs)
+    def attribute_value_save(self, attribute, text):
+        root = ET.fromstring('<attributes><attribute name="" namespace="OSRT">' +
+                             '<value/></attribute></attributes>'.format(attribute))
+        root.find('./attribute').set('name', attribute)
+        root.find('./attribute/value').text = text
+        # the OBS API of attributes is super strange, you POST updates
+        url = self.makeurl(['source', self.project, '_attribute'])
+        self.retried_POST(url, data=ET.tostring(root))
+
     def update_status_or_deactivate(self, project, command):
         meta = self.get_prj_pseudometa(project)
         if len(meta['requests']) == 0:
@@ -1573,7 +1600,7 @@ class StagingAPI(object):
                 len(requests_old) - len(requests_common),
                 command
             ))
-            lines.append('') # Blank line.
+            lines.append('')  # Blank line.
 
             requests = []
             for req in meta['requests']:
@@ -1594,7 +1621,7 @@ class StagingAPI(object):
             dashboard_url = '{}/project/staging_projects/{}/{}'.format(
                 self.apiurl, self.project, self.extract_staging_short(project))
             lines.append('Requests ([dashboard]({})):'.format(dashboard_url))
-            lines.append('') # Blank line.
+            lines.append('')  # Blank line.
 
             requests = meta['requests']
 
@@ -1685,7 +1712,6 @@ class StagingAPI(object):
             http_POST(u)
         except:
             print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)
-
 
     def _candidate_adi_project(self):
         """Decide a candidate name for an ADI project."""
