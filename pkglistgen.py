@@ -527,6 +527,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _check_supplements(self):
         tocheck = set()
+        tocheck_locales = set()
         for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
@@ -539,6 +540,11 @@ class PkgListGen(ToolBase.ToolBase):
                         if d.startswith('namespace:modalias') or d.startswith('namespace:filesystem'):
                             tocheck.add(s.name)
 
+            for l in self.locales:
+                i = pool.str2id('locale({})'.format(l))
+                for s in pool.whatprovides(i):
+                    tocheck_locales.add(s.name)
+
         all_grouped = set()
         for g in self.groups.values():
             if g.solved:
@@ -548,6 +554,9 @@ class PkgListGen(ToolBase.ToolBase):
 
         for p in tocheck - all_grouped:
             logger.warn('package %s has supplements but is not grouped', p)
+
+        for p in tocheck_locales - all_grouped:
+            logger.warn('package %s provides supported locale but is not grouped', p)
 
     def _prepare_pool(self, arch):
         pool = solv.Pool()
