@@ -140,7 +140,6 @@ DEFAULT = {
         'openqa': None,
         'lock': 'SUSE:%(project)s:Staging',
         'lock-ns': 'SUSE',
-        'remote-config': False,
         'delreq-review': None,
         'main-repo': 'standard',
         'priority': '100', # Lower than SLE-15 since less specific.
@@ -161,7 +160,6 @@ DEFAULT = {
         'lock-ns': None,
         'delreq-review': None,
         'main-repo': 'openSUSE_Factory',
-        'remote-config': False,
         'priority': '1000', # Lowest priority as only a fallback.
     },
 }
@@ -246,10 +244,8 @@ class Config(object):
 
     def apply_remote(self, api):
         """Fetch remote config and re-process (defaults, remote, .oscrc)."""
-        if not conf.config[self.project].get('remote-config', True):
-            return
 
-        config = None # api.dashboard_content_load('config')
+        config = api.attribute_value_load('Config')
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config
@@ -258,4 +254,4 @@ class Config(object):
             self.populate_conf()
         elif config is None:
             # Write empty config to allow for caching.
-            api.dashboard_content_save('config', '')
+            api.attribute_value_save('Config', '')
