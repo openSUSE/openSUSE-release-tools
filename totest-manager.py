@@ -351,9 +351,6 @@ class ToTestBase(object):
             # meant to use the totest manager.
             if repo.get('repository') in ('ports', 'factory', 'images_staging'):
                 continue
-            # ignore 32bit for now. We're only interesed in aarch64 here
-            if repo.get('arch') in ('armv6l', 'armv7l'):
-                continue
             if repo.get('dirty', '') == 'true':
                 logger.info('%s %s %s -> %s' % (repo.get('project'),
                                                 repo.get('repository'), repo.get('arch'), 'dirty'))
