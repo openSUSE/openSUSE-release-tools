@@ -823,6 +823,7 @@ class ToTest150Ports(ToTestBaseNew):
     ]
 
     ftp_products = ['000product:openSUSE-ftp-ftp-aarch64',
+                    '000product:openSUSE-ftp-ftp-armv7hl',
                     ]
 
     livecd_products = []
