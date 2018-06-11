@@ -422,10 +422,11 @@ def do_staging(self, subcmd, opts, *args):
     if opts.wipe_cache:
         Cache.delete_all()
 
+    api = StagingAPI(opts.apiurl, opts.project)
+    config.apply_remote(api)
+
     needed = lock_needed(cmd, opts)
     with OBSLock(opts.apiurl, opts.project, reason=cmd, needed=needed) as lock:
-        api = StagingAPI(opts.apiurl, opts.project)
-        config.apply_remote(api)
 
         # call the respective command and parse args by need
         if cmd == 'check':
