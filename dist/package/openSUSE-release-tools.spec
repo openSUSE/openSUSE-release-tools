@@ -527,6 +527,7 @@ fi
 %{_bindir}/osrt-totest-manager
 %{_datadir}/%{source_dir}/totest-manager.py
 %{_unitdir}/osrt-totest-manager@.service
+%{_unitdir}/osrt-totest-manager@.timer
 
 %files pkglistgen
 %defattr(-,root,root,-)
