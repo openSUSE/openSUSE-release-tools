@@ -14,6 +14,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
+
 from ConfigParser import ConfigParser
 from collections import OrderedDict
 import io
@@ -201,16 +203,32 @@ class Config(object):
         else:
             return defaults
 
+    def _migrate_staging_config(self, api):
+        # first try staging project's dashboard. Can't rely on cstaging as it's
+        # defined by config
+        config = api.load_file_content(self.project + ':Staging', 'dashboard', 'config')
+        if not config:
+            config = api.load_file_content(self.project, 'dashboard', 'config')
+        if not config:
+            return None
+
+        print("Found config in staging dashboard - migrate now [y/n] (y)? ", end='')
+        response = raw_input().lower()
+        if response != '' and response != 'y':
+            return config
+
+        api.attribute_value_save('Config', config)
+
     def apply_remote(self, api):
         """Fetch remote config and re-process (defaults, remote, .oscrc)."""
 
         config = api.attribute_value_load('Config')
+        if not config:
+            # try the old way
+            config = self._migrate_staging_config(api)
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config
             cp.readfp(io.BytesIO(config))
             self.remote_values = dict(cp.items('remote'))
             self.populate_conf()
-        elif config is None:
-            # Write empty config to allow for caching.
-            api.attribute_value_save('Config', '')
