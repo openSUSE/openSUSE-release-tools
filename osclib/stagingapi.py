@@ -20,7 +20,12 @@ import dateutil.parser
 import json
 import logging
 import textwrap
-import urllib2
+try:
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError, URLError
+
 import time
 import re
 from lxml import etree as ET
@@ -154,7 +159,7 @@ class StagingAPI(object):
                 if data is not None:
                     return func(url, data=data)
                 return func(url)
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 if 500 <= e.code <= 599:
                     print 'Error {}, retrying {} in {}s'.format(e.code, url, retry_sleep_seconds)
                     time.sleep(retry_sleep_seconds)
@@ -292,7 +297,7 @@ class StagingAPI(object):
             content = http_GET(url)
             for entry in ET.parse(content).getroot().findall('entry'):
                 filelist.append(entry.attrib['name'])
-        except urllib2.HTTPError as err:
+        except HTTPError as err:
             if err.code == 404:
                 # The package we were supposed to query does not exist
                 # we can pass this up and return the empty filelist
@@ -389,7 +394,7 @@ class StagingAPI(object):
         try:
             url = self.makeurl(['source', prj, '_project', '_frozenlinks'], {'meta': '1'})
             root = ET.parse(http_GET(url)).getroot()
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 return None
         meta = self.get_prj_pseudometa(prj)
@@ -470,7 +475,7 @@ class StagingAPI(object):
         url = makeurl(self.apiurl, ('source', project, package), query=query)
         try:
             return ET.parse(http_GET(url)).getroot()
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (HTTPError, URLError):
             return None
 
     def source_info_request(self, request):
@@ -1464,7 +1469,7 @@ class StagingAPI(object):
             url = self.makeurl(['source', project, '_meta'])
         try:
             http_GET(url)
-        except urllib2.HTTPError:
+        except HTTPError:
             return False
         return True
 
@@ -1496,7 +1501,7 @@ class StagingAPI(object):
         url = self.makeurl(['build', project, repository, arch, '_repository', "%s?view=fileinfo" % rpm])
         try:
             return ET.parse(http_GET(url)).getroot().find('version').text
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 return None
             raise
@@ -1534,7 +1539,12 @@ class StagingAPI(object):
 
     def attribute_value_load(self, attribute):
         url = self.makeurl(['source', self.project, '_attribute', 'OSRT:' + attribute])
-        f = self.retried_GET(url)
+        try:
+            f = self.retried_GET(url)
+        except HTTPError as e:
+            if e.code == 404:
+                return None
+            raise e
         root = ET.parse(f).getroot()
         root = root.find('./attribute/value')
         if root is None:
