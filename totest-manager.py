@@ -920,11 +920,11 @@ class CommandlineInterface(cmdln.Cmdln):
         }
         self.openqa_server = {
             'openSUSE': 'https://openqa.opensuse.org',
-            'SLE': 'https://openqa.suse.de',
+            'SUSE': 'https://openqa.suse.de',
         }
         self.api_url = {
             'openSUSE': 'https://api.opensuse.org',
-            'SLE': 'https://api.suse.de',
+            'SUSE': 'https://api.suse.de',
         }
 
     def get_optparser(self):
@@ -936,15 +936,11 @@ class CommandlineInterface(cmdln.Cmdln):
         parser.add_option(
             "--osc-debug", action="store_true", help="osc debug output")
         parser.add_option(
-            "--project-base", help="""Select base of OBS/IBS project as well as openQA server based on distribution family, e.g. 'openSUSE' or 'SLE', default:
-            'openSUSE'""")
-        parser.add_option(
-            "--openqa-server", help="""Full URL to the openQA server that should be queried, default based on '--project-base' selection, e.g.
+            "--openqa-server", help="""Full URL to the openQA server that should be queried, default based on project selection, e.g.
             'https://openqa.opensuse.org' for 'openSUSE'""")
         parser.add_option(
-            "--obs-api-url", help="""Full URL to OBS instance to be queried, default based on '--project-base' selection, e.g.
+            "--obs-api-url", help="""Full URL to OBS instance to be queried, default based on project selection, e.g.
             'https://api.opensuse.org' for 'openSUSE'""")
-        return parser
         return parser
 
     def postoptparse(self):
@@ -963,17 +959,18 @@ class CommandlineInterface(cmdln.Cmdln):
         osc.conf.get_config()
         if (self.options.osc_debug):
             osc.conf.config['debug'] = True
-        if not self.options.project_base:
-            self.options.project_base = 'openSUSE'
-        if not self.options.openqa_server:
-            self.options.openqa_server = self.openqa_server[self.options.project_base]
-        if not self.options.obs_api_url:
-            self.options.obs_api_url = self.api_url[self.options.project_base]
 
     def _setup_totest(self, project):
         fallback_project = 'openSUSE:%s' % project
         if project not in self.totest_class and fallback_project in self.totest_class:
             project = fallback_project
+
+        project_base = project.split(':')[0]
+        if not self.options.openqa_server:
+            self.options.openqa_server = self.openqa_server[project_base]
+        if not self.options.obs_api_url:
+            self.options.obs_api_url = self.api_url[project_base]
+
         Config(project)
         if project not in self.totest_class:
             msg = 'Project %s not recognized. Possible values [%s]' % (
