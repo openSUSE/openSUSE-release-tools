@@ -167,6 +167,24 @@ Suggests:       influxdb
 %description metrics
 Ingest relevant OBS and annotation data to generate insightful metrics.
 
+%package metrics-access
+Summary:        Ingest access logs to generate metrics
+Group:          Development/Tools/Other
+BuildArch:      noarch
+# Used to stream log files.
+Requires:       curl
+Requires:       %{name}-metrics = %{version}
+Requires:       php > 7
+# Used to install influxdb/influxdb-php.
+Requires:       php-composer
+# pgrep used in aggregate.php
+Requires:       procps
+# xzcat for decompressing log files.
+Requires:       xz
+
+%description metrics-access
+Ingest download.o.o Apache access logs and generate metrics.
+
 %package repo-checker
 Summary:        Repository checker service
 Group:          Development/Tools/Other
@@ -474,6 +492,7 @@ fi
 %defattr(-,root,root,-)
 %{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics
+%exclude %{_datadir}/%{source_dir}/metrics/access
 %{_datadir}/%{source_dir}/metrics.py
 %{_datadir}/%{source_dir}/metrics_release.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
@@ -487,6 +506,14 @@ fi
 %{_unitdir}/osrt-metrics@.timer
 %{_unitdir}/osrt-metrics-release@.service
 %{_unitdir}/osrt-metrics-release@.timer
+
+%files metrics-access
+%defattr(-,root,root,-)
+%{_bindir}/osrt-metrics-access-aggregate
+%{_bindir}/osrt-metrics-access-ingest
+%{_datadir}/%{source_dir}/metrics/access
+%{_unitdir}/osrt-metrics-access.service
+%{_unitdir}/osrt-metrics-access.timer
 
 %files repo-checker
 %defattr(-,root,root,-)
