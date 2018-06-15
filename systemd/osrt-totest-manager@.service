@@ -5,8 +5,4 @@ Description=openSUSE Release Tools: ToTest Manager for %i
 User=osrt-totest-manager
 SyslogIdentifier=osrt-totest-manager
 WorkingDirectory=~
-ExecStart=/usr/bin/osrt-totest-manager --verbose run --interval 5 "%i"
-
-[Install]
-WantedBy=multi-user.target
-
+ExecStart=/usr/bin/osrt-totest-manager --verbose run "%i"
