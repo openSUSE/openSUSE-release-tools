@@ -245,13 +245,13 @@ class ToTestBase(object):
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
 
+        self.failed_relevant_jobs = []
+        self.failed_ignored_jobs = []
+
         if snapshot is None:
             return QA_FAILED
 
         jobs = self.find_openqa_results(snapshot)
-
-        self.failed_relevant_jobs = []
-        self.failed_ignored_jobs = []
 
         if len(jobs) < self.jobs_num():  # not yet scheduled
             logger.warning('we have only %s jobs' % len(jobs))
@@ -870,7 +870,40 @@ class ToTest150Images(ToTestBaseNew):
         return 13
 
 
-class ToTestSLE150(ToTestBaseNew):
+class ToTestSLE(ToTestBaseNew):
+    def __init__(self, *args, **kwargs):
+        ToTestBaseNew.__init__(self, test_subproject='TEST', *args, **kwargs)
+
+    def openqa_group(self):
+        return 'Functional'
+
+    def get_current_snapshot(self):
+        return self.iso_build_version(self.project + ':TEST', self.main_products[0])
+
+    def ftp_build_version(self, project, tree):
+        return super(ToTestSLE, self).ftp_build_version(project, tree, base='SLE')
+
+    def iso_build_version(self, project, tree):
+        return super(ToTestSLE, self).iso_build_version(project, tree, base='SLE')
+
+class ToTestSLE124(ToTestSLE):
+    main_products = [
+        '_product:SLES-dvd5-DVD-aarch64',
+        '_product:SLES-dvd5-DVD-ppc64le',
+        '_product:SLES-dvd5-DVD-s390x',
+        '_product:SLES-dvd5-DVD-x86_64',
+    ]
+
+    ftp_products = [
+        '_product:SLES-ftp-POOL-aarch64',
+        '_product:SLES-ftp-POOL-ppc64le',
+        '_product:SLES-ftp-POOL-s390x',
+        '_product:SLES-ftp-POOL-x86_64',
+    ]
+
+    livecd_products = []
+
+class ToTestSLE15(ToTestSLE):
     main_products = [
         '000product:SLES-cd-DVD-aarch64',
         '000product:SLES-cd-DVD-ppc64le',
@@ -887,21 +920,6 @@ class ToTestSLE150(ToTestBaseNew):
 
     livecd_products = []
 
-    def __init__(self, *args, **kwargs):
-        ToTestBaseNew.__init__(self, test_subproject='TEST', *args, **kwargs)
-
-    def openqa_group(self):
-        return 'Functional'
-
-    def get_current_snapshot(self):
-        return self.iso_build_version(self.project + ':TEST', self.main_products[0])
-
-    def ftp_build_version(self, project, tree):
-        return super(ToTestSLE150, self).ftp_build_version(project, tree, base='SLE')
-
-    def iso_build_version(self, project, tree):
-        return super(ToTestSLE150, self).iso_build_version(project, tree, base='SLE')
-
 
 class CommandlineInterface(cmdln.Cmdln):
 
@@ -916,7 +934,9 @@ class CommandlineInterface(cmdln.Cmdln):
             'openSUSE:Leap:15.0': ToTest150,
             'openSUSE:Leap:15.0:Ports': ToTest150Ports,
             'openSUSE:Leap:15.0:Images': ToTest150Images,
-            'SUSE:SLE-15:GA': ToTestSLE150,
+            'SUSE:SLE-15:GA': ToTestSLE15,
+            'SUSE:SLE-15-SP1:GA': ToTestSLE15,
+            'SUSE:SLE-12-SP4:GA': ToTestSLE124,
         }
         self.openqa_server = {
             'openSUSE': 'https://openqa.opensuse.org',
