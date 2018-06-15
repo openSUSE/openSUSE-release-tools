@@ -505,7 +505,7 @@ class StrategySpecial(StrategyNone):
     # Configurable via splitter-special-packages.
     PACKAGES = [
         'gcc',
-        'gcc7',
+        'gcc8',
         'glibc',
         'kernel-source',
     ]
