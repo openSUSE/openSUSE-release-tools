@@ -1560,7 +1560,7 @@ class StagingAPI(object):
     # (preferably do this right away for ibs and obs)
     def attribute_value_save(self, attribute, text):
         root = ET.fromstring('<attributes><attribute name="" namespace="OSRT">' +
-                             '<value/></attribute></attributes>'.format(attribute))
+                             '<value/></attribute></attributes>')
         root.find('./attribute').set('name', attribute)
         root.find('./attribute/value').text = text
         # the OBS API of attributes is super strange, you POST updates

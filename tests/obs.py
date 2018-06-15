@@ -14,6 +14,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
+
 from datetime import datetime, timedelta
 import os
 import re
@@ -53,9 +55,11 @@ def router_handler(route_table, method, request, uri, headers):
     uri_parsed = urlparse.urlparse(uri)
     for path, fn in route_table:
         match = False
-        if isinstance(path, basestring) and uri_parsed.path == path:
+        if not isinstance(path, str):
+            print(path.pattern)
+        if isinstance(path, str) and uri_parsed.path == path:
             match = True
-        elif not isinstance(path, basestring) and path.search(uri_parsed.path):
+        elif not isinstance(path, str) and path.search(uri_parsed.path):
             match = True
         if match:
             return fn(request, uri, headers)
@@ -141,7 +145,6 @@ class OBS(object):
         # build the responses.  We will try to put responses as XML
         # templates in the fixture directory.
         self.dashboard = {}
-        self.dashboard_counts = {}
 
         self.requests = {
             '123': {
@@ -229,7 +232,7 @@ class OBS(object):
                 'project': 'openSUSE:Factory:Staging:C',
                 'title': 'A project ready to be accepted',
                 'description': ('requests:\n- {id: 501, package: apparmor, author: Admin, type: submit}\n'
-                    '- {id: 502, package: mariadb, author: Admin, type: submit}'),
+                                '- {id: 502, package: mariadb, author: Admin, type: submit}'),
             },
             'J': {
                 'project': 'openSUSE:Factory:Staging:J',
@@ -267,7 +270,14 @@ class OBS(object):
             },
         }
 
-        self.lock = None
+        self.attributes = {
+            'openSUSE:Factory': {
+                'OSRT': {
+                    'Config': 'overridden-by-local = remote-nope\n'
+                    'remote-only = remote-indeed'
+                }
+            }
+        }
 
         self.meta = {}
 
@@ -408,10 +418,10 @@ class OBS(object):
             response = (200, headers, template.substitute(self.requests[request_id]))
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'REQUEST', uri, response
+            print('REQUEST', uri, response)
 
         return response
 
@@ -448,10 +458,10 @@ class OBS(object):
             response = (200, headers, self._request(request_id))
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'REVIEW REQUEST', uri, response
+            print('REVIEW REQUEST', uri, response)
 
         return response
 
@@ -479,10 +489,10 @@ class OBS(object):
             response = (200, headers, result)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SEARCH REQUEST', uri, response
+            print('SEARCH REQUEST', uri, response)
 
         return response
 
@@ -490,30 +500,52 @@ class OBS(object):
     # /source/
     #
 
-    @GET(re.compile(r'/source/openSUSE:Factory:Staging/_attribute/openSUSE:LockedBy'))
-    def source_staging_lock(self, request, uri, headers):
-        """Return staging lock."""
-        response = (404, headers, '<result>Not found</result>')
-        try:
-            lock = self.lock if self.lock else self._fixture(uri)
-            response = (200, headers, lock)
-        except Exception as e:
-            if DEBUG:
-                print uri, e
+    @GET(re.compile(r'/source/[\w:]+/_attribute/[\w:]+$'))
+    def source_attribute(self, request, uri, headers):
+        """Return attribute."""
+
+        match = re.search(r'/source/([\w:]+)/_attribute/(\w+):(\w+)$', uri)
+        project = match.group(1)
+        ns = match.group(2)
+        name = match.group(3)
+
+        # never returns 404 - unless the project does not exist,
+        # which we can't (and don't need) to model
+        response = (200, headers, '<attributes/>')
+        print(self.attributes, project, ns, name)
+        if not project in self.attributes:
+            return response
+        hash = self.attributes[project]
+
+        if not ns in hash and not name in hash[ns]:
+            return response
+
+        root = ET.fromstring('<attributes><attribute name="" namespace="">' +
+                             '<value/></attribute></attributes>')
+        root.find('./attribute').set('name', name)
+        root.find('./attribute').set('namespace', ns)
+        root.find('./attribute/value').text = hash[ns][name]
+
+        response = (200, headers, ET.tostring(root))
 
         if DEBUG:
-            print 'STAGING LOCK', uri, response
+            print('GET ATTRIBUTE', uri, response)
 
         return response
 
-    @POST(re.compile(r'/source/openSUSE:Factory:Staging/_attribute/openSUSE:LockedBy'))
-    def source_staging_lock_put(self, request, uri, headers):
-        """Set the staging lock."""
-        self.lock = request.body
-        response = (200, headers, self.lock)
+    @POST(re.compile(r'/source/[\w:]+/_attribute$'))
+    def source_attribute_post(self, request, uri, headers):
+        """Set an attribute"""
+        project = re.search(r'/source/([\w:]+)/_attribute', uri).group(1)
+        _attrib = ET.fromstring(request.body).find('./attribute')
+        hash = self.attributes.setdefault(project, {})
+        hash = hash.setdefault(_attrib.get('namespace'), {})
+        text = _attrib.find('./value').text
+        hash[_attrib.get('name')] = text or ''
+        response = (200, headers, request.body)
 
         if DEBUG:
-            print 'PUT STAGING LOCK', uri, response
+            print('PUT ATTRIBUTE', uri, response)
 
         return response
 
@@ -527,10 +559,10 @@ class OBS(object):
             response = (200, headers, contents)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'STAGING DASHBOARD FILE', uri, response
+            print('STAGING DASHBOARD FILE', uri, response)
 
         return response
 
@@ -539,11 +571,10 @@ class OBS(object):
         """Set the staging dashboard file contents."""
         filename = re.search(r'/source/[\w:]+/\w+/(\w+)', uri).group(1)
         self.dashboard[filename] = request.body
-        self.dashboard_counts[filename] = self.dashboard_counts.get(filename, 0) + 1
         response = (200, headers, request.body)
 
         if DEBUG:
-            print 'PUT STAGING DASHBOARD FILE', uri, response
+            print('PUT STAGING DASHBOARD FILE', uri, response)
 
         return response
 
@@ -565,10 +596,10 @@ class OBS(object):
             response = (200, headers, history)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'STAGING PROJECT _history META', uri, response
+            print('STAGING PROJECT _history META', uri, response)
 
         return response
 
@@ -592,10 +623,10 @@ class OBS(object):
             response = (200, headers, meta)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'STAGING PROJECT _project _meta', uri, response
+            print('STAGING PROJECT _project _meta', uri, response)
 
         return response
 
@@ -614,10 +645,10 @@ class OBS(object):
             response = (200, headers, project)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'STAGING PROJECT _PROJECT', uri, response
+            print('STAGING PROJECT _PROJECT', uri, response)
 
         return response
 
@@ -636,10 +667,10 @@ class OBS(object):
             response = (200, headers, meta)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'STAGING PROJECT [PACKAGE] _META', uri, response
+            print('STAGING PROJECT [PACKAGE] _META', uri, response)
 
         return response
 
@@ -654,7 +685,7 @@ class OBS(object):
         response = (200, headers, meta)
 
         if DEBUG:
-            print 'PUT STAGING PROJECT [PACKAGE] _META', uri, response
+            print('PUT STAGING PROJECT [PACKAGE] _META', uri, response)
 
         return response
 
@@ -668,10 +699,10 @@ class OBS(object):
             response = (200, headers, template.substitute(self.links[package]))
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SOURCE WINE', uri, response
+            print('SOURCE WINE', uri, response)
 
         return response
 
@@ -685,10 +716,10 @@ class OBS(object):
             response = (200, headers, '<result>Ok</result>')
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'DELETE', uri, response
+            print('DELETE', uri, response)
 
         return response
 
@@ -709,10 +740,10 @@ class OBS(object):
 
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SOURCE APPARMOR', uri, response
+            print('SOURCE APPARMOR', uri, response)
 
         return response
 
@@ -732,10 +763,10 @@ class OBS(object):
             response = (200, headers, template.substitute(self.package[index]))
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SOURCE HOME:ADMIN', package, uri, response
+            print('SOURCE HOME:ADMIN', package, uri, response)
 
         return response
 
@@ -753,10 +784,10 @@ class OBS(object):
             response = (200, headers, template.substitute(self.links[project_package]))
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SOURCE HOME:ADMIN WINE', uri, response
+            print('SOURCE HOME:ADMIN WINE', uri, response)
 
         return response
 
@@ -777,10 +808,10 @@ class OBS(object):
 
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'PUT SOURCE WINE _LINK', uri, response
+            print('PUT SOURCE WINE _LINK', uri, response)
 
         return response
 
@@ -828,10 +859,10 @@ class OBS(object):
             response = (200, headers, result)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SEARCH PROJECT ID', uri, response
+            print('SEARCH PROJECT ID', uri, response)
 
         return response
 
@@ -867,10 +898,10 @@ class OBS(object):
             response = (200, headers, result)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SEARCH REQUEST', uri, response
+            print('SEARCH REQUEST', uri, response)
 
         return response
 
@@ -900,10 +931,10 @@ class OBS(object):
             response = (200, headers, result)
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'SEARCH REQUEST', uri, response
+            print('SEARCH REQUEST', uri, response)
 
         return response
 
@@ -968,10 +999,10 @@ class OBS(object):
             }))
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'REQUEST', uri, response
+            print('REQUEST', uri, response)
 
         return response
 
@@ -987,10 +1018,10 @@ class OBS(object):
             response = (200, headers, self._fixture(uri))
         except Exception as e:
             if DEBUG:
-                print uri, e
+                print(uri, e)
 
         if DEBUG:
-            print 'DEFAULT', uri, response
+            print('DEFAULT', uri, response)
 
         return response
 

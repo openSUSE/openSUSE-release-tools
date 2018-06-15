@@ -27,12 +27,16 @@ class TestConfig(unittest.TestCase):
         self.assertEqual('local', conf.config[PROJECT]['overridden-by-local'])
         self.assertEqual('remote-indeed', conf.config[PROJECT]['remote-only'])
 
-    def test_remote_none(self):
-        self.api.dashboard_content_save('config', '')
-        self.assertEqual(self.obs.dashboard_counts['config'], 1)
+        self.api.attribute_value_save('Config', 'remote-only = nope')
         self.config.apply_remote(self.api)
-        # Ensure blank file not overridden.
-        self.assertEqual(self.obs.dashboard_counts['config'], 1)
+
+        self.assertEqual('local', conf.config[PROJECT]['overridden-by-local'])
+        self.assertEqual('nope', conf.config[PROJECT]['remote-only'])
+
+    def test_remote_none(self):
+        self.api.attribute_value_save('Config', '')
+        # don't crash
+        self.config.apply_remote(self.api)
 
     def test_pattern_order(self):
         # Add pattern to defaults in order to identify which was matched.
