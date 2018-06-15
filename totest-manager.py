@@ -931,7 +931,8 @@ class CommandlineInterface(cmdln.Cmdln):
         parser = cmdln.CmdlnOptionParser(self)
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
-        parser.add_option("--norelease", action="store_true", help="do not trigger release in build service")
+        parser.add_option("--release", action="store_true", help="trigger release in build service (default for openSUSE)")
+        parser.add_option("--norelease", action="store_true", help="do not trigger release in build service (default for SLE)")
         parser.add_option("--verbose", action="store_true", help="verbose")
         parser.add_option(
             "--osc-debug", action="store_true", help="osc debug output")
@@ -977,7 +978,14 @@ class CommandlineInterface(cmdln.Cmdln):
                 project, ', '.join(self.totest_class))
             raise cmdln.CmdlnUserError(msg)
 
-        return self.totest_class[project](project, self.options.dry, self.options.norelease, self.options.obs_api_url, self.options.openqa_server)
+        if self.options.release:
+            release = True
+        elif self.options.norelease:
+            release = False
+        else:
+            release = (project_base == 'openSUSE')
+
+        return self.totest_class[project](project, self.options.dry, not release, self.options.obs_api_url, self.options.openqa_server)
 
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_run(self, subcmd, opts, project='openSUSE:Factory'):
