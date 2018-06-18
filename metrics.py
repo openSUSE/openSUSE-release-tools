@@ -14,6 +14,7 @@ import yaml
 import metrics_release
 import osc.conf
 import osc.core
+from osc.core import HTTPError
 from osc.core import get_commitlog
 import osclib.conf
 from osclib.cache import Cache
@@ -351,10 +352,14 @@ def ingest_release_schedule(project):
 
 def revision_index(api):
     if not hasattr(revision_index, 'index'):
-        root = ET.fromstring(''.join(
-            get_commitlog(api.apiurl, api.cstaging, 'dashboard', None, format='xml')))
-
         revision_index.index = {}
+
+        try:
+            root = ET.fromstring(''.join(
+                get_commitlog(api.apiurl, api.cstaging, 'dashboard', None, format='xml')))
+        except HTTPError as e:
+            return revision_index.index
+
         for logentry in root.findall('logentry'):
             date = date_parse(logentry.find('date').text)
             revision_index.index[date] = logentry.get('revision')
@@ -478,7 +483,9 @@ def ingest_dashboard(api):
 
     count = 0
     points = []
+    max_revision = 0
     for made, revision in sorted(index.items()):
+        max_revision = revision
         if not past:
             if revision == revision_last:
                 past = True
@@ -516,7 +523,7 @@ def ingest_dashboard(api):
         client.write_points(points, 's')
         count += len(points)
 
-    print('last revision processed: {}'.format(revision))
+    print('last revision processed: {}'.format(max_revision))
 
     return count
 
@@ -544,8 +551,9 @@ def main(args):
     Cache.PATTERNS['/source/[^/]+/dashboard/[^/]+\?rev=.*'] = sys.maxint
     Cache.init()
 
-    Config(args.project)
+    c = Config(args.project)
     api = StagingAPI(osc.conf.config['apiurl'], args.project)
+    c.apply_remote(api)
 
     print('dashboard: wrote {:,} points'.format(ingest_dashboard(api)))
 
