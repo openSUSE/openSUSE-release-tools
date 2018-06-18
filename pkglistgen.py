@@ -391,7 +391,7 @@ class Group(object):
             if status is not None:
                 attrs['supportstatus'] = status
             p = ET.SubElement(packagelist, 'package', attrs)
-            if name in packages:
+            if name in packages and packages[name]:
                 c = ET.Comment(' reason: {} '.format(packages[name]))
                 packagelist.append(c)
 
@@ -601,25 +601,59 @@ class PkgListGen(ToolBase.ToolBase):
             result.update(group)
         return result
 
-    def _collect_unsorted_packages(self, modules):
+    # the unsorted group is special and will contain all the rest for
+    # the FTP tree. We filter it with unneeded though to create a
+    # unsorted.yml file for release manager review
+    def _collect_unsorted_packages(self, modules, unsorted):
         uneeded_regexps = [re.compile(r)
                            for r in self._parse_unneeded('unneeded.yml')]
 
         packages = dict()
+        if unsorted:
+            unsorted.solved_packages = dict()
+            unsorted.solved_packages['*'] = dict()
+
         for arch in self.architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             archpacks = [s.name for s in pool.solvables_iter()]
+
+            # copy
+            filtered = list(archpacks)
             for r in uneeded_regexps:
-                archpacks = [p for p in archpacks if not r.match(p)]
+                filtered = [p for p in filtered if not r.match(p)]
 
             # convert to set
-            archpacks = set(archpacks) - self.unwanted
+            filtered = set(filtered) - self.unwanted
             for g in modules:
+                if unsorted and g == unsorted:
+                    continue
                 for a in ('*', arch):
-                    archpacks -= set(g.solved_packages[a].keys())
-            for package in archpacks:
+                    filtered -= set(g.solved_packages[a].keys())
+            for package in filtered:
                 packages.setdefault(package, []).append(arch)
+
+            if unsorted:
+                archpacks = set(archpacks)
+                unsorted.solved_packages[arch] = dict()
+                for g in modules:
+                    archpacks -= set(g.solved_packages[arch].keys())
+                    archpacks -= set(g.solved_packages['*'].keys())
+                unsorted.solved_packages[arch] = dict()
+                for p in archpacks:
+                    unsorted.solved_packages[arch][p] = None
+
+        if unsorted:
+            common = None
+            for arch in self.architectures:
+                if common is None:
+                    common = set(unsorted.solved_packages[arch].keys())
+                    continue
+                common &= set(unsorted.solved_packages[arch].keys())
+            for p in common:
+                unsorted.solved_packages['*'][p] = None
+                for arch in self.architectures:
+                    del unsorted.solved_packages[arch][p]
 
         with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
             fh.write("unsorted:\n")
@@ -1107,7 +1141,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     for p in overlapped:
                         module.solved_packages[arch].pop(p, None)
 
-        self.tool._collect_unsorted_packages(modules)
+        self.tool._collect_unsorted_packages(modules, self.tool.groups.get('unsorted'))
         self.tool._write_all_groups()
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
@@ -1168,7 +1202,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
             opts.project = api.rings[2]
             self.options.repos.insert(0, '/'.join([api.rings[2], main_repo]))
-            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, skip_release=True)
+            self.update_and_solve_target_wrapper(apiurl, target_project, target_config,
+                                                 main_repo, opts, skip_release=True)
             return self.error_occured
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
@@ -1184,7 +1219,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     opts_dvd = copy.deepcopy(opts)
                     opts_dvd.project += ':DVD'
                     self.options.repos.insert(0, '/'.join([opts_dvd.project, main_repo]))
-                    self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
+                    self.update_and_solve_target_wrapper(
+                        apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
                     self.options.repos.pop(0)
 
                 self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
