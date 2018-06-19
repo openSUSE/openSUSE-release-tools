@@ -311,9 +311,14 @@ class Group(object):
             for arch in self.architectures:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
-                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name
+                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name + "\n"
                 for p in sorted(packages & mp):
-                    overlap.comment += '\n  - ' + p
+                    for arch in m.solved_packages.keys():
+                        if m.solved_packages[arch].get(p, None):
+                            overlap.comment += "  # " + m.name + "." + arch + ': ' + m.solved_packages[arch][p] + "\n"
+                        if self.solved_packages[arch].get(p, None):
+                            overlap.comment += "  # " + self.name + "." + arch + ': ' + self.solved_packages[arch][p] + "\n"
+                    overlap.comment += '  - ' + p + "\n"
                     overlap._add_to_packages(p)
 
     def collect_devel_packages(self):
