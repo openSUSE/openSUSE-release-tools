@@ -1373,6 +1373,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.unlink_list(None, spec_files)
         else:
             self.move_list(spec_files, release_dir)
+            inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+            self.move_list(inc_files, release_dir)
 
         self.multibuild_from_glob(product_dir, '*.kiwi')
         self.build_stub(product_dir, 'kiwi')
