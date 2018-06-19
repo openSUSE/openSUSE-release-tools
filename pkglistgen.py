@@ -207,10 +207,8 @@ class Group(object):
                 locked = self.locked | self.pkglist.unwanted
                 for l in locked:
                     sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
-                    if sel.isempty():
-                        # if we can't find it, it probably is not as important
-                        logger.debug('{}.{}: locked package {} not found'.format(self.name, arch, l))
-                    else:
+                    # if we can't find it, it probably is not as important
+                    if not sel.isempty():
                         jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
                 for s in self.silents:
