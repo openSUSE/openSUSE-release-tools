@@ -1,0 +1,11 @@
+[Unit]
+Description=openSUSE Release Tools: metrics - access logs
+
+[Timer]
+OnBootSec=120
+# Allow for log rotation to take place on download server.
+OnCalendar=*-*-* 4:00:00
+Unit=osrt-metrics-access.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=openSUSE Release Tools: metrics - access logs
+
+[Service]
+User=osrt-metrics
+SyslogIdentifier=osrt-metrics
+ExecStart=/usr/bin/osrt-metrics-access-aggregate
+RuntimeMaxSec=120 hour
+
+[Install]
+WantedBy=multi-user.target

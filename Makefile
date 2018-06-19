@@ -22,6 +22,8 @@ install:
 	  $(DESTDIR)$(pkgdatadir)/osc-staging.py
 	for i in $(pkgdata_BINS); do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(bindir)/osrt-$${i%.*}; done
 	install -m 755 script/* $(DESTDIR)$(bindir)
+	ln -s $(pkgdatadir)/metrics/access/aggregate.php $(DESTDIR)$(bindir)/osrt-metrics-access-aggregate
+	ln -s $(pkgdatadir)/metrics/access/ingest.php $(DESTDIR)$(bindir)/osrt-metrics-access-ingest
 	cp -R config/* $(DESTDIR)$(sysconfdir)/$(package_name)
 	for dir in dashboards datasources ; do ln -s $(pkgdatadir)/metrics/grafana/provisioning/$$dir.yaml \
 	  $(DESTDIR)$(grafana_provisioning_dir)/$$dir/$(package_name).yaml ; done
