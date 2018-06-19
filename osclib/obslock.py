@@ -74,7 +74,7 @@ class OBSLock(object):
         return signature
 
     def _write(self, signature):
-        url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
+        url = makeurl(self.apiurl, ['source', self.lock, '_attribute'])
         data = """
         <attributes>
           <attribute namespace='%s' name='LockedBy'>

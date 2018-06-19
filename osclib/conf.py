@@ -14,6 +14,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
+
 from ConfigParser import ConfigParser
 from collections import OrderedDict
 import io
@@ -103,48 +105,6 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
-    r'SUSE:(?P<project>SLE-15.*$)': {
-        'staging': 'SUSE:%(project)s:Staging',
-        'staging-group': 'sle-staging-managers',  # '%(project.lower)s-staging',
-        'staging-archs': 'i586 x86_64',
-        'staging-dvd-archs': '',
-        'rings': 'SUSE:%(project)s:Rings',
-        'nonfree': None,
-        'rebuild': None,
-        'product': None,
-        'openqa': None,
-        'lock': 'SUSE:%(project)s:Staging',
-        'lock-ns': 'SUSE',
-        'leaper-override-group': 'sle-release-managers',
-        'delreq-review': None,
-        'main-repo': 'standard',
-        # check_source.py
-        'check-source-in-air-rename-allow': 'True',
-        'repo-checker': 'repo-checker',
-        'repo_checker-package-comment-devel': '',
-        'pkglistgen-archs': 'x86_64',
-        'pkglistgen-ignore-unresolvable': '1',
-        'pkglistgen-ignore-recommended': '1',
-        'pkglistgen-product-family-last': 'SUSE:SLE-11:GA',
-    },
-    r'SUSE:(?P<project>.*$)': {
-        'staging': 'SUSE:%(project)s:Staging',
-        'staging-group': 'sle-staging-managers',  # '%(project.lower)s-staging',
-        'staging-archs': 'i586 x86_64',
-        'staging-dvd-archs': '',
-        'nocleanup-packages': 'Test-DVD-x86_64 sles-release',
-        'rings': None,
-        'nonfree': None,
-        'rebuild': None,
-        'product': None,
-        'openqa': None,
-        'lock': 'SUSE:%(project)s:Staging',
-        'lock-ns': 'SUSE',
-        'remote-config': False,
-        'delreq-review': None,
-        'main-repo': 'standard',
-        'priority': '100', # Lower than SLE-15 since less specific.
-    },
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.
     r'(?P<project>.*$)': {
@@ -161,7 +121,6 @@ DEFAULT = {
         'lock-ns': None,
         'delreq-review': None,
         'main-repo': 'openSUSE_Factory',
-        'remote-config': False,
         'priority': '1000', # Lowest priority as only a fallback.
     },
 }
@@ -244,18 +203,32 @@ class Config(object):
         else:
             return defaults
 
+    def _migrate_staging_config(self, api):
+        # first try staging project's dashboard. Can't rely on cstaging as it's
+        # defined by config
+        config = api.load_file_content(self.project + ':Staging', 'dashboard', 'config')
+        if not config:
+            config = api.load_file_content(self.project, 'dashboard', 'config')
+        if not config:
+            return None
+
+        print("Found config in staging dashboard - migrate now [y/n] (y)? ", end='')
+        response = raw_input().lower()
+        if response != '' and response != 'y':
+            return config
+
+        api.attribute_value_save('Config', config)
+
     def apply_remote(self, api):
         """Fetch remote config and re-process (defaults, remote, .oscrc)."""
-        if not conf.config[self.project].get('remote-config', True):
-            return
 
-        config = api.dashboard_content_load('config')
+        config = api.attribute_value_load('Config')
+        if not config:
+            # try the old way
+            config = self._migrate_staging_config(api)
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config
             cp.readfp(io.BytesIO(config))
             self.remote_values = dict(cp.items('remote'))
             self.populate_conf()
-        elif config is None:
-            # Write empty config to allow for caching.
-            api.dashboard_content_save('config', '')

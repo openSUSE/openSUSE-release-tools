@@ -71,12 +71,9 @@ class ToTestBase(object):
         self.amqp_url = osc.conf.config.get('ttm_amqp_url')
 
     def load_issues_to_ignore(self):
-        url = self.api.makeurl(['source', self.project, '_attribute', 'OSRT:IgnoredIssues'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        root = root.find('./attribute/value')
-        if root is not None:
-            root = yaml.load(root.text)
+        text = self.api.attribute_value_load('IgnoredIssues')
+        if text:
+            root = yaml.load(text)
             self.issues_to_ignore = root.get('last_seen')
         else:
             self.issues_to_ignore = dict()
@@ -85,11 +82,7 @@ class ToTestBase(object):
         if self.dryrun:
             return
         text = yaml.dump({'last_seen': self.issues_to_ignore}, default_flow_style=False)
-        root = ET.fromstring('<attributes><attribute name="IgnoredIssues" namespace="OSRT">' +
-                             '<value/></attribute></attributes>')
-        root.find('./attribute/value').text = text
-        url = self.api.makeurl(['source', self.project, '_attribute'])
-        self.api.retried_POST(url, data=ET.tostring(root))
+        self.api.attribute_value_save('IgnoredIssues', text)
 
     def openqa_group(self):
         return self.project
