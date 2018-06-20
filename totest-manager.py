@@ -791,7 +791,7 @@ class ToTestFactoryARM(ToTestFactory):
         return 2
 
 
-class ToTest150(ToTestBaseNew):
+class ToTest151(ToTestBaseNew):
     main_products = [
         '000product:openSUSE-cd-mini-x86_64',
         '000product:openSUSE-dvd5-dvd-x86_64',
@@ -804,7 +804,7 @@ class ToTest150(ToTestBaseNew):
     livecd_products = []
 
     def openqa_group(self):
-        return 'openSUSE Leap 15.0'
+        return 'openSUSE Leap 15.1'
 
     def get_current_snapshot(self):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
@@ -875,6 +875,11 @@ class ToTest150Images(ToTestBaseNew):
     def jobs_num(self):
         return 13
 
+class ToTest151Images(ToTest150Images):
+
+    def openqa_group(self):
+        return 'openSUSE Leap 15.1 Images'
+
 
 class ToTestSLE150(ToTestBaseNew):
     main_products = [
@@ -919,9 +924,10 @@ class CommandlineInterface(cmdln.Cmdln):
             'openSUSE:Factory:PowerPC': ToTestFactoryPowerPC,
             'openSUSE:Factory:ARM': ToTestFactoryARM,
             'openSUSE:Factory:zSystems': ToTestFactoryzSystems,
-            'openSUSE:Leap:15.0': ToTest150,
+            'openSUSE:Leap:15.1': ToTest151,
             'openSUSE:Leap:15.0:Ports': ToTest150Ports,
             'openSUSE:Leap:15.0:Images': ToTest150Images,
+            'openSUSE:Leap:15.1:Images': ToTest151Images,
             'SUSE:SLE-15:GA': ToTestSLE150,
         }
         self.openqa_server = {
