@@ -549,9 +549,9 @@ def main(args):
     Cache.PATTERNS['/source/[^/]+/dashboard/[^/]+\?rev=.*'] = sys.maxint
     Cache.init()
 
-    c = Config(args.project)
+    config = Config(args.project)
     api = StagingAPI(osc.conf.config['apiurl'], args.project)
-    c.apply_remote(api)
+    config.apply_remote(api)
 
     print('dashboard: wrote {:,} points'.format(ingest_dashboard(api)))
 
