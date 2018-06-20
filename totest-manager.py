@@ -57,6 +57,7 @@ class ToTestBase(object):
     def __init__(self, project, dryrun=False, norelease=False, api_url=None, openqa_server='https://openqa.opensuse.org', test_subproject=None):
         self.project = project
         self.dryrun = dryrun
+        self.norelease = norelease
         if not api_url:
             api_url = osc.conf.config['apiurl']
         self.api = StagingAPI(api_url, project=project)
