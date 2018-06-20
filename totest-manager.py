@@ -289,8 +289,11 @@ class ToTestBase(object):
                         text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
                         # remove flag - unfortunately can't delete comment unless admin
                         data = {'text': text}
-                        self.openqa.openqa_request(
-                            'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
+                        if self.dryrun:
+                            logger.info("Would label {} with: {}".format(job['id'], text))
+                        else:
+                            self.openqa.openqa_request(
+                                'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
 
                     logger.info("job %s failed, but was ignored", job['name'])
                 else:
@@ -818,10 +821,19 @@ class ToTest150Ports(ToTestBaseNew):
 
     livecd_products = []
 
+    # Leap 15.0 Ports still need to update snapshot
+    set_snapshot_number = True
+
+    # product_repo openqa_group jobs_num values are specific to aarch64
+    # TODO: How to handle the other entries of main_products ?
+
     product_repo = 'images_arm'
 
     def openqa_group(self):
-        return 'openSUSE Leap 15.0 Ports'
+        return 'openSUSE Leap 15.0 AArch64'
+
+    def jobs_num(self):
+        return 10
 
     def get_current_snapshot(self):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
