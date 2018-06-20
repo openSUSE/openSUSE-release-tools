@@ -483,9 +483,7 @@ def ingest_dashboard(api):
 
     count = 0
     points = []
-    max_revision = 0
     for made, revision in sorted(index.items()):
-        max_revision = revision
         if not past:
             if revision == revision_last:
                 past = True
@@ -523,7 +521,7 @@ def ingest_dashboard(api):
         client.write_points(points, 's')
         count += len(points)
 
-    print('last revision processed: {}'.format(max_revision))
+    print('last revision processed: {}'.format(revision if len(index) else 'none'))
 
     return count
 
