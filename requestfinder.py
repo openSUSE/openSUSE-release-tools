@@ -40,7 +40,6 @@ class Requestfinder(ToolBase.ToolBase):
 
     def __init__(self):
         ToolBase.ToolBase.__init__(self)
-        self.devel = None
 
     def fill_package_meta(self, project):
         self.package_metas = dict()
@@ -50,9 +49,10 @@ class Requestfinder(ToolBase.ToolBase):
             name = p.attrib['name']
             self.package_metas[name] = p
 
-    def find_requests(self, xquery):
+    def find_requests(self, settings):
+        xquery = settings['query']
 
-        if self.devel:
+        if settings['devel']:
             self.fill_package_meta('openSUSE:Factory')
 
         url = osc.core.makeurl(self.apiurl, ('search', 'request'), {"match": xquery})
@@ -63,11 +63,11 @@ class Requestfinder(ToolBase.ToolBase):
         for request in root.findall('request'):
             req = osc.core.Request()
             req.read(request)
-            if self.devel:
+            if settings['devel']:
                 p = req.actions[0].tgt_package
                 pm = self.package_metas[p] if p in self.package_metas else None
                 devel = pm.find('devel') if pm else None
-                if devel is None or devel.get('project') == self.devel:
+                if devel is None or devel.get('project') in settings['devel']:
                     self.requests.append(req)
             else:
                 self.requests.append(req)
@@ -87,13 +87,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def get_optparser(self):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
-        parser.add_option('--devel', dest='devel', metavar='PROJECT',
-                          help='only packages with devel project')
         return parser
 
     def setup_tool(self):
         tool = Requestfinder()
-        tool.devel = self.options.devel
         return tool
 
     def _load_settings(self, settings, name):
@@ -108,6 +105,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--action', metavar='action', help='action (accept/decline)')
     @cmdln.option('--settings', metavar='settings', help='settings to load from config file')
     @cmdln.option('-m', '--message', metavar="message", help="message")
+    @cmdln.option('--devel', dest='devel', metavar='PROJECT', action='append', help='only packages with specified devel project')
     def do_review(self, subcmd, opts):
         """${cmd_name}: print commands for reviews
 
@@ -122,6 +120,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             'exclude-project': None,
             'exclude-user': None,
             'exclude-group': None,
+            'devel': None,
         }
 
         if opts.settings:
@@ -134,13 +133,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.message:
             settings['message'] = opts.message
 
+        if opts.devel:
+            settings['devel'] = opts.devel
+
         if opts.query:
             settings['query'] = opts.query
 
         if not settings['query']:
             raise Exception('please specify query')
 
-        rqs = self.tool.find_requests(settings['query'])
+        rqs = self.tool.find_requests(settings)
         for r in rqs:
             if r.actions[0].type == 'submit':
                 print(' '.join(('#', r.reqid, r.actions[0].type, r.actions[0].src_project, r.actions[0].src_package, r.actions[0].tgt_project)))
@@ -187,6 +189,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--action', metavar='action', help='action (accept/decline)')
     @cmdln.option('--settings', metavar='settings', help='settings to load from config file')
     @cmdln.option('-m', '--message', metavar="message", help="message")
+    @cmdln.option('--devel', dest='devel', metavar='PROJECT', action='append', help='only packages with specified devel project')
     def do_request(self, subcmd, opts):
         """${cmd_name}: print commands for requests
 
@@ -198,14 +201,28 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             'action': 'reopen',
             'message': 'reopen',
             'query': None,
+            'devel': None,
         }
 
         if opts.settings:
             self._load_settings(settings, opts.settings)
 
-        rqs = self.tool.find_requests(settings['query'])
+        if opts.action:
+            settings['action'] = opts.action
+            settings['message'] = opts.action
+
+        if opts.message:
+            settings['message'] = opts.message
+
+        if opts.devel:
+            settings['devel'] = opts.devel
+
+        rqs = self.tool.find_requests(settings)
         for r in rqs:
-            print('#', r.reqid, r.get_creator(), r.actions[0].src_project, r.actions[0].src_package, r.actions[0].tgt_project)
+            if r.actions[0].type == 'submit':
+                print(' '.join(('#', r.reqid, r.actions[0].type, r.actions[0].src_project, r.actions[0].src_package, r.actions[0].tgt_project)))
+            else:
+                print(' '. join(('#', r.reqid, r.actions[0].type, r.actions[0].tgt_project)))
             print("osc rq {} -m '{}' {}".format(settings['action'], settings['message'], r.reqid))
 
     def help_examples(self):
@@ -223,6 +240,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         $ ${name} review --settings foo | tee doit.sh
         ./doit.sh
         """
+
 
 if __name__ == "__main__":
     app = CommandLineInterface()
