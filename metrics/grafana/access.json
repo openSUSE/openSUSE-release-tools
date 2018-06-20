@@ -1,7 +1,7 @@
 {
   "__inputs": [
     {
-      "name": "DS_OSRT_ACCESS",
+      "name": "osrt_access",
       "label": "osrt_access",
       "description": "",
       "type": "datasource",
@@ -9,7 +9,7 @@
       "pluginName": "InfluxDB"
     },
     {
-      "name": "DS_OPENSUSE:LEAP:42.2",
+      "name": "openSUSE:Leap:42.2",
       "label": "openSUSE:Leap:42.2",
       "description": "",
       "type": "datasource",
@@ -17,7 +17,7 @@
       "pluginName": "InfluxDB"
     },
     {
-      "name": "DS_OPENSUSE:LEAP:42.3",
+      "name": "openSUSE:Leap:42.3",
       "label": "openSUSE:Leap:42.3",
       "description": "",
       "type": "datasource",
@@ -25,7 +25,7 @@
       "pluginName": "InfluxDB"
     },
     {
-      "name": "DS_OPENSUSE:LEAP:15.0",
+      "name": "openSUSE:Leap:15.0",
       "label": "openSUSE:Leap:15.0",
       "description": "",
       "type": "datasource",
@@ -79,7 +79,7 @@
         "type": "dashboard"
       },
       {
-        "datasource": "${DS_OPENSUSE:LEAP:42.2}",
+        "datasource": "openSUSE:Leap:42.2",
         "enable": false,
         "hide": false,
         "iconColor": "rgba(255, 96, 96, 1)",
@@ -91,7 +91,7 @@
         "type": "tags"
       },
       {
-        "datasource": "${DS_OPENSUSE:LEAP:42.3}",
+        "datasource": "openSUSE:Leap:42.3",
         "enable": false,
         "hide": false,
         "iconColor": "rgba(255, 96, 96, 1)",
@@ -103,7 +103,7 @@
         "type": "tags"
       },
       {
-        "datasource": "${DS_OPENSUSE:LEAP:15.0}",
+        "datasource": "openSUSE:Leap:15.0",
         "enable": false,
         "hide": false,
         "iconColor": "rgba(255, 96, 96, 1)",
@@ -156,7 +156,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_OSRT_ACCESS}",
+      "datasource": "osrt_access",
       "fill": 1,
       "gridPos": {
         "h": 10,
@@ -266,7 +266,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_OSRT_ACCESS}",
+      "datasource": "osrt_access",
       "fill": 1,
       "gridPos": {
         "h": 10,
@@ -376,7 +376,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_OSRT_ACCESS}",
+      "datasource": "osrt_access",
       "fill": 1,
       "gridPos": {
         "h": 10,
@@ -483,7 +483,7 @@
     },
     {
       "columns": [],
-      "datasource": "${DS_OSRT_ACCESS}",
+      "datasource": "osrt_access",
       "fontSize": "100%",
       "gridPos": {
         "h": 10,
@@ -571,7 +571,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_OSRT_ACCESS}",
+      "datasource": "osrt_access",
       "fill": 1,
       "gridPos": {
         "h": 10,
