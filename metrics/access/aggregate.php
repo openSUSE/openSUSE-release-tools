@@ -6,7 +6,7 @@ use InfluxDB\Database;
 
 $CACHE_DIR = $_SERVER['HOME'] . '/.cache/openSUSE-release-tools-access';
 const PROTOCOLS = ['ipv4', 'ipv6'];
-const PONTIFEX = 'http://downloadlogs.infra.opensuse.org';
+const PONTIFEX = 'http://pontifex.infra.opensuse.org/logs';
 const LANGLEY = 'http://langley.suse.de/pub/pontifex%s-opensuse.suse.de';
 const VHOST = 'download.opensuse.org';
 const FILENAME = 'download.opensuse.org-%s-access_log.xz';
