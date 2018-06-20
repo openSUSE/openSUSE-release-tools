@@ -469,74 +469,6 @@ def ingest_dashboard_revision_get():
 
     return None
 
-def ingest_attributes(api):
-    url = api.makeurl(['source', api.project, '_project', '_history'], {'meta': 1})
-    root = ET.parse(osc.core.http_GET(url))
-
-    points = []
-    count = 0
-    revision = 0
-    last_attribute_md5 = ''
-
-    last_values = {}
-
-    for rev in root.findall('./revision'):
-        revision = rev.get('rev')
-        time = datetime.utcfromtimestamp(float(rev.find('./time').text))
-
-        url = api.makeurl(['source', api.project, '_project'],
-                        {'meta': 1, 'rev': revision})
-        root = ET.parse(osc.core.http_GET(url))
-
-        attribute = root.find('.//entry[@name="_attribute"]')
-        if attribute is None:
-            continue
-
-        attribute_md5 = attribute.get('md5')
-        if attribute_md5 == last_attribute_md5:
-            continue
-        last_attribute_md5 = attribute_md5
-
-        url = api.makeurl(['source', api.project, '_project', '_attribute'],
-                                {'meta': 1, 'rev': revision})
-        root = ET.parse(osc.core.http_GET(url))
-        #print revision, time, ET.tostring(root)
-
-        for v in root.findall('.//attribute[@namespace="OSRT"]'):
-            attribute_name = v.get('name')
-            last_values.setdefault(attribute_name, None)
-            if last_values[attribute_name] == v.find('value').text:
-                continue
-            # TODO: no idea what fields to make
-            fields = {revision: revision }
-
-            points.append({
-                'measurement': 'attribute_osrt_{}'.format(attribute_name),
-                'fields': fields,
-                'time': time,
-            })
-
-        points.append({
-            'measurement': 'project_meta_revision',
-            'fields': {
-                'revision': revision,
-            },
-            'time': time,
-        })
-
-        if len(points) >= 1000:
-            client.write_points(points, 's')
-            count += len(points)
-            points = []
-
-    if len(points):
-        client.write_points(points, 's')
-        count += len(points)
-
-    print('last revision processed: {}'.format(revision))
-
-    return count
-
 def ingest_dashboard(api):
     index = revision_index(api)
 
@@ -551,9 +483,7 @@ def ingest_dashboard(api):
 
     count = 0
     points = []
-    max_revision = 0
     for made, revision in sorted(index.items()):
-        max_revision = revision
         if not past:
             if revision == revision_last:
                 past = True
@@ -591,7 +521,7 @@ def ingest_dashboard(api):
         client.write_points(points, 's')
         count += len(points)
 
-    print('last revision processed: {}'.format(max_revision))
+    print('last revision processed: {}'.format(revision if len(index) else 'none'))
 
     return count
 
@@ -619,11 +549,10 @@ def main(args):
     Cache.PATTERNS['/source/[^/]+/dashboard/[^/]+\?rev=.*'] = sys.maxint
     Cache.init()
 
-    c = Config(args.project)
+    config = Config(args.project)
     api = StagingAPI(osc.conf.config['apiurl'], args.project)
-    c.apply_remote(api)
+    config.apply_remote(api)
 
-    print('attributes: wrote {:,} points'.format(ingest_attributes(api)))
     print('dashboard: wrote {:,} points'.format(ingest_dashboard(api)))
 
     global who_workaround_swap, who_workaround_miss
