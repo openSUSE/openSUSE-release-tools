@@ -14,6 +14,8 @@ const IPV6_PREFIX = 'ipv6.';
 const PRODUCT_PATTERN = '/^(10\.[2-3]|11\.[0-4]|12\.[1-3]|13\.[1-2]|42\.[1-3]|15\.[0]|tumbleweed)$/';
 
 $begin = new DateTime();
+// Skip the current day since the logs are incomplete and not compressed yet.
+$begin->sub(date_interval_create_from_date_string('1 day'));
 $source_map = [
   'ipv4' => [
     '2010-01-03' => false,
