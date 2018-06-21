@@ -41,7 +41,7 @@ error_log('count: ' . number_format(count($period_reversed)) . ' days');
 
 cache_init();
 ingest_all($period_reversed, $source_map);
-aggregate_all($period_reversed);
+aggregate_all(array_reverse($period_reversed));
 
 
 function cache_init()
@@ -149,14 +149,14 @@ function subprocess_count()
   return substr_count(shell_exec('pgrep -g ' . getmypid()), "\n") - 1;
 }
 
-function aggregate_all($period_reversed)
+function aggregate_all($period)
 {
   global $CACHE_DIR;
   $intervals = ['day' => 'Y-m-d', 'week' => 'Y-W', 'month' => 'Y-m'];
   $merged = [];
   $merged_protocol = [];
   $date_previous = null;
-  foreach ($period_reversed as $date) {
+  foreach ($period as $date) {
     $date_string = $date->format('Y-m-d');
 
     $data = null;
@@ -198,7 +198,7 @@ function aggregate_all($period_reversed)
   // Write out any remaining data by simulating a date beyond all intervals.
   error_log('write remaining data');
   $date = clone $date;
-  $date->sub(date_interval_create_from_date_string('1 year'));
+  $date->add(date_interval_create_from_date_string('1 year'));
 
   foreach (PROTOCOLS as $protocol) {
     aggregate($intervals, $merged_protocol[$protocol], $date, $date_previous, null,
@@ -266,6 +266,8 @@ function merge(&$data1, $data2)
 
 function summarize($data)
 {
+  static $products = [];
+
   $summary = [];
 
   $summary['-'] = [
@@ -290,8 +292,28 @@ function summarize($data)
       // A UUID should be unique to a product, as such this should provide an
       // accurate count of total unique across all products.
       $summary['-']['unique'] += $summary_product['unique'];
+    } else {
+      $summary_product += [
+        'unique' => 0,
+        'unqiue_average' => (float) 0,
+        'unqiue_max' => 0,
+      ];
     }
     $summary[$product] = $summary_product;
+
+    // Keep track of which products have been included in previous summary.
+    if (!isset($products[$product])) $products[$product] = true;
+  }
+
+  // Fill empty data with zeros to achieve appropriate result in graph.
+  $missing = array_diff(array_keys($products), array_keys($summary));
+  foreach ($missing as $product) {
+    $summary[$product] = [
+      'total' => 0,
+      'unique' => 0,
+      'unqiue_average' => (float) 0,
+      'unqiue_max' => 0,
+    ];
   }
 
   return $summary;
