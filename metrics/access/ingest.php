@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 
-const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* size:(\S+) \S+(?: "?(\S+-\S+-\S+-\S+-\S+|-)"? "?(dvd|ftp|-)"?)?/';
+const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* size:(\S+) \S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|-)"?)?/';
 const REGEX_PRODUCT = '#/(?:(tumbleweed)|distribution/(?:leap/)?(\d+\.\d+)|openSUSE(?:_|:/)(?:leap(?:_|:/))?(factory|tumbleweed|\d+\.\d+))#i';
 
 $total = 0;
