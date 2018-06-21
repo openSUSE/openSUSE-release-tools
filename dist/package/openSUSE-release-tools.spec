@@ -493,6 +493,7 @@ fi
 %{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics/access
+%exclude %{_datadir}/%{source_dir}/metrics/grafana/access.json
 %{_datadir}/%{source_dir}/metrics.py
 %{_datadir}/%{source_dir}/metrics_release.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
@@ -512,6 +513,7 @@ fi
 %{_bindir}/osrt-metrics-access-aggregate
 %{_bindir}/osrt-metrics-access-ingest
 %{_datadir}/%{source_dir}/metrics/access
+%{_datadir}/%{source_dir}/metrics/grafana/access.json
 %{_unitdir}/osrt-metrics-access.service
 %{_unitdir}/osrt-metrics-access.timer
 

@@ -6,7 +6,7 @@ use InfluxDB\Database;
 
 $CACHE_DIR = $_SERVER['HOME'] . '/.cache/openSUSE-release-tools-access';
 const PROTOCOLS = ['ipv4', 'ipv6'];
-const PONTIFEX = 'http://downloadlogs.infra.opensuse.org';
+const PONTIFEX = 'http://pontifex.infra.opensuse.org/logs';
 const LANGLEY = 'http://langley.suse.de/pub/pontifex%s-opensuse.suse.de';
 const VHOST = 'download.opensuse.org';
 const FILENAME = 'download.opensuse.org-%s-access_log.xz';
@@ -14,19 +14,21 @@ const IPV6_PREFIX = 'ipv6.';
 const PRODUCT_PATTERN = '/^(10\.[2-3]|11\.[0-4]|12\.[1-3]|13\.[1-2]|42\.[1-3]|15\.[0]|tumbleweed)$/';
 
 $begin = new DateTime();
+// Skip the current day since the logs are incomplete and not compressed yet.
+$begin->sub(date_interval_create_from_date_string('1 day'));
 $source_map = [
   'ipv4' => [
     '2010-01-03' => false,
     '2014-04-14' => sprintf(LANGLEY, 2) . '/' . VHOST,
     '2017-12-04' => sprintf(LANGLEY, 3) . '/' . VHOST,
     // 2017-12-05 has bad permissions on langley and is still on origin.
-    $begin->format('Y-m-d') => sprintf(PONTIFEX) . '/' . VHOST,
+    $begin->format('Y-m-d') => PONTIFEX . '/' . VHOST,
     'filename' => FILENAME,
   ],
   'ipv6' => [
     '2012-12-31' => false,
     '2017-12-04' => sprintf(LANGLEY, 3) . '/' . IPV6_PREFIX . VHOST,
-    $begin->format('Y-m-d') => sprintf(PONTIFEX) . '/' . IPV6_PREFIX . VHOST,
+    $begin->format('Y-m-d') => PONTIFEX . '/' . IPV6_PREFIX . VHOST,
     'filename' => IPV6_PREFIX . FILENAME,
   ],
 ];
