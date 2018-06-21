@@ -207,10 +207,8 @@ class Group(object):
                 locked = self.locked | self.pkglist.unwanted
                 for l in locked:
                     sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
-                    if sel.isempty():
-                        # if we can't find it, it probably is not as important
-                        logger.debug('{}.{}: locked package {} not found'.format(self.name, arch, l))
-                    else:
+                    # if we can't find it, it probably is not as important
+                    if not sel.isempty():
                         jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
                 for s in self.silents:
@@ -311,9 +309,14 @@ class Group(object):
             for arch in self.architectures:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
-                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name
+                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name + "\n"
                 for p in sorted(packages & mp):
-                    overlap.comment += '\n  - ' + p
+                    for arch in m.solved_packages.keys():
+                        if m.solved_packages[arch].get(p, None):
+                            overlap.comment += "  # " + m.name + "." + arch + ': ' + m.solved_packages[arch][p] + "\n"
+                        if self.solved_packages[arch].get(p, None):
+                            overlap.comment += "  # " + self.name + "." + arch + ': ' + self.solved_packages[arch][p] + "\n"
+                    overlap.comment += '  - ' + p + "\n"
                     overlap._add_to_packages(p)
 
     def collect_devel_packages(self):
@@ -1368,6 +1371,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.unlink_list(None, spec_files)
         else:
             self.move_list(spec_files, release_dir)
+            inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+            self.move_list(inc_files, release_dir)
 
         self.multibuild_from_glob(product_dir, '*.kiwi')
         self.build_stub(product_dir, 'kiwi')
