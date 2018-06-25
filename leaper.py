@@ -83,8 +83,8 @@ class Leaper(ReviewBot.ReviewBot):
             self.lookup_sle15 = self.factory.lookup.copy()
             return
 
-        self.factory.parse_lookup('openSUSE:Leap:15.0')
-        self.factory.parse_lookup('openSUSE:Leap:15.0:NonFree')
+        self.factory.parse_lookup('openSUSE:Leap:15.1')
+        self.factory.parse_lookup('openSUSE:Leap:15.1:NonFree')
         self.lookup_150 = self.factory.lookup.copy()
 
     def get_source_packages(self, project, expand=False):
@@ -253,7 +253,7 @@ class Leaper(ReviewBot.ReviewBot):
                 self.needs_release_manager = True
                 # fall through to check history and requests
             # TODO Ugly save for 15.1 (n-1).
-            elif False and origin.startswith('openSUSE:Leap:15.0'):
+            elif origin.startswith('openSUSE:Leap:15.0'):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
                 # submitted from :Update
@@ -301,7 +301,7 @@ class Leaper(ReviewBot.ReviewBot):
             elif origin.startswith('SUSE:SLE-15'):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
-                for v in ('15.0',):
+                for v in ('15.0', '15.1'):
                     prj = 'openSUSE:Leap:{}:SLE-workarounds'.format(v)
                     if self.is_package_in_project( prj, target_package):
                         self.logger.info("found package in %s", prj)
@@ -349,12 +349,13 @@ class Leaper(ReviewBot.ReviewBot):
 
             # new package submitted from Factory. Check if it was in
             # 42.3 before and skip maintainer review if so.
-            subprj = src_project[len('openSUSE:Factory'):]
-            if self.source_in_factory and target_project.startswith('openSUSE:Leap:15.0') \
-                and self.is_package_in_project('openSUSE:Leap:42.3'+subprj, package):
-                    self.logger.info('package was in 42.3')
-                    self.do_check_maintainer_review = False
-                    return True
+# commented for reference. Needed again for 16.0 probably
+#            subprj = src_project[len('openSUSE:Factory'):]
+#            if self.source_in_factory and target_project.startswith('openSUSE:Leap:15.0') \
+#                and self.is_package_in_project('openSUSE:Leap:42.3'+subprj, package):
+#                    self.logger.info('package was in 42.3')
+#                    self.do_check_maintainer_review = False
+#                    return True
 
             is_fine_if_factory = True
             self.needs_release_manager = True
