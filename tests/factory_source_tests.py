@@ -62,6 +62,10 @@ class TestFactorySourceAccept(unittest.TestCase):
     def test_accept_request(self):
 
         httpretty.register_uri(httpretty.GET,
+            rr("/source/openSUSE:Factory/00Meta/lookup.yml"),
+            status = 404)
+
+        httpretty.register_uri(httpretty.GET,
             APIURL + "/request/770001",
             body = """
                 <request id="770001" creator="chameleon">
@@ -261,6 +265,10 @@ class TestFactorySourceAccept(unittest.TestCase):
                     <summary>openSUSE:Factory/plan</summary>
                 </status>
             """)
+
+        httpretty.register_uri(httpretty.GET,
+            rr("/source/openSUSE:Factory/00Meta/lookup.yml"),
+            status = 404)
 
         httpretty.register_uri(httpretty.GET,
             rr("/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+submit%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27+or+submit%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27plan%27+or+submit%2Ftarget%2F%40package%3D%27plan%27+or+action%2Fsource%2F%40package%3D%27plan%27+or+submit%2Fsource%2F%40package%3D%27plan%27%29+and+action%2F%40type%3D%27submit%27"),

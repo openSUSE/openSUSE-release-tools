@@ -47,6 +47,38 @@ import osc.core
 import urllib2
 from itertools import count
 
+class PackageLookup(object):
+    """ helper class to manage 00Meta/lookup.yml
+    """
+
+    def __init__(self, apiurl = None):
+        self.apiurl = apiurl
+        # dict[project][package]
+        self.lookup = {}
+
+    def get(self, project, package):
+        if not project in self.lookup:
+            self.load(project)
+
+        return self.lookup[project].get(package, None)
+
+    def reset(self):
+        self.lookup = {}
+
+    def load(self, project):
+        fh = self._load_lookup_file(project)
+        self.lookup[project] = yaml.safe_load(fh) if fh else {}
+
+    def _load_lookup_file(self, prj):
+        try:
+            return osc.core.http_GET(osc.core.makeurl(self.apiurl,
+                                ['source', prj, '00Meta', 'lookup.yml']))
+        except urllib2.HTTPError as e:
+            # in case the project doesn't exist yet (like sle update)
+            if e.code != 404:
+                raise e
+            return None
+
 
 class ReviewBot(object):
     """
@@ -91,6 +123,7 @@ class ReviewBot(object):
         self.comment_handler = False
         self.override_allow = True
         self.override_group_key = '{}-override-group'.format(self.bot_name.lower())
+        self.lookup = PackageLookup(self.apiurl)
 
         self.load_config()
 

@@ -213,6 +213,10 @@ Pico text editor while also offering a few enhancements.</description>
                                match_querystring=True,
                                body='<collection matches="0"></collection>')
 
+        httpretty.register_uri(httpretty.GET,
+            APIURL + "/source/openSUSE:Factory/00Meta/lookup.yml",
+            status = 404)
+
         result = {'state_accepted': None}
 
         def change_request(result, method, uri, headers):

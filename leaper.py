@@ -78,14 +78,7 @@ class Leaper(ReviewBot.ReviewBot):
     def prepare_review(self):
         # update lookup information on every run
 
-        if self.ibs:
-            self.factory.parse_lookup('SUSE:SLE-15:GA')
-            self.lookup_sle15 = self.factory.lookup.copy()
-            return
-
-        self.factory.parse_lookup('openSUSE:Leap:15.1')
-        self.factory.parse_lookup('openSUSE:Leap:15.1:NonFree')
-        self.lookup_150 = self.factory.lookup.copy()
+        self.lookup.reset()
 
     def get_source_packages(self, project, expand=False):
         """Return the list of packages in a project."""
@@ -127,6 +120,9 @@ class Leaper(ReviewBot.ReviewBot):
         if origin.startswith('Devel;'):
             (dummy, origin, dummy) = origin.split(';')
 
+        # FIXME: to make the rest of the code easier this should probably check
+        # if the srcmd5 matches the origin project. That way it doesn't really
+        # matter from where something got submitted as long as the sources match.
         return project.startswith(origin)
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
@@ -141,7 +137,10 @@ class Leaper(ReviewBot.ReviewBot):
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         package = target_package
 
-        origin = None
+        origin = self.lookup.get(target_project, package)
+        origin_same = True
+        if origin:
+            origin_same = self._check_same_origin(origin, src_project)
 
         if src_srcinfo is None:
             # source package does not exist?
@@ -151,63 +150,80 @@ class Leaper(ReviewBot.ReviewBot):
 
         if self.ibs and target_project.startswith('SUSE:SLE'):
 
-            if package in self.lookup_sle15:
-                origin = self.lookup_sle15[package]
-
-            origin_same = True
-            if origin:
-                origin_same = self._check_same_origin(origin, src_project)
-                self.logger.info("expected origin is '%s' (%s)", origin,
-                                 "unchanged" if origin_same else "changed")
-
+            review_result = None
             prj = 'openSUSE.org:openSUSE:Factory'
-            # True or None (open request) are acceptable for SLE.
-            self.source_in_factory = self._check_factory(package, src_srcinfo, prj)
-            if self.source_in_factory is None:
-                self.pending_factory_submission = True
-            if self.source_in_factory is not False:
-                return self.source_in_factory
-
-            # got false. could mean package doesn't exist or no match
             if self.is_package_in_project(prj, package):
-                self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
-
-            prj = 'openSUSE.org:openSUSE:Leap:15.0'
-            # TODO Ugly save for SLE-15-SP1.
-            if False and self.is_package_in_project(prj, package):
-                if self._check_factory(package, src_srcinfo, prj) is True:
-                    self.logger.info('found source match in {}'.format(prj))
+                # True or None (open request) are acceptable for SLE.
+                in_factory = self._check_factory(package, src_srcinfo, prj)
+                if in_factory:
+                    review_result = True
+                    self.source_in_factory = True
+                elif in_factory is None:
+                    self.pending_factory_submission = True
                 else:
                     self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
-
-            devel_project, devel_package = devel_project_get(self.apiurl, 'openSUSE.org:openSUSE:Factory', package)
-            if devel_project is not None:
-                # specifying devel package is optional
-                if devel_package is None:
-                    devel_package = package
-                if self.is_package_in_project(devel_project, devel_package):
-                    if self._check_matching_srcmd5(devel_project, devel_package, src_srcinfo.verifymd5) == True:
-                        self.logger.info('matching sources in {}/{}'.format(devel_project, devel_package))
-                        return True
-                    else:
-                        self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, devel_project, devel_package)))
             else:
-                self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', package))
+                self.logger.info('the package is not in Factory, nor submitted there')
 
-            #self.logger.info('no matching sources in Factory, Leap:15.0, nor devel project')
-            self.logger.info('no matching sources in Factory, nor devel project')
+            if review_result == None:
+                other_projects_to_check = []
+                m = re.match('SUSE:SLE-(\d+)(?:-SP(\d+)):', target_project)
+                if m:
+                    sle_version = int(m.group(1))
+                    sp_version = int(m.group(2))
+                    versions_to_check = []
+                    # yeah, too much harcoding here
+                    if sle_version == 12:
+                        versions_to_check = [ '42.3' ]
+                    elif sle_version == 15:
+                        versions_to_check = [ '15.%d'%i for i in range(sp_version+1) ]
+                    else:
+                        self.logger.error("can't handle %d.%d", sle_version, sp_version)
 
-            if origin_same is False:
+                    for version in versions_to_check:
+                        leap = 'openSUSE.org:openSUSE:Leap:%s'%(version)
+                        other_projects_to_check += [ leap, leap + ':Update', leap + ':NonFree', leap + ':NonFree:Update' ]
+
+                for prj in other_projects_to_check:
+                    if self.is_package_in_project(prj, package):
+                        self.logger.info('checking {}'.format(prj))
+                        if self._check_factory(package, src_srcinfo, prj) is True:
+                            self.logger.info('found source match in {}'.format(prj))
+                        else:
+                            self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
+
+                devel_project, devel_package = devel_project_get(self.apiurl, 'openSUSE.org:openSUSE:Factory', package)
+                if devel_project is not None:
+                    # specifying devel package is optional
+                    if devel_package is None:
+                        devel_package = package
+                    if self.is_package_in_project(devel_project, devel_package):
+                        if self._check_matching_srcmd5(devel_project, devel_package, src_srcinfo.verifymd5) == True:
+                            self.logger.info('matching sources in {}/{}'.format(devel_project, devel_package))
+                            return True
+                        else:
+                            self.logger.info('different sources in devel project {}'.format(self.rdiff_link(src_project, src_package, src_rev, devel_project, devel_package)))
+                else:
+                    self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', package))
+
+                self.logger.info('no matching sources found anywhere. Needs a human to decide whether that is ok. Please provide some justification to help that person.')
+
+            if not review_result:
+                review_result = origin_same
+                if origin_same:
+                    self.logger.info("ok, origin %s unchanged", origin)
+                else:
+                    # only log origin state if it's taken into consideration for the review result
+                    self.logger.info("Submitted from a different origin than expected ('%s')", origin)
+
+            if not review_result and self.override_allow:
                 # Rather than decline, leave review open in-case of change and
                 # ask release manager for input via override comment.
                 self.logger.info('Comment `(at){} override accept` to force accept.'.format(self.review_user))
                 self.needs_release_manager = True
-                return None
+                review_result = None
 
-            return origin_same
-
-        if package in self.lookup_150:
-            origin = self.lookup_150[package]
+            return review_result
 
         # obviously
         if src_project in ('openSUSE:Factory', 'openSUSE:Factory:NonFree'):
@@ -216,9 +232,8 @@ class Leaper(ReviewBot.ReviewBot):
         is_fine_if_factory = False
         not_in_factory_okish = False
         if origin:
-            origin_same = self._check_same_origin(origin, src_project)
             self.logger.info("expected origin is '%s' (%s)", origin,
-                             "unchanged" if origin_same else "changed")
+                    "unchanged" if origin_same else "changed")
             if origin.startswith('Devel;'):
                 if origin_same == False:
                     self.logger.debug("not submitted from devel project")
@@ -349,13 +364,13 @@ class Leaper(ReviewBot.ReviewBot):
 
             # new package submitted from Factory. Check if it was in
             # 42.3 before and skip maintainer review if so.
-# commented for reference. Needed again for 16.0 probably
-#            subprj = src_project[len('openSUSE:Factory'):]
-#            if self.source_in_factory and target_project.startswith('openSUSE:Leap:15.0') \
-#                and self.is_package_in_project('openSUSE:Leap:42.3'+subprj, package):
-#                    self.logger.info('package was in 42.3')
-#                    self.do_check_maintainer_review = False
-#                    return True
+            subprj = src_project[len('openSUSE:Factory'):]
+            # disabled for reference. Needed again for 16.0 probably
+            if False and self.source_in_factory and target_project.startswith('openSUSE:Leap:15.0') \
+                and self.is_package_in_project('openSUSE:Leap:42.3'+subprj, package):
+                    self.logger.info('package was in 42.3')
+                    self.do_check_maintainer_review = False
+                    return True
 
             is_fine_if_factory = True
             self.needs_release_manager = True
@@ -457,9 +472,9 @@ class Leaper(ReviewBot.ReviewBot):
             if self.automatic_submission and creator != bot_name:
                 self.logger.info('@{}: this request would have been automatically created by {} after the Factory submission was accepted in order to eleviate the need to manually create requests for packages sourced from Factory'.format(creator, bot_name))
         elif self.source_in_factory:
-            self.logger.info("the submitted sources are in or accepted for Factory")
+            self.logger.info("perfect. the submitted sources are in or accepted for Factory")
         elif self.source_in_factory == False:
-            self.logger.info("the submitted sources are NOT in Factory")
+            self.logger.warn("the submitted sources are NOT in Factory")
 
         if request_ok == False:
             self.logger.info("NOTE: if you think the automated review was wrong here, please talk to the release team before reopening the request")

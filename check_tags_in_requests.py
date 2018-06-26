@@ -54,7 +54,7 @@ class TagChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         super(TagChecker, self).__init__(*args, **kwargs)
-        self.factory = "openSUSE:Factory"
+        self.factory = [ "openSUSE:Factory" ]
         self.review_messages['declined'] = """
 (This is a script, so report bugs)
 

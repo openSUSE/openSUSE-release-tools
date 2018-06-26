@@ -45,20 +45,9 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
-        self.factory = "openSUSE:Factory"
+        self.factory = [ "openSUSE:Factory" ]
         self.review_messages = { 'accepted' : 'ok', 'declined': 'the package needs to be accepted in Factory first' }
-        self.lookup = {}
         self.history_limit = 5
-
-    def reset_lookup(self):
-        self.lookup = {}
-
-    def parse_lookup(self, project):
-        self.lookup.update(yaml.safe_load(self._load_lookup_file(project)))
-
-    def _load_lookup_file(self, prj):
-        return osc.core.http_GET(osc.core.makeurl(self.apiurl,
-                                ['source', prj, '00Meta', 'lookup.yml']))
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         super(FactorySourceChecker, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
@@ -93,12 +82,14 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
     def _package_get_upstream_projects(self, package):
         """ return list of projects where the specified package is supposed to come
         from. Either by lookup table or self.factory """
-        projects = self.factory
-        if self.lookup and package in self.lookup:
-            projects = self.lookup[package]
+        projects = []
+        for prj in self.factory:
+            r = self.lookup.get(prj, package)
+            if r:
+                projects.append(r)
 
-        if isinstance(projects, basestring):
-            projects = [projects]
+        if not projects:
+            projects = self.factory
 
         return projects
 
