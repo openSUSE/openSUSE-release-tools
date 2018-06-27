@@ -777,6 +777,7 @@ class ToTestFactoryARM(ToTestFactory):
                     '000product:openSUSE-ftp-ftp-armv6hl']
 
     livecd_products = ['JeOS']
+    livecd_archs = ['armv7l']
 
     def __init__(self, *args, **kwargs):
         ToTestFactory.__init__(self, *args, **kwargs)
