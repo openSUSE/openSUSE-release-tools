@@ -56,6 +56,9 @@ class CheckSource(ReviewBot.ReviewBot):
             # settings, but override since real target is not product.
             self.single_action_require = False
 
+            # It might make sense to supersede maintbot, but for now.
+            self.skip_add_reviews = True
+
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
