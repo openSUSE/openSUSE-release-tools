@@ -378,7 +378,7 @@ class ToTestBase(object):
             return None
 
         # docker container has no size limit
-        if package == 'opensuse-leap-image':
+        if re.match(r'opensuse-leap-image.*', package):
             return None
 
         if '-Addon-NonOss-ftp-ftp' in package:
@@ -846,7 +846,8 @@ class ToTest150Images(ToTestBaseNew):
         'livecd-leap-gnome',
         'livecd-leap-kde',
         'livecd-leap-x11',
-        'opensuse-leap-image',
+        'opensuse-leap-image:docker',
+        'opensuse-leap-image:lxc',
         'kiwi-templates-Leap15-JeOS:MS-HyperV',
         'kiwi-templates-Leap15-JeOS:OpenStack-Cloud',
         'kiwi-templates-Leap15-JeOS:VMware',
