@@ -171,7 +171,7 @@ def clone_do(apiurl_source, apiurl_target, project):
         # the leaf can simple be used to start the chain and works as desired.
         # Disable this when running clone repeatedly during developing as the
         # projects cannot be cleanly re-created without more work.
-        entity_clone(apiurl_source, apiurl_target, ['source', project + ':Rings:2-TestDVD', '_meta'],
+        entity_clone(apiurl_source, apiurl_target, ['source', project + ':Rings:1-MinimalX', '_meta'],
                      clone=project_clone)
 
         entity_clone(apiurl_source, apiurl_target, ['source', project + ':Staging', 'dashboard', '_meta'],
