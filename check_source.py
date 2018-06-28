@@ -46,6 +46,12 @@ class CheckSource(ReviewBot.ReviewBot):
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
 
+        if self.action.type == 'maintenance_incident':
+            # The workflow effectively enforces the names to match and the
+            # parent code sets target_package from source_package so this check
+            # becomes useless and awkward to perform.
+            self.in_air_rename_allow = True
+
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
