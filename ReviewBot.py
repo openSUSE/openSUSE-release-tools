@@ -299,6 +299,9 @@ class ReviewBot(object):
 
         overall = None
         for a in req.actions:
+            # Store in-case sub-classes need direct access to original values.
+            self.action = a
+
             fn = 'check_action_%s'%a.type
             if not hasattr(self, fn):
                 fn = 'check_action__default'
