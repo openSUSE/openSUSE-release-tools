@@ -847,6 +847,11 @@ class ToTest150Images(ToTestBaseNew):
         'livecd-leap-kde',
         'livecd-leap-x11',
         'opensuse-leap-image',
+        'kiwi-templates-Leap15-JeOS:MS-HyperV',
+        'kiwi-templates-Leap15-JeOS:OpenStack-Cloud',
+        'kiwi-templates-Leap15-JeOS:VMware',
+        'kiwi-templates-Leap15-JeOS:XEN',
+        'kiwi-templates-Leap15-JeOS:kvm-and-xen',
     ]
 
     ftp_products = []
