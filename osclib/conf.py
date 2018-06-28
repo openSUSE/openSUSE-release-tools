@@ -51,6 +51,7 @@ DEFAULT = {
         'main-repo': 'standard',
         'download-baseurl': 'http://download.opensuse.org/tumbleweed/',
         # check_source.py
+        'check-source-single-action-require': 'True',
         'devel-project-enforce': 'True',
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
@@ -83,6 +84,7 @@ DEFAULT = {
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
         # check_source.py
+        'check-source-single-action-require': 'True',
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
         'repo_checker-arch-whitelist': 'x86_64',

@@ -291,7 +291,7 @@ class ReviewBot(object):
         self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
 
         if self.only_one_action and len(req.actions) != 1:
-            self.review_messages['declined'] = 'Only one action per request'
+            self.review_messages['declined'] = 'Only one action per request supported'
             return False
 
         if self.comment_handler is not False:

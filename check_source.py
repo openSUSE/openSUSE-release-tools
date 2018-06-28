@@ -27,7 +27,6 @@ class CheckSource(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         # ReviewBot options.
-        self.only_one_action = True
         self.request_default_return = True
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
@@ -39,6 +38,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.staging_api(project)
         config = self.staging_config[project]
 
+        self.single_action_require = str2bool(config.get('check-source-single-action-require', 'False'))
         self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))
         self.in_air_rename_allow = str2bool(config.get('check-source-in-air-rename-allow', 'False'))
         self.add_review_team = str2bool(config.get('check-source-add-review-team', 'True'))
@@ -52,9 +52,17 @@ class CheckSource(ReviewBot.ReviewBot):
             # becomes useless and awkward to perform.
             self.in_air_rename_allow = True
 
+            # The target project will be set to product and thus inherit
+            # settings, but override since real target is not product.
+            self.single_action_require = False
+
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
+
+        if self.single_action_require and len(self.request.actions) != 1:
+            self.review_messages['declined'] = 'Only one action per request allowed'
+            return False
 
         if target_package.startswith('00'):
             self.review_messages['accepted'] = 'Skipping all checks for 00* packages'
