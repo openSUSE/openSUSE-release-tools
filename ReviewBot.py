@@ -313,16 +313,26 @@ class ReviewBot(object):
         return pkgname == 'patchinfo' or pkgname.startswith('patchinfo.')
 
     def check_action_maintenance_incident(self, req, a):
-        dst_package = a.src_package
         if self._is_patchinfo(a.src_package):
             self.logger.debug('ignoring patchinfo action')
             return None
-        # dirty obs crap
+
+        # Duplicate src_package as tgt_package since prior to assignment to a
+        # specific incident project there is no target package (odd API). After
+        # assignment it is still assumed the target will match the source. Since
+        # the ultimate goal is the tgt_releaseproject the incident is treated
+        # similar to staging in that the intermediate result is not the final
+        # and thus the true target project (ex. openSUSE:Maintenance) is not
+        # used for check_source_submission().
+        tgt_package = a.src_package
         if a.tgt_releaseproject is not None:
-            ugly_suffix = '.'+a.tgt_releaseproject.replace(':', '_')
-            if dst_package.endswith(ugly_suffix):
-                dst_package = dst_package[:-len(ugly_suffix)]
-        return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_releaseproject, dst_package)
+            suffix = '.' + a.tgt_releaseproject.replace(':', '_')
+            if tgt_package.endswith(suffix):
+                tgt_package = tgt_package[:-len(suffix)]
+
+        # Note tgt_releaseproject (product) instead of tgt_project (maintenance).
+        return self.check_source_submission(a.src_project, a.src_package, a.src_rev,
+                                            a.tgt_releaseproject, tgt_package)
 
     def check_action_maintenance_release(self, req, a):
         pkgname = a.src_package
