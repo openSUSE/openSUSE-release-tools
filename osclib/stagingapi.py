@@ -1546,10 +1546,10 @@ class StagingAPI(object):
                 return None
             raise e
         root = ET.parse(f).getroot()
-        root = root.find('./attribute/value')
-        if root is None:
+        root = root.xpath('./attribute[@namespace="OSRT" and @name="{}"]/value/text()'.format(attribute))
+        if not len(root):
             return None
-        return root.text
+        return root[0]
 
     # to create a new attribute 'type' you need to do some manual step
     # create a xml file analoge to what
