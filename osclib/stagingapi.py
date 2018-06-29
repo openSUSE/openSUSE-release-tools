@@ -85,8 +85,7 @@ class StagingAPI(object):
         if self.crings:
             self.rings = (
                 '{}:0-Bootstrap'.format(self.crings),
-                '{}:1-MinimalX'.format(self.crings),
-                '{}:2-TestDVD'.format(self.crings)
+                '{}:1-MinimalX'.format(self.crings)
             )
         else:
             self.rings = []

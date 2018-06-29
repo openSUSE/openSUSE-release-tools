@@ -19,11 +19,5 @@ else
 	osc meta prj     "$base:Staging:$letter" -F ${letter}_prj
 	osc meta prjconf "$base:Staging:$letter" -F ${letter}_prjconf
 fi
-if osc meta prj "$base:Staging:$letter:DVD" > /dev/null 2>&1; then
-	echo "$base:Staging:$letter:DVD already exists"
-else
-	osc meta prj     "$base:Staging:$letter:DVD" -F ${letter}_dvd_prj
-	osc meta prjconf "$base:Staging:$letter:DVD" -F ${letter}_dvd_prjconf
-fi
 
 echo "done. Don't forget the openQA templates"
