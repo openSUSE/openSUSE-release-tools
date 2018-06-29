@@ -123,7 +123,7 @@ DEFAULT = {
         'lock-ns': None,
         'delreq-review': None,
         'main-repo': 'openSUSE_Factory',
-        'priority': '1000', # Lowest priority as only a fallback.
+        '_priority': '0', # Apply defaults first
     },
 }
 
@@ -164,12 +164,14 @@ class Config(object):
     def populate_conf(self):
         """Add sane default into the configuration."""
         defaults = {}
-        default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: int(i[1].get('priority', 99))))
+        default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: int(i[1].get('_priority', 99))))
         for prj_pattern in default_ordered:
             match = re.match(prj_pattern, self.project)
             if match:
                 project = match.group('project')
                 for k, v in DEFAULT[prj_pattern].items():
+                    if k.startswith('_'):
+                        continue
                     if isinstance(v, basestring) and '%(project)s' in v:
                         defaults[k] = v % {'project': project}
                     elif isinstance(v, basestring) and '%(project.lower)s' in v:
@@ -178,7 +180,8 @@ class Config(object):
                         defaults[k] = v % {'version': match.group('version')}
                     else:
                         defaults[k] = v
-                break
+                if int(DEFAULT[prj_pattern].get('_priority', 99)) != 0:
+                    break
 
         if self.remote_values:
             defaults.update(self.remote_values)
