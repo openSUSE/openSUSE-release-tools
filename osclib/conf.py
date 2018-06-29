@@ -107,6 +107,27 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
+    r'openSUSE:(?P<project>Backports:(?P<version>[^:]+))': {
+        'staging': 'openSUSE:%(project)s:Staging',
+        'staging-group': 'factory-staging',
+        'staging-archs': 'x86_64',
+        'lock': 'openSUSE:%(project)s:Staging',
+        'lock-ns': 'openSUSE',
+        'onlyadi': True,
+        'leaper-override-group': 'leap-reviewers',
+        'review-team': 'opensuse-review-team',
+        'legal-review-group': 'legal-auto',
+        # review-team optionally added by leaper.py.
+        'repo-checker': 'repo-checker',
+        'repo_checker-arch-whitelist': 'x86_64',
+        # 16 hour staging window for follow-ups since lower throughput.
+        'splitter-staging-age-max': '57600',
+        # No special packages since they will pass through Leap first.
+        'splitter-special-packages': '',
+        # Allow `unselect --cleanup` to operate immediately on:
+        # - Update crawler requests (leaper)
+        'unselect-cleanup-whitelist': 'leaper',
+    },
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.
     r'(?P<project>.*$)': {
@@ -114,6 +135,7 @@ DEFAULT = {
         'staging-group': None,
         'staging-archs': '',
         'staging-dvd-archs': '',
+        'onlyadi': False,
         'rings': None,
         'nonfree': None,
         'rebuild': None,

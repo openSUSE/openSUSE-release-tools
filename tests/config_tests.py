@@ -47,6 +47,7 @@ class TestConfig(unittest.TestCase):
         projects = (
             'openSUSE:Factory',
             'openSUSE:Leap:15.0',
+            'openSUSE:Backports:SLE-15',
             'SUSE:SLE-15:GA',
             'SUSE:SLE-12:GA',
             'GNOME:Factory',

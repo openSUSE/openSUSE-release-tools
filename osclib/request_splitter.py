@@ -127,7 +127,7 @@ class RequestSplitter(object):
         ring = self.ring_get(target_package)
         if ring:
             target.set('ring', ring)
-        elif request_type == 'delete':
+        elif not self.api.conlyadi and request_type == 'delete':
             # Delete requests should always be considered in a ring.
             target.set('ring', 'delete')
 
@@ -140,6 +140,8 @@ class RequestSplitter(object):
         request.set('postponed', 'False')
 
     def ring_get(self, target_package):
+        if self.api.conlyadi:
+            return None
         if self.api.crings:
             ring = self.api.ring_packages_for_links.get(target_package)
             if ring:
