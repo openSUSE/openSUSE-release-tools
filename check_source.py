@@ -27,7 +27,6 @@ class CheckSource(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         # ReviewBot options.
-        self.only_one_action = True
         self.request_default_return = True
 
         self.maintbot = MaintenanceChecker(*args, **kwargs)
@@ -39,6 +38,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.staging_api(project)
         config = self.staging_config[project]
 
+        self.single_action_require = str2bool(config.get('check-source-single-action-require', 'False'))
         self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))
         self.in_air_rename_allow = str2bool(config.get('check-source-in-air-rename-allow', 'False'))
         self.add_review_team = str2bool(config.get('check-source-add-review-team', 'True'))
@@ -46,13 +46,32 @@ class CheckSource(ReviewBot.ReviewBot):
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
 
+        if self.action.type == 'maintenance_incident':
+            # The workflow effectively enforces the names to match and the
+            # parent code sets target_package from source_package so this check
+            # becomes useless and awkward to perform.
+            self.in_air_rename_allow = True
+
+            # The target project will be set to product and thus inherit
+            # settings, but override since real target is not product.
+            self.single_action_require = False
+
+            # It might make sense to supersede maintbot, but for now.
+            self.skip_add_reviews = True
+
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
 
+        if self.single_action_require and len(self.request.actions) != 1:
+            self.review_messages['declined'] = 'Only one action per request allowed'
+            return False
+
         if target_package.startswith('00'):
             self.review_messages['accepted'] = 'Skipping all checks for 00* packages'
             return True
+
+        inair_renamed = target_package != source_package
 
         if not self.ignore_devel:
             self.logger.info('checking if target package exists and has devel project')
@@ -72,6 +91,18 @@ class CheckSource(ReviewBot.ReviewBot):
                         'See https://en.opensuse.org/openSUSE:How_to_contribute_to_Factory#How_to_request_a_new_devel_project for details.'
                     ) % (source_project, target_project)
                     return False
+        else:
+            if source_project.endswith(':Update'):
+                # Allow for submission like:
+                # - source: openSUSE:Leap:15.0:Update/google-compute-engine.8258
+                # - target: openSUSE:Leap:15.1/google-compute-engine
+                # Note: home:jberry:Update would also be allowed via this condition,
+                # but that should be handled by leaper and human review.
+                inair_renamed = target_package != source_package.split('.')[0]
+
+        if not self.in_air_rename_allow and inair_renamed:
+            self.review_messages['declined'] = 'Source and target package names must match'
+            return False
 
         # Checkout and see if renaming package screws up version parsing.
         dir = os.path.expanduser('~/co/%s' % self.request.reqid)
@@ -100,11 +131,6 @@ class CheckSource(ReviewBot.ReviewBot):
         if new_info['name'] != target_package:
             shutil.rmtree(dir)
             self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (target_package, target_package, new_info['name'])
-            return False
-
-        # We want to see the same package name in the devel project as in the distro; anything else calls for confusion
-        if not self.in_air_rename_allow and source_package != target_package:
-            self.review_messages['declined'] = "No in-air renames: The package must be called the same in the devel project as in the target project"
             return False
 
         # Run check_source.pl script and interpret output.
