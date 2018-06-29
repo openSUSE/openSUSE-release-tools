@@ -62,8 +62,6 @@ class TestApiCalls(unittest.TestCase):
             'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-1': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
-            'elem-ring-2': 'openSUSE:Factory:Rings:2-TestDVD',
-            'git': 'openSUSE:Factory:Rings:2-TestDVD',
             'wine': 'openSUSE:Factory:Rings:1-MinimalX',
         }
         self.assertEqual(ring_packages, self.api.ring_packages_for_links)
@@ -74,8 +72,6 @@ class TestApiCalls(unittest.TestCase):
             'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
             'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX',
             'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
-            'elem-ring-2': 'openSUSE:Factory:Rings:2-TestDVD',
-            'git': 'openSUSE:Factory:Rings:2-TestDVD',
             'wine': 'openSUSE:Factory:Rings:1-MinimalX',
         }
         self.assertEqual(ring_packages, self.api.ring_packages)
