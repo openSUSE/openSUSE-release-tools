@@ -1202,11 +1202,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 '/'.join([api.rings[0], main_repo]),
             ]
             self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
-
-            opts.project = api.rings[2]
-            self.options.repos.insert(0, '/'.join([api.rings[2], main_repo]))
-            self.update_and_solve_target_wrapper(apiurl, target_project, target_config,
-                                                 main_repo, opts, skip_release=True)
             return self.error_occured
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
@@ -1216,15 +1211,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
                 if not api.is_staging_bootstrapped(opts.project):
                     self.options.repos.append('/'.join([opts.project, 'bootstrap_copy']))
-
-                # DVD project first since it depends on main.
-                if api.item_exists(opts.project + ':DVD'):
-                    opts_dvd = copy.deepcopy(opts)
-                    opts_dvd.project += ':DVD'
-                    self.options.repos.insert(0, '/'.join([opts_dvd.project, main_repo]))
-                    self.update_and_solve_target_wrapper(
-                        apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
-                    self.options.repos.pop(0)
 
                 self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
             return self.error_occured
