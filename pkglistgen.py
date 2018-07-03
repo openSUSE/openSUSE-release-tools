@@ -72,7 +72,6 @@ logger = logging.getLogger()
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
-DEFAULT_REPOS = ("openSUSE:Factory/standard")
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
 
@@ -414,7 +413,6 @@ class PkgListGen(ToolBase.ToolBase):
 
     def __init__(self):
         ToolBase.ToolBase.__init__(self)
-        self.repos = DEFAULT_REPOS
         # package -> supportatus
         self.packages = dict()
         self.default_support_status = 'l3'
@@ -528,6 +526,17 @@ class PkgListGen(ToolBase.ToolBase):
         for e in excludes:
             g.ignore(self.groups[e])
 
+    def expand_project_repo(self, project, repo, repos):
+        repos.append([project, repo])
+        url = makeurl(self.apiurl, ['source', project, '_meta'])
+        meta = ET.parse(http_GET(url)).getroot()
+        for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
+            self.expand_project_repo(path.get('project', project), path.get('repository'), repos)
+        return repos
+
+    def expand_repos(self, project, repo):
+        return self.expand_project_repo(project, repo, [])
+
     def _check_supplements(self):
         tocheck = set()
         tocheck_locales = set()
@@ -568,8 +577,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.lockjobs[arch] = []
         solvables = set()
 
-        for prp in self.repos:
-            project, reponame = prp.split('/')
+        for project, reponame in self.repos:
             repo = pool.add_repo(project)
             s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
             r = repo.add_solv(s)
@@ -692,11 +700,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
+        self.repos = []
 
     def get_optparser(self):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
-        parser.add_option('-r', '--repositories', dest='repos', metavar='REPOS', action='append',
-                          help='repositories to process (%s)' % DEFAULT_REPOS)
         parser.add_option('-i', '--input-dir', dest='input_dir', metavar='DIR',
                           help='input directory', default='.')
         parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
@@ -712,19 +719,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         tool.input_dir = self.options.input_dir
         tool.output_dir = self.options.output_dir
         tool.default_support_status = self.options.default_support_status
+        tool.repos = self.repos
         if self.options.architectures:
             tool.architectures = self.options.architectures
         else:
             tool.architectures = ARCHITECTURES
-        if self.options.repos:
-            repos = []
-            for r in self.options.repos:
-                # handle comas as well, easier for shell script for now
-                if ',' in r:
-                    repos += r.split(',')
-                else:
-                    repos.append(r)
-            tool.repos = repos
         return tool
 
     def do_list(self, subcmd, opts):
@@ -769,8 +768,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         # only there to parse the repos
         bs_mirrorfull = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
         global_update = False
-        for prp in self.tool.repos:
-            project, repo = prp.split('/')
+        for project, repo in self.repos:
             for arch in self.tool.architectures:
                 # TODO: refactor to common function with repo_checker.py
                 d = os.path.join(CACHEDIR, project, repo, arch)
@@ -804,8 +802,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def update_merge(self, nonfree):
         """Merge free and nonfree solv files or copy free to merged"""
-        for prp in self.tool.repos:
-            project, repo = prp.split('/')
+        for project, repo in self.repos:
             for arch in self.tool.architectures:
                 solv_file = os.path.join(
                     CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
@@ -840,8 +837,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def do_create_sle_weakremovers(self, subcmd, opts, *prjs):
         for prj in prjs:
             logger.debug("processing %s", prj)
-            self.options.repos = ['/'.join([prj, 'standard'])]
-            self.postoptparse()
+            self.expand_repos(prj, 'standard')
             opts.project = prj
             self.do_update('update', opts)
 
@@ -853,7 +849,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             sysrepo = None
             for prp in prjs:
                 fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(prp, 'standard', arch))
-                r = pool.add_repo(prp)
+                r = pool.add_repo('/'.join([prj, 'standard']))
                 r.add_solv(fn)
                 if not sysrepo:
                     sysrepo = r
@@ -922,10 +918,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 pool = solv.Pool()
                 pool.setarch(arch)
 
-                for prp in self.tool.repos:
-                    project, repo = prp.split('/')
+                for project, repo in self.tool.repos:
                     fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                    r = pool.add_repo(prp)
+                    r = pool.add_repo()
                     r.add_solv(fn)
 
                 sysrepo = pool.add_repo(os.path.basename(old).replace('.merged.solv', ''))
@@ -1117,6 +1112,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for group in self.tool.output:
             groupname = group.keys()[0]
             settings = group[groupname]
+            if not settings:  # e.g. unsorted
+                settings = {}
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
             self.tool.solve_module(groupname, includes, excludes)
@@ -1150,6 +1147,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
     @cmdln.option('-s', '--scope', default='all', help='scope on which to operate ({})'.format(', '.join(SCOPES)))
+    @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
+    @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -1185,47 +1184,26 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         main_repo = target_config['main-repo']
 
         if opts.scope == 'target':
-            self.options.repos = ['/'.join([target_project, main_repo])]
+            self.repos = self.tool.expand_repos(target_project, main_repo)
             self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
             return self.error_occured
         elif opts.scope == 'ports':
             # TODO Continue supporting #1297, but should be abstracted.
             main_repo = 'ports'
             opts.project += ':Ports'
-            self.options.repos = ['/'.join([opts.project, main_repo])]
+            self.repos = self.tool.expand_repos(opts.project, main_repo)
             self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
             return self.error_occured
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
-            self.options.repos = [
-                '/'.join([api.rings[1], main_repo]),
-                '/'.join([api.rings[0], main_repo]),
-            ]
+            self.repos = self.tool.expand_repos(api.rings[1], main_repo)
             self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
-
-            opts.project = api.rings[2]
-            self.options.repos.insert(0, '/'.join([api.rings[2], main_repo]))
-            self.update_and_solve_target_wrapper(apiurl, target_project, target_config,
-                                                 main_repo, opts, skip_release=True)
             return self.error_occured
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
             for letter in letters:
                 opts.project = api.prj_from_short(letter)
-                self.options.repos = ['/'.join([opts.project, main_repo])]
-
-                if not api.is_staging_bootstrapped(opts.project):
-                    self.options.repos.append('/'.join([opts.project, 'bootstrap_copy']))
-
-                # DVD project first since it depends on main.
-                if api.item_exists(opts.project + ':DVD'):
-                    opts_dvd = copy.deepcopy(opts)
-                    opts_dvd.project += ':DVD'
-                    self.options.repos.insert(0, '/'.join([opts_dvd.project, main_repo]))
-                    self.update_and_solve_target_wrapper(
-                        apiurl, target_project, target_config, main_repo, opts_dvd, skip_release=True)
-                    self.options.repos.pop(0)
-
+                self.repos = self.tool.expand_repos(opts.project, main_repo)
                 self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
             return self.error_occured
 
@@ -1278,15 +1256,19 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         host = urlparse.urlparse(apiurl).hostname
         cache_dir = save_cache_path('opensuse-packagelists', host, opts.project)
 
-        if os.path.exists(cache_dir):
-            shutil.rmtree(cache_dir)
-        os.makedirs(cache_dir)
+        if not opts.no_checkout:
+            if os.path.exists(cache_dir):
+                shutil.rmtree(cache_dir)
+            os.makedirs(cache_dir)
 
         group_dir = os.path.join(cache_dir, group)
         product_dir = os.path.join(cache_dir, product)
         release_dir = os.path.join(cache_dir, release)
 
         for package in checkout_list:
+            if opts.no_checkout:
+                print("Skipping checkout of {}/{}".format(opts.project, package))
+                continue
             checkout_package(apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
 
         if not skip_release:
@@ -1309,17 +1291,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             print('-> do_update nonfree')
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
-            self.options.repos_ = self.options.repos
-            self.options.repos = ['/'.join([nonfree, main_repo])]
-            self.postoptparse()
-
+            repos_ = self.repos
             opts_nonfree = copy.deepcopy(opts)
             opts_nonfree.project = nonfree
+            self.repos = self.expand_repos(nonfree, main_repo)
             self.do_update('update', opts_nonfree)
 
             # Switch repo back to main target project.
-            self.options.repos = self.options.repos_
-            self.postoptparse()
+            self.repos = repos_
 
         print('-> update_merge')
         self.update_merge(nonfree if drop_list else False)
@@ -1331,6 +1310,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
         self.do_solve('solve', opts)
+        if opts.stop_after_solve:
+            return
 
         if drop_list:
             # Ensure solv files from all releases in product family are updated.
