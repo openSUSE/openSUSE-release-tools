@@ -1146,6 +1146,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-p', '--project', help='target project')
     @cmdln.option('-s', '--scope', default='all', help='scope on which to operate ({})'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
+    @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -1307,6 +1308,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
         self.do_solve('solve', opts)
+        if opts.stop_after_solve:
+            return
 
         if drop_list:
             # Ensure solv files from all releases in product family are updated.
