@@ -1112,6 +1112,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for group in self.tool.output:
             groupname = group.keys()[0]
             settings = group[groupname]
+            if not settings:  # e.g. unsorted
+                settings = {}
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
             self.tool.solve_module(groupname, includes, excludes)
