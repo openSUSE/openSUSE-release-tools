@@ -107,6 +107,27 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
+    r'openSUSE:(?P<project>Backports:(?P<version>[^:]+))': {
+        'staging': 'openSUSE:%(project)s:Staging',
+        'staging-group': 'factory-staging',
+        'staging-archs': 'x86_64',
+        'lock': 'openSUSE:%(project)s:Staging',
+        'lock-ns': 'openSUSE',
+        'onlyadi': True,
+        'leaper-override-group': 'leap-reviewers',
+        'review-team': 'opensuse-review-team',
+        'legal-review-group': 'legal-auto',
+        # review-team optionally added by leaper.py.
+        'repo-checker': 'repo-checker',
+        'repo_checker-arch-whitelist': 'x86_64',
+        # 16 hour staging window for follow-ups since lower throughput.
+        'splitter-staging-age-max': '57600',
+        # No special packages since they will pass through Leap first.
+        'splitter-special-packages': '',
+        # Allow `unselect --cleanup` to operate immediately on:
+        # - Update crawler requests (leaper)
+        'unselect-cleanup-whitelist': 'leaper',
+    },
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.
     r'(?P<project>.*$)': {
@@ -114,6 +135,7 @@ DEFAULT = {
         'staging-group': None,
         'staging-archs': '',
         'staging-dvd-archs': '',
+        'onlyadi': False,
         'rings': None,
         'nonfree': None,
         'rebuild': None,
@@ -123,7 +145,7 @@ DEFAULT = {
         'lock-ns': None,
         'delreq-review': None,
         'main-repo': 'openSUSE_Factory',
-        'priority': '1000', # Lowest priority as only a fallback.
+        '_priority': '0', # Apply defaults first
     },
 }
 
@@ -164,12 +186,14 @@ class Config(object):
     def populate_conf(self):
         """Add sane default into the configuration."""
         defaults = {}
-        default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: int(i[1].get('priority', 99))))
+        default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: int(i[1].get('_priority', 99))))
         for prj_pattern in default_ordered:
             match = re.match(prj_pattern, self.project)
             if match:
                 project = match.group('project')
                 for k, v in DEFAULT[prj_pattern].items():
+                    if k.startswith('_'):
+                        continue
                     if isinstance(v, basestring) and '%(project)s' in v:
                         defaults[k] = v % {'project': project}
                     elif isinstance(v, basestring) and '%(project.lower)s' in v:
@@ -178,7 +202,8 @@ class Config(object):
                         defaults[k] = v % {'version': match.group('version')}
                     else:
                         defaults[k] = v
-                break
+                if int(DEFAULT[prj_pattern].get('_priority', 99)) != 0:
+                    break
 
         if self.remote_values:
             defaults.update(self.remote_values)
