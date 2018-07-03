@@ -1145,6 +1145,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
     @cmdln.option('-s', '--scope', default='all', help='scope on which to operate ({})'.format(', '.join(SCOPES)))
+    @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -1252,15 +1253,19 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         host = urlparse.urlparse(apiurl).hostname
         cache_dir = save_cache_path('opensuse-packagelists', host, opts.project)
 
-        if os.path.exists(cache_dir):
-            shutil.rmtree(cache_dir)
-        os.makedirs(cache_dir)
+        if not opts.no_checkout:
+            if os.path.exists(cache_dir):
+                shutil.rmtree(cache_dir)
+            os.makedirs(cache_dir)
 
         group_dir = os.path.join(cache_dir, group)
         product_dir = os.path.join(cache_dir, product)
         release_dir = os.path.join(cache_dir, release)
 
         for package in checkout_list:
+            if opts.no_checkout:
+                print("Skipping checkout of {}/{}".format(opts.project, package))
+                continue
             checkout_package(apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
 
         if not skip_release:
