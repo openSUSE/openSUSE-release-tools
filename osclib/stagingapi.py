@@ -981,11 +981,6 @@ class StagingAPI(object):
 
         return log.getvalue()
 
-    def staging_walk(self, staging):
-        yield staging
-        if len(self.cstaging_dvd_archs) and not self.is_adi_project(staging):
-            yield staging + ':DVD'
-
     @memoize(session=True)
     def project_status(self, staging=None, aggregate=False):
         path = ('project', 'staging_projects', self.project)

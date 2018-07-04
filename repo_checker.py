@@ -183,9 +183,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             if group not in self.groups_build:
                 # Generate build hash based on hashes from relevant projects.
                 builds = []
-                for staging in api.staging_walk(group):
-                    builds.append(ET.fromstringlist(show_results_meta(
-                        self.apiurl, staging, multibuild=True, repository=['standard'])).get('state'))
+                builds.append(ET.fromstringlist(show_results_meta(
+                    self.apiurl, group, multibuild=True, repository=['standard'])).get('state'))
                 builds.append(ET.fromstringlist(show_results_meta(
                     self.apiurl, api.project, multibuild=True, repository=['standard'])).get('state'))
 
@@ -247,14 +246,12 @@ class RepoChecker(ReviewBot.ReviewBot):
             directories = []
             ignore = set()
 
-            for staging in self.staging_api(project).staging_walk(group):
-                if arch not in self.target_archs(staging):
-                    self.logger.debug('{}/{} not available'.format(staging, arch))
-                    continue
-
-                stagings.append(staging)
-                directories.append(self.mirror(staging, arch))
-                ignore.update(self.ignore_from_staging(project, staging, arch))
+            if arch not in self.target_archs(group):
+                self.logger.debug('{}/{} not available'.format(group, arch))
+            else:
+                stagings.append(group)
+                directories.append(self.mirror(group, arch))
+                ignore.update(self.ignore_from_staging(project, group, arch))
 
             if not len(stagings):
                 continue
