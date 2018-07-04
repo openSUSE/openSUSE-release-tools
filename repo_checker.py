@@ -166,11 +166,10 @@ class RepoChecker(ReviewBot.ReviewBot):
                 if status and str(status['overall_state']) == 'failed':
                     # Exception to the rule is openQA only in failed state.
                     openQA_only = True
-                    for project in api.project_status_walk(status):
-                        if len(project['broken_packages']):
-                            # Broken packages so not just openQA.
-                            openQA_only = False
-                            break
+                    if len(status['broken_packages']):
+                        # Broken packages so not just openQA.
+                        openQA_only = False
+                        break
 
                 if not self.force and not openQA_only:
                     self.logger.debug('{}: {} not ready'.format(request.reqid, group))

@@ -911,19 +911,18 @@ class StagingAPI(object):
 
     def rebuild_broken(self, status, check=True):
         """ Rebuild broken packages given a staging's status information. """
-        for project in self.project_status_walk(status):
-            for package in project['broken_packages']:
-                package = {k: str(v) for k, v in package.items()}
-                if package['state'] == 'unresolvable':
-                    continue
-                key = (package['project'], package['package'],
-                       package['repository'], package['arch'])
-                if check and not self.rebuild_check(*key):
-                    yield (key, 'skipped')
-                    continue
+        for package in status['broken_packages']:
+            package = {k: str(v) for k, v in package.items()}
+            if package['state'] == 'unresolvable':
+                continue
+            key = (package['project'], package['package'],
+                   package['repository'], package['arch'])
+            if check and not self.rebuild_check(*key):
+                yield (key, 'skipped')
+                continue
 
-                code = rebuild(self.apiurl, *key)
-                yield (key, code)
+            code = rebuild(self.apiurl, *key)
+            yield (key, code)
 
     def rebuild_check(self, project, package, repository, architecture):
         history = self.job_history_get(project, repository, architecture, package)
@@ -1002,13 +1001,6 @@ class StagingAPI(object):
         url = self.makeurl(path, {'format': 'json'})
         return json.load(self.retried_GET(url))
 
-    def project_status_walk(self, project):
-        yield project
-        for sub in project['subprojects']:
-            # Oddly, dashboard returns [ None ] instead of [].
-            if sub is not None:
-                yield sub
-
     def check_project_status(self, project):
         """
         Checks a staging project for acceptance. Use the JSON document
@@ -1027,10 +1019,9 @@ class StagingAPI(object):
 
     def project_status_build_sum(self, status):
         final = tobuild = 0
-        for project in self.project_status_walk(status):
-            for repo in project['building_repositories']:
-                final += int(repo['final'])
-                tobuild += int(repo['tobuild'])
+        for repo in status['building_repositories']:
+            final += int(repo['final'])
+            tobuild += int(repo['tobuild'])
         return final, tobuild
 
     def project_status_requests(self, request_type, filter_function=None):
