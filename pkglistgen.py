@@ -89,6 +89,7 @@ class Group(object):
         self.solved = False
         self.not_found = dict()
         self.unresolvable = dict()
+        self.default_support_status = None
         for a in ARCHITECTURES:
             self.packages[a] = []
             self.unresolvable[a] = dict()
@@ -388,7 +389,7 @@ class Group(object):
                 else:
                     logger.error(msg)
                     name = msg
-            status = self.pkglist.supportstatus(name)
+            status = self.pkglist.supportstatus(name) or self.default_support_status
             attrs = {'name': name}
             if status is not None:
                 attrs['supportstatus'] = status
@@ -415,7 +416,6 @@ class PkgListGen(ToolBase.ToolBase):
         ToolBase.ToolBase.__init__(self)
         # package -> supportatus
         self.packages = dict()
-        self.default_support_status = 'l3'
         self.groups = dict()
         self._supportstatus = None
         self.input_dir = '.'
@@ -427,14 +427,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.unwanted = set()
         self.output = None
         self.locales = set()
-
-    def _dump_supportstatus(self):
-        for name in self.packages.keys():
-            for status in self.packages[name]:
-                if status == self.default_support_status:
-                    continue
-                for group in self.packages[name][status]:
-                    print(name, status)
 
     def _load_supportstatus(self):
         # XXX
@@ -448,15 +440,11 @@ class PkgListGen(ToolBase.ToolBase):
                     if len(a) > 1:
                         self._supportstatus[a[0]] = a[1]
 
-    # TODO: make per product
     def supportstatus(self, package):
         if self._supportstatus is None:
             self._load_supportstatus()
 
-        if package in self._supportstatus:
-            return self._supportstatus[package]
-        else:
-            return self.default_support_status
+        return self._supportstatus.get(package)
 
     def _load_group_file(self, fn):
         output = None
@@ -702,15 +690,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                           help='input directory', default='.')
         parser.add_option('-a', '--architecture', dest='architectures', metavar='ARCH',
                           help='architecure', action='append')
-        parser.add_option('--default-support-status', dest='default_support_status', metavar='STATUS',
-                          help='default support status', default=None)
         return parser
 
     def setup_tool(self):
         tool = PkgListGen()
         tool.input_dir = self.options.input_dir
         tool.output_dir = self.options.output_dir
-        tool.default_support_status = self.options.default_support_status
         tool.repos = self.repos
         if self.options.architectures:
             tool.architectures = self.options.architectures
@@ -729,17 +714,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         for name in sorted(self.tool.groups.keys()):
             print(name)
-
-    # to be called only once to bootstrap
-    def do_dump_supportstatus(self, subcmd, opts):
-        """${cmd_name}: dump supportstatus of input files
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
-        self.tool.load_all_groups()
-        self.tool._dump_supportstatus()
 
     def do_list_products(self, subcmd, opts):
         """${cmd_name}: list all products
@@ -1111,6 +1085,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.tool.solve_module(groupname, includes, excludes)
             g = self.tool.groups[groupname]
             g.conflicts = settings.get('conflicts', [])
+            g.default_support_status = settings.get('default-support', 'unsupported')
             modules.append(g)
 
         # not defined for openSUSE
