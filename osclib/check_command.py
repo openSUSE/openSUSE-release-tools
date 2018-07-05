@@ -26,7 +26,7 @@ class CheckCommand(object):
 
         return True
 
-    def _report(self, project, verbose, is_subproject=False):
+    def _report(self, project, verbose):
         """Print a single report for a project.
         :param project: dict object, converted from JSON.
         :param verbose: do verbose check or not
@@ -82,14 +82,6 @@ class CheckCommand(object):
                     report.append("   - openQA's overall status is %s for %s/tests/%s" % (qa_result, self.api.copenqa, job['id']))
                     report.extend('     %s: fail' % module['name'] for module in job['modules'] if module['result'] == 'fail')
                     break
-
-        subproject = project['subproject']
-        if subproject:
-            subreport = self._report(subproject, verbose, is_subproject=True)
-            if subreport:
-                report.append('')
-                report.append(' -- For subproject %s' % subproject['name'])
-                report.extend(subreport)
 
         if project['overall_state'] == 'acceptable':
             report.insert(0, ' ++ Acceptable staging project %s' % project['name'])
