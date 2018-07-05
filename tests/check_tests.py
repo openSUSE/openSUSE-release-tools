@@ -40,10 +40,6 @@ FULL_REPORT = """
    - openQA's overall status is failed for https://openqa.opensuse.org/tests/10660
      first_boot: fail
 
- -- For subproject openSUSE:Factory:Staging:H:DVD
-   - At least following repositories are still building:
-     standard/x86_64: blocked
-
  -- REVIEW Project openSUSE:Factory:Staging:J still needs attention
    - jeuclid: Missing reviews: factory-repo-checker
 """
@@ -57,11 +53,6 @@ H_REPORT = """
      images/x86_64: blocked
    - openQA's overall status is failed for https://openqa.opensuse.org/tests/10660
      livecdreboot: fail
-
- -- For subproject openSUSE:Factory:Staging:H:DVD
-   - At least following repositories are still building:
-     standard/x86_64: blocked
-     images/x86_64: blocked
 """
 
 
