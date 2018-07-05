@@ -676,7 +676,7 @@ class PkgListGen(ToolBase.ToolBase):
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['all', 'arm', 'target', 'rings', 'staging', 'ports']
+    SCOPES = ['all', 'arm', 'target', 'rings', 'ports', 'staging']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -1113,7 +1113,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
-    @cmdln.option('-s', '--scope', default='all', help='scope on which to operate ({})'.format(', '.join(SCOPES)))
+    @cmdln.option('-s', '--scope', default='all', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     def do_update_and_solve(self, subcmd, opts):
@@ -1127,6 +1127,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if not opts.project:
             raise ValueError('project is required')
+        opts.staging_project = None
+        if opts.scope.startswith('staging:'):
+            opts.staging_project = re.match('staging:(.*)', opts.scope).group(1)
+            opts.staging_project = opts.staging_project.upper()
+            opts.scope = 'staging'
+
         if opts.scope not in self.SCOPES:
             raise ValueError('scope must be one of: {}'.format(', '.join(self.SCOPES)))
 
@@ -1181,6 +1187,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
             for letter in letters:
+                if opts.staging_project and letter != opts.staging_project:
+                    continue
                 opts.project = api.prj_from_short(letter)
                 self.repos = self.tool.expand_repos(opts.project, main_repo)
                 self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
