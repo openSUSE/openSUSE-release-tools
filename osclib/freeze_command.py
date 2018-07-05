@@ -163,18 +163,6 @@ class FreezeCommand(object):
             for arch in ['x86_64', 'ppc64le']:
                 self.update_product_version(prj, 'Test-DVD-' + arch, arch, version)
 
-        # now try to freeze sub project - much easier
-        if self.api.item_exists(prj + ':DVD'):
-            self.prj = prj + ':DVD'
-            self.set_links()
-            self.freeze_prjlinks()
-
-            # Update the version information found in the Test-DVD package, to match openSUSE-release
-            if self.api.item_exists(prj, "openSUSE-release"):
-                version = self.api.package_version(prj, 'openSUSE-release')
-                for arch in ['x86_64', 'ppc64le']:
-                    self.update_product_version(prj + ':DVD', 'Test-DVD-' + arch, arch, version)
-
         # Set the original build status for the project
         self.api.build_switch_prj(prj, build_status)
 

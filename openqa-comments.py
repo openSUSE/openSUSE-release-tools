@@ -36,7 +36,7 @@ class OpenQAReport(object):
         self.comment = CommentAPI(api.apiurl)
 
     def _package_url(self, package):
-        link = 'https://build.opensuse.org/package/live_build_log/%s/%s/%s/%s'
+        link = '/package/live_build_log/%s/%s/%s/%s'
         link = link % (package['project'],
                        package['package'],
                        package['repository'],
@@ -218,5 +218,5 @@ if __name__ == '__main__':
     if args.staging:
         openQA.report(api.prj_from_letter(args.staging))
     else:
-        for staging in api.get_staging_projects(include_dvd=False):
+        for staging in api.get_staging_projects():
             openQA.report(staging)
