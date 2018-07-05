@@ -73,20 +73,6 @@ class OpenQAReport(object):
         info = json.load(self.api.retried_GET(url))
         return info
 
-    def get_broken_package_status(self, info):
-        status = info['broken_packages']
-        subproject = info['subproject']
-        if subproject:
-            status.extend(subproject['broken_packages'])
-        return status
-
-    def get_openQA_status(self, info):
-        status = info['openqa_jobs']
-        subproject = info['subproject']
-        if subproject:
-            status.extend(subproject['openqa_jobs'])
-        return status
-
     def is_there_openqa_comment(self, project):
         """Return True if there is a previous comment."""
         signature = '<!-- openQA status -->'
@@ -119,7 +105,7 @@ class OpenQAReport(object):
             self.comment.add_comment(project_name=project, comment=report)
 
     def _report_broken_packages(self, info):
-        broken_package_status = self.get_broken_package_status(info)
+        broken_package_status = info['broken_packages']
 
         # Group packages by name
         groups = defaultdict(list)
@@ -139,7 +125,7 @@ class OpenQAReport(object):
     def _report_openQA(self, info):
         failing_lines, green_lines = [], []
 
-        openQA_status = self.get_openQA_status(info)
+        openQA_status = info['openqa_jobs']
         for job in openQA_status:
             test_name = job['name'].split('-')[-1]
             fails = [
