@@ -1235,7 +1235,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
             if packages.find('entry[@name="{}"]'.format(release)) is None:
                 if not self.options.dry:
-                    undelete_package(apiurl, opts.project, product, 'revive')
+                    undelete_package(apiurl, opts.project, release, 'revive')
                 print('{} undeleted, skip dvd until next cycle'.format(release))
                 return
 
