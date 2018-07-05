@@ -166,11 +166,10 @@ class RepoChecker(ReviewBot.ReviewBot):
                 if status and str(status['overall_state']) == 'failed':
                     # Exception to the rule is openQA only in failed state.
                     openQA_only = True
-                    for project in api.project_status_walk(status):
-                        if len(project['broken_packages']):
-                            # Broken packages so not just openQA.
-                            openQA_only = False
-                            break
+                    if len(status['broken_packages']):
+                        # Broken packages so not just openQA.
+                        openQA_only = False
+                        break
 
                 if not self.force and not openQA_only:
                     self.logger.debug('{}: {} not ready'.format(request.reqid, group))
@@ -184,9 +183,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             if group not in self.groups_build:
                 # Generate build hash based on hashes from relevant projects.
                 builds = []
-                for staging in api.staging_walk(group):
-                    builds.append(ET.fromstringlist(show_results_meta(
-                        self.apiurl, staging, multibuild=True, repository=['standard'])).get('state'))
+                builds.append(ET.fromstringlist(show_results_meta(
+                    self.apiurl, group, multibuild=True, repository=['standard'])).get('state'))
                 builds.append(ET.fromstringlist(show_results_meta(
                     self.apiurl, api.project, multibuild=True, repository=['standard'])).get('state'))
 
@@ -248,14 +246,12 @@ class RepoChecker(ReviewBot.ReviewBot):
             directories = []
             ignore = set()
 
-            for staging in self.staging_api(project).staging_walk(group):
-                if arch not in self.target_archs(staging):
-                    self.logger.debug('{}/{} not available'.format(staging, arch))
-                    continue
-
-                stagings.append(staging)
-                directories.append(self.mirror(staging, arch))
-                ignore.update(self.ignore_from_staging(project, staging, arch))
+            if arch not in self.target_archs(group):
+                self.logger.debug('{}/{} not available'.format(group, arch))
+            else:
+                stagings.append(group)
+                directories.append(self.mirror(group, arch))
+                ignore.update(self.ignore_from_staging(project, group, arch))
 
             if not len(stagings):
                 continue
