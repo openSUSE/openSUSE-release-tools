@@ -442,7 +442,7 @@ def do_staging(self, subcmd, opts, *args):
             projects = set()
             key = value = None
             stagings = api.get_staging_projects_short(None) + \
-                       api.get_staging_projects(include_dvd=False)
+                       api.get_staging_projects()
             for arg in args[1:]:
                 if arg in stagings:
                     projects.add(api.prj_from_short(arg))
@@ -454,7 +454,7 @@ def do_staging(self, subcmd, opts, *args):
                     value += ' ' + arg
 
             if not len(projects):
-                projects = api.get_staging_projects(include_dvd=False)
+                projects = api.get_staging_projects()
 
             ConfigCommand(api).perform(projects, key, value, opts.append, opts.clear)
         elif cmd == 'freeze':
@@ -501,8 +501,6 @@ def do_staging(self, subcmd, opts, *args):
                     if not opts.no_cleanup:
                         if api.item_exists(api.prj_from_letter(prj)):
                             cmd.cleanup(api.prj_from_letter(prj))
-                        if api.item_exists("%s:DVD" % api.prj_from_letter(prj)):
-                            cmd.cleanup("%s:DVD" % api.prj_from_letter(prj))
                 cmd.accept_other_new()
                 if opts.project.startswith('openSUSE:'):
                     cmd.update_factory_version()
@@ -518,7 +516,7 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'select':
             # Include list of all stagings in short-hand and by full name.
             existing_stagings = api.get_staging_projects_short(None)
-            existing_stagings += api.get_staging_projects(include_dvd=False)
+            existing_stagings += api.get_staging_projects()
             stagings = []
             requests = []
             for arg in args[1:]:

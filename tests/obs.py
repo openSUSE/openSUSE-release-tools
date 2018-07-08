@@ -603,12 +603,11 @@ class OBS(object):
 
         return response
 
-    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U|J](\:DVD)?/_project/_meta'))
+    @GET(re.compile(r'/source/openSUSE:Factory:Staging:[A|B|C|U|J]?/_project/_meta'))
     def source_staging_project_meta_revisioned(self, request, uri, headers):
         """Return the _meta information for a staging project."""
 
         uri = uri.replace('/_project', '')
-        uri = uri.replace(':DVD', '')
         key = re.search(r'openSUSE:Factory:Staging:(\w(?:/\w+)?)/_meta', uri).group(1)
 
         response = (404, headers, '<result>Not found</result>')

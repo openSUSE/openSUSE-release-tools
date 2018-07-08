@@ -331,24 +331,18 @@ class StagingAPI(object):
 
         return True
 
-    def get_staging_projects(self, include_dvd=True):
+    def get_staging_projects(self):
         """
         Get all current running staging projects
         :return list of known staging projects
         """
 
-        projects = project_list_prefix(self.apiurl, self.cstaging + ':')
-        if not include_dvd:
-            projects = filter(lambda p: not p.endswith(':DVD'), projects)
-
-        return projects
+        return project_list_prefix(self.apiurl, self.cstaging + ':')
 
     def extract_staging_short(self, p):
         if not p.startswith(self.cstaging):
             return p
         prefix = len(self.cstaging) + 1
-        if p.endswith(':DVD'):
-            p = p[:-4]
         return p[prefix:]
 
     def prj_from_short(self, name):
@@ -363,7 +357,7 @@ class StagingAPI(object):
                     and None for both.
         """
         projects = []
-        for project in self.get_staging_projects(include_dvd=False):
+        for project in self.get_staging_projects():
             if adi is not None and self.is_adi_project(project) != adi:
                 continue
             short = self.extract_staging_short(project)
@@ -1113,13 +1107,6 @@ class StagingAPI(object):
         if self.is_adi_project(project):
             return project
 
-        if self.ring_packages.get(pkg) and self.rings.index(self.ring_packages.get(pkg)) == 2 and not project.endswith(':DVD'):
-            # pkg A in ring1 and points to pkg B in ring2
-            return project + ":DVD"
-        elif self.ring_packages.get(pkg) and self.rings.index(self.ring_packages.get(pkg)) != 2 and project.endswith(':DVD'):
-            # pkg A in ring2 and points to pkg B in ring1
-            return project.replace(':DVD', '')
-
         return project
 
     def get_sub_packages(self, package, project):
@@ -1433,14 +1420,11 @@ class StagingAPI(object):
 
     def build_switch_staging_project(self, target_project, target_flag):
         """
-        Switch the build flag for a staging project (includes :DVD).
+        Switch the build flag for a staging project
         :param target_project: staging project
         :param target_flag: build target flag
         """
         self.build_switch_prj(target_project, target_flag)
-
-        if self.item_exists(target_project + ":DVD"):
-            self.build_switch_prj(target_project + ":DVD", target_flag)
 
     def item_exists(self, project, package=None):
         """
