@@ -696,7 +696,7 @@ class PkgListGen(ToolBase.ToolBase):
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['all', 'target', 'rings', 'staging', 'ports']
+    SCOPES = ['all', 'arm', 'target', 'rings', 'staging', 'ports']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -920,7 +920,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
                 for project, repo in self.tool.repos:
                     fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                    r = pool.add_repo()
+                    r = pool.add_repo(project)
                     r.add_solv(fn)
 
                 sysrepo = pool.add_repo(os.path.basename(old).replace('.merged.solv', ''))
@@ -992,10 +992,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
         path_prefix = 'suse/' if name and repo_style == 'build' else ''
         url = urlparse.urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
+        print("fetching url %s", url)
         repomd = requests.get(url)
         ns = {'r': 'http://linux.duke.edu/metadata/repo'}
         root = ET.fromstring(repomd.content)
+        if root is None:
+            return
+
         primary_element = root.find('.//r:data[@type="primary"]', ns)
+        if primary_element is None:
+            return
+
         location = primary_element.find('r:location', ns).get('href')
         sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
 
@@ -1068,6 +1075,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if name is not None and '-Build' in name:
             return name, 'build'
 
+        return name, "undefined"
         raise Exception('media.1/{media,build} includes no build number')
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
@@ -1178,13 +1186,25 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         config.apply_remote(api)
 
         target_config = conf.config[target_project]
-        archs_key = 'pkglistgen-archs' if opts.scope != 'ports' else 'pkglistgen-archs-ports'
+        if opts.scope == 'ports':
+            archs_key = 'pkglistgen-archs-ports'
+        elif opts.scope == 'arm':
+            archs_key = 'pkglistgen-archs-arm'
+        else:
+            archs_key = 'pkglistgen-archs'
+
         if archs_key in target_config:
             self.options.architectures = target_config.get(archs_key).split(' ')
         main_repo = target_config['main-repo']
 
         if opts.scope == 'target':
             self.repos = self.tool.expand_repos(target_project, main_repo)
+            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
+            return self.error_occured
+        elif opts.scope == 'arm':
+            main_repo = 'ports'
+            opts.project += ':ARM'
+            self.repos = self.tool.expand_repos(opts.project, main_repo)
             self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
             return self.error_occured
         elif opts.scope == 'ports':
@@ -1287,7 +1307,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.do_update('update', opts)
 
         nonfree = target_config.get('nonfree')
-        if opts.scope != 'ports' and nonfree and drop_list:
+        if opts.scope not in ('arm', 'ports') and nonfree and drop_list:
             print('-> do_update nonfree')
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
@@ -1300,8 +1320,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # Switch repo back to main target project.
             self.repos = repos_
 
-        print('-> update_merge')
-        self.update_merge(nonfree if drop_list else False)
+            print('-> update_merge')
+            self.update_merge(nonfree if drop_list else False)
 
         print('-> do_solve')
         opts.ignore_unresolvable = str2bool(target_config.get('pkglistgen-ignore-unresolvable'))
@@ -1406,7 +1426,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     os.makedirs(self.options.output_dir)
 
                 opts.overwrite = False
-                names.append(self.do_dump_solv('dump_solv', opts, url))
+                solv_name = self.do_dump_solv('dump_solv', opts, url)
+                if solv_name:
+                    names.append(solv_name)
 
             if not len(names):
                 logger.warning('no solv files were dumped for {}'.format(project))
