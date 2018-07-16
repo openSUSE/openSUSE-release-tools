@@ -33,7 +33,7 @@ import logging
 import urllib2
 import filecmp
 from osc.core import checkout_package
-from osc.core import http_GET
+from osc.core import http_GET, http_PUT
 from osc.core import makeurl
 from osc.core import Package
 from osc.core import show_results_meta
@@ -400,6 +400,13 @@ class Group(object):
 
         return root
 
+    # just list all packages in it as an array - to be output as one yml
+    def summary(self):
+        ret = set()
+        for arch in ['*'] + self.architectures:
+            ret |= set(self.solved_packages[arch].keys())
+        return ret
+
     def dump(self):
         pprint({'name': self.name, 'missing': self.missing, 'packages': self.packages,
                 'solved': self.solved_packages, 'silents': self.silents})
@@ -474,11 +481,13 @@ class PkgListGen(ToolBase.ToolBase):
 
     def _write_all_groups(self):
         self._check_supplements()
+        summary = dict()
         archs = ['*'] + self.architectures
         for name in self.groups:
             group = self.groups[name]
             if not group.solved:
                 continue
+            summary[name] = group.summary()
             fn = '{}.group'.format(group.name)
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 comment = group.comment
@@ -490,6 +499,7 @@ class PkgListGen(ToolBase.ToolBase):
                     x = re.sub('\s*<!-- reason:', ' <!-- reason:', x)
                     # fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
                     fh.write(x)
+        return summary
 
     def _parse_product(self, root):
         print(root.find('.//products/product/name').text)
@@ -1109,7 +1119,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                         module.solved_packages[arch].pop(p, None)
 
         self.tool._collect_unsorted_packages(modules, self.tool.groups.get('unsorted'))
-        self.tool._write_all_groups()
+        return self.tool._write_all_groups()
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
@@ -1164,7 +1174,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if opts.scope == 'target':
             self.repos = self.tool.expand_repos(target_project, main_repo)
-            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
+            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
             return self.error_occured
         elif opts.scope == 'arm':
             main_repo = 'ports'
@@ -1177,12 +1187,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             main_repo = 'ports'
             opts.project += ':Ports'
             self.repos = self.tool.expand_repos(opts.project, main_repo)
-            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
+            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
             return self.error_occured
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
             self.repos = self.tool.expand_repos(api.rings[1], main_repo)
-            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
+            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
             return self.error_occured
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
@@ -1191,7 +1201,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     continue
                 opts.project = api.prj_from_short(letter)
                 self.repos = self.tool.expand_repos(opts.project, main_repo)
-                self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts)
+                self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
             return self.error_occured
 
     def update_and_solve_target_wrapper(self, *args, **kwargs):
@@ -1206,7 +1216,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             traceback.print_exc()
             self.error_occured = True
 
-    def update_and_solve_target(self, apiurl, target_project, target_config, main_repo, opts,
+    def update_and_solve_target(self, api, target_project, target_config, main_repo, opts,
                                 skip_release=False, drop_list=False):
         print('[{}] {}/{}: update and solve'.format(opts.scope, opts.project, main_repo))
 
@@ -1214,16 +1224,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         product = target_config.get('pkglistgen-product', '000product')
         release = target_config.get('pkglistgen-release', '000release-packages')
 
-        url = makeurl(apiurl, ['source', opts.project])
+        url = api.makeurl(['source', opts.project])
         packages = ET.parse(http_GET(url)).getroot()
         if packages.find('entry[@name="{}"]'.format(product)) is None:
             if not self.options.dry:
-                undelete_package(apiurl, opts.project, product, 'revive')
+                undelete_package(api.apiurl, opts.project, product, 'revive')
             # TODO disable build.
             print('{} undeleted, skip dvd until next cycle'.format(product))
             return
         elif not opts.force:
-            root = ET.fromstringlist(show_results_meta(apiurl, opts.project, product,
+            root = ET.fromstringlist(show_results_meta(api.apiurl, opts.project, product,
                                                        repository=[main_repo], multibuild=True))
             if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
                 print('{}/{} build in progress'.format(opts.project, product))
@@ -1235,12 +1245,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
             if packages.find('entry[@name="{}"]'.format(release)) is None:
                 if not self.options.dry:
-                    undelete_package(apiurl, opts.project, release, 'revive')
+                    undelete_package(api.apiurl, opts.project, release, 'revive')
                 print('{} undeleted, skip dvd until next cycle'.format(release))
                 return
 
         # Cache dir specific to hostname and project.
-        host = urlparse.urlparse(apiurl).hostname
+        host = urlparse.urlparse(api.apiurl).hostname
         cache_dir = save_cache_path('opensuse-packagelists', host, opts.project)
 
         if not opts.no_checkout:
@@ -1256,7 +1266,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             if opts.no_checkout:
                 print("Skipping checkout of {}/{}".format(opts.project, package))
                 continue
-            checkout_package(apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
+            checkout_package(api.apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
 
         if not skip_release:
             self.unlink_all_except(release_dir)
@@ -1296,7 +1306,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.include_suggested = str2bool(target_config.get('pkglistgen-include-suggested'))
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
-        self.do_solve('solve', opts)
+        summary = self.do_solve('solve', opts)
+
         if opts.stop_after_solve:
             return
 
@@ -1307,7 +1318,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             family_last = target_config.get('pkglistgen-product-family-last')
             family_include = target_config.get('pkglistgen-product-family-include')
             solv_prior = self.solv_cache_update(
-                apiurl, cache_dir_solv, target_project, family_last, family_include, opts)
+                api.apiurl, cache_dir_solv, target_project, family_last, family_include, opts)
 
             # Include pre-final release solv files for target project. These
             # files will only exist from previous runs.
@@ -1350,6 +1361,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.multibuild_from_glob(release_dir, '*.spec')
             self.build_stub(release_dir, 'spec')
             self.commit_package(release_dir)
+
+        if api.item_exists(opts.project, '000product-summary'):
+            summary_str = "# Summary of packages in groups"
+            for group in sorted(summary.keys()):
+                summary_str += "\n" + group + ":\n"
+                for package in sorted(summary[group]):
+                    summary_str += "  - " + package + "\n"
+
+            url = api.makeurl(['source', opts.project, '000product-summary', 'summary.yml'])
+            http_PUT(url, data=summary_str)
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
