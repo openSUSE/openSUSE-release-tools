@@ -805,7 +805,7 @@ class ToTest151(ToTestBaseNew):
     livecd_products = []
 
     def openqa_group(self):
-        return 'openSUSE Leap 15.1'
+        return 'openSUSE Leap 15'
 
     def get_current_snapshot(self):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
