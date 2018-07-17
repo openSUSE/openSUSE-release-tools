@@ -992,17 +992,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
         path_prefix = 'suse/' if name and repo_style == 'build' else ''
         url = urlparse.urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
-        print("fetching url %s", url)
         repomd = requests.get(url)
         ns = {'r': 'http://linux.duke.edu/metadata/repo'}
         root = ET.fromstring(repomd.content)
-        if root is None:
-            return
-
         primary_element = root.find('.//r:data[@type="primary"]', ns)
-        if primary_element is None:
-            return
-
         location = primary_element.find('r:location', ns).get('href')
         sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
 
@@ -1075,7 +1068,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if name is not None and '-Build' in name:
             return name, 'build'
 
-        return name, "undefined"
         raise Exception('media.1/{media,build} includes no build number')
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
