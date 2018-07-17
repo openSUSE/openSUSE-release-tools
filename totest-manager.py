@@ -811,6 +811,34 @@ class ToTest151(ToTestBaseNew):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
 
+class ToTest151ARM(ToTestBaseNew):
+    main_products = [
+        '000product:openSUSE-cd-mini-aarch64',
+        '000product:openSUSE-dvd5-dvd-aarch64',
+    ]
+
+    ftp_products = ['000product:openSUSE-ftp-ftp-aarch64',
+                    '000product:openSUSE-ftp-ftp-armv7hl',
+                    ]
+
+    livecd_products = []
+
+    # Leap 15.1 ARM still need to update snapshot
+    set_snapshot_number = True
+
+    # product_repo openqa_group jobs_num values are specific to aarch64
+    # TODO: How to handle the other entries of main_products ?
+
+    def openqa_group(self):
+        return 'openSUSE Leap 15 AArch64'
+
+    def jobs_num(self):
+        return 10
+
+    def get_current_snapshot(self):
+        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
+
+
 class ToTest150Ports(ToTestBaseNew):
     main_products = [
         '000product:openSUSE-cd-mini-aarch64',
@@ -932,6 +960,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'openSUSE:Factory:ARM': ToTestFactoryARM,
             'openSUSE:Factory:zSystems': ToTestFactoryzSystems,
             'openSUSE:Leap:15.1': ToTest151,
+            'openSUSE:Leap:15.1:ARM': ToTest151ARM,
             'openSUSE:Leap:15.0:Ports': ToTest150Ports,
             'openSUSE:Leap:15.0:Images': ToTest150Images,
             'openSUSE:Leap:15.1:Images': ToTest151Images,
