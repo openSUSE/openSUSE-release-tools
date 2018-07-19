@@ -225,6 +225,17 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.debug('requests: {} skipped, {} queued'.format(
             count_before - len(self.requests), len(self.requests)))
 
+    def expand_project_repo(self, api, project, repo, repos):
+        repos.append([project, repo])
+        url = api.makeurl(['source', project, '_meta'])
+        meta = ET.parse(api.retried_GET(url)).getroot()
+        for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
+            self.expand_project_repo(api, path.get('project', project), path.get('repository'), repos)
+        return repos
+
+    def expand_repos(self, api, project, repo):
+        return self.expand_project_repo(api, project, repo, [])
+
     def ensure_group(self, request, action):
         project = action.tgt_project
         group = self.requests_map[int(request.reqid)]
@@ -254,8 +265,12 @@ class RepoChecker(ReviewBot.ReviewBot):
                 continue
 
             # Only bother if staging can match arch, but layered first.
-            directories.insert(0, self.mirror(project, arch))
-
+            repos = self.expand_repos(self.staging_api(project), project, 'standard')
+            for layered_project, repo in reversed(repos):
+                if repo != 'standard':
+                    raise "We assume all is standard"
+                directories.insert(0, self.mirror(layered_project, arch))
+                
             whitelist = self.binary_whitelist(project, arch, group)
 
             # Perform checks on group.
