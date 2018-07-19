@@ -12,7 +12,6 @@ RUN zypper -n ref && zypper -n dup && zypper -n install \
   obs-service-* \
   osc \
   python-packaging \
-  python2-pyOpenSSL \
   sudo
 
 # `osc build` directories that are effective to cache:
