@@ -164,12 +164,9 @@ class RepoChecker(ReviewBot.ReviewBot):
                 # Not in a "ready" state.
                 openQA_only = False # Not relevant so set to False.
                 if status and str(status['overall_state']) == 'failed':
-                    # Exception to the rule is openQA only in failed state.
-                    openQA_only = True
-                    if len(status['broken_packages']):
-                        # Broken packages so not just openQA.
-                        openQA_only = False
-                        break
+                    # Exception to the rule is openQA only in failed state,
+                    # Broken packages so not just openQA.
+                    openQA_only = (len(status['broken_packages']) == 0)
 
                 if not self.force and not openQA_only:
                     self.logger.debug('{}: {} not ready'.format(request.reqid, group))
@@ -257,7 +254,11 @@ class RepoChecker(ReviewBot.ReviewBot):
                 continue
 
             # Only bother if staging can match arch, but layered first.
-            directories.insert(0, self.mirror(project, arch))
+            repos = self.staging_api(project).expanded_repos('standard')
+            for layered_project, repo in reversed(repos):
+                if repo != 'standard':
+                    raise "We assume all is standard"
+                directories.insert(0, self.mirror(layered_project, arch))
 
             whitelist = self.binary_whitelist(project, arch, group)
 

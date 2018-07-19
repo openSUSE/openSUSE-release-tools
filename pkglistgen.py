@@ -526,16 +526,8 @@ class PkgListGen(ToolBase.ToolBase):
         for e in excludes:
             g.ignore(self.groups[e])
 
-    def expand_project_repo(self, project, repo, repos):
-        repos.append([project, repo])
-        url = makeurl(self.apiurl, ['source', project, '_meta'])
-        meta = ET.parse(http_GET(url)).getroot()
-        for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
-            self.expand_project_repo(path.get('project', project), path.get('repository'), repos)
-        return repos
-
     def expand_repos(self, project, repo):
-        return self.expand_project_repo(project, repo, [])
+        return StagingAPI(self.apiurl, project).expanded_repos('standard')
 
     def _check_supplements(self):
         tocheck = set()
