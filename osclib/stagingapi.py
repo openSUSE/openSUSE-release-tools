@@ -1826,3 +1826,16 @@ class StagingAPI(object):
             return meta.find(xpath) is not None
 
         return False
+
+    # recursively detect underlying projects
+    def expand_project_repo(self, project, repo, repos):
+        repos.append([project, repo])
+        url = self.makeurl(['source', project, '_meta'])
+        meta = ET.parse(self.retried_GET(url)).getroot()
+        for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
+            self.expand_project_repo(path.get('project', project), path.get('repository'), repos)
+        return repos
+
+    def expanded_repos(self, repo):
+        return self.expand_project_repo(self.project, repo, [])
+        
