@@ -96,3 +96,7 @@ job install name mariadb
 
 ## we newly want to start glxgears in Staging tests (sync up with SLE)
 job install name Mesa-demo-x
+
+## required in Staging tests
+job install name salt-master
+job install name salt-minion
