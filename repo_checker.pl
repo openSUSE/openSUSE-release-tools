@@ -19,24 +19,10 @@ require CreatePackageDescr;
 my $ret = 0;
 my $arch = shift @ARGV;
 my @directories = split(/\,/, shift @ARGV);
-my %toignore;
-my $repodir;
 my %whitelist;
 while (@ARGV) {
     my $switch = shift @ARGV;
-    if ( $switch eq "-f" ) {
-        my $toignore = shift @ARGV;
-        open( TOIGNORE, $toignore ) || die "can't open $toignore";
-        while (<TOIGNORE>) {
-            chomp;
-            $toignore{$_} = 1;
-        }
-        close(TOIGNORE);
-    }
-    elsif ( $switch eq "-r" ) {
-        $repodir = shift @ARGV;
-    }
-    elsif ( $switch eq "-w" ) {
+    if ( $switch eq "-w" ) {
         %whitelist = map { $_ => 1 } split(/\,/, shift @ARGV);
     }
     else {
@@ -47,9 +33,8 @@ while (@ARGV) {
 
 my %targets;
 
-sub write_package($$) {
-    my $ignore  = shift;
-    my $package = shift;
+sub write_package {
+    my ($package, $packages_fd, $written_names) = @_;
 
     my $name = basename($package);
     if ($name =~ m/^[a-z0-9]{32}-/) { # repo cache
@@ -58,44 +43,40 @@ sub write_package($$) {
        $name =~ s,^(.*)-[^-]+-[^-]+.rpm,$1,;
     }
 
-    if ( $ignore == 1 && defined $toignore{$name} ) {
+    if ( defined $written_names->{$name} ) {
+        #print STDERR "ignoring $package in favor of $written_names->{$name}\n";
         return;
     }
+    $written_names->{$name} = $package;
 
     my $out = CreatePackageDescr::package_snippet($package);
     if ($out eq "" || $out =~ m/=Pkg:    /) {
         print STDERR "ERROR: empty package snippet for: $name\n";
         exit(126);
     }
-    print PACKAGES $out;
+    print $packages_fd $out;
     return $name;
 }
 
 my @rpms;
 my $tmpdir = tempdir( "repochecker-XXXXXXX", TMPDIR => 1, CLEANUP => 1 );
 my $pfile = $tmpdir . "/packages";
-open( PACKAGES, ">", $pfile ) || die 'can not open';
-print PACKAGES "=Ver: 2.0\n";
+open( my $packages_fd, ">", $pfile ) || die 'can not open';
+print $packages_fd "=Ver: 2.0\n";
 
-# Allow $repodir to be empty indicating to only review $directories.
-if (length($repodir)) {
-    my @rpms = glob("$repodir/*.rpm");
-    foreach my $package (@rpms) {
-        write_package(1, $package);
-    }
-}
+my $written_names = {};
 
 foreach my $directory (@directories) {
     @rpms = glob("$directory/*.rpm");
     foreach my $package (@rpms) {
-        my $name = write_package( 0, $package );
-        if (!exists($whitelist{$name})) {
+        my $name = write_package( $package, $packages_fd, $written_names );
+        if ($name && !exists($whitelist{$name})) {
             $targets{$name} = 1;
         }
     }
 }
 
-close(PACKAGES);
+close($packages_fd);
 
 my $error_file = $tmpdir . "/error_file";
 open(INSTALL, "/usr/bin/installcheck $arch $pfile 2> $error_file |")

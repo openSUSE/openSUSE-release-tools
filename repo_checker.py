@@ -241,31 +241,29 @@ class RepoChecker(ReviewBot.ReviewBot):
         for arch in self.target_archs(project):
             stagings = []
             directories = []
-            ignore = set()
 
             if arch not in self.target_archs(group):
                 self.logger.debug('{}/{} not available'.format(group, arch))
             else:
                 stagings.append(group)
                 directories.append(self.mirror(group, arch))
-                ignore.update(self.ignore_from_staging(project, group, arch))
 
             if not len(stagings):
                 continue
 
             # Only bother if staging can match arch, but layered first.
             repos = self.staging_api(project).expanded_repos('standard')
-            for layered_project, repo in reversed(repos):
+            for layered_project, repo in repos:
                 if repo != 'standard':
                     raise "We assume all is standard"
-                directories.insert(0, self.mirror(layered_project, arch))
+                directories.append(self.mirror(layered_project, arch))
 
             whitelist = self.binary_whitelist(project, arch, group)
 
             # Perform checks on group.
             results = {
                 'cycle': self.cycle_check(project, stagings, arch),
-                'install': self.install_check(project, directories, arch, ignore, whitelist),
+                'install': self.install_check(project, directories, arch, whitelist),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -326,16 +324,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.mirrored.add((project, arch))
         return directory
 
-    def ignore_from_staging(self, project, staging, arch):
-        """Determine the target project binaries to ingore in favor of staging."""
-        _, binary_map = package_binary_list(self.apiurl, staging, 'standard', arch)
-        packages = set(binary_map.values())
-
-        binaries, _ = package_binary_list(self.apiurl, project, 'standard', arch)
-        for binary in binaries:
-            if binary.package in packages:
-                yield binary.name
-
     def binary_whitelist(self, project, arch, group):
         additions = self.staging_api(project).get_prj_pseudometa(group).get('config', {})
         prefix = 'repo_checker-binary-whitelist'
@@ -346,29 +334,19 @@ class RepoChecker(ReviewBot.ReviewBot):
         whitelist = filter(None, whitelist)
         return whitelist
 
-    def install_check(self, project, directories, arch, ignore=[], whitelist=[], parse=False):
+    def install_check(self, project, directories, arch, whitelist=[], parse=False):
         self.logger.info('install check: start')
 
-        with tempfile.NamedTemporaryFile() as ignore_file:
-            # Print ignored rpms on separate lines in ignore file.
-            for item in ignore:
-                ignore_file.write(item + '\n')
-            ignore_file.flush()
+        # Invoke repo_checker.pl to perform an install check.
+        script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
+        parts = ['LC_ALL=C', 'perl', script, arch, ','.join(directories),
+                 '-w', ','.join(whitelist)]
 
-            directory_project = directories.pop(0) if len(directories) > 1 else None
-
-            # Invoke repo_checker.pl to perform an install check.
-            script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
-            parts = ['LC_ALL=C', 'perl', script, arch, ','.join(directories),
-                     '-f', ignore_file.name, '-w', ','.join(whitelist)]
-            if directory_project:
-                parts.extend(['-r', directory_project])
-
-            parts = [pipes.quote(part) for part in parts]
-            p = subprocess.Popen(' '.join(parts), shell=True,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, close_fds=True)
-            stdout, stderr = p.communicate()
+        parts = [pipes.quote(part) for part in parts]
+        p = subprocess.Popen(' '.join(parts), shell=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, close_fds=True)
+        stdout, stderr = p.communicate()
 
         if p.returncode:
             self.logger.info('install check: failed')
