@@ -74,21 +74,13 @@ class StagingAPI(object):
 
         # Store some prefix / data used in the code.
         self.user = conf.get_apiurl_usr(apiurl)
+        self._rings = None
         self._ring_packages = None
         self._ring_packages_for_links = None
         self._packages_staged = None
         self._package_metas = dict()
         self._supersede = False
         self._package_disabled = {}
-
-        # If the project support rings, inititialize some variables.
-        if self.crings:
-            self.rings = (
-                '{}:0-Bootstrap'.format(self.crings),
-                '{}:1-MinimalX'.format(self.crings)
-            )
-        else:
-            self.rings = []
 
         Cache.init()
 
@@ -109,6 +101,21 @@ class StagingAPI(object):
 
         # Raise AttributeError like normal.
         return self.__getattribute__(attr)
+
+    @property
+    def rings(self):
+        if self._rings is None:
+
+            # If the project support rings, inititialize some variables.
+            if self.crings:
+                self._rings = (
+                    '{}:0-Bootstrap'.format(self.crings),
+                    '{}:1-MinimalX'.format(self.crings)
+                )
+            else:
+                self._rings = []
+
+        return self._rings
 
     @property
     def ring_packages(self):
@@ -1838,4 +1845,3 @@ class StagingAPI(object):
 
     def expanded_repos(self, repo):
         return self.expand_project_repo(self.project, repo, [])
-        
