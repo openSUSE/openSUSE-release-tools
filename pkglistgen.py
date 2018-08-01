@@ -1123,7 +1123,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
-    @cmdln.option('-s', '--scope', default='all', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
+    @cmdln.option('-s', '--scope', action='append', default=['all'], help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     def do_update_and_solve(self, subcmd, opts):
@@ -1138,20 +1138,24 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if not opts.project:
             raise ValueError('project is required')
         opts.staging_project = None
-        if opts.scope.startswith('staging:'):
-            opts.staging_project = re.match('staging:(.*)', opts.scope).group(1)
-            opts.staging_project = opts.staging_project.upper()
-            opts.scope = 'staging'
 
-        if opts.scope not in self.SCOPES:
-            raise ValueError('scope must be one of: {}'.format(', '.join(self.SCOPES)))
+        # special case for all
+        if opts.scope == ['all']:
+            opts.scope = self.SCOPES[1:]
 
-        if opts.scope == 'all':
-            for scope in self.SCOPES[1:]:
-                opts.scope = scope
-                self.do_update_and_solve(subcmd, copy.deepcopy(opts))
-            return self.error_occured
+        for scope in opts.scope:
+            if scope.startswith('staging:'):
+                opts.staging_project = re.match('staging:(.*)', scope).group(1)
+                opts.staging_project = opts.staging_project.upper()
+                scope = 'staging'
+            if scope not in self.SCOPES:
+                raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
+            opts.scope = scope
+            self.real_update_and_solve(copy.deepcopy(opts))
+        return self.error_occured
 
+    # note: scope is a value here - while it's an array above
+    def real_update_and_solve(self, opts):
         # Store target project as opts.project will contain subprojects.
         target_project = opts.project
 
