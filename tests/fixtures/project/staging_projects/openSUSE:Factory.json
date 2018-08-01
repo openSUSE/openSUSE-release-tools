@@ -1072,7 +1072,7 @@
         "obsolete_requests": [
             {
                 "accept_at": null,
-                "superseded_by_id": null,
+                "superseded_by": null,
                 "description": "",
                 "creator": "alois",
                 "created_at": "2017-05-02T10:24:19.000Z",
@@ -1084,7 +1084,7 @@
             },
             {
                 "accept_at": null,
-                "superseded_by_id": 492518,
+                "superseded_by": 492518,
                 "description": "",
                 "creator": "alois",
                 "created_at": "2017-05-02T10:24:19.000Z",
@@ -1096,7 +1096,7 @@
             },
             {
                 "accept_at": null,
-                "superseded_by_id": 592518,
+                "superseded_by": 592518,
                 "description": "",
                 "creator": "alois",
                 "created_at": "2017-05-02T10:24:19.000Z",
@@ -1108,7 +1108,7 @@
             },
             {
                 "accept_at": null,
-                "superseded_by_id": null,
+                "superseded_by": null,
                 "description": "",
                 "creator": "alois",
                 "created_at": "2017-05-02T10:24:19.000Z",
@@ -1120,7 +1120,7 @@
             },
             {
                 "accept_at": null,
-                "superseded_by_id": null,
+                "superseded_by": null,
                 "description": "",
                 "creator": "leaper",
                 "created_at": "2017-05-02T10:24:19.000Z",
@@ -1132,7 +1132,7 @@
             },
             {
                 "accept_at": null,
-                "superseded_by_id": null,
+                "superseded_by": null,
                 "description": "",
                 "creator": "alois",
                 "created_at": "2017-05-02T10:24:19.000Z",
@@ -1144,7 +1144,7 @@
             },
             {
                 "accept_at": null,
-                "superseded_by_id": null,
+                "superseded_by": null,
                 "description": "",
                 "creator": "alois",
                 "created_at": "2017-05-02T10:24:19.000Z",
