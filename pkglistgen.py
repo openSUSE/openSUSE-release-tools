@@ -813,7 +813,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def do_create_sle_weakremovers(self, subcmd, opts, *prjs):
         for prj in prjs:
             logger.debug("processing %s", prj)
-            self.expand_repos(prj, 'standard')
+            self.tool.expand_repos(prj, 'standard')
             opts.project = prj
             self.do_update('update', opts)
 
@@ -1295,7 +1295,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             repos_ = self.repos
             opts_nonfree = copy.deepcopy(opts)
             opts_nonfree.project = nonfree
-            self.repos = self.expand_repos(nonfree, main_repo)
+            self.repos = self.tool.expand_repos(nonfree, main_repo)
             self.do_update('update', opts_nonfree)
 
             # Switch repo back to main target project.
