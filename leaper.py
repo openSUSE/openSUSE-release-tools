@@ -291,8 +291,8 @@ class Leaper(ReviewBot.ReviewBot):
                         self.logger.debug("found request")
                         return good
                 # let's see where it came from before
-                if package in self.lookup_150:
-                    oldorigin = self.lookup_150[package]
+                oldorigin = self.lookup.get('openSUSE:Leap:15.0', target_package)
+                if oldorigin:
                     self.logger.debug("oldorigin {}".format(oldorigin))
                     # Factory. So it's ok to keep upgrading it to Factory
                     # TODO: whitelist packages where this is ok and block others?
@@ -307,8 +307,7 @@ class Leaper(ReviewBot.ReviewBot):
                                 return good
                     # TODO Ugly save for 15.2 (n-2).
                     elif False and oldorigin.startswith('openSUSE:Leap:15.0'):
-                        o = self.lookup_150[package]
-                        self.logger.info("Package was from %s in 15.0", o)
+                        self.logger.info("Package was from %s in 15.0", oldorigin)
                 # the release manager needs to review attempts to upgrade to Factory
                 is_fine_if_factory = True
                 self.needs_release_manager = True
