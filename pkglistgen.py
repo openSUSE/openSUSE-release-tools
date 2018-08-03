@@ -524,8 +524,8 @@ class PkgListGen(ToolBase.ToolBase):
         for e in excludes:
             g.ignore(self.groups[e])
 
-    def expand_repos(self, project, repo):
-        return StagingAPI(self.apiurl, project).expanded_repos('standard')
+    def expand_repos(self, project, repo='standard'):
+        return StagingAPI(self.apiurl, project).expanded_repos(repo)
 
     def _check_supplements(self):
         tocheck = set()
@@ -686,7 +686,7 @@ class PkgListGen(ToolBase.ToolBase):
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['all', 'arm', 'target', 'rings', 'ports', 'staging']
+    SCOPES = ['all', 'target', 'rings', 'staging', 'arm']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -813,7 +813,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def do_create_sle_weakremovers(self, subcmd, opts, *prjs):
         for prj in prjs:
             logger.debug("processing %s", prj)
-            self.expand_repos(prj, 'standard')
+            self.tool.expand_repos(prj, 'standard')
             opts.project = prj
             self.do_update('update', opts)
 
@@ -1184,7 +1184,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             main_repo = 'ports'
             opts.project += ':ARM'
             self.repos = self.tool.expand_repos(opts.project, main_repo)
-            self.update_and_solve_target_wrapper(apiurl, target_project, target_config, main_repo, opts, drop_list=True)
+            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
             return self.error_occured
         elif opts.scope == 'ports':
             # TODO Continue supporting #1297, but should be abstracted.
@@ -1295,7 +1295,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             repos_ = self.repos
             opts_nonfree = copy.deepcopy(opts)
             opts_nonfree.project = nonfree
-            self.repos = self.expand_repos(nonfree, main_repo)
+            self.repos = self.tool.expand_repos(nonfree, main_repo)
             self.do_update('update', opts_nonfree)
 
             # Switch repo back to main target project.
