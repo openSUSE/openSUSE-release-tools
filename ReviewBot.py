@@ -36,6 +36,8 @@ import signal
 import datetime
 import time
 import yaml
+import pika
+import json
 
 try:
     from xml.etree import cElementTree as ET
@@ -45,6 +47,7 @@ except ImportError:
 from osc import conf
 import osc.core
 import urllib2
+from urlparse import urlsplit
 from itertools import count
 from xdg.BaseDirectory import load_first_config
 
@@ -103,6 +106,10 @@ class ReviewBot(object):
             'project_namespace_api_map' : [
                 ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
                 ],
+            'amqp_status': False,
+            'amqp_host': None,
+            'amqp_user': None,
+            'amqp_password': None,
             }
 
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
@@ -127,6 +134,10 @@ class ReviewBot(object):
         self.lookup = PackageLookup(self.apiurl)
 
         self.load_config()
+
+        self.notify_connection = None
+        self.notify_channel = None
+        amqp_url = None
 
     def _load_config(self, handle = None):
         d = self.__class__.config_defaults
@@ -178,7 +189,45 @@ class ReviewBot(object):
 
     # function called before requests are reviewed
     def prepare_review(self):
-        pass
+        self.notify('ok', "starting review run")
+
+    def notify_init(self):
+
+        host = self.config.amqp_host
+        if not host:
+            host = 'rabbit.'+'.'.join(urlsplit(self.apiurl)[1].split('.')[1:])
+        user = self.config.amqp_user
+        if not user:
+            user = conf.config['api_host_options'][self.apiurl]['user']
+        password = self.config.amqp_password
+        if not password:
+            password = conf.config['api_host_options'][self.apiurl]['pass']
+
+        self.logger.debug("sending status notifications to %s", host)
+
+        amqp_url = 'amqps://%s:%s@%s'%(user, password, host)
+
+        self.notify_connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
+
+        self.notify_channel = self.notify_connection.channel()
+        self.notify_channel.exchange_declare(exchange='pubsub', exchange_type='topic', passive=True, durable=True)
+
+    def notify(self, status, comment):
+        """ post a status update to the message bus """
+        self.logger.info(comment)
+        if not self.notify_connection:
+            return
+        msg_body = json.dumps({
+            'name': self.bot_name.lower(),
+            'status': status,
+            'comment': comment,
+        })
+        try:
+            self.notify_channel.basic_publish(exchange='pubsub', routing_key='suse.bot.status', body=msg_body)
+        except pika.exceptions.ChannelClosed, e:
+            self.logger.error(e)
+            self.notify_connection = None
+
 
     def check_requests(self):
         self.staging_apis = {}
@@ -186,8 +235,9 @@ class ReviewBot(object):
 
         # give implementations a chance to do something before single requests
         self.prepare_review()
-        for req in self.requests:
-            self.logger.info("checking %s"%req.reqid)
+        for req, i in zip(self.requests, count()):
+            self.notify("ok", "checking %s (%d/%d)"%(req.reqid, len(self.requests), i+1))
+
             self.request = req
 
             override = self.request_override_check(req)
@@ -702,6 +752,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--fallback-user", dest='fallback_user', metavar='USER', help="fallback review user")
         parser.add_option("--fallback-group", dest='fallback_group', metavar='GROUP', help="fallback review group")
         parser.add_option('-c', '--config', dest='config', metavar='FILE', help='read config file FILE')
+        parser.add_option("--enable-amqp-status", action="store_true", help="enable posting rabbitmq status updates")
 
         return parser
 
@@ -732,6 +783,9 @@ class CommandLineInterface(cmdln.Cmdln):
 
         if self.options.fallback_group:
             self.checker.fallback_group = self.options.fallback_group
+
+        if self.options.enable_amqp_status or self.checker.config.amqp_status:
+            self.checker.notify_init()
 
     def setup_checker(self):
         """ reimplement this """
@@ -801,13 +855,26 @@ class CommandLineInterface(cmdln.Cmdln):
                 raise ExTimeout()
             signal.signal(signal.SIGALRM, alarm_called)
 
+        status = None
+        msg = None
         while True:
+            status = 'ok'
+            msg = None
             try:
                 workfunc()
             except Exception as e:
+                status = 'failed'
+                msg = str(e)
+                self.checker.notify(status, msg)
                 self.logger.exception(e)
 
             if interval:
+                if msg:
+                    msg += ' | '
+                else:
+                    msg = ''
+                msg += "sleeping %d minutes." % interval
+                self.checker.notify(status, msg)
                 if os.isatty(0):
                     self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
                     signal.alarm(interval*60)
@@ -832,6 +899,13 @@ class CommandLineInterface(cmdln.Cmdln):
                 continue
 
             break
+
+        if not msg:
+            msg = 'done'
+        self.checker.notify(status, msg)
+        if self.checker.notify_connection:
+            self.checker.notify_connection.close()
+
 
 if __name__ == "__main__":
     app = CommandLineInterface()
