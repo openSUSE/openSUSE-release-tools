@@ -16,6 +16,7 @@ import tempfile
 
 from osclib.comments import CommentAPI
 from osclib.core import binary_list
+from osclib.core import BINARY_REGEX
 from osclib.core import depends_on
 from osclib.core import devel_project_fallback
 from osclib.core import fileinfo_ext_all
@@ -24,6 +25,7 @@ from osclib.core import request_staged
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
+from osclib.memoize import memoize
 
 import ReviewBot
 
@@ -341,12 +343,31 @@ class RepoChecker(ReviewBot.ReviewBot):
             if binary.package in packages:
                 yield binary.name
 
+    @memoize(session=True)
+    def binary_list_existing_problem(self, project):
+        """Determine which binaries are mentioned in repo_checker output."""
+        binaries = set()
+
+        api = self.staging_api(project)
+        content = api.dashboard_content_load('repo_checker')
+        if not content:
+            self.logger.warn('no project_only run from which to extract existing problems')
+            return binaries
+
+        sections = self.install_check_parse(content)
+        for section in sections:
+            for binary in section.binaries:
+                match = re.match(BINARY_REGEX, binary)
+                if match:
+                    binaries.add(match.group('name'))
+
+        return binaries
+
     def binary_whitelist(self, project, arch, group):
         additions = self.staging_api(project).get_prj_pseudometa(group).get('config', {})
+        whitelist = self.binary_list_existing_problem(project)
         prefix = 'repo_checker-binary-whitelist'
-        whitelist = set()
         for key in [prefix, '-'.join([prefix, arch])]:
-            whitelist.update(self.staging_config[project].get(key, '').split(' '))
             whitelist.update(additions.get(key, '').split(' '))
         whitelist = filter(None, whitelist)
         return whitelist
