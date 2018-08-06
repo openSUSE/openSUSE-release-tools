@@ -251,7 +251,7 @@ class Manager42(object):
             raise
 
 
-    def _is_ignored(self, project, package):
+    def _is_ignored(self, package):
         if package in self.config.ignored_packages:
             logger.debug("%s in ignore list", package)
             return True
@@ -259,7 +259,7 @@ class Manager42(object):
 
     def _fill_package_list(self, project):
         if project not in self.packages:
-            self.packages[project] = [ p for p in self.get_source_packages(project) if not self._is_ignored(project, p) ]
+            self.packages[project] = [ p for p in self.get_source_packages(project) if not self._is_ignored(p) ]
 
     def check_source_in_project(self, project, package, verifymd5, deleted=False):
 
@@ -295,7 +295,8 @@ class Manager42(object):
         self.sle_workarounds_sourced = False
         lproject = self.lookup.get(package, None)
         if not package in self.packages[self.config.from_prj]:
-            logger.info("{} vanished".format(package))
+            if not self._is_ignored(package):
+                logger.info("{} vanished".format(package))
             if self.lookup.get(package):
                 del self.lookup[package]
                 self.lookup_changes += 1
