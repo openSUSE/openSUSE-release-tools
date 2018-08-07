@@ -46,6 +46,7 @@ from osc import conf
 import osc.core
 import urllib2
 from itertools import count
+from xdg.BaseDirectory import load_first_config
 
 class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
@@ -133,6 +134,13 @@ class ReviewBot(object):
         return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
 
     def load_config(self, filename = None):
+        if not filename:
+            d = load_first_config('opensuse-release-tools')
+            if d:
+                filename = os.path.join(d, '%s.conf'%self.bot_name.lower())
+                if not os.path.exists(filename):
+                    filename = None
+
         if filename:
             with open(filename, 'r') as fh:
                 self.config = self._load_config(fh)
