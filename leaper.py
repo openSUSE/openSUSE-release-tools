@@ -48,7 +48,6 @@ class Leaper(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         # ReviewBot options.
-        self.only_one_action = True
         self.request_default_return = True
         self.comment_handler = True
 
