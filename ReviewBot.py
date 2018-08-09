@@ -330,7 +330,7 @@ class ReviewBot(object):
         if self.comment_handler is not False:
             self.comment_handler_add()
 
-        overall = None
+        overall = True
         for a in req.actions:
             # Store in-case sub-classes need direct access to original values.
             self.action = a
@@ -340,8 +340,14 @@ class ReviewBot(object):
                 fn = 'check_action__default'
             func = getattr(self, fn)
             ret = func(req, a)
-            if ret == False or overall is None and ret is not None:
-                overall = ret
+
+            # In the case of multiple actions take the "lowest" result where the
+            # order from lowest to highest is: False, None, True.
+            if overall is not False:
+                if ((overall is True and ret is not True) or
+                    (overall is None and ret is False)):
+                    overall = ret
+
         return overall
 
     @staticmethod
