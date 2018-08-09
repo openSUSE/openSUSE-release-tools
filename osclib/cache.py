@@ -90,7 +90,7 @@ class Cache(object):
         '/source/([^/]+)/_meta$': TTL_LONG,
         '/source/([^/]+)/(?:[^/]+)/(?:_meta|_link)$': TTL_LONG,
         '/source/([^/]+)/dashboard/[^/]+': TTL_LONG,
-        '/source/([^/]+)/_attribute/[^/]+': TTL_MEDIUM,
+        '/source/([^/]+)/_attribute/[^/]+': TTL_SHORT,
         # Handles clearing local cache on package deletes. Lots of queries like
         # updating project info, comment, and package additions.
         '/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_LONG,
