@@ -48,7 +48,6 @@ class Leaper(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         # ReviewBot options.
-        self.only_one_action = True
         self.request_default_return = True
         self.comment_handler = True
 
@@ -224,6 +223,27 @@ class Leaper(ReviewBot.ReviewBot):
                 review_result = None
 
             return review_result
+
+        if target_project.endswith(':Update'):
+            self.logger.info("expected origin is '%s' (%s)", origin,
+                             "unchanged" if origin_same else "changed")
+
+            if origin_same:
+                return True
+
+            good = self._check_matching_srcmd5(origin, target_package, src_srcinfo.verifymd5)
+            if good:
+                self.logger.info('submission source found in origin ({})'.format(origin))
+                return good
+            good = self.factory._check_requests(origin, target_package, src_srcinfo.verifymd5)
+            if good or good == None:
+                self.logger.info('found pending submission against origin ({})'.format(origin))
+                return good
+
+            return None
+        elif self.action.type == 'maintenance_incident':
+            self.logger.debug('unhandled incident pattern (targetting non :Update project)')
+            return True
 
         # obviously
         if src_project in ('openSUSE:Factory', 'openSUSE:Factory:NonFree'):
