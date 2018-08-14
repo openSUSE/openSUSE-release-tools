@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -98,7 +99,11 @@ class CheckSource(ReviewBot.ReviewBot):
                 # - target: openSUSE:Leap:15.1/google-compute-engine
                 # Note: home:jberry:Update would also be allowed via this condition,
                 # but that should be handled by leaper and human review.
-                inair_renamed = target_package != source_package.split('.')[0]
+                # Ignore a dot in package name (ex. tpm2.0-abrmd) and instead
+                # only look for ending in dot number.
+                match = re.match(r'(.*)\.\d+$', source_package)
+                if match:
+                    inair_renamed = target_package != match.group(1)
 
         if not self.in_air_rename_allow and inair_renamed:
             self.review_messages['declined'] = 'Source and target package names must match'
