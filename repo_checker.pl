@@ -21,6 +21,7 @@ my $arch = shift @ARGV;
 my @directories = split(/\,/, shift @ARGV);
 my %toignore;
 my %whitelist;
+my $filter = 1;
 while (@ARGV) {
     my $switch = shift @ARGV;
     if ( $switch eq "-f" ) {
@@ -34,6 +35,9 @@ while (@ARGV) {
     }
     elsif ( $switch eq "-w" ) {
         %whitelist = map { $_ => 1 } split(/\,/, shift @ARGV);
+    }
+    elsif ( $switch eq "--no-filter" ) {
+        $filter = 0;
     }
     else {
         print "read the source luke: $switch ? \n";
@@ -109,7 +113,7 @@ while (<INSTALL>) {
         $inc = 0;
     }
     if ( $_ =~ /^can't install (.*)-[^-]+-[^-]+:$/ ) {
-        if ( defined $targets{$1} ) {
+        if ( !$filter || defined $targets{$1} ) {
             $inc = 1;
             $ret = 1;
         }
@@ -138,7 +142,7 @@ while (<CONFLICTS>) {
         $inc = 0;
     }
     if ( $_ =~ /^found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:$/ ) {
-        if ( defined $targets{$1} || defined $targets{$2} ) {
+        if ( !$filter || defined $targets{$1} || defined $targets{$2} ) {
             $inc = 1;
             $ret = 1;
         }

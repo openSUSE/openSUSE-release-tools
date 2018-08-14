@@ -70,12 +70,17 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         comment = [build]
         for arch in self.target_archs(project):
-            directory_project = self.mirror(project, arch)
+            directories = []
+            repos = self.staging_api(project).expanded_repos('standard')
+            for layered_project, repo in repos:
+                if repo != 'standard':
+                    raise "We assume all is standard"
+                directories.append(self.mirror(layered_project, arch))
 
             parse = project if post_comments else False
             results = {
                 'cycle': CheckResult(True, None),
-                'install': self.install_check(project, [directory_project], arch, parse=parse),
+                'install': self.install_check(project, directories, arch, parse=parse, no_filter=True),
             }
 
             if not all(result.success for _, result in results.items()):
@@ -346,7 +351,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         whitelist = filter(None, whitelist)
         return whitelist
 
-    def install_check(self, project, directories, arch, ignore=[], whitelist=[], parse=False):
+    def install_check(self, project, directories, arch, ignore=[], whitelist=[], parse=False, no_filter=False):
         self.logger.info('install check: start')
 
         with tempfile.NamedTemporaryFile() as ignore_file:
@@ -359,6 +364,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
             parts = ['LC_ALL=C', 'perl', script, arch, ','.join(directories),
                      '-f', ignore_file.name, '-w', ','.join(whitelist)]
+            if no_filter:
+                parts.append('--no-filter')
 
             parts = [pipes.quote(part) for part in parts]
             p = subprocess.Popen(' '.join(parts), shell=True,
