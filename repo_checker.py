@@ -255,10 +255,10 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             # Only bother if staging can match arch, but layered first.
             repos = self.staging_api(project).expanded_repos('standard')
-            for layered_project, repo in reversed(repos):
+            for layered_project, repo in repos:
                 if repo != 'standard':
                     raise "We assume all is standard"
-                directories.insert(0, self.mirror(layered_project, arch))
+                directories.append(self.mirror(layered_project, arch))
 
             whitelist = self.binary_whitelist(project, arch, group)
 
@@ -355,14 +355,10 @@ class RepoChecker(ReviewBot.ReviewBot):
                 ignore_file.write(item + '\n')
             ignore_file.flush()
 
-            directory_project = directories.pop(0) if len(directories) > 1 else None
-
             # Invoke repo_checker.pl to perform an install check.
             script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
             parts = ['LC_ALL=C', 'perl', script, arch, ','.join(directories),
                      '-f', ignore_file.name, '-w', ','.join(whitelist)]
-            if directory_project:
-                parts.extend(['-r', directory_project])
 
             parts = [pipes.quote(part) for part in parts]
             p = subprocess.Popen(' '.join(parts), shell=True,
