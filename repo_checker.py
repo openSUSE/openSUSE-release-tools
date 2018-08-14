@@ -594,7 +594,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         else:
             print('y')
 
-        api.attribute_value_save('Config', ''.join(config_new), 'repo_checker whitelist clean')
+        api.attribute_value_save('Config', ''.join(config_new))
 
     def whitelist_clean_set(self, config, key, value):
         # Unfortunately even OscConfigParser does not preserve empty lines.
