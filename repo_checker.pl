@@ -20,8 +20,8 @@ my $ret = 0;
 my $arch = shift @ARGV;
 my @directories = split(/\,/, shift @ARGV);
 my %toignore;
-my $repodir;
 my %whitelist;
+my $filter = 1;
 while (@ARGV) {
     my $switch = shift @ARGV;
     if ( $switch eq "-f" ) {
@@ -33,11 +33,11 @@ while (@ARGV) {
         }
         close(TOIGNORE);
     }
-    elsif ( $switch eq "-r" ) {
-        $repodir = shift @ARGV;
-    }
     elsif ( $switch eq "-w" ) {
         %whitelist = map { $_ => 1 } split(/\,/, shift @ARGV);
+    }
+    elsif ( $switch eq "--no-filter" ) {
+        $filter = 0;
     }
     else {
         print "read the source luke: $switch ? \n";
@@ -47,9 +47,8 @@ while (@ARGV) {
 
 my %targets;
 
-sub write_package($$) {
-    my $ignore  = shift;
-    my $package = shift;
+sub write_package {
+    my ($package, $packages_fd, $written_names) = @_;
 
     my $name = basename($package);
     if ($name =~ m/^[a-z0-9]{32}-/) { # repo cache
@@ -58,44 +57,49 @@ sub write_package($$) {
        $name =~ s,^(.*)-[^-]+-[^-]+.rpm,$1,;
     }
 
-    if ( $ignore == 1 && defined $toignore{$name} ) {
+    if ( defined $written_names->{$name} ) {
         return;
     }
+    $written_names->{$name} = $package;
 
     my $out = CreatePackageDescr::package_snippet($package);
     if ($out eq "" || $out =~ m/=Pkg:    /) {
         print STDERR "ERROR: empty package snippet for: $name\n";
         exit(126);
     }
-    print PACKAGES $out;
+    print $packages_fd $out;
     return $name;
 }
 
 my @rpms;
 my $tmpdir = tempdir( "repochecker-XXXXXXX", TMPDIR => 1, CLEANUP => 1 );
 my $pfile = $tmpdir . "/packages";
-open( PACKAGES, ">", $pfile ) || die 'can not open';
-print PACKAGES "=Ver: 2.0\n";
+open( my $packages_fd, ">", $pfile ) || die 'can not open';
+print $packages_fd "=Ver: 2.0\n";
 
-# Allow $repodir to be empty indicating to only review $directories.
-if (length($repodir)) {
-    my @rpms = glob("$repodir/*.rpm");
-    foreach my $package (@rpms) {
-        write_package(1, $package);
-    }
-}
+my $written_names = {};
+my $first_layer = 1;
 
 foreach my $directory (@directories) {
     @rpms = glob("$directory/*.rpm");
     foreach my $package (@rpms) {
-        my $name = write_package( 0, $package );
-        if (!exists($whitelist{$name})) {
+        my $name = write_package( $package, $packages_fd, $written_names );
+        if ($first_layer && $name && !exists($whitelist{$name})) {
             $targets{$name} = 1;
         }
     }
+
+    if ($first_layer) {
+        foreach my $key (keys %toignore) {
+            if (!defined($written_names->{$key})) {
+                $written_names->{$key} = "simulate overridden";
+            }
+        }
+        $first_layer = 0;
+    }
 }
 
-close(PACKAGES);
+close($packages_fd);
 
 my $error_file = $tmpdir . "/error_file";
 open(INSTALL, "/usr/bin/installcheck $arch $pfile 2> $error_file |")
@@ -109,7 +113,7 @@ while (<INSTALL>) {
         $inc = 0;
     }
     if ( $_ =~ /^can't install (.*)-[^-]+-[^-]+:$/ ) {
-        if ( defined $targets{$1} ) {
+        if ( !$filter || defined $targets{$1} ) {
             $inc = 1;
             $ret = 1;
         }
@@ -138,7 +142,7 @@ while (<CONFLICTS>) {
         $inc = 0;
     }
     if ( $_ =~ /^found conflict of (.*)-[^-]+-[^-]+ with (.*)-[^-]+-[^-]+:$/ ) {
-        if ( defined $targets{$1} || defined $targets{$2} ) {
+        if ( !$filter || defined $targets{$1} || defined $targets{$2} ) {
             $inc = 1;
             $ret = 1;
         }
