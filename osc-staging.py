@@ -349,7 +349,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unlock
         osc staging rebuild [--force] [STAGING...]
         osc staging repair [--cleanup] [REQUEST...]
-        osc staging setprio [STAGING...]
+        osc staging setprio [STAGING...] [priority]
         osc staging supersede [REQUEST...]
     """
     if opts.version:
@@ -669,7 +669,17 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'setprio':
-            PrioCommand(api).perform(args[1:])
+            stagings = []
+            priority = None
+
+            priorities = ['critical', 'important', 'moderate', 'low']
+            for arg in args[1:]:
+                if arg in priorities:
+                    priority = arg
+                else:
+                    stagings.append(arg)
+
+            PrioCommand(api).perform(stagings, priority)
         elif cmd == 'supersede':
             SupersedeCommand(api).perform(args[1:])
         elif cmd == 'unlock':
