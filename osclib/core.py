@@ -55,14 +55,22 @@ def owner_fallback(apiurl, project, package):
 @memoize(session=True)
 def maintainers_get(apiurl, project, package=None):
     if package is None:
-        meta = ET.fromstringlist(show_project_meta(apiurl, project))
-        return [p.get('userid') for p in meta.findall('.//person') if p.get('role') == 'maintainer']
+        meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+        maintainers = meta.xpath('//person[@role="maintainer"]/@userid')
 
+        groups = meta.xpath('//group[@role="maintainer"]/@groupid')
+        maintainers.extend(groups_members(apiurl, groups))
+
+        return maintainers
+
+    # Ugly reparse, but real xpath makes the rest much cleaner.
     root = owner_fallback(apiurl, project, package)
-    maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
-    if not maintainers:
-        for group in [p.get('name') for p in root.findall('.//group') if p.get('role') == 'maintainer']:
-            maintainers = maintainers + group_members(apiurl, group)
+    root = ETL.fromstringlist(ET.tostringlist(root))
+    maintainers = root.xpath('//person[@role="maintainer"]/@name')
+
+    groups = root.xpath('//group[@role="maintainer"]/@name')
+    maintainers.extend(groups_members(apiurl, groups))
+
     return maintainers
 
 @memoize(session=True)
