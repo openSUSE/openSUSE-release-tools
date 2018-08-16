@@ -321,6 +321,11 @@ def do_staging(self, subcmd, opts, *args):
         If the force option is included the rebuild checks will be ignored and
         all packages failing to build will be triggered.
 
+    "setprio" will set priority of requests withing stagings
+        If no stagings are specified all stagings will be used.
+        The default priority is important, but the possible values are:
+          "critical", "important", "moderate" or "low".
+
     "supersede" will supersede requests were applicable.
         A request list can be used to limit what is superseded.
 
