@@ -35,6 +35,14 @@ def group_members(apiurl, group, maintainers=False):
 
     return root.xpath('person/person/@userid')
 
+def groups_members(apiurl, groups):
+    members = []
+
+    for group in groups:
+        members.extend(group_members(apiurl, group))
+
+    return members
+
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
     root = owner(apiurl, package, project=project)
