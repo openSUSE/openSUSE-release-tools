@@ -468,7 +468,8 @@ fi
 %files leaper
 %defattr(-,root,root,-)
 %{_bindir}/osrt-leaper
-%{_bindir}/osrt-leaper-crawler-*
+# Ugly, but used as config for lack of real config (see #1543).
+%config(noreplace) %{_bindir}/osrt-leaper-crawler-*
 %{_bindir}/osrt-manager_42
 %{_bindir}/osrt-update_crawler
 %{_datadir}/%{source_dir}/leaper.py
