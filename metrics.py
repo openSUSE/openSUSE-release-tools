@@ -355,8 +355,8 @@ def revision_index(api):
         revision_index.index = {}
 
         try:
-            root = ET.fromstring(''.join(
-                get_commitlog(api.apiurl, api.cstaging, 'dashboard', None, format='xml')))
+            root = ET.fromstringlist(
+                get_commitlog(api.apiurl, api.cstaging, 'dashboard', None, format='xml'))
         except HTTPError as e:
             return revision_index.index
 

@@ -197,8 +197,8 @@ class Manager42(object):
         if (self.sle_workarounds and not self.sle_workarounds_sourced and
             package in self.packages[self.sle_workarounds]):
             # Determine how recently the package was updated.
-            root = ET.fromstring(''.join(
-                get_commitlog(self.apiurl, self.sle_workarounds, package, None, format='xml')))
+            root = ET.fromstringlist(
+                get_commitlog(self.apiurl, self.sle_workarounds, package, None, format='xml'))
             updated_last = date_parse(root.find('logentry/date').text)
             age = datetime.now() - updated_last
             if age.total_seconds() < 3600 * 24:
