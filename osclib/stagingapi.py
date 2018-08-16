@@ -690,12 +690,12 @@ class StagingAPI(object):
 
     def get_prj_meta_revision(self, project):
         log = get_commitlog(self.apiurl, project, '_project', None, format='xml', meta=True)
-        root = ET.fromstring(''.join(log))
+        root = ET.fromstringlist(log)
         return int(root.find('logentry').get('revision'))
 
     def get_prj_meta(self, project, revision=None):
         meta = show_project_meta(self.apiurl, project, rev=revision)
-        return ET.fromstring(''.join(meta))
+        return ET.fromstringlist(meta)
 
     def load_prj_pseudometa(self, description_text):
         try:
@@ -867,7 +867,7 @@ class StagingAPI(object):
 
     def is_package_disabled(self, project, package, store=False):
         meta = show_package_meta(self.apiurl, project, package)
-        meta = ET.fromstring(''.join(meta))
+        meta = ET.fromstringlist(meta)
         disabled = len(meta.xpath('build/disable[not(@*)]')) > 0
         if store:
             self._package_disabled['/'.join([project, package])] = disabled

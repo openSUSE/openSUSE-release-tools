@@ -35,6 +35,14 @@ def group_members(apiurl, group, maintainers=False):
 
     return root.xpath('person/person/@userid')
 
+def groups_members(apiurl, groups):
+    members = []
+
+    for group in groups:
+        members.extend(group_members(apiurl, group))
+
+    return members
+
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
     root = owner(apiurl, package, project=project)
@@ -47,14 +55,22 @@ def owner_fallback(apiurl, project, package):
 @memoize(session=True)
 def maintainers_get(apiurl, project, package=None):
     if package is None:
-        meta = ET.fromstring(''.join(show_project_meta(apiurl, project)))
-        return [p.get('userid') for p in meta.findall('.//person') if p.get('role') == 'maintainer']
+        meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+        maintainers = meta.xpath('//person[@role="maintainer"]/@userid')
 
+        groups = meta.xpath('//group[@role="maintainer"]/@groupid')
+        maintainers.extend(groups_members(apiurl, groups))
+
+        return maintainers
+
+    # Ugly reparse, but real xpath makes the rest much cleaner.
     root = owner_fallback(apiurl, project, package)
-    maintainers = [p.get('name') for p in root.findall('.//person') if p.get('role') == 'maintainer']
-    if not maintainers:
-        for group in [p.get('name') for p in root.findall('.//group') if p.get('role') == 'maintainer']:
-            maintainers = maintainers + group_members(apiurl, group)
+    root = ETL.fromstringlist(ET.tostringlist(root))
+    maintainers = root.xpath('//person[@role="maintainer"]/@name')
+
+    groups = root.xpath('//group[@role="maintainer"]/@name')
+    maintainers.extend(groups_members(apiurl, groups))
+
     return maintainers
 
 @memoize(session=True)
@@ -71,7 +87,7 @@ def package_list(apiurl, project):
 @memoize(session=True)
 def target_archs(apiurl, project):
     meta = show_project_meta(apiurl, project)
-    meta = ET.fromstring(''.join(meta))
+    meta = ET.fromstringlist(meta)
     archs = []
     for arch in meta.findall('repository[@name="standard"]/arch'):
         archs.append(arch.text)
@@ -167,7 +183,7 @@ def binary_src_debug(binary):
 @memoize(session=True)
 def devel_project_get(apiurl, target_project, target_package):
     try:
-        meta = ET.fromstring(''.join(show_package_meta(apiurl, target_project, target_package)))
+        meta = ET.fromstringlist(show_package_meta(apiurl, target_project, target_package))
         node = meta.find('devel')
         if node is not None:
             return node.get('project'), node.get('package')

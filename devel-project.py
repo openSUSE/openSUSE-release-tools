@@ -92,7 +92,7 @@ def maintainer(args):
     apiurl = osc.conf.config['apiurl']
     devel_projects = devel_projects_load(args)
     for devel_project in devel_projects:
-        meta = ET.fromstring(''.join(show_project_meta(apiurl, devel_project)))
+        meta = ET.fromstringlist(show_project_meta(apiurl, devel_project))
         groups = meta.xpath('group[@role="maintainer"]/@groupid')
         intersection = set(groups).intersection(desired)
         if len(intersection) != len(desired):
@@ -207,7 +207,7 @@ def maintainers_get(apiurl, project, package=None):
                 meta = show_project_meta(apiurl, project)
     else:
         meta = show_project_meta(apiurl, project)
-    meta = ET.fromstring(''.join(meta))
+    meta = ET.fromstringlist(meta)
 
     userids = []
     for person in meta.findall('person[@role="maintainer"]'):

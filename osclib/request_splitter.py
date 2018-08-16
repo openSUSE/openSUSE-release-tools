@@ -483,7 +483,7 @@ class StrategyQuick(StrategyNone):
         # Only allow reviews by whitelisted groups and users as all others will
         # be considered non-quick (like @by_group="legal-auto"). The allowed
         # groups are only those configured as reviewers on the target project.
-        meta = ET.fromstring(''.join(show_project_meta(splitter.api.apiurl, splitter.api.project)))
+        meta = ET.fromstringlist(show_project_meta(splitter.api.apiurl, splitter.api.project))
         allowed_groups = meta.xpath('group[@role="reviewer"]/@groupid')
         allowed_users = []
         if 'repo-checker' in splitter.config:
