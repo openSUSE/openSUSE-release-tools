@@ -24,6 +24,7 @@ import operator
 import re
 
 from osc import conf
+from osclib.core import attribute_value_load
 
 
 # Sane defatuls for openSUSE and SUSE.  The string interpolation rule
@@ -170,12 +171,12 @@ def str2bool(v):
 class Config(object):
     """Helper class to configuration file."""
 
-    def __init__(self, project):
+    def __init__(self, apiurl, project):
         self.project = project
+        self.remote_values = self.fetch_remote(apiurl)
 
         conf_file = conf.config.get('conffile', os.environ.get('OSC_CONFIG', '~/.oscrc'))
         self.conf_file = os.path.expanduser(conf_file)
-        self.remote_values = None
 
         # Populate the configuration dictionary
         self.populate_conf()
@@ -185,7 +186,7 @@ class Config(object):
         return conf
 
     def populate_conf(self):
-        """Add sane default into the configuration."""
+        """Add sane default into the configuration and layer (defaults, remote, ~/.oscrc)."""
         defaults = {}
         default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: int(i[1].get('_priority', 99))))
         for prj_pattern in default_ordered:
@@ -231,32 +232,12 @@ class Config(object):
         else:
             return defaults
 
-    def _migrate_staging_config(self, api):
-        # first try staging project's dashboard. Can't rely on cstaging as it's
-        # defined by config
-        config = api.load_file_content(self.project + ':Staging', 'dashboard', 'config')
-        if not config:
-            config = api.load_file_content(self.project, 'dashboard', 'config')
-        if not config:
-            return None
-
-        print("Found config in staging dashboard - migrate now [y/n] (y)? ", end='')
-        response = raw_input().lower()
-        if response != '' and response != 'y':
-            return config
-
-        api.attribute_value_save('Config', config)
-
-    def apply_remote(self, api):
-        """Fetch remote config and re-process (defaults, remote, .oscrc)."""
-
-        config = api.attribute_value_load('Config')
-        if not config:
-            # try the old way
-            config = self._migrate_staging_config(api)
+    def fetch_remote(self, apiurl):
+        config = attribute_value_load(apiurl, self.project, 'Config')
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config
             cp.readfp(io.BytesIO(config))
-            self.remote_values = dict(cp.items('remote'))
-            self.populate_conf()
+            return dict(cp.items('remote'))
+
+        return None

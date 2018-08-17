@@ -2,6 +2,8 @@ import unittest
 from osc import conf
 from osclib.conf import DEFAULT
 from osclib.conf import Config
+#from osclib.core import attribute_value_load
+from osclib.core import attribute_value_save
 from osclib.stagingapi import StagingAPI
 
 from obs import APIURL
@@ -12,31 +14,32 @@ from obs import OBS
 class TestConfig(unittest.TestCase):
     def setUp(self):
         self.obs = OBS()
-        self.config = Config(PROJECT)
+        self.load_config()
         self.api = StagingAPI(APIURL, PROJECT)
+
+    def load_config(self, project=PROJECT):
+        self.config = Config(APIURL, project)
 
     def test_basic(self):
         self.assertEqual('openSUSE', conf.config[PROJECT]['lock-ns'])
 
     def test_remote(self):
-        self.assertEqual('local', conf.config[PROJECT]['overridden-by-local'])
-        self.assertIsNone(conf.config[PROJECT].get('remote-only'))
-
-        self.config.apply_remote(self.api)
-
+        # Initial config present in fixtures/oscrc and obs.py attribute default.
+        # Local config fixture contains overridden-by-local and should win over
+        # the remote config value.
         self.assertEqual('local', conf.config[PROJECT]['overridden-by-local'])
         self.assertEqual('remote-indeed', conf.config[PROJECT]['remote-only'])
 
-        self.api.attribute_value_save('Config', 'remote-only = nope')
-        self.config.apply_remote(self.api)
+        # Change remote value.
+        attribute_value_save(APIURL, PROJECT, 'Config', 'remote-only = new value\n')
+        self.load_config()
 
         self.assertEqual('local', conf.config[PROJECT]['overridden-by-local'])
-        self.assertEqual('nope', conf.config[PROJECT]['remote-only'])
+        self.assertEqual('new value', conf.config[PROJECT]['remote-only'])
 
     def test_remote_none(self):
-        self.api.attribute_value_save('Config', '')
-        # don't crash
-        self.config.apply_remote(self.api)
+        self.load_config('not_real_project')
+        self.assertTrue(True) # Did not crash!
 
     def test_pattern_order(self):
         # Add pattern to defaults in order to identify which was matched.
@@ -56,7 +59,7 @@ class TestConfig(unittest.TestCase):
         # Ensure each pattern is match instead of catch-all pattern.
         patterns = set()
         for project in projects:
-            config = Config(project)
+            config = Config(APIURL, project)
             patterns.add(conf.config[project]['pattern'])
 
         self.assertEqual(len(patterns), len(DEFAULT))

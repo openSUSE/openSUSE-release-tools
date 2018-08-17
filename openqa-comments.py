@@ -211,9 +211,9 @@ if __name__ == '__main__':
     if args.force:
         MARGIN_HOURS = 0
 
-    config = Config(args.project)
-    api = StagingAPI(osc.conf.config['apiurl'], args.project)
-    config.apply_remote(api)
+    apiurl = osc.conf.config['apiurl']
+    Config(apiurl, args.project)
+    api = StagingAPI(apiurl, args.project)
     openQA = OpenQAReport(api)
 
     if args.staging:

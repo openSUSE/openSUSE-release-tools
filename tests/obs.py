@@ -274,7 +274,7 @@ class OBS(object):
             'openSUSE:Factory': {
                 'OSRT': {
                     'Config': 'overridden-by-local = remote-nope\n'
-                    'remote-only = remote-indeed'
+                              'remote-only = remote-indeed\n'
                 }
             }
         }

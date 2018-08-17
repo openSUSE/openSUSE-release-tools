@@ -40,8 +40,9 @@ osc.core._search = osc.core.search
 osc.core.search = search
 
 def staging_api(args):
-    Config(args.project)
-    return StagingAPI(osc.conf.config['apiurl'], args.project)
+    apiurl = osc.conf.config['apiurl']
+    Config(apiurl, args.project)
+    return StagingAPI(apiurl, args.project)
 
 def devel_projects_get(apiurl, project):
     """
@@ -116,7 +117,7 @@ def notify(args):
                 maintainer_map.setdefault(userid, set())
                 maintainer_map[userid].add(devel_package_identifier)
 
-    Config(args.project) # Ensure mail-* options are loaded for mail_send().
+    Config(apiurl, args.project) # Ensure mail-* options are loaded for mail_send().
     subject = 'Packages you maintain are present in {}'.format(args.project)
     for userid, package_identifiers in maintainer_map.items():
         email = entity_email(apiurl, userid)

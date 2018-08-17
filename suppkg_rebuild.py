@@ -47,7 +47,7 @@ class StagingHelper(object):
     def __init__(self, project):
         self.project = project
         self.apiurl = osc.conf.config['apiurl']
-        Config(self.project)
+        Config(self.apiurl, self.project)
         self.api = StagingAPI(self.apiurl, self.project)
 
     def get_support_package_list(self, project, repository):

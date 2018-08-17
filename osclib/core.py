@@ -14,6 +14,7 @@ except ImportError:
 from osc.core import get_binarylist
 from osc.core import get_dependson
 from osc.core import http_GET
+from osc.core import http_POST
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import Request
@@ -278,3 +279,41 @@ def package_list_without_links(apiurl, project):
     root = ETL.parse(http_GET(url)).getroot()
     return root.xpath(
         '//sourceinfo[not(./linked[@project="{}"]) and not(contains(@package, ":"))]/@package'.format(project))
+
+def attribute_value_load(apiurl, project, name, namespace='OSRT'):
+    url = makeurl(apiurl, ['source', project, '_attribute', namespace + ':' + name])
+
+    try:
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return None
+
+        raise e
+
+    value = root.xpath(
+        './attribute[@namespace="{}" and @name="{}"]/value/text()'.format(namespace, name))
+    if not len(value):
+        return None
+
+    return value[0]
+
+# New attributes must be defined manually before they can be used. Example:
+#   `osc api /attribute/OSRT/IgnoredIssues/_meta outputs`
+#
+# The new attribute can be created via:
+#   `api -T $xml /attribute/OSRT/$NEWATTRIBUTE/_meta`
+#
+# Remember to create for both OBS and IBS as necessary.
+def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
+    root = ET.Element('attributes')
+
+    attribute = ET.SubElement(root, 'attribute')
+    attribute.set('namespace', namespace)
+    attribute.set('name', name)
+
+    ET.SubElement(attribute, 'value').text = value
+
+    # The OBS API of attributes is super strange, POST to update.
+    url = makeurl(apiurl, ['source', project, '_attribute'])
+    http_POST(url, data=ET.tostring(root))

@@ -11,7 +11,7 @@ from obs import OBS
 class TestUnselect(unittest.TestCase):
     def setUp(self):
         self.obs = OBS()
-        Config(PROJECT)
+        Config(APIURL, PROJECT)
         self.api = StagingAPI(APIURL, PROJECT)
 
     def test_cleanup_filter(self):

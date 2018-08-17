@@ -1159,10 +1159,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         # Store target project as opts.project will contain subprojects.
         target_project = opts.project
 
-        config = Config(target_project)
         apiurl = conf.config['apiurl']
+        config = Config(apiurl, target_project)
         api = StagingAPI(apiurl, target_project)
-        config.apply_remote(api)
 
         target_config = conf.config[target_project]
         if opts.scope == 'ports':
@@ -1387,7 +1386,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             project_family.extend(project_list_family(apiurl, family_include))
 
         for project in project_family:
-            config = Config(project)
+            config = Config(apiurl, project)
             project_config = conf.config[project]
 
             baseurl = project_config.get('download-baseurl')
