@@ -143,7 +143,6 @@ class ReviewBot(object):
         if project not in self.staging_apis:
             Config(self.apiurl, project)
             self.staging_apis[project] = StagingAPI(self.apiurl, project)
-            self.staging_config[project] = conf.config[project].copy()
 
         return self.staging_apis[project]
 
@@ -172,7 +171,6 @@ class ReviewBot(object):
 
     def check_requests(self):
         self.staging_apis = {}
-        self.staging_config = {}
 
         # give implementations a chance to do something before single requests
         self.prepare_review()
