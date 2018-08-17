@@ -132,7 +132,7 @@ DEFAULT = {
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.
     r'(?P<project>.*$)': {
-        'staging': '%(project)s', # Allows for dashboard/config if desired.
+        'staging': None,
         'staging-group': None,
         'staging-archs': '',
         'staging-dvd-archs': '',
