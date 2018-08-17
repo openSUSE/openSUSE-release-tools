@@ -32,7 +32,7 @@ class TestSelect(unittest.TestCase):
         Initialize the configuration
         """
         self.obs = OBS()
-        Config('openSUSE:Factory')
+        Config(APIURL, 'openSUSE:Factory')
         self.api = StagingAPI(APIURL, 'openSUSE:Factory')
 
     def test_old_frozen(self):

@@ -11,7 +11,7 @@ from obs import OBS
 class TestOBSLock(unittest.TestCase):
     def setUp(self):
         self.obs = OBS()
-        Config(PROJECT)
+        Config(APIURL, PROJECT)
 
     def obs_lock(self, reason='list'):
         return OBSLock(APIURL, PROJECT, reason=reason)

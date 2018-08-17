@@ -43,7 +43,7 @@ class TestApiCalls(unittest.TestCase):
         """
 
         self.obs = OBS()
-        Config('openSUSE:Factory')
+        Config(APIURL, 'openSUSE:Factory')
         self.api = StagingAPI(APIURL, 'openSUSE:Factory')
 
     def tearDown(self):

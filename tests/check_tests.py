@@ -63,7 +63,7 @@ class TestCheckCommand(unittest.TestCase):
         """Initialize the configuration."""
 
         self.obs = OBS()
-        Config('openSUSE:Factory')
+        Config(APIURL, 'openSUSE:Factory')
         self.stagingapi = StagingAPI(APIURL, 'openSUSE:Factory')
         self.checkcommand = CheckCommand(self.stagingapi)
 

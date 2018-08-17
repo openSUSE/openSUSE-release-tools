@@ -329,7 +329,7 @@ def main(args):
     osc.conf.config['debug'] = args.osc_debug
 
     # initialize stagingapi config
-    Config(args.to_prj)
+    Config(osc.conf.config['apiurl'], args.to_prj)
 
     uc = UpdateCrawler(args.from_prj, args.to_prj)
     uc.caching = args.cache_requests
