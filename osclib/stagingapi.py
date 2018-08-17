@@ -34,6 +34,8 @@ import yaml
 
 from osc import conf
 from osc import oscerr
+from osclib.core import attribute_value_load
+from osclib.core import attribute_value_save
 from osc.core import show_package_meta
 from osc.core import buildlog_strip_time
 from osc.core import change_review_state
@@ -1513,35 +1515,11 @@ class StagingAPI(object):
         if content != self.dashboard_content_load(filename):
             self.dashboard_content_save(filename, content, comment)
 
-    def attribute_value_load(self, attribute):
-        url = self.makeurl(['source', self.project, '_attribute', 'OSRT:' + attribute])
-        try:
-            f = self.retried_GET(url)
-        except HTTPError as e:
-            if e.code == 404:
-                return None
-            raise e
-        root = ET.parse(f).getroot()
-        root = root.xpath('./attribute[@namespace="OSRT" and @name="{}"]/value/text()'.format(attribute))
-        if not len(root):
-            return None
-        return root[0]
+    def attribute_value_load(self, name):
+        return attribute_value_load(self.apiurl, self.project, name)
 
-    # to create a new attribute 'type' you need to do some manual step
-    # create a xml file analoge to what
-    # osc api /attribute/OSRT/IgnoredIssues/_meta outputs
-    # you need to think about roles, groups and users that should be
-    # able to write the attribute
-    # after that osc api -T $xml /attribute/OSRT/$NEWATTRIBUTE/_meta
-    # (preferably do this right away for ibs and obs)
-    def attribute_value_save(self, attribute, text):
-        root = ET.fromstring('<attributes><attribute name="" namespace="OSRT">' +
-                             '<value/></attribute></attributes>')
-        root.find('./attribute').set('name', attribute)
-        root.find('./attribute/value').text = text
-        # the OBS API of attributes is super strange, you POST updates
-        url = self.makeurl(['source', self.project, '_attribute'])
-        self.retried_POST(url, data=ET.tostring(root))
+    def attribute_value_save(self, name, value):
+        return attribute_value_save(self.apiurl, self.project, name, value)
 
     def update_status_or_deactivate(self, project, command):
         meta = self.get_prj_pseudometa(project)
