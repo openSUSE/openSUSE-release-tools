@@ -16,6 +16,7 @@ import tempfile
 
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.conf import str2bool
 from osclib.core import binary_list
 from osclib.core import BINARY_REGEX
 from osclib.core import depends_on
@@ -101,7 +102,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('{} package comments'.format(len(self.package_results)))
 
         for package, sections in self.package_results.items():
-            if bool(Config.get(self.apiurl, project).get('repo_checker-package-comment-devel', True)):
+            if str2bool(Config.get(self.apiurl, project).get('repo_checker-package-comment-devel', 'True')):
                 bot_name_suffix = project
                 comment_project, comment_package = devel_project_fallback(self.apiurl, project, package)
                 if comment_project is None or comment_package is None:
