@@ -108,6 +108,11 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+):Update)$': {
+        'main-repo': 'standard',
+        'leaper-override-group': 'leap-reviewers',
+        'repo_checker-arch-whitelist': 'x86_64',
+    },
     r'openSUSE:(?P<project>Backports:(?P<version>[^:]+))$': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
