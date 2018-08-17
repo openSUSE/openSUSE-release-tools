@@ -33,8 +33,8 @@ try:
 except ImportError:
     import cElementTree as ET
 
-import osc.conf
 import osc.core
+from osclib.conf import Config
 from osclib.core import devel_project_get
 import urllib2
 import yaml
@@ -468,8 +468,7 @@ class Leaper(ReviewBot.ReviewBot):
         return False
 
     def check_one_request(self, req):
-        api = self.staging_api(req.actions[0].tgt_project)
-        config = self.staging_config[api.project]
+        config = Config.get(self.apiurl, req.actions[0].tgt_project)
         self.needs_legal_review = False
         self.needs_reviewteam = False
         self.needs_release_manager = False

@@ -13,6 +13,7 @@ except ImportError:
 
 import osc.conf
 import osc.core
+from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 import urllib2
@@ -36,8 +37,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
     def target_project_config(self, project):
         # Load project config and allow for remote entries.
-        self.staging_api(project)
-        config = self.staging_config[project]
+        config = Config.get(self.apiurl, project)
 
         self.single_action_require = str2bool(config.get('check-source-single-action-require', 'False'))
         self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))

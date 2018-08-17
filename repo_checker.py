@@ -15,6 +15,7 @@ import sys
 import tempfile
 
 from osclib.comments import CommentAPI
+from osclib.conf import Config
 from osclib.core import binary_list
 from osclib.core import BINARY_REGEX
 from osclib.core import depends_on
@@ -54,7 +55,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         return not len(root.xpath('result[@state!="published"]'))
 
     def project_only(self, project, post_comments=False):
-        # self.staging_config needed by target_archs().
         api = self.staging_api(project)
 
         if not self.force and not self.repository_published(project):
@@ -101,7 +101,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('{} package comments'.format(len(self.package_results)))
 
         for package, sections in self.package_results.items():
-            if bool(self.staging_config[project].get('repo_checker-package-comment-devel', True)):
+            if bool(Config.get(self.apiurl, project).get('repo_checker-package-comment-devel', True)):
                 bot_name_suffix = project
                 comment_project, comment_package = devel_project_fallback(self.apiurl, project, package)
                 if comment_project is None or comment_package is None:
@@ -302,7 +302,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         # Check for arch whitelist and use intersection.
         product = project.split(':Staging:', 1)[0]
-        whitelist = self.staging_config[product].get('repo_checker-arch-whitelist')
+        whitelist = Config.get(self.apiurl, product).get('repo_checker-arch-whitelist')
         if whitelist:
             archs = list(set(whitelist.split(' ')).intersection(set(archs)))
 
