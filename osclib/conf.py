@@ -25,6 +25,7 @@ import re
 
 from osc import conf
 from osclib.core import attribute_value_load
+from osclib.memoize import memoize
 
 
 # Sane defatuls for openSUSE and SUSE.  The string interpolation rule
@@ -180,6 +181,13 @@ class Config(object):
 
         # Populate the configuration dictionary
         self.populate_conf()
+
+    @staticmethod
+    @memoize(session=True) # Allow reset by memoize_session_reset() for ReviewBot.
+    def get(apiurl, project):
+        """Cached version for directly accessing project config."""
+        Config(apiurl, project)
+        return conf.config.get(project, [])
 
     @property
     def conf(self):
