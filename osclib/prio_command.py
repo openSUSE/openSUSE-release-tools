@@ -22,7 +22,7 @@ class PrioCommand(object):
     def __init__(self, api):
         self.api = api
 
-    def _setprio(self, project):
+    def _setprio(self, project, priority):
         """
         Set prios for requests that are still in review
         :param project: project to check
@@ -35,9 +35,7 @@ class PrioCommand(object):
         for r in project['missing_reviews']:
             reqid = str(r['request'])
             req = osc.core.get_request(self.api.apiurl, reqid)
-            priority = req.priority
-            if priority is None:
-                priority = 'important'
+            if req.priority != priority:
                 query = { 'cmd': 'setpriority', 'priority': priority }
                 url = osc.core.makeurl(self.api.apiurl, ['request', reqid], query)
                 print reqid, message
@@ -48,7 +46,7 @@ class PrioCommand(object):
                     print e
 
 
-    def perform(self, projects=None):
+    def perform(self, projects=None, priority=None):
         """
         Set priority on specific stagings or all of them at once
         :param projects: projects on which to set priority, None for all
@@ -59,10 +57,13 @@ class PrioCommand(object):
             aggregate = True
             projects = self.api.get_staging_projects()
 
+        if not priority:
+            priority = 'important'
+
         for project in projects:
             info = self.api.project_status(project, aggregate)
             if not info['selected_requests']:
                 continue
-            self._setprio(info)
+            self._setprio(info, priority)
 
         return True

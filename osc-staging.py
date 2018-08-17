@@ -321,6 +321,11 @@ def do_staging(self, subcmd, opts, *args):
         If the force option is included the rebuild checks will be ignored and
         all packages failing to build will be triggered.
 
+    "setprio" will set priority of requests withing stagings
+        If no stagings are specified all stagings will be used.
+        The default priority is important, but the possible values are:
+          "critical", "important", "moderate" or "low".
+
     "supersede" will supersede requests were applicable.
         A request list can be used to limit what is superseded.
 
@@ -349,7 +354,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unlock
         osc staging rebuild [--force] [STAGING...]
         osc staging repair [--cleanup] [REQUEST...]
-        osc staging setprio [STAGING...]
+        osc staging setprio [STAGING...] [priority]
         osc staging supersede [REQUEST...]
     """
     if opts.version:
@@ -669,7 +674,17 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'repair':
             RepairCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'setprio':
-            PrioCommand(api).perform(args[1:])
+            stagings = []
+            priority = None
+
+            priorities = ['critical', 'important', 'moderate', 'low']
+            for arg in args[1:]:
+                if arg in priorities:
+                    priority = arg
+                else:
+                    stagings.append(arg)
+
+            PrioCommand(api).perform(stagings, priority)
         elif cmd == 'supersede':
             SupersedeCommand(api).perform(args[1:])
         elif cmd == 'unlock':
