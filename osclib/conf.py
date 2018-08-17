@@ -24,6 +24,7 @@ import operator
 import re
 
 from osc import conf
+from osclib.core import attribute_value_load
 
 
 # Sane defatuls for openSUSE and SUSE.  The string interpolation rule
@@ -234,7 +235,7 @@ class Config(object):
     def apply_remote(self, api):
         """Fetch remote config and re-process (defaults, remote, .oscrc)."""
 
-        config = api.attribute_value_load('Config')
+        config = attribute_value_load(api.apiurl, self.project, 'Config')
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config
