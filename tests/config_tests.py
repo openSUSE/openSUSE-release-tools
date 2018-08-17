@@ -2,8 +2,8 @@ import unittest
 from osc import conf
 from osclib.conf import DEFAULT
 from osclib.conf import Config
-#from osclib.core import attribute_value_load
 from osclib.core import attribute_value_save
+from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
 
 from obs import APIURL
@@ -63,3 +63,12 @@ class TestConfig(unittest.TestCase):
             patterns.add(conf.config[project]['pattern'])
 
         self.assertEqual(len(patterns), len(DEFAULT))
+
+    def test_get_memoize_reset(self):
+        """Ensure memoize_session_reset() properly forces re-fetch of config."""
+        self.assertEqual('remote-indeed', Config.get(APIURL, PROJECT)['remote-only'])
+
+        attribute_value_save(APIURL, PROJECT, 'Config', 'remote-only = new value\n')
+        memoize_session_reset()
+
+        self.assertEqual('new value', Config.get(APIURL, PROJECT)['remote-only'])

@@ -13,6 +13,7 @@ except ImportError:
 
 import osc.conf
 import osc.core
+from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 import urllib2
@@ -36,14 +37,14 @@ class CheckSource(ReviewBot.ReviewBot):
 
     def target_project_config(self, project):
         # Load project config and allow for remote entries.
-        self.staging_api(project)
-        config = self.staging_config[project]
+        config = Config.get(self.apiurl, project)
 
         self.single_action_require = str2bool(config.get('check-source-single-action-require', 'False'))
         self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))
         self.in_air_rename_allow = str2bool(config.get('check-source-in-air-rename-allow', 'False'))
         self.add_review_team = str2bool(config.get('check-source-add-review-team', 'True'))
         self.review_team = config.get('review-team')
+        self.staging_group = config.get('staging-group')
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
 
@@ -175,24 +176,14 @@ class CheckSource(ReviewBot.ReviewBot):
 
             if self.only_changes():
                 self.logger.debug('only .changes modifications')
-                staging_group = self.staging_group(target_project)
-                if staging_group and not self.dryrun:
+                if self.staging_group and not self.dryrun:
                     osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
-                        by_group=staging_group,
+                        by_group=self.staging_group,
                         message='skipping the staging process since only .changes modifications')
             elif self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
         return True
-
-    def staging_group(self, project):
-        try:
-            return self.staging_api(project).cstaging_group
-        except urllib2.HTTPError as e:
-            if e.code != 404:
-                raise e
-
-        return None
 
     def is_devel_project(self, source_project, target_project):
         if source_project in self.devel_whitelist:
