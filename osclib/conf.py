@@ -231,29 +231,10 @@ class Config(object):
         else:
             return defaults
 
-    def _migrate_staging_config(self, api):
-        # first try staging project's dashboard. Can't rely on cstaging as it's
-        # defined by config
-        config = api.load_file_content(self.project + ':Staging', 'dashboard', 'config')
-        if not config:
-            config = api.load_file_content(self.project, 'dashboard', 'config')
-        if not config:
-            return None
-
-        print("Found config in staging dashboard - migrate now [y/n] (y)? ", end='')
-        response = raw_input().lower()
-        if response != '' and response != 'y':
-            return config
-
-        api.attribute_value_save('Config', config)
-
     def apply_remote(self, api):
         """Fetch remote config and re-process (defaults, remote, .oscrc)."""
 
         config = api.attribute_value_load('Config')
-        if not config:
-            # try the old way
-            config = self._migrate_staging_config(api)
         if config:
             cp = ConfigParser()
             config = '[remote]\n' + config
