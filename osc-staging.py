@@ -477,7 +477,7 @@ def do_staging(self, subcmd, opts, *args):
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
             if version_totest:
-                version_openqa = api.dashboard_content_load('version_totest')
+                version_openqa = api.pseudometa_file_load('version_totest')
                 totest_dirty = api.is_repo_dirty(api.project, 'totest')
                 print("version_openqa: %s / version_totest: %s / totest_dirty: %s\n" % (version_openqa, version_totest, totest_dirty))
             else:
@@ -491,7 +491,7 @@ def do_staging(self, subcmd, opts, *args):
                 version_openqa = version_totest
                 totest_dirty   = False
             else:
-                version_openqa = api.dashboard_content_load('version_totest')
+                version_openqa = api.pseudometa_file_load('version_totest')
                 totest_dirty   = api.is_repo_dirty(api.project, 'totest')
 
             if version_openqa == version_totest and not totest_dirty:

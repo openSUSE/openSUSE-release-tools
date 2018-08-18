@@ -75,7 +75,7 @@ class AcceptCommand(object):
         return rqs
 
     def reset_rebuild_data(self, project):
-        data = self.api.dashboard_content_load('support_pkg_rebuild')
+        data = self.api.pseudometa_file_load('support_pkg_rebuild')
         if data is None:
             return
 
@@ -89,7 +89,7 @@ class AcceptCommand(object):
         # supportpkg list
         content = ET.tostring(root)
         if content != data:
-            self.api.dashboard_content_save('support_pkg_rebuild', content, 'accept command update')
+            self.api.pseudometa_file_save('support_pkg_rebuild', content, 'accept command update')
 
     def virtually_accept_delete(self, request_id, package):
         self.api.add_review(request_id, by_group=self.api.cdelreq_review, msg='Request accepted. Cleanup in progress - DO NOT REVOKE!')

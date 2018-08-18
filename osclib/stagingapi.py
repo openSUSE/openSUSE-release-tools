@@ -629,14 +629,14 @@ class StagingAPI(object):
 
     @memoize(session=True)
     def get_ignored_requests(self):
-        ignore = self.dashboard_content_load('ignored_requests')
+        ignore = self.pseudometa_file_load('ignored_requests')
         if ignore is None or not ignore:
             return {}
         return yaml.safe_load(ignore)
 
     def set_ignored_requests(self, ignore_requests):
         ignore = yaml.dump(ignore_requests, default_flow_style=False)
-        self.dashboard_content_ensure('ignored_requests', ignore)
+        self.pseudometa_file_ensure('ignored_requests', ignore)
 
     @memoize(session=True, add_invalidate=True)
     def get_open_requests(self, query_extra=None):
@@ -1487,13 +1487,13 @@ class StagingAPI(object):
                 return None
             raise
 
-    def dashboard_content_load(self, filename, revision=None):
+    def pseudometa_file_load(self, filename, revision=None):
         return project_pseudometa_file_load(self.apiurl, self.project, filename, revision)
 
-    def dashboard_content_save(self, filename, content, comment=None):
+    def pseudometa_file_save(self, filename, content, comment=None):
         project_pseudometa_file_save(self.apiurl, self.project, filename, content, comment)
 
-    def dashboard_content_ensure(self, filename, content, comment=None):
+    def pseudometa_file_ensure(self, filename, content, comment=None):
         project_pseudometa_file_ensure(self.apiurl, self.project, filename, content, comment)
 
     def attribute_value_load(self, name):

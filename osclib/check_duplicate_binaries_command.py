@@ -37,6 +37,6 @@ class CheckDuplicateBinariesCommand(object):
 
         current = yaml.dump(duplicates, default_flow_style=False)
         if save:
-            self.api.dashboard_content_ensure('duplicate_binaries', current)
+            self.api.pseudometa_file_ensure('duplicate_binaries', current)
         else:
             print(current)

@@ -65,7 +65,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         build = ET.fromstringlist(show_results_meta(
             self.apiurl, project, multibuild=True, repository=['standard'])).get('state')
-        pseudometa_content = api.dashboard_content_load('repo_checker')
+        pseudometa_content = api.pseudometa_file_load('repo_checker')
         if not self.force and pseudometa_content:
             build_previous = pseudometa_content.splitlines()[0]
             if build == build_previous:
@@ -92,7 +92,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         text = '\n'.join(comment).strip()
         if not self.dryrun:
-            api.dashboard_content_ensure('repo_checker', text + '\n', 'project_only run')
+            api.pseudometa_file_ensure('repo_checker', text + '\n', 'project_only run')
         else:
             print(text)
 
@@ -350,7 +350,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         binaries = set()
 
         api = self.staging_api(project)
-        content = api.dashboard_content_load('repo_checker')
+        content = api.pseudometa_file_load('repo_checker')
         if not content:
             self.logger.warn('no project_only run from which to extract existing problems')
             return binaries

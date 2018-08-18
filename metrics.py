@@ -382,7 +382,7 @@ def dashboard_at(api, filename, datetime=None, revision=None):
     if not revision:
         return revision
 
-    content = api.dashboard_content_load(filename, revision)
+    content = api.pseudometa_file_load(filename, revision)
     if filename in ('ignored_requests'):
         if content:
             return yaml.safe_load(content)
