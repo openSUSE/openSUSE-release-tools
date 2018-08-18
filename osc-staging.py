@@ -167,9 +167,9 @@ def do_staging(self, subcmd, opts, *args):
 
     "config" will modify or view staging specific configuration
 
-        Target project level configuration that applies to all stagings can be
-        found in the $PROJECT:Staging/dashboard container in file "config". Both
-        configuration locations follow the .oscrc format (space separated list).
+        Target project OSRT:Config attribute configuration applies to all
+        stagings. Both configuration locations follow the .oscrc format (space
+        separated list).
 
         config
             Print all staging configuration.
