@@ -1,5 +1,5 @@
 [Unit]
-Description=openSUSE Release Tools: staging-bot devel list (stored in dashboard)
+Description=openSUSE Release Tools: staging-bot devel list (stored in pseudometa package)
 
 [Service]
 User=osrt-staging-bot

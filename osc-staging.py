@@ -137,7 +137,7 @@ def clean_args(args):
 @cmdln.option('--try-strategies', action='store_true', default=False, help='apply strategies and keep any with desireable outcome')
 @cmdln.option('--strategy', help='apply a specific strategy')
 @cmdln.option('--no-color', action='store_true', help='strip colors from output (or add staging.color = 0 to the .oscrc general section')
-@cmdln.option('--save', action='store_true', help='save the result to the dashboard container')
+@cmdln.option('--save', action='store_true', help='save the result to the pseudometa package')
 @cmdln.option('--append', action='store_true', help='append to existing value')
 @cmdln.option('--clear', action='store_true', help='clear value')
 def do_staging(self, subcmd, opts, *args):

@@ -23,6 +23,7 @@ from osclib.core import depends_on
 from osclib.core import devel_project_fallback
 from osclib.core import fileinfo_ext_all
 from osclib.core import package_binary_list
+from osclib.core import project_pseudometa_package
 from osclib.core import request_staged
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
@@ -64,9 +65,9 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         build = ET.fromstringlist(show_results_meta(
             self.apiurl, project, multibuild=True, repository=['standard'])).get('state')
-        dashboard_content = api.dashboard_content_load('repo_checker')
-        if not self.force and dashboard_content:
-            build_previous = dashboard_content.splitlines()[0]
+        pseudometa_content = api.dashboard_content_load('repo_checker')
+        if not self.force and pseudometa_content:
+            build_previous = pseudometa_content.splitlines()[0]
             if build == build_previous:
                 self.logger.info('{} build unchanged'.format(project))
                 return
@@ -414,7 +415,9 @@ class RepoChecker(ReviewBot.ReviewBot):
             if stderr:
                 parts.append('<pre>\n' + stderr + '\n' + '</pre>\n')
 
-            header = '### [install check & file conflicts](/package/view_file/{}:Staging/dashboard/repo_checker)\n\n'.format(project)
+            pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, project)
+            path = ['package', 'view_file', pseudometa_project, pseudometa_package, 'repo_checker']
+            header = '### [install check & file conflicts](/{})\n\n'.format('/'.join(path))
             return CheckResult(False, header + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
 
