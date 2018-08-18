@@ -273,7 +273,8 @@ def source_file_load(apiurl, project, package, filename, revision=None):
 
 def source_file_save(apiurl, project, package, filename, content, comment=None):
     if not comment:
-        comment = 'update by OSRT tools on host {}'.format(socket.gethostname())
+        comment = 'update by OSRT tools'
+    comment += ' (host {})'.format(socket.gethostname())
 
     url = makeurl(apiurl, ['source', project, package, filename], {'comment': comment})
     http_PUT(url, data=content)
