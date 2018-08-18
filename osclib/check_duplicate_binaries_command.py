@@ -37,10 +37,6 @@ class CheckDuplicateBinariesCommand(object):
 
         current = yaml.dump(duplicates, default_flow_style=False)
         if save:
-            args = ['{}:Staging'.format(self.api.project), 'dashboard', 'duplicate_binaries']
-            previous = self.api.load_file_content(*args)
-            if current != previous:
-                args.append(current)
-                self.api.save_file_content(*args)
+            self.api.dashboard_content_ensure('duplicate_binaries', current)
         else:
             print(current)

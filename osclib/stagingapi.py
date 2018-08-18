@@ -1244,8 +1244,8 @@ class StagingAPI(object):
         # If adi project, check for baselibs.conf in all specs to catch both
         # dynamically generated and static baselibs.conf.
         baselibs = False if self.is_adi_project(project) else None
-        if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
-                src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
+        if baselibs is False and 'baselibs.conf' in str(source_file_load(
+                self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
             baselibs = True
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
@@ -1261,8 +1261,8 @@ class StagingAPI(object):
             url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
-            if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
-                    src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
+            if baselibs is False and 'baselibs.conf' in str(source_file_load(
+                    self.apiurl, src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
                 baselibs = True
 
         if baselibs:
@@ -1467,7 +1467,7 @@ class StagingAPI(object):
 
         version = None
 
-        specfile = self.load_file_content(project, package, '{}.spec'.format(package))
+        specfile = source_file_load(self.apiurl, project, package, '{}.spec'.format(package))
         if specfile:
             try:
                 version = re.findall('^Version:(.*)', specfile, re.MULTILINE)[0].strip()
@@ -1486,27 +1486,6 @@ class StagingAPI(object):
             if e.code == 404:
                 return None
             raise
-
-    def load_file_content(self, project, package, filename, revision=None):
-        """
-        Load the content of a file and return the content as data. If the package is a link, it will be expanded
-        :param project: The project to query
-        :param package:  The package to quert
-        :param filename: The filename to query
-        :param revision: The revision to query
-        """
-        return source_file_load(self.apiurl, project, package, filename, revision)
-
-    def save_file_content(self, project, package, filename, content, comment='script updated'):
-        """
-        Save content to a project/package/file
-        :param project: The project containing the package
-        :param package: the package to update
-        :param filename: the filename to save the data to
-        :param content: the content to write to the file
-        """
-        url = self.makeurl(['source', project, package, filename], {'comment': comment})
-        http_PUT(url, data=content)
 
     def dashboard_content_load(self, filename, revision=None):
         return project_pseudometa_file_load(self.apiurl, self.project, filename, revision)

@@ -13,6 +13,8 @@ from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
 from osc.core import delete_package, search, set_devel_project
 from osclib.config_command import ConfigCommand
+from osclib.core import source_file_load
+from osclib.core import source_file_save
 from datetime import date
 
 
@@ -171,10 +173,10 @@ class AcceptCommand(object):
                     # intend to break the kiwi file
                     arch = package.split('-')[-1]
                     fakepkgname = 'I-am-breaks-kiwi-build'
-                    oldkiwifile = self.api.load_file_content(project, package, 'PRODUCT-'+arch+'.kiwi')
+                    oldkiwifile = source_file_load(self.api.apiurl, project, package, 'PRODUCT-'+arch+'.kiwi')
                     if oldkiwifile is not None:
                         newkiwifile = re.sub(r'<repopackage name="openSUSE-release"/>', '<repopackage name="%s"/>' % fakepkgname, oldkiwifile)
-                        self.api.save_file_content(project, package, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
+                        source_file_save(self.api.apiurl, project, package, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
 
                     # do wipe binary now
                     query = { 'cmd': 'wipe' }
@@ -250,7 +252,7 @@ class AcceptCommand(object):
 
         if len(filelist) > 1:
             # There is more than one .spec file in the package; link package containers as needed
-            origmeta = self.api.load_file_content(project, pkgname, '_meta')
+            origmeta = source_file_load(self.api.apiurl, project, pkgname, '_meta')
             for specfile in filelist:
                 package = specfile[:-5]  # stripping .spec off the filename gives the packagename
                 if package == pkgname:
@@ -272,9 +274,9 @@ class AcceptCommand(object):
                     newmeta = re.sub(r'</package>',
                                      r'<bcntsynctag>{}</bcntsynctag></package>'.format(pkgname),
                                      newmeta)
-                    self.api.save_file_content(project, package, '_meta', newmeta)
+                    source_file_save(self.api.apiurl, project, package, '_meta', newmeta)
                     link = "<link package=\"{}\" cicount=\"copy\" />".format(pkgname)
-                    self.api.save_file_content(project, package, '_link', link)
+                    source_file_save(self.api.apiurl, project, package, '_link', link)
         return True
 
     def update_factory_version(self):
