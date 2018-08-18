@@ -57,6 +57,9 @@ from osc.core import streamfile
 from osclib.cache import Cache
 from osclib.core import devel_project_get
 from osclib.core import project_list_prefix
+from osclib.core import project_pseudometa_file_load
+from osclib.core import project_pseudometa_file_save
+from osclib.core import project_pseudometa_file_ensure
 from osclib.core import source_file_load
 from osclib.comments import CommentAPI
 from osclib.ignore_command import IgnoreCommand
@@ -1506,14 +1509,13 @@ class StagingAPI(object):
         http_PUT(url, data=content)
 
     def dashboard_content_load(self, filename, revision=None):
-        return self.load_file_content(self.cstaging, 'dashboard', filename, revision)
+        return project_pseudometa_file_load(self.apiurl, self.project, filename, revision)
 
-    def dashboard_content_save(self, filename, content, comment='script updated'):
-        return self.save_file_content(self.cstaging, 'dashboard', filename, content, comment)
+    def dashboard_content_save(self, filename, content, comment=None):
+        project_pseudometa_file_save(self.apiurl, self.project, filename, content, comment)
 
-    def dashboard_content_ensure(self, filename, content, comment='script updated'):
-        if content != self.dashboard_content_load(filename):
-            self.dashboard_content_save(filename, content, comment)
+    def dashboard_content_ensure(self, filename, content, comment=None):
+        project_pseudometa_file_ensure(self.apiurl, self.project, filename, content, comment)
 
     def attribute_value_load(self, name):
         return attribute_value_load(self.apiurl, self.project, name)

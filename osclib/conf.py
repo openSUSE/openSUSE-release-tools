@@ -24,7 +24,6 @@ import operator
 import re
 
 from osc import conf
-from osclib.core import attribute_value_load
 from osclib.memoize import memoize
 
 
@@ -51,6 +50,7 @@ DEFAULT = {
         'lock-ns': 'openSUSE',
         'delreq-review': 'factory-maintainers',
         'main-repo': 'standard',
+        'pseudometa_package': 'openSUSE:%(project)s:Staging/dashboard',
         'download-baseurl': 'http://download.opensuse.org/tumbleweed/',
         # check_source.py
         'check-source-single-action-require': 'True',
@@ -80,6 +80,7 @@ DEFAULT = {
         'leaper-override-group': 'leap-reviewers',
         'delreq-review': None,
         'main-repo': 'standard',
+        'pseudometa_package': 'openSUSE:%(project)s:Staging/dashboard',
         'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
         'download-baseurl-update': 'http://download.opensuse.org/update/leap/%(version)s/',
         'check-source-add-review-team': 'False',
@@ -246,6 +247,7 @@ class Config(object):
             return defaults
 
     def fetch_remote(self, apiurl):
+        from osclib.core import attribute_value_load
         config = attribute_value_load(apiurl, self.project, 'Config')
         if config:
             cp = ConfigParser()
