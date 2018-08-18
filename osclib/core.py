@@ -2,6 +2,7 @@ from collections import namedtuple
 from datetime import datetime
 from dateutil.parser import parse as date_parse
 import re
+import socket
 from xml.etree import cElementTree as ET
 from lxml import etree as ETL
 
@@ -15,6 +16,7 @@ from osc.core import get_binarylist
 from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import http_POST
+from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import Request
@@ -267,6 +269,13 @@ def source_file_load(apiurl, project, package, filename, revision=None):
         return http_GET(url).read()
     except HTTPError:
         return None
+
+def source_file_save(apiurl, project, package, filename, content, comment=None):
+    if not comment:
+        comment = 'update by OSRT tools on host {}'.format(socket.gethostname())
+
+    url = makeurl(apiurl, ['source', project, package, filename], {'comment': comment})
+    http_PUT(url, data=content)
 
 # Should be an API call that says give me "real" packages that does not include
 # multibuild entries nor linked packages.
