@@ -104,3 +104,11 @@ def mail_send(project, to, subject, body, from_key='maintainer', followup_to_key
     s = smtplib.SMTP(config.get('mail-relay', 'relay.suse.de'))
     s.sendmail(msg['From'], [msg['To']], msg.as_string())
     s.quit()
+
+def sha1_short(data):
+    import hashlib
+
+    if isinstance(data, list):
+        data = '::'.join(data)
+
+    return hashlib.sha1(data).hexdigest()[:7]
