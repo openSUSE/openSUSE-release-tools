@@ -112,18 +112,6 @@ def request_when_staged(request, project, first=False):
 
     return date_parse(when)
 
-def request_staged(request):
-    for review in request.reviews:
-        if (review.state == 'new' and review.by_project and
-            review.by_project.startswith(request.actions[0].tgt_project)):
-
-            # Allow time for things to settle.
-            when = request_when_staged(request, review.by_project)
-            if (datetime.utcnow() - when).total_seconds() > 10 * 60:
-                return review.by_project
-
-    return None
-
 def binary_list(apiurl, project, repository, arch, package=None):
     parsed = []
     for binary in get_binarylist(apiurl, project, repository, arch, package):

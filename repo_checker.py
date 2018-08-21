@@ -14,21 +14,26 @@ import subprocess
 import sys
 import tempfile
 
-from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.conf import str2bool
-from osclib.core import binary_list
 from osclib.core import BINARY_REGEX
 from osclib.core import depends_on
 from osclib.core import devel_project_fallback
 from osclib.core import fileinfo_ext_all
 from osclib.core import package_binary_list
+from osclib.core import project_meta_revision
+from osclib.core import project_pseudometa_file_ensure
+from osclib.core import project_pseudometa_file_load
 from osclib.core import project_pseudometa_package
-from osclib.core import request_staged
+from osclib.core import repository_path_search
+from osclib.core import repository_path_expand
+from osclib.core import repositories_states
+from osclib.core import repositories_published
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
 from osclib.memoize import CACHEDIR
 from osclib.memoize import memoize
+from osclib.util import sha1_short
 
 import ReviewBot
 
@@ -37,67 +42,29 @@ CheckResult = namedtuple('CheckResult', ('success', 'comment'))
 INSTALL_REGEX = r"^(?:can't install (.*?)|found conflict of (.*?) with (.*?)):$"
 InstallSection = namedtuple('InstallSection', ('binaries', 'text'))
 
+ERROR_REPO_SPECIFIED = 'a repository must be specified via OSRT:Config main-repo for {}'
+
 class RepoChecker(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         # ReviewBot options.
-        self.only_one_action = True
         self.request_default_return = True
         self.comment_handler = True
 
         # RepoChecker options.
         self.skip_cycle = False
         self.force = False
-        self.limit_group = None
-
-    def repository_published(self, project):
-        root = ET.fromstringlist(show_results_meta(
-            self.apiurl, project, multibuild=True, repository=['standard']))
-        return not len(root.xpath('result[@state!="published"]'))
 
     def project_only(self, project, post_comments=False):
-        api = self.staging_api(project)
-
-        if not self.force and not self.repository_published(project):
-            self.logger.info('{}/standard not published'.format(project))
+        repository = self.project_repository(project)
+        if not repository:
+            self.logger.error(ERROR_REPO_SPECIFIED.format(project))
             return
 
-        build = ET.fromstringlist(show_results_meta(
-            self.apiurl, project, multibuild=True, repository=['standard'])).get('state')
-        pseudometa_content = api.pseudometa_file_load('repo_checker')
-        if not self.force and pseudometa_content:
-            build_previous = pseudometa_content.splitlines()[0]
-            if build == build_previous:
-                self.logger.info('{} build unchanged'.format(project))
-                return
-
-        comment = [build]
-        for arch in self.target_archs(project):
-            directories = []
-            repos = self.staging_api(project).expanded_repos('standard')
-            for layered_project, repo in repos:
-                if repo != 'standard':
-                    raise "We assume all is standard"
-                directories.append(self.mirror(layered_project, arch))
-
-            parse = project if post_comments else False
-            results = {
-                'cycle': CheckResult(True, None),
-                'install': self.install_check(project, directories, arch, parse=parse, no_filter=True),
-            }
-
-            if not all(result.success for _, result in results.items()):
-                self.result_comment(arch, results, comment)
-
-        text = '\n'.join(comment).strip()
-        if not self.dryrun:
-            api.pseudometa_file_ensure('repo_checker', text + '\n', 'project_only run')
-        else:
-            print(text)
-
-        if post_comments:
-            self.package_comments(project)
+        repository_pairs = repository_path_expand(self.apiurl, project, repository)
+        state_hash = self.repository_state(repository_pairs)
+        self.repository_check(repository_pairs, state_hash, False)
 
     def package_comments(self, project):
         self.logger.info('{} package comments'.format(len(self.package_results)))
@@ -137,192 +104,26 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.comment_write(state='seen', result=reference, bot_name_suffix=bot_name_suffix,
                                project=comment_project, package=comment_package, message=message)
 
-    def prepare_review(self):
-        # Reset for request batch.
-        self.requests_map = {}
-        self.groups = {}
-        self.groups_build = {}
-        self.groups_skip_cycle = []
-
-        # Manipulated in ensure_group().
-        self.group = None
-        self.mirrored = set()
-
-        # Stores parsed install_check() results grouped by package.
-        self.package_results = {}
-
-        # Look for requests of interest and group by staging.
-        skip_build = set()
-        for request in self.requests:
-            # Only interesting if request is staged.
-            group = request_staged(request)
-            if not group:
-                self.logger.debug('{}: not staged'.format(request.reqid))
-                continue
-
-            if self.limit_group and group != self.limit_group:
-                continue
-
-            # Only interested if group has completed building.
-            api = self.staging_api(request.actions[0].tgt_project)
-            status = api.project_status(group, True)
-            # Corrupted requests may reference non-existent projects and will
-            # thus return a None status which should be considered not ready.
-            if not status or str(status['overall_state']) not in ('testing', 'review', 'acceptable'):
-                # Not in a "ready" state.
-                openQA_only = False # Not relevant so set to False.
-                if status and str(status['overall_state']) == 'failed':
-                    # Exception to the rule is openQA only in failed state,
-                    # Broken packages so not just openQA.
-                    openQA_only = (len(status['broken_packages']) == 0)
-
-                if not self.force and not openQA_only:
-                    self.logger.debug('{}: {} not ready'.format(request.reqid, group))
-                    continue
-
-            # Only interested if request is in consistent state.
-            selected = api.project_status_requests('selected')
-            if request.reqid not in selected:
-                self.logger.debug('{}: inconsistent state'.format(request.reqid))
-
-            if group not in self.groups_build:
-                # Generate build hash based on hashes from relevant projects.
-                builds = []
-                builds.append(ET.fromstringlist(show_results_meta(
-                    self.apiurl, group, multibuild=True, repository=['standard'])).get('state'))
-                builds.append(ET.fromstringlist(show_results_meta(
-                    self.apiurl, api.project, multibuild=True, repository=['standard'])).get('state'))
-
-                # Include meta revision for config changes (like whitelist).
-                builds.append(str(api.get_prj_meta_revision(group)))
-                self.groups_build[group] = hashlib.sha1(''.join(builds)).hexdigest()[:7]
-
-                # Determine if build has changed since last comment.
-                comments = self.comment_api.get_comments(project_name=group)
-                _, info = self.comment_api.comment_find(comments, self.bot_name)
-                if info and self.groups_build[group] == info.get('build'):
-                    skip_build.add(group)
-
-                # Look for skip-cycle comment command.
-                users = self.request_override_check_users(request.actions[0].tgt_project)
-                for _, who in self.comment_api.command_find(
-                    comments, self.review_user, 'skip-cycle', users):
-                    self.logger.debug('comment command: skip-cycle by {}'.format(who))
-                    self.groups_skip_cycle.append(group)
-                    break
-
-            if not self.force and group in skip_build:
-                self.logger.debug('{}: {} build unchanged'.format(request.reqid, group))
-                continue
-
-            self.requests_map[int(request.reqid)] = group
-
-            requests = self.groups.get(group, [])
-            requests.append(request)
-            self.groups[group] = requests
-
-            self.logger.debug('{}: {} ready'.format(request.reqid, group))
-
-        # Filter out undesirable requests and ensure requests are ordered
-        # together with group for efficiency.
-        count_before = len(self.requests)
-        self.requests = []
-        for group, requests in sorted(self.groups.items()):
-            self.requests.extend(requests)
-
-        self.logger.debug('requests: {} skipped, {} queued'.format(
-            count_before - len(self.requests), len(self.requests)))
-
-    def ensure_group(self, request, action):
-        project = action.tgt_project
-        group = self.requests_map[int(request.reqid)]
-
-        if group == self.group:
-            # Only process a group the first time it is encountered.
-            return self.group_pass
-
-        self.logger.info('group {}'.format(group))
-        self.group = group
-        self.group_pass = True
-
-        comment = []
-        for arch in self.target_archs(project):
-            stagings = []
-            directories = []
-            ignore = set()
-
-            if arch not in self.target_archs(group):
-                self.logger.debug('{}/{} not available'.format(group, arch))
-            else:
-                stagings.append(group)
-                directories.append(self.mirror(group, arch))
-                ignore.update(self.ignore_from_staging(project, group, arch))
-
-            if not len(stagings):
-                continue
-
-            # Only bother if staging can match arch, but layered first.
-            repos = self.staging_api(project).expanded_repos('standard')
-            for layered_project, repo in repos:
-                if repo != 'standard':
-                    raise "We assume all is standard"
-                directories.append(self.mirror(layered_project, arch))
-
-            whitelist = self.binary_whitelist(project, arch, group)
-
-            # Perform checks on group.
-            results = {
-                'cycle': self.cycle_check(project, stagings, arch),
-                'install': self.install_check(project, directories, arch, ignore, whitelist),
-            }
-
-            if not all(result.success for _, result in results.items()):
-                # Not all checks passed, build comment.
-                self.group_pass = False
-                self.result_comment(arch, results, comment)
-
-        info_extra = {'build': self.groups_build[group]}
-        if not self.group_pass:
-            # Some checks in group did not pass, post comment.
-            # Avoid identical comments with different build hash during target
-            # project build phase. Once published update regardless.
-            published = self.repository_published(project)
-            self.comment_write(state='seen', result='failed', project=group,
-                               message='\n'.join(comment).strip(), identical=True,
-                               info_extra=info_extra, info_extra_identical=published)
-        else:
-            # Post passed comment only if previous failed comment.
-            text = 'Previously reported problems have been resolved.'
-            self.comment_write(state='done', result='passed', project=group,
-                               message=text, identical=True, only_replace=True,
-                               info_extra=info_extra)
-
-        return self.group_pass
-
-    def target_archs(self, project):
-        archs = target_archs(self.apiurl, project)
+    def target_archs(self, project, repository):
+        archs = target_archs(self.apiurl, project, repository)
 
         # Check for arch whitelist and use intersection.
-        product = project.split(':Staging:', 1)[0]
-        whitelist = Config.get(self.apiurl, product).get('repo_checker-arch-whitelist')
+        whitelist = Config.get(self.apiurl, project).get('repo_checker-arch-whitelist')
         if whitelist:
             archs = list(set(whitelist.split(' ')).intersection(set(archs)))
 
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
 
-    def mirror(self, project, arch):
+    @memoize(ttl=60, session=True, add_invalidate=True)
+    def mirror(self, project, repository, arch):
         """Call bs_mirrorfull script to mirror packages."""
-        directory = os.path.join(CACHEDIR, project, 'standard', arch)
-        if (project, arch) in self.mirrored:
-            # Only mirror once per request batch.
-            return directory
-
+        directory = os.path.join(CACHEDIR, project, repository, arch)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         script = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
-        path = '/'.join((project, 'standard', arch))
+        path = '/'.join((project, repository, arch))
         url = '{}/public/build/{}'.format(self.apiurl, path)
         parts = ['LC_ALL=C', 'perl', script, '--nodebug', url, directory]
         parts = [pipes.quote(part) for part in parts]
@@ -331,26 +132,25 @@ class RepoChecker(ReviewBot.ReviewBot):
         if os.system(' '.join(parts)):
             raise Exception('failed to mirror {}'.format(path))
 
-        self.mirrored.add((project, arch))
         return directory
 
-    def ignore_from_staging(self, project, staging, arch):
-        """Determine the target project binaries to ingore in favor of staging."""
-        _, binary_map = package_binary_list(self.apiurl, staging, 'standard', arch)
+    def simulated_merge_ignore(self, override_pair, overridden_pair, arch):
+        """Determine the list of binaries to similate overides in overridden layer."""
+        _, binary_map = package_binary_list(self.apiurl, override_pair[0], override_pair[1], arch)
         packages = set(binary_map.values())
 
-        binaries, _ = package_binary_list(self.apiurl, project, 'standard', arch)
+        binaries, _ = package_binary_list(self.apiurl, overridden_pair[0], overridden_pair[1], arch)
         for binary in binaries:
             if binary.package in packages:
                 yield binary.name
 
     @memoize(session=True)
-    def binary_list_existing_problem(self, project):
+    def binary_list_existing_problem(self, project, repository):
         """Determine which binaries are mentioned in repo_checker output."""
         binaries = set()
 
-        api = self.staging_api(project)
-        content = api.pseudometa_file_load('repo_checker')
+        filename = self.project_pseudometa_file_name(project, repository)
+        content = project_pseudometa_file_load(self.apiurl, project, filename)
         if not content:
             self.logger.warn('no project_only run from which to extract existing problems')
             return binaries
@@ -364,23 +164,29 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         return binaries
 
-    def binary_whitelist(self, project, arch, group):
-        additions = self.staging_api(project).get_prj_pseudometa(group).get('config', {})
-        whitelist = self.binary_list_existing_problem(project)
-        prefix = 'repo_checker-binary-whitelist'
-        for key in [prefix, '-'.join([prefix, arch])]:
-            whitelist.update(additions.get(key, '').split(' '))
+    def binary_whitelist(self, override_pair, overridden_pair, arch):
+        whitelist = self.binary_list_existing_problem(overridden_pair[0], overridden_pair[1])
+
+        if Config.get(self.apiurl, overridden_pair[0]).get('staging'):
+            additions = self.staging_api(overridden_pair[0]).get_prj_pseudometa(
+                override_pair[0]).get('config', {})
+            prefix = 'repo_checker-binary-whitelist'
+            for key in [prefix, '-'.join([prefix, arch])]:
+                whitelist.update(additions.get(key, '').split(' '))
+
         whitelist = filter(None, whitelist)
         return whitelist
 
-    def install_check(self, project, directories, arch, ignore=[], whitelist=[], parse=False, no_filter=False):
-        self.logger.info('install check: start')
+    def install_check(self, project, directories, repository, arch, ignore=None, whitelist=[], parse=False, no_filter=False):
+        self.logger.info('install check: start (ignore:{}, whitelist:{}, parse:{}, no_filter:{})'.format(
+            bool(ignore), len(whitelist), bool(parse), no_filter))
 
         with tempfile.NamedTemporaryFile() as ignore_file:
             # Print ignored rpms on separate lines in ignore file.
-            for item in ignore:
-                ignore_file.write(item + '\n')
-            ignore_file.flush()
+            if ignore:
+                for item in ignore:
+                    ignore_file.write(item + '\n')
+                ignore_file.flush()
 
             # Invoke repo_checker.pl to perform an install check.
             script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
@@ -399,11 +205,11 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.logger.info('install check: failed')
             if p.returncode == 126:
                 self.logger.warn('mirror cache reset due to corruption')
-                self.mirrored = set()
+                self._invalidate_all()
             elif parse:
                 # Parse output for later consumption for posting comments.
                 sections = self.install_check_parse(stdout)
-                self.install_check_sections_group(parse, arch, sections)
+                self.install_check_sections_group(parse, repository, arch, sections)
 
             # Format output as markdown comment.
             parts = []
@@ -416,16 +222,16 @@ class RepoChecker(ReviewBot.ReviewBot):
                 parts.append('<pre>\n' + stderr + '\n' + '</pre>\n')
 
             pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, project)
-            path = ['package', 'view_file', pseudometa_project, pseudometa_package, 'repo_checker']
+            filename = self.project_pseudometa_file_name(project, repository)
+            path = ['package', 'view_file', pseudometa_project, pseudometa_package, filename]
             header = '### [install check & file conflicts](/{})\n\n'.format('/'.join(path))
             return CheckResult(False, header + ('\n' + ('-' * 80) + '\n\n').join(parts))
-
 
         self.logger.info('install check: passed')
         return CheckResult(True, None)
 
-    def install_check_sections_group(self, project, arch, sections):
-        _, binary_map = package_binary_list(self.apiurl, project, 'standard', arch)
+    def install_check_sections_group(self, project, repository, arch, sections):
+        _, binary_map = package_binary_list(self.apiurl, project, repository, arch)
 
         for section in sections:
             # If switch to creating bugs likely makes sense to join packages to
@@ -463,36 +269,52 @@ class RepoChecker(ReviewBot.ReviewBot):
         if section:
             yield InstallSection(section, text)
 
-    def cycle_check(self, project, stagings, arch):
-        if self.skip_cycle or self.group in self.groups_skip_cycle:
+    @memoize(ttl=60, session=True)
+    def cycle_check_skip(self, project):
+        if self.skip_cycle:
+            return True
+
+        # Look for skip-cycle comment command.
+        comments = self.comment_api.get_comments(project_name=project)
+        users = self.request_override_check_users(project)
+        for _, who in self.comment_api.command_find(
+            comments, self.review_user, 'skip-cycle', users):
+            self.logger.debug('comment command: skip-cycle by {}'.format(who))
+            return True
+
+        return False
+
+    def cycle_check(self, override_pair, overridden_pair, arch):
+        if self.cycle_check_skip(override_pair[0]):
             self.logger.info('cycle check: skip due to --skip-cycle or comment command')
             return CheckResult(True, None)
 
         self.logger.info('cycle check: start')
-        cycle_detector = CycleDetector(self.staging_api(project))
         comment = []
-        for staging in stagings:
-            first = True
-            for index, (cycle, new_edges, new_packages) in enumerate(
-                cycle_detector.cycles(staging, arch=arch), start=1):
-                if not new_packages:
-                    continue
+        first = True
+        cycle_detector = CycleDetector(self.staging_api(overridden_pair[0]))
+        for index, (cycle, new_edges, new_packages) in enumerate(
+            cycle_detector.cycles(override_pair, overridden_pair, arch), start=1):
 
-                if first:
-                    comment.append('### new [cycle(s)](/project/repository_state/{}/standard)\n'.format(staging))
-                    first = False
+            if not new_packages:
+                continue
 
-                # New package involved in cycle, build comment.
-                comment.append('- #{}: {} package cycle, {} new edges'.format(
-                    index, len(cycle), len(new_edges)))
+            if first:
+                comment.append('### new [cycle(s)](/project/repository_state/{}/{})\n'.format(
+                    override_pair[0], override_pair[1]))
+                first = False
 
-                comment.append('   - cycle')
-                for package in sorted(cycle):
-                    comment.append('      - {}'.format(package))
+            # New package involved in cycle, build comment.
+            comment.append('- #{}: {} package cycle, {} new edges'.format(
+                index, len(cycle), len(new_edges)))
 
-                comment.append('   - new edges')
-                for edge in sorted(new_edges):
-                    comment.append('      - ({}, {})'.format(edge[0], edge[1]))
+            comment.append('   - cycle')
+            for package in sorted(cycle):
+                comment.append('      - {}'.format(package))
+
+            comment.append('   - new edges')
+            for edge in sorted(new_edges):
+                comment.append('      - ({}, {})'.format(edge[0], edge[1]))
 
         if len(comment):
             # New cycles, post comment.
@@ -502,15 +324,210 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('cycle check: passed')
         return CheckResult(True, None)
 
-    def result_comment(self, arch, results, comment):
+    def result_comment(self, repository, arch, results, comment):
         """Generate comment from results"""
-        comment.append('## ' + arch + '\n')
+        comment.append('## {}/{}\n'.format(repository, arch))
         for result in results.values():
             if not result.success:
                 comment.append(result.comment)
 
+    def project_pseudometa_file_name(self, project, repository):
+        filename = 'repo_checker'
+
+        main_repo = Config.get(self.apiurl, project).get('main-repo')
+        if not main_repo:
+            filename += '.' + repository
+
+        return filename
+
+    @memoize(ttl=60, session=True)
+    def repository_state(self, repository_pairs):
+        states = repositories_states(self.apiurl, repository_pairs)
+        states.append(str(project_meta_revision(self.apiurl, repository_pairs[0][0])))
+
+        return sha1_short(states)
+
+    @memoize(ttl=60, session=True)
+    def repository_state_last(self, project, repository, pseudometa):
+        if pseudometa:
+            filename = self.project_pseudometa_file_name(project, repository)
+            content = project_pseudometa_file_load(self.apiurl, project, filename)
+            if content:
+                return content.splitlines()[0]
+        else:
+            comments = self.comment_api.get_comments(project_name=project)
+            _, info = self.comment_api.comment_find(comments, self.bot_name)
+            if info:
+                return info.get('build')
+
+        return None
+
+    @memoize(session=True)
+    def repository_check(self, repository_pairs, state_hash, simulate_merge, post_comments=False):
+        comment = []
+        project, repository = repository_pairs[0] # this would mean staging!?
+        self.logger.info('checking {}/{}@{}[{}]'.format(
+            project, repository, state_hash, len(repository_pairs)))
+
+        published = repositories_published(self.apiurl, repository_pairs)
+
+        if not self.force:
+            if state_hash == self.repository_state_last(project, repository, not simulate_merge):
+                self.logger.info('{} build unchanged'.format(project))
+                # TODO keep track of skipped count for cycle summary
+                return None
+
+            # For submit style requests, want to process if top layer is done,
+            # but not mark review as final until all layers are published.
+            if published is not True and (not simulate_merge or published[0] == project):
+                # Require all layers to be published except when the top layer
+                # is published in a simulate merge (allows quicker feedback with
+                # potentially incorrect resutls for staging).
+                self.logger.info('{}/{} not published'.format(published[0], published[1]))
+                return None
+
+        # Drop non-published repository information and thus reduce to boolean.
+        published = published is True
+
+        if simulate_merge:
+            # Restrict top layer archs to the whitelisted archs from merge layer.
+            archs = set(target_archs(self.apiurl, project, repository)).intersection(
+                    set(self.target_archs(repository_pairs[1][0], repository_pairs[1][1])))
+        else:
+            # Top of pseudometa file.
+            comment.append(state_hash)
+            archs = self.target_archs(project, repository)
+
+            if post_comments:
+                # Stores parsed install_check() results grouped by package.
+                self.package_results = {}
+
+        if not len(archs):
+            self.logger.debug('{} has no relevant architectures'.format(project))
+            return None
+
+        result = True
+        for arch in archs:
+            directories = []
+            for pair_project, pair_repository in repository_pairs:
+                directories.append(self.mirror(pair_project, pair_repository, arch))
+
+            if simulate_merge:
+                ignore = self.simulated_merge_ignore(repository_pairs[0], repository_pairs[1], arch)
+                whitelist = self.binary_whitelist(repository_pairs[0], repository_pairs[1], arch)
+
+                results = {
+                    'cycle': self.cycle_check(repository_pairs[0], repository_pairs[1], arch),
+                    'install': self.install_check(project, directories, repository_pairs[1][1], arch, ignore, whitelist),
+                }
+            else:
+                parse = project if post_comments else False
+                # Only products themselves will want no-filter or perhaps
+                # projects working on cleaning up a product.
+                no_filter = str2bool(Config.get(self.apiurl, project).get('repo_checker-no-filter'))
+                results = {
+                    'cycle': CheckResult(True, None),
+                    'install': self.install_check(project, directories, repository, arch,
+                                                  parse=parse, no_filter=no_filter),
+                }
+
+            if not all(result.success for _, result in results.items()):
+                # Not all checks passed, build comment.
+                result = False
+                self.result_comment(repository, arch, results, comment)
+
+        if simulate_merge:
+            info_extra = {'build': state_hash}
+            if not result:
+                # Some checks in group did not pass, post comment.
+                # Avoid identical comments with different build hash during
+                # target project build phase. Once published update regardless.
+                self.comment_write(state='seen', result='failed', project=project,
+                                   message='\n'.join(comment).strip(), identical=True,
+                                   info_extra=info_extra, info_extra_identical=published)
+            else:
+                # Post passed comment only if previous failed comment.
+                text = 'Previously reported problems have been resolved.'
+                self.comment_write(state='done', result='passed', project=project,
+                                   message=text, identical=True, only_replace=True,
+                                   info_extra=info_extra)
+        else:
+            text = '\n'.join(comment).strip()
+            if not self.dryrun:
+                filename = self.project_pseudometa_file_name(project, repository)
+                project_pseudometa_file_ensure(
+                    self.apiurl, project, filename, text + '\n', 'repo_checker project_only run')
+            else:
+                print(text)
+
+            if post_comments:
+                self.package_comments(project)
+
+        if result and not published:
+            # Wait for the complete stack to build before positive result.
+            self.logger.debug('demoting result from accept to ignore due to non-published layer')
+            result = None
+
+        return result
+
+    @memoize(session=True)
+    def project_repository(self, project):
+        repository = Config.get(self.apiurl, project).get('main-repo')
+        if not repository:
+            self.logger.debug('no main-repo defined for {}'.format(project))
+
+            search_project = 'openSUSE:Factory'
+            for search_repository in ('snapshot', 'standard'):
+                repository = repository_path_search(
+                    self.apiurl, project, search_project, search_repository)
+
+                if repository:
+                    self.logger.debug('found chain to {}/{} via {}'.format(
+                        search_project, search_repository, repository))
+                    break
+
+        return repository
+
+    @memoize(ttl=60, session=True)
+    def request_repository_pairs(self, request, action):
+        repository = self.project_repository(action.tgt_project)
+        if not repository:
+            self.review_messages['declined'] = ERROR_REPO_SPECIFIED.format(action.tgt_project)
+            return False
+
+        repository_pairs = []
+        # Assumes maintenance_release target project has staging disabled.
+        if Config.get(self.apiurl, action.tgt_project).get('staging'):
+            stage_info = self.staging_api(action.tgt_project).packages_staged.get(action.tgt_package)
+            if not stage_info or str(stage_info['rq_id']) != str(request.reqid):
+                self.logger.info('{} not staged'.format(request.reqid))
+                return None
+
+            # Staging setup is convoluted and thus the repository setup does not
+            # contain a path to the target project. Instead the ports repository
+            # is used to import the target prjconf. As such the staging group
+            # repository must be explicitly layered on top of target project.
+            repository_pairs.append([stage_info['prj'], repository])
+            repository_pairs.extend(repository_path_expand(self.apiurl, action.tgt_project, repository))
+        else:
+            # Find a repository which links to target project "main" repository.
+            repository = repository_path_search(
+                self.apiurl, action.src_project, action.tgt_project, repository)
+            if not repository:
+                self.review_messages['declined'] = ERROR_REPO_SPECIFIED.format(action.tgt_project)
+                return False
+
+            repository_pairs.extend(repository_path_expand(self.apiurl, action.src_project, repository))
+
+        return repository_pairs
+
     def check_action_submit(self, request, action):
-        if not self.ensure_group(request, action):
+        repository_pairs = self.request_repository_pairs(request, action)
+        if not isinstance(repository_pairs, list):
+            return repository_pairs
+
+        state_hash = self.repository_state(repository_pairs)
+        if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
         self.review_messages['accepted'] = 'cycle and install check passed'
@@ -547,11 +564,30 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.comment_write(state='seen', result='failed')
             return None
 
-        # Allow for delete to be declined before ensuring group passed.
-        if not self.ensure_group(request, action):
+        repository_pairs = self.request_repository_pairs(request, action)
+        if not isinstance(repository_pairs, list):
+            return repository_pairs
+
+        state_hash = self.repository_state(repository_pairs)
+        if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
-        self.review_messages['accepted'] = 'delete request is safe'
+        self.review_messages['accepted'] = 'cycle and install check passed'
+        return True
+
+    def check_action_maintenance_release(self, request, action):
+        # No reason to special case patchinfo since same source and target
+        # projects which is all that repo_checker cares about.
+
+        repository_pairs = self.request_repository_pairs(request, action)
+        if not isinstance(repository_pairs, list):
+            return repository_pairs
+
+        state_hash = self.repository_state(repository_pairs)
+        if not self.repository_check(repository_pairs, state_hash, True):
+            return None
+
+        self.review_messages['accepted'] = 'cycle and install check passed'
         return True
 
 
@@ -566,7 +602,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         parser.add_option('--skip-cycle', action='store_true', help='skip cycle check')
         parser.add_option('--force', action='store_true', help='force review even if project is not ready')
-        parser.add_option('--limit-group', metavar='GROUP', help='only review requests in specific group')
 
         return parser
 
@@ -577,7 +612,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             bot.skip_cycle = self.options.skip_cycle
 
         bot.force = self.options.force
-        bot.limit_group = self.options.limit_group
 
         return bot
 
