@@ -22,6 +22,7 @@ from osc.core import owner
 from osc.core import Request
 from osc.core import show_package_meta
 from osc.core import show_project_meta
+from osc.core import show_results_meta
 from osclib.conf import Config
 from osclib.memoize import memoize
 
@@ -387,3 +388,27 @@ def repository_path_search(apiurl, project, search_project, search_repository):
             queue.append((repository_top, path.get('project'), path.get('repository')))
 
     return None
+
+def repository_state(apiurl, project, repository):
+    return ET.fromstringlist(show_results_meta(
+        apiurl, project, multibuild=True, repository=[repository])).get('state')
+
+def repositories_states(apiurl, repository_pairs):
+    states = []
+
+    for project, repository in repository_pairs:
+        states.append(repository_state(apiurl, project, repository))
+
+    return states
+
+def repository_published(apiurl, project, repository):
+    root = ETL.fromstringlist(show_results_meta(
+        apiurl, project, multibuild=True, repository=[repository]))
+    return not len(root.xpath('result[@state!="published" and @state!="unpublished"]'))
+
+def repositories_published(apiurl, repository_pairs):
+    for project, repository in repository_pairs:
+        if not repository_published(apiurl, project, repository):
+            return (project, repository)
+
+    return True
