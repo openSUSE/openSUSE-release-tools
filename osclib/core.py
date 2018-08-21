@@ -89,18 +89,14 @@ def package_list(apiurl, project):
     return sorted(packages)
 
 @memoize(session=True)
-def target_archs(apiurl, project):
-    meta = show_project_meta(apiurl, project)
-    meta = ET.fromstringlist(meta)
-    archs = []
-    for arch in meta.findall('repository[@name="standard"]/arch'):
-        archs.append(arch.text)
-    return archs
+def target_archs(apiurl, project, repository='standard'):
+    meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+    return meta.xpath('repository[@name="{}"]/arch/text()'.format(repository))
 
 @memoize(session=True)
 def depends_on(apiurl, project, repository, packages=None, reverse=None):
     dependencies = set()
-    for arch in target_archs(apiurl, project):
+    for arch in target_archs(apiurl, project, repository):
         root = ET.fromstring(get_dependson(apiurl, project, repository, arch, packages, reverse))
         dependencies.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
 
