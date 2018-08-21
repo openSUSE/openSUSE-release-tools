@@ -13,6 +13,7 @@ except ImportError:
     from urllib2 import HTTPError
 
 from osc.core import get_binarylist
+from osc.core import get_commitlog
 from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import http_POST
@@ -412,3 +413,8 @@ def repositories_published(apiurl, repository_pairs):
             return (project, repository)
 
     return True
+
+def project_meta_revision(apiurl, project):
+    root = ET.fromstringlist(get_commitlog(
+        apiurl, project, '_project', None, format='xml', meta=True))
+    return int(root.find('logentry').get('revision'))
