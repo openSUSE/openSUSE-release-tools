@@ -153,7 +153,6 @@ DEFAULT = {
         'lock': None,
         'lock-ns': None,
         'delreq-review': None,
-        'main-repo': 'openSUSE_Factory',
         '_priority': '0', # Apply defaults first
     },
 }
