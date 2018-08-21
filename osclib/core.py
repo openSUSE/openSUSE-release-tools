@@ -362,3 +362,28 @@ def repository_path_expand(apiurl, project, repo, repos=None):
         repository_path_expand(apiurl, path.get('project', project), path.get('repository'), repos)
 
     return repos
+
+@memoize(session=True)
+def repository_path_search(apiurl, project, search_project, search_repository):
+    queue = []
+
+    # Initialize breadth first search queue with repositories from top project.
+    root = ETL.fromstringlist(show_project_meta(apiurl, project))
+    for repository in root.xpath('repository[path[@project and @repository]]/@name'):
+        queue.append((repository, project, repository))
+
+    # Perform a breadth first search and return the first repository chain with
+    # a series of path elements targeting search project and repository.
+    for repository_top, project, repository in queue:
+        if root.get('name') != project:
+            # Repositories for a single project are in a row so cache parsing.
+            root = ETL.fromstringlist(show_project_meta(apiurl, project))
+
+        paths = root.findall('repository[@name="{}"]/path'.format(repository))
+        for path in paths:
+            if path.get('project') == search_project and path.get('repository') == search_repository:
+                return repository_top
+
+            queue.append((repository_top, path.get('project'), path.get('repository')))
+
+    return None
