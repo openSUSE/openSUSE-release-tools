@@ -26,6 +26,7 @@ from optparse import OptionParser
 import cmdln
 from collections import namedtuple
 from collections import OrderedDict
+from osclib.cache import Cache
 from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.core import group_members
@@ -680,6 +681,7 @@ class CommentFromLogHandler(logging.Handler):
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
+        Cache.init()
         self.clazz = ReviewBot
 
     def get_optparser(self):
