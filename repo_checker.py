@@ -137,6 +137,31 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.comment_write(state='seen', result=reference, bot_name_suffix=bot_name_suffix,
                                project=comment_project, package=comment_package, message=message)
 
+    def is_group_ready(self, api, group):
+       status = api.project_status(group, True)
+       # Corrupted requests may reference non-existent projects and will
+       # thus return a None status which should be considered not ready.
+       if not status:
+           return False
+
+       if self.force:
+           return True
+
+       overall_state = str(status['overall_state'])
+       if overall_state in ('testing', 'review', 'acceptable'):
+          return True
+
+       if overall_state != 'failed':
+          return False
+
+       # if the project is in failed state, it's ready if
+       # the broken packages only contain meta packages like
+       # 000product or 000check-modules
+       # it can also be failed, if there are openQA failures,
+       # but we don't care here
+       broken_packages = [a for a in status['broken_packages'] if not a['package'].startswith('000') ]
+       return len(broken_packages) == 0
+
     def prepare_review(self):
         # Reset for request batch.
         self.requests_map = {}
@@ -165,20 +190,9 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             # Only interested if group has completed building.
             api = self.staging_api(request.actions[0].tgt_project)
-            status = api.project_status(group, True)
-            # Corrupted requests may reference non-existent projects and will
-            # thus return a None status which should be considered not ready.
-            if not status or str(status['overall_state']) not in ('testing', 'review', 'acceptable'):
-                # Not in a "ready" state.
-                openQA_only = False # Not relevant so set to False.
-                if status and str(status['overall_state']) == 'failed':
-                    # Exception to the rule is openQA only in failed state,
-                    # Broken packages so not just openQA.
-                    openQA_only = (len(status['broken_packages']) == 0)
-
-                if not self.force and not openQA_only:
-                    self.logger.debug('{}: {} not ready'.format(request.reqid, group))
-                    continue
+            if not self.is_group_ready(api, group):
+               self.logger.debug('{}: {} not ready'.format(request.reqid, group))
+               continue
 
             # Only interested if request is in consistent state.
             selected = api.project_status_requests('selected')
