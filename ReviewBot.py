@@ -141,7 +141,7 @@ class ReviewBot(object):
 
     def staging_api(self, project):
         if project not in self.staging_apis:
-            Config(self.apiurl, project)
+            Config.get(self.apiurl, project)
             self.staging_apis[project] = StagingAPI(self.apiurl, project)
 
         return self.staging_apis[project]
