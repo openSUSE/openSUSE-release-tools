@@ -15,6 +15,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from osclib.config_command import ConfigCommand
+from osclib.core import source_file_load
+from osclib.core import source_file_save
 import time
 import re
 from xml.etree import cElementTree as ET
@@ -170,12 +172,12 @@ class FreezeCommand(object):
         if not self.api.item_exists(project, product):
             return None
 
-        kiwifile = self.api.load_file_content(project, product, 'PRODUCT-'+arch+'.kiwi')
+        kiwifile = source_file_load(self.api.apiurl, project, product, 'PRODUCT-'+arch+'.kiwi')
 
         tmpkiwifile = re.sub(r'<productinfo name="VERSION">.*</productinfo>', '<productinfo name="VERSION">%s</productinfo>' % version, kiwifile)
         newkiwifile = re.sub(r'<productvar name="VERSION">.*</productvar>', '<productvar name="VERSION">%s</productvar>' % version, tmpkiwifile)
 
-        self.api.save_file_content(project, product, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
+        source_file_save(self.api.apiurl, project, product, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
 
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', {'name': prj})

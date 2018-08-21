@@ -137,7 +137,7 @@ def clean_args(args):
 @cmdln.option('--try-strategies', action='store_true', default=False, help='apply strategies and keep any with desireable outcome')
 @cmdln.option('--strategy', help='apply a specific strategy')
 @cmdln.option('--no-color', action='store_true', help='strip colors from output (or add staging.color = 0 to the .oscrc general section')
-@cmdln.option('--save', action='store_true', help='save the result to the dashboard container')
+@cmdln.option('--save', action='store_true', help='save the result to the pseudometa package')
 @cmdln.option('--append', action='store_true', help='append to existing value')
 @cmdln.option('--clear', action='store_true', help='clear value')
 def do_staging(self, subcmd, opts, *args):
@@ -167,9 +167,9 @@ def do_staging(self, subcmd, opts, *args):
 
     "config" will modify or view staging specific configuration
 
-        Target project level configuration that applies to all stagings can be
-        found in the $PROJECT:Staging/dashboard container in file "config". Both
-        configuration locations follow the .oscrc format (space separated list).
+        Target project OSRT:Config attribute configuration applies to all
+        stagings. Both configuration locations follow the .oscrc format (space
+        separated list).
 
         config
             Print all staging configuration.
@@ -477,7 +477,7 @@ def do_staging(self, subcmd, opts, *args):
             # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
             version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
             if version_totest:
-                version_openqa = api.dashboard_content_load('version_totest')
+                version_openqa = api.pseudometa_file_load('version_totest')
                 totest_dirty = api.is_repo_dirty(api.project, 'totest')
                 print("version_openqa: %s / version_totest: %s / totest_dirty: %s\n" % (version_openqa, version_totest, totest_dirty))
             else:
@@ -491,7 +491,7 @@ def do_staging(self, subcmd, opts, *args):
                 version_openqa = version_totest
                 totest_dirty   = False
             else:
-                version_openqa = api.dashboard_content_load('version_totest')
+                version_openqa = api.pseudometa_file_load('version_totest')
                 totest_dirty   = api.is_repo_dirty(api.project, 'totest')
 
             if version_openqa == version_totest and not totest_dirty:

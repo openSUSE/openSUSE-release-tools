@@ -19,6 +19,7 @@ from osc.core import get_commitlog
 import osclib.conf
 from osclib.cache import Cache
 from osclib.conf import Config
+from osclib.core import project_pseudometa_package
 from osclib.stagingapi import StagingAPI
 
 SOURCE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -354,9 +355,10 @@ def revision_index(api):
     if not hasattr(revision_index, 'index'):
         revision_index.index = {}
 
+        project, package = project_pseudometa_package(api.apiurl, api.project)
         try:
             root = ET.fromstringlist(
-                get_commitlog(api.apiurl, api.cstaging, 'dashboard', None, format='xml'))
+                get_commitlog(api.apiurl, project, package, None, format='xml'))
         except HTTPError as e:
             return revision_index.index
 
@@ -380,7 +382,7 @@ def dashboard_at(api, filename, datetime=None, revision=None):
     if not revision:
         return revision
 
-    content = api.dashboard_content_load(filename, revision)
+    content = api.pseudometa_file_load(filename, revision)
     if filename in ('ignored_requests'):
         if content:
             return yaml.safe_load(content)
@@ -530,6 +532,7 @@ def main(args):
     client = InfluxDBClient(args.host, args.port, args.user, args.password, args.project)
 
     osc.conf.get_config(override_apiurl=args.apiurl)
+    apiurl = osc.conf.config['apiurl']
     osc.conf.config['debug'] = args.debug
 
     # Ensure database exists.
@@ -540,16 +543,16 @@ def main(args):
         return
 
     # Use separate cache since it is persistent.
+    _, package = project_pseudometa_package(apiurl, args.project)
     Cache.CACHE_DIR = Cache.CACHE_DIR + '-metrics'
     if args.wipe_cache:
         Cache.delete_all()
     if args.heavy_cache:
         Cache.PATTERNS['/search/request'] = sys.maxint
-        Cache.PATTERNS['/source/[^/]+/dashboard/_history'] = sys.maxint
-    Cache.PATTERNS['/source/[^/]+/dashboard/[^/]+\?rev=.*'] = sys.maxint
+        Cache.PATTERNS['/source/[^/]+/{}/_history'.format(package)] = sys.maxint
+    Cache.PATTERNS['/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxint
     Cache.init()
 
-    apiurl = osc.conf.config['apiurl']
     Config(apiurl, args.project)
     api = StagingAPI(apiurl, args.project)
 

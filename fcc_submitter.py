@@ -31,6 +31,7 @@ from xml.etree import cElementTree as ET
 import osc.conf
 import osc.core
 from osclib.core import devel_project_get
+from osclib.core import project_pseudometa_package
 
 from osc import oscerr
 from osclib.memoize import memoize
@@ -319,7 +320,8 @@ class FccSubmitter(object):
         target_packages = self.get_source_packages(self.to_prj)
         deleted_packages = self.get_deleted_packages(self.to_prj)
 
-        skip_pkgs_list = self.load_skip_pkgs_list('openSUSE:Factory:Staging', 'dashboard').splitlines()
+        pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, 'openSUSE:Factory')
+        skip_pkgs_list = self.load_skip_pkgs_list(pseudometa_project, pseudometa_package).splitlines()
 
         ms_packages = [] # collect multi specs packages
 

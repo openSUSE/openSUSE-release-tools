@@ -9,6 +9,7 @@ from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import show_upstream_rev
+from osclib.core import project_pseudometa_package
 from urllib2 import HTTPError
 import argparse
 import osc.conf
@@ -174,7 +175,8 @@ def clone_do(apiurl_source, apiurl_target, project):
         entity_clone(apiurl_source, apiurl_target, ['source', project + ':Rings:1-MinimalX', '_meta'],
                      clone=project_clone)
 
-        entity_clone(apiurl_source, apiurl_target, ['source', project + ':Staging', 'dashboard', '_meta'],
+        pseudometa_project, pseudometa_package = project_pseudometa_package(apiurl_source, project)
+        entity_clone(apiurl_source, apiurl_target, ['source', pseudometa_project, pseudometa_package, '_meta'],
                      clone=package_clone, after=package_clone_after)
 
         entity_clone(apiurl_source, apiurl_target, ['source', project, 'drush', '_meta'],

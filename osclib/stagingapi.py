@@ -57,6 +57,9 @@ from osc.core import streamfile
 from osclib.cache import Cache
 from osclib.core import devel_project_get
 from osclib.core import project_list_prefix
+from osclib.core import project_pseudometa_file_load
+from osclib.core import project_pseudometa_file_save
+from osclib.core import project_pseudometa_file_ensure
 from osclib.core import source_file_load
 from osclib.comments import CommentAPI
 from osclib.ignore_command import IgnoreCommand
@@ -626,14 +629,14 @@ class StagingAPI(object):
 
     @memoize(session=True)
     def get_ignored_requests(self):
-        ignore = self.dashboard_content_load('ignored_requests')
+        ignore = self.pseudometa_file_load('ignored_requests')
         if ignore is None or not ignore:
             return {}
         return yaml.safe_load(ignore)
 
     def set_ignored_requests(self, ignore_requests):
         ignore = yaml.dump(ignore_requests, default_flow_style=False)
-        self.dashboard_content_ensure('ignored_requests', ignore)
+        self.pseudometa_file_ensure('ignored_requests', ignore)
 
     @memoize(session=True, add_invalidate=True)
     def get_open_requests(self, query_extra=None):
@@ -1241,8 +1244,8 @@ class StagingAPI(object):
         # If adi project, check for baselibs.conf in all specs to catch both
         # dynamically generated and static baselibs.conf.
         baselibs = False if self.is_adi_project(project) else None
-        if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
-                src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
+        if baselibs is False and 'baselibs.conf' in str(source_file_load(
+                self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
             baselibs = True
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
@@ -1258,8 +1261,8 @@ class StagingAPI(object):
             url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
-            if baselibs is False and 'baselibs.conf' in str(self.load_file_content(
-                    src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
+            if baselibs is False and 'baselibs.conf' in str(source_file_load(
+                    self.apiurl, src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
                 baselibs = True
 
         if baselibs:
@@ -1464,7 +1467,7 @@ class StagingAPI(object):
 
         version = None
 
-        specfile = self.load_file_content(project, package, '{}.spec'.format(package))
+        specfile = source_file_load(self.apiurl, project, package, '{}.spec'.format(package))
         if specfile:
             try:
                 version = re.findall('^Version:(.*)', specfile, re.MULTILINE)[0].strip()
@@ -1484,36 +1487,14 @@ class StagingAPI(object):
                 return None
             raise
 
-    def load_file_content(self, project, package, filename, revision=None):
-        """
-        Load the content of a file and return the content as data. If the package is a link, it will be expanded
-        :param project: The project to query
-        :param package:  The package to quert
-        :param filename: The filename to query
-        :param revision: The revision to query
-        """
-        return source_file_load(self.apiurl, project, package, filename, revision)
+    def pseudometa_file_load(self, filename, revision=None):
+        return project_pseudometa_file_load(self.apiurl, self.project, filename, revision)
 
-    def save_file_content(self, project, package, filename, content, comment='script updated'):
-        """
-        Save content to a project/package/file
-        :param project: The project containing the package
-        :param package: the package to update
-        :param filename: the filename to save the data to
-        :param content: the content to write to the file
-        """
-        url = self.makeurl(['source', project, package, filename], {'comment': comment})
-        http_PUT(url, data=content)
+    def pseudometa_file_save(self, filename, content, comment=None):
+        project_pseudometa_file_save(self.apiurl, self.project, filename, content, comment)
 
-    def dashboard_content_load(self, filename, revision=None):
-        return self.load_file_content(self.cstaging, 'dashboard', filename, revision)
-
-    def dashboard_content_save(self, filename, content, comment='script updated'):
-        return self.save_file_content(self.cstaging, 'dashboard', filename, content, comment)
-
-    def dashboard_content_ensure(self, filename, content, comment='script updated'):
-        if content != self.dashboard_content_load(filename):
-            self.dashboard_content_save(filename, content, comment)
+    def pseudometa_file_ensure(self, filename, content, comment=None):
+        project_pseudometa_file_ensure(self.apiurl, self.project, filename, content, comment)
 
     def attribute_value_load(self, name):
         return attribute_value_load(self.apiurl, self.project, name)

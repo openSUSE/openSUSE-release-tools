@@ -154,7 +154,7 @@ class ToTestBase(object):
         raise NotFoundException("can't find %s version" % self.project)
 
     def current_qa_version(self):
-        return self.api.dashboard_content_load('version_totest')
+        return self.api.pseudometa_file_load('version_totest')
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -614,7 +614,7 @@ class ToTestBase(object):
 
     def write_version_to_dashboard(self, target, version):
         if not (self.dryrun or self.norelease):
-            self.api.dashboard_content_ensure('version_%s' % target, version, comment='Update version')
+            self.api.pseudometa_file_ensure('version_%s' % target, version, comment='Update version')
 
 
 class ToTestBaseNew(ToTestBase):
@@ -896,7 +896,7 @@ class ToTest150Images(ToTestBaseNew):
         return 'openSUSE Leap 15.0 Images'
 
     def current_qa_version(self):
-        return self.api.dashboard_content_load('version_totest_images')
+        return self.api.pseudometa_file_load('version_totest_images')
 
     def write_version_to_dashboard(self, target, version):
         super(ToTest150Images, self).write_version_to_dashboard('{}_images'.format(target), version)

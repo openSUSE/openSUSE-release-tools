@@ -73,11 +73,11 @@ def list(args):
 
         if args.write:
             api = staging_api(args)
-            api.dashboard_content_ensure('devel_projects', out, 'devel_projects write')
+            api.pseudometa_file_ensure('devel_projects', out, 'devel_projects write')
 
 def devel_projects_load(args):
     api = staging_api(args)
-    devel_projects = api.dashboard_content_load('devel_projects')
+    devel_projects = api.pseudometa_file_load('devel_projects')
 
     if devel_projects:
         return devel_projects.splitlines()
@@ -267,7 +267,7 @@ if __name__ == '__main__':
 
     parser_list = subparsers.add_parser('list', help='List devel projects.')
     parser_list.set_defaults(func=list)
-    parser_list.add_argument('-w', '--write', action='store_true', help='write to dashboard container package')
+    parser_list.add_argument('-w', '--write', action='store_true', help='write to pseudometa package')
 
     parser_maintainer = subparsers.add_parser('maintainer', help='Check for relevant groups as maintainer.')
     parser_maintainer.set_defaults(func=maintainer)

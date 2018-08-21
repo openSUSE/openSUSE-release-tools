@@ -2,6 +2,7 @@ from collections import namedtuple
 from datetime import datetime
 from dateutil.parser import parse as date_parse
 import re
+import socket
 from xml.etree import cElementTree as ET
 from lxml import etree as ETL
 
@@ -15,11 +16,13 @@ from osc.core import get_binarylist
 from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import http_POST
+from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import Request
 from osc.core import show_package_meta
 from osc.core import show_project_meta
+from osclib.conf import Config
 from osclib.memoize import memoize
 
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
@@ -267,6 +270,35 @@ def source_file_load(apiurl, project, package, filename, revision=None):
         return http_GET(url).read()
     except HTTPError:
         return None
+
+def source_file_save(apiurl, project, package, filename, content, comment=None):
+    if not comment:
+        comment = 'update by OSRT tools'
+    comment += ' (host {})'.format(socket.gethostname())
+
+    url = makeurl(apiurl, ['source', project, package, filename], {'comment': comment})
+    http_PUT(url, data=content)
+
+def project_pseudometa_package(apiurl, project):
+    package = Config.get(apiurl, project).get('pseudometa_package', '00Meta')
+    if '/' in package:
+        project, package = package.split('/', 2)
+
+    return project, package
+
+def project_pseudometa_file_load(apiurl, project, filename, revision=None):
+    project, package = project_pseudometa_package(apiurl, project)
+    return source_file_load(apiurl, project, package, filename, revision)
+
+def project_pseudometa_file_save(apiurl, project, filename, content, comment=None):
+    project, package = project_pseudometa_package(apiurl, project)
+    source_file_save(apiurl, project, package, filename, content, comment)
+
+def project_pseudometa_file_ensure(apiurl, project, filename, content, comment=None):
+    project_pseudometa, package = project_pseudometa_package(apiurl, project)
+
+    if content != project_pseudometa_file_load(apiurl, project_pseudometa, filename):
+        project_pseudometa_file_save(apiurl, project, filename, content, comment)
 
 # Should be an API call that says give me "real" packages that does not include
 # multibuild entries nor linked packages.
