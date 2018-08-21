@@ -345,3 +345,20 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
     # The OBS API of attributes is super strange, POST to update.
     url = makeurl(apiurl, ['source', project, '_attribute'])
     http_POST(url, data=ET.tostring(root))
+
+@memoize(session=True)
+def repository_path_expand(apiurl, project, repo, repos=None):
+    """Recursively list underlying projects."""
+
+    if repos is None:
+        # Avoids screwy behavior where list as default shares reference for all
+        # calls which effectively means the list grows even when new project.
+        repos = []
+
+    repos.append([project, repo])
+
+    meta = ET.fromstringlist(show_project_meta(apiurl, project))
+    for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
+        repository_path_expand(apiurl, path.get('project', project), path.get('repository'), repos)
+
+    return repos
