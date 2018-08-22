@@ -64,7 +64,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         state_hash = self.repository_state(repository_pairs)
-        self.repository_check(repository_pairs, state_hash, False)
+        self.repository_check(repository_pairs, state_hash, False, post_comments)
 
     def package_comments(self, project):
         self.logger.info('{} package comments'.format(len(self.package_results)))
