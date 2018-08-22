@@ -535,8 +535,6 @@ class Leaper(ReviewBot.ReviewBot):
 
     def check_action__default(self, req, a):
         self.needs_release_manager = True
-        if self.ibs:
-            self.do_check_maintainer_review = False
         return super(Leaper, self).check_action__default(req, a)
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
