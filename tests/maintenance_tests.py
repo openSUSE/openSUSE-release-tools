@@ -22,7 +22,7 @@ import osc
 import re
 import urlparse
 
-from check_maintenance_incidents import MaintenanceChecker
+from ReviewBot import ReviewBot
 
 APIURL = 'https://maintenancetest.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
@@ -52,9 +52,7 @@ class TestMaintenance(unittest.TestCase):
         self.logger = logging.getLogger(__file__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.checker = MaintenanceChecker(apiurl = APIURL, \
-                user = 'maintbot', \
-                logger = self.logger)
+        self.checker = ReviewBot(apiurl=APIURL, user='maintbot', logger=self.logger)
         self.checker.override_allow = False # Test setup cannot handle.
 
     def test_non_maintainer_submit(self):
@@ -168,9 +166,8 @@ class TestMaintenance(unittest.TestCase):
 
         self.checker.requests = []
         self.checker.set_request_ids_search_review()
-        self.checker.check_requests()
-
-        self.assertTrue(result['devel_review_added'])
+        self.assertTrue(self.checker.devel_project_review_needed(
+            self.checker.requests[0], 'server:database', 'mysql-workbench'))
 
     def test_non_maintainer_double_review(self):
 
@@ -290,10 +287,6 @@ class TestMaintenance(unittest.TestCase):
         # ReviewBot.add_review() skips duplicates, but different test setup.
         self.assertTrue(self.checker.devel_project_review_needed(
             self.checker.requests[0], 'server:database', 'mysql-workbench'))
-
-        self.checker.check_requests()
-
-        self.assertFalse(result['devel_review_added'])
 
 
 if __name__ == '__main__':
