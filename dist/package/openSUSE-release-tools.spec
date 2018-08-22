@@ -134,20 +134,10 @@ BuildArch:      noarch
 Requires:       %{name} = %{version}
 Requires:       osclib = %{version}
 Requires(pre):  shadow
+Obsoletes:      %{name}-maintenance < %{version}
 
 %description leaper
 Leap-style services for non-Factory projects.
-
-%package maintenance
-Summary:        Maintenance related services
-Group:          Development/Tools/Other
-BuildArch:      noarch
-# TODO Update requirements.
-Requires:       osclib = %{version}
-Requires(pre):  shadow
-
-%description maintenance
-Maintenance related services like incident check.
 
 %package metrics
 Summary:        Ingest relevant data to generate insightful metrics
@@ -330,14 +320,6 @@ exit 0
 %postun leaper
 %systemd_postun
 
-%pre maintenance
-getent passwd osrt-maintenance > /dev/null || \
-  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-maintenance" osrt-maintenance
-exit 0
-
-%postun maintenance
-%systemd_postun
-
 %pre metrics
 getent passwd osrt-metrics > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-metrics" osrt-metrics
@@ -409,7 +391,6 @@ fi
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
-%exclude %{_datadir}/%{source_dir}/check_maintenance_incidents.py
 %exclude %{_datadir}/%{source_dir}/check_source.pl
 %exclude %{_datadir}/%{source_dir}/check_source.py
 %exclude %{_datadir}/%{source_dir}/devel-project.py
@@ -479,13 +460,6 @@ fi
 %{_unitdir}/osrt-leaper-review.service
 %{_unitdir}/osrt-leaper-review.timer
 %config(noreplace) %{_sysconfdir}/openSUSE-release-tools/manager_42
-
-%files maintenance
-%defattr(-,root,root,-)
-%{_bindir}/osrt-check_maintenance_incidents
-%{_datadir}/%{source_dir}/check_maintenance_incidents.py
-%{_unitdir}/osrt-maintenance-incidents.service
-%{_unitdir}/osrt-maintenance-incidents.timer
 
 %files metrics
 %defattr(-,root,root,-)
