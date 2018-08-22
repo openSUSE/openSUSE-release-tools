@@ -58,6 +58,7 @@ DEFAULT = {
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
         'repo-checker': 'repo-checker',
+        'repo_checker-no-filter': 'True',
         'pkglistgen-product-family-include': 'openSUSE:Leap:N',
         'mail-list': 'opensuse-factory@opensuse.org',
         'mail-maintainer': 'Dominique Leuenberger <dimstar@suse.de>',
@@ -91,6 +92,7 @@ DEFAULT = {
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
         'repo_checker-arch-whitelist': 'x86_64',
+        'repo_checker-no-filter': 'True',
         # 16 hour staging window for follow-ups since lower throughput.
         'splitter-staging-age-max': '57600',
         # No special packages since they will pass through SLE first.
@@ -115,6 +117,7 @@ DEFAULT = {
         'main-repo': 'standard',
         'leaper-override-group': 'leap-reviewers',
         'repo_checker-arch-whitelist': 'x86_64',
+        'repo_checker-no-filter': 'True',
     },
     r'openSUSE:(?P<project>Backports:(?P<version>[^:]+))$': {
         'staging': 'openSUSE:%(project)s:Staging',
@@ -153,7 +156,6 @@ DEFAULT = {
         'lock': None,
         'lock-ns': None,
         'delreq-review': None,
-        'main-repo': 'openSUSE_Factory',
         '_priority': '0', # Apply defaults first
     },
 }

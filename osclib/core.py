@@ -13,6 +13,7 @@ except ImportError:
     from urllib2 import HTTPError
 
 from osc.core import get_binarylist
+from osc.core import get_commitlog
 from osc.core import get_dependson
 from osc.core import http_GET
 from osc.core import http_POST
@@ -22,6 +23,7 @@ from osc.core import owner
 from osc.core import Request
 from osc.core import show_package_meta
 from osc.core import show_project_meta
+from osc.core import show_results_meta
 from osclib.conf import Config
 from osclib.memoize import memoize
 
@@ -89,18 +91,14 @@ def package_list(apiurl, project):
     return sorted(packages)
 
 @memoize(session=True)
-def target_archs(apiurl, project):
-    meta = show_project_meta(apiurl, project)
-    meta = ET.fromstringlist(meta)
-    archs = []
-    for arch in meta.findall('repository[@name="standard"]/arch'):
-        archs.append(arch.text)
-    return archs
+def target_archs(apiurl, project, repository='standard'):
+    meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+    return meta.xpath('repository[@name="{}"]/arch/text()'.format(repository))
 
 @memoize(session=True)
 def depends_on(apiurl, project, repository, packages=None, reverse=None):
     dependencies = set()
-    for arch in target_archs(apiurl, project):
+    for arch in target_archs(apiurl, project, repository):
         root = ET.fromstring(get_dependson(apiurl, project, repository, arch, packages, reverse))
         dependencies.update(pkgdep.text for pkgdep in root.findall('.//pkgdep'))
 
@@ -113,18 +111,6 @@ def request_when_staged(request, project, first=False):
             when = history.when
 
     return date_parse(when)
-
-def request_staged(request):
-    for review in request.reviews:
-        if (review.state == 'new' and review.by_project and
-            review.by_project.startswith(request.actions[0].tgt_project)):
-
-            # Allow time for things to settle.
-            when = request_when_staged(request, review.by_project)
-            if (datetime.utcnow() - when).total_seconds() > 10 * 60:
-                return review.by_project
-
-    return None
 
 def binary_list(apiurl, project, repository, arch, package=None):
     parsed = []
@@ -349,3 +335,74 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
     # The OBS API of attributes is super strange, POST to update.
     url = makeurl(apiurl, ['source', project, '_attribute'])
     http_POST(url, data=ET.tostring(root))
+
+@memoize(session=True)
+def repository_path_expand(apiurl, project, repo, repos=None):
+    """Recursively list underlying projects."""
+
+    if repos is None:
+        # Avoids screwy behavior where list as default shares reference for all
+        # calls which effectively means the list grows even when new project.
+        repos = []
+
+    repos.append([project, repo])
+
+    meta = ET.fromstringlist(show_project_meta(apiurl, project))
+    for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
+        repository_path_expand(apiurl, path.get('project', project), path.get('repository'), repos)
+
+    return repos
+
+@memoize(session=True)
+def repository_path_search(apiurl, project, search_project, search_repository):
+    queue = []
+
+    # Initialize breadth first search queue with repositories from top project.
+    root = ETL.fromstringlist(show_project_meta(apiurl, project))
+    for repository in root.xpath('repository[path[@project and @repository]]/@name'):
+        queue.append((repository, project, repository))
+
+    # Perform a breadth first search and return the first repository chain with
+    # a series of path elements targeting search project and repository.
+    for repository_top, project, repository in queue:
+        if root.get('name') != project:
+            # Repositories for a single project are in a row so cache parsing.
+            root = ETL.fromstringlist(show_project_meta(apiurl, project))
+
+        paths = root.findall('repository[@name="{}"]/path'.format(repository))
+        for path in paths:
+            if path.get('project') == search_project and path.get('repository') == search_repository:
+                return repository_top
+
+            queue.append((repository_top, path.get('project'), path.get('repository')))
+
+    return None
+
+def repository_state(apiurl, project, repository):
+    return ET.fromstringlist(show_results_meta(
+        apiurl, project, multibuild=True, repository=[repository])).get('state')
+
+def repositories_states(apiurl, repository_pairs):
+    states = []
+
+    for project, repository in repository_pairs:
+        states.append(repository_state(apiurl, project, repository))
+
+    return states
+
+def repository_published(apiurl, project, repository):
+    root = ETL.fromstringlist(show_results_meta(
+        apiurl, project, multibuild=True, repository=[repository]))
+    return not len(root.xpath('result[@state!="published" and @state!="unpublished"]'))
+
+def repositories_published(apiurl, repository_pairs):
+    for project, repository in repository_pairs:
+        if not repository_published(apiurl, project, repository):
+            return (project, repository)
+
+    return True
+
+def project_meta_revision(apiurl, project):
+    root = ET.fromstringlist(get_commitlog(
+        apiurl, project, '_project', None, format='xml', meta=True))
+    return int(root.find('logentry').get('revision'))

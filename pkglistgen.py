@@ -40,6 +40,7 @@ from osc.core import show_results_meta
 from osc.core import undelete_package
 from osc import conf
 from osclib.conf import Config, str2bool
+from osclib.core import repository_path_expand
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
@@ -525,7 +526,7 @@ class PkgListGen(ToolBase.ToolBase):
             g.ignore(self.groups[e])
 
     def expand_repos(self, project, repo='standard'):
-        return StagingAPI(self.apiurl, project).expanded_repos(repo)
+        return repository_path_expand(self.apiurl, project, repo)
 
     def _check_supplements(self):
         tocheck = set()
