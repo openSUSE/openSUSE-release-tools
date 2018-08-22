@@ -368,7 +368,7 @@ class RepoChecker(ReviewBot.ReviewBot):
     @memoize(session=True)
     def repository_check(self, repository_pairs, state_hash, simulate_merge, post_comments=False):
         comment = []
-        project, repository = repository_pairs[0] # this would mean staging!?
+        project, repository = repository_pairs[0]
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
