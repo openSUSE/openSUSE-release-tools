@@ -345,6 +345,12 @@ def repository_path_expand(apiurl, project, repo, repos=None):
         # calls which effectively means the list grows even when new project.
         repos = []
 
+    if [project, repo] in repos:
+        # For some reason devel projects such as graphics include the same path
+        # twice for openSUSE:Factory/snapshot. Does not hurt anything, but
+        # cleaner not to include it twice.
+        return repos
+
     repos.append([project, repo])
 
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
