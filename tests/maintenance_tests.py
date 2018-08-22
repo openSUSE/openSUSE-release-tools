@@ -287,99 +287,14 @@ class TestMaintenance(unittest.TestCase):
 
         self.checker.requests = []
         self.checker.set_request_ids_search_review()
+        # ReviewBot.add_review() skips duplicates, but different test setup.
+        self.assertTrue(self.checker.devel_project_review_needed(
+            self.checker.requests[0], 'server:database', 'mysql-workbench'))
+
         self.checker.check_requests()
 
         self.assertFalse(result['devel_review_added'])
 
-
-
-    def test_backports_submit(self):
-
-        httpretty.register_uri(httpretty.GET,
-            rr("/search/request?withfullhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D"),
-            match_querystring = True,
-            body = """
-                <collection matches="1">
-                    <request id="261411" creator="lnussel">
-                      <action type="maintenance_incident">
-                        <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
-                        <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
-                      </action>
-                      <state name="review" who="lnussel" when="2014-11-13T13:22:02">
-                        <comment></comment>
-                      </state>
-                      <review state="new" by_user="maintbot"/>
-                      <history who="lnussel" when="2014-11-13T13:22:02">
-                        <description>Request created</description>
-                        <comment>test update</comment>
-                      </history>
-                      <description>test update</description>
-                    </request>
-                </collection>
-            """)
-
-        httpretty.register_uri(httpretty.GET,
-            APIURL + "/request/261411",
-            body = """
-                <request id="261411" creator="lnussel">
-                  <action type="maintenance_incident">
-                    <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
-                    <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
-                  </action>
-                  <state name="review" who="lnussel" when="2014-11-13T13:22:02">
-                    <comment></comment>
-                  </state>
-                  <review state="new" by_user="maintbot"/>
-                  <history who="lnussel" when="2014-11-13T13:22:02">
-                    <description>Request created</description>
-                    <comment>test update</comment>
-                  </history>
-                  <description>test update</description>
-                </request>
-            """)
-
-        httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/home:lnussel:branches:openSUSE:Backports:SLE-12/plan",
-            body = """
-                <directory name="plan" rev="1" vrev="1" srcmd5="b4ed19dc30c1b328168bc62a81ec6998">
-                  <linkinfo project="home:lnussel:plan" package="plan" srcmd5="7a2353f73b29dba970702053229542a0" baserev="7a2353f73b29dba970702053229542a0" xsrcmd5="71e76daf2c2e9ddb0b9208f54a14f608" lsrcmd5="b4ed19dc30c1b328168bc62a81ec6998" />
-                  <entry name="_link" md5="91f81d88456818a18a7332999fb2da18" size="125" mtime="1415807350" />
-                  <entry name="plan.spec" md5="b6814215f6d2e8559b43de9a214b2cbd" size="8103" mtime="1413627959" />
-                </directory>
-
-            """)
-
-        httpretty.register_uri(httpretty.GET,
-            APIURL + "/search/owner?project=openSUSE:Backports:SLE-12&binary=plan",
-            match_querystring = True,
-            body = """
-                <collection/>
-            """)
-
-        httpretty.register_uri(httpretty.GET,
-            APIURL + "/search/owner?binary=plan",
-            match_querystring = True,
-            body = """
-                <collection/>
-            """)
-
-        result = { 'factory_review_added' : None }
-
-        def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
-            if u.query == 'cmd=addreview&by_user=factory-source':
-                result['factory_review_added'] = True
-            return (200, headers, '<status code="ok"/>')
-
-        httpretty.register_uri(httpretty.POST,
-            APIURL + "/request/261411",
-            body = lambda method, uri, headers: change_request(result, method, uri, headers))
-
-        self.checker.requests = []
-        self.checker.set_request_ids_search_review()
-        self.checker.check_requests()
-
-        self.assertTrue(result['factory_review_added'])
 
 if __name__ == '__main__':
     unittest.main()
