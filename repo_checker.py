@@ -362,7 +362,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             comments = self.comment_api.get_comments(project_name=project)
             _, info = self.comment_api.comment_find(comments, '::'.join([self.bot_name, repository]))
             if info:
-                return info.get('state')
+                return info.get('build')
 
         return None
 
@@ -441,7 +441,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.result_comment(repository, arch, results, comment)
 
         if simulate_merge:
-            info_extra = {'state': state_hash}
+            info_extra = {'build': state_hash}
             if not result:
                 # Some checks in group did not pass, post comment.
                 # Avoid identical comments with different build hash during
