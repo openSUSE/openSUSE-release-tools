@@ -134,7 +134,7 @@ DEFAULT = {
         'legal-review-group': 'legal-auto',
         # review-team optionally added by leaper.py.
         'repo-checker': 'repo-checker',
-        'repo_checker-arch-whitelist': 'x86_64',
+        'repo_checker-project-skip': 'True',
         # 16 hour staging window for follow-ups since lower throughput.
         'splitter-staging-age-max': '57600',
         # No special packages since they will pass through Leap first.
@@ -142,6 +142,13 @@ DEFAULT = {
         # Allow `unselect --cleanup` to operate immediately on:
         # - Update crawler requests (leaper)
         'unselect-cleanup-whitelist': 'leaper',
+    },
+    r'openSUSE:(?P<project>Backports:SLE-[^:]+(?::Update)?)$': {
+        # Skip SLE related projects maintenance projects to avoid processing
+        # them during multi-target requests including an openSUSE project. The
+        # SLE projects cannot be processed since the repo cannot be mirrored.
+        'repo_checker-project-skip': 'True',
+        '_priority': '101',
     },
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.

@@ -493,6 +493,13 @@ class RepoChecker(ReviewBot.ReviewBot):
 
     @memoize(ttl=60, session=True)
     def request_repository_pairs(self, request, action):
+        if str2bool(Config.get(self.apiurl, action.tgt_project).get('repo_checker-project-skip', 'False')):
+            # Do not change message as this should only occur in requests
+            # targeting multiple projects such as in maintenance workflow in
+            # which the message should be set by other actions.
+            self.logger.debug('skipping review of action targeting {}'.format(action.tgt_project))
+            return True
+
         repository = self.project_repository(action.tgt_project)
         if not repository:
             self.review_messages['declined'] = ERROR_REPO_SPECIFIED.format(action.tgt_project)
