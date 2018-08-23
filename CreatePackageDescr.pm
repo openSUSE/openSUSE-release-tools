@@ -121,6 +121,7 @@ sub package_snippet($) {
     $out .= "-Con:\n";
     $out .= "+Req:\n";
     foreach my $prv ( @{ $qq{1049} || [] } ) {
+        next if ( $prv eq "this-is-only-for-build-envs" );
         # Completely disgusting, but maintainers have no interest in fixing,
         # see #1153 for more details.
         next
