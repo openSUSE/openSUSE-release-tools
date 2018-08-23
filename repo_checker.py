@@ -66,7 +66,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         state_hash = self.repository_state(repository_pairs)
         self.repository_check(repository_pairs, state_hash, False, bool(post_comments))
 
-    def package_comments(self, project):
+    def package_comments(self, project, repository):
         self.logger.info('{} package comments'.format(len(self.package_results)))
 
         for package, sections in self.package_results.items():
@@ -81,10 +81,11 @@ class RepoChecker(ReviewBot.ReviewBot):
                     'has installation issues and may not be installable:'.format(
                         project=project, package=package)
             else:
-                bot_name_suffix = None
+                bot_name_suffix = repository
                 comment_project = project
                 comment_package = package
-                message = 'This package has installation issues and may not be installable:'
+                message = 'This package has installation issues and may not be installable from the `{}` ' \
+                    'repository:'.format(repository)
 
             # Sort sections by text to group binaries together.
             sections = sorted(sections, key=lambda s: s.text)
@@ -465,7 +466,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 print(text)
 
             if post_comments:
-                self.package_comments(project)
+                self.package_comments(project, repository)
 
         if result and not published:
             # Wait for the complete stack to build before positive result.
