@@ -359,7 +359,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 return content.splitlines()[0]
         else:
             comments = self.comment_api.get_comments(project_name=project)
-            _, info = self.comment_api.comment_find(comments, self.bot_name)
+            _, info = self.comment_api.comment_find(comments, '::'.join([self.bot_name, repository]))
             if info:
                 return info.get('build')
 
@@ -447,13 +447,14 @@ class RepoChecker(ReviewBot.ReviewBot):
                 # target project build phase. Once published update regardless.
                 self.comment_write(state='seen', result='failed', project=project,
                                    message='\n'.join(comment).strip(), identical=True,
-                                   info_extra=info_extra, info_extra_identical=published)
+                                   info_extra=info_extra, info_extra_identical=published,
+                                   bot_name_suffix=repository)
             else:
                 # Post passed comment only if previous failed comment.
                 text = 'Previously reported problems have been resolved.'
                 self.comment_write(state='done', result='passed', project=project,
                                    message=text, identical=True, only_replace=True,
-                                   info_extra=info_extra)
+                                   info_extra=info_extra, bot_name_suffix=repository)
         else:
             text = '\n'.join(comment).strip()
             if not self.dryrun:
