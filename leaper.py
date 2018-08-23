@@ -39,7 +39,6 @@ from osclib.core import devel_project_get
 import urllib2
 import yaml
 import ReviewBot
-from check_maintenance_incidents import MaintenanceChecker
 from check_source_in_factory import FactorySourceChecker
 
 class Leaper(ReviewBot.ReviewBot):
@@ -53,7 +52,6 @@ class Leaper(ReviewBot.ReviewBot):
 
         self.do_comments = True
 
-        self.maintbot = MaintenanceChecker(*args, **kwargs)
         # for FactorySourceChecker
         self.factory = FactorySourceChecker(*args, **kwargs)
 
@@ -125,6 +123,26 @@ class Leaper(ReviewBot.ReviewBot):
         return project.startswith(origin)
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
+        ret = self.check_source_submission_inner(src_project, src_package, src_rev, target_project, target_package)
+
+        # The layout of this code is just plain wrong and awkward. What is
+        # really desired a "post check source submission" not
+        # check_one_request() which applies to all action types and all actions
+        # at once. The follow-ups need the same context that the main method
+        # determining to flip the switch had. For maintenance incidents the
+        # ReviewBot code does a fair bit of mangling to the package and project
+        # values passed in which is not present during check_one_request().
+        # Currently the only feature used by maintenance is
+        # do_check_maintainer_review and the rest of the checks apply in the
+        # single action workflow so this should work fine, but really all the
+        # processing should be done per-action instead of per-request.
+
+        if self.do_check_maintainer_review:
+            self.devel_project_review_ensure(self.request, target_project, target_package)
+
+        return ret
+
+    def check_source_submission_inner(self, src_project, src_package, src_rev, target_project, target_package):
         super(Leaper, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
         self.automatic_submission = False
 
@@ -228,6 +246,9 @@ class Leaper(ReviewBot.ReviewBot):
             self.logger.info("expected origin is '%s' (%s)", origin,
                              "unchanged" if origin_same else "changed")
 
+            # Only when not from current product should request require maintainer review.
+            self.do_check_maintainer_review = False
+
             if origin_same:
                 return True
 
@@ -239,6 +260,8 @@ class Leaper(ReviewBot.ReviewBot):
             if good or good == None:
                 self.logger.info('found pending submission against origin ({})'.format(origin))
                 return good
+
+            self.do_check_maintainer_review = True
 
             return None
         elif self.action.type == 'maintenance_incident':
@@ -478,9 +501,6 @@ class Leaper(ReviewBot.ReviewBot):
         self.packages = {}
 
         request_ok = ReviewBot.ReviewBot.check_one_request(self, req)
-        if self.do_check_maintainer_review:
-            has_correct_maintainer = self.maintbot.check_one_request(req)
-            self.logger.debug("has_correct_maintainer: %s", has_correct_maintainer)
 
         self.logger.debug("review result: %s", request_ok)
         if self.pending_factory_submission:

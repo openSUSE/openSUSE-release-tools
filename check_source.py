@@ -18,7 +18,6 @@ from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 import urllib2
 import ReviewBot
-from check_maintenance_incidents import MaintenanceChecker
 from osclib.conf import str2bool
 
 class CheckSource(ReviewBot.ReviewBot):
@@ -30,8 +29,6 @@ class CheckSource(ReviewBot.ReviewBot):
 
         # ReviewBot options.
         self.request_default_return = True
-
-        self.maintbot = MaintenanceChecker(*args, **kwargs)
 
         self.skip_add_reviews = False
 
@@ -286,8 +283,7 @@ class CheckSource(ReviewBot.ReviewBot):
         links = root.findall('sourceinfo/linked')
         if links is None or len(links) == 0:
             if not self.ignore_devel:
-                # Utilize maintbot to add devel project review if necessary.
-                self.maintbot.check_one_request(request)
+                self.devel_project_review_ensure(request, action.tgt_project, action.tgt_package)
 
             if not self.skip_add_reviews and self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')

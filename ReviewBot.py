@@ -29,7 +29,9 @@ from collections import OrderedDict
 from osclib.cache import Cache
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.core import devel_project_fallback
 from osclib.core import group_members
+from osclib.core import maintainers_get
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
@@ -306,6 +308,36 @@ class ReviewBot(object):
         code = ET.parse(r).getroot().attrib['code']
         if code != 'ok':
             raise Exception('non-ok return code: {}'.format(code))
+
+    def devel_project_review_add(self, request, project, package, message='adding devel project review'):
+        devel_project, devel_package = devel_project_fallback(self.apiurl, project, package)
+        if not devel_project:
+            self.logger.warning('no devel project found for {}/{}'.format(project, package))
+            return False
+
+        self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
+        return True
+
+    def devel_project_review_ensure(self, request, project, package, message='submitter not devel maintainer'):
+        if not self.devel_project_review_needed(request, project, package):
+            self.logger.debug('devel project review not needed')
+            return True
+
+        return self.devel_project_review_add(request, project, package, message)
+
+    def devel_project_review_needed(self, request, project, package):
+        author = request.get_creator()
+        maintainers = set(maintainers_get(self.apiurl, project, package))
+
+        if author in maintainers:
+            return False
+
+        # Carried over from maintbot, but seems haphazard.
+        for review in request.reviews:
+            if review.by_user in maintainers:
+                return False
+
+        return True
 
     def check_one_request(self, req):
         """

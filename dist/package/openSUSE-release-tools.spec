@@ -133,8 +133,6 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       %{name} = %{version}
 Requires:       osclib = %{version}
-# osrt-leaper-review needs check_maintenance_incidents.py
-Requires:       %{name}-maintenance = %{version}
 Requires(pre):  shadow
 
 %description leaper
