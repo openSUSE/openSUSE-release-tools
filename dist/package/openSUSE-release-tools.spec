@@ -385,7 +385,7 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%doc README.asciidoc
+%doc README.md
 %{_bindir}/osrt-biarchtool
 %{_bindir}/osrt-bs_mirrorfull
 %{_bindir}/osrt-build-fail-reminder
@@ -435,7 +435,7 @@ fi
 %files devel
 %defattr(-,root,root,-)
 # Non-empty for older products.
-%doc README.asciidoc
+%doc README.md
 
 %files abichecker
 %defattr(-,root,root,-)
