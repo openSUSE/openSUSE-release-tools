@@ -66,7 +66,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         state_hash = self.repository_state(repository_pairs)
         self.repository_check(repository_pairs, state_hash, False, bool(post_comments))
 
-    def package_comments(self, project):
+    def package_comments(self, project, repository):
         self.logger.info('{} package comments'.format(len(self.package_results)))
 
         for package, sections in self.package_results.items():
@@ -81,10 +81,11 @@ class RepoChecker(ReviewBot.ReviewBot):
                     'has installation issues and may not be installable:'.format(
                         project=project, package=package)
             else:
-                bot_name_suffix = None
+                bot_name_suffix = repository
                 comment_project = project
                 comment_package = package
-                message = 'This package has installation issues and may not be installable:'
+                message = 'This package has installation issues and may not be installable from the `{}` ' \
+                    'repository:'.format(repository)
 
             # Sort sections by text to group binaries together.
             sections = sorted(sections, key=lambda s: s.text)
@@ -359,7 +360,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 return content.splitlines()[0]
         else:
             comments = self.comment_api.get_comments(project_name=project)
-            _, info = self.comment_api.comment_find(comments, self.bot_name)
+            _, info = self.comment_api.comment_find(comments, '::'.join([self.bot_name, repository]))
             if info:
                 return info.get('state')
 
@@ -447,13 +448,14 @@ class RepoChecker(ReviewBot.ReviewBot):
                 # target project build phase. Once published update regardless.
                 self.comment_write(state='seen', result='failed', project=project,
                                    message='\n'.join(comment).strip(), identical=True,
-                                   info_extra=info_extra, info_extra_identical=published)
+                                   info_extra=info_extra, info_extra_identical=published,
+                                   bot_name_suffix=repository)
             else:
                 # Post passed comment only if previous failed comment.
                 text = 'Previously reported problems have been resolved.'
                 self.comment_write(state='done', result='passed', project=project,
                                    message=text, identical=True, only_replace=True,
-                                   info_extra=info_extra)
+                                   info_extra=info_extra, bot_name_suffix=repository)
         else:
             text = '\n'.join(comment).strip()
             if not self.dryrun:
@@ -464,7 +466,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 print(text)
 
             if post_comments:
-                self.package_comments(project)
+                self.package_comments(project, repository)
 
         if result and not published:
             # Wait for the complete stack to build before positive result.
