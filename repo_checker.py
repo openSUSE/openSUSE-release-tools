@@ -64,7 +64,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         state_hash = self.repository_state(repository_pairs)
-        self.repository_check(repository_pairs, state_hash, False, post_comments)
+        self.repository_check(repository_pairs, state_hash, False, bool(post_comments))
 
     def package_comments(self, project):
         self.logger.info('{} package comments'.format(len(self.package_results)))
@@ -177,9 +177,10 @@ class RepoChecker(ReviewBot.ReviewBot):
         whitelist = filter(None, whitelist)
         return whitelist
 
-    def install_check(self, project, directories, repository, arch, ignore=None, whitelist=[], parse=False, no_filter=False):
+    def install_check(self, target_project_pair, arch, directories,
+                      ignore=None, whitelist=[], parse=False, no_filter=False):
         self.logger.info('install check: start (ignore:{}, whitelist:{}, parse:{}, no_filter:{})'.format(
-            bool(ignore), len(whitelist), bool(parse), no_filter))
+            bool(ignore), len(whitelist), parse, no_filter))
 
         with tempfile.NamedTemporaryFile() as ignore_file:
             # Print ignored rpms on separate lines in ignore file.
@@ -209,7 +210,8 @@ class RepoChecker(ReviewBot.ReviewBot):
             elif parse:
                 # Parse output for later consumption for posting comments.
                 sections = self.install_check_parse(stdout)
-                self.install_check_sections_group(parse, repository, arch, sections)
+                self.install_check_sections_group(
+                    target_project_pair[0], target_project_pair[1], arch, sections)
 
             # Format output as markdown comment.
             parts = []
@@ -221,8 +223,9 @@ class RepoChecker(ReviewBot.ReviewBot):
             if stderr:
                 parts.append('<pre>\n' + stderr + '\n' + '</pre>\n')
 
-            pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, project)
-            filename = self.project_pseudometa_file_name(project, repository)
+            pseudometa_project, pseudometa_package = project_pseudometa_package(
+                self.apiurl, target_project_pair[0])
+            filename = self.project_pseudometa_file_name(target_project_pair[0], target_project_pair[1])
             path = ['package', 'view_file', pseudometa_project, pseudometa_package, filename]
             header = '### [install check & file conflicts](/{})\n\n'.format('/'.join(path))
             return CheckResult(False, header + ('\n' + ('-' * 80) + '\n\n').join(parts))
@@ -365,7 +368,7 @@ class RepoChecker(ReviewBot.ReviewBot):
     @memoize(session=True)
     def repository_check(self, repository_pairs, state_hash, simulate_merge, post_comments=False):
         comment = []
-        project, repository = repository_pairs[0] # this would mean staging!?
+        project, repository = repository_pairs[0]
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
@@ -418,17 +421,17 @@ class RepoChecker(ReviewBot.ReviewBot):
 
                 results = {
                     'cycle': self.cycle_check(repository_pairs[0], repository_pairs[1], arch),
-                    'install': self.install_check(project, directories, repository_pairs[1][1], arch, ignore, whitelist),
+                    'install': self.install_check(
+                        repository_pairs[1], arch, directories, ignore, whitelist),
                 }
             else:
-                parse = project if post_comments else False
                 # Only products themselves will want no-filter or perhaps
                 # projects working on cleaning up a product.
                 no_filter = str2bool(Config.get(self.apiurl, project).get('repo_checker-no-filter'))
                 results = {
                     'cycle': CheckResult(True, None),
-                    'install': self.install_check(project, directories, repository, arch,
-                                                  parse=parse, no_filter=no_filter),
+                    'install': self.install_check(repository_pairs[0], arch, directories,
+                                                  parse=post_comments, no_filter=no_filter),
                 }
 
             if not all(result.success for _, result in results.items()):
