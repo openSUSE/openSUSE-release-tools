@@ -52,6 +52,7 @@ class TestConfig(unittest.TestCase):
             'openSUSE:Leap:15.0',
             'openSUSE:Leap:15.0:Update',
             'openSUSE:Backports:SLE-15',
+            'openSUSE:Backports:SLE-15:Update',
             'SUSE:SLE-15:GA',
             'SUSE:SLE-12:GA',
             'GNOME:Factory',
