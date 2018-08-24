@@ -527,9 +527,7 @@ class Leaper(ReviewBot.ReviewBot):
             else:
                 state = 'done'
                 result = 'declined'
-            # Since leaper calls other bots (like maintbot) comments may
-            # sometimes contain identical lines (like for unhandled requests).
-            self.comment_handler_lines_deduplicate()
+
             self.comment_write(state, result)
 
         add_review_groups = []
