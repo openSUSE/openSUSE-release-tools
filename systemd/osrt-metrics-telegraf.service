@@ -1,0 +1,12 @@
+[Unit]
+Description=openSUSE Release Tools: metrics telegraf
+
+[Service]
+User=osrt-metrics
+SyslogIdentifier=osrt-metrics
+ExecStart=/usr/bin/telegraf \
+  --config OSRT_DATA_DIR/metrics/telegraf/agent.conf \
+  --config-directory OSRT_DATA_DIR/metrics/telegraf
+
+[Install]
+WantedBy=multi-user.target

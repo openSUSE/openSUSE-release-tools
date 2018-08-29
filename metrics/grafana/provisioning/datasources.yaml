@@ -42,3 +42,9 @@ datasources:
   url: http://localhost:8086
   access: proxy
   database: osrt_access
+
+- name: osrt_telegraf
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: osrt_telegraf

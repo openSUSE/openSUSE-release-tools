@@ -161,6 +161,7 @@ Requires(pre):  shadow
 Recommends:     python-influxdb
 Suggests:       grafana
 Suggests:       influxdb
+Suggests:       telegraf
 
 %description metrics
 Ingest relevant OBS and annotation data to generate insightful metrics.
@@ -506,6 +507,7 @@ fi
 %{_unitdir}/osrt-metrics@.timer
 %{_unitdir}/osrt-metrics-release@.service
 %{_unitdir}/osrt-metrics-release@.timer
+%{_unitdir}/osrt-metrics-telegraf.service
 
 %files metrics-access
 %defattr(-,root,root,-)

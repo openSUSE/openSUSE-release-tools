@@ -27,7 +27,9 @@ install:
 	cp -R config/* $(DESTDIR)$(sysconfdir)/$(package_name)
 	for dir in dashboards datasources ; do ln -s $(pkgdatadir)/metrics/grafana/provisioning/$$dir.yaml \
 	  $(DESTDIR)$(grafana_provisioning_dir)/$$dir/$(package_name).yaml ; done
-	sed -i "s|OSRT_DATA_DIR|$(pkgdatadir)|" $(DESTDIR)$(pkgdatadir)/metrics/grafana/provisioning/dashboards.yaml
+	sed -i "s|OSRT_DATA_DIR|$(pkgdatadir)|" \
+	  $(DESTDIR)$(pkgdatadir)/metrics/grafana/provisioning/dashboards.yaml \
+	  $(DESTDIR)$(unitdir)/osrt-metrics-telegraf.service
 
 check: test
 
