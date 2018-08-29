@@ -294,6 +294,8 @@ class Leaper(ReviewBot.ReviewBot):
             elif origin.startswith('openSUSE:Leap:15.0'):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
+                if src_project.startswith('openSUSE:Leap'):
+                    self.do_check_maintainer_review = False
                 # submitted from :Update
                 if origin_same:
                     self.logger.debug("submission from 15.0 ok")
@@ -301,6 +303,7 @@ class Leaper(ReviewBot.ReviewBot):
                 # switching to sle package might make sense
                 if src_project.startswith('SUSE:SLE-15'):
                     self.needs_release_manager = True
+                    self.do_check_maintainer_review = False
                     return True
                 # submitted from elsewhere but is in :Update
                 else:
@@ -338,6 +341,8 @@ class Leaper(ReviewBot.ReviewBot):
             elif origin.startswith('SUSE:SLE-15'):
                 if self.must_approve_maintenance_updates:
                     self.needs_release_manager = True
+                if src_project.startswith('SUSE:SLE-15'):
+                    self.do_check_maintainer_review = False
                 for v in ('15.0', '15.1'):
                     prj = 'openSUSE:Leap:{}:SLE-workarounds'.format(v)
                     if self.is_package_in_project( prj, target_package):
