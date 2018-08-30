@@ -71,7 +71,8 @@ class CompareList(object):
         return packages
 
     def is_linked_package(self, project, package):
-        u = makeurl(self.apiurl, ['source', project, package])
+        query = {'withlinked': 1}
+        u = makeurl(self.apiurl, ['source', project, package], query=query)
         root = ET.parse(http_GET(u)).getroot()
         linked = root.find('linkinfo')
         return linked
