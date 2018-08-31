@@ -120,9 +120,11 @@ OBS product release announcer for generating email diffs summaries.
 Summary:        Check source review bot
 Group:          Development/Tools/Other
 BuildArch:      noarch
-# TODO Update requirements.
 Requires:       osclib = %{version}
 # check_source.pl
+Requires:       obs-service-download_files
+Requires:       obs-service-format_spec_file
+Requires:       obs-service-source_validator
 Requires:       perl-Text-Diff
 Requires(pre):  shadow
 
