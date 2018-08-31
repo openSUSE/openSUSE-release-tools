@@ -122,6 +122,8 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
+# check_source.pl
+Requires:       perl-Text-Diff
 Requires(pre):  shadow
 
 %description check-source
