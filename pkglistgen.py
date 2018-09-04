@@ -19,12 +19,12 @@ from osc.core import Package
 from osc.core import show_results_meta
 from osc.core import undelete_package
 from osc import conf
+from osclib.cache_manager import CacheManager
 from osclib.conf import Config, str2bool
 from osclib.core import repository_path_expand
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
-from xdg.BaseDirectory import save_cache_path
 import glob
 import hashlib
 import io
@@ -47,7 +47,7 @@ import string
 import ToolBase
 
 # share header cache with repochecker
-from osclib.memoize import CACHEDIR
+CACHEDIR = CacheManager.directory('repository-meta')
 
 logger = logging.getLogger()
 
@@ -1235,7 +1235,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         # Cache dir specific to hostname and project.
         host = urlparse.urlparse(api.apiurl).hostname
-        cache_dir = save_cache_path('opensuse-packagelists', host, opts.project)
+        cache_dir = CacheManager.directory('pkglistgen', host, opts.project)
 
         if not opts.no_checkout:
             if os.path.exists(cache_dir):
@@ -1298,7 +1298,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if drop_list:
             # Ensure solv files from all releases in product family are updated.
             print('-> solv_cache_update')
-            cache_dir_solv = save_cache_path('opensuse-packagelists', 'solv')
+            cache_dir_solv = CacheManager.directory('pkglistgen', 'solv')
             family_last = target_config.get('pkglistgen-product-family-last')
             family_include = target_config.get('pkglistgen-product-family-include')
             solv_prior = self.solv_cache_update(

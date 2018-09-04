@@ -12,6 +12,7 @@ import urllib
 from StringIO import StringIO
 from osc import conf
 from osc.core import urlopen
+from osclib.cache_manager import CacheManager
 from time import time
 
 try:
@@ -64,7 +65,7 @@ class Cache(object):
     cache, but obviously not for other contributors.
     """
 
-    CACHE_DIR = os.path.expanduser('~/.cache/openSUSE-release-tools')
+    CACHE_DIR = None
     TTL_LONG = 12 * 60 * 60
     TTL_MEDIUM = 30 * 60
     TTL_SHORT = 5 * 60
@@ -101,7 +102,9 @@ class Cache(object):
     last_updated = {}
 
     @staticmethod
-    def init():
+    def init(directory='main'):
+        Cache.CACHE_DIR = CacheManager.directory('request', directory)
+
         Cache.patterns = []
         for pattern in Cache.PATTERNS:
             Cache.patterns.append(re.compile(pattern))
@@ -249,6 +252,9 @@ class Cache(object):
 
     @staticmethod
     def path(url, project, include_file=False, makedirs=False):
+        if not Cache.CACHE_DIR:
+            raise Exception('Cache.init() must be called first')
+
         parts = [Cache.CACHE_DIR]
 
         o = urlparse.urlsplit(url)

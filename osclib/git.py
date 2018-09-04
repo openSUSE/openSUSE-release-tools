@@ -1,9 +1,10 @@
 import os
 from os import path
+from osclib.cache_manager import CacheManager
 import subprocess
-from xdg.BaseDirectory import save_cache_path
 
-CACHE_DIR = save_cache_path('openSUSE-release-tools', 'git')
+# Git will not be happy if pruned, but not used enough to be worth excluding.
+CACHE_DIR = CacheManager.directory('git')
 
 def clone(url, directory):
     return_code = subprocess.call(['git', 'clone', url, directory])

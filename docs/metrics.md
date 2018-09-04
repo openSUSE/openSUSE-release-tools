@@ -46,7 +46,7 @@ to unintentionally change the default project, annotation state, or time period
 by saving the dashboard with different defaults.
 
 Use the `--debug` option and inspect individual request XML dumps by looking in
-`~/.cache/openSUSE-release-tools-metrics` or:
+`~/.cache/openSUSE-release-tools/request/metrics` or:
 
 ```
 osc api '/request/$reqid?withfullhistory=1'

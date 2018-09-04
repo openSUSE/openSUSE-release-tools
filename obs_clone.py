@@ -212,12 +212,11 @@ if __name__ == '__main__':
 
     if args.cache:
         from osclib.cache import Cache
-        Cache.CACHE_DIR = Cache.CACHE_DIR + '-clone'
         Cache.PATTERNS = {}
         # Prevent caching source information from local clone.
         Cache.PATTERNS['/source/[^/]+/[^/]+/[^/]+?rev'] = 0
         Cache.PATTERNS['.*'] = Cache.TTL_LONG * 2
-        Cache.init()
+        Cache.init('clone')
 
     osc.conf.config['debug'] = args.debug
     project_fence.project = args.project

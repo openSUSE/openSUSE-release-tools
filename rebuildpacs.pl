@@ -175,7 +175,8 @@ sub mirror_repo($$$) {
   my $repo = shift;
   my $arch = shift;
 
-  my $repodir = ($ENV{XDG_CACHE_HOME}||$ENV{HOME}."/.cache")."/opensuse-repo-checker/repo-$project-$repo-$arch";
+  # Old and new in single directory, but never deployed together.
+  my $repodir = ($ENV{XDG_CACHE_HOME}||$ENV{HOME}."/.cache")."/openSUSE-release-tools/repository-meta/repo-$project-$repo-$arch";
   mkdir($repodir);
 
   system(

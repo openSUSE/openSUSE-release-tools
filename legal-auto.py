@@ -26,6 +26,7 @@ except:
 
 import osc.conf
 import osc.core
+from osclib.cache_manager import CacheManager
 import ReviewBot
 
 from osclib.comments import CommentAPI
@@ -189,8 +190,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.delete_from_db(req.reqid)
 
     def _pkl_path(self):
-        CACHE_DIR = os.path.expanduser('~/.cache/osc-plugin-factory')
-        return os.path.join(CACHE_DIR, 'legaldb')
+        return CacheManager.directory('legal-auto')
 
     def update_project(self, project):
         try:
