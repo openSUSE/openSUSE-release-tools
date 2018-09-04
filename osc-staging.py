@@ -39,14 +39,11 @@ from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
 from osclib.prio_command import PrioCommand
 
-OSC_STAGING_VERSION = '0.0.1'
-
 
 def _print_version(self):
-    """ Print version information about this extension. """
-    print(OSC_STAGING_VERSION)
+    from osclib.common import VERSION
+    print(VERSION)
     quit(0)
-
 
 def _full_project_name(self, project):
     """Deduce the full project name."""
