@@ -389,6 +389,9 @@ def do_staging(self, subcmd, opts, *args):
         else:
             opts.project = 'Factory'
 
+    # Cache the remote config fetch.
+    Cache.init()
+
     # Init the OBS access and configuration
     opts.project = self._full_project_name(opts.project)
     opts.apiurl = self.get_api_url()

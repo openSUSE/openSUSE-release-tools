@@ -103,6 +103,11 @@ class Cache(object):
 
     @staticmethod
     def init(directory='main'):
+        if Cache.CACHE_DIR:
+            # Stick with the first initialization to allow for StagingAPI to
+            # ensure always enabled, but allow parent to change directory.
+            return
+
         Cache.CACHE_DIR = CacheManager.directory('request', directory)
 
         Cache.patterns = []
