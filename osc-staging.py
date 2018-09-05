@@ -39,14 +39,11 @@ from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
 from osclib.prio_command import PrioCommand
 
-OSC_STAGING_VERSION = '0.0.1'
-
 
 def _print_version(self):
-    """ Print version information about this extension. """
-    print(OSC_STAGING_VERSION)
+    from osclib.common import VERSION
+    print(VERSION)
     quit(0)
-
 
 def _full_project_name(self, project):
     """Deduce the full project name."""
@@ -391,6 +388,9 @@ def do_staging(self, subcmd, opts, *args):
             opts.project = core.store_read_project('.')
         else:
             opts.project = 'Factory'
+
+    # Cache the remote config fetch.
+    Cache.init()
 
     # Init the OBS access and configuration
     opts.project = self._full_project_name(opts.project)

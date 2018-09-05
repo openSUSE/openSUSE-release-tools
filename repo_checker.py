@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 
+from osclib.cache_manager import CacheManager
 from osclib.conf import Config
 from osclib.conf import str2bool
 from osclib.core import BINARY_REGEX
@@ -31,12 +32,12 @@ from osclib.core import repositories_states
 from osclib.core import repositories_published
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
-from osclib.memoize import CACHEDIR
 from osclib.memoize import memoize
 from osclib.util import sha1_short
 
 import ReviewBot
 
+CACHEDIR = CacheManager.directory('repository-meta')
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CheckResult = namedtuple('CheckResult', ('success', 'comment'))
 INSTALL_REGEX = r"^(?:can't install (.*?)|found conflict of (.*?) with (.*?)):$"

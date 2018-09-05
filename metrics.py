@@ -544,14 +544,13 @@ def main(args):
 
     # Use separate cache since it is persistent.
     _, package = project_pseudometa_package(apiurl, args.project)
-    Cache.CACHE_DIR = Cache.CACHE_DIR + '-metrics'
     if args.wipe_cache:
         Cache.delete_all()
     if args.heavy_cache:
         Cache.PATTERNS['/search/request'] = sys.maxint
         Cache.PATTERNS['/source/[^/]+/{}/_history'.format(package)] = sys.maxint
     Cache.PATTERNS['/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxint
-    Cache.init()
+    Cache.init('metrics')
 
     Config(apiurl, args.project)
     api = StagingAPI(apiurl, args.project)

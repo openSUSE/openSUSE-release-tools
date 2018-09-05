@@ -85,7 +85,7 @@ deploy:
 cache:
   directories:
     # obs_clone.py
-    - ~/.cache/openSUSE-release-tools-clone
+    - ~/.cache/openSUSE-release-tools/request/clone
     # distribution jobs `osc build`
     - .docker-tmp
   pip: true

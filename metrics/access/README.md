@@ -22,7 +22,7 @@ A separate, minimal set of aggregation done for each IP protocol data.
 - `aggregate.php`: invoke to manage entire process including calling (`ingest.php`)
 - `ingest.php`: used to parse a single log file / stream and dump summary JSON to stdout
 
-See `~/.cache/openSUSE-release-tools-access` for cache data separated by IP protocol. A single JSON file corresponds to a single access log file.
+See `~/.cache/openSUSE-release-tools/metrics-access` for cache data separated by IP protocol. A single JSON file corresponds to a single access log file.
 
 ## Future product versions
 

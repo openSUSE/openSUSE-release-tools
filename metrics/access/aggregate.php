@@ -4,7 +4,7 @@
 use InfluxDB\Point;
 use InfluxDB\Database;
 
-$CACHE_DIR = $_SERVER['HOME'] . '/.cache/openSUSE-release-tools-access';
+$CACHE_DIR = $_SERVER['HOME'] . '/.cache/openSUSE-release-tools/metrics-access';
 const PROTOCOLS = ['ipv4', 'ipv6'];
 const PONTIFEX = 'http://pontifex.infra.opensuse.org/logs';
 const LANGLEY = 'http://langley.suse.de/pub/pontifex%s-opensuse.suse.de';

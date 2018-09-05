@@ -2,26 +2,15 @@ from datetime import datetime
 import fcntl
 from functools import wraps
 import os
+from osclib.cache_manager import CacheManager
 import shelve
 try:
     import cPickle as pickle
 except:
     import pickle
 
-
-try:
-    from xdg.BaseDirectory import save_cache_path
-except ImportError:
-    from xdg.BaseDirectory import xdg_cache_home
-
-    def save_cache_path(*name):
-        path = os.path.join(xdg_cache_home, *name)
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        return path
-
 # Where the cache files are stored
-CACHEDIR = save_cache_path('opensuse-repo-checker')
+CACHEDIR = CacheManager.directory('memoize')
 
 
 def memoize(ttl=None, session=False, add_invalidate=False):
@@ -175,10 +164,7 @@ def memoize(ttl=None, session=False, add_invalidate=False):
             _close_cache(cache)
             return value
 
-        cache_dir = os.path.expanduser(CACHEDIR)
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)
-        cache_name = os.path.join(cache_dir, fn.__name__)
+        cache_name = os.path.join(CACHEDIR, fn.__name__)
         return _fn
 
     ttl = ttl if ttl else TIMEOUT
