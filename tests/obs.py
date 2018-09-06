@@ -115,7 +115,7 @@ class OBS(object):
         """Instance constructor."""
         self.fixtures = fixtures
 
-        CacheManager.directory_test()
+        CacheManager.test = True
         Cache.init()
         Cache.delete_all()
         httpretty.enable()
