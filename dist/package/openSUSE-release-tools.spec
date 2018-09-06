@@ -403,6 +403,7 @@ fi
 %{_bindir}/osrt-fcc_submitter
 %{_bindir}/osrt-findfileconflicts
 %{_bindir}/osrt-issue-diff
+%{_bindir}/osrt-k8s-secret
 %{_bindir}/osrt-legal-auto
 %{_bindir}/osrt-obs_clone
 %{_bindir}/osrt-openqa-maintenance
