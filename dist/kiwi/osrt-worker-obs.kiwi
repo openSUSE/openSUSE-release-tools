@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<image schemaversion="6.5" name="osrt-worker-obs">
+  <description type="system">
+    <author>openSUSE Release Team</author>
+    <contact>opensuse-releaseteam@opensuse.org</contact>
+    <specification>openSUSE Release Tools (OSRT) worker for OBS container image</specification>
+  </description>
+  <preferences>
+    <type image="docker" derived_from="obsrepositories:/opensuse/tumbleweed#current">
+<!--       <containerconfig name="osrt/worker-obs" tag="%%TAG%%" additionaltags="latest"/> -->
+      <containerconfig name="osrt/worker-obs" tag="latest"/>
+    </type>
+    <version>1.0.0</version>
+    <packagemanager>zypper</packagemanager>
+    <rpm-check-signatures>false</rpm-check-signatures>
+    <rpm-excludedocs>true</rpm-excludedocs>
+  </preferences>
+  <repository>
+    <source path="obsrepositories:/"/>
+  </repository>
+  <packages type="image">
+    <package name="openSUSE-release-tools-check-source"/>
+    <package name="openSUSE-release-tools-leaper"/>
+    <package name="openSUSE-release-tools-pkglistgen"/>
+    <package name="openSUSE-release-tools-repo-checker"/>
+    <package name="openSUSE-release-tools-staging-bot"/>
+  </packages>
+</image>
