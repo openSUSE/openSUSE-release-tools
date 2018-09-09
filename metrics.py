@@ -59,7 +59,7 @@ def search_capture(apiurl, queries=None, **kwargs):
 # Provides a osc.core.search() implementation for use with get_request_list()
 # that paginates in sets of 1000 and yields each request.
 def search_paginated_generator(apiurl, queries=None, **kwargs):
-    if "submit/target/@project='openSUSE:Factory'" in kwargs['request']:
+    if "action/target/@project='openSUSE:Factory'" in kwargs['request']:
         kwargs['request'] = osc.core.xpath_join(kwargs['request'], '@id>250000', op='and')
 
     request_count = 0
