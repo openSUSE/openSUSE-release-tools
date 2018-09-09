@@ -39,6 +39,7 @@ def get_request_list(*args, **kwargs):
     osc.core.search = search_capture
     osc.core._ET = osc.core.ET
     osc.core.ET = ET
+    osc.conf.config['include_request_from_project'] = False
 
     osc.core.get_request_list(*args, **kwargs)
 
@@ -93,7 +94,6 @@ def timestamp(datetime):
 def ingest_requests(api, project):
     requests = get_request_list(api.apiurl, project,
                                 req_state=('accepted', 'revoked', 'superseded'),
-                                exclude_target_projects=[project],
                                 withfullhistory=True)
     for request in requests:
         if request.find('action').get('type') not in ('submit', 'delete'):
