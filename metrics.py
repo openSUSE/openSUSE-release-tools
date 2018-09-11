@@ -39,6 +39,7 @@ def get_request_list(*args, **kwargs):
     osc.core.search = search_capture
     osc.core._ET = osc.core.ET
     osc.core.ET = ET
+    osc.conf.config['include_request_from_project'] = False
 
     osc.core.get_request_list(*args, **kwargs)
 
@@ -58,7 +59,7 @@ def search_capture(apiurl, queries=None, **kwargs):
 # Provides a osc.core.search() implementation for use with get_request_list()
 # that paginates in sets of 1000 and yields each request.
 def search_paginated_generator(apiurl, queries=None, **kwargs):
-    if "submit/target/@project='openSUSE:Factory'" in kwargs['request']:
+    if "action/target/@project='openSUSE:Factory'" in kwargs['request']:
         kwargs['request'] = osc.core.xpath_join(kwargs['request'], '@id>250000', op='and')
 
     request_count = 0
@@ -93,7 +94,6 @@ def timestamp(datetime):
 def ingest_requests(api, project):
     requests = get_request_list(api.apiurl, project,
                                 req_state=('accepted', 'revoked', 'superseded'),
-                                exclude_target_projects=[project],
                                 withfullhistory=True)
     for request in requests:
         if request.find('action').get('type') not in ('submit', 'delete'):
