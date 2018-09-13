@@ -66,8 +66,8 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = 'Only one action per request allowed'
             return False
 
-        if target_package.startswith('00'):
-            self.review_messages['accepted'] = 'Skipping all checks for 00* packages'
+        if target_package.startswith('00') or target_package.startswith('_'):
+            self.review_messages['accepted'] = 'Skipping all checks for product related packages'
             return True
 
         inair_renamed = target_package != source_package
