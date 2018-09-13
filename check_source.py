@@ -44,6 +44,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.staging_group = config.get('staging-group')
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
+        self.skip_add_reviews = False
 
         if self.action.type == 'maintenance_incident':
             # The workflow effectively enforces the names to match and the
