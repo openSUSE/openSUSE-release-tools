@@ -11,7 +11,7 @@ const LANGLEY = 'http://langley.suse.de/pub/pontifex%s-opensuse.suse.de';
 const VHOST = 'download.opensuse.org';
 const FILENAME = 'download.opensuse.org-%s-access_log.xz';
 const IPV6_PREFIX = 'ipv6.';
-const PRODUCT_PATTERN = '/^(10\.[2-3]|11\.[0-4]|12\.[1-3]|13\.[1-2]|42\.[1-3]|15\.[0]|tumbleweed)$/';
+const PRODUCT_PATTERN = '/^(10\.[2-3]|11\.[0-4]|12\.[1-3]|13\.[1-2]|42\.[1-3]|15\.[0-1]|tumbleweed)$/';
 
 $begin = new DateTime();
 // Skip the current day since the logs are incomplete and not compressed yet.
