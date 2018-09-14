@@ -174,6 +174,7 @@ function aggregate_all($period)
 
       if (!isset($merged_protocol[$protocol])) $merged_protocol[$protocol] = [];
       $data_new['days'] = 1;
+      normalize($data_new);
       aggregate($intervals, $merged_protocol[$protocol], $date, $date_previous, $data_new,
         ['protocol' => $protocol], 'protocol');
 
@@ -220,6 +221,11 @@ function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [
 
         $count = write_summary($interval, $date_previous, $summary, $tags, $prefix);
 
+        if ($prefix == 'access') {
+          $summary = summarize_product_plus_key($merged[$interval]['data']['total_image_product']);
+          $count += write_summary_product_plus_key($interval, $date_previous, $summary, 'image');
+        }
+
         error_log("[$prefix] [$interval] [{$merged[$interval]['value']}] wrote $count points at " .
           $date_previous->format('Y-m-d') . " spanning " . $merged[$interval]['data']['days'] . ' day(s)');
       }
@@ -237,6 +243,14 @@ function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [
   }
 }
 
+function normalize(&$data)
+{
+  // Ensure fields added later, that are not present in all data, are available.
+  if (!isset($data['total_image_product'])) {
+    $data['total_image_product'] = [];
+  }
+}
+
 function merge(&$data1, $data2)
 {
   $data1['days'] += $data2['days'];
@@ -249,6 +263,7 @@ function merge(&$data1, $data2)
   }
 
   merge_product_plus_key($data1['unique_product'], $data2['unique_product']);
+  merge_product_plus_key($data1['total_image_product'], $data2['total_image_product']);
 
   $data1['total_invalid'] += $data2['total_invalid'];
   $data1['bytes'] += $data2['bytes'];
@@ -324,6 +339,29 @@ function summarize($data)
   return $summary;
 }
 
+function summarize_product_plus_key($data)
+{
+  static $keys = [];
+
+  $summary = [];
+  $products = array_merge(array_keys($keys), array_keys($data));
+  foreach ($products as $product) {
+    if (!product_filter($product)) continue;
+
+    $keys_keys = isset($keys[$product]) ? array_keys($keys[$product]) : [];
+    $data_keys = isset($data[$product]) ? array_keys($data[$product]) : [];
+    $product_keys = array_merge($keys_keys, $data_keys);
+
+    $summary[$product] = [];
+    foreach ($product_keys as $key) {
+      // Fill empty data with zeros to achieve appropriate result in graph.
+      $summary[$product][$key] = isset($data[$product][$key]) ? $data[$product][$key] : 0;
+    }
+  }
+
+  return $summary;
+}
+
 function product_filter($product)
 {
   return (bool) preg_match(PRODUCT_PATTERN, $product);
@@ -343,6 +381,20 @@ function write_summary($interval, DateTime $value, $summary, $tags = [], $prefix
   foreach ($summary as $product => $fields) {
     $points[] = new Point($measurement, null,
       ['product' => $product] + $tags, $fields, $value->getTimestamp());
+  }
+  write($points);
+  return count($points);
+}
+
+function write_summary_product_plus_key($interval, DateTime $date, $summary, $prefix)
+{
+  $measurement = $prefix . '_' . $interval;
+  $points = [];
+  foreach ($summary as $product => $pairs) {
+    foreach ($pairs as $key => $value) {
+      $points[] = new Point($measurement, null,
+        ['product' => $product, 'key' => $key], ['value' => $value], $date->getTimestamp());
+    }
   }
   write($points);
   return count($points);
