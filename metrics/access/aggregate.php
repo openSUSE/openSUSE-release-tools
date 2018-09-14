@@ -248,20 +248,25 @@ function merge(&$data1, $data2)
     $data1['total_product'][$product] += $data2['total_product'][$product];
   }
 
-  foreach ($data2['unique_product'] as $product => $unqiue) {
-    if (empty($data1['unique_product'][$product]))
-      $data1['unique_product'][$product] = [];
-
-    foreach ($unqiue as $uuid => $count) {
-      if (empty($data1['unique_product'][$product][$uuid]))
-        $data1['unique_product'][$product][$uuid] = 0;
-
-      $data1['unique_product'][$product][$uuid] += $data2['unique_product'][$product][$uuid];
-    }
-  }
+  merge_product_plus_key($data1['unique_product'], $data2['unique_product']);
 
   $data1['total_invalid'] += $data2['total_invalid'];
   $data1['bytes'] += $data2['bytes'];
+}
+
+function merge_product_plus_key(&$data1, $data2)
+{
+  foreach ($data2 as $product => $pairs) {
+    if (empty($data1[$product]))
+      $data1[$product] = [];
+
+    foreach ($pairs as $key => $value) {
+      if (empty($data1[$product][$key]))
+        $data1[$product][$key] = 0;
+
+      $data1[$product][$key] += $data2[$product][$key];
+    }
+  }
 }
 
 function summarize($data)
