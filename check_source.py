@@ -254,16 +254,6 @@ class CheckSource(ReviewBot.ReviewBot):
     def check_action_delete(self, request, action):
         self.target_project_config(action.tgt_project)
 
-        if action.tgt_repository is not None:
-            if action.tgt_project.startswith('openSUSE:'):
-                self.review_messages['declined'] = 'The repositories in the openSUSE:* namespace ' \
-                    'are managed by the Release Managers. For suggesting changes, send a mail ' \
-                    'to opensuse-releaseteam@opensuse.org with an explanation of why the change ' \
-                    'makes sense.'
-                return False
-            else:
-                self.review_messages['accepted'] = 'unhandled: removing repository'
-                return True
         try:
             result = osc.core.show_project_sourceinfo(self.apiurl, action.tgt_project, True, (action.tgt_package))
             root = ET.fromstring(result)
@@ -301,6 +291,17 @@ class CheckSource(ReviewBot.ReviewBot):
         # overridden, but seems like no valid case for allowing this (see #1696).
         self.review_messages['declined'] = 'Deleting the {} project is not allowed.'.format(action.tgt_project)
         return False
+
+    def check_action_delete_repository(self, request, action):
+        if action.tgt_project.startswith('openSUSE:'):
+            self.review_messages['declined'] = 'The repositories in the openSUSE:* namespace ' \
+                'are managed by the Release Managers. For suggesting changes, send a mail ' \
+                'to opensuse-releaseteam@opensuse.org with an explanation of why the change ' \
+                'makes sense.'
+            return False
+
+        self.review_messages['accepted'] = 'unhandled: removing repository'
+        return True
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
