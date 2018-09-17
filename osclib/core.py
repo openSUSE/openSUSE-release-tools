@@ -281,9 +281,7 @@ def project_pseudometa_file_save(apiurl, project, filename, content, comment=Non
     source_file_save(apiurl, project, package, filename, content, comment)
 
 def project_pseudometa_file_ensure(apiurl, project, filename, content, comment=None):
-    project_pseudometa, package = project_pseudometa_package(apiurl, project)
-
-    if content != project_pseudometa_file_load(apiurl, project_pseudometa, filename):
+    if content != project_pseudometa_file_load(apiurl, project, filename):
         project_pseudometa_file_save(apiurl, project, filename, content, comment)
 
 # Should be an API call that says give me "real" packages that does not include
