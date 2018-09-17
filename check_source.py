@@ -296,6 +296,12 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = "This is an incorrect request, it's a linked package to %s/%s" % (linked_project, linked_package)
             return False
 
+    def check_action_delete_project(self, request, action):
+        # Presumably if the request is valid the bot should be disabled or
+        # overridden, but seems like no valid case for allowing this (see #1696).
+        self.review_messages['declined'] = 'Deleting the {} project is not allowed.'.format(action.tgt_project)
+        return False
+
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
