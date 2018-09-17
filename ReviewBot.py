@@ -344,10 +344,7 @@ class ReviewBot(object):
             # Store in-case sub-classes need direct access to original values.
             self.action = a
 
-            fn = 'check_action_%s'%a.type
-            if not hasattr(self, fn):
-                fn = 'check_action__default'
-            func = getattr(self, fn)
+            func = getattr(self, self.action_method(a))
             ret = func(req, a)
 
             # In the case of multiple actions take the "lowest" result where the
@@ -358,6 +355,30 @@ class ReviewBot(object):
                     overall = ret
 
         return overall
+
+    def action_method(self, action):
+        method_prefix = 'check_action'
+        method_type = action.type
+        method_suffix = None
+
+        if method_type == 'delete':
+            method_suffix = 'project'
+            if action.tgt_package is not None:
+                method_suffix = 'package'
+            elif action.tgt_repository is not None:
+                method_suffix = 'repository'
+
+        if method_suffix:
+            method = '_'.join([method_prefix, method_type, method_suffix])
+            if hasattr(self, method):
+                return method
+
+        method = '_'.join([method_prefix, method_type])
+        if hasattr(self, method):
+            return method
+
+        method_type = '_default'
+        return '_'.join([method_prefix, method_type])
 
     @staticmethod
     def _is_patchinfo(pkgname):
