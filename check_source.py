@@ -251,7 +251,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.review_messages['declined'] = message
         return False
 
-    def check_action_delete(self, request, action):
+    def check_action_delete_package(self, request, action):
         self.target_project_config(action.tgt_project)
 
         try:
