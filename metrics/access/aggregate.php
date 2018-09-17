@@ -352,9 +352,11 @@ function summarize_product_plus_key($data)
     $data_keys = isset($data[$product]) ? array_keys($data[$product]) : [];
     $product_keys = array_merge($keys_keys, $data_keys);
 
+    if (!isset($keys[$product])) $keys[$product] = [];
     $summary[$product] = [];
     foreach ($product_keys as $key) {
       // Fill empty data with zeros to achieve appropriate result in graph.
+      $keys[$product][$key] = true;
       $summary[$product][$key] = isset($data[$product][$key]) ? $data[$product][$key] : 0;
     }
   }
