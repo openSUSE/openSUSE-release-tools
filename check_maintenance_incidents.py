@@ -129,7 +129,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         return True
 
-    def check_action_delete(self, req, a):
+    def check_action_delete_package(self, req, a):
         self._check_maintainer_review_needed(req, a)
 
         return True

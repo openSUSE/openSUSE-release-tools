@@ -546,7 +546,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.review_messages['accepted'] = 'cycle and install check passed'
         return True
 
-    def check_action_delete(self, request, action):
+    def check_action_delete_package(self, request, action):
         # TODO Ignore tgt_project packages that depend on this that are part of
         # ignore list as and instead look at output from staging for those.
 
