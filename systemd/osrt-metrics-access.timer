@@ -6,7 +6,9 @@ OnBootSec=120
 # Allow for log rotation to take place on download server.
 # Skip Monday during which osrt-metrics@.service are run as openSUSE:Factory
 # takes 5 hours and uses up most of the RAM on machine.
-OnCalendar=Tue..Sun *-*-* 4:00:00
+# OnCalendar=Tue..Sun *-*-* 4:00:00
+# TODO Use the above once updated to Leap 15.0 with systemd that supports.
+OnCalendar=Tue,Wed,Thu,Fri,Sat,Sun *-*-* 04:00:00
 Unit=osrt-metrics-access.service
 
 [Install]
