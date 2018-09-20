@@ -22,6 +22,7 @@ from osc import conf
 from osclib.cache_manager import CacheManager
 from osclib.conf import Config, str2bool
 from osclib.core import repository_path_expand
+from osclib.core import repository_state
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
@@ -732,21 +733,32 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 if not os.path.exists(d):
                     os.makedirs(d)
 
+                # Fetch state before mirroring in-case it changes during download.
+                state = repository_state(self.tool.apiurl, project, repo)
+
+                # Would be preferable to include hash in name, but cumbersome to handle without
+                # reworking a fair bit since the state needs to be tracked.
+                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                solv_file_hash = '{}::{}'.format(solv_file, state)
+                if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
+                    # Solve file exists and hash unchanged, skip updating solv.
+                    logger.debug('skipping solv generation for {} due to matching state {}'.format(
+                        '/'.join([project, repo, arch]), state))
+                    continue
+
+                # Either hash changed or new, so remove any old hash files.
+                self.unlink_list(None, glob.glob(solv_file + '::*'))
+                global_update = True
+
                 logger.debug('updating %s', d)
                 args = [bs_mirrorfull]
                 args.append('--nodebug')
                 args.append('{}/public/build/{}/{}/{}'.format(self.tool.apiurl, project, repo, arch))
                 args.append(d)
                 p = subprocess.Popen(args, stdout=subprocess.PIPE)
-                repo_update = False
                 for line in p.stdout:
                     logger.info(line.rstrip())
-                    global_update = True
-                    repo_update = True
 
-                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                if os.path.exists(solv_file) and not repo_update:
-                    continue
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
                 fh = open(solv_file, 'w')
@@ -755,6 +767,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 p.communicate('\0'.join(files))
                 p.wait()
                 fh.close()
+
+                # Create hash file now that solv creation is complete.
+                open(solv_file_hash, 'a').close()
+
         return global_update
 
     def update_merge(self, nonfree):
