@@ -141,7 +141,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
         if self.options.factory:
-            bot.factory = self.options.factory
+            bot.factory = [ self.options.factory ]
 
         return bot
 
