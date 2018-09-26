@@ -1,0 +1,14 @@
+apiVersion: 0.2.0
+environments:
+  heroes:
+    destination:
+      namespace: osrt
+      server: https://caasp-master.infra.opensuse.org:6443
+    k8sVersion: v1.8.0
+    path: heroes
+    targets:
+    - check-source
+    - repo-checker
+kind: ksonnet.io/app
+name: openSUSE-release-tools
+version: 0.0.1

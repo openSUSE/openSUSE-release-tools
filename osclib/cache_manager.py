@@ -12,21 +12,18 @@ from xdg.BaseDirectory import save_cache_path
 # This manager ensures that the entire cache is pruned periodically to remove
 # files that have not been accessed recently and avoid endless growth.
 class CacheManager(object):
-    DIRECTORY = save_cache_path(NAME)
     PRUNE_FREQUENCY = 60 * 60 * 24 * 7
     PRUNE_TTL = 60 * 60 * 24 * 30
 
     pruned = False
+    test = False
 
     @staticmethod
     def directory(*args):
         CacheManager.prune_all()
-        return os.path.join(CacheManager.DIRECTORY, *args)
-
-    @staticmethod
-    def directory_test():
-        if not CacheManager.DIRECTORY.endswith('.test'):
-            CacheManager.DIRECTORY = os.path.join(CacheManager.DIRECTORY, '.test')
+        if CacheManager.test:
+            return save_cache_path(NAME, '.test', *args)
+        return save_cache_path(NAME, *args)
 
     @staticmethod
     def prune_all():
@@ -34,7 +31,7 @@ class CacheManager(object):
             return
         CacheManager.pruned = True
 
-        prune_lock = os.path.join(CacheManager.DIRECTORY, '.prune')
+        prune_lock = os.path.join(CacheManager.directory(), '.prune')
         if not os.path.exists(prune_lock):
             CacheManager.migrate()
         elif time() - os.stat(prune_lock).st_mtime < CacheManager.PRUNE_FREQUENCY:
@@ -48,7 +45,7 @@ class CacheManager(object):
         accessed_prune = time() - CacheManager.PRUNE_TTL
         files_pruned = 0
         bytes_pruned = 0
-        for directory, subdirectories, files in os.walk(CacheManager.DIRECTORY):
+        for directory, subdirectories, files in os.walk(CacheManager.directory()):
             files_pruned_directory = 0
             for filename in files:
                 path = os.path.join(directory, filename)
@@ -79,9 +76,9 @@ class CacheManager(object):
                 print('> migrating caches', file=sys.stderr)
 
                 # Move existing dir out of the way in order to nest.
-                cache_moved = CacheManager.DIRECTORY + '-main'
+                cache_moved = CacheManager.directory() + '-main'
                 if not os.path.exists(cache_moved):
-                    os.rename(CacheManager.DIRECTORY, cache_moved)
+                    os.rename(CacheManager.directory(), cache_moved)
 
                 # Detected need to migrate, but may have already passed -main.
                 CacheManager.migrate(False)
@@ -128,6 +125,6 @@ class CacheManager(object):
             for source, destination in path_map.items():
                 source = os.path.join(cache_root, source.format(base))
                 if destination:
-                    destination = os.path.join(CacheManager.DIRECTORY, destination)
+                    destination = os.path.join(CacheManager.directory(), destination)
 
                 yield source, destination
