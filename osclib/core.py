@@ -383,8 +383,12 @@ def repository_path_search(apiurl, project, search_project, search_repository):
     return None
 
 def repository_state(apiurl, project, repository):
-    return ET.fromstringlist(show_results_meta(
-        apiurl, project, multibuild=True, repository=[repository])).get('state')
+    # Unfortunately, the state hash reflects the published state and not the
+    # binaries published in repository. As such request binary list and hash.
+    url = makeurl(apiurl, ['build', project, '_result'],
+                  {'view': 'binarylist', 'multibuild': 1, 'repository': repository})
+    from osclib.util import sha1_short
+    return sha1_short(http_GET(url).read())
 
 def repositories_states(apiurl, repository_pairs):
     states = []
