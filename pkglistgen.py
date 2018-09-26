@@ -1365,12 +1365,20 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if api.item_exists(opts.project, '000product-summary'):
             summary_str = "# Summary of packages in groups"
             for group in sorted(summary.keys()):
+                # the unsorted group should appear filtered by
+                # unneeded.yml - so we need the content of unsorted.yml
+                # not unsorted.group (this grew a little unnaturally)
+                if group == 'unsorted': continue
                 summary_str += "\n" + group + ":\n"
                 for package in sorted(summary[group]):
                     summary_str += "  - " + package + "\n"
 
             url = api.makeurl(['source', opts.project, '000product-summary', 'summary.yml'])
             http_PUT(url, data=summary_str)
+
+            unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
+            url = api.makeurl(['source', opts.project, '000product-summary', 'unsorted.yml'])
+            http_PUT(url, data=unsorted_yml)
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
