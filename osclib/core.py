@@ -382,13 +382,20 @@ def repository_path_search(apiurl, project, search_project, search_repository):
 
     return None
 
+def repository_arch_state(apiurl, project, repository, arch):
+    # just checking the mtimes of the repository's binaries
+    url = makeurl(apiurl, ['build', project, repository, arch, '_repository'])
+    from osclib.util import sha1_short
+    return sha1_short(http_GET(url).read())
+
 def repository_state(apiurl, project, repository):
     # Unfortunately, the state hash reflects the published state and not the
     # binaries published in repository. As such request binary list and hash.
-    url = makeurl(apiurl, ['build', project, '_result'],
-                  {'view': 'binarylist', 'multibuild': 1, 'repository': repository})
+    combined_state = []
+    for arch in target_archs(apiurl, project, repository):
+        combined_state.append(repository_arch_state(apiurl, project, repository, arch))
     from osclib.util import sha1_short
-    return sha1_short(http_GET(url).read())
+    return sha1_short(combined_state)
 
 def repositories_states(apiurl, repository_pairs):
     states = []
