@@ -44,6 +44,7 @@ import traceback
 import random
 import shutil
 import string
+import time
 
 import ToolBase
 
@@ -162,6 +163,10 @@ class Group(object):
         self.suggested = dict()
         for arch in self.architectures:
             pool = self.pkglist._prepare_pool(arch)
+            solver = pool.Solver()
+            if ignore_recommended:
+                solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, 1)
+
             # pool.set_debuglevel(10)
             suggested = []
 
@@ -199,10 +204,6 @@ class Group(object):
                         logger.warn('{}.{}: silent package {} not found'.format(self.name, arch, s))
                     else:
                         jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
-
-                solver = pool.Solver()
-                if ignore_recommended:
-                    solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, 1)
 
                 problems = solver.solve(jobs)
                 if problems:
@@ -243,8 +244,11 @@ class Group(object):
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
                     self.srcpkgs[src] = group + ':' + s.name
 
+            start = time.time()
             for n, group in self.packages[arch]:
                 solve_one_package(n, group)
+            end = time.time()
+            logger.info('%s - solving took %f', self.name, end - start)
 
             if include_suggested:
                 seen = set()
