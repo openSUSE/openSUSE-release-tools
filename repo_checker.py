@@ -494,6 +494,21 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         return repository
 
+    def staging_build_failure_check(self, api, staging):
+        # This check is only utilize to avoid the case of staging changes after
+        # a review succeeds and thus does not re-review after the changes needed
+        # to resolve the build failure are performed. This is one of a variety
+        # of cases in which this can occur, but rather than fix real issue
+        # re-instating this to workaround a common case. (see #1712)
+
+        status = api.project_status(staging, True)
+        # Corrupted requests may reference non-existent projects and will
+        # thus return a None status which should be considered not ready.
+        if not status or (str(status['overall_state']) == 'failed' and len(status['broken_packages']) > 0):
+            return False
+
+        return True
+
     @memoize(ttl=60, session=True)
     def request_repository_pairs(self, request, action):
         if str2bool(Config.get(self.apiurl, action.tgt_project).get('repo_checker-project-skip', 'False')):
@@ -511,9 +526,14 @@ class RepoChecker(ReviewBot.ReviewBot):
         repository_pairs = []
         # Assumes maintenance_release target project has staging disabled.
         if Config.get(self.apiurl, action.tgt_project).get('staging'):
-            stage_info = self.staging_api(action.tgt_project).packages_staged.get(action.tgt_package)
+            api = self.staging_api(action.tgt_project)
+            stage_info = api.packages_staged.get(action.tgt_package)
             if not stage_info or str(stage_info['rq_id']) != str(request.reqid):
                 self.logger.info('{} not staged'.format(request.reqid))
+                return None
+
+            if not self.force and not self.staging_build_failure_check(api, stage_info['prj']):
+                self.logger.info('{} not ready due to staging build failure(s)'.format(request.reqid))
                 return None
 
             # Staging setup is convoluted and thus the repository setup does not
