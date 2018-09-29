@@ -16,13 +16,14 @@ from osc.core import checkout_package
 from osc.core import http_GET, http_PUT
 from osc.core import makeurl
 from osc.core import Package
+from osc.core import HTTPError
 from osc.core import show_results_meta
 from osc.core import undelete_package
 from osc import conf
 from osclib.cache_manager import CacheManager
 from osclib.conf import Config, str2bool
 from osclib.core import repository_path_expand
-from osclib.core import repository_state
+from osclib.core import repository_arch_state
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
@@ -301,7 +302,8 @@ class Group(object):
                         if m.solved_packages[arch].get(p, None):
                             overlap.comment += "  # " + m.name + "." + arch + ': ' + m.solved_packages[arch][p] + "\n"
                         if self.solved_packages[arch].get(p, None):
-                            overlap.comment += "  # " + self.name + "." + arch + ': ' + self.solved_packages[arch][p] + "\n"
+                            overlap.comment += "  # " + self.name + "." + \
+                                arch + ': ' + self.solved_packages[arch][p] + "\n"
                     overlap.comment += '  - ' + p + "\n"
                     overlap._add_to_packages(p)
 
@@ -737,8 +739,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 if not os.path.exists(d):
                     os.makedirs(d)
 
-                # Fetch state before mirroring in-case it changes during download.
-                state = repository_state(self.tool.apiurl, project, repo)
+                try:
+                    # Fetch state before mirroring in-case it changes during download.
+                    state = repository_arch_state(self.tool.apiurl, project, repo, arch)
+                except HTTPError:
+                    continue
 
                 # Would be preferable to include hash in name, but cumbersome to handle without
                 # reworking a fair bit since the state needs to be tracked.
@@ -1372,7 +1377,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 # the unsorted group should appear filtered by
                 # unneeded.yml - so we need the content of unsorted.yml
                 # not unsorted.group (this grew a little unnaturally)
-                if group == 'unsorted': continue
+                if group == 'unsorted':
+                    continue
                 summary_str += "\n" + group + ":\n"
                 for package in sorted(summary[group]):
                     summary_str += "  - " + package + "\n"
