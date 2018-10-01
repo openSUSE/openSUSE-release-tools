@@ -1384,11 +1384,20 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     summary_str += "  - " + package + "\n"
 
             url = api.makeurl(['source', opts.project, '000product-summary', 'summary.yml'])
-            http_PUT(url, data=summary_str)
+            self.conditional_PUT(url, summary_str)
 
             unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
             url = api.makeurl(['source', opts.project, '000product-summary', 'unsorted.yml'])
-            http_PUT(url, data=unsorted_yml)
+            self.conditional_PUT(url, unsorted_yml)
+
+    def conditional_PUT(self, url, data):
+        try:
+            olddata = http_GET(url).read()
+            if olddata == data:
+                return
+        except HTTPError:
+            pass
+        http_PUT(url, data=data)
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
