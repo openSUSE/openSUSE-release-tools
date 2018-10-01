@@ -25,6 +25,7 @@ from osclib.conf import Config, str2bool
 from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.core import source_file_ensure
+from osclib.core import target_archs
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
@@ -138,7 +139,7 @@ class Group(object):
 
     # do not repeat packages
     def ignore(self, without):
-        for arch in ['*'] + self.architectures:
+        for arch in ['*'] + self.pkglist.filtered_architectures:
             s = set(without.solved_packages[arch].keys())
             s |= set(without.solved_packages['*'].keys())
             for p in s:
@@ -157,13 +158,13 @@ class Group(object):
         """ base: list of base groups or None """
 
         solved = dict()
-        for arch in self.architectures:
+        for arch in self.pkglist.filtered_architectures:
             solved[arch] = dict()
 
         self.srcpkgs = dict()
         self.recommends = dict()
         self.suggested = dict()
-        for arch in self.architectures:
+        for arch in self.pkglist.filtered_architectures:
             pool = self.pkglist._prepare_pool(arch)
             solver = pool.Solver()
             if ignore_recommended:
@@ -263,7 +264,7 @@ class Group(object):
 
         common = None
         # compute common packages across all architectures
-        for arch in self.architectures:
+        for arch in self.pkglist.filtered_architectures:
             if common is None:
                 common = set(solved[arch].keys())
                 continue
@@ -274,7 +275,7 @@ class Group(object):
 
         # reduce arch specific set by common ones
         solved['*'] = dict()
-        for arch in self.architectures:
+        for arch in self.pkglist.filtered_architectures:
             for p in common:
                 solved['*'][p] = solved[arch].pop(p)
 
@@ -285,7 +286,7 @@ class Group(object):
         if not overlap:
             return
         packages = set(self.solved_packages['*'])
-        for arch in self.architectures:
+        for arch in self.pkglist.filtered_architectures:
             packages.update(self.solved_packages[arch])
         for m in modules:
             # do not check with ourselves and only once for the rest
@@ -294,7 +295,7 @@ class Group(object):
             if self.name in m.conflicts or m.name in self.conflicts:
                 continue
             mp = set(m.solved_packages['*'])
-            for arch in self.architectures:
+            for arch in self.pkglist.filtered_architectures:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
                 overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name + "\n"
@@ -309,7 +310,7 @@ class Group(object):
                     overlap._add_to_packages(p)
 
     def collect_devel_packages(self):
-        for arch in self.architectures:
+        for arch in self.pkglist.filtered_architectures:
             pool = self.pkglist._prepare_pool(arch)
             sel = pool.Selection()
             for s in pool.solvables_iter():
@@ -328,7 +329,7 @@ class Group(object):
         for p in pkgdict.keys():
             already_present = False
             for m in modules:
-                for arch in ['*'] + self.architectures:
+                for arch in ['*'] + self.pkglist.filtered_architectures:
                     already_present = already_present or (p in m.solved_packages[arch])
             if already_present:
                 del pkgdict[p]
@@ -338,7 +339,7 @@ class Group(object):
         self._filter_already_selected(modules, self.suggested)
 
     def toxml(self, arch, ignore_broken=False, comment=None):
-        packages = self.solved_packages[arch]
+        packages = self.solved_packages.get(arch, dict())
 
         name = self.name
         if arch != '*':
@@ -392,7 +393,7 @@ class Group(object):
     # just list all packages in it as an array - to be output as one yml
     def summary(self):
         ret = set()
-        for arch in ['*'] + self.architectures:
+        for arch in ['*'] + self.pkglist.filtered_architectures:
             ret |= set(self.solved_packages[arch].keys())
         return ret
 
@@ -400,7 +401,7 @@ class Group(object):
         pprint({'name': self.name, 'missing': self.missing, 'packages': self.packages,
                 'solved': self.solved_packages, 'silents': self.silents})
         return
-        archs = ['*'] + self.architectures
+        archs = ['*'] + self.pkglist.filtered_architectures
         for arch in archs:
             x = self.toxml(arch)
             print(ET.tostring(x, pretty_print=True))
@@ -519,7 +520,7 @@ class PkgListGen(ToolBase.ToolBase):
     def _check_supplements(self):
         tocheck = set()
         tocheck_locales = set()
-        for arch in self.architectures:
+        for arch in self.filtered_architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             for s in pool.solvables_iter():
@@ -603,7 +604,7 @@ class PkgListGen(ToolBase.ToolBase):
             unsorted.solved_packages = dict()
             unsorted.solved_packages['*'] = dict()
 
-        for arch in self.architectures:
+        for arch in self.filtered_architectures:
             pool = self._prepare_pool(arch)
             sel = pool.Selection()
             archpacks = [s.name for s in pool.solvables_iter()]
@@ -635,14 +636,14 @@ class PkgListGen(ToolBase.ToolBase):
 
         if unsorted:
             common = None
-            for arch in self.architectures:
+            for arch in self.filtered_architectures:
                 if common is None:
                     common = set(unsorted.solved_packages[arch].keys())
                     continue
                 common &= set(unsorted.solved_packages[arch].keys())
             for p in common:
                 unsorted.solved_packages['*'][p] = None
-                for arch in self.architectures:
+                for arch in self.filtered_architectures:
                     del unsorted.solved_packages[arch][p]
 
         with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
@@ -650,7 +651,7 @@ class PkgListGen(ToolBase.ToolBase):
             for p in sorted(packages.keys()):
                 fh.write("  - ")
                 fh.write(p)
-                if len(packages[p]) != len(self.architectures):
+                if len(packages[p]) != len(self.filtered_architectures):
                     fh.write(": [")
                     fh.write(','.join(sorted(packages[p])))
                     fh.write("]")
@@ -734,7 +735,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         bs_mirrorfull = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
         global_update = False
         for project, repo in self.repos:
-            for arch in self.tool.architectures:
+            for arch in opts.filtered_architectures:
                 # TODO: refactor to common function with repo_checker.py
                 d = os.path.join(CACHEDIR, project, repo, arch)
                 if not os.path.exists(d):
@@ -1088,6 +1089,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             with open(os.path.join(self.tool.input_dir, opts.locales_from), 'r') as fh:
                 root = ET.parse(fh).getroot()
                 self.tool.locales |= set([lang.text for lang in root.findall(".//linguas/language")])
+        self.tool.filtered_architectures = opts.filtered_architectures
 
         modules = []
         # the yml parser makes an array out of everything, so
@@ -1116,7 +1118,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             ignores = [x.name for x in overlap.ignored]
             self.tool.solve_module(overlap.name, [], ignores)
             overlapped = set(overlap.solved_packages['*'])
-            for arch in overlap.architectures:
+            for arch in self.tool.filtered_architectures:
                 overlapped |= set(overlap.solved_packages[arch])
             for module in modules:
                 if module.name == 'overlap' or module in overlap.ignored:
@@ -1233,6 +1235,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         group = target_config.get('pkglistgen-group', '000package-groups')
         product = target_config.get('pkglistgen-product', '000product')
         release = target_config.get('pkglistgen-release', '000release-packages')
+
+        opts.filtered_architectures = []
+        # make sure we only calculcate existant architectures
+        for arch in target_archs(api.apiurl, opts.project, main_repo):
+            if arch in self.options.architectures:
+                opts.filtered_architectures.append(arch)
 
         url = api.makeurl(['source', opts.project])
         packages = ET.parse(http_GET(url)).getroot()
