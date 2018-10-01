@@ -149,20 +149,20 @@ class Leaper(ReviewBot.ReviewBot):
 
             review_result = None
             prj = 'openSUSE.org:openSUSE:Factory'
-            if self.is_package_in_project(prj, package):
-                # True or None (open request) are acceptable for SLE.
-                in_factory = self._check_factory(package, src_srcinfo, prj)
-                if in_factory:
-                    review_result = True
-                    self.source_in_factory = True
-                elif in_factory is None:
-                    self.pending_factory_submission = True
+            # True or None (open request) are acceptable for SLE.
+            in_factory = self._check_factory(package, src_srcinfo, prj)
+            if in_factory:
+                review_result = True
+                self.source_in_factory = True
+            elif in_factory is None:
+                self.pending_factory_submission = True
+            else:
+                if self.is_package_in_project(prj, package):
+                    self.logger.info('the package is not in Factory, nor submitted there')
                 else:
                     self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
-            else:
-                self.logger.info('the package is not in Factory, nor submitted there')
 
-            if review_result == None:
+            if review_result == None and not self.pending_factory_submission:
                 other_projects_to_check = []
                 m = re.match('SUSE:SLE-(\d+)(?:-SP(\d+)):', target_project)
                 if m:
@@ -205,7 +205,7 @@ class Leaper(ReviewBot.ReviewBot):
 
                 self.logger.info('no matching sources found anywhere. Needs a human to decide whether that is ok. Please provide some justification to help that person.')
 
-            if not review_result:
+            if not review_result and origin is not None:
                 review_result = origin_same
                 if origin_same:
                     self.logger.info("ok, origin %s unchanged", origin)
