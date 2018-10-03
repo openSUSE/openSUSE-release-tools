@@ -265,6 +265,10 @@ def source_file_save(apiurl, project, package, filename, content, comment=None):
     url = makeurl(apiurl, ['source', project, package, filename], {'comment': comment})
     http_PUT(url, data=content)
 
+def source_file_ensure(apiurl, project, package, filename, content,  comment=None):
+    if content != source_file_load(apiurl, project, package, filename):
+        source_file_save(apiurl, project, package, filename, content, comment)
+
 def project_pseudometa_package(apiurl, project):
     package = Config.get(apiurl, project).get('pseudometa_package', '00Meta')
     if '/' in package:
