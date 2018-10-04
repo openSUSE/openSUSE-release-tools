@@ -24,6 +24,7 @@ from osclib.cache_manager import CacheManager
 from osclib.conf import Config, str2bool
 from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
+from osclib.core import source_file_ensure
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
@@ -1383,12 +1384,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 for package in sorted(summary[group]):
                     summary_str += "  - " + package + "\n"
 
-            url = api.makeurl(['source', opts.project, '000product-summary', 'summary.yml'])
-            http_PUT(url, data=summary_str)
-
+            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'summary.yml', summary_str, 'Updating summary.yml')
             unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
-            url = api.makeurl(['source', opts.project, '000product-summary', 'unsorted.yml'])
-            http_PUT(url, data=unsorted_yml)
+            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'unsorted.yml', summary_str, 'Updating unsorted.yml')
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
