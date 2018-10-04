@@ -1555,7 +1555,7 @@ class StagingAPI(object):
             requests = meta['requests']
 
         for req in requests:
-            lines.append('  * {}request#{} for package {} submitted by @{}'.format(
+            lines.append('  * {}request#{} for package {} submitted by {}'.format(
                 req.get('prefix', ''), req['id'], req['package'], req.get('author')))
         msg = '\n'.join(lines)
         msg = comment_api.add_marker(msg, bot, info)
