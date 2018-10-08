@@ -16,8 +16,9 @@ import requests
 try:
     from urllib.error import HTTPError
 except ImportError:
-    #python 2.x
+    # python 2.x
     from urllib2 import HTTPError
+
 
 class Project(object):
     def __init__(self, name):
@@ -69,14 +70,32 @@ class Project(object):
         if not buildid:
             print("I don't know the build id of " + staging)
             return
+        # all openQA jobs are created at the same URL
+        url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
         openqa = self.listener.jobs_for_iso(iso)
+        # collect job infos to pick names
+        openqa_infos = dict()
         for job in openqa:
             print(staging, iso, job['id'], job['state'], job['result'],
                   job['settings']['MACHINE'], job['settings']['TEST'])
-            xml = self.openqa_check_xml(self.listener.test_url(job),
-                                        self.map_openqa_result(job),
-                                        job['settings']['TEST'] + '@' + job['settings']['MACHINE'])
-            url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
+            openqa_infos[job['id']] = {'url': self.listener.test_url(job)}
+            openqa_infos[job['id']]['state'] = self.map_openqa_result(job)
+            openqa_infos[job['id']]['name'] = job['settings']['TEST']
+            openqa_infos[job['id']]['machine'] = job['settings']['MACHINE']
+
+        # make sure the names are unique
+        taken_names = dict()
+        for id in openqa_infos:
+            name = openqa_infos[id]['name']
+            if name in taken_names:
+                openqa_infos[id]['name'] = openqa_infos[id]['name'] + "@" + openqa_infos[id]['machine']
+                # the other id
+                id = taken_names[name]
+                openqa_infos[id]['name'] = openqa_infos[id]['name'] + "@" + openqa_infos[id]['machine']
+            taken_names[name] = id
+
+        for info in openqa_infos.values():
+            xml = self.openqa_check_xml(info['url'], info['state'], info['name'])
             try:
                 http_POST(url, data=xml)
             except HTTPError:
@@ -128,6 +147,7 @@ class Project(object):
         se = ET.SubElement(check, 'name')
         se.text = name
         return ET.tostring(check)
+
 
 class Listener(object):
     def __init__(self, amqp_prefix, amqp_url, openqa_url):
