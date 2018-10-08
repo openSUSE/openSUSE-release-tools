@@ -38,10 +38,16 @@ class Project(object):
                 ret.append(self.map_iso(name, entry.get('name')))
         return ret
 
+    def gather_buildid(self, name, repository):
+        url = self.api.makeurl(['published', name, repository], {'view': 'status'})
+        f = self.api.retried_GET(url)
+        id = ET.parse(f).getroot().find('buildid')
+        if id is not None:
+            return id.text
+
     def initial_staging_state(self, name):
-        ret = {'isos': self.gather_isos(name, 'images')}
-        # missing API for initial repo id
-        return ret
+        return {'isos': self.gather_isos(name, 'images'),
+                'id': self.gather_buildid(name, 'images')}
 
     def update_staging_buildid(self, project, repository, buildid):
         self.staging_projects[project]['id'] = buildid
@@ -79,7 +85,7 @@ class Project(object):
                                     test + '@' + machine)
         url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
         http_POST(url, data=xml)
-    
+
     def openqa_create(self, iso, test, machine, id):
         print('openqa_create', iso, test, machine, id)
 
