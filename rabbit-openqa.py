@@ -11,7 +11,13 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-
+from urllib import quote_plus
+import requests
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
 
 class Project(object):
     def __init__(self, name):
@@ -71,8 +77,12 @@ class Project(object):
                                         self.map_openqa_result(job),
                                         job['settings']['TEST'] + '@' + job['settings']['MACHINE'])
             url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
-            http_POST(url, data=xml)
-            print(url, xml)
+            try:
+                http_POST(url, data=xml)
+            except HTTPError:
+                # https://github.com/openSUSE/open-build-service/issues/6051
+                print('failed to post status to ' + url)
+                print(xml)
 
     def update_staging_status(self, project):
         for iso in self.staging_projects[project]['isos']:
@@ -119,7 +129,6 @@ class Project(object):
         se.text = name
         return ET.tostring(check)
 
-
 class Listener(object):
     def __init__(self, amqp_prefix, amqp_url, openqa_url):
         self.projects = []
@@ -159,9 +168,19 @@ class Listener(object):
         }
         return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
 
+    def get_step_url(self, testurl, modulename):
+        failurl = testurl + '/modules/{!s}/fails'.format(quote_plus(modulename))
+        fails = requests.get(failurl).json()
+        failed_step = fails.get('first_failed_step', 1)
+        return "{!s}#step/{!s}/{:d}".format(testurl, modulename, failed_step)
+
     def test_url(self, job):
-        # TODO: link to failing module if failed
-        return self.openqa_url + ("/tests/%d" % job['id'])
+        url = self.openqa_url + ("/tests/%d" % job['id'])
+        if job['result'] == 'failed':
+            for module in job['modules']:
+                if module['result'] == 'failed':
+                    return self.get_step_url(url, module['name'])
+        return url
 
     def on_published_repo(self, payload):
         for p in self.projects:
@@ -222,8 +241,10 @@ if __name__ == '__main__':
     if amqp_prefix == 'opensuse':
 
         class Leap15(Project):
-            def __init__(self, name):
-                super(name)
+            def map_iso(self, project, iso):
+                # B: openSUSE-Leap-15.1-DVD-x86_64-Build21.3-Media.iso
+                # A: openSUSE-Leap:15.1-Staging:D-Staging-DVD-x86_64-Build21.3-Media.iso
+                return re.sub(r'Leap-(.*)-DVD', r'Leap:\1-Staging:' + self.staging_letter(project) + '-Staging-DVD', iso)
 
         l.add(Leap15('openSUSE:Leap:15.1'))
     else:
