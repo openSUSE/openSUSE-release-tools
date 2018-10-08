@@ -194,13 +194,10 @@ class Listener(object):
     def on_message(self, unused_channel, method, properties, body):
         if method.routing_key == '{}.obs.repo.published'.format(amqp_prefix):
             self.on_published_repo(json.loads(body))
-
-        if method.routing_key == '{}.openqa.job.done'.format(amqp_prefix):
+        elif re.search(r'.openqa.', method.routing_key):
             self.on_openqa_job(json.loads(body).get('ISO'))
-        if method.routing_key == '{}.openqa.job.create'.format(amqp_prefix):
-            self.on_openqa_job(json.loads(body).get('ISO'))
-        if method.routing_key == '{}.openqa.job.restart'.format(amqp_prefix):
-            self.on_openqa_job(json.loads(body).get('ISO'))
+        else:
+            print("unknown rabbitmq message {}".format(method.routing_key))
 
     def listen(self):
         print(' [*] Waiting for logs. To exit press CTRL+C')
