@@ -1,0 +1,9 @@
+[Unit]
+Description=openSUSE Release Tools: Sync openQA status
+
+[Service]
+User=osrt-rabbit-openqa
+ExecStart=/usr/bin/osrt-rabbit-openqa
+
+[Install]
+WantedBy=multi-user.target
