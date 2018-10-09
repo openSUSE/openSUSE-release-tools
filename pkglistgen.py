@@ -678,63 +678,7 @@ class PkgListGen(ToolBase.ToolBase):
                 return 'devel package of ' + g.develpkgs[package]
         return None
 
-
-class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['all', 'target', 'rings', 'staging', 'arm']
-
-    def __init__(self, *args, **kwargs):
-        ToolBase.CommandLineInterface.__init__(self, args, kwargs)
-        self.repos = []
-
-    def get_optparser(self):
-        parser = ToolBase.CommandLineInterface.get_optparser(self)
-        parser.add_option('-i', '--input-dir', dest='input_dir', metavar='DIR',
-                          help='input directory', default='.')
-        parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
-                          help='input directory', default='.')
-        parser.add_option('-a', '--architecture', dest='architectures', metavar='ARCH',
-                          help='architecure', action='append')
-        return parser
-
-    def setup_tool(self):
-        tool = PkgListGen()
-        tool.input_dir = self.options.input_dir
-        tool.output_dir = self.options.output_dir
-        tool.repos = self.repos
-        if self.options.architectures:
-            tool.architectures = self.options.architectures
-        else:
-            tool.architectures = ARCHITECTURES
-        return tool
-
-    def do_list(self, subcmd, opts):
-        """${cmd_name}: list all groups
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
-        self.tool.load_all_groups()
-
-        for name in sorted(self.tool.groups.keys()):
-            print(name)
-
-    def do_list_products(self, subcmd, opts):
-        """${cmd_name}: list all products
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
-        self.tool.list_products()
-
-    def do_update(self, subcmd, opts):
-        """${cmd_name}: Solve groups
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
+    def update_repos(self, subcmd, opts):
         # only there to parse the repos
         bs_mirrorfull = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
         global_update = False
@@ -789,6 +733,64 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         return global_update
 
+
+class CommandLineInterface(ToolBase.CommandLineInterface):
+    SCOPES = ['all', 'target', 'rings', 'staging', 'arm']
+
+    def __init__(self, *args, **kwargs):
+        ToolBase.CommandLineInterface.__init__(self, args, kwargs)
+        self.repos = []
+
+    def get_optparser(self):
+        parser = ToolBase.CommandLineInterface.get_optparser(self)
+        parser.add_option('-i', '--input-dir', dest='input_dir', metavar='DIR',
+                          help='input directory', default='.')
+        parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
+                          help='input directory', default='.')
+        parser.add_option('-a', '--architecture', dest='architectures', metavar='ARCH',
+                          help='architecure', action='append')
+        return parser
+
+    def setup_tool(self):
+        tool = PkgListGen()
+        tool.input_dir = self.options.input_dir
+        tool.output_dir = self.options.output_dir
+        tool.repos = self.repos
+        if self.options.architectures:
+            tool.architectures = self.options.architectures
+        else:
+            tool.architectures = ARCHITECTURES
+        return tool
+
+    def do_list(self, subcmd, opts):
+        """${cmd_name}: list all groups
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        self.tool.load_all_groups()
+
+        for name in sorted(self.tool.groups.keys()):
+            print(name)
+
+    def do_list_products(self, subcmd, opts):
+        """${cmd_name}: list all products
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        self.tool.list_products()
+
+    def do_update(self, subcmd, opts):
+        """${cmd_name}: Update groups
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        self.tool.update_repos('update', opts)
+
     def update_merge(self, nonfree):
         """Merge free and nonfree solv files or copy free to merged"""
         for project, repo in self.repos:
@@ -828,7 +830,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             logger.debug("processing %s", prj)
             self.tool.expand_repos(prj, 'standard')
             opts.project = prj
-            self.do_update('update', opts)
+            self.tool.update_repos(opts)
 
         drops = dict()
         for arch in self.tool.architectures:
@@ -1304,7 +1306,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.postoptparse()
 
         print('-> do_update')
-        self.do_update('update', opts)
+        self.tool.update_repos(opts)
 
         nonfree = target_config.get('nonfree')
         if opts.scope not in ('arm', 'ports') and nonfree and drop_list:
@@ -1315,7 +1317,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             opts_nonfree = copy.deepcopy(opts)
             opts_nonfree.project = nonfree
             self.repos = self.tool.expand_repos(nonfree, main_repo)
-            self.do_update('update', opts_nonfree)
+            self.update_repos(opts_nonfree)
 
             # Switch repo back to main target project.
             self.repos = repos_
