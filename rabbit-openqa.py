@@ -36,7 +36,13 @@ class Project(object):
         return name.split(':')[-1]
 
     def map_iso(self, staging_project, iso):
-        raise 'Unimplemented'
+        parts = self.replace_string().split('/')
+        if parts[0] != 's':
+            raise Exception("{}'s iso_replace_string does not start with s/".format(self.name))
+        old = parts[1]
+        new = parts[2]
+        new = new.replace('$LETTER', self.staging_letter(staging_project))
+        return re.compile(old).sub(new, iso)
 
     def gather_isos(self, name, repository):
         url = self.api.makeurl(['published', name, repository, 'iso'])
@@ -258,35 +264,27 @@ if __name__ == '__main__':
     if amqp_prefix == 'opensuse':
 
         class Leap15(Project):
-            def map_iso(self, project, iso):
+            def replace_string(self):
                 # B: openSUSE-Leap-15.1-DVD-x86_64-Build21.3-Media.iso
                 # A: openSUSE-Leap:15.1-Staging:D-Staging-DVD-x86_64-Build21.3-Media.iso
-                return re.sub(r'Leap-(.*)-DVD', r'Leap:\1-Staging:' + self.staging_letter(project) + '-Staging-DVD', iso)
+                return 's/Leap-(.*)-DVD/Leap:\g<1>-Staging:$LETTER-Staging-DVD/'
 
         l.add(Leap15('openSUSE:Leap:15.1'))
     else:
         class Sle15(Project):
-            def map_iso(self, project, iso):
+            def replace_string(self):
                 # B: SLE-15-SP1-Installer-DVD-x86_64-Build67.2-Media1.iso
                 # A: SLE-15-SP1-Staging:D-Installer-DVD-x86_64-BuildD.67.2-Media1.iso
-                letter = self.staging_letter(project)
-                begin = re.sub(r'^(.*)-Installer.*', r'\1', iso)
-                middle = re.sub(r'^.*-(Installer.*-Build).*', r'\1', iso)
-                ending = re.sub(r'.*-Build', '', iso)
-                return "%s-Staging:%s-%s%s.%s" % (begin, letter, middle, letter, ending)
+                return 's/^(SLE-.*)-Installer-(.*)Build/\g<1>-Staging:$LETTER-Installer-\g<2>Build$LETTER./'
 
         l.add(Sle15('SUSE:SLE-15-SP1:GA'))
 
-        class Sle12(Project):
-            def map_iso(self, project, iso):
+        class Sle12sp4(Project):
+            def replace_string(self):
                 # B: Test-Server-DVD-x86_64-Build42.1-Media.iso
                 # A: SLE12-SP4-Staging:Y-Test-Server-DVD-x86_64-BuildY.42.1-Media.iso
-                letter = self.staging_letter(project)
-                begin = re.sub(r'SUSE:SLE-(.*):GA.*', r'SLE\1', project)
-                middle = re.sub(r'^(.*-Build).*', r'\1', iso)
-                ending = re.sub(r'.*-Build', '', iso)
-                return "%s-Staging:%s-%s%s.%s" % (begin, letter, middle, letter, ending)
+                return 's/^(Test.*Build)/SLE12-SP4-Staging:$LETTER-\g<1>$LETTER/' 
 
-        l.add(Sle12('SUSE:SLE-12-SP4:GA'))
+        l.add(Sle12sp4('SUSE:SLE-12-SP4:GA'))
 
     l.listen()
