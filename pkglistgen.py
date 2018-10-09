@@ -424,6 +424,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.unwanted = set()
         self.output = None
         self.locales = set()
+        self.did_update = False
 
     def _load_supportstatus(self):
         # XXX
@@ -562,7 +563,10 @@ class PkgListGen(ToolBase.ToolBase):
             s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
             r = repo.add_solv(s)
             if not r:
-                raise Exception("failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
+                if not self.did_update:
+                    raise Exception(
+                        "failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
+                continue
             for solvable in repo.solvables_iter():
                 if solvable.name in solvables:
                     self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE | solv.Job.SOLVER_LOCK, solvable.id))
@@ -781,6 +785,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
                 # Create hash file now that solv creation is complete.
                 open(solv_file_hash, 'a').close()
+        self.did_update = True
 
         return global_update
 
@@ -1392,9 +1397,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 for package in sorted(summary[group]):
                     summary_str += "  - " + package + "\n"
 
-            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'summary.yml', summary_str, 'Updating summary.yml')
+            source_file_ensure(api.apiurl, opts.project, '000product-summary',
+                               'summary.yml', summary_str, 'Updating summary.yml')
             unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
-            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
+            source_file_ensure(api.apiurl, opts.project, '000product-summary',
+                               'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
