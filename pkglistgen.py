@@ -678,7 +678,7 @@ class PkgListGen(ToolBase.ToolBase):
                 return 'devel package of ' + g.develpkgs[package]
         return None
 
-    def update_repos(self, subcmd, opts):
+    def update_repos(self, opts):
         # only there to parse the repos
         bs_mirrorfull = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
         global_update = False
@@ -691,7 +691,7 @@ class PkgListGen(ToolBase.ToolBase):
 
                 try:
                     # Fetch state before mirroring in-case it changes during download.
-                    state = repository_arch_state(self.tool.apiurl, project, repo, arch)
+                    state = repository_arch_state(self.apiurl, project, repo, arch)
                 except HTTPError:
                     continue
 
@@ -712,7 +712,7 @@ class PkgListGen(ToolBase.ToolBase):
                 logger.debug('updating %s', d)
                 args = [bs_mirrorfull]
                 args.append('--nodebug')
-                args.append('{}/public/build/{}/{}/{}'.format(self.tool.apiurl, project, repo, arch))
+                args.append('{}/public/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
                 args.append(d)
                 p = subprocess.Popen(args, stdout=subprocess.PIPE)
                 for line in p.stdout:
@@ -732,6 +732,16 @@ class PkgListGen(ToolBase.ToolBase):
         self.did_update = True
 
         return global_update
+
+    def unlink_list(self, path, names):
+        for name in names:
+            if path is None:
+                name_path = name
+            else:
+                name_path = os.path.join(path, name)
+
+            if os.path.isfile(name_path):
+                os.unlink(name_path)
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
@@ -789,7 +799,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        self.tool.update_repos('update', opts)
+        self.tool.update_repos(opts)
 
     def update_merge(self, nonfree):
         """Merge free and nonfree solv files or copy free to merged"""
@@ -1358,7 +1368,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.do_create_droplist('create_droplist', opts, *solv_prior)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
-        self.unlink_list(product_dir, delete_products)
+        self.tool.unlink_list(product_dir, delete_products)
 
         print('-> product service')
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
@@ -1366,13 +1376,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
 
         delete_kiwis = target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' ')
-        self.unlink_list(product_dir, delete_kiwis)
+        self.tool.unlink_list(product_dir, delete_kiwis)
         if opts.scope == 'staging':
             self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
         if skip_release:
-            self.unlink_list(None, spec_files)
+            self.tool.unlink_list(None, spec_files)
         else:
             self.move_list(spec_files, release_dir)
             inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
@@ -1478,16 +1488,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def move_list(self, file_list, destination):
         for name in file_list:
             os.rename(name, os.path.join(destination, os.path.basename(name)))
-
-    def unlink_list(self, path, names):
-        for name in names:
-            if path is None:
-                name_path = name
-            else:
-                name_path = os.path.join(path, name)
-
-            if os.path.isfile(name_path):
-                os.unlink(name_path)
 
     def unlink_all_except(self, path, ignore_list=['_service'], ignore_hidden=True):
         for name in os.listdir(path):
