@@ -1123,7 +1123,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             for module in modules:
                 if module.name == 'overlap' or module in overlap.ignored:
                     continue
-                for arch in ['*'] + module.architectures:
+                for arch in ['*'] + self.tool.filtered_architectures:
                     for p in overlapped:
                         module.solved_packages[arch].pop(p, None)
 
