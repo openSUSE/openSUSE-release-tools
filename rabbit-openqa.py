@@ -6,7 +6,7 @@ import sys
 import json
 import osc
 import re
-from osc.core import http_POST
+from osc.core import http_GET, http_POST, makeurl
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
@@ -26,17 +26,17 @@ class Project(object):
         self.api = StagingAPI(apiurl, name)
         self.staging_projects = dict()
         self.listener = None
+        self.replace_string = self.api.attribute_value_load('OpenQAMapping')
         for p in self.api.get_staging_projects():
             if self.api.is_adi_project(p):
                 continue
             self.staging_projects[p] = self.initial_staging_state(p)
-        print(self.staging_projects)
 
     def staging_letter(self, name):
         return name.split(':')[-1]
 
     def map_iso(self, staging_project, iso):
-        parts = self.replace_string().split('/')
+        parts = self.replace_string.split('/')
         if parts[0] != 's':
             raise Exception("{}'s iso_replace_string does not start with s/".format(self.name))
         old = parts[1]
@@ -260,31 +260,10 @@ if __name__ == '__main__':
         openqa_url = 'https://openqa.opensuse.org'
 
     l = Listener(amqp_prefix, amqp_url, openqa_url)
-
-    if amqp_prefix == 'opensuse':
-
-        class Leap15(Project):
-            def replace_string(self):
-                # B: openSUSE-Leap-15.1-DVD-x86_64-Build21.3-Media.iso
-                # A: openSUSE-Leap:15.1-Staging:D-Staging-DVD-x86_64-Build21.3-Media.iso
-                return 's/Leap-(.*)-DVD/Leap:\g<1>-Staging:$LETTER-Staging-DVD/'
-
-        l.add(Leap15('openSUSE:Leap:15.1'))
-    else:
-        class Sle15(Project):
-            def replace_string(self):
-                # B: SLE-15-SP1-Installer-DVD-x86_64-Build67.2-Media1.iso
-                # A: SLE-15-SP1-Staging:D-Installer-DVD-x86_64-BuildD.67.2-Media1.iso
-                return 's/^(SLE-.*)-Installer-(.*)Build/\g<1>-Staging:$LETTER-Installer-\g<2>Build$LETTER./'
-
-        l.add(Sle15('SUSE:SLE-15-SP1:GA'))
-
-        class Sle12sp4(Project):
-            def replace_string(self):
-                # B: Test-Server-DVD-x86_64-Build42.1-Media.iso
-                # A: SLE12-SP4-Staging:Y-Test-Server-DVD-x86_64-BuildY.42.1-Media.iso
-                return 's/^(Test.*Build)/SLE12-SP4-Staging:$LETTER-\g<1>$LETTER/' 
-
-        l.add(Sle12sp4('SUSE:SLE-12-SP4:GA'))
+    url = makeurl(apiurl, ['search', 'project', 'id'], {'match': 'attribute/@name="OSRT:OpenQAMapping"'})
+    f = http_GET(url)
+    root = ET.parse(f).getroot()
+    for entry in root.findall('project'):
+        l.add(Project(entry.get('name')))
 
     l.listen()
