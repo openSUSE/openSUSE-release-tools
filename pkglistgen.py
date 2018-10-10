@@ -1394,7 +1394,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
             source_file_ensure(api.apiurl, opts.project, '000product-summary', 'summary.yml', summary_str, 'Updating summary.yml')
             unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
-            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'unsorted.yml', summary_str, 'Updating unsorted.yml')
+            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
