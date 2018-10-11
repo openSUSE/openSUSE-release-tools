@@ -424,6 +424,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.unwanted = set()
         self.output = None
         self.locales = set()
+        self.did_update = False
 
     def _load_supportstatus(self):
         # XXX
@@ -562,7 +563,10 @@ class PkgListGen(ToolBase.ToolBase):
             s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
             r = repo.add_solv(s)
             if not r:
-                raise Exception("failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
+                if not self.did_update:
+                    raise Exception(
+                        "failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
+                continue
             for solvable in repo.solvables_iter():
                 if solvable.name in solvables:
                     self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE | solv.Job.SOLVER_LOCK, solvable.id))
@@ -674,6 +678,71 @@ class PkgListGen(ToolBase.ToolBase):
                 return 'devel package of ' + g.develpkgs[package]
         return None
 
+    def update_repos(self, opts):
+        # only there to parse the repos
+        bs_mirrorfull = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
+        global_update = False
+        for project, repo in self.repos:
+            for arch in opts.filtered_architectures:
+                # TODO: refactor to common function with repo_checker.py
+                d = os.path.join(CACHEDIR, project, repo, arch)
+                if not os.path.exists(d):
+                    os.makedirs(d)
+
+                try:
+                    # Fetch state before mirroring in-case it changes during download.
+                    state = repository_arch_state(self.apiurl, project, repo, arch)
+                except HTTPError:
+                    continue
+
+                # Would be preferable to include hash in name, but cumbersome to handle without
+                # reworking a fair bit since the state needs to be tracked.
+                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                solv_file_hash = '{}::{}'.format(solv_file, state)
+                if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
+                    # Solve file exists and hash unchanged, skip updating solv.
+                    logger.debug('skipping solv generation for {} due to matching state {}'.format(
+                        '/'.join([project, repo, arch]), state))
+                    continue
+
+                # Either hash changed or new, so remove any old hash files.
+                self.unlink_list(None, glob.glob(solv_file + '::*'))
+                global_update = True
+
+                logger.debug('updating %s', d)
+                args = [bs_mirrorfull]
+                args.append('--nodebug')
+                args.append('{}/public/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
+                args.append(d)
+                p = subprocess.Popen(args, stdout=subprocess.PIPE)
+                for line in p.stdout:
+                    logger.info(line.rstrip())
+
+                files = [os.path.join(d, f)
+                         for f in os.listdir(d) if f.endswith('.rpm')]
+                fh = open(solv_file, 'w')
+                p = subprocess.Popen(
+                    ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
+                p.communicate('\0'.join(files))
+                p.wait()
+                fh.close()
+
+                # Create hash file now that solv creation is complete.
+                open(solv_file_hash, 'a').close()
+        self.did_update = True
+
+        return global_update
+
+    def unlink_list(self, path, names):
+        for name in names:
+            if path is None:
+                name_path = name
+            else:
+                name_path = os.path.join(path, name)
+
+            if os.path.isfile(name_path):
+                os.unlink(name_path)
+
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging', 'arm']
@@ -725,64 +794,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.tool.list_products()
 
     def do_update(self, subcmd, opts):
-        """${cmd_name}: Solve groups
+        """${cmd_name}: Update groups
 
         ${cmd_usage}
         ${cmd_option_list}
         """
-
-        # only there to parse the repos
-        bs_mirrorfull = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
-        global_update = False
-        for project, repo in self.repos:
-            for arch in opts.filtered_architectures:
-                # TODO: refactor to common function with repo_checker.py
-                d = os.path.join(CACHEDIR, project, repo, arch)
-                if not os.path.exists(d):
-                    os.makedirs(d)
-
-                try:
-                    # Fetch state before mirroring in-case it changes during download.
-                    state = repository_arch_state(self.tool.apiurl, project, repo, arch)
-                except HTTPError:
-                    continue
-
-                # Would be preferable to include hash in name, but cumbersome to handle without
-                # reworking a fair bit since the state needs to be tracked.
-                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                solv_file_hash = '{}::{}'.format(solv_file, state)
-                if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
-                    # Solve file exists and hash unchanged, skip updating solv.
-                    logger.debug('skipping solv generation for {} due to matching state {}'.format(
-                        '/'.join([project, repo, arch]), state))
-                    continue
-
-                # Either hash changed or new, so remove any old hash files.
-                self.unlink_list(None, glob.glob(solv_file + '::*'))
-                global_update = True
-
-                logger.debug('updating %s', d)
-                args = [bs_mirrorfull]
-                args.append('--nodebug')
-                args.append('{}/public/build/{}/{}/{}'.format(self.tool.apiurl, project, repo, arch))
-                args.append(d)
-                p = subprocess.Popen(args, stdout=subprocess.PIPE)
-                for line in p.stdout:
-                    logger.info(line.rstrip())
-
-                files = [os.path.join(d, f)
-                         for f in os.listdir(d) if f.endswith('.rpm')]
-                fh = open(solv_file, 'w')
-                p = subprocess.Popen(
-                    ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
-                p.communicate('\0'.join(files))
-                p.wait()
-                fh.close()
-
-                # Create hash file now that solv creation is complete.
-                open(solv_file_hash, 'a').close()
-
-        return global_update
+        self.tool.update_repos(opts)
 
     def update_merge(self, nonfree):
         """Merge free and nonfree solv files or copy free to merged"""
@@ -823,7 +840,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             logger.debug("processing %s", prj)
             self.tool.expand_repos(prj, 'standard')
             opts.project = prj
-            self.do_update('update', opts)
+            self.tool.update_repos(opts)
 
         drops = dict()
         for arch in self.tool.architectures:
@@ -1299,7 +1316,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.postoptparse()
 
         print('-> do_update')
-        self.do_update('update', opts)
+        self.tool.update_repos(opts)
 
         nonfree = target_config.get('nonfree')
         if opts.scope not in ('arm', 'ports') and nonfree and drop_list:
@@ -1310,7 +1327,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             opts_nonfree = copy.deepcopy(opts)
             opts_nonfree.project = nonfree
             self.repos = self.tool.expand_repos(nonfree, main_repo)
-            self.do_update('update', opts_nonfree)
+            self.update_repos(opts_nonfree)
 
             # Switch repo back to main target project.
             self.repos = repos_
@@ -1351,7 +1368,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.do_create_droplist('create_droplist', opts, *solv_prior)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
-        self.unlink_list(product_dir, delete_products)
+        self.tool.unlink_list(product_dir, delete_products)
 
         print('-> product service')
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
@@ -1359,13 +1376,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
 
         delete_kiwis = target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' ')
-        self.unlink_list(product_dir, delete_kiwis)
+        self.tool.unlink_list(product_dir, delete_kiwis)
         if opts.scope == 'staging':
             self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
         if skip_release:
-            self.unlink_list(None, spec_files)
+            self.tool.unlink_list(None, spec_files)
         else:
             self.move_list(spec_files, release_dir)
             inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
@@ -1392,9 +1409,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 for package in sorted(summary[group]):
                     summary_str += "  - " + package + "\n"
 
-            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'summary.yml', summary_str, 'Updating summary.yml')
+            source_file_ensure(api.apiurl, opts.project, '000product-summary',
+                               'summary.yml', summary_str, 'Updating summary.yml')
             unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
-            source_file_ensure(api.apiurl, opts.project, '000product-summary', 'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
+            source_file_ensure(api.apiurl, opts.project, '000product-summary',
+                               'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
@@ -1469,16 +1488,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def move_list(self, file_list, destination):
         for name in file_list:
             os.rename(name, os.path.join(destination, os.path.basename(name)))
-
-    def unlink_list(self, path, names):
-        for name in names:
-            if path is None:
-                name_path = name
-            else:
-                name_path = os.path.join(path, name)
-
-            if os.path.isfile(name_path):
-                os.unlink(name_path)
 
     def unlink_all_except(self, path, ignore_list=['_service'], ignore_hidden=True):
         for name in os.listdir(path):
