@@ -822,7 +822,8 @@ class ToTest151ARM(ToTestBaseNew):
                     '000product:openSUSE-ftp-ftp-armv7hl',
                     ]
 
-    livecd_products = []
+    livecd_products = ['JeOS']
+    livecd_archs = ['armv7l']
 
     # Leap 15.1 ARM still need to update snapshot
     set_snapshot_number = True
