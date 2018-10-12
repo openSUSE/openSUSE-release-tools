@@ -177,6 +177,7 @@ class FreezeCommand(object):
         ET.SubElement(f, 'disable')
         f = ET.SubElement(root, 'publish')
         ET.SubElement(f, 'disable')
+        ET.SubElement(f, 'enable', {'repository': 'images'})
         f = ET.SubElement(root, 'debuginfo')
         ET.SubElement(f, 'enable')
 
