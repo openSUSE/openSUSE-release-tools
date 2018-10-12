@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse
+import logging
 import pika
 import sys
 import json
@@ -18,6 +19,7 @@ try:
 except ImportError:
     # python 2.x
     from urllib2 import HTTPError
+from PubSubConsumer import PubSubConsumer
 
 
 class Project(object):
@@ -74,7 +76,7 @@ class Project(object):
     def fetch_openqa_jobs(self, staging, iso):
         buildid = self.staging_projects[staging].get('id')
         if not buildid:
-            print("I don't know the build id of " + staging)
+            self.logger.info("I don't know the build id of " + staging)
             return
         # all openQA jobs are created at the same URL
         url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
@@ -105,9 +107,7 @@ class Project(object):
             try:
                 http_POST(url, data=xml)
             except HTTPError:
-                # https://github.com/openSUSE/open-build-service/issues/6051
-                print('failed to post status to ' + url)
-                print(xml)
+                self.logger.error('failed to post status to ' + url)
 
     def update_staging_status(self, project):
         for iso in self.staging_projects[project]['isos']:
@@ -155,32 +155,20 @@ class Project(object):
         return ET.tostring(check)
 
 
-class Listener(object):
+class Listener(PubSubConsumer):
     def __init__(self, amqp_prefix, amqp_url, openqa_url):
+        super(Listener, self).__init__(amqp_url, logging.getLogger(__name__))
         self.projects = []
         self.amqp_prefix = amqp_prefix
-        self.amqp_url = amqp_url
         self.openqa_url = openqa_url
         self.openqa = OpenQA_Client(server=openqa_url)
-        self.setup_rabbitmq()
 
-    def setup_rabbitmq(self):
-        connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
-        self.channel = connection.channel()
-
-        self.channel.exchange_declare(exchange='pubsub', exchange_type='topic', passive=True, durable=True)
-
-        result = self.channel.queue_declare(exclusive=True)
-        queue_name = result.method.queue
-
-        for event in ['.obs.repo.published', '.openqa.job.done',
-                      '.openqa.job.create', '.openqa.job.restart']:
-            self.channel.queue_bind(exchange='pubsub',
-                                    queue=queue_name,
-                                    routing_key=self.amqp_prefix + event)
-        self.channel.basic_consume(self.on_message,
-                                   queue=queue_name,
-                                   no_ack=True)
+    def routing_keys(self):
+        ret = []
+        for suffix in ['.obs.repo.published', '.openqa.job.done',
+                       '.openqa.job.create', '.openqa.job.restart']:
+            ret.append(self.amqp_prefix + suffix)
+        return ret
 
     def add(self, project):
         project.fetch_initial_openqa(self)
@@ -213,7 +201,7 @@ class Listener(object):
             p.check_published_repo(str(payload['project']), str(payload['repo']), str(payload['buildid']))
 
     def on_openqa_job(self, iso):
-        print('openqa_job_change', iso)
+        self.logger.debug('openqa_job_change', iso)
         for p in self.projects:
             p.openqa_job_change(iso)
 
@@ -223,11 +211,7 @@ class Listener(object):
         elif re.search(r'.openqa.', method.routing_key):
             self.on_openqa_job(json.loads(body).get('ISO'))
         else:
-            print("unknown rabbitmq message {}".format(method.routing_key))
-
-    def listen(self):
-        print(' [*] Waiting for logs. To exit press CTRL+C')
-        self.channel.start_consuming()
+            self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))
 
 
 if __name__ == '__main__':
@@ -259,6 +243,8 @@ if __name__ == '__main__':
         amqp_url = "amqps://opensuse:opensuse@rabbit.opensuse.org?heartbeat_interval=15"
         openqa_url = 'https://openqa.opensuse.org'
 
+    logging.basicConfig(level=logging.INFO)
+
     l = Listener(amqp_prefix, amqp_url, openqa_url)
     url = makeurl(apiurl, ['search', 'project', 'id'], {'match': 'attribute/@name="OSRT:OpenQAMapping"'})
     f = http_GET(url)
@@ -266,4 +252,7 @@ if __name__ == '__main__':
     for entry in root.findall('project'):
         l.add(Project(entry.get('name')))
 
-    l.listen()
+    try:
+        l.run()
+    except KeyboardInterrupt:
+        l.stop()
