@@ -24,15 +24,19 @@ from PubSubConsumer import PubSubConsumer
 
 class Project(object):
     def __init__(self, name):
+        self.name = name
         Config(apiurl, name)
         self.api = StagingAPI(apiurl, name)
         self.staging_projects = dict()
         self.listener = None
         self.replace_string = self.api.attribute_value_load('OpenQAMapping')
+
+    def init(self):
         for p in self.api.get_staging_projects():
             if self.api.is_adi_project(p):
                 continue
             self.staging_projects[p] = self.initial_staging_state(p)
+            self.update_staging_status(p)
 
     def staging_letter(self, name):
         return name.split(':')[-1]
@@ -66,12 +70,6 @@ class Project(object):
     def initial_staging_state(self, name):
         return {'isos': self.gather_isos(name, 'images'),
                 'id': self.gather_buildid(name, 'images')}
-
-    # once the project is added to a listener, it's calling back
-    def fetch_initial_openqa(self, listener):
-        self.listener = listener
-        for project in self.staging_projects:
-            self.update_staging_status(project)
 
     def fetch_openqa_jobs(self, staging, iso):
         buildid = self.staging_projects[staging].get('id')
@@ -171,8 +169,17 @@ class Listener(PubSubConsumer):
         return ret
 
     def add(self, project):
-        project.fetch_initial_openqa(self)
+        project.listener = self
         self.projects.append(project)
+
+    def start_consuming(self):
+        # now we are (re-)connected to the bus and need to fetch the
+        # initial state
+        for project in self.projects:
+            self.logger.info('Fetching ISOs of %s', project.name)
+            project.init()
+        self.logger.info('Finished fetching initial ISOs, listening')
+        super(Listener, self).start_consuming()
 
     def jobs_for_iso(self, iso):
         values = {
@@ -236,11 +243,11 @@ if __name__ == '__main__':
 
     if apiurl.endswith('suse.de'):
         amqp_prefix = 'suse'
-        amqp_url = "amqps://suse:suse@rabbit.suse.de?heartbeat_interval=15"
+        amqp_url = "amqps://suse:suse@rabbit.suse.de"
         openqa_url = 'https://openqa.suse.de'
     else:
         amqp_prefix = 'opensuse'
-        amqp_url = "amqps://opensuse:opensuse@rabbit.opensuse.org?heartbeat_interval=15"
+        amqp_url = "amqps://opensuse:opensuse@rabbit.opensuse.org"
         openqa_url = 'https://openqa.opensuse.org'
 
     logging.basicConfig(level=logging.INFO)
