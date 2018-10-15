@@ -33,6 +33,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
     def add_devel_project_review(self, req, package):
         """ add devel project/package as reviewer """
         a = req.actions[0]
+        if self._is_patchinfo(a.src_package):
+            a = req.actions[1]
         project = a.tgt_releaseproject if a.type == 'maintenance_incident' else req.actions[0].tgt_project
         root = owner_fallback(self.apiurl, project, package)
 
