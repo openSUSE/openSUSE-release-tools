@@ -241,7 +241,9 @@ class Leaper(ReviewBot.ReviewBot):
                 self.logger.info('found pending submission against origin ({})'.format(origin))
                 return good
 
-            self.do_check_maintainer_review = True
+            # TODO #1662: Uncomment once maintbot has been superseded and leaper
+            # is no longer run in comment-only mode.
+            #self.do_check_maintainer_review = True
 
             return None
         elif self.action.type == 'maintenance_incident':
