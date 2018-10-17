@@ -16,6 +16,8 @@ sed -i "s|$(cd "$SOURCE_DIR" && git remote get-url origin)|$SOURCE_DIR|" _servic
 sed -i "s|<param name=\"scm\">git</param>|<param name=\"scm\">git</param><param name=\"revision\">$(cd "$SOURCE_DIR" && git describe --all --always)</param>|" _service
 
 rm *.obscpio
+# ugly, but upstream not interested in making this process clean
+export TAR_SCM_TESTMODE=1
 osc service disabledrun
 
 # skip interactive
