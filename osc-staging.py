@@ -285,6 +285,25 @@ def do_staging(self, subcmd, opts, *args):
         These concepts can be combined and interactive mode allows the proposal
         to be modified before it is executed.
 
+        Moving requests can be accomplished using the --move flag. For example,
+        to move already staged pac1 and pac2 to staging B use the following.
+
+        select --move B pac1 pac2
+
+        The staging in which the requests are staged will automatically be
+        determined and the requests will be removed from that staging and placed
+        in the specified staging.
+
+        Related to this, the --filter-from option may be used in conjunction
+        with --move to only move requests already staged in a specific staging.
+        This can be useful if a staging master is responsible for a specific set
+        of packages and wants to move them into a different staging when they
+        were already placed in a mixed staging. For example, if one had a file
+        with a list of packages the following would move any of them found in
+        staging A to staging B.
+
+        select --move --filter-from A B $(< package.list)
+
     "unselect" will remove from the project - pushing them back to the backlog
         If a message is included the requests will be ignored first.
 
