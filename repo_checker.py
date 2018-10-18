@@ -297,7 +297,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('cycle check: start')
         comment = []
         first = True
-        cycle_detector = CycleDetector(self.staging_api(overridden_pair[0]))
+        cycle_detector = CycleDetector(self.apiurl)
         for index, (cycle, new_edges, new_packages) in enumerate(
             cycle_detector.cycles(override_pair, overridden_pair, arch), start=1):
 
