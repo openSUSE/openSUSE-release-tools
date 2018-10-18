@@ -124,6 +124,12 @@ class ReviewBot(object):
             self.config = self._load_config()
 
     def staging_api(self, project):
+        # Allow for the Staging subproject to be passed directly from config
+        # which should be stripped before initializing StagingAPI. This allows
+        # for NonFree subproject to utilize StagingAPI for main project.
+        if project.endswith(':Staging'):
+            project = project[:-8]
+
         if project not in self.staging_apis:
             Config.get(self.apiurl, project)
             self.staging_apis[project] = StagingAPI(self.apiurl, project)
