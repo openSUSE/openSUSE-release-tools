@@ -59,7 +59,7 @@ class SelectCommand(object):
 
         return candidates[0] if candidates else None
 
-    def select_request(self, request, move, from_):
+    def select_request(self, request, move, filter_from):
         supersede = self._supersede(request)
 
         staged_requests = {
@@ -73,12 +73,11 @@ class SelectCommand(object):
             return self.api.rq_to_prj(request, self.target_project)
         elif request in staged_requests and (move or supersede):
             # 'select' command becomes a 'move'
-            fprj = None
-            if from_:
-                fprj = self.api.prj_from_letter(from_)
-            else:
-                # supersede = (new_rq, package, project)
-                fprj = self.api.packages_staged[staged_requests[request]]['prj'] if not supersede else supersede[2]
+            # supersede = (new_rq, package, project)
+            fprj = self.api.packages_staged[staged_requests[request]]['prj'] if not supersede else supersede[2]
+            if filter_from != fprj:
+                print('Ignoring "{}" in "{}" since not in "{}"'.format(request, fprj, filter_from))
+                return True
 
             if supersede:
                 print('"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0]))
@@ -109,13 +108,13 @@ class SelectCommand(object):
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
     def perform(self, requests, move=False,
-                from_=None, no_freeze=False):
+                filter_from=None, no_freeze=False):
         """
         Select package and move it accordingly by arguments
         :param target_project: project we want to target
         :param requests: requests we are working with
         :param move: wether to move the requests or not
-        :param from_: location where from move the requests
+        :param filter_from: filter request list to only those from a specific staging
         """
 
         if self.api.is_adi_project(self.target_project):
@@ -135,7 +134,7 @@ class SelectCommand(object):
         requests_count = len(requests)
         for index, request in enumerate(requests, start=1):
             print('({}/{}) '.format(index, requests_count), end='')
-            if not self.select_request(request, move, from_):
+            if not self.select_request(request, move, filter_from):
                 return False
 
         # Notify everybody about the changes

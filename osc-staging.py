@@ -88,8 +88,8 @@ def clean_args(args):
               help='split the requests into individual groups')
 @cmdln.option('--supersede', action='store_true',
               help='replace staged requests when superseded')
-@cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
-              help='specify a source project when moving a request')
+@cmdln.option('--filter-from', metavar='STAGING',
+              help='filter request list to only those from a specific staging')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT',
               help='indicate the project on which to operate, default is openSUSE:Factory')
 @cmdln.option('--add', dest='add', metavar='PACKAGE',
@@ -324,7 +324,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unignore [--cleanup] [REQUEST...|all]
         osc staging list [--supersede]
         osc staging lock [-m MESSAGE]
-        osc staging select [--no-freeze] [--move [--from STAGING]]
+        osc staging select [--no-freeze] [--move [--filter-from STAGING]]
             [--add PACKAGE]
             STAGING REQUEST...
         osc staging select [--no-freeze] [--interactive|--non-interactive]
@@ -524,8 +524,8 @@ def do_staging(self, subcmd, opts, *args):
                     requests.append(arg)
 
             if len(stagings) != 1 or len(requests) == 0 or opts.filter_by or opts.group_by:
-                if opts.move or opts.from_:
-                    print('--move and --from must be used with explicit staging and request list')
+                if opts.move or opts.filter_from:
+                    print('--move and --filter-from must be used with explicit staging and request list')
                     return
 
                 open_requests = api.get_open_requests({'withhistory': 1})
@@ -638,7 +638,8 @@ def do_staging(self, subcmd, opts, *args):
                     api.mark_additional_packages(target_project, [opts.add])
                 else:
                     SelectCommand(api, target_project) \
-                        .perform(requests, opts.move, opts.from_, opts.no_freeze)
+                        .perform(requests, opts.move,
+                                 api.prj_from_short(opts.filter_from), opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'ignore':
