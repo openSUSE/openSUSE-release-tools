@@ -19,7 +19,7 @@ from osclib.memoize import memoize
 #   the project.
 
 DEFAULT = {
-    r'openSUSE:(?P<project>Factory(?::Ports)?)$': {
+    r'openSUSE:(?P<project>Factory)(?::NonFree)?$': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64',
@@ -50,7 +50,7 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
-    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)(?::Ports)?)$': {
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))(?::NonFree)?$': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64',
@@ -99,7 +99,7 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
-    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+):Update)$': {
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)(?::NonFree)?:Update)$': {
         'main-repo': 'standard',
         'leaper-override-group': 'leap-reviewers',
         'repo_checker-arch-whitelist': 'x86_64',
