@@ -169,8 +169,9 @@ class RepoChecker(ReviewBot.ReviewBot):
     def binary_whitelist(self, override_pair, overridden_pair, arch):
         whitelist = self.binary_list_existing_problem(overridden_pair[0], overridden_pair[1])
 
-        if Config.get(self.apiurl, overridden_pair[0]).get('staging'):
-            additions = self.staging_api(overridden_pair[0]).get_prj_pseudometa(
+        staging = Config.get(self.apiurl, overridden_pair[0]).get('staging')
+        if staging:
+            additions = self.staging_api(staging).get_prj_pseudometa(
                 override_pair[0]).get('config', {})
             prefix = 'repo_checker-binary-whitelist'
             for key in [prefix, '-'.join([prefix, arch])]:
@@ -297,7 +298,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('cycle check: start')
         comment = []
         first = True
-        cycle_detector = CycleDetector(self.staging_api(overridden_pair[0]))
+        cycle_detector = CycleDetector(self.apiurl)
         for index, (cycle, new_edges, new_packages) in enumerate(
             cycle_detector.cycles(override_pair, overridden_pair, arch), start=1):
 
@@ -525,8 +526,9 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         repository_pairs = []
         # Assumes maintenance_release target project has staging disabled.
-        if Config.get(self.apiurl, action.tgt_project).get('staging'):
-            api = self.staging_api(action.tgt_project)
+        staging = Config.get(self.apiurl, action.tgt_project).get('staging')
+        if staging:
+            api = self.staging_api(staging)
             stage_info = api.packages_staged.get(action.tgt_package)
             if not stage_info or str(stage_info['rq_id']) != str(request.reqid):
                 self.logger.info('{} not staged'.format(request.reqid))

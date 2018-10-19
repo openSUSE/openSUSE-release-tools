@@ -129,8 +129,8 @@ class Package(object):
 class CycleDetector(object):
     """Class to detect cycles in an OBS project."""
 
-    def __init__(self, api):
-        self.api = api
+    def __init__(self, apiurl):
+        self.apiurl = apiurl
         # Store packages prevoiusly ignored. Don't pollute the screen.
         self._ignore_packages = set()
 
@@ -138,7 +138,7 @@ class CycleDetector(object):
         root = None
         try:
             # print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
-            url = makeurl(self.api.apiurl, ['build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
+            url = makeurl(self.apiurl, ['build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
             root = http_GET(url).read()
         except urllib2.HTTPError as e:
             print('ERROR in URL %s [%s]' % (url, e))
