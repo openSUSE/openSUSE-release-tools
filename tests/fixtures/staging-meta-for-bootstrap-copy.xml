@@ -8,6 +8,7 @@
   </build>
   <publish>
     <disable/>
+    <enable repository="images"/>
   </publish>
   <debuginfo>
     <enable/>
