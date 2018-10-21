@@ -88,8 +88,8 @@ def clean_args(args):
               help='split the requests into individual groups')
 @cmdln.option('--supersede', action='store_true',
               help='replace staged requests when superseded')
-@cmdln.option('-f', '--from', dest='from_', metavar='FROMPROJECT',
-              help='specify a source project when moving a request')
+@cmdln.option('--filter-from', metavar='STAGING',
+              help='filter request list to only those from a specific staging')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT',
               help='indicate the project on which to operate, default is openSUSE:Factory')
 @cmdln.option('--add', dest='add', metavar='PACKAGE',
@@ -285,6 +285,25 @@ def do_staging(self, subcmd, opts, *args):
         These concepts can be combined and interactive mode allows the proposal
         to be modified before it is executed.
 
+        Moving requests can be accomplished using the --move flag. For example,
+        to move already staged pac1 and pac2 to staging B use the following.
+
+        select --move B pac1 pac2
+
+        The staging in which the requests are staged will automatically be
+        determined and the requests will be removed from that staging and placed
+        in the specified staging.
+
+        Related to this, the --filter-from option may be used in conjunction
+        with --move to only move requests already staged in a specific staging.
+        This can be useful if a staging master is responsible for a specific set
+        of packages and wants to move them into a different staging when they
+        were already placed in a mixed staging. For example, if one had a file
+        with a list of packages the following would move any of them found in
+        staging A to staging B.
+
+        select --move --filter-from A B $(< package.list)
+
     "unselect" will remove from the project - pushing them back to the backlog
         If a message is included the requests will be ignored first.
 
@@ -324,7 +343,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unignore [--cleanup] [REQUEST...|all]
         osc staging list [--supersede]
         osc staging lock [-m MESSAGE]
-        osc staging select [--no-freeze] [--move [--from STAGING]]
+        osc staging select [--no-freeze] [--move [--filter-from STAGING]]
             [--add PACKAGE]
             STAGING REQUEST...
         osc staging select [--no-freeze] [--interactive|--non-interactive]
@@ -524,8 +543,8 @@ def do_staging(self, subcmd, opts, *args):
                     requests.append(arg)
 
             if len(stagings) != 1 or len(requests) == 0 or opts.filter_by or opts.group_by:
-                if opts.move or opts.from_:
-                    print('--move and --from must be used with explicit staging and request list')
+                if opts.move or opts.filter_from:
+                    print('--move and --filter-from must be used with explicit staging and request list')
                     return
 
                 open_requests = api.get_open_requests({'withhistory': 1})
@@ -638,7 +657,8 @@ def do_staging(self, subcmd, opts, *args):
                     api.mark_additional_packages(target_project, [opts.add])
                 else:
                     SelectCommand(api, target_project) \
-                        .perform(requests, opts.move, opts.from_, opts.no_freeze)
+                        .perform(requests, opts.move,
+                                 api.prj_from_short(opts.filter_from), opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'ignore':
