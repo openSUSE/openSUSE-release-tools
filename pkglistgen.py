@@ -1327,7 +1327,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             opts_nonfree = copy.deepcopy(opts)
             opts_nonfree.project = nonfree
             self.repos = self.tool.expand_repos(nonfree, main_repo)
-            self.update_repos(opts_nonfree)
+            self.tool.update_repos(opts_nonfree)
 
             # Switch repo back to main target project.
             self.repos = repos_
