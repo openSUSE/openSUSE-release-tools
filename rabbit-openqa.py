@@ -7,18 +7,21 @@ import sys
 import json
 import osc
 import re
+from time import sleep
 from osc.core import http_GET, http_POST, makeurl
+from M2Crypto.SSL import SSLError as SSLError
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
+from openqa_client.exceptions import ConnectionError
 from urllib import quote_plus
 import requests
 try:
-    from urllib.error import HTTPError
+    from urllib.error import HTTPError, URLError
 except ImportError:
     # python 2.x
-    from urllib2 import HTTPError
+    from urllib2 import HTTPError, URLError
 from PubSubConsumer import PubSubConsumer
 
 
@@ -259,7 +262,11 @@ if __name__ == '__main__':
     for entry in root.findall('project'):
         l.add(Project(entry.get('name')))
 
-    try:
-        l.run()
-    except KeyboardInterrupt:
-        l.stop()
+    while True:
+        try:
+            l.run()
+        except KeyboardInterrupt:
+            l.stop()
+        except (HTTPError, URLError, ConnectionError, SSLError):
+            # OBS/openQA hickup
+            sleep(10)
