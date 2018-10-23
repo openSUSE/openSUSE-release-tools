@@ -227,7 +227,7 @@ class Listener(PubSubConsumer):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bot to sync openQA status to OBS')
-    parser.add_argument("--apiurl", '-A', type=str, default='https://api.opensuse.org', help='API URL of OBS')
+    parser.add_argument("--apiurl", '-A', type=str, help='API URL of OBS')
     parser.add_argument('-s', '--staging', type=str, default=None,
                         help='staging project letter')
     parser.add_argument('-f', '--force', action='store_true', default=False,
@@ -239,10 +239,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    osc.conf.get_config()
+    osc.conf.get_config(override_apiurl = args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    apiurl = args.apiurl
+    apiurl = osc.conf.config['apiurl']
 
     if apiurl.endswith('suse.de'):
         amqp_prefix = 'suse'
