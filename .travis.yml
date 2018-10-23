@@ -59,7 +59,7 @@ matrix:
       install:
         # urlgrabber needed to install osc from git in requirements.txt
         # m2crypto for osc to be runable as used in docker-compose-obs
-        - pip install pycurl urlgrabber m2crypto
+        - pip install pycurl urlgrabber m2crypto pika
         - pip install -r requirements.txt
         - pip install python-coveralls
         - pip install nose-exclude
