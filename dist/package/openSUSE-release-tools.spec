@@ -222,7 +222,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
-Requires:       python-openqa_client
+Requires:       python2-openqa_client
 Requires:       python2-pika
 
 %description totest-manager
@@ -298,6 +298,8 @@ Summary:        Sync openQA Status Into OBS
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osc >= 0.159.0
+Requires:       python2-openqa_client
+Requires:       python2-pika
 
 %description rabbit-openqa
 Bot listening to AMQP bus and syncs openQA job status into OBS for
@@ -399,8 +401,8 @@ fi
 %systemd_postun
 
 %pre rabbit-openqa
-getent passwd osrt-rabit-openqa > /dev/null || \
-  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-rabbit-openqa" osrt-rabit-openqa
+getent passwd osrt-rabbit-openqa > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-rabbit-openqa" osrt-rabbit-openqa
 exit 0
 
 %postun rabbit-openqa
