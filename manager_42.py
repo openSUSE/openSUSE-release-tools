@@ -268,7 +268,6 @@ class Manager42(object):
                 return srcmd5, historyrevs[srcmd5]
         return None, None
 
-
     # check if we can find the srcmd5 in any of our underlay
     # projects
     def check_one_package(self, package):
