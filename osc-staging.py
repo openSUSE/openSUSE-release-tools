@@ -656,9 +656,10 @@ def do_staging(self, subcmd, opts, *args):
                 if opts.add:
                     api.mark_additional_packages(target_project, [opts.add])
                 else:
+                    filter_from = api.prj_from_short(opts.filter_from) if opts.filter_from else None
                     SelectCommand(api, target_project) \
                         .perform(requests, opts.move,
-                                 api.prj_from_short(opts.filter_from), opts.no_freeze)
+                                 filter_from, opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'ignore':
