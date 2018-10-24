@@ -359,7 +359,9 @@ class RepoChecker(ReviewBot.ReviewBot):
     def repository_state(self, repository_pairs, simulate_merge):
         archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
         states = repositories_states(self.apiurl, repository_pairs, archs)
-        states.append(str(project_meta_revision(self.apiurl, repository_pairs[0][0])))
+
+        if simulate_merge:
+            states.append(str(project_meta_revision(self.apiurl, repository_pairs[0][0])))
 
         return sha1_short(states)
 
