@@ -64,7 +64,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             return
 
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, False)
         self.repository_check(repository_pairs, state_hash, False, bool(post_comments))
 
     def package_comments(self, project, repository):
@@ -356,8 +356,9 @@ class RepoChecker(ReviewBot.ReviewBot):
         return filename
 
     @memoize(ttl=60, session=True)
-    def repository_state(self, repository_pairs):
-        states = repositories_states(self.apiurl, repository_pairs)
+    def repository_state(self, repository_pairs, simulate_merge):
+        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
+        states = repositories_states(self.apiurl, repository_pairs, archs)
         states.append(str(project_meta_revision(self.apiurl, repository_pairs[0][0])))
 
         return sha1_short(states)
@@ -566,7 +567,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, True)
         if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
@@ -608,7 +609,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, True)
         if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
@@ -623,7 +624,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, True)
         if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
