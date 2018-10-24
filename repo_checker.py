@@ -366,17 +366,17 @@ class RepoChecker(ReviewBot.ReviewBot):
         return sha1_short(states)
 
     @memoize(ttl=60, session=True)
-    def repository_state_last(self, project, repository, pseudometa):
-        if pseudometa:
-            filename = self.project_pseudometa_file_name(project, repository)
-            content = project_pseudometa_file_load(self.apiurl, project, filename)
-            if content:
-                return content.splitlines()[0]
-        else:
+    def repository_state_last(self, project, repository, simulate_merge):
+        if simulate_merge:
             comments = self.comment_api.get_comments(project_name=project)
             _, info = self.comment_api.comment_find(comments, '::'.join([self.bot_name, repository]))
             if info:
                 return info.get('build')
+        else:
+            filename = self.project_pseudometa_file_name(project, repository)
+            content = project_pseudometa_file_load(self.apiurl, project, filename)
+            if content:
+                return content.splitlines()[0]
 
         return None
 
@@ -391,7 +391,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         published = repositories_published(self.apiurl, repository_pairs)
 
         if not self.force:
-            if state_hash == self.repository_state_last(project, repository, not simulate_merge):
+            if state_hash == self.repository_state_last(project, repository, simulate_merge):
                 self.logger.info('{} build unchanged'.format(project))
                 # TODO keep track of skipped count for cycle summary
                 return None
