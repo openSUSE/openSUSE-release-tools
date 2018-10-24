@@ -331,7 +331,7 @@ def ingest_release_schedule(project):
 
         # Extract Factory "release schedule" from Tumbleweed snapshot list.
         command = 'rsync rsync.opensuse.org::opensuse-full/opensuse/tumbleweed/iso/Changes.* | ' \
-            'grep -oP "Changes\.\K\d{5,}"'
+            'grep -oP "' + r'Changes\.\K\d{5,}' + '"'
         snapshots = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).communicate()[0]
         for date in snapshots.split():
             release_schedule[datetime.strptime(date, '%Y%m%d')] = 'Snapshot {}'.format(date)
@@ -547,9 +547,9 @@ def main(args):
     if args.wipe_cache:
         Cache.delete_all()
     if args.heavy_cache:
-        Cache.PATTERNS['/search/request'] = sys.maxint
-        Cache.PATTERNS['/source/[^/]+/{}/_history'.format(package)] = sys.maxint
-    Cache.PATTERNS['/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxint
+        Cache.PATTERNS[r'/search/request'] = sys.maxint
+        Cache.PATTERNS[r'/source/[^/]+/{}/_history'.format(package)] = sys.maxint
+    Cache.PATTERNS[r'/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxint
     Cache.init('metrics')
 
     Config(apiurl, args.project)

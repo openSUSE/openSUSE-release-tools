@@ -265,7 +265,7 @@ class StagingAPI(object):
         return package_info
 
     def extract_specfile_short(self, filelist):
-        packages = [spec[:-5] for spec in filelist if re.search('\.spec$', spec)]
+        packages = [spec[:-5] for spec in filelist if re.search(r'\.spec$', spec)]
 
         return packages
 
