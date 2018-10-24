@@ -388,7 +388,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             project, repository, state_hash, len(repository_pairs)))
 
         archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
-        published = repositories_published(self.apiurl, repository_pairs)
+        published = repositories_published(self.apiurl, repository_pairs, archs)
 
         if not self.force:
             if state_hash == self.repository_state_last(project, repository, simulate_merge):
