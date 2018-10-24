@@ -117,6 +117,15 @@ class RepoChecker(ReviewBot.ReviewBot):
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
 
+    @memoize(session=True)
+    def target_archs_from_prairs(self, repository_pairs, simulate_merge):
+        if simulate_merge:
+            # Restrict top layer archs to the whitelisted archs from merge layer.
+            return set(target_archs(self.apiurl, repository_pairs[0][0], repository_pairs[0][1])).intersection(
+                   set(self.target_archs(repository_pairs[1][0], repository_pairs[1][1])))
+
+        return self.target_archs(repository_pairs[0][0], repository_pairs[0][1])
+
     @memoize(ttl=60, session=True, add_invalidate=True)
     def mirror(self, project, repository, arch):
         """Call bs_mirrorfull script to mirror packages."""
@@ -375,6 +384,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
+        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
         published = repositories_published(self.apiurl, repository_pairs)
 
         if not self.force:
@@ -395,14 +405,9 @@ class RepoChecker(ReviewBot.ReviewBot):
         # Drop non-published repository information and thus reduce to boolean.
         published = published is True
 
-        if simulate_merge:
-            # Restrict top layer archs to the whitelisted archs from merge layer.
-            archs = set(target_archs(self.apiurl, project, repository)).intersection(
-                    set(self.target_archs(repository_pairs[1][0], repository_pairs[1][1])))
-        else:
+        if not simulate_merge:
             # Top of pseudometa file.
             comment.append(state_hash)
-            archs = self.target_archs(project, repository)
 
             if post_comments:
                 # Stores parsed install_check() results grouped by package.
