@@ -71,32 +71,32 @@ class Cache(object):
     TTL_SHORT = 5 * 60
     TTL_DUPLICATE = 3
     PATTERNS = {
-        '/build/[^/]+/_result': TTL_DUPLICATE,
+        r'/build/[^/]+/_result': TTL_DUPLICATE,
         # For cycles when run via repo-checker cache non-stagings.
-        '/build/(?:[^/](?!:Staging:))+/[^/]+/[^/]+/_builddepinfo$': TTL_MEDIUM,
+        r'/build/(?:[^/](?!:Staging:))+/[^/]+/[^/]+/_builddepinfo$': TTL_MEDIUM,
         # Group members cannot be guaranteed, but change rarely.
-        '/group/[^/?]+$': TTL_SHORT,
+        r'/group/[^/?]+$': TTL_SHORT,
         # Clear target project cache upon request acceptance.
-        '/request/(\d+)\?.*newstate=accepted': TTL_DUPLICATE,
-        "/search/package\?match=\[@project='([^']+)'\]$": TTL_LONG,
+        r'/request/(\d+)\?.*newstate=accepted': TTL_DUPLICATE,
+        r"/search/package\?match=\[@project='([^']+)'\]$": TTL_LONG,
         # Potentially expire the latest_updated since it will be the only way to
         # tell after an adi staging is removed. For now just cache the calls
         # that occur in rapid succession.
-        "/search/project/id\?match=starts-with\(@name,'([^']+)\:'\)$": TTL_DUPLICATE,
+        r"/search/project/id\?match=starts-with\(@name,'([^']+)\:'\)$": TTL_DUPLICATE,
         # List of all projects may change, but relevant ones rarely.
-        '/source$': TTL_LONG,
+        r'/source$': TTL_LONG,
         # Sources will be expired with project, could be done on package level.
-        '/source/([^/?]+)(?:\?.*)?$': TTL_LONG,
+        r'/source/([^/?]+)(?:\?.*)?$': TTL_LONG,
         # Project will be marked changed when packages are added/removed.
-        '/source/([^/]+)/_meta$': TTL_LONG,
-        '/source/([^/]+)/(?:[^/]+)/(?:_meta|_link)$': TTL_LONG,
-        '/source/([^/]+)/dashboard/[^/]+': TTL_LONG,
-        '/source/([^/]+)/_attribute/[^/]+': TTL_MEDIUM,
+        r'/source/([^/]+)/_meta$': TTL_LONG,
+        r'/source/([^/]+)/(?:[^/]+)/(?:_meta|_link)$': TTL_LONG,
+        r'/source/([^/]+)/dashboard/[^/]+': TTL_LONG,
+        r'/source/([^/]+)/_attribute/[^/]+': TTL_MEDIUM,
         # Handles clearing local cache on package deletes. Lots of queries like
         # updating project info, comment, and package additions.
-        '/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_LONG,
+        r'/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_LONG,
         # Presumably users are not interweaving in short windows.
-        '/statistics/latest_updated': TTL_SHORT,
+        r'/statistics/latest_updated': TTL_SHORT,
     }
 
     last_updated = {}

@@ -487,7 +487,7 @@ class PkgListGen(ToolBase.ToolBase):
                     # only comment first time
                     comment = None
                     x = ET.tostring(x, pretty_print=True)
-                    x = re.sub('\s*<!-- reason:', ' <!-- reason:', x)
+                    x = re.sub(r'\s*<!-- reason:', ' <!-- reason:', x)
                     # fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
                     fh.write(x)
         return summary

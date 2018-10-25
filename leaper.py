@@ -164,7 +164,7 @@ class Leaper(ReviewBot.ReviewBot):
 
             if review_result == None:
                 other_projects_to_check = []
-                m = re.match('SUSE:SLE-(\d+)(?:-SP(\d+)):', target_project)
+                m = re.match(r'SUSE:SLE-(\d+)(?:-SP(\d+)):', target_project)
                 if m:
                     sle_version = int(m.group(1))
                     sp_version = int(m.group(2))

@@ -689,7 +689,7 @@ class OBS(object):
 
         return response
 
-    @DELETE(re.compile('/source/openSUSE:Factory:Staging:[B|C]/\w+'))
+    @DELETE(re.compile(r'/source/openSUSE:Factory:Staging:[B|C]/\w+'))
     def delete_package(self, request, uri, headers):
         """Delete a source package from a Staging project."""
         package = re.search(r'/source/([\w:]+/\w+)', uri).group(1)

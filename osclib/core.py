@@ -28,7 +28,7 @@ from osclib.conf import Config
 from osclib.memoize import memoize
 
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
-RPM_REGEX = BINARY_REGEX + '\.rpm'
+RPM_REGEX = BINARY_REGEX + r'\.rpm'
 BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
 
 @memoize(session=True)
