@@ -392,31 +392,34 @@ def repository_arch_state(apiurl, project, repository, arch):
     from osclib.util import sha1_short
     return sha1_short(http_GET(url).read())
 
-def repository_state(apiurl, project, repository):
+def repository_state(apiurl, project, repository, archs=[]):
+    if not len(archs):
+        archs = target_archs(apiurl, project, repository)
+
     # Unfortunately, the state hash reflects the published state and not the
     # binaries published in repository. As such request binary list and hash.
     combined_state = []
-    for arch in target_archs(apiurl, project, repository):
+    for arch in archs:
         combined_state.append(repository_arch_state(apiurl, project, repository, arch))
     from osclib.util import sha1_short
     return sha1_short(combined_state)
 
-def repositories_states(apiurl, repository_pairs):
+def repositories_states(apiurl, repository_pairs, archs=[]):
     states = []
 
     for project, repository in repository_pairs:
-        states.append(repository_state(apiurl, project, repository))
+        states.append(repository_state(apiurl, project, repository, archs))
 
     return states
 
-def repository_published(apiurl, project, repository):
+def repository_published(apiurl, project, repository, archs=[]):
     root = ETL.fromstringlist(show_results_meta(
-        apiurl, project, multibuild=True, repository=[repository]))
+        apiurl, project, multibuild=True, repository=[repository], arch=archs))
     return not len(root.xpath('result[@state!="published" and @state!="unpublished"]'))
 
-def repositories_published(apiurl, repository_pairs):
+def repositories_published(apiurl, repository_pairs, archs=[]):
     for project, repository in repository_pairs:
-        if not repository_published(apiurl, project, repository):
+        if not repository_published(apiurl, project, repository, archs):
             return (project, repository)
 
     return True

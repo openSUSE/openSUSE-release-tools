@@ -64,7 +64,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             return
 
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, False)
         self.repository_check(repository_pairs, state_hash, False, bool(post_comments))
 
     def package_comments(self, project, repository):
@@ -116,6 +116,15 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
+
+    @memoize(session=True)
+    def target_archs_from_prairs(self, repository_pairs, simulate_merge):
+        if simulate_merge:
+            # Restrict top layer archs to the whitelisted archs from merge layer.
+            return set(target_archs(self.apiurl, repository_pairs[0][0], repository_pairs[0][1])).intersection(
+                   set(self.target_archs(repository_pairs[1][0], repository_pairs[1][1])))
+
+        return self.target_archs(repository_pairs[0][0], repository_pairs[0][1])
 
     @memoize(ttl=60, session=True, add_invalidate=True)
     def mirror(self, project, repository, arch):
@@ -347,24 +356,27 @@ class RepoChecker(ReviewBot.ReviewBot):
         return filename
 
     @memoize(ttl=60, session=True)
-    def repository_state(self, repository_pairs):
-        states = repositories_states(self.apiurl, repository_pairs)
-        states.append(str(project_meta_revision(self.apiurl, repository_pairs[0][0])))
+    def repository_state(self, repository_pairs, simulate_merge):
+        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
+        states = repositories_states(self.apiurl, repository_pairs, archs)
+
+        if simulate_merge:
+            states.append(str(project_meta_revision(self.apiurl, repository_pairs[0][0])))
 
         return sha1_short(states)
 
     @memoize(ttl=60, session=True)
-    def repository_state_last(self, project, repository, pseudometa):
-        if pseudometa:
-            filename = self.project_pseudometa_file_name(project, repository)
-            content = project_pseudometa_file_load(self.apiurl, project, filename)
-            if content:
-                return content.splitlines()[0]
-        else:
+    def repository_state_last(self, project, repository, simulate_merge):
+        if simulate_merge:
             comments = self.comment_api.get_comments(project_name=project)
             _, info = self.comment_api.comment_find(comments, '::'.join([self.bot_name, repository]))
             if info:
                 return info.get('build')
+        else:
+            filename = self.project_pseudometa_file_name(project, repository)
+            content = project_pseudometa_file_load(self.apiurl, project, filename)
+            if content:
+                return content.splitlines()[0]
 
         return None
 
@@ -375,10 +387,11 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
-        published = repositories_published(self.apiurl, repository_pairs)
+        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
+        published = repositories_published(self.apiurl, repository_pairs, archs)
 
         if not self.force:
-            if state_hash == self.repository_state_last(project, repository, not simulate_merge):
+            if state_hash == self.repository_state_last(project, repository, simulate_merge):
                 self.logger.info('{} build unchanged'.format(project))
                 # TODO keep track of skipped count for cycle summary
                 return None
@@ -395,14 +408,9 @@ class RepoChecker(ReviewBot.ReviewBot):
         # Drop non-published repository information and thus reduce to boolean.
         published = published is True
 
-        if simulate_merge:
-            # Restrict top layer archs to the whitelisted archs from merge layer.
-            archs = set(target_archs(self.apiurl, project, repository)).intersection(
-                    set(self.target_archs(repository_pairs[1][0], repository_pairs[1][1])))
-        else:
+        if not simulate_merge:
             # Top of pseudometa file.
             comment.append(state_hash)
-            archs = self.target_archs(project, repository)
 
             if post_comments:
                 # Stores parsed install_check() results grouped by package.
@@ -561,7 +569,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, True)
         if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
@@ -603,7 +611,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, True)
         if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
@@ -618,7 +626,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
-        state_hash = self.repository_state(repository_pairs)
+        state_hash = self.repository_state(repository_pairs, True)
         if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
