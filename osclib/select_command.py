@@ -75,7 +75,7 @@ class SelectCommand(object):
             # 'select' command becomes a 'move'
             # supersede = (new_rq, package, project)
             fprj = self.api.packages_staged[staged_requests[request]]['prj'] if not supersede else supersede[2]
-            if filter_from != fprj:
+            if filter_from and filter_from != fprj:
                 print('Ignoring "{}" in "{}" since not in "{}"'.format(request, fprj, filter_from))
                 return True
 
