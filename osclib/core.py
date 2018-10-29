@@ -413,6 +413,19 @@ def repositories_states(apiurl, repository_pairs, archs=[]):
     return states
 
 def repository_published(apiurl, project, repository, archs=[]):
+    # In a perfect world this would check for the existence of imports from i586
+    # into x86_64, but in an even more perfect world OBS would show archs that
+    # depend on another arch for imports as not completed until the dependent
+    # arch completes. This is a simplified check that ensures x86_64 repos are
+    # not indicated as published when i586 has not finished which is primarily
+    # useful for repo_checker when only checking x86_64. The API treats archs as
+    # a filter on what to return and thus non-existent archs do not cause an
+    # issue nor alter the result.
+    if 'x86_64' in archs and 'i586' not in archs:
+        # Create a copy to avoid altering caller's list.
+        archs = list(archs)
+        archs.append('i586')
+
     root = ETL.fromstringlist(show_results_meta(
         apiurl, project, multibuild=True, repository=[repository], arch=archs))
     return not len(root.xpath('result[@state!="published" and @state!="unpublished"]'))
