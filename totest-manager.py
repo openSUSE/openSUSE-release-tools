@@ -453,35 +453,41 @@ class ToTestBase(object):
 
         return True
 
-    def _release_package(self, project, package, set_release=None):
+    def _release_package(self, project, package, set_release=None, repository=None,
+                         target_project=None, target_repository=None):
         query = {'cmd': 'release'}
 
         if set_release:
             query['setrelease'] = set_release
 
-        # FIXME: make configurable. openSUSE:Factory:ARM currently has multiple
-        # repos with release targets, so obs needs to know which one to release
-        if project == 'openSUSE:Factory:ARM':
-            query['repository'] = 'images'
+        if repository is not None:
+            query['repository'] = repository
+
+        if target_project is not None:
+            # Both need to be set
+            query['target_project'] = target_project
+            query['target_repository'] = target_repository
 
         baseurl = ['source', project, package]
 
         url = self.api.makeurl(baseurl, query=query)
         if self.dryrun or self.norelease:
-            logger.info("release %s/%s (%s)" % (project, package, set_release))
+            logger.info("release %s/%s (%s)" % (project, package, query))
         else:
             self.api.retried_POST(url)
 
     def _release(self, set_release=None):
         for product in self.ftp_products:
-            self._release_package(self.project, product)
+            self._release_package(self.project, product, repository=self.product_repo)
 
         for cd in self.livecd_products:
             self._release_package('%s:Live' %
-                                  self.project, cd, set_release=set_release)
+                                  self.project, cd, set_release=set_release,
+                                  repository=self.livecd_repo)
 
         for cd in self.main_products:
-            self._release_package(self.project, cd, set_release=set_release)
+            self._release_package(self.project, cd, set_release=set_release,
+                                  repository=self.product_repo)
 
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
