@@ -505,7 +505,8 @@ class ToTestBase(object):
         logger.info('Publish test project content')
         if not (self.dryrun or self.norelease):
             self.api.switch_flag_in_prj(
-                self.test_project, flag='publish', state='enable')
+                self.test_project, flag='publish', state='enable',
+                repository=self.product_repo)
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
@@ -518,7 +519,9 @@ class ToTestBase(object):
             return True
 
         for flag in root.find('publish'):
-            if flag.get('repository', None) or flag.get('arch', None):
+            if flag.get('repository', None) not in [None, self.product_repo]:
+                continue
+            if flag.get('arch', None):
                 continue
             if flag.tag == 'enable':
                 return True
