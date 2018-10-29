@@ -54,6 +54,10 @@ class ToTestBase(object):
     livecd_repo = 'images'
     livecd_archs = ['i586', 'x86_64']
 
+    main_products = []
+    ftp_products = []
+    livecd_products = []
+
     def __init__(self, project, dryrun=False, norelease=False, api_url=None, openqa_server='https://openqa.opensuse.org', test_subproject=None):
         self.project = project
         self.dryrun = dryrun
@@ -737,8 +741,6 @@ class ToTestFactoryPowerPC(ToTestBase):
 
     ftp_products = ['000product:openSUSE-ftp-ftp-ppc64_ppc64le']
 
-    livecd_products = []
-
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
 
@@ -760,8 +762,6 @@ class ToTestFactoryzSystems(ToTestBase):
                      '000product:openSUSE-cd-mini-s390x']
 
     ftp_products = ['000product:openSUSE-ftp-ftp-s390x']
-
-    livecd_products = []
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
@@ -814,8 +814,6 @@ class ToTest151(ToTestBaseNew):
                     '000product:openSUSE-Addon-NonOss-ftp-ftp-x86_64'
                     ]
 
-    livecd_products = []
-
     def openqa_group(self):
         return 'openSUSE Leap 15'
 
@@ -862,8 +860,6 @@ class ToTest150Ports(ToTestBaseNew):
                     '000product:openSUSE-ftp-ftp-armv7hl',
                     ]
 
-    livecd_products = []
-
     # Leap 15.0 Ports still need to update snapshot
     set_snapshot_number = True
 
@@ -896,9 +892,6 @@ class ToTest150Images(ToTestBaseNew):
         'kiwi-templates-Leap15-JeOS:kvm-and-xen',
     ]
 
-    ftp_products = []
-
-    livecd_products = []
     product_arch = 'x86_64'
 
     # docker image has a different number
@@ -960,8 +953,6 @@ class ToTestSLE12(ToTestSLE):
         '_product:SLES-ftp-POOL-x86_64',
     ]
 
-    livecd_products = []
-
 class ToTestSLE15(ToTestSLE):
     main_products = [
         '000product:SLES-cd-DVD-aarch64',
@@ -976,8 +967,6 @@ class ToTestSLE15(ToTestSLE):
         '000product:SLES-ftp-POOL-s390x',
         '000product:SLES-ftp-POOL-x86_64',
     ]
-
-    livecd_products = []
 
 
 class CommandlineInterface(cmdln.Cmdln):
