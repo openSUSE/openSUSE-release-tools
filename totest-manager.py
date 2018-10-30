@@ -436,15 +436,14 @@ class ToTestBase(object):
             if not self.package_ok(self.project, product, self.product_repo, self.product_arch):
                 return False
 
-            if len(self.livecd_products):
+        if len(self.livecd_products):
+            if not self.all_repos_done('%s:Live' % self.project):
+                return False
 
-                if not self.all_repos_done('%s:Live' % self.project):
-                    return False
-
-                for arch in self.livecd_archs:
-                    for product in self.livecd_products:
-                        if not self.package_ok('%s:Live' % self.project, product, self.livecd_repo, arch):
-                            return False
+            for arch in self.livecd_archs:
+                for product in self.livecd_products:
+                    if not self.package_ok('%s:Live' % self.project, product, self.livecd_repo, arch):
+                        return False
 
         return True
 
