@@ -399,12 +399,18 @@ class ToTestBase(object):
         url = self.api.makeurl(['build', project, '_result'], query)
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
-        for repo in root.findall('result'):
-            status = repo.find('status')
-            if status.get('code') != 'succeeded':
-                logger.info(
-                    '%s %s %s %s -> %s' % (project, package, repository, arch, status.get('code')))
-                return False
+        succeeded = root.findall('result/status[@code="succeeded"]')
+        # [@code!='succeeded'] is not supported by ET
+        failed = [status for status in root.findall("result/status") if status.get('code') != 'succeeded']
+
+        if len(failed) > 0:
+            logger.info(
+                '%s %s %s %s -> %s' % (project, package, repository, arch, failed[0].get('code')))
+            return False
+
+        if len(succeeded) == 0:
+            logger.info('No results for %s %s %s %s' % (project, package, repository, arch))
+            return False
 
         maxsize = self.maxsize_for_package(package)
         if not maxsize:
