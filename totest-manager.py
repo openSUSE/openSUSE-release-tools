@@ -58,9 +58,11 @@ class ToTestBase(object):
     product_repo = 'images'
     product_arch = 'local'
     livecd_repo = 'images'
+    totest_container_repo = 'containers'
 
     main_products = []
     ftp_products = []
+    container_products = []
     livecd_products = []
     image_products = []
 
@@ -457,7 +459,7 @@ class ToTestBase(object):
             if not self.package_ok(self.project, product, self.product_repo, self.product_arch):
                 return False
 
-        for product in self.image_products:
+        for product in self.image_products + self.container_products:
             for arch in product.archs:
                 if not self.package_ok(self.project, product.package, self.product_repo, arch):
                     return False
@@ -514,6 +516,13 @@ class ToTestBase(object):
             self._release_package(self.project, cd, set_release=set_release,
                                   repository=self.product_repo)
 
+        for container in self.container_products:
+            # Containers are built in the same repo as other image products,
+            # but released into a different repo in :ToTest
+            self._release_package(self.project, container.package, repository=self.product_repo,
+                                  target_project=self.test_project,
+                                  target_repository=self.totest_container_repo)
+
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
@@ -528,6 +537,11 @@ class ToTestBase(object):
             self.api.switch_flag_in_prj(
                 self.test_project, flag='publish', state='enable',
                 repository=self.product_repo)
+        if self.container_products:
+            logger.info('Releasing container products from ToTest')
+            for container in self.container_products:
+                self._release_package(self.test_project, container.package,
+                                      repository=self.totest_container_repo)
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
