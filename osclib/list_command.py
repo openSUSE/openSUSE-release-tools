@@ -29,7 +29,6 @@ class ListCommand:
         if not len(requests): return
 
         splitter = RequestSplitter(self.api, requests, in_ring=True)
-        splitter.filter_add('./action[@type="submit" or @type="delete"]')
         splitter.group_by('./action/target/@devel_project')
         splitter.split()
 
@@ -68,6 +67,7 @@ class ListCommand:
             print 'Not in a ring:', ' '.join(sorted(non_ring_packages))
 
         # Print requests not handled by staging process to highlight them.
+        splitter.stageable = False
         for request_type in ('change_devel', 'set_bugowner'):
             splitter.reset()
             splitter.filter_add('./action[@type="{}"]'.format(request_type))

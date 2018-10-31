@@ -9,10 +9,11 @@ from osclib.core import request_age
 import re
 
 class RequestSplitter(object):
-    def __init__(self, api, requests, in_ring):
+    def __init__(self, api, requests, in_ring, stageable=True):
         self.api = api
         self.requests = requests
         self.in_ring = in_ring
+        self.stageable = stageable
         self.config = conf.config[self.api.project]
 
         # 55 minutes to avoid two staging bot loops of 30 minutes
@@ -37,6 +38,10 @@ class RequestSplitter(object):
         self.filtered = []
         self.other = []
         self.grouped = {}
+
+        if self.stageable:
+            # Require requests to be stageable (submit or delete package).
+            self.filter_add('./action[@type="submit" or (@type="delete" and ./target[@package])]')
 
     def strategy_set(self, name, **kwargs):
         self.reset()
@@ -393,7 +398,6 @@ class Strategy(object):
 
 class StrategyNone(Strategy):
     def apply(self, splitter):
-        splitter.filter_add('./action[not(@type="add_role" or @type="change_devel")]')
         # All other strategies that inherit this are not restricted by age as
         # the age restriction is used to allow other strategies to be observed.
         if type(self) is StrategyNone:
