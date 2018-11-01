@@ -146,12 +146,12 @@ def requests(args):
     apiurl = osc.conf.config['apiurl']
     devel_projects = devel_projects_load(args)
 
+    # Disable including source project in get_request_list() query.
+    osc.conf.config['include_request_from_project'] = False
     for devel_project in devel_projects:
         requests = get_request_list(apiurl, devel_project,
                                     req_state=('new', 'review'),
                                     req_type='submit',
-                                    # Seems to work backwards, as it includes only.
-                                    exclude_target_projects=[devel_project],
                                     withfullhistory=True)
         for request in requests:
             action = request.actions[0]
