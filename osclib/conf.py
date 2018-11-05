@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from ConfigParser import ConfigParser
+from osc import OscConfigParser
 from collections import OrderedDict
 import io
 import os
@@ -235,7 +235,7 @@ class Config(object):
         extra sections.
 
         """
-        cp = ConfigParser(defaults=defaults)
+        cp = OscConfigParser.OscConfigParser(defaults=defaults)
         cp.read(self.conf_file)
         if cp.has_section(section):
             return dict(cp.items(section))
@@ -246,7 +246,7 @@ class Config(object):
         from osclib.core import attribute_value_load
         config = attribute_value_load(apiurl, self.project, 'Config')
         if config:
-            cp = ConfigParser()
+            cp = OscConfigParser.OscConfigParser()
             config = '[remote]\n' + config
             cp.readfp(io.BytesIO(config))
             return dict(cp.items('remote'))

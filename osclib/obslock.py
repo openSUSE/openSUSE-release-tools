@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from datetime import datetime
 import time
 import warnings
@@ -95,7 +97,7 @@ class OBSLock(object):
                         stop = False
 
                 if stop:
-                    print 'Lock acquired by [%s] %s ago, reason <%s>. Try later.' % (user, delta, reason)
+                    print('Lock acquired by [%s] %s ago, reason <%s>. Try later.' % (user, delta, reason))
                     exit(-1)
         self._write(self._signature())
 

@@ -1,7 +1,12 @@
 from __future__ import print_function
 
 import re
-import urllib2
+
+try:
+    from urllib.request import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
 
 from osc import oscerr
 from osc.core import change_review_state
@@ -37,7 +42,7 @@ class RepairCommand(object):
         staging_project = reviews[0]
         try:
             data = self.api.get_prj_pseudometa(staging_project)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 data = None
 

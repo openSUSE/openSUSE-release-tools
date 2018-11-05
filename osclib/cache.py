@@ -7,9 +7,19 @@ import osc.core
 import re
 import shutil
 import sys
-import urlparse
-import urllib
-from StringIO import StringIO
+
+try:
+    from urllib.parse import unquote
+    from urllib.parse import urlsplit, SplitResult
+    from urllib.request import URLError, HTTPError
+    from io import StringIO
+except ImportError:
+    #python 2.x
+    from urlparse import urlsplit, SplitResult
+    from urllib import unquote
+    from urllib2 import URLError, HTTPError
+    from StringIO import StringIO
+
 from osc import conf
 from osc.core import urlopen
 from osclib.cache_manager import CacheManager
@@ -122,7 +132,7 @@ class Cache(object):
 
     @staticmethod
     def get(url):
-        url = urllib.unquote(url)
+        url = unquote(url)
         match, project = Cache.match(url)
         if match:
             path = Cache.path(url, project, include_file=True)
@@ -176,7 +186,7 @@ class Cache(object):
 
     @staticmethod
     def put(url, data):
-        url = urllib.unquote(url)
+        url = unquote(url)
         match, project = Cache.match(url)
         if match:
             path = Cache.path(url, project, include_file=True, makedirs=True)
@@ -189,6 +199,7 @@ class Cache(object):
             # be replaced with urlopen('file://...') to be consistent, but until
             # the need arrises StringIO has less overhead.
             text = data.read()
+            text.decode('utf-8')
             data = StringIO(text)
 
             if conf.config['debug']: print('CACHE_PUT', url, project, file=sys.stderr)
@@ -200,7 +211,7 @@ class Cache(object):
 
     @staticmethod
     def delete(url):
-        url = urllib.unquote(url)
+        url = unquote(url)
         match, project = Cache.match(url)
         if match:
             path = Cache.path(url, project, include_file=True)
@@ -220,9 +231,9 @@ class Cache(object):
 
         # Also delete version without query. This does not handle other
         # variations using different query strings. Handy for PUT with ?force=1.
-        o = urlparse.urlsplit(url)
+        o = urlsplit(url)
         if o.query != '':
-            url_plain = urlparse.SplitResult(o.scheme, o.netloc, o.path, '', o.fragment).geturl()
+            url_plain = SplitResult(o.scheme, o.netloc, o.path, '', o.fragment).geturl()
             Cache.delete(url_plain)
 
     @staticmethod
@@ -250,9 +261,9 @@ class Cache(object):
 
     @staticmethod
     def spliturl(url):
-        o = urlparse.urlsplit(url)
-        apiurl = urlparse.SplitResult(o.scheme, o.netloc, '', '', '').geturl()
-        path = urlparse.SplitResult('', '', o.path, o.query, '').geturl()
+        o = urlsplit(url)
+        apiurl = SplitResult(o.scheme, o.netloc, '', '', '').geturl()
+        path = SplitResult('', '', o.path, o.query, '').geturl()
         return (apiurl, path)
 
     @staticmethod
@@ -262,7 +273,7 @@ class Cache(object):
 
         parts = [Cache.CACHE_DIR]
 
-        o = urlparse.urlsplit(url)
+        o = urlsplit(url)
         parts.append(o.hostname)
 
         if project:
@@ -273,7 +284,7 @@ class Cache(object):
             os.makedirs(directory)
 
         if include_file:
-            parts.append(hashlib.sha1(url).hexdigest())
+            parts.append(hashlib.sha1(url.encode('utf-8')).hexdigest())
             return os.path.join(*parts)
 
         return directory

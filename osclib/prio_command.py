@@ -1,6 +1,13 @@
+from __future__ import print_function
+
 import json
 import osc
-import urllib2
+
+try:
+    from urllib.request import HTTPError
+except ImportError:
+    #python 2.x
+    from urllib2 import HTTPError
 
 class PrioCommand(object):
     def __init__(self, api):
@@ -22,12 +29,12 @@ class PrioCommand(object):
             if req.priority != priority:
                 query = { 'cmd': 'setpriority', 'priority': priority }
                 url = osc.core.makeurl(self.api.apiurl, ['request', reqid], query)
-                print reqid, message
+                print(reqid + ' ' + message)
                 try:
                     osc.core.http_POST(url, data=message)
-                    print reqid, r['by'], priority
-                except urllib2.HTTPError as e:
-                    print e
+                    print(reqid + ' ' + r['by'] + ' ' + priority)
+                except HTTPError as e:
+                    print(e)
 
 
     def perform(self, projects=None, priority=None):
