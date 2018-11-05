@@ -32,6 +32,7 @@ class Project(object):
         self.api = StagingAPI(apiurl, name)
         self.staging_projects = dict()
         self.listener = None
+        self.logger = logging.getLogger(__name__)
         self.replace_string = self.api.attribute_value_load('OpenQAMapping')
 
     def init(self):
@@ -104,7 +105,7 @@ class Project(object):
             taken_names[name] = id
 
         for info in openqa_infos.values():
-            xml = self.openqa_check_xml(info['url'], info['state'], info['name'])
+            xml = self.openqa_check_xml(info['url'], info['state'], 'openqa:' + info['name'])
             try:
                 http_POST(url, data=xml)
             except HTTPError:
@@ -262,11 +263,8 @@ if __name__ == '__main__':
     for entry in root.findall('project'):
         l.add(Project(entry.get('name')))
 
-    while True:
-        try:
-            l.run()
-        except KeyboardInterrupt:
-            l.stop()
-        except (HTTPError, URLError, ConnectionError, SSLError):
-            # OBS/openQA hickup
-            sleep(10)
+    try:
+        l.run()
+    except KeyboardInterrupt:
+        l.stop()
+

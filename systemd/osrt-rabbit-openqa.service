@@ -4,6 +4,7 @@ Description=openSUSE Release Tools: Sync openQA status
 [Service]
 User=osrt-rabbit-openqa
 ExecStart=/usr/bin/osrt-rabbit-openqa
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
