@@ -883,7 +883,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 repository = [ mr.srcrepo for mr in matchrepos],
                 arch = [ mr.arch for mr in matchrepos])
         for result in results:
-            for res in osc.core.result_xml_to_dicts(result):
+            for res, _ in osc.core.result_xml_to_dicts(result):
                 if not 'package' in res or res['package'] != src_srcinfo.package:
                     continue
                 rmap[(res['repository'], res['arch'])] = res
