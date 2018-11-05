@@ -755,8 +755,6 @@ class ToTestFactory(ToTestBase):
                      '000product:openSUSE-cd-mini-x86_64',
                      '000product:openSUSE-Tumbleweed-Kubic-dvd5-dvd-x86_64']
 
-    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['i586', 'x86_64'])]
-
     ftp_products = ['000product:openSUSE-ftp-ftp-i586_x86_64',
                     '000product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
 
@@ -962,6 +960,7 @@ class ToTest150Images(ToTestBaseNew):
         return 13
 
 class ToTest151Images(ToTest150Images):
+    container_products = [ImageProduct('opensuse-leap-image:docker', ['x86_64'])]
 
     def openqa_group(self):
         return 'openSUSE Leap 15.1 Images'
