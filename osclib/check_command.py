@@ -73,15 +73,16 @@ class CheckCommand(object):
                 break
 
         # openQA results
-        if self.api.copenqa:
-            if not project['openqa_jobs']:
-                report.append('   - No openQA result yet')
-            for job in project['openqa_jobs']:
-                if job['result'] != 'passed':
-                    qa_result = job['result'] if job['result'] != 'none' else 'running'
-                    report.append("   - openQA's overall status is %s for %s/tests/%s" % (qa_result, self.api.copenqa, job['id']))
-                    report.extend('     %s: fail' % module['name'] for module in job['modules'] if module['result'] == 'fail')
-                    break
+        for check in project.get('missing_checks', []):
+            report.append('   - Missing check: ' + check)
+
+        for check in project.get('checks', []):
+            if check['state'] != 'success':
+                info = "   - %s check: %s" % (check['state'], check['name'])
+                if check['url']:
+                    info += " " + check['url']
+                report.append(info)
+                break
 
         if project['overall_state'] == 'acceptable':
             report.insert(0, ' ++ Acceptable staging project %s' % project['name'])

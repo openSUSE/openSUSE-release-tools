@@ -1,107 +1,143 @@
 {
-    "overall_state": "building",
-    "broken_packages": [],
-    "building_repositories": [
-        {
-            "arch": "i586",
-            "code": "scheduling",
-            "dirty": "true",
-            "repository": "standard",
-            "state": "scheduling"
-        },
-        {
-            "arch": "x86_64",
-            "code": "building",
-            "dirty": "true",
-            "repository": "standard",
-            "state": "building"
-        },
-        {
-            "arch": "x86_64",
-            "code": "blocked",
-            "repository": "images",
-            "state": "blocked"
-        }
-    ],
-    "description": "requests:\n- {id: 234999, package: kdebase4-openSUSE}\n- {id: 235422, package: yast2-network}\n- {id: 235482, package: libmtp}\n- {id: 235495, package: yast2-kdump}\n- {id: 235524, package: kdebase4-workspace}\n- {id: 235547, package: kiwi}\n",
-    "missing_reviews": [
-        {
-            "by": "opensuse-review-team",
-            "id": 253740,
-            "package": "kiwi",
-            "request": 235547,
-            "state": "new"
-        }
-    ],
-    "name": "openSUSE:Factory:Staging:H",
-    "obsolete_requests": [],
-    "openqa_jobs": [
-        {
-            "clone_id": null,
-            "id": 10661,
-            "iso": null,
-            "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-cryptlvm",
-            "result": "passed",
-            "state": "done",
-	    "modules": [
-		{
-		    "name": "isosize",
-		    "result": "ok"
-		},
-		{
-		    "name": "livecdreboot",
-		    "result": "ok"
-		},
-		{
-		    "name": "first_boot",
-		    "result": "ok"
-		}
-	    ]
-        },
-        {
-            "clone_id": null,
-            "id": 10660,
-            "iso": null,
-            "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-RAID1",
-            "result": "failed",
-            "state": "done",
-	    "modules": [
-		{
-		    "name": "isosize",
-		    "result": "ok"
-		},
-		{
-		    "name": "livecdreboot",
-		    "result": "fail"
-		},
-		{
-		    "name": "first_boot",
-		    "result": "na"
-		}
-	    ]
-        },
-        {
-            "clone_id": null,
-            "id": 10659,
-            "iso": null,
-            "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-minimalx",
-            "result": "passed",
-            "state": "done",
-	    "modules": [
-		{
-		    "name": "isosize",
-		    "result": "ok"
-		},
-		{
-		    "name": "livecdreboot",
-		    "result": "na"
-		},
-		{
-		    "name": "first_boot",
-		    "result": "ok"
-		}
-	    ]
-        }
-    ],
-    "untracked_requests": []
+   "selected_requests" : [
+      {
+         "superseded_by" : null,
+         "package" : "kernel-source",
+         "project" : "openSUSE:Factory",
+         "state" : "review",
+         "approver" : null,
+         "description" : "4.19 (let's not supersede 4.18.16 to have this pending as I assume there will be some problems in staging again)",
+         "id" : 1152735,
+         "updated_at" : "2018-11-02T04:26:34.024Z",
+         "request_type" : "submit",
+         "superseded_by_id" : null,
+         "priority" : "moderate",
+         "accept_at" : null,
+         "creator" : "jirislaby",
+         "number" : 643881,
+         "created_at" : "2018-10-23T06:31:44.000Z",
+         "updated_when" : "2018-11-02T04:26:34.024Z"
+      }
+   ],
+   "obsolete_requests" : [],
+   "broken_packages" : [],
+   "missing_checks" : [],
+   "name" : "openSUSE:Factory:Staging:H",
+   "checks" : [
+      {
+         "short_description" : null,
+         "name" : "openqa:minimalx@64bit",
+         "updated_at" : "2018-11-09T13:47:06.000Z",
+         "state" : "success",
+         "id" : 3906,
+         "created_at" : "2018-11-09T12:53:23.000Z",
+         "status_reports_id" : 411,
+         "url" : "https://openqa.opensuse.org/tests/790707"
+      },
+      {
+         "state" : "success",
+         "id" : 3909,
+         "updated_at" : "2018-11-09T12:56:00.000Z",
+         "status_reports_id" : 411,
+         "url" : "https://openqa.opensuse.org/tests/790708",
+         "created_at" : "2018-11-09T12:53:23.000Z",
+         "short_description" : null,
+         "name" : "openqa:rescue_system"
+      },
+      {
+         "short_description" : null,
+         "name" : "openqa:minimalx@uefi-staging",
+         "created_at" : "2018-11-09T12:53:23.000Z",
+         "status_reports_id" : 411,
+         "url" : "https://openqa.opensuse.org/tests/790709",
+         "updated_at" : "2018-11-09T13:47:31.000Z",
+         "state" : "success",
+         "id" : 3912
+      },
+      {
+         "short_description" : null,
+         "name" : "openqa:RAID0",
+         "status_reports_id" : 411,
+         "url" : "https://openqa.opensuse.org/tests/790710",
+         "created_at" : "2018-11-09T12:53:23.000Z",
+         "state" : "success",
+         "id" : 3915,
+         "updated_at" : "2018-11-09T13:32:09.000Z"
+      },
+      {
+         "updated_at" : "2018-11-09T13:51:17.000Z",
+         "state" : "success",
+         "id" : 3918,
+         "created_at" : "2018-11-09T12:53:24.000Z",
+         "status_reports_id" : 411,
+         "url" : "https://openqa.opensuse.org/tests/790711",
+         "short_description" : null,
+         "name" : "openqa:cryptlvm"
+      },
+      {
+         "url" : "https://openqa.opensuse.org/tests/790712",
+         "status_reports_id" : 411,
+         "created_at" : "2018-11-09T12:53:25.000Z",
+         "id" : 3921,
+         "state" : "success",
+         "updated_at" : "2018-11-09T14:02:05.000Z",
+         "name" : "openqa:gnome",
+         "short_description" : null
+      },
+      {
+         "short_description" : null,
+         "name" : "openqa:kde@64bit",
+         "updated_at" : "2018-11-09T14:22:48.000Z",
+         "state" : "success",
+         "id" : 3924,
+         "created_at" : "2018-11-09T12:53:25.000Z",
+         "status_reports_id" : 411,
+         "url" : "https://openqa.opensuse.org/tests/790713"
+      },
+      {
+         "created_at" : "2018-11-09T12:53:25.000Z",
+         "url" : "https://openqa.opensuse.org/tests/790714",
+         "status_reports_id" : 411,
+         "updated_at" : "2018-11-09T14:21:51.000Z",
+         "id" : 3927,
+         "state" : "success",
+         "name" : "openqa:kde@USBboot_64",
+         "short_description" : null
+      },
+      {
+         "id" : 3930,
+         "state" : "failure",
+         "updated_at" : "2018-11-09T13:09:16.000Z",
+         "url" : "https://openqa.opensuse.org/tests/790715#step/partitioning/2",
+         "status_reports_id" : 411,
+         "created_at" : "2018-11-09T12:53:26.000Z",
+         "name" : "openqa:textmode",
+         "short_description" : null
+      },
+      {
+         "short_description" : null,
+         "name" : "openqa:update_staging",
+         "state" : "success",
+         "id" : 3933,
+         "updated_at" : "2018-11-09T13:39:36.000Z",
+         "status_reports_id" : 411,
+         "url" : "https://openqa.opensuse.org/tests/790716",
+         "created_at" : "2018-11-09T12:53:26.000Z"
+      },
+      {
+         "name" : "openqa:RAID1",
+         "short_description" : null,
+         "created_at" : "2018-11-09T12:53:26.000Z",
+         "url" : "https://openqa.opensuse.org/tests/790717",
+         "status_reports_id" : 411,
+         "updated_at" : "2018-11-09T14:12:49.000Z",
+         "id" : 3936,
+         "state" : "success"
+      }
+   ],
+   "untracked_requests" : [],
+   "missing_reviews" : [],
+   "overall_state" : "failed",
+   "description" : "requests:\n- {author: jirislaby, id: 643881, package: kernel-source, type: submit}\nrequests_comment: 21343\nsplitter_info:\n  activated: '2018-10-23 06:12:35.646967'\n  group: kernel-source\n  strategy: {name: special}\n",
+   "building_repositories" : []
 }
