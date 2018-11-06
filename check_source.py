@@ -16,6 +16,7 @@ import osc.core
 from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
+from osclib.core import group_members
 import urllib2
 import ReviewBot
 from osclib.conf import str2bool
@@ -174,10 +175,13 @@ class CheckSource(ReviewBot.ReviewBot):
 
             if self.only_changes():
                 self.logger.debug('only .changes modifications')
-                if self.staging_group and not self.dryrun:
-                    osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
-                        by_group=self.staging_group,
-                        message='skipping the staging process since only .changes modifications')
+                if self.staging_group and self.review_user in group_members(self.apiurl, self.staging_group):
+                    if not self.dryrun:
+                        osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
+                            by_group=self.staging_group,
+                            message='skipping the staging process since only .changes modifications')
+                else:
+                    self.logger.debug('unable to skip staging review since not a member of staging group')
             elif self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
