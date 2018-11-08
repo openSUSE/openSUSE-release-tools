@@ -817,7 +817,7 @@ class ToTest151(ToTestBaseNew):
         return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
 
-class ToTest151ARM(ToTestBaseNew):
+class ToTest151ARM(ToTest151):
     main_products = [
         '000product:openSUSE-cd-mini-aarch64',
         '000product:openSUSE-dvd5-dvd-aarch64',
@@ -832,18 +832,14 @@ class ToTest151ARM(ToTestBaseNew):
 
     # Leap 15.1 ARM still need to update snapshot
     set_snapshot_number = True
-
-    # product_repo openqa_group jobs_num values are specific to aarch64
-    # TODO: How to handle the other entries of main_products ?
+    # JeOS doesn't follow build numbers of main isos
+    need_same_build_number = False
 
     def openqa_group(self):
         return 'openSUSE Leap 15 AArch64'
 
     def jobs_num(self):
         return 10
-
-    def get_current_snapshot(self):
-        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
 
 class ToTest150Ports(ToTestBaseNew):
