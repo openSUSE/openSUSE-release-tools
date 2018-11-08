@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OSRT Staging Move Drag-n-Drop
 // @namespace    openSUSE/openSUSE-release-tools
-// @version      0.1.0
+// @version      0.2.0
 // @description  Provide staging request moving interface on staging dashboard.
 // @author       Jimmy Berry
 // @match        */project/staging_projects/*
@@ -16,10 +16,25 @@
 
 (function()
 {
+    // Exclude not usable browsers.
+    if (!document.querySelectorAll || !('draggable' in document.createElement('span'))) {
+        return;
+    }
+
+    // Ensure user is logged in.
+    if (!document.querySelector('#link-to-user-home')) {
+        return;
+    }
+
     // Add explanation of trigger shortcut to legend box.
     var explanation = document.createElement('div');
     explanation.id = 'osrt-explanation';
-    explanation.innerText = 'press ctrl+m to move requests';
+    explanation.innerText = 'enter move mode';
+    explanation.setAttribute('title', 'ctrl + m');
+    explanation.onclick = function() {
+        initMoveInterface();
+        this.onclick = null;
+    };
     document.querySelector('#legends').appendChild(explanation);
 
     window.onkeyup = function(e) {
@@ -35,6 +50,12 @@
     padding: 10px;
     background-color: #d9b200;
     color: white;
+    cursor: pointer;
+}
+
+#osrt-explanation.osrt-active
+{
+    cursor: default;
 }
 
 #osrt-summary
@@ -43,13 +64,55 @@
     z-index: 10000;
     bottom: 0;
     left: 0;
-    width: 95%;
-    height: 100px;
-    padding: 10px;
-    background-color: black;
-    color: #18f018;
-    white-space: pre;
-    overflow: scroll;
+    width: 100%%;
+    height: 2em;
+    padding-top: 0.7em;
+    text-align: center;
+    background-color: white;
+}
+
+#osrt-summary button
+{
+    margin-left: 10px;
+}
+
+#osrt-summary progress
+{
+    display: none;
+}
+
+#osrt-summary.osrt-progress progress
+{
+    display: inline;
+}
+
+#osrt-summary.osrt-progress span,
+#osrt-summary.osrt-progress button,
+#osrt-summary.osrt-success button
+{
+    display: none;
+}
+
+#osrt-summary.osrt-failed
+{
+    background-color: red;
+    color: white;
+}
+
+#osrt-summary.osrt-failed span
+{
+    display: inline;
+}
+
+#osrt-summary.osrt-failed progress
+{
+    display: none;
+}
+
+#osrt-summary.osrt-success
+{
+    background-color: green;
+    color: white;
 }
 
 /* drop target state */
@@ -91,19 +154,7 @@
 
 })();
 
-var initMoveInterface = function(){
-    //exclude older browsers by the features we need them to support
-    //and legacy opera explicitly so we don't waste time on a dead browser
-    if
-    (
-        !document.querySelectorAll
-        ||
-        !('draggable' in document.createElement('span'))
-        ||
-        window.opera
-    )
-    { return; }
-
+var initMoveInterface = function() {
     // Update explanation text and add new legend entries.
     function addLegend(type)
     {
@@ -118,7 +169,10 @@ var initMoveInterface = function(){
     addLegend('Moved');
     addLegend('Selected');
 
-    document.querySelector('#osrt-explanation').innerText = 'move mode activated: drag box around requests or ctrl/shift+click requests to select and drag a request to another staging.';
+    var explanation = document.querySelector('#osrt-explanation');
+    explanation.innerText = 'drag box around requests or ctrl/shift + click requests to select and drag a request to another staging.';
+    explanation.setAttribute('title', 'move mode activated');
+    explanation.classList.add('osrt-active');
 
     // @resource will not work since served without proper MIME type.
     $.get('https://raw.githubusercontent.com/p34eu/selectables/master/selectables.css', function(data, status) {
@@ -143,7 +197,7 @@ var initMoveInterface = function(){
             e.osrtContinue = (e.target.getAttribute('data-draggable') != 'item' &&
                               e.target.tagName != 'A' &&
                               e.target.tagName != 'LABEL' &&
-                              e.target.id != 'osrt-summary');
+                              !e.target.id.startsWith('osrt-'));
         },
         // Abuse key option by setting the value in start callback whic is run
         // first and the value determines if drag selection is started.
@@ -171,38 +225,96 @@ var initMoveInterface = function(){
         return parent.querySelector('div.letter a').innerText;
     }
 
+    var summary = {};
     function updateSummary()
     {
         var summaryElement = document.querySelector('div#osrt-summary');
         if (!summaryElement) {
             summaryElement = document.createElement('div');
             summaryElement.id = 'osrt-summary';
+            summaryElement.appendChild(document.createElement('span'))
+
+            var button = document.createElement('button');
+            button.innerText = 'Apply';
+            button.onclick = applyChanges;
+            summaryElement.appendChild(button);
+
+            summaryElement.appendChild(document.createElement('progress'))
             document.body.appendChild(summaryElement);
         }
 
         var elements = document.querySelectorAll('.osrt-moved');
-        var summary = {};
+        summary = {};
         var staging;
         for (var i = 0; i < elements.length; i++) {
             staging = getStaging(elements[i]);
+            if (!isNaN(staging)) {
+                staging = 'adi:' + staging;
+            }
             if (!(staging in summary)) {
                 summary[staging] = [];
             }
             summary[staging].push(elements[i].children[0].innerText.trim());
         }
 
-        var summaryText = '';
+        summaryElement.children[0].innerText = elements.length + ' request(s) to move affecting ' + Object.keys(summary).length + ' stagings(s)';
+        summaryElement.children[2].setAttribute('max', elements.length);
+    }
+
+    function applyChanges()
+    {
+        var summaryElement = document.querySelector('div#osrt-summary');
+        summaryElement.classList.add('osrt-progress');
+
+        var user = document.querySelector('#link-to-user-home').innerText.trim();
         var pathParts = window.location.pathname.split('/');
         var project = pathParts[pathParts.length - 1];
-        for (var key in summary) {
-            staging = key;
-            if (!isNaN(key)) {
-                staging = 'adi:' + key;
-            }
-            summaryText += 'osc staging -p ' + project + ' select --move ' + staging + ' ' + summary[key].join(' ') + "\n";
+
+        var data = JSON.stringify({'user': user, 'project': project, 'move': true, 'selection': summary});
+        var domain_parent = window.location.hostname.split('.').splice(1).join('.');
+        var subdomain = domain_parent.endsWith('suse.de') ? 'tortuga' : 'operator';
+        var url = 'https://' + subdomain + '.' + domain_parent + '/select';
+        $.post({url: url, data: data, crossDomain: true, xhrFields: {withCredentials: true},
+                success: applyChangesSuccess}).fail(applyChangesFailed);
+    }
+
+    function applyChangesSuccess(data)
+    {
+        // Could provide link to this in UI.
+        console.log(data);
+
+        var summaryElement = document.querySelector('div#osrt-summary');
+        summaryElement.classList.add('osrt-complete');
+        if (data.trim().endsWith('failed')) {
+            applyChangesFailed();
+            return;
         }
 
-        summaryElement.innerText = summaryText;
+        var expected = summaryElement.children[2].getAttribute('max');
+        if ((data.match(/\(\d+\/\d+\)/g) || []).length == expected) {
+            summaryElement.children[0].innerText = 'Moved ' + expected + ' request(s).';
+            summaryElement.children[2].setAttribute('value', expected);
+            summaryElement.classList.add('osrt-success');
+            summaryElement.classList.remove('osrt-progress');
+
+            // Could reset UI in a more elegant way.
+            reloadShortly();
+            return;
+        }
+
+        applyChangesFailed();
+    }
+
+    function applyChangesFailed()
+    {
+        var summaryElement = document.querySelector('div#osrt-summary');
+        summaryElement.children[0].innerText = 'Failed to move requests.';
+        summaryElement.classList.add('osrt-failed');
+    }
+
+    function reloadShortly()
+    {
+        setTimeout(function() { window.location.reload(); }, 3000);
     }
 
     //get the collection of draggable targets and add their draggable attribute

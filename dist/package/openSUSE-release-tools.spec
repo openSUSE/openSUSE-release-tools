@@ -199,6 +199,17 @@ Requires:       build
 Requires:       perl-XML-Simple
 Requires(pre):  shadow
 
+%package obs-operator
+Summary:        Server used to perform staging operations
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       osc-plugin-staging = %{version}
+Requires(pre):  shadow
+
+%description obs-operator
+Server used to perform staging operations as a service instead of requiring
+the osc staging plugin to be utilized directly.
+
 %description repo-checker
 Repository checker service that inspects built RPMs from stagings.
 
@@ -365,6 +376,17 @@ exit 0
 # If grafana-server.service is enabled then restart it to load new dashboards.
 if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled grafana-server ; then
   /usr/bin/systemctl try-restart --no-block grafana-server
+fi
+
+%pre obs-operator
+getent passwd osrt-obs-operator > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-obs-operator" osrt-obs-operator
+exit 0
+
+%postun obs-operator
+%systemd_postun
+if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled osrt-obs-operator ; then
+  /usr/bin/systemctl try-restart --no-block osrt-obs-operator
 fi
 
 %pre repo-checker
@@ -544,6 +566,10 @@ exit 0
 %{_datadir}/%{source_dir}/metrics/grafana/access.json
 %{_unitdir}/osrt-metrics-access.service
 %{_unitdir}/osrt-metrics-access.timer
+
+%files obs-operator
+%{_bindir}/osrt-obs_operator
+%{_unitdir}/osrt-obs-operator.service
 
 %files repo-checker
 %defattr(-,root,root,-)

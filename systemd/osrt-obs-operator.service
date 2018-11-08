@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: OBS Operator
+
+[Service]
+User=osrt-obs-operator
+ExecStart=/usr/bin/osrt-obs_operator --debug
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
