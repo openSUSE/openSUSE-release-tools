@@ -24,7 +24,12 @@
     // Add explanation of trigger shortcut to legend box.
     var explanation = document.createElement('div');
     explanation.id = 'osrt-explanation';
-    explanation.innerText = 'press ctrl+m to move requests';
+    explanation.innerText = 'enter move mode';
+    explanation.setAttribute('title', 'ctrl + m');
+    explanation.onclick = function() {
+        initMoveInterface();
+        this.onclick = null;
+    };
     document.querySelector('#legends').appendChild(explanation);
 
     window.onkeyup = function(e) {
@@ -40,6 +45,12 @@
     padding: 10px;
     background-color: #d9b200;
     color: white;
+    cursor: pointer;
+}
+
+#osrt-explanation.osrt-active
+{
+    cursor: default;
 }
 
 #osrt-summary
@@ -111,7 +122,10 @@ var initMoveInterface = function(){
     addLegend('Moved');
     addLegend('Selected');
 
-    document.querySelector('#osrt-explanation').innerText = 'move mode activated: drag box around requests or ctrl/shift+click requests to select and drag a request to another staging.';
+    var explanation = document.querySelector('#osrt-explanation');
+    explanation.innerText = 'drag box around requests or ctrl/shift + click requests to select and drag a request to another staging.';
+    explanation.setAttribute('title', 'move mode activated');
+    explanation.classList.add('osrt-active');
 
     // @resource will not work since served without proper MIME type.
     $.get('https://raw.githubusercontent.com/p34eu/selectables/master/selectables.css', function(data, status) {
