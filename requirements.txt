@@ -9,6 +9,6 @@ cmdln
 git+https://github.com/openSUSE/osc
 
 # Dependencies for testing
-httpretty
+httpretty<0.9.6
 mock
 
