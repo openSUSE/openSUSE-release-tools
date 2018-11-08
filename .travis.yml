@@ -94,3 +94,8 @@ cache:
 before_cache:
   - sudo rm -rf .docker-tmp/build-root
   - sudo chmod -R o+rw .docker-tmp
+
+notifications:
+  email:
+    recipients:
+      - opensuse-releaseteam@suse.de
