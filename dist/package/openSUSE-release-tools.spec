@@ -413,6 +413,7 @@ exit 0
 %doc README.md
 %{_bindir}/osrt-biarchtool
 %{_bindir}/osrt-bs_mirrorfull
+%{_bindir}/osrt-bugowner
 %{_bindir}/osrt-build-fail-reminder
 %{_bindir}/osrt-checknewer
 %{_bindir}/osrt-check_source_in_factory
