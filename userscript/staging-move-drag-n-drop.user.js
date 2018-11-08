@@ -16,6 +16,11 @@
 
 (function()
 {
+    // Exclude not usable browsers.
+    if (!document.querySelectorAll || !('draggable' in document.createElement('span'))) {
+        return;
+    }
+
     // Add explanation of trigger shortcut to legend box.
     var explanation = document.createElement('div');
     explanation.id = 'osrt-explanation';
@@ -92,18 +97,6 @@
 })();
 
 var initMoveInterface = function(){
-    //exclude older browsers by the features we need them to support
-    //and legacy opera explicitly so we don't waste time on a dead browser
-    if
-    (
-        !document.querySelectorAll
-        ||
-        !('draggable' in document.createElement('span'))
-        ||
-        window.opera
-    )
-    { return; }
-
     // Update explanation text and add new legend entries.
     function addLegend(type)
     {
