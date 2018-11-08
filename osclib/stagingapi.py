@@ -836,12 +836,11 @@ class StagingAPI(object):
 
         orig_project = project
         self._remove_package_from_prj_pseudometa(project, package)
-        project = self.map_ring_package_to_subject(project, package)
         if self._supersede:
             self.is_package_disabled(project, package, store=True)
 
         for sub_prj, sub_pkg in self.get_sub_packages(package, project):
-            sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            sub_prj = project
             if self._supersede:
                 self.is_package_disabled(sub_prj, sub_pkg, store=True)
             # Skip inner-project links for letter staging
@@ -1090,21 +1089,6 @@ class StagingAPI(object):
 
         return True
 
-    def map_ring_package_to_subject(self, project, pkg):
-        """
-        Returns the subproject (if any) to use for the pkg depending on the ring
-        the package is in
-        :param project the staging prj
-        :param pkg the package to add
-        """
-        # it's actually a pretty stupid algorithm, but it might become more complex later
-
-        # assuming it is in adi staging, workaround for https://progress.opensuse.org/issues/9646
-        if self.is_adi_project(project):
-            return project
-
-        return project
-
     def get_sub_packages(self, package, project):
         """
         Returns a list of packages that need to be linked to main package.
@@ -1164,11 +1148,10 @@ class StagingAPI(object):
         """
 
         tar_pkg = act.tgt_package
-        project = self.map_ring_package_to_subject(project, tar_pkg)
         self.create_and_wipe_package(project, tar_pkg)
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
-            sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            sub_prj = project
             self.create_and_wipe_package(sub_prj, sub_pkg)
 
             # create a link so unselect can find it
@@ -1217,7 +1200,7 @@ class StagingAPI(object):
             baselibs = True
 
         for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
-            sub_prj = self.map_ring_package_to_subject(project, sub_pkg)
+            sub_prj = project
             # Skip inner-project links for letter staging
             if not self.is_adi_project(project) and sub_prj == project:
                 continue
