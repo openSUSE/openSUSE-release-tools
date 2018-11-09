@@ -35,7 +35,7 @@ class AdiCommand:
                 return
             if len(info['untracked_requests']):
                 print(query_project + " " + Fore.YELLOW + 'untracked: ' + ', '.join(['{}[{}]'.format(
-                    Fore.CYAN + req['package'] + Fore.RESET + " " + req['number']) for req in info['untracked_requests']]))
+                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['untracked_requests']]))
                 return
             if len(info['obsolete_requests']):
                 print(query_project + " " + Fore.YELLOW + 'obsolete: ' + ', '.join(['{}[{}]'.format(
