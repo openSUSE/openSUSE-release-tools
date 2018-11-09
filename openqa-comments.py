@@ -178,13 +178,13 @@ class OpenQAReport(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Command to publish openQA status in Staging projects')
+        description='Publish openQA status in staging projects')
     parser.add_argument('-s', '--staging', type=str, default=None,
-                        help='staging project letter')
+                        help='staging project')
     parser.add_argument('-f', '--force', action='store_true', default=False,
-                        help='force the write of the comment')
-    parser.add_argument('-p', '--project', type=str, default='Factory',
-                        help='openSUSE version to make the check (Factory, 13.2)')
+                        help='force a comment to be written')
+    parser.add_argument('-p', '--project', type=str, default='openSUSE:Factory',
+                        help='project to check (ex. openSUSE:Factory, openSUSE:Leap:15.1)')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
 
