@@ -29,19 +29,6 @@ class OpenQAReport(object):
         text = '[%s](%s)' % (package['arch'], link)
         return text
 
-    def _openQA_url(self, job):
-        test_name = job['name'].split('-')[-1]
-        link = '%s/tests/%s' % (self.api.copenqa, job['id'])
-        text = '[%s](%s)' % (test_name, link)
-        return text
-
-    def _openQA_module_url(self, job, module):
-        link = '%s/tests/%s/modules/%s/steps/1' % (
-            self.api.copenqa, job['id'], module['name']
-        )
-        text = '[%s](%s)' % (module['name'], link)
-        return text
-
     def old_enough(self, _date):
         time_delta = datetime.utcnow() - _date
         safe_margin = timedelta(hours=MARGIN_HOURS)
@@ -96,33 +83,30 @@ class OpenQAReport(object):
             report += '* and more (%s) ...' % (len(failing_lines) - MAX_LINES)
         return report
 
-    def _report_openQA(self, info):
+    def report_checks(self, info):
         failing_lines, green_lines = [], []
 
-        openQA_status = info['openqa_jobs']
-        for job in openQA_status:
-            test_name = job['name'].split('-')[-1]
-            fails = [
-                '  * %s (%s)' % (test_name, self._openQA_module_url(job, module))
-                for module in job['modules'] if module['result'] == 'failed'
-            ]
+        links_state = {}
+        for check in info['checks']:
+            links_state.setdefault(check['state'], [])
+            links_state[check['state']].append('[{}]({})'.format(check['name'], check['url']))
 
-            if fails:
-                failing_lines.extend(fails)
+        lines = []
+        failure = False
+        for state, links in links_state.items():
+            if len(links) > MAX_LINES:
+                extra = len(links) - MAX_LINES
+                links = links[:MAX_LINES]
+                links.append('and {} more...'.format(extra))
+
+            lines.append('- {}'.format(state))
+            if state != 'success':
+                lines.extend(['  - {}'.format(link) for link in links])
+                failure = True
             else:
-                green_lines.append(self._openQA_url(job))
+                lines[-1] += ': {}'.format(', '.join(links))
 
-        failing_report, green_report = '', ''
-        if failing_lines:
-            failing_report = '* Failing tests:\n' + '\n'.join(failing_lines[:MAX_LINES])
-            if len(failing_lines) > MAX_LINES:
-                failing_report += '\n  * and more (%s) ...' % (len(failing_lines) - MAX_LINES)
-        if green_lines:
-            green_report = '* Succeeding tests:' + ', '.join(green_lines[:MAX_LINES])
-            if len(green_lines) > MAX_LINES:
-                green_report += ', and more (%s) ...' % (len(green_lines) - MAX_LINES)
-
-        return '\n'.join((failing_report, green_report)).strip(), bool(failing_lines)
+        return '\n'.join(lines).strip(), failure
 
     def report(self, project, aggregate=True):
         info = self.api.project_status(project, aggregate)
@@ -141,14 +125,14 @@ class OpenQAReport(object):
             return
 
         report_broken_packages = self._report_broken_packages(info)
-        report_openQA, some_openqa_fail = self._report_openQA(info)
+        report_checks, check_failure = self.report_checks(info)
 
-        if report_broken_packages or some_openqa_fail:
+        if report_broken_packages or check_failure:
             if report_broken_packages:
                 report_broken_packages = 'Broken:\n\n' + report_broken_packages
-            if report_openQA:
-                report_openQA = 'openQA:\n\n' + report_openQA
-            report = '\n\n'.join((report_broken_packages, report_openQA))
+            if report_checks:
+                report_checks = 'Checks:\n\n' + report_checks
+            report = '\n\n'.join((report_broken_packages, report_checks))
             report = report.strip()
             if report:
                 if osc.conf.config['debug']:
