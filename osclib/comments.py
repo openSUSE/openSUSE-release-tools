@@ -156,6 +156,10 @@ class CommentAPI(object):
 
         comment = self.truncate(comment.strip())
 
+        # OBS returns unicode from some APIs, but comment API does not accept
+        # when included. Rather than handle everywhere just strip here.
+        comment = comment.encode('ascii', 'ignore')
+
         query = {}
         if parent_id:
             query['parent_id'] = parent_id
