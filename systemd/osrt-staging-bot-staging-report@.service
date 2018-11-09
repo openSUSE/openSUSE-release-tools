@@ -4,7 +4,7 @@ Description=openSUSE Release Tools: staging-bot report on staging status of %i
 [Service]
 User=osrt-staging-bot
 SyslogIdentifier=osrt-staging-bot
-ExecStart=/usr/bin/osrt-staging-report -p "%i"
+ExecStart=/usr/bin/osrt-staging-report --debug -p "%i"
 RuntimeMaxSec=6 hour
 
 [Install]
