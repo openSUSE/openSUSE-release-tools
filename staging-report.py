@@ -13,10 +13,10 @@ import osc
 
 MARGIN_HOURS = 4
 MAX_LINES = 6
-MARKER = 'openQA'
+MARKER = 'StagingReport'
 
 
-class OpenQAReport(object):
+class StagingReport(object):
     def __init__(self, api):
         self.api = api
         self.comment = CommentAPI(api.apiurl)
@@ -135,7 +135,7 @@ class OpenQAReport(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Publish openQA status in staging projects')
+        description='Publish report on staging status as comment on staging project')
     parser.add_argument('-s', '--staging', type=str, default=None,
                         help='staging project')
     parser.add_argument('-f', '--force', action='store_true', default=False,
@@ -153,10 +153,10 @@ if __name__ == '__main__':
     apiurl = osc.conf.config['apiurl']
     Config(apiurl, args.project)
     api = StagingAPI(apiurl, args.project)
-    openQA = OpenQAReport(api)
+    staging_report = StagingReport(api)
 
     if args.staging:
-        openQA.report(api.prj_from_letter(args.staging), False, args.force)
+        staging_report.report(api.prj_from_letter(args.staging), False, args.force)
     else:
         for staging in api.get_staging_projects():
-            openQA.report(staging, True, args.force)
+            staging_report.report(staging, True, args.force)

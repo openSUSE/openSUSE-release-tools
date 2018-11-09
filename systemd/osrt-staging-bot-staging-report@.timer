@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: staging-bot report on staging status of %i
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=3 min
+Unit=osrt-staging-bot-staging-report@%i.service
+
+[Install]
+WantedBy=timers.target
