@@ -724,9 +724,7 @@ class ToTestFactory(ToTestBase):
 
 
 class ToTestFactoryPowerPC(ToTestBase):
-    main_products = ['000product:openSUSE-dvd5-dvd-ppc64',
-                     '000product:openSUSE-dvd5-dvd-ppc64le',
-                     '000product:openSUSE-cd-mini-ppc64',
+    main_products = ['000product:openSUSE-dvd5-dvd-ppc64le',
                      '000product:openSUSE-cd-mini-ppc64le']
 
     ftp_products = ['000product:openSUSE-ftp-ftp-ppc64_ppc64le']
