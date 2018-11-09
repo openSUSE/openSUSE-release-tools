@@ -47,17 +47,6 @@ class OpenQAReport(object):
         safe_margin = timedelta(hours=MARGIN_HOURS)
         return safe_margin <= time_delta
 
-    def get_info(self, project):
-        _prefix = '{}:'.format(self.api.cstaging)
-        if project.startswith(_prefix):
-            project = project.replace(_prefix, '')
-
-        query = {'format': 'json'}
-        url = self.api.makeurl(('project', 'staging_projects',
-                                self.api.project, project), query=query)
-        info = json.load(self.api.retried_GET(url))
-        return info
-
     def is_there_openqa_comment(self, project):
         """Return True if there is a previous comment."""
         signature = '<!-- openQA status -->'
@@ -135,8 +124,8 @@ class OpenQAReport(object):
 
         return '\n'.join((failing_report, green_report)).strip(), bool(failing_lines)
 
-    def report(self, project):
-        info = self.get_info(project)
+    def report(self, project, aggregate=True):
+        info = self.api.project_status(project, aggregate)
 
         # Some staging projects do not have info like
         # openSUSE:Factory:Staging:Gcc49
@@ -202,7 +191,7 @@ if __name__ == '__main__':
     openQA = OpenQAReport(api)
 
     if args.staging:
-        openQA.report(api.prj_from_letter(args.staging))
+        openQA.report(api.prj_from_letter(args.staging), False)
     else:
         for staging in api.get_staging_projects():
             openQA.report(staging)
