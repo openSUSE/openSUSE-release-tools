@@ -13,6 +13,7 @@ import osc
 
 MARGIN_HOURS = 4
 MAX_LINES = 6
+MARKER = 'openQA'
 
 
 class OpenQAReport(object):
@@ -34,35 +35,20 @@ class OpenQAReport(object):
         safe_margin = timedelta(hours=MARGIN_HOURS)
         return safe_margin <= time_delta
 
-    def is_there_openqa_comment(self, project):
-        """Return True if there is a previous comment."""
-        signature = '<!-- openQA status -->'
+    def update_status_comment(self, project, report, force=False, only_replace=False):
+        report = self.comment.add_marker(report, MARKER)
         comments = self.comment.get_comments(project_name=project)
-        comment = [c for c in comments.values() if signature in c['comment']]
-        return len(comment) > 0
-
-    def update_status_comment(self, project, report, force=False):
-        signature = '<!-- openQA status -->'
-        report = '%s\n%s' % (signature, str(report))
-
-        write_comment = False
-
-        comments = self.comment.get_comments(project_name=project)
-        comment = [c for c in comments.values() if signature in c['comment']]
-        if comment and len(comment) > 1:
-            print 'ERROR. There are more than one openQA status comment in %s' % project
-            # for c in comment:
-            #     self.comment.delete(c['id'])
-            # write_comment = True
-        elif comment and comment[0]['comment'] != report and self.old_enough(comment[0]['when']):
-            self.comment.delete(comment[0]['id'])
-            write_comment = True
-        elif not comment:
-            write_comment = True
+        comment, _ = self.comment.comment_find(comments, MARKER)
+        if comment:
+            write_comment = (report != comment['comment'] and self.old_enough(comment['when']))
+        else:
+            write_comment = not only_replace
 
         if write_comment or force:
             if osc.conf.config['debug']:
                 print 'Updating comment'
+            if comment:
+                self.comment.delete(comment['id'])
             self.comment.add_comment(project_name=project, comment=report)
 
     def _report_broken_packages(self, info):
@@ -108,7 +94,7 @@ class OpenQAReport(object):
 
         return '\n'.join(lines).strip(), failure
 
-    def report(self, project, aggregate=True):
+    def report(self, project, aggregate=True, force=False):
         info = self.api.project_status(project, aggregate)
 
         # Some staging projects do not have info like
@@ -134,19 +120,17 @@ class OpenQAReport(object):
                 report_checks = 'Checks:\n\n' + report_checks
             report = '\n\n'.join((report_broken_packages, report_checks))
             report = report.strip()
-            if report:
-                if osc.conf.config['debug']:
-                    print project
-                    print '-' * len(project)
-                    print report
-                self.update_status_comment(project, report)
-            elif not info['overall_state'] == 'acceptable' and self.is_there_openqa_comment(project):
-                report = 'Congratulations! All fine now.'
-                if osc.conf.config['debug']:
-                    print project
-                    print '-' * len(project)
-                    print report
-                self.update_status_comment(project, report, force=True)
+            only_replace = False
+        else:
+            report = 'Congratulations! All fine now.'
+            only_replace = True
+
+        self.update_status_comment(project, report, force=force, only_replace=only_replace)
+
+        if osc.conf.config['debug']:
+            print project
+            print '-' * len(project)
+            print report
 
 
 if __name__ == '__main__':
@@ -166,16 +150,13 @@ if __name__ == '__main__':
     osc.conf.get_config()
     osc.conf.config['debug'] = args.debug
 
-    if args.force:
-        MARGIN_HOURS = 0
-
     apiurl = osc.conf.config['apiurl']
     Config(apiurl, args.project)
     api = StagingAPI(apiurl, args.project)
     openQA = OpenQAReport(api)
 
     if args.staging:
-        openQA.report(api.prj_from_letter(args.staging), False)
+        openQA.report(api.prj_from_letter(args.staging), False, args.force)
     else:
         for staging in api.get_staging_projects():
-            openQA.report(staging)
+            openQA.report(staging, True, args.force)
