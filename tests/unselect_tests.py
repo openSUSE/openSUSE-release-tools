@@ -16,5 +16,6 @@ class TestUnselect(unittest.TestCase):
 
     def test_cleanup_filter(self):
         UnselectCommand.config_init(self.api)
+        UnselectCommand.cleanup_days = 1
         obsolete = self.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)
         self.assertSequenceEqual(['627445', '642126', '646560', '645723', '646823'], obsolete)
