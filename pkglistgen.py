@@ -154,7 +154,7 @@ class Group(object):
             self.ignore(g)
         self.ignored.add(without)
 
-    def solve(self, ignore_recommended=False, include_suggested=False):
+    def solve(self, use_recommends=False, include_suggested=False):
         """ base: list of base groups or None """
 
         solved = dict()
@@ -167,8 +167,7 @@ class Group(object):
         for arch in self.pkglist.filtered_architectures:
             pool = self.pkglist._prepare_pool(arch)
             solver = pool.Solver()
-            if ignore_recommended:
-                solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, 1)
+            solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, not use_recommends)
 
             # pool.set_debuglevel(10)
             suggested = []
@@ -419,7 +418,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.output_dir = '.'
         self.lockjobs = dict()
         self.ignore_broken = False
-        self.ignore_recommended = False
         self.include_suggested = False
         self.unwanted = set()
         self.output = None
@@ -507,11 +505,11 @@ class PkgListGen(ToolBase.ToolBase):
                 root = ET.parse(fh).getroot()
                 self._parse_product(root)
 
-    def solve_module(self, groupname, includes, excludes):
+    def solve_module(self, groupname, includes, excludes, use_recommends):
         g = self.groups[groupname]
         for i in includes:
             g.inherit(self.groups[i])
-        g.solve(self.ignore_recommended, self.include_suggested)
+        g.solve(use_recommends, self.include_suggested)
         for e in excludes:
             g.ignore(self.groups[e])
 
@@ -1093,8 +1091,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if opts.ignore_unresolvable:
             self.tool.ignore_broken = True
-        if opts.ignore_recommended:
-            self.tool.ignore_recommended = True
+        global_use_recommends = not opts.ignore_recommended
         if opts.include_suggested:
             if opts.ignore_recommended:
                 raise cmdln.CmdlnUserError("--ignore-recommended and --include-suggested don't work together")
@@ -1118,7 +1115,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 settings = {}
             includes = settings.get('includes', [])
             excludes = settings.get('excludes', [])
-            self.tool.solve_module(groupname, includes, excludes)
+            use_recommends = settings.get('recommends', global_use_recommends)
+            self.tool.solve_module(groupname, includes, excludes, use_recommends)
             g = self.tool.groups[groupname]
             g.conflicts = settings.get('conflicts', [])
             g.default_support_status = settings.get('default-support', 'unsupported')
@@ -1133,7 +1131,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if overlap:
             ignores = [x.name for x in overlap.ignored]
-            self.tool.solve_module(overlap.name, [], ignores)
+            self.tool.solve_module(overlap.name, [], ignores, use_recommends=False)
             overlapped = set(overlap.solved_packages['*'])
             for arch in self.tool.filtered_architectures:
                 overlapped |= set(overlap.solved_packages[arch])
