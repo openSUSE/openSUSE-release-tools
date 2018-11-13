@@ -116,7 +116,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
     def check_action_maintenance_incident(self, req, a):
 
         if a.src_package == 'patchinfo':
-            return None
+            return True
 
         self._check_maintainer_review_needed(req, a)
 
