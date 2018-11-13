@@ -16,9 +16,6 @@ class TestUnselect(unittest.TestCase):
 
     def test_cleanup_filter(self):
         UnselectCommand.config_init(self.api)
+        UnselectCommand.cleanup_days = 1
         obsolete = self.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)
-        self.assertTrue('492438' in obsolete, 'revoked')
-        self.assertTrue('592437' in obsolete, 'superseded but over threshold')
-        self.assertTrue('492439' in obsolete, 'declined by leaper')
-        self.assertTrue('492441' in obsolete, 'declined but over threshold')
-        self.assertEqual(len(obsolete), 4)
+        self.assertSequenceEqual(['627445', '642126', '646560', '645723', '646823'], obsolete)

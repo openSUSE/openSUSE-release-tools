@@ -228,6 +228,8 @@ class StagingAPI(object):
         packages_staged = {}
         for prj in self.get_staging_projects():
             status = self.project_status(prj, True)
+            if not status:
+                continue
             meta = self.load_prj_pseudometa(status['description'])
             for req in meta['requests']:
                 packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id']}

@@ -1,1228 +1,4135 @@
 [
-    {
-	"overall_state": "acceptable",
-	"selected_requests": [
-	    {
-		"id": 235410
-	    }
-	],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests:\n- {id: 235410, package: ncurses}\n",
-        "missing_reviews": [],
-        "name": "openSUSE:Factory:Staging:A",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10576,
-                "iso": null,
-                "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10575,
-                "iso": null,
-                "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10574,
-                "iso": null,
-                "name": "opensuse-Staging:A-Staging-DVD-x86_64-Build115.4-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "empty",
-	"selected_requests": [],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests: []\n",
-        "missing_reviews": [],
-        "name": "openSUSE:Factory:Staging:B",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10521,
-                "iso": null,
-                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10520,
-                "iso": null,
-                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10519,
-                "iso": null,
-                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "acceptable",
-	"selected_requests": [
-	    {
-		"id": 235517
-	    }
-	],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests:\n- {id: 235517, package: systemd}\n",
-        "missing_reviews": [],
-        "name": "openSUSE:Factory:Staging:C",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10193,
-                "iso": null,
-                "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10158,
-                "iso": null,
-                "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10157,
-                "iso": null,
-                "name": "opensuse-Staging:C-Staging-DVD-x86_64-Build99.3-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "empty",
-	"selected_requests": [],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests: []\n",
-        "missing_reviews": [],
-        "name": "openSUSE:Factory:Staging:D",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10570,
-                "iso": null,
-                "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10569,
-                "iso": null,
-                "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10568,
-                "iso": null,
-                "name": "opensuse-Staging:D-Staging-DVD-x86_64-Build110.10-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "empty",
-	"selected_requests": [],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests: []\n",
-        "missing_reviews": [],
-        "name": "openSUSE:Factory:Staging:E",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10603,
-                "iso": null,
-                "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10602,
-                "iso": null,
-                "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10601,
-                "iso": null,
-                "name": "opensuse-Staging:E-Staging-DVD-x86_64-Build89.1-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "review",
-	"selected_requests": [
-	    {
-		"id": 234678
-	    },
-	    {
-		"id": 234991
-	    },
-	    {
-		"id": 235018
-	    },
-	    {
-		"id": 235047
-	    },
-	    {
-		"id": 235076
-	    },
-	    {
-		"id": 235180
-	    },
-	    {
-		"id": 235376
-	    },
-	    {
-		"id": 235402
-	    },
-	    {
-		"id": 235520
-	    },
-	    {
-		"id": 235548
-	    },
-	    {
-		"id": 235550
-	    }
-	],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests:\n- {id: 234678, package: yast2-iscsi-client}\n- {id: 234991, package: zypper}\n- {id: 235018, package: yast2-storage}\n- {id: 235047, package: libzypp}\n- {id: 235076, package: yast2-nfs-server}\n- {id: 235180, package: yast2}\n- {id: 235376, package: libyui-qt-pkg}\n- {id: 235402, package: libstorage}\n- {id: 235520, package: libqt5-qtbase}\n- {id: 235548, package: autoyast2}\n- {id: 235550, package: yast2-pkg-bindings}\n",
-        "missing_reviews": [
-            {
-                "by": "factory-repo-checker",
-                "id": 251286,
-                "package": "yast2-iscsi-client",
-                "request": 234678,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 252354,
-                "package": "yast2-storage",
-                "request": 235018,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 252276,
-                "package": "zypper",
-                "request": 234991,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 252430,
-                "package": "libzypp",
-                "request": 235047,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 252559,
-                "package": "yast2-nfs-server",
-                "request": 235076,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 252867,
-                "package": "yast2",
-                "request": 235180,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 253264,
-                "package": "libyui-qt-pkg",
-                "request": 235376,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 253373,
-                "package": "libstorage",
-                "request": 235402,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 253664,
-                "package": "libqt5-qtbase",
-                "request": 235520,
-                "state": "new"
-            },
-            {
-                "by": "opensuse-review-team",
-                "id": 253745,
-                "package": "autoyast2",
-                "request": 235548,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 253746,
-                "package": "autoyast2",
-                "request": 235548,
-                "state": "new"
-            },
-            {
-                "by": "opensuse-review-team",
-                "id": 253755,
-                "package": "yast2-pkg-bindings",
-                "request": 235550,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 253756,
-                "package": "yast2-pkg-bindings",
-                "request": 235550,
-                "state": "new"
-            }
-        ],
-        "name": "openSUSE:Factory:Staging:F",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10637,
-                "iso": null,
-                "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10636,
-                "iso": null,
-                "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10635,
-                "iso": null,
-                "name": "opensuse-Staging:F-Staging-DVD-x86_64-Build100.6-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "review",
-	"selected_requests": [
-	    {
-		"id": 234718
-	    },
-	    {
-		"id": 234824
-	    },
-	    {
-		"id": 234862
-	    },
-	    {
-		"id": 234920
-	    },
-	    {
-		"id": 234935
-	    },
-	    {
-		"id": 234947
-	    },
-	    {
-		"id": 234965
-	    },
-	    {
-		"id": 234981
-	    },
-	    {
-		"id": 235009
-	    },
-	    {
-		"id": 235055
-	    },
-	    {
-		"id": 235062
-	    },
-	    {
-		"id": 235063
-	    },
-	    {
-		"id": 235378
-	    },
-	    {
-		"id": 235538
-	    }
-	],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests:\n- {id: 234718, package: libXfont}\n- {id: 234824, package: xf86-input-vmmouse}\n- {id: 234862, package: tigervnc}\n- {id: 234920, package: xf86-input-evdev}\n- {id: 234935, package: libmng}\n- {id: 234947, package: yast2-nfs-client}\n- {id: 234965, package: yast2-installation}\n- {id: 234981, package: yast2-fcoe-client}\n- {id: 235009, package: libxkbcommon}\n- {id: 235055, package: llvm}\n- {id: 235062, package: yast2-add-on}\n- {id: 235063, package: yast2-ca-management}\n- {id: 235378, package: xorg-x11-server}\n- {id: 235538, package: Mesa}\n",
-        "missing_reviews": [
-            {
-                "by": "opensuse-review-team",
-                "id": 253705,
-                "package": "Mesa",
-                "request": 235538,
-                "state": "new"
-            }
-        ],
-        "name": "openSUSE:Factory:Staging:G",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10631,
-                "iso": null,
-                "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10630,
-                "iso": null,
-                "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10629,
-                "iso": null,
-                "name": "opensuse-Staging:G-Staging-DVD-x86_64-Build96.8-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "building",
-	"selected_requests": [
-	    {
-		"id": 234999
-	    },
-	    {
-		"id": 235422
-	    },
-	    {
-		"id": 235482
-	    },
-	    {
-		"id": 235495
-	    },
-	    {
-		"id": 235524
-	    },
-	    {
-		"id": 235547
-	    }
-	],
-        "broken_packages": [],
-        "building_repositories": [
-            {
-                "arch": "i586",
-                "code": "building",
-                "repository": "standard",
-                "state": "building"
-            },
-            {
-                "arch": "x86_64",
-                "code": "building",
-                "repository": "standard",
-                "state": "building"
-            },
-            {
-                "arch": "x86_64",
-                "code": "blocked",
-                "repository": "images",
-                "state": "blocked"
-            }
-        ],
-        "description": "requests:\n- {id: 234999, package: kdebase4-openSUSE}\n- {id: 235422, package: yast2-network}\n- {id: 235482, package: libmtp}\n- {id: 235495, package: yast2-kdump}\n- {id: 235524, package: kdebase4-workspace}\n- {id: 235547, package: kiwi}\n",
-        "missing_reviews": [
-            {
-                "by": "opensuse-review-team",
-                "id": 253740,
-                "package": "kiwi",
-                "request": 235547,
-                "state": "new"
-            }
-        ],
-        "name": "openSUSE:Factory:Staging:H",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10661,
-                "iso": null,
-                "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10660,
-                "iso": null,
-                "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-RAID1",
-                "result": "failed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "fail"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10659,
-                "iso": null,
-                "name": "opensuse-Staging:H-Staging-DVD-x86_64-Build92.10-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"selected_requests": [],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests: []\n",
-        "missing_reviews": [],
-        "name": "openSUSE:Factory:Staging:I",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10517,
-                "iso": null,
-                "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10464,
-                "iso": null,
-                "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10462,
-                "iso": null,
-                "name": "opensuse-Staging:I-Staging-DVD-x86_64-Build92.5-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "review",
-	"selected_requests": [
-	    {
-		"id": 235022
-	    },
-	    {
-		"id": 235030
-	    },
-	    {
-		"id": 235127
-	    },
-	    {
-		"id": 235201
-	    },
-	    {
-		"id": 235203
-	    },
-	    {
-		"id": 235204
-	    }
-	],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests:\n- {id: 235022, package: scilab}\n- {id: 235030, package: apache-commons-cli}\n- {id: 235127, package: jeuclid}\n- {id: 235201, package: libcss}\n- {id: 235203, package: libparserutils}\n- {id: 235204, package: libwapcaplet}\n",
-        "missing_reviews": [
-            {
-                "by": "factory-repo-checker",
-                "id": 252728,
-                "package": "jeuclid",
-                "request": 235127,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 252918,
-                "package": "libcss",
-                "request": 235201,
-                "state": "new"
-            },
-            {
-                "by": "factory-repo-checker",
-                "id": 252365,
-                "package": "scilab",
-                "request": 235022,
-                "state": "new"
-            }
-        ],
-        "name": "openSUSE:Factory:Staging:J",
-        "obsolete_requests": [],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 9637,
-                "iso": null,
-                "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 9636,
-                "iso": null,
-                "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 9635,
-                "iso": null,
-                "name": "opensuse-Staging:J-Staging-DVD-x86_64-Build75.1-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "subproject": null,
-        "untracked_requests": []
-    },
-    {
-	"overall_state": "empty",
-	"selected_requests": [],
-        "broken_packages": [],
-        "building_repositories": [],
-        "description": "requests: []\n",
-        "missing_reviews": [],
-        "name": "openSUSE:Factory:Staging:U",
-        "obsolete_requests": [
-            {
-                "accept_at": null,
-                "superseded_by": null,
-                "description": "",
-                "creator": "alois",
-                "created_at": "2017-05-02T10:24:19.000Z",
-                "package": "kernel-source",
-                "updated_at": "${update_at_too_recent}",
-                "number": 492436,
-                "state": "revoked",
-                "id": 697437
-            },
-            {
-                "accept_at": null,
-                "superseded_by": 492518,
-                "description": "",
-                "creator": "alois",
-                "created_at": "2017-05-02T10:24:19.000Z",
-                "package": "Photini",
-                "updated_at": "${update_at_too_recent}",
-                "number": 492437,
-                "state": "superseded",
-                "id": 697437
-            },
-            {
-                "accept_at": null,
-                "superseded_by": 592518,
-                "description": "",
-                "creator": "alois",
-                "created_at": "2017-05-02T10:24:19.000Z",
-                "package": "Photini2",
-                "updated_at": "${declined_updated_at_over}",
-                "number": 592437,
-                "state": "superseded",
-                "id": 697437
-            },
-            {
-                "accept_at": null,
-                "superseded_by": null,
-                "description": "",
-                "creator": "alois",
-                "created_at": "2017-05-02T10:24:19.000Z",
-                "package": "kernel-source",
-                "updated_at": "2017-05-02T17:14:31.000Z",
-                "number": 492438,
-                "state": "revoked",
-                "id": 697437
-            },
-            {
-                "accept_at": null,
-                "superseded_by": null,
-                "description": "",
-                "creator": "leaper",
-                "created_at": "2017-05-02T10:24:19.000Z",
-                "package": "zypper",
-                "updated_at": "2017-05-02T17:14:31.000Z",
-                "number": 492439,
-                "state": "declined",
-                "id": 697437
-            },
-            {
-                "accept_at": null,
-                "superseded_by": null,
-                "description": "",
-                "creator": "alois",
-                "created_at": "2017-05-02T10:24:19.000Z",
-                "package": "phpmyadmin",
-                "updated_at": "${declined_updated_at_under}",
-                "number": 492440,
-                "state": "declined",
-                "id": 697437
-            },
-            {
-                "accept_at": null,
-                "superseded_by": null,
-                "description": "",
-                "creator": "alois",
-                "created_at": "2017-05-02T10:24:19.000Z",
-                "package": "adminer",
-                "updated_at": "${declined_updated_at_over}",
-                "number": 492441,
-                "state": "declined",
-                "id": 697437
-            }
-        ],
-        "openqa_jobs": [
-            {
-                "clone_id": null,
-                "id": 10521,
-                "iso": null,
-                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-cryptlvm",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10520,
-                "iso": null,
-                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-RAID1",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            },
-            {
-                "clone_id": null,
-                "id": 10519,
-                "iso": null,
-                "name": "opensuse-Staging:B-Staging-DVD-x86_64-Build107.2-minimalx",
-                "result": "passed",
-                "state": "done",
-		"modules": [
-		    {
-			"name": "isosize",
-			"result": "ok"
-		    },
-		    {
-			"name": "livecdreboot",
-			"result": "na"
-		    },
-		    {
-			"name": "first_boot",
-			"result": "ok"
-		    }
-		]
-            }
-        ],
-        "untracked_requests": []
-    }
+  {
+    "overall_state": "building",
+    "description": "requests:\n- {author: msmeissn, id: 646813, package: gpg2, type: submit}\n- {author: msmeissn, id: 646814, package: upower, type: submit}\n- {author: msmeissn, id: 646818, package: iprutils, type: submit}\n- {author: msmeissn, id: 646821, package: util-linux, type: submit}\n- {author: msmeissn, id: 646913, package: pcre, type: submit}\n- {author: WernerFink, id: 646974, package: aaa_base, type: submit}\n- {author: mwilck, id: 647026, package: suse-module-tools, type: submit}\nrequests_comment: 7206\nsplitter_info:\n  activated: '2018-11-07 16:47:55.779176'\n  group: Base:System\n  strategy: {name: devel}\n",
+    "name": "openSUSE:Factory:Staging:A",
+    "missing_checks": [],
+    "checks": [
+      {
+        "name": "openqa:minimalx@64bit",
+        "created_at": "2018-11-09T10:17:52.000Z",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 408,
+        "id": 3873,
+        "url": "https://openqa.opensuse.org/tests/790669",
+        "updated_at": "2018-11-09T10:59:53.000Z"
+      },
+      {
+        "short_description": null,
+        "state": "success",
+        "id": 3876,
+        "status_reports_id": 408,
+        "updated_at": "2018-11-09T10:20:22.000Z",
+        "url": "https://openqa.opensuse.org/tests/790670",
+        "name": "openqa:rescue_system",
+        "created_at": "2018-11-09T10:17:52.000Z"
+      },
+      {
+        "short_description": null,
+        "state": "success",
+        "id": 3879,
+        "status_reports_id": 408,
+        "updated_at": "2018-11-09T10:59:40.000Z",
+        "url": "https://openqa.opensuse.org/tests/790671",
+        "name": "openqa:minimalx@uefi-staging",
+        "created_at": "2018-11-09T10:17:52.000Z"
+      },
+      {
+        "updated_at": "2018-11-09T10:48:36.000Z",
+        "url": "https://openqa.opensuse.org/tests/790672",
+        "short_description": null,
+        "state": "success",
+        "id": 3882,
+        "status_reports_id": 408,
+        "created_at": "2018-11-09T10:17:52.000Z",
+        "name": "openqa:RAID0"
+      },
+      {
+        "status_reports_id": 408,
+        "id": 3885,
+        "short_description": null,
+        "state": "success",
+        "updated_at": "2018-11-09T11:02:41.000Z",
+        "url": "https://openqa.opensuse.org/tests/790673",
+        "name": "openqa:cryptlvm",
+        "created_at": "2018-11-09T10:17:52.000Z"
+      },
+      {
+        "name": "openqa:gnome",
+        "created_at": "2018-11-09T10:17:52.000Z",
+        "status_reports_id": 408,
+        "id": 3888,
+        "short_description": null,
+        "state": "success",
+        "updated_at": "2018-11-09T11:15:26.000Z",
+        "url": "https://openqa.opensuse.org/tests/790674"
+      },
+      {
+        "created_at": "2018-11-09T10:17:53.000Z",
+        "name": "openqa:kde@64bit",
+        "updated_at": "2018-11-09T11:32:01.000Z",
+        "url": "https://openqa.opensuse.org/tests/790675",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 408,
+        "id": 3891
+      },
+      {
+        "name": "openqa:kde@USBboot_64",
+        "created_at": "2018-11-09T10:17:53.000Z",
+        "status_reports_id": 408,
+        "id": 3894,
+        "short_description": null,
+        "state": "success",
+        "url": "https://openqa.opensuse.org/tests/790676",
+        "updated_at": "2018-11-09T11:33:54.000Z"
+      },
+      {
+        "url": "https://openqa.opensuse.org/tests/790677",
+        "updated_at": "2018-11-09T10:56:44.000Z",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 408,
+        "id": 3897,
+        "created_at": "2018-11-09T10:17:53.000Z",
+        "name": "openqa:textmode"
+      },
+      {
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 408,
+        "id": 3900,
+        "updated_at": "2018-11-09T10:48:51.000Z",
+        "url": "https://openqa.opensuse.org/tests/790678",
+        "name": "openqa:update_staging",
+        "created_at": "2018-11-09T10:17:53.000Z"
+      },
+      {
+        "status_reports_id": 408,
+        "id": 3903,
+        "short_description": null,
+        "state": "success",
+        "url": "https://openqa.opensuse.org/tests/790679",
+        "updated_at": "2018-11-09T11:17:39.000Z",
+        "name": "openqa:RAID1",
+        "created_at": "2018-11-09T10:17:53.000Z"
+      }
+    ],
+    "selected_requests": [
+      {
+        "id": 1161567,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "accept_at": null,
+        "number": 646813,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "creator": "msmeissn",
+        "updated_at": "2018-11-07T16:48:40.276Z",
+        "package": "gpg2",
+        "updated_when": "2018-11-07T16:48:40.276Z",
+        "superseded_by": null,
+        "created_at": "2018-11-07T07:22:30.000Z",
+        "priority": "moderate"
+      },
+      {
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 646814,
+        "approver": null,
+        "id": 1161570,
+        "state": "review",
+        "request_type": "submit",
+        "superseded_by": null,
+        "created_at": "2018-11-07T07:22:41.000Z",
+        "priority": "moderate",
+        "package": "upower",
+        "updated_when": "2018-11-07T16:48:49.139Z",
+        "creator": "msmeissn",
+        "updated_at": "2018-11-07T16:48:49.139Z"
+      },
+      {
+        "number": 646818,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161582,
+        "approver": null,
+        "updated_when": "2018-11-07T16:48:13.300Z",
+        "package": "iprutils",
+        "priority": "moderate",
+        "created_at": "2018-11-07T07:46:08.000Z",
+        "superseded_by": null,
+        "updated_at": "2018-11-07T16:48:13.300Z",
+        "creator": "msmeissn"
+      },
+      {
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 646821,
+        "approver": null,
+        "id": 1161591,
+        "state": "review",
+        "request_type": "submit",
+        "superseded_by": null,
+        "created_at": "2018-11-07T07:46:41.000Z",
+        "priority": "moderate",
+        "package": "util-linux",
+        "updated_when": "2018-11-07T16:48:19.057Z",
+        "updated_at": "2018-11-07T16:48:19.057Z",
+        "creator": "msmeissn"
+      },
+      {
+        "number": 646913,
+        "accept_at": null,
+        "description": "- pcreposix patch taken from debian. Solves cyrus-imapd issue #1731, too.\n  pcre-8.42-pcreposix.patch",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161867,
+        "approver": null,
+        "updated_when": "2018-11-07T16:48:07.770Z",
+        "package": "pcre",
+        "created_at": "2018-11-07T10:04:19.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "creator": "msmeissn",
+        "updated_at": "2018-11-07T16:48:07.770Z"
+      },
+      {
+        "accept_at": null,
+        "number": 646974,
+        "project": "openSUSE:Factory",
+        "description": "- Update to version 84.87+git20181107.f39a8d1:\n  * Readline: Do not miss common mappings for vi\n  * Readline: Use overwrite-mode on Insert key\n  * Avoid `ls' command in alljava shell scriptlets\n  * bashrc: Change =~ test to globs. Fixes mkshrc.\n  * Update README (#55)",
+        "superseded_by_id": null,
+        "id": 1162050,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "package": "aaa_base",
+        "updated_when": "2018-11-07T17:17:33.206Z",
+        "superseded_by": null,
+        "created_at": "2018-11-07T13:13:52.000Z",
+        "priority": "moderate",
+        "updated_at": "2018-11-07T17:17:33.206Z",
+        "creator": "WernerFink"
+      },
+      {
+        "accept_at": null,
+        "number": 647026,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Update to version 15.0.1 (git 5c63319):\n- Use /etc/modules-load.d/sg.conf for sg driver autoloading\n  (bsc#1036463)\n  * added /etc/modules-load.d/sg.conf (forwarded request 647025 from mwilck)",
+        "id": 1162206,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "package": "suse-module-tools",
+        "updated_when": "2018-11-07T17:30:07.852Z",
+        "superseded_by": null,
+        "created_at": "2018-11-07T14:59:44.000Z",
+        "priority": "moderate",
+        "creator": "mwilck",
+        "updated_at": "2018-11-07T17:30:07.852Z"
+      }
+    ],
+    "obsolete_requests": [],
+    "broken_packages": [
+      {
+        "arch": "x86_64",
+        "package": "installation-images:Kubic",
+        "repository": "standard",
+        "state": "failed",
+        "project": "openSUSE:Factory:Staging:A",
+        "details": null
+      },
+      {
+        "project": "openSUSE:Factory:Staging:A",
+        "details": null,
+        "package": "installation-images:openSUSE",
+        "arch": "x86_64",
+        "repository": "standard",
+        "state": "failed"
+      }
+    ],
+    "missing_reviews": [
+      {
+        "request": 646913,
+        "package": "pcre",
+        "by": "repo-checker",
+        "id": 2797740,
+        "state": "new"
+      },
+      {
+        "request": 646818,
+        "id": 2796606,
+        "by": "repo-checker",
+        "package": "iprutils",
+        "state": "new"
+      },
+      {
+        "id": 2796618,
+        "by": "repo-checker",
+        "package": "util-linux",
+        "state": "new",
+        "request": 646821
+      },
+      {
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2798673,
+        "package": "suse-module-tools",
+        "request": 647026
+      },
+      {
+        "request": 646974,
+        "package": "aaa_base",
+        "by": "repo-checker",
+        "id": 2798166,
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "package": "gpg2",
+        "by": "repo-checker",
+        "id": 2796501,
+        "request": 646813
+      },
+      {
+        "request": 646814,
+        "package": "upower",
+        "id": 2796507,
+        "by": "repo-checker",
+        "state": "new"
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [
+      {
+        "state": "building",
+        "repository": "standard",
+        "final": 2256,
+        "arch": "i586",
+        "code": "building",
+        "tobuild": 358
+      },
+      {
+        "tobuild": 2,
+        "code": "building",
+        "repository": "standard",
+        "final": 2612,
+        "arch": "x86_64",
+        "state": "building"
+      },
+      {
+        "tobuild": 1,
+        "code": "blocked",
+        "arch": "x86_64",
+        "final": 2613,
+        "repository": "images",
+        "state": "blocked"
+      }
+    ]
+  },
+  {
+    "checks": [],
+    "broken_packages": [],
+    "obsolete_requests": [],
+    "selected_requests": [
+      {
+        "updated_at": "2018-11-06T20:11:56.178Z",
+        "creator": "dstoecker",
+        "superseded_by": null,
+        "created_at": "2018-09-28T06:24:47.000Z",
+        "priority": "moderate",
+        "package": "perl-File-Copy-Recursive",
+        "updated_when": "2018-11-06T20:11:56.178Z",
+        "approver": null,
+        "id": 1137909,
+        "state": "review",
+        "request_type": "submit",
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 638963
+      },
+      {
+        "package": "keyutils",
+        "updated_when": "2018-11-06T20:11:12.719Z",
+        "superseded_by": null,
+        "created_at": "2018-10-29T16:45:59.000Z",
+        "priority": "moderate",
+        "updated_at": "2018-11-06T20:11:12.719Z",
+        "creator": "msmeissn",
+        "accept_at": null,
+        "number": 645337,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- add upstream signing key and verify source signature (forwarded request 645336 from AndreasStieger)",
+        "id": 1157133,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null
+      },
+      {
+        "updated_at": "2018-11-06T20:11:06.514Z",
+        "creator": "Andreas_Schwab",
+        "priority": "moderate",
+        "created_at": "2018-10-31T11:00:53.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-06T20:11:06.514Z",
+        "package": "linux-glibc-devel",
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1158252,
+        "superseded_by_id": null,
+        "description": "- fix netfilter builds with 4.19\n  * add netfilter-bridge-define-INT_MIN-INT_MAX-in-userspace.patch\n\n- Update to kernel headers 4.19",
+        "project": "openSUSE:Factory",
+        "number": 645710,
+        "accept_at": null
+      },
+      {
+        "updated_at": "2018-11-06T20:09:42.184Z",
+        "creator": "jubalh",
+        "package": "shadow",
+        "updated_when": "2018-11-06T20:09:42.184Z",
+        "superseded_by": null,
+        "created_at": "2018-11-02T11:24:49.000Z",
+        "priority": "moderate",
+        "id": 1159263,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "accept_at": null,
+        "number": 646047,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null
+      },
+      {
+        "id": 1159341,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 646073,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "creator": "pluskalm",
+        "updated_at": "2018-11-06T20:10:44.148Z",
+        "package": "vim",
+        "updated_when": "2018-11-06T20:10:44.148Z",
+        "superseded_by": null,
+        "created_at": "2018-11-02T14:11:52.000Z",
+        "priority": "moderate"
+      },
+      {
+        "priority": "moderate",
+        "created_at": "2018-11-02T14:32:15.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-06T20:10:55.110Z",
+        "package": "guile",
+        "creator": "psimons",
+        "updated_at": "2018-11-06T20:10:55.110Z",
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 646084,
+        "accept_at": null,
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1159374
+      },
+      {
+        "creator": "namtrac",
+        "updated_at": "2018-11-06T20:09:49.997Z",
+        "updated_when": "2018-11-06T20:09:49.997Z",
+        "package": "gegl",
+        "created_at": "2018-11-03T08:58:14.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1159653,
+        "approver": null,
+        "number": 646177,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "id": 1159656,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "accept_at": null,
+        "number": 646178,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "updated_at": "2018-11-06T20:09:56.293Z",
+        "creator": "namtrac",
+        "package": "jq",
+        "updated_when": "2018-11-06T20:09:56.293Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-03T08:58:47.000Z"
+      },
+      {
+        "state": "review",
+        "request_type": "submit",
+        "id": 1159701,
+        "approver": null,
+        "number": 646193,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "- Add patch to fix keyboard layout changes (boo#1103682, kde#350816, kde#269403):\n  * 0001-Fix-keyboard-layout-change-notifications.patch",
+        "project": "openSUSE:Factory",
+        "updated_at": "2018-11-06T20:10:27.005Z",
+        "creator": "Vogtinator",
+        "updated_when": "2018-11-06T20:10:27.005Z",
+        "package": "kglobalaccel",
+        "priority": "moderate",
+        "created_at": "2018-11-03T14:25:43.000Z",
+        "superseded_by": null
+      },
+      {
+        "updated_at": "2018-11-06T20:11:18.499Z",
+        "creator": "scarabeus_iv",
+        "superseded_by": null,
+        "created_at": "2018-11-04T09:36:25.000Z",
+        "priority": "moderate",
+        "package": "python-pycurl",
+        "updated_when": "2018-11-06T20:11:18.499Z",
+        "approver": null,
+        "id": 1159878,
+        "state": "review",
+        "request_type": "submit",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 646252
+      },
+      {
+        "request_type": "submit",
+        "state": "review",
+        "id": 1159953,
+        "approver": null,
+        "number": 646277,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "creator": "jengelh",
+        "updated_at": "2018-11-09T10:57:29.263Z",
+        "updated_when": "2018-11-09T10:57:29.263Z",
+        "package": "SDL2",
+        "created_at": "2018-11-04T23:49:45.000Z",
+        "priority": "moderate",
+        "superseded_by": null
+      },
+      {
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 646282,
+        "approver": null,
+        "id": 1159968,
+        "state": "review",
+        "request_type": "submit",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-05T04:23:06.000Z",
+        "package": "go",
+        "updated_when": "2018-11-06T20:09:02.193Z",
+        "updated_at": "2018-11-06T20:09:02.193Z",
+        "creator": "jfkw"
+      },
+      {
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-05T07:09:36.000Z",
+        "package": "ethtool",
+        "updated_when": "2018-11-06T20:10:38.238Z",
+        "creator": "mkubecek",
+        "updated_at": "2018-11-06T20:10:38.238Z",
+        "project": "openSUSE:Factory",
+        "description": "- Update to new upstream release 4.19",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 646328,
+        "approver": null,
+        "id": 1160106,
+        "request_type": "submit",
+        "state": "review"
+      },
+      {
+        "updated_at": "2018-11-06T20:10:49.652Z",
+        "creator": "ganghe",
+        "updated_when": "2018-11-06T20:10:49.652Z",
+        "package": "lvm2",
+        "created_at": "2018-11-05T07:55:39.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1160118,
+        "approver": null,
+        "number": 646332,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "creator": "mimi_vx",
+        "updated_at": "2018-11-06T20:11:00.947Z",
+        "created_at": "2018-11-05T08:54:51.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_when": "2018-11-06T20:11:00.947Z",
+        "package": "python-pytest",
+        "approver": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1160148,
+        "description": "- update to 3.10.0\n * Resume capturing output after continue with __import__(\"pdb\").set_trace().\n * Add -sw, --stepwise as an alternative to --lf -x for stopping at the first\n    failure, but starting the next test invocation from that test.\n * Make --color emit colorful dots when not running in verbose mode.\n * Improve performance with collection reporting in non-quiet mode with terminals.\n * The \"collecting …\" message is only printed/updated every 0.5s.\n * Fix false RemovedInPytest4Warning: usage of Session... is deprecated, \n    please use pytest warnings.\n * Fix problems with running tests in package __init__.py files.\n * Swallow warnings during anonymous compilation of source.\n * Fix access denied error when deleting stale directories\n    created by tmpdir / tmp_path.\n * Naming a fixture request will now raise a warning: the request fixture\n    is internal and should not be overwritten as it will lead to internal errors.\n * Handle (ignore) exceptions raised during collection, e.g.\n    with Django's LazySettings proxy class.\n * Added missing documentation about the fact that module names passed\n    to filter warnings are not regex-escaped.\n * Display cachedir also in non-verbose mode if non-default.\n * pdb: improve message about output capturing with set_trace.\n * Do not display \"IO-capturing turned off/on\" when -s is used to avoid confusion.\n * Improve message and stack level of warnings issued by monkeypatch.setenv\n    when the value of the environment variable is not a str.\n * Fix \"ValueError: Plugin already registered\" with conftest plugins via symlink.\n * Handle race condition between creation and deletion of temporary folders.\n * Fix bug where the warning summary at the end of the test session was\n    not showing the test where the warning was originated.\n * Fix regression when stacklevel for warnings was passed as positional\n    argument on python2.",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 646342,
+        "accept_at": null
+      },
+      {
+        "priority": "moderate",
+        "created_at": "2018-11-05T10:55:04.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-06T20:11:33.182Z",
+        "package": "docker-runc",
+        "creator": "cyphar",
+        "updated_at": "2018-11-06T20:11:33.182Z",
+        "description": "- Update changelogs to mention bsc#1113313.\n- Add backport of https://github.com/containerd/containerd/pull/2764, which is\n  required for us to build containerd on i586 SLE-12 (where /bin/sh doesn't\n  like emoji in shell scripts). bsc#1102522 bsc#1113313",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 646382,
+        "accept_at": null,
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1160271
+      },
+      {
+        "number": 646383,
+        "accept_at": null,
+        "description": "Automatic submission by obs-autosubmit",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1160274,
+        "approver": null,
+        "updated_when": "2018-11-06T20:11:39.092Z",
+        "package": "ncurses",
+        "priority": "moderate",
+        "created_at": "2018-11-05T10:55:12.000Z",
+        "superseded_by": null,
+        "creator": "factory-maintainer",
+        "updated_at": "2018-11-06T20:11:39.092Z"
+      },
+      {
+        "approver": null,
+        "id": 1160283,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "description": "- Update changelogs to mention bsc#1113313.\n- Add backport of https://github.com/containerd/containerd/pull/2764, which is\n  required for us to build containerd on i586 SLE-12 (where /bin/sh doesn't\n  like emoji in shell scripts). bsc#1102522 bsc#1113313",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 646386,
+        "creator": "cyphar",
+        "updated_at": "2018-11-06T20:11:50.632Z",
+        "superseded_by": null,
+        "created_at": "2018-11-05T10:59:22.000Z",
+        "priority": "moderate",
+        "package": "golang-github-docker-libnetwork",
+        "updated_when": "2018-11-06T20:11:50.632Z"
+      },
+      {
+        "request_type": "submit",
+        "state": "review",
+        "id": 1160307,
+        "approver": null,
+        "number": 646394,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "creator": "cyphar",
+        "updated_at": "2018-11-06T20:12:14.359Z",
+        "updated_when": "2018-11-06T20:12:14.359Z",
+        "package": "containerd",
+        "created_at": "2018-11-05T11:33:18.000Z",
+        "priority": "moderate",
+        "superseded_by": null
+      },
+      {
+        "updated_at": "2018-11-06T20:09:34.409Z",
+        "creator": "pluskalm",
+        "superseded_by": null,
+        "created_at": "2018-11-05T13:34:57.000Z",
+        "priority": "moderate",
+        "package": "libirman",
+        "updated_when": "2018-11-06T20:09:34.409Z",
+        "approver": null,
+        "id": 1160406,
+        "state": "review",
+        "request_type": "submit",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 646427
+      },
+      {
+        "state": "review",
+        "request_type": "submit",
+        "id": 1160829,
+        "approver": null,
+        "number": 646568,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "updated_at": "2018-11-06T20:10:15.119Z",
+        "creator": "NMoreyChaisemartin",
+        "updated_when": "2018-11-06T20:10:15.119Z",
+        "package": "opensm",
+        "priority": "moderate",
+        "created_at": "2018-11-06T07:47:12.000Z",
+        "superseded_by": null
+      },
+      {
+        "approver": null,
+        "id": 1161036,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 646637,
+        "updated_at": "2018-11-09T11:11:51.568Z",
+        "creator": "mimi_vx",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-06T11:49:26.000Z",
+        "package": "x11-tools",
+        "updated_when": "2018-11-09T11:11:51.568Z"
+      },
+      {
+        "updated_at": "2018-11-06T20:11:44.975Z",
+        "creator": "pmonrealgonzalez",
+        "package": "perl-IO-Socket-SSL",
+        "updated_when": "2018-11-06T20:11:44.975Z",
+        "superseded_by": null,
+        "created_at": "2018-11-06T11:52:08.000Z",
+        "priority": "moderate",
+        "id": 1161048,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "accept_at": null,
+        "number": 646641,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null
+      },
+      {
+        "package": "openucx",
+        "updated_when": "2018-11-06T20:12:03.058Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-06T12:26:08.000Z",
+        "updated_at": "2018-11-06T20:12:03.058Z",
+        "creator": "jengelh",
+        "accept_at": null,
+        "number": 646644,
+        "project": "openSUSE:Factory",
+        "description": "- Update to v1.4.0 (bsc#1103494)",
+        "superseded_by_id": null,
+        "id": 1161057,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null
+      },
+      {
+        "accept_at": null,
+        "number": 646648,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- asan_build: build ASAN included\n- debug_build: build more suitable for debugging\n\n- updated to 2.3.0\n  * ThreadPool overhead improvements, enable custom thread pool \n    to be registered via ThreadPoolProvider class\n  * Fixes to enable custom namespaces for Iex, Imf\n  * Improve read performance for deep/zipped data, and\n    SIMD-accelerated uncompress support\n  * Added rawPixelDataToBuffer() function for access to\n    compressed scanlines\n  * Iex::BaseExc no longer derived from std::string.\n  * Imath throw() specifiers removed\n  * Initial Support for Python 3\n  * removed patch\n    - ilmbase-halfExport.h-license.patch (upstreamed)",
+        "id": 1161069,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "package": "ilmbase",
+        "updated_when": "2018-11-06T20:12:08.809Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-06T12:36:30.000Z",
+        "creator": "pgajdos",
+        "updated_at": "2018-11-06T20:12:08.809Z"
+      },
+      {
+        "description": "- Update to version 84.87+git20181106.224b37d:\n  * brp-15-strip-debug: deal with libs where file outputs\n    more text after \"not stripped\" (bsc#1114695)",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 646678,
+        "accept_at": null,
+        "approver": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1161159,
+        "priority": "moderate",
+        "created_at": "2018-11-06T14:41:09.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-06T20:09:21.343Z",
+        "package": "brp-check-suse",
+        "creator": "oertel",
+        "updated_at": "2018-11-06T20:09:21.343Z"
+      },
+      {
+        "state": "review",
+        "request_type": "submit",
+        "id": 1161210,
+        "approver": null,
+        "number": 646695,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "creator": "TheBlackCat",
+        "updated_at": "2018-11-07T07:16:55.184Z",
+        "updated_when": "2018-11-07T07:16:55.184Z",
+        "package": "python-requests",
+        "priority": "moderate",
+        "created_at": "2018-11-06T15:28:31.000Z",
+        "superseded_by": null
+      },
+      {
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161234,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "number": 646703,
+        "accept_at": null,
+        "updated_at": "2018-11-07T07:06:36.656Z",
+        "creator": "tiwai",
+        "created_at": "2018-11-06T15:32:32.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_when": "2018-11-07T07:06:36.656Z",
+        "package": "live555"
+      },
+      {
+        "creator": "wrosenauer",
+        "updated_at": "2018-11-08T09:53:22.610Z",
+        "updated_when": "2018-11-08T09:53:22.610Z",
+        "package": "mercurial",
+        "created_at": "2018-11-07T22:12:37.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1162440,
+        "approver": null,
+        "number": 647104,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Codify new ilmbase requirements. (forwarded request 646947 from jengelh)",
+        "accept_at": null,
+        "number": 647258,
+        "approver": null,
+        "id": 1162902,
+        "state": "review",
+        "request_type": "submit",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T09:13:30.000Z",
+        "package": "openexr",
+        "updated_when": "2018-11-09T11:17:09.449Z",
+        "creator": "pgajdos",
+        "updated_at": "2018-11-09T11:17:09.449Z"
+      },
+      {
+        "description": "submit new version 2.45.24",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 647294,
+        "accept_at": null,
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1163010,
+        "priority": "moderate",
+        "created_at": "2018-11-08T11:09:02.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-08T11:31:07.458Z",
+        "package": "libyui-qt-pkg",
+        "creator": "yast-team",
+        "updated_at": "2018-11-08T11:31:07.458Z"
+      }
+    ],
+    "building_repositories": [],
+    "untracked_requests": [],
+    "missing_reviews": [
+      {
+        "id": 2730723,
+        "by": "repo-checker",
+        "package": "perl-File-Copy-Recursive",
+        "state": "new",
+        "request": 638963
+      },
+      {
+        "package": "keyutils",
+        "by": "repo-checker",
+        "id": 2786157,
+        "state": "new",
+        "request": 645337
+      },
+      {
+        "request": 645710,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2788890,
+        "package": "linux-glibc-devel"
+      },
+      {
+        "request": 646047,
+        "package": "shadow",
+        "id": 2791299,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "package": "vim",
+        "id": 2791434,
+        "by": "repo-checker",
+        "request": 646073
+      },
+      {
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2791575,
+        "package": "guile",
+        "request": 646084
+      },
+      {
+        "state": "new",
+        "id": 2792049,
+        "by": "repo-checker",
+        "package": "gegl",
+        "request": 646177
+      },
+      {
+        "state": "new",
+        "id": 2792064,
+        "by": "repo-checker",
+        "package": "jq",
+        "request": 646178
+      },
+      {
+        "state": "new",
+        "package": "kglobalaccel",
+        "by": "repo-checker",
+        "id": 2792103,
+        "request": 646193
+      },
+      {
+        "package": "python-pycurl",
+        "by": "repo-checker",
+        "id": 2792253,
+        "state": "new",
+        "request": 646252
+      },
+      {
+        "state": "new",
+        "package": "SDL2",
+        "id": 2792319,
+        "by": "repo-checker",
+        "request": 646277
+      },
+      {
+        "request": 646282,
+        "state": "new",
+        "id": 2792334,
+        "by": "repo-checker",
+        "package": "go"
+      },
+      {
+        "state": "new",
+        "id": 2792445,
+        "by": "repo-checker",
+        "package": "ethtool",
+        "request": 646328
+      },
+      {
+        "request": 646332,
+        "state": "new",
+        "package": "lvm2",
+        "by": "repo-checker",
+        "id": 2792508
+      },
+      {
+        "request": 646342,
+        "by": "repo-checker",
+        "id": 2792814,
+        "package": "python-pytest",
+        "state": "new"
+      },
+      {
+        "request": 646382,
+        "package": "docker-runc",
+        "id": 2792988,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "package": "ncurses",
+        "by": "repo-checker",
+        "id": 2792994,
+        "request": 646383
+      },
+      {
+        "state": "new",
+        "package": "golang-github-docker-libnetwork",
+        "id": 2793006,
+        "by": "repo-checker",
+        "request": 646386
+      },
+      {
+        "request": 646394,
+        "state": "new",
+        "id": 2793054,
+        "by": "repo-checker",
+        "package": "containerd"
+      },
+      {
+        "request": 646427,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2793270,
+        "package": "libirman"
+      },
+      {
+        "by": "repo-checker",
+        "id": 2794308,
+        "package": "opensm",
+        "state": "new",
+        "request": 646568
+      },
+      {
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2794824,
+        "package": "x11-tools",
+        "request": 646637
+      },
+      {
+        "request": 646641,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2794839,
+        "package": "perl-IO-Socket-SSL"
+      },
+      {
+        "package": "openucx",
+        "id": 2794878,
+        "by": "repo-checker",
+        "state": "new",
+        "request": 646644
+      },
+      {
+        "state": "new",
+        "package": "ilmbase",
+        "id": 2794929,
+        "by": "repo-checker",
+        "request": 646648
+      },
+      {
+        "request": 646678,
+        "by": "repo-checker",
+        "id": 2795193,
+        "package": "brp-check-suse",
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "package": "python-requests",
+        "id": 2795379,
+        "by": "repo-checker",
+        "request": 646695
+      },
+      {
+        "request": 646703,
+        "id": 2795541,
+        "by": "repo-checker",
+        "package": "live555",
+        "state": "new"
+      },
+      {
+        "request": 647104,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2799444,
+        "package": "mercurial"
+      },
+      {
+        "request": 647258,
+        "package": "openexr",
+        "id": 2800038,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "request": 647294,
+        "id": 2800425,
+        "by": "opensuse-review-team",
+        "package": "libyui-qt-pkg",
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "id": 2800428,
+        "by": "repo-checker",
+        "package": "libyui-qt-pkg",
+        "request": 647294
+      }
+    ],
+    "overall_state": "testing",
+    "description": "requests:\n- {author: dstoecker, id: 638963, package: perl-File-Copy-Recursive, type: submit}\n- {author: msmeissn, id: 645337, package: keyutils, type: submit}\n- {author: Andreas_Schwab, id: 645710, package: linux-glibc-devel, type: submit}\n- {author: jubalh, id: 646047, package: shadow, type: submit}\n- {author: pluskalm, id: 646073, package: vim, type: submit}\n- {author: psimons, id: 646084, package: guile, type: submit}\n- {author: namtrac, id: 646177, package: gegl, type: submit}\n- {author: namtrac, id: 646178, package: jq, type: submit}\n- {author: Vogtinator, id: 646193, package: kglobalaccel, type: submit}\n- {author: scarabeus_iv, id: 646252, package: python-pycurl, type: submit}\n- {author: jengelh, id: 646277, package: SDL2, type: submit}\n- {author: jfkw, id: 646282, package: go, type: submit}\n- {author: mkubecek, id: 646328, package: ethtool, type: submit}\n- {author: ganghe, id: 646332, package: lvm2, type: submit}\n- {author: mimi_vx, id: 646342, package: python-pytest, type: submit}\n- {author: cyphar, id: 646382, package: docker-runc, type: submit}\n- {author: factory-maintainer, id: 646383, package: ncurses, type: submit}\n- {author: cyphar, id: 646386, package: golang-github-docker-libnetwork, type: submit}\n- {author: cyphar, id: 646394, package: containerd, type: submit}\n- {author: pluskalm, id: 646427, package: libirman, type: submit}\n- {author: NMoreyChaisemartin, id: 646568, package: opensm, type: submit}\n- {author: mimi_vx, id: 646637, package: x11-tools, type: submit}\n- {author: pmonrealgonzalez, id: 646641, package: perl-IO-Socket-SSL, type: submit}\n- {author: jengelh, id: 646644, package: openucx, type: submit}\n- {author: pgajdos, id: 646648, package: ilmbase, type: submit}\n- {author: oertel, id: 646678, package: brp-check-suse, type: submit}\n- {author: TheBlackCat, id: 646695, package: python-requests, type: submit}\n- {author: tiwai, id: 646703, package: live555, type: submit}\n- {author: wrosenauer, id: 647104, package: mercurial, type: submit}\n- {author: pgajdos, id: 647258, package: openexr, type: submit}\n- {author: yast-team, id: 647294, package: libyui-qt-pkg, type: submit}\nrequests_comment: 12967\nsplitter_info:\n  activated: '2018-11-06 20:08:26.990248'\n  group: all\n  strategy: {name: none}\n",
+    "name": "openSUSE:Factory:Staging:B",
+    "missing_checks": [
+      "openqa:cryptlvm"
+    ]
+  },
+  {
+    "checks": [],
+    "broken_packages": [],
+    "obsolete_requests": [],
+    "selected_requests": [
+      {
+        "created_at": "2018-09-04T15:55:17.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_when": "2018-10-02T07:52:25.996Z",
+        "package": "openssl-1_0_0",
+        "creator": "vitezslav_cizek",
+        "updated_at": "2018-10-02T07:52:25.996Z",
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "number": 633055,
+        "accept_at": null,
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1120115
+      },
+      {
+        "number": 635010,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1125983,
+        "approver": null,
+        "updated_when": "2018-10-02T07:52:14.630Z",
+        "package": "openssl",
+        "created_at": "2018-09-11T15:12:37.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_at": "2018-10-02T07:52:14.630Z",
+        "creator": "vitezslav_cizek"
+      },
+      {
+        "number": 636597,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1130775,
+        "approver": null,
+        "updated_when": "2018-10-30T09:25:12.326Z",
+        "package": "python-tornado",
+        "priority": "moderate",
+        "created_at": "2018-09-19T08:41:08.000Z",
+        "superseded_by": null,
+        "updated_at": "2018-10-30T09:25:12.326Z",
+        "creator": "scarabeus_iv"
+      },
+      {
+        "package": "perl",
+        "updated_when": "2018-10-02T12:11:33.750Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-10-02T11:05:37.000Z",
+        "creator": "mlschroe",
+        "updated_at": "2018-10-02T12:11:33.750Z",
+        "accept_at": null,
+        "number": 639573,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "->",
+        "id": 1139739,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null
+      },
+      {
+        "creator": "Andreas_Schwab",
+        "updated_at": "2018-10-09T13:02:52.262Z",
+        "updated_when": "2018-10-09T13:02:52.262Z",
+        "package": "libxcrypt",
+        "priority": "moderate",
+        "created_at": "2018-10-09T12:28:20.000Z",
+        "superseded_by": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1143512,
+        "approver": null,
+        "number": 640817,
+        "accept_at": null,
+        "description": "Split libcrypt out of glibc",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "number": 643247,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1150833,
+        "approver": null,
+        "updated_when": "2018-10-22T21:17:04.897Z",
+        "package": "neon",
+        "priority": "moderate",
+        "created_at": "2018-10-19T18:44:30.000Z",
+        "superseded_by": null,
+        "creator": "namtrac",
+        "updated_at": "2018-10-22T21:17:04.897Z"
+      },
+      {
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1157037,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "number": 645305,
+        "accept_at": null,
+        "creator": "scarabeus_iv",
+        "updated_at": "2018-10-30T09:29:39.459Z",
+        "priority": "moderate",
+        "created_at": "2018-10-29T15:14:31.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-10-30T09:29:39.459Z",
+        "package": "python"
+      },
+      {
+        "accept_at": null,
+        "number": 645342,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "id": 1157148,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "package": "python3",
+        "updated_when": "2018-10-29T19:34:16.457Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-10-29T18:30:35.000Z",
+        "updated_at": "2018-10-29T19:34:16.457Z",
+        "creator": "mcepl"
+      },
+      {
+        "project": "openSUSE:Factory",
+        "description": "- Add patch perl-5.28-fixes.patch to get build cehck working again\n  due broken perl API with perl 5.28 and up (boo#1113945)",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 645535,
+        "approver": null,
+        "id": 1157727,
+        "state": "review",
+        "request_type": "submit",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-10-30T13:17:23.000Z",
+        "package": "texinfo",
+        "updated_when": "2018-11-01T15:24:50.577Z",
+        "creator": "WernerFink",
+        "updated_at": "2018-11-01T15:24:50.577Z"
+      },
+      {
+        "updated_at": "2018-10-31T08:10:35.205Z",
+        "creator": "scarabeus_iv",
+        "updated_when": "2018-10-31T08:10:35.205Z",
+        "package": "python-pyOpenSSL",
+        "priority": "moderate",
+        "created_at": "2018-10-31T05:46:21.000Z",
+        "superseded_by": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1158036,
+        "approver": null,
+        "number": 645638,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "approver": null,
+        "id": 1158132,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "description": "- update to 1.18.1:\n  * Fix debian bug 910911: This restores backward compatibility with\n    databases created by version 1.8 (and some later versions, with\n    mmapped I/O disabled).\n\n- update to 1.18:\n  * Fix directory entry validation\n  * Fix improper use of GDBM_DEBUG macro\n  * Fix spurious error from gdbm_dump and gdbm_export\n  * Make sure gdbm_sync always returns a meaningful value\n- includes changes from 1.17:\n  * Fix bug in gdbm_dump function, it did not clear the\n    GDBM_ITEM_NOT_FOUND error marker, which is set upon its normal\n    termination\n- changes upstreamed:\n  * gdbm_close() and gdbm_sync() now return 0 on success. On error,\n    they return -1 and set gdbm_errno and errno to the appropriate\n    error codes - drop gdbm-close-and-sync-return-value.patch\n\n- update to 1.16:\n  * Fix typo\n  * New gdbmtool variables: coalesce and centfree\n  * src/falloc.c (avail_lookup): Remove the start parameter.\n                 (_gdbm_put_av_elem): Rewrite the \"can_merge\" loop.\n- added gdbm-close-and-sync-return-value.patch\n  see https://puszcza.gnu.org.ua/bugs/index.php?399\n\n- update to 1.15:\n  * Extensive database consistency checking\n  * Improved error checking",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 645670,
+        "updated_at": "2018-10-31T08:09:55.558Z",
+        "creator": "pgajdos",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-10-31T07:16:35.000Z",
+        "package": "gdbm",
+        "updated_when": "2018-10-31T08:09:55.558Z"
+      },
+      {
+        "package": "openssl-1_1",
+        "updated_when": "2018-11-06T10:41:16.715Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-05T14:47:25.000Z",
+        "creator": "vitezslav_cizek",
+        "updated_at": "2018-11-06T10:41:16.715Z",
+        "accept_at": null,
+        "number": 646435,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "id": 1160430,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null
+      },
+      {
+        "creator": "Andreas_Schwab",
+        "updated_at": "2018-11-08T08:14:57.500Z",
+        "updated_when": "2018-11-08T08:14:57.500Z",
+        "package": "glibc",
+        "created_at": "2018-11-08T08:06:27.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1162827,
+        "approver": null,
+        "number": 647233,
+        "accept_at": null,
+        "description": "- Fix typography for glibc-locale-base. (forwarded request 647063 from jengelh)",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [
+      {
+        "final": 137,
+        "arch": "i586",
+        "repository": "standard",
+        "state": "building",
+        "tobuild": 2481,
+        "code": "building"
+      },
+      {
+        "final": 62,
+        "arch": "x86_64",
+        "repository": "standard",
+        "state": "building",
+        "tobuild": 2556,
+        "code": "building"
+      },
+      {
+        "code": "blocked",
+        "tobuild": 1,
+        "state": "blocked",
+        "repository": "images",
+        "arch": "x86_64",
+        "final": 2617
+      }
+    ],
+    "missing_reviews": [
+      {
+        "request": 639573,
+        "package": "perl",
+        "by": "repo-checker",
+        "id": 2734860,
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "id": 2744174,
+        "by": "repo-checker",
+        "package": "libxcrypt",
+        "request": 640817
+      },
+      {
+        "request": 643247,
+        "by": "repo-checker",
+        "id": 2766180,
+        "package": "neon",
+        "state": "new"
+      },
+      {
+        "request": 645305,
+        "state": "new",
+        "package": "python",
+        "id": 2785866,
+        "by": "repo-checker"
+      },
+      {
+        "request": 645342,
+        "by": "repo-checker",
+        "id": 2786256,
+        "package": "python3",
+        "state": "new"
+      },
+      {
+        "request": 645535,
+        "package": "texinfo",
+        "id": 2787459,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "package": "python-pyOpenSSL",
+        "by": "repo-checker",
+        "id": 2788365,
+        "request": 645638
+      },
+      {
+        "state": "new",
+        "package": "gdbm",
+        "id": 2788470,
+        "by": "repo-checker",
+        "request": 645670
+      },
+      {
+        "request": 646435,
+        "state": "new",
+        "package": "openssl-1_1",
+        "id": 2793495,
+        "by": "repo-checker"
+      },
+      {
+        "request": 647233,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2799666,
+        "package": "glibc"
+      }
+    ],
+    "overall_state": "building",
+    "description": "requests:\n- {author: vitezslav_cizek, id: 633055, package: openssl-1_0_0, type: submit}\n- {author: vitezslav_cizek, id: 635010, package: openssl, type: submit}\n- {author: scarabeus_iv, id: 636597, package: python-tornado, type: submit}\n- {author: mlschroe, id: 639573, package: perl, type: submit}\n- {author: Andreas_Schwab, id: 640817, package: libxcrypt, type: submit}\n- {author: namtrac, id: 643247, package: neon, type: submit}\n- {author: scarabeus_iv, id: 645305, package: python, type: submit}\n- {author: mcepl, id: 645342, package: python3, type: submit}\n- {author: WernerFink, id: 645535, package: texinfo, type: submit}\n- {author: scarabeus_iv, id: 645638, package: python-pyOpenSSL, type: submit}\n- {author: pgajdos, id: 645670, package: gdbm, type: submit}\n- {author: vitezslav_cizek, id: 646435, package: openssl-1_1, type: submit}\n- {author: Andreas_Schwab, id: 647233, package: glibc, type: submit}\nrequests_comment: 12989\nsplitter_info:\n  activated: '2018-08-13 18:23:35.107990'\n  group: glibc\n  strategy: {name: special}\n",
+    "name": "openSUSE:Factory:Staging:C",
+    "missing_checks": [
+      "openqa:cryptlvm"
+    ]
+  },
+  {
+    "missing_reviews": [],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "checks": [
+      {
+        "created_at": "2018-11-09T12:53:23.000Z",
+        "name": "openqa:minimalx@64bit",
+        "updated_at": "2018-11-09T13:47:06.000Z",
+        "url": "https://openqa.opensuse.org/tests/790707",
+        "status_reports_id": 411,
+        "id": 3906,
+        "short_description": null,
+        "state": "success"
+      },
+      {
+        "name": "openqa:rescue_system",
+        "created_at": "2018-11-09T12:53:23.000Z",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 411,
+        "id": 3909,
+        "updated_at": "2018-11-09T12:56:00.000Z",
+        "url": "https://openqa.opensuse.org/tests/790708"
+      },
+      {
+        "created_at": "2018-11-09T12:53:23.000Z",
+        "name": "openqa:minimalx@uefi-staging",
+        "updated_at": "2018-11-09T13:47:31.000Z",
+        "url": "https://openqa.opensuse.org/tests/790709",
+        "short_description": null,
+        "state": "success",
+        "id": 3912,
+        "status_reports_id": 411
+      },
+      {
+        "name": "openqa:RAID0",
+        "created_at": "2018-11-09T12:53:23.000Z",
+        "id": 3915,
+        "status_reports_id": 411,
+        "state": "success",
+        "short_description": null,
+        "url": "https://openqa.opensuse.org/tests/790710",
+        "updated_at": "2018-11-09T13:32:09.000Z"
+      },
+      {
+        "state": "success",
+        "short_description": null,
+        "id": 3918,
+        "status_reports_id": 411,
+        "updated_at": "2018-11-09T13:51:17.000Z",
+        "url": "https://openqa.opensuse.org/tests/790711",
+        "name": "openqa:cryptlvm",
+        "created_at": "2018-11-09T12:53:24.000Z"
+      },
+      {
+        "status_reports_id": 411,
+        "id": 3921,
+        "state": "success",
+        "short_description": null,
+        "url": "https://openqa.opensuse.org/tests/790712",
+        "updated_at": "2018-11-09T14:02:05.000Z",
+        "name": "openqa:gnome",
+        "created_at": "2018-11-09T12:53:25.000Z"
+      },
+      {
+        "created_at": "2018-11-09T12:53:25.000Z",
+        "name": "openqa:kde@64bit",
+        "updated_at": "2018-11-09T14:22:48.000Z",
+        "url": "https://openqa.opensuse.org/tests/790713",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 411,
+        "id": 3924
+      },
+      {
+        "url": "https://openqa.opensuse.org/tests/790714",
+        "updated_at": "2018-11-09T14:21:51.000Z",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 411,
+        "id": 3927,
+        "created_at": "2018-11-09T12:53:25.000Z",
+        "name": "openqa:kde@USBboot_64"
+      },
+      {
+        "updated_at": "2018-11-09T13:09:16.000Z",
+        "url": "https://openqa.opensuse.org/tests/790715#step/partitioning/2",
+        "short_description": null,
+        "state": "failure",
+        "id": 3930,
+        "status_reports_id": 411,
+        "created_at": "2018-11-09T12:53:26.000Z",
+        "name": "openqa:textmode"
+      },
+      {
+        "created_at": "2018-11-09T12:53:26.000Z",
+        "name": "openqa:update_staging",
+        "url": "https://openqa.opensuse.org/tests/790716",
+        "updated_at": "2018-11-09T13:39:36.000Z",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 411,
+        "id": 3933
+      },
+      {
+        "name": "openqa:RAID1",
+        "created_at": "2018-11-09T12:53:26.000Z",
+        "state": "success",
+        "short_description": null,
+        "id": 3936,
+        "status_reports_id": 411,
+        "updated_at": "2018-11-09T14:12:49.000Z",
+        "url": "https://openqa.opensuse.org/tests/790717"
+      }
+    ],
+    "selected_requests": [
+      {
+        "updated_at": "2018-11-02T04:26:34.024Z",
+        "creator": "jirislaby",
+        "superseded_by": null,
+        "created_at": "2018-10-23T06:31:44.000Z",
+        "priority": "moderate",
+        "package": "kernel-source",
+        "updated_when": "2018-11-02T04:26:34.024Z",
+        "approver": null,
+        "id": 1152735,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "description": "4.19 (let's not supersede 4.18.16 to have this pending as I assume there will be some problems in staging again)",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 643881
+      }
+    ],
+    "broken_packages": [],
+    "obsolete_requests": [],
+    "name": "openSUSE:Factory:Staging:D",
+    "missing_checks": [],
+    "overall_state": "failed",
+    "description": "requests:\n- {author: jirislaby, id: 643881, package: kernel-source, type: submit}\nrequests_comment: 21343\nsplitter_info:\n  activated: '2018-10-23 06:12:35.646967'\n  group: kernel-source\n  strategy: {name: special}\n"
+  },
+  {
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:E",
+    "description": "requests:\n- {author: AndreasStieger, id: 635472, package: postgresql-jdbc, type: delete}\n- {author: factory-maintainer, id: 646345, package: ecj, type: submit}\n- {author: factory-maintainer, id: 646346, package: jtidy, type: submit}\n- {author: factory-maintainer, id: 646384, package: qdox, type: submit}\n- {author: fstrba, id: 646511, package: mysql-connector-java, type: submit}\n- {author: fstrba, id: 646979, package: xalan-j2, type: submit}\n- {author: scarabeus_iv, id: 647275, package: axis, type: submit}\nrequests_comment: 18678\nsplitter_info:\n  activated: '2018-11-06 20:05:54.764291'\n  group: Java:packages\n  strategy: {name: devel}\n",
+    "overall_state": "acceptable",
+    "untracked_requests": [],
+    "building_repositories": [],
+    "missing_reviews": [],
+    "obsolete_requests": [],
+    "broken_packages": [],
+    "selected_requests": [
+      {
+        "request_type": "delete",
+        "state": "review",
+        "id": 1127369,
+        "approver": null,
+        "number": 635472,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "dropped from SLE 15, no longer current, leaf package\ncurrent version not buildable\nsecurity issue: boo#1106539",
+        "project": "openSUSE:Factory",
+        "creator": "AndreasStieger",
+        "updated_at": "2018-11-09T00:11:50.245Z",
+        "updated_when": "2018-11-09T00:11:50.245Z",
+        "package": "postgresql-jdbc",
+        "created_at": "2018-09-13T07:35:27.000Z",
+        "priority": "moderate",
+        "superseded_by": null
+      },
+      {
+        "updated_when": "2018-11-09T00:15:06.618Z",
+        "package": "ecj",
+        "created_at": "2018-11-05T09:38:53.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "creator": "factory-maintainer",
+        "updated_at": "2018-11-09T00:15:06.618Z",
+        "number": 646345,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "Automatic submission by obs-autosubmit",
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1160157,
+        "approver": null
+      },
+      {
+        "package": "jtidy",
+        "updated_when": "2018-11-09T00:15:07.181Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-05T09:40:01.000Z",
+        "updated_at": "2018-11-09T00:15:07.181Z",
+        "creator": "factory-maintainer",
+        "accept_at": null,
+        "number": 646346,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "Automatic submission by obs-autosubmit",
+        "id": 1160160,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null
+      },
+      {
+        "id": 1160277,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 646384,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "Automatic submission by obs-autosubmit",
+        "updated_at": "2018-11-09T00:15:07.778Z",
+        "creator": "factory-maintainer",
+        "package": "qdox",
+        "updated_when": "2018-11-09T00:15:07.778Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-05T10:56:28.000Z"
+      },
+      {
+        "updated_at": "2018-11-09T09:38:03.895Z",
+        "creator": "fstrba",
+        "priority": "important",
+        "created_at": "2018-11-05T22:17:59.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-09T09:38:03.895Z",
+        "package": "mysql-connector-java",
+        "approver": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1160658,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "number": 646511,
+        "accept_at": null
+      },
+      {
+        "project": "openSUSE:Factory",
+        "description": "Add maven provides",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 646979,
+        "approver": null,
+        "id": 1162065,
+        "request_type": "submit",
+        "state": "review",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-07T13:15:47.000Z",
+        "package": "xalan-j2",
+        "updated_when": "2018-11-08T21:33:29.702Z",
+        "updated_at": "2018-11-08T21:33:29.702Z",
+        "creator": "fstrba"
+      },
+      {
+        "accept_at": null,
+        "number": 647275,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "id": 1162953,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "package": "axis",
+        "updated_when": "2018-11-08T22:04:58.276Z",
+        "superseded_by": null,
+        "created_at": "2018-11-08T09:51:42.000Z",
+        "priority": "moderate",
+        "updated_at": "2018-11-08T22:04:58.276Z",
+        "creator": "scarabeus_iv"
+      }
+    ],
+    "checks": [
+      {
+        "name": "openqa:minimalx@64bit",
+        "created_at": "2018-11-08T15:19:14.000Z",
+        "state": "success",
+        "short_description": null,
+        "id": 3537,
+        "status_reports_id": 375,
+        "updated_at": "2018-11-08T16:14:12.000Z",
+        "url": "https://openqa.opensuse.org/tests/790112"
+      },
+      {
+        "url": "https://openqa.opensuse.org/tests/790113",
+        "updated_at": "2018-11-08T15:50:56.000Z",
+        "id": 3540,
+        "status_reports_id": 375,
+        "short_description": null,
+        "state": "success",
+        "created_at": "2018-11-08T15:19:14.000Z",
+        "name": "openqa:rescue_system"
+      },
+      {
+        "name": "openqa:minimalx@uefi-staging",
+        "created_at": "2018-11-08T15:19:14.000Z",
+        "status_reports_id": 375,
+        "id": 3543,
+        "state": "success",
+        "short_description": null,
+        "url": "https://openqa.opensuse.org/tests/790114",
+        "updated_at": "2018-11-08T16:13:20.000Z"
+      },
+      {
+        "short_description": null,
+        "state": "success",
+        "id": 3546,
+        "status_reports_id": 375,
+        "url": "https://openqa.opensuse.org/tests/790115",
+        "updated_at": "2018-11-08T16:11:30.000Z",
+        "name": "openqa:RAID0",
+        "created_at": "2018-11-08T15:19:14.000Z"
+      },
+      {
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 375,
+        "id": 3549,
+        "url": "https://openqa.opensuse.org/tests/790116",
+        "updated_at": "2018-11-08T16:19:15.000Z",
+        "name": "openqa:cryptlvm",
+        "created_at": "2018-11-08T15:19:14.000Z"
+      },
+      {
+        "status_reports_id": 375,
+        "id": 3552,
+        "short_description": null,
+        "state": "success",
+        "url": "https://openqa.opensuse.org/tests/790117",
+        "updated_at": "2018-11-08T16:41:34.000Z",
+        "name": "openqa:gnome",
+        "created_at": "2018-11-08T15:19:14.000Z"
+      },
+      {
+        "short_description": null,
+        "state": "success",
+        "id": 3555,
+        "status_reports_id": 375,
+        "updated_at": "2018-11-08T16:59:51.000Z",
+        "url": "https://openqa.opensuse.org/tests/790118",
+        "name": "openqa:kde@64bit",
+        "created_at": "2018-11-08T15:19:14.000Z"
+      },
+      {
+        "status_reports_id": 375,
+        "id": 3558,
+        "short_description": null,
+        "state": "success",
+        "url": "https://openqa.opensuse.org/tests/790119",
+        "updated_at": "2018-11-08T17:00:55.000Z",
+        "name": "openqa:kde@USBboot_64",
+        "created_at": "2018-11-08T15:19:15.000Z"
+      },
+      {
+        "created_at": "2018-11-08T15:19:15.000Z",
+        "name": "openqa:textmode",
+        "url": "https://openqa.opensuse.org/tests/790120",
+        "updated_at": "2018-11-08T16:24:24.000Z",
+        "state": "success",
+        "short_description": null,
+        "id": 3561,
+        "status_reports_id": 375
+      },
+      {
+        "created_at": "2018-11-08T15:19:15.000Z",
+        "name": "openqa:update_staging",
+        "url": "https://openqa.opensuse.org/tests/790121",
+        "updated_at": "2018-11-08T16:19:36.000Z",
+        "status_reports_id": 375,
+        "id": 3564,
+        "state": "success",
+        "short_description": null
+      },
+      {
+        "created_at": "2018-11-08T15:19:15.000Z",
+        "name": "openqa:RAID1",
+        "updated_at": "2018-11-08T16:43:18.000Z",
+        "url": "https://openqa.opensuse.org/tests/790122",
+        "state": "success",
+        "short_description": null,
+        "status_reports_id": 375,
+        "id": 3567
+      }
+    ]
+  },
+  {
+    "missing_reviews": [
+      {
+        "state": "new",
+        "id": 2682218,
+        "by": "repo-checker",
+        "package": "python-ceilometerclient",
+        "request": 632895
+      },
+      {
+        "request": 646022,
+        "package": "python-testtools",
+        "id": 2791158,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "package": "python-python-subunit",
+        "id": 2796096,
+        "by": "repo-checker",
+        "state": "new",
+        "request": 646744
+      },
+      {
+        "package": "python-stestr",
+        "by": "repo-checker",
+        "id": 2796351,
+        "state": "new",
+        "request": 646749
+      },
+      {
+        "state": "new",
+        "id": 2796576,
+        "by": "repo-checker",
+        "package": "libgit2",
+        "request": 646816
+      },
+      {
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2796600,
+        "package": "rpcbind",
+        "request": 646817
+      },
+      {
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2796612,
+        "package": "strace",
+        "request": 646819
+      },
+      {
+        "request": 646896,
+        "package": "libinput",
+        "by": "repo-checker",
+        "id": 2797548,
+        "state": "new"
+      },
+      {
+        "request": 646934,
+        "by": "repo-checker",
+        "id": 2797845,
+        "package": "kubernetes",
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2798091,
+        "package": "python-pbr",
+        "request": 646964
+      },
+      {
+        "state": "new",
+        "id": 2798097,
+        "by": "repo-checker",
+        "package": "libreoffice",
+        "request": 646965
+      },
+      {
+        "package": "cri-o",
+        "by": "repo-checker",
+        "id": 2798466,
+        "state": "new",
+        "request": 646997
+      },
+      {
+        "state": "new",
+        "id": 2798685,
+        "by": "X11:Solus",
+        "package": "budgie-desktop",
+        "request": 647028
+      },
+      {
+        "state": "new",
+        "package": "budgie-desktop",
+        "id": 2798685,
+        "by": "budgie-desktop",
+        "request": 647028
+      },
+      {
+        "by": "repo-checker",
+        "id": 2798688,
+        "package": "budgie-desktop",
+        "state": "new",
+        "request": 647028
+      },
+      {
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2798718,
+        "package": "schily",
+        "request": 647037
+      },
+      {
+        "request": 647039,
+        "by": "repo-checker",
+        "id": 2798748,
+        "package": "tse3",
+        "state": "new"
+      },
+      {
+        "id": 2799006,
+        "by": "repo-checker",
+        "package": "ruby2.5",
+        "state": "new",
+        "request": 647052
+      },
+      {
+        "request": 647057,
+        "state": "new",
+        "package": "libvirt",
+        "id": 2799069,
+        "by": "repo-checker"
+      },
+      {
+        "request": 647061,
+        "state": "new",
+        "package": "ffmpeg-4",
+        "by": "repo-checker",
+        "id": 2799084
+      },
+      {
+        "request": 647072,
+        "by": "repo-checker",
+        "id": 2799204,
+        "package": "xen",
+        "state": "new"
+      },
+      {
+        "request": 647196,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2799576,
+        "package": "dialog"
+      },
+      {
+        "request": 647204,
+        "package": "libmspack",
+        "id": 2799591,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "request": 647251,
+        "id": 2799963,
+        "by": "repo-checker",
+        "package": "gdb",
+        "state": "new"
+      },
+      {
+        "request": 647254,
+        "id": 2800020,
+        "by": "repo-checker",
+        "package": "NetworkManager-applet",
+        "state": "new"
+      },
+      {
+        "id": 2800128,
+        "by": "repo-checker",
+        "package": "perl-Business-ISMN",
+        "state": "new",
+        "request": 647272
+      },
+      {
+        "request": 647273,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2800134,
+        "package": "perl-DBI"
+      },
+      {
+        "request": 647274,
+        "state": "new",
+        "package": "perl-DateTime-Locale",
+        "id": 2800167,
+        "by": "repo-checker"
+      },
+      {
+        "state": "new",
+        "package": "perl-Error",
+        "id": 2800179,
+        "by": "repo-checker",
+        "request": 647276
+      },
+      {
+        "request": 647289,
+        "by": "repo-checker",
+        "id": 2800347,
+        "package": "perl-libwww-perl",
+        "state": "new"
+      },
+      {
+        "package": "python-Twisted",
+        "id": 2800620,
+        "by": "repo-checker",
+        "state": "new",
+        "request": 647311
+      },
+      {
+        "request": 647315,
+        "state": "new",
+        "package": "kernel-firmware",
+        "id": 2800764,
+        "by": "repo-checker"
+      },
+      {
+        "by": "repo-checker",
+        "id": 2800872,
+        "package": "glib2-branding",
+        "state": "new",
+        "request": 647326
+      },
+      {
+        "request": 647327,
+        "package": "tracker",
+        "id": 2800878,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "request": 647332,
+        "package": "perl-YAML",
+        "by": "repo-checker",
+        "id": 2801022,
+        "state": "new"
+      },
+      {
+        "state": "new",
+        "package": "perl-XML-XPath",
+        "id": 2801028,
+        "by": "repo-checker",
+        "request": 647333
+      },
+      {
+        "request": 647335,
+        "id": 2801034,
+        "by": "repo-checker",
+        "package": "perl-Test-Trap",
+        "state": "new"
+      },
+      {
+        "request": 647342,
+        "id": 2801097,
+        "by": "repo-checker",
+        "package": "perl-WWW-Mechanize",
+        "state": "new"
+      },
+      {
+        "package": "perl-Specio",
+        "id": 2801109,
+        "by": "repo-checker",
+        "state": "new",
+        "request": 647344
+      },
+      {
+        "package": "rpmlint",
+        "id": 2801124,
+        "by": "repo-checker",
+        "state": "new",
+        "request": 647347
+      },
+      {
+        "state": "new",
+        "package": "lirc",
+        "by": "repo-checker",
+        "id": 2801592,
+        "request": 647390
+      },
+      {
+        "request": 647429,
+        "package": "emacs-dash",
+        "id": 2801994,
+        "by": "repo-checker",
+        "state": "new"
+      },
+      {
+        "request": 647430,
+        "state": "new",
+        "package": "emacs-magit",
+        "by": "repo-checker",
+        "id": 2802024
+      },
+      {
+        "request": 647431,
+        "by": "repo-checker",
+        "id": 2802027,
+        "package": "emacs-haskell-mode",
+        "state": "new"
+      },
+      {
+        "id": 2802030,
+        "by": "repo-checker",
+        "package": "emacs-with-editor",
+        "state": "new",
+        "request": 647432
+      },
+      {
+        "request": 647436,
+        "by": "repo-checker",
+        "id": 2802090,
+        "package": "geeko-gtk-theme",
+        "state": "new"
+      },
+      {
+        "request": 647541,
+        "by": "opensuse-review-team",
+        "id": 2802678,
+        "package": "perl-File-Slurp",
+        "state": "new"
+      },
+      {
+        "id": 2802681,
+        "by": "repo-checker",
+        "package": "perl-File-Slurp",
+        "state": "new",
+        "request": 647541
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "selected_requests": [
+      {
+        "approver": null,
+        "id": 1119632,
+        "state": "review",
+        "request_type": "delete",
+        "project": "openSUSE:Factory",
+        "description": "no longer maintained",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 632895,
+        "creator": "dirkmueller",
+        "updated_at": "2018-11-08T13:28:15.044Z",
+        "superseded_by": null,
+        "created_at": "2018-09-03T17:28:27.000Z",
+        "priority": "moderate",
+        "package": "python-ceilometerclient",
+        "updated_when": "2018-11-08T13:28:15.044Z"
+      },
+      {
+        "creator": "scarabeus_iv",
+        "updated_at": "2018-11-08T13:27:07.243Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-02T08:21:15.000Z",
+        "package": "python-testtools",
+        "updated_when": "2018-11-08T13:27:07.243Z",
+        "approver": null,
+        "id": 1159188,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 646022
+      },
+      {
+        "number": 646744,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161357,
+        "approver": null,
+        "updated_when": "2018-11-08T13:28:41.430Z",
+        "package": "python-python-subunit",
+        "created_at": "2018-11-06T19:49:03.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "creator": "TheBlackCat",
+        "updated_at": "2018-11-08T13:28:41.430Z"
+      },
+      {
+        "number": 646749,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161372,
+        "approver": null,
+        "updated_when": "2018-11-08T13:28:47.224Z",
+        "package": "python-stestr",
+        "created_at": "2018-11-06T20:31:38.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_at": "2018-11-08T13:28:47.224Z",
+        "creator": "TheBlackCat"
+      },
+      {
+        "accept_at": null,
+        "number": 646816,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "id": 1161576,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "package": "libgit2",
+        "updated_when": "2018-11-08T13:27:34.512Z",
+        "superseded_by": null,
+        "created_at": "2018-11-07T07:44:12.000Z",
+        "priority": "moderate",
+        "updated_at": "2018-11-08T13:27:34.512Z",
+        "creator": "msmeissn"
+      },
+      {
+        "updated_when": "2018-11-08T13:27:40.419Z",
+        "package": "rpcbind",
+        "priority": "moderate",
+        "created_at": "2018-11-07T07:44:50.000Z",
+        "superseded_by": null,
+        "creator": "msmeissn",
+        "updated_at": "2018-11-08T13:27:40.419Z",
+        "number": 646817,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161579,
+        "approver": null
+      },
+      {
+        "updated_at": "2018-11-08T13:27:45.956Z",
+        "creator": "msmeissn",
+        "updated_when": "2018-11-08T13:27:45.956Z",
+        "package": "strace",
+        "priority": "moderate",
+        "created_at": "2018-11-07T07:46:25.000Z",
+        "superseded_by": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1161585,
+        "approver": null,
+        "number": 646819,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "number": 646896,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "- Update to new upstream release 1.12.3",
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1161816,
+        "approver": null,
+        "updated_when": "2018-11-08T17:36:52.152Z",
+        "package": "libinput",
+        "priority": "moderate",
+        "created_at": "2018-11-07T09:37:29.000Z",
+        "superseded_by": null,
+        "updated_at": "2018-11-08T17:36:52.152Z",
+        "creator": "jengelh"
+      },
+      {
+        "priority": "moderate",
+        "created_at": "2018-11-07T10:42:17.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-08T13:27:25.161Z",
+        "package": "kubernetes",
+        "creator": "RBrownSUSE",
+        "updated_at": "2018-11-08T13:27:25.161Z",
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "number": 646934,
+        "accept_at": null,
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161930
+      },
+      {
+        "approver": null,
+        "id": 1162020,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 646964,
+        "updated_at": "2018-11-08T13:28:05.125Z",
+        "creator": "scarabeus_iv",
+        "superseded_by": null,
+        "created_at": "2018-11-07T12:35:24.000Z",
+        "priority": "moderate",
+        "package": "python-pbr",
+        "updated_when": "2018-11-08T13:28:05.125Z"
+      },
+      {
+        "updated_at": "2018-11-08T13:28:10.569Z",
+        "creator": "scarabeus_iv",
+        "superseded_by": null,
+        "created_at": "2018-11-07T12:37:02.000Z",
+        "priority": "moderate",
+        "package": "libreoffice",
+        "updated_when": "2018-11-08T13:28:10.569Z",
+        "approver": null,
+        "id": 1162023,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 646965
+      },
+      {
+        "accept_at": null,
+        "number": 646997,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "id": 1162119,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "package": "cri-o",
+        "updated_when": "2018-11-08T13:28:30.154Z",
+        "superseded_by": null,
+        "created_at": "2018-11-07T13:52:34.000Z",
+        "priority": "moderate",
+        "updated_at": "2018-11-08T13:28:30.154Z",
+        "creator": "RBrownSUSE"
+      },
+      {
+        "updated_at": "2018-11-08T13:29:28.388Z",
+        "creator": "simonizor",
+        "updated_when": "2018-11-08T13:29:28.388Z",
+        "package": "budgie-desktop",
+        "priority": "moderate",
+        "created_at": "2018-11-07T15:06:45.000Z",
+        "superseded_by": null,
+        "request_type": "delete",
+        "state": "review",
+        "id": 1162212,
+        "approver": null,
+        "number": 647028,
+        "accept_at": null,
+        "description": "Normally, I would totally file a bug report first, but this is the 2nd time in a year that this package has become unbuildable with no one maintaining it.  This package has no business being in our main repositories if no one is going to maintain it and only makes us look bad by being there.",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Update to new upstream release 2018.10.30",
+        "accept_at": null,
+        "number": 647037,
+        "approver": null,
+        "id": 1162239,
+        "request_type": "submit",
+        "state": "review",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-07T15:40:59.000Z",
+        "package": "schily",
+        "updated_when": "2018-11-08T13:27:54.468Z",
+        "creator": "jengelh",
+        "updated_at": "2018-11-08T13:27:54.468Z"
+      },
+      {
+        "package": "tse3",
+        "updated_when": "2018-11-08T13:29:46.902Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-07T15:45:45.000Z",
+        "creator": "dimstar",
+        "updated_at": "2018-11-08T13:29:46.902Z",
+        "accept_at": null,
+        "number": 647039,
+        "project": "openSUSE:Factory",
+        "description": "Failed to build for &gt; 180 days",
+        "superseded_by_id": null,
+        "id": 1162245,
+        "request_type": "delete",
+        "state": "review",
+        "approver": null
+      },
+      {
+        "creator": "jordimassaguerpla",
+        "updated_at": "2018-11-08T13:27:11.942Z",
+        "package": "ruby2.5",
+        "updated_when": "2018-11-08T13:27:11.942Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-07T16:50:12.000Z",
+        "id": 1162284,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647052,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null
+      },
+      {
+        "approver": null,
+        "id": 1162299,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 647057,
+        "creator": "jfehlig",
+        "updated_at": "2018-11-08T13:27:16.455Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-07T17:17:13.000Z",
+        "package": "libvirt",
+        "updated_when": "2018-11-08T13:27:16.455Z"
+      },
+      {
+        "accept_at": null,
+        "number": 647061,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Update ffmpeg to 4.1\n  * Lots of filter updates as usual: deblock, tmix, aplify,\n    fftdnoiz, aderivative, aintegral, pal75bars, pal100bars,\n    adeclick, adeclip, lensfun (wrapper), colorconstancy, 1D LUT\n    filter (lut1d), cue, acue, transpose_npp, amultiply,\n    Block-Matching 3d (bm3d) denoising filter, acrossover filter,\n    audio denoiser as afftdn filter, sinc audio filter source,\n    chromahold, setparams, vibrance, xstack,\n    (a)graphmonitor filter yadif_cuda filter.\n  * AV1 parser\n  * Support for AV1 in MP4\n  * PCM VIDC decoder and encoder\n  * libtensorflow backend for DNN based filters like srcnn\n  * -- The following only enabled in third-party builds:\n  * ATRAC9 decoder\n  * AVS2 video decoder via libdavs2\n  * IMM4 video decoder\n  * Brooktree ProSumer video decoder\n  * MatchWare Screen Capture Codec decoder\n  * WinCam Motion Video decoder\n  * RemotelyAnywhere Screen Capture decoder\n  * AVS2 video encoder via libxavs2\n  * ILBC decoder\n  * SER demuxer\n  * Decoding S12M timecode in H264\n  * For complete changelog, see https://git.ffmpeg.org/gitweb/ffmpeg.git/shortlog/n4.1\n- Remove 0001-avcodec-libaom-fix-setting-amount-of-threads.patch\n  (fixed upstream (bsc#776cdd1), remove ffmpeg-CVE-2018-13305.patch,\n  remove 0001-avformat-flvenc-Check-audio-packet-size.patch,\n  remove cve-2017-17555.diff (fixed upstream).",
+        "id": 1162311,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "package": "ffmpeg-4",
+        "updated_when": "2018-11-08T13:27:20.688Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-07T17:22:46.000Z",
+        "creator": "jengelh",
+        "updated_at": "2018-11-08T13:27:20.688Z"
+      },
+      {
+        "updated_when": "2018-11-08T13:28:20.383Z",
+        "package": "xen",
+        "priority": "moderate",
+        "created_at": "2018-11-07T18:13:24.000Z",
+        "superseded_by": null,
+        "updated_at": "2018-11-08T13:28:20.383Z",
+        "creator": "charlesa",
+        "number": 647072,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1162344,
+        "approver": null
+      },
+      {
+        "updated_at": "2018-11-08T13:27:58.685Z",
+        "creator": "WernerFink",
+        "package": "dialog",
+        "updated_when": "2018-11-08T13:27:58.685Z",
+        "superseded_by": null,
+        "created_at": "2018-11-08T06:30:47.000Z",
+        "priority": "moderate",
+        "id": 1162716,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647196,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Fix mangled Hindi translation (bsc#1115005). (forwarded request 647100 from sbrabec)"
+      },
+      {
+        "number": 647204,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1162740,
+        "approver": null,
+        "updated_when": "2018-11-08T13:27:50.429Z",
+        "package": "libmspack",
+        "created_at": "2018-11-08T06:41:36.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "creator": "msmeissn",
+        "updated_at": "2018-11-08T13:27:50.429Z"
+      },
+      {
+        "priority": "moderate",
+        "created_at": "2018-11-08T08:59:56.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-08T13:28:25.380Z",
+        "package": "gdb",
+        "updated_at": "2018-11-08T13:28:25.380Z",
+        "creator": "rguenther",
+        "description": "- Fix crash when reading core [bsc #1109013]\n  * Add gdb-fix-crash-when-reading-core.patch\n    https://sourceware.org/ml/gdb-cvs/2018-11/msg00022.html (forwarded request 647075 from tomdevries)",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 647251,
+        "accept_at": null,
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1162881
+      },
+      {
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 647254,
+        "approver": null,
+        "id": 1162890,
+        "request_type": "submit",
+        "state": "review",
+        "superseded_by": null,
+        "created_at": "2018-11-08T09:03:10.000Z",
+        "priority": "moderate",
+        "package": "NetworkManager-applet",
+        "updated_when": "2018-11-08T13:28:36.293Z",
+        "creator": "dimstar",
+        "updated_at": "2018-11-08T13:28:36.293Z"
+      },
+      {
+        "id": 1162944,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647272,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "creator": "pmonrealgonzalez",
+        "updated_at": "2018-11-08T13:28:52.409Z",
+        "package": "perl-Business-ISMN",
+        "updated_when": "2018-11-08T13:28:52.409Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T09:47:58.000Z"
+      },
+      {
+        "approver": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1162947,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "number": 647273,
+        "accept_at": null,
+        "updated_at": "2018-11-08T13:28:58.698Z",
+        "creator": "pmonrealgonzalez",
+        "created_at": "2018-11-08T09:49:32.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_when": "2018-11-08T13:28:58.698Z",
+        "package": "perl-DBI"
+      },
+      {
+        "number": 647274,
+        "accept_at": null,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1162950,
+        "approver": null,
+        "updated_when": "2018-11-08T13:29:03.758Z",
+        "package": "perl-DateTime-Locale",
+        "priority": "moderate",
+        "created_at": "2018-11-08T09:50:40.000Z",
+        "superseded_by": null,
+        "updated_at": "2018-11-08T13:29:03.758Z",
+        "creator": "pmonrealgonzalez"
+      },
+      {
+        "state": "review",
+        "request_type": "submit",
+        "id": 1162956,
+        "approver": null,
+        "number": 647276,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "updated_at": "2018-11-08T13:29:10.769Z",
+        "creator": "pmonrealgonzalez",
+        "updated_when": "2018-11-08T13:29:10.769Z",
+        "package": "perl-Error",
+        "priority": "moderate",
+        "created_at": "2018-11-08T09:52:49.000Z",
+        "superseded_by": null
+      },
+      {
+        "updated_at": "2018-11-08T13:29:35.152Z",
+        "creator": "pmonrealgonzalez",
+        "priority": "moderate",
+        "created_at": "2018-11-08T10:00:54.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-08T13:29:35.152Z",
+        "package": "perl-libwww-perl",
+        "approver": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1162995,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 647289,
+        "accept_at": null
+      },
+      {
+        "id": 1163061,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647311,
+        "project": "openSUSE:Factory",
+        "description": "- Add no-pygtkcompat.patch to avoid dependency on Gtk (boo#1110669)\r\n",
+        "superseded_by_id": null,
+        "updated_at": "2018-11-08T14:40:45.604Z",
+        "creator": "mcepl",
+        "package": "python-Twisted",
+        "updated_when": "2018-11-08T14:40:45.604Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T13:25:50.000Z"
+      },
+      {
+        "accept_at": null,
+        "number": 647315,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "id": 1163073,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "package": "kernel-firmware",
+        "updated_when": "2018-11-09T11:04:01.174Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T13:58:36.000Z",
+        "updated_at": "2018-11-09T11:04:01.174Z",
+        "creator": "tiwai"
+      },
+      {
+        "updated_when": "2018-11-08T16:00:04.158Z",
+        "package": "glib2-branding",
+        "created_at": "2018-11-08T14:22:47.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "creator": "dimstar",
+        "updated_at": "2018-11-08T16:00:04.158Z",
+        "number": 647326,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "- Update gnome_defaults: evince.desktop has been renamed to\n  org.gnome.Evince.desktop with GNOME 3.30. (forwarded request 647312 from iznogood)",
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1163106,
+        "approver": null
+      },
+      {
+        "id": 1163109,
+        "state": "review",
+        "request_type": "submit",
+        "approver": null,
+        "accept_at": null,
+        "number": 647327,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Add tracker-sqlte-3.25-rename-tables.patch: drop FTS table/view\n  before ontology update (glgo#GNOME/tracker#40, boo#1110090) (forwarded request 647325 from dimstar)",
+        "creator": "dimstar",
+        "updated_at": "2018-11-08T14:44:47.717Z",
+        "package": "tracker",
+        "updated_when": "2018-11-08T14:44:47.717Z",
+        "superseded_by": null,
+        "created_at": "2018-11-08T14:23:23.000Z",
+        "priority": "moderate"
+      },
+      {
+        "updated_when": "2018-11-09T11:03:00.729Z",
+        "package": "perl-YAML",
+        "priority": "moderate",
+        "created_at": "2018-11-08T14:56:21.000Z",
+        "superseded_by": null,
+        "creator": "dstoecker",
+        "updated_at": "2018-11-09T11:03:00.729Z",
+        "number": 647332,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1163124,
+        "approver": null
+      },
+      {
+        "id": 1163127,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647333,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "updated_at": "2018-11-09T11:02:57.571Z",
+        "creator": "dstoecker",
+        "package": "perl-XML-XPath",
+        "updated_when": "2018-11-09T11:02:57.571Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T14:56:28.000Z"
+      },
+      {
+        "id": 1163133,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647335,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "updated_at": "2018-11-09T11:02:54.275Z",
+        "creator": "dstoecker",
+        "package": "perl-Test-Trap",
+        "updated_when": "2018-11-09T11:02:54.275Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T14:57:57.000Z"
+      },
+      {
+        "updated_at": "2018-11-09T11:02:43.271Z",
+        "creator": "dstoecker",
+        "package": "perl-WWW-Mechanize",
+        "updated_when": "2018-11-09T11:02:43.271Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T15:07:48.000Z",
+        "id": 1163154,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647342,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null
+      },
+      {
+        "updated_when": "2018-11-09T11:02:36.199Z",
+        "package": "perl-Specio",
+        "created_at": "2018-11-08T15:09:16.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_at": "2018-11-09T11:02:36.199Z",
+        "creator": "dstoecker",
+        "number": 647344,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1163160,
+        "approver": null
+      },
+      {
+        "number": 647347,
+        "accept_at": null,
+        "description": "- whitelist keepalived dbus service (bsc#1015141) (forwarded request 647310 from jsegitz)",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1163169,
+        "approver": null,
+        "updated_when": "2018-11-08T18:02:52.500Z",
+        "package": "rpmlint",
+        "created_at": "2018-11-08T15:16:18.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "creator": "msmeissn",
+        "updated_at": "2018-11-08T18:02:52.500Z"
+      },
+      {
+        "superseded_by": null,
+        "created_at": "2018-11-08T16:47:36.000Z",
+        "priority": "moderate",
+        "package": "lirc",
+        "updated_when": "2018-11-08T21:34:55.481Z",
+        "creator": "posophe",
+        "updated_at": "2018-11-08T21:34:55.481Z",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 647390,
+        "approver": null,
+        "id": 1163298,
+        "request_type": "submit",
+        "state": "review"
+      },
+      {
+        "number": 647429,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "The build is broken and I no longer use (or maintain) this package.",
+        "project": "openSUSE:Factory",
+        "request_type": "delete",
+        "state": "review",
+        "id": 1163415,
+        "approver": null,
+        "updated_when": "2018-11-08T20:47:43.695Z",
+        "package": "emacs-dash",
+        "priority": "moderate",
+        "created_at": "2018-11-08T18:54:54.000Z",
+        "superseded_by": null,
+        "creator": "psimons",
+        "updated_at": "2018-11-08T20:47:43.695Z"
+      },
+      {
+        "creator": "psimons",
+        "updated_at": "2018-11-08T20:47:47.091Z",
+        "package": "emacs-magit",
+        "updated_when": "2018-11-08T20:47:47.091Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T18:56:10.000Z",
+        "id": 1163418,
+        "request_type": "delete",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647430,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "The build depends on the broken emacs-dash package and I no longer use (or maintain) magit."
+      },
+      {
+        "superseded_by_id": null,
+        "description": "The build is broken and I no longer use (or maintain) this package.",
+        "project": "openSUSE:Factory",
+        "number": 647431,
+        "accept_at": null,
+        "approver": null,
+        "request_type": "delete",
+        "state": "review",
+        "id": 1163421,
+        "priority": "moderate",
+        "created_at": "2018-11-08T18:56:26.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-08T20:47:50.215Z",
+        "package": "emacs-haskell-mode",
+        "creator": "psimons",
+        "updated_at": "2018-11-08T20:47:50.215Z"
+      },
+      {
+        "creator": "psimons",
+        "updated_at": "2018-11-08T20:47:37.023Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T18:57:38.000Z",
+        "package": "emacs-with-editor",
+        "updated_when": "2018-11-08T20:47:37.023Z",
+        "approver": null,
+        "id": 1163424,
+        "state": "review",
+        "request_type": "delete",
+        "project": "openSUSE:Factory",
+        "description": "I no longer use (or maintain) this package. It exists only because it's a dependency of emacs-magit, which I submitted a delete request for moments ago as well.",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 647432
+      },
+      {
+        "creator": "hellcp",
+        "updated_at": "2018-11-08T20:47:40.449Z",
+        "updated_when": "2018-11-08T20:47:40.449Z",
+        "package": "geeko-gtk-theme",
+        "priority": "moderate",
+        "created_at": "2018-11-08T19:51:19.000Z",
+        "superseded_by": null,
+        "state": "review",
+        "request_type": "delete",
+        "id": 1163436,
+        "approver": null,
+        "number": 647436,
+        "accept_at": null,
+        "description": "No longer maintained",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      },
+      {
+        "updated_at": "2018-11-09T09:50:29.538Z",
+        "creator": "pmonrealgonzalez",
+        "superseded_by": null,
+        "created_at": "2018-11-09T09:48:29.000Z",
+        "priority": "moderate",
+        "package": "perl-File-Slurp",
+        "updated_when": "2018-11-09T09:50:29.538Z",
+        "approver": null,
+        "id": 1163751,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 647541
+      }
+    ],
+    "broken_packages": [
+      {
+        "project": "openSUSE:Factory:Staging:F",
+        "details": "nothing provides pkgconfig(gupnp-av-1.0) >= 0.11.5",
+        "arch": "i586",
+        "package": "dleyna-server",
+        "repository": "standard",
+        "state": "unresolvable"
+      },
+      {
+        "state": "unresolvable",
+        "arch": "i586",
+        "package": "gnome-music",
+        "repository": "standard",
+        "project": "openSUSE:Factory:Staging:F",
+        "details": "nothing provides dbus(com.intel.dleyna-server) needed by grilo-plugin-dleyna"
+      },
+      {
+        "package": "python-Twisted",
+        "arch": "i586",
+        "repository": "standard",
+        "state": "unresolvable",
+        "project": "openSUSE:Factory:Staging:F",
+        "details": "nothing provides python2-h2 >= 3.0, nothing provides python3-h2 >= 3.0"
+      },
+      {
+        "arch": "i586",
+        "package": "python-cliff",
+        "repository": "standard",
+        "state": "failed",
+        "project": "openSUSE:Factory:Staging:F",
+        "details": null
+      },
+      {
+        "details": "nothing provides python2-hpack, nothing provides python3-hpack",
+        "project": "openSUSE:Factory:Staging:F",
+        "state": "unresolvable",
+        "repository": "standard",
+        "arch": "i586",
+        "package": "python-h2"
+      },
+      {
+        "project": "openSUSE:Factory:Staging:F",
+        "details": null,
+        "state": "failed",
+        "arch": "i586",
+        "package": "python-hpack",
+        "repository": "standard"
+      },
+      {
+        "package": "python-pbr:test",
+        "arch": "i586",
+        "repository": "standard",
+        "state": "failed",
+        "project": "openSUSE:Factory:Staging:F",
+        "details": null
+      },
+      {
+        "state": "failed",
+        "package": "python-requests-mock",
+        "arch": "i586",
+        "repository": "standard",
+        "project": "openSUSE:Factory:Staging:F",
+        "details": null
+      },
+      {
+        "details": null,
+        "project": "openSUSE:Factory:Staging:F",
+        "repository": "standard",
+        "arch": "i586",
+        "package": "python-stevedore",
+        "state": "failed"
+      },
+      {
+        "details": null,
+        "project": "openSUSE:Factory:Staging:F",
+        "state": "failed",
+        "repository": "standard",
+        "arch": "i586",
+        "package": "strace"
+      },
+      {
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "dleyna-server",
+        "state": "unresolvable",
+        "details": "nothing provides pkgconfig(gupnp-av-1.0) >= 0.11.5",
+        "project": "openSUSE:Factory:Staging:F"
+      },
+      {
+        "details": "nothing provides dbus(com.intel.dleyna-server) needed by grilo-plugin-dleyna",
+        "project": "openSUSE:Factory:Staging:F",
+        "repository": "standard",
+        "package": "gnome-music",
+        "arch": "x86_64",
+        "state": "unresolvable"
+      },
+      {
+        "project": "openSUSE:Factory:Staging:F",
+        "details": null,
+        "package": "python-cliff",
+        "arch": "x86_64",
+        "repository": "standard",
+        "state": "failed"
+      },
+      {
+        "state": "failed",
+        "repository": "standard",
+        "package": "python-pbr:test",
+        "arch": "x86_64",
+        "details": null,
+        "project": "openSUSE:Factory:Staging:F"
+      },
+      {
+        "arch": "x86_64",
+        "package": "python-requests-mock",
+        "repository": "standard",
+        "state": "failed",
+        "project": "openSUSE:Factory:Staging:F",
+        "details": null
+      },
+      {
+        "details": null,
+        "project": "openSUSE:Factory:Staging:F",
+        "state": "failed",
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "python-stevedore"
+      },
+      {
+        "details": null,
+        "project": "openSUSE:Factory:Staging:F",
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "strace",
+        "state": "failed"
+      }
+    ],
+    "obsolete_requests": [],
+    "checks": [
+      {
+        "created_at": "2018-11-09T23:25:12.000Z",
+        "name": "openqa:textmode",
+        "updated_at": "2018-11-09T23:25:12.000Z",
+        "url": "https://openqa.opensuse.org/tests/790912",
+        "status_reports_id": 429,
+        "id": 4068,
+        "short_description": null,
+        "state": "pending"
+      },
+      {
+        "id": 4071,
+        "status_reports_id": 429,
+        "short_description": null,
+        "state": "success",
+        "updated_at": "2018-11-10T00:02:43.000Z",
+        "url": "https://openqa.opensuse.org/tests/790913",
+        "name": "openqa:update_staging",
+        "created_at": "2018-11-09T23:25:12.000Z"
+      },
+      {
+        "status_reports_id": 429,
+        "id": 4074,
+        "short_description": null,
+        "state": "pending",
+        "url": "https://openqa.opensuse.org/tests/790914",
+        "updated_at": "2018-11-09T23:25:12.000Z",
+        "name": "openqa:RAID1",
+        "created_at": "2018-11-09T23:25:12.000Z"
+      },
+      {
+        "created_at": "2018-11-09T23:25:13.000Z",
+        "name": "openqa:minimalx@64bit",
+        "updated_at": "2018-11-09T23:25:13.000Z",
+        "url": "https://openqa.opensuse.org/tests/790904",
+        "id": 4077,
+        "status_reports_id": 429,
+        "state": "pending",
+        "short_description": null
+      },
+      {
+        "short_description": null,
+        "state": "success",
+        "id": 4080,
+        "status_reports_id": 429,
+        "updated_at": "2018-11-09T23:27:39.000Z",
+        "url": "https://openqa.opensuse.org/tests/790905",
+        "name": "openqa:rescue_system",
+        "created_at": "2018-11-09T23:25:13.000Z"
+      },
+      {
+        "name": "openqa:minimalx@uefi-staging",
+        "created_at": "2018-11-09T23:25:13.000Z",
+        "status_reports_id": 429,
+        "id": 4083,
+        "state": "pending",
+        "short_description": null,
+        "updated_at": "2018-11-09T23:25:13.000Z",
+        "url": "https://openqa.opensuse.org/tests/790906"
+      },
+      {
+        "created_at": "2018-11-09T23:25:13.000Z",
+        "name": "openqa:RAID0",
+        "updated_at": "2018-11-09T23:58:38.000Z",
+        "url": "https://openqa.opensuse.org/tests/790907",
+        "status_reports_id": 429,
+        "id": 4086,
+        "short_description": null,
+        "state": "success"
+      },
+      {
+        "created_at": "2018-11-09T23:25:13.000Z",
+        "name": "openqa:cryptlvm",
+        "updated_at": "2018-11-09T23:25:13.000Z",
+        "url": "https://openqa.opensuse.org/tests/790908",
+        "status_reports_id": 429,
+        "id": 4089,
+        "short_description": null,
+        "state": "pending"
+      },
+      {
+        "name": "openqa:gnome",
+        "created_at": "2018-11-09T23:25:13.000Z",
+        "state": "pending",
+        "short_description": null,
+        "status_reports_id": 429,
+        "id": 4092,
+        "url": "https://openqa.opensuse.org/tests/790909",
+        "updated_at": "2018-11-09T23:25:13.000Z"
+      },
+      {
+        "state": "pending",
+        "short_description": null,
+        "status_reports_id": 429,
+        "id": 4095,
+        "url": "https://openqa.opensuse.org/tests/790910",
+        "updated_at": "2018-11-09T23:25:13.000Z",
+        "name": "openqa:kde@64bit",
+        "created_at": "2018-11-09T23:25:13.000Z"
+      },
+      {
+        "name": "openqa:kde@USBboot_64",
+        "created_at": "2018-11-09T23:25:13.000Z",
+        "status_reports_id": 429,
+        "id": 4098,
+        "state": "pending",
+        "short_description": null,
+        "url": "https://openqa.opensuse.org/tests/790911",
+        "updated_at": "2018-11-09T23:25:13.000Z"
+      }
+    ],
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:F",
+    "description": "requests:\n- {author: dirkmueller, id: 632895, package: python-ceilometerclient, type: delete}\n- {author: scarabeus_iv, id: 646022, package: python-testtools, type: submit}\n- {author: TheBlackCat, id: 646744, package: python-python-subunit, type: submit}\n- {author: TheBlackCat, id: 646749, package: python-stestr, type: submit}\n- {author: msmeissn, id: 646816, package: libgit2, type: submit}\n- {author: msmeissn, id: 646817, package: rpcbind, type: submit}\n- {author: msmeissn, id: 646819, package: strace, type: submit}\n- {author: jengelh, id: 646896, package: libinput, type: submit}\n- {author: RBrownSUSE, id: 646934, package: kubernetes, type: submit}\n- {author: scarabeus_iv, id: 646964, package: python-pbr, type: submit}\n- {author: scarabeus_iv, id: 646965, package: libreoffice, type: submit}\n- {author: RBrownSUSE, id: 646997, package: cri-o, type: submit}\n- {author: simonizor, id: 647028, package: budgie-desktop, type: delete}\n- {author: jengelh, id: 647037, package: schily, type: submit}\n- {author: dimstar, id: 647039, package: tse3, type: delete}\n- {author: jordimassaguerpla, id: 647052, package: ruby2.5, type: submit}\n- {author: jfehlig, id: 647057, package: libvirt, type: submit}\n- {author: jengelh, id: 647061, package: ffmpeg-4, type: submit}\n- {author: charlesa, id: 647072, package: xen, type: submit}\n- {author: WernerFink, id: 647196, package: dialog, type: submit}\n- {author: msmeissn, id: 647204, package: libmspack, type: submit}\n- {author: rguenther, id: 647251, package: gdb, type: submit}\n- {author: dimstar, id: 647254, package: NetworkManager-applet, type: submit}\n- {author: pmonrealgonzalez, id: 647272, package: perl-Business-ISMN, type: submit}\n- {author: pmonrealgonzalez, id: 647273, package: perl-DBI, type: submit}\n- {author: pmonrealgonzalez, id: 647274, package: perl-DateTime-Locale, type: submit}\n- {author: pmonrealgonzalez, id: 647276, package: perl-Error, type: submit}\n- {author: pmonrealgonzalez, id: 647289, package: perl-libwww-perl, type: submit}\n- {author: mcepl, id: 647311, package: python-Twisted, type: submit}\n- {author: tiwai, id: 647315, package: kernel-firmware, type: submit}\n- {author: dimstar, id: 647326, package: glib2-branding, type: submit}\n- {author: dimstar, id: 647327, package: tracker, type: submit}\n- {author: dstoecker, id: 647332, package: perl-YAML, type: submit}\n- {author: dstoecker, id: 647333, package: perl-XML-XPath, type: submit}\n- {author: dstoecker, id: 647335, package: perl-Test-Trap, type: submit}\n- {author: dstoecker, id: 647342, package: perl-WWW-Mechanize, type: submit}\n- {author: dstoecker, id: 647344, package: perl-Specio, type: submit}\n- {author: msmeissn, id: 647347, package: rpmlint, type: submit}\n- {author: posophe, id: 647390, package: lirc, type: submit}\n- {author: psimons, id: 647429, package: emacs-dash, type: delete}\n- {author: psimons, id: 647430, package: emacs-magit, type: delete}\n- {author: psimons, id: 647431, package: emacs-haskell-mode, type: delete}\n- {author: psimons, id: 647432, package: emacs-with-editor, type: delete}\n- {author: hellcp, id: 647436, package: geeko-gtk-theme, type: delete}\n- {author: pmonrealgonzalez, id: 647541, package: perl-File-Slurp, type: submit}\nrequests_comment: 19436\nsplitter_info:\n  activated: '2018-11-08 13:26:53.178150'\n  group: all\n  strategy: {name: none}\n",
+    "overall_state": "failed"
+  },
+  {
+    "selected_requests": [],
+    "broken_packages": [],
+    "obsolete_requests": [],
+    "checks": [],
+    "missing_reviews": [],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "description": "requests: []\n",
+    "overall_state": "empty",
+    "name": "openSUSE:Factory:Staging:Gcc7",
+    "missing_checks": []
+  },
+  {
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:16",
+    "overall_state": "unacceptable",
+    "description": "requests:\n- {author: cboltz, id: 627445, package: postfixadmin, type: submit}\nrequests_comment: 3\n",
+    "untracked_requests": [],
+    "building_repositories": [],
+    "missing_reviews": [
+      {
+        "request": 627445,
+        "package": "postfixadmin",
+        "by": "repo-checker",
+        "id": 2637820,
+        "state": "new"
+      }
+    ],
+    "checks": [],
+    "obsolete_requests": [
+      {
+        "approver": null,
+        "id": 1103227,
+        "state": "declined",
+        "request_type": "submit",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- fix deps\n  * add missing php-imap (setup is checking for it)\n  * add missing php-phar\n    ERROR: manifest length read was \"41556\" should be \"655360\"",
+        "accept_at": null,
+        "number": 627445,
+        "updated_at": "2018-11-08T09:50:41.247Z",
+        "creator": "cboltz",
+        "superseded_by": null,
+        "created_at": "2018-08-04T12:11:42.000Z",
+        "priority": "moderate",
+        "package": "postfixadmin",
+        "updated_when": "2018-11-08T09:50:41.247Z"
+      }
+    ],
+    "broken_packages": [],
+    "selected_requests": [
+      {
+        "superseded_by_id": null,
+        "description": "- fix deps\n  * add missing php-imap (setup is checking for it)\n  * add missing php-phar\n    ERROR: manifest length read was \"41556\" should be \"655360\"",
+        "project": "openSUSE:Factory",
+        "number": 627445,
+        "accept_at": null,
+        "approver": null,
+        "state": "declined",
+        "request_type": "submit",
+        "id": 1103227,
+        "created_at": "2018-08-04T12:11:42.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_when": "2018-11-08T09:50:41.247Z",
+        "package": "postfixadmin",
+        "creator": "cboltz",
+        "updated_at": "2018-11-08T09:50:41.247Z"
+      }
+    ]
+  },
+  {
+    "obsolete_requests": [
+      {
+        "approver": null,
+        "id": 1147449,
+        "state": "declined",
+        "request_type": "submit",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "Automatic submission by obs-autosubmit",
+        "accept_at": null,
+        "number": 642126,
+        "creator": "factory-maintainer",
+        "updated_at": "2018-11-08T14:49:55.962Z",
+        "superseded_by": null,
+        "created_at": "2018-10-15T22:24:09.000Z",
+        "priority": "moderate",
+        "package": "cf-cli",
+        "updated_when": "2018-11-08T14:49:55.962Z"
+      }
+    ],
+    "broken_packages": [
+      {
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "cf-cli:test",
+        "state": "failed",
+        "details": null,
+        "project": "openSUSE:Factory:Staging:adi:17"
+      }
+    ],
+    "selected_requests": [
+      {
+        "creator": "factory-maintainer",
+        "updated_at": "2018-11-08T14:49:55.962Z",
+        "updated_when": "2018-11-08T14:49:55.962Z",
+        "package": "cf-cli",
+        "priority": "moderate",
+        "created_at": "2018-10-15T22:24:09.000Z",
+        "superseded_by": null,
+        "state": "declined",
+        "request_type": "submit",
+        "id": 1147449,
+        "approver": null,
+        "number": 642126,
+        "accept_at": null,
+        "description": "Automatic submission by obs-autosubmit",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      }
+    ],
+    "checks": [],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "missing_reviews": [],
+    "description": "requests:\n- {author: factory-maintainer, id: 642126, package: cf-cli, type: submit}\nrequests_comment: 3\n",
+    "overall_state": "unacceptable",
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:17"
+  },
+  {
+    "selected_requests": [
+      {
+        "updated_at": "2018-11-09T11:15:01.123Z",
+        "creator": "jsegitz",
+        "priority": "moderate",
+        "created_at": "2018-11-07T16:27:22.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-09T11:15:01.123Z",
+        "package": "checkpolicy",
+        "approver": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1162269,
+        "description": null,
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "number": 647047,
+        "accept_at": null
+      }
+    ],
+    "broken_packages": [
+      {
+        "state": "unresolvable",
+        "arch": "x86_64",
+        "package": "checkpolicy",
+        "repository": "standard",
+        "project": "openSUSE:Factory:Staging:adi:35",
+        "details": "nothing provides libsepol-devel-static >= 2.8"
+      }
+    ],
+    "obsolete_requests": [],
+    "checks": [],
+    "missing_reviews": [
+      {
+        "state": "new",
+        "package": "checkpolicy",
+        "id": 2798838,
+        "by": "repo-checker",
+        "request": 647047
+      },
+      {
+        "state": "new",
+        "id": 2799135,
+        "by": "jengelh",
+        "package": "checkpolicy",
+        "request": 647047
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "description": "requests:\n- {author: jsegitz, id: 647047, package: checkpolicy, type: submit}\nrequests_comment: 3\n",
+    "overall_state": "failed",
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:35"
+  },
+  {
+    "overall_state": "failed",
+    "description": "requests:\n- {author: TheBlackCat, id: 647645, package: python-QtPy, type: submit}\nrequests_comment: 3\n",
+    "name": "openSUSE:Factory:Staging:adi:36",
+    "missing_checks": [],
+    "checks": [],
+    "selected_requests": [
+      {
+        "updated_at": "2018-11-09T18:50:33.146Z",
+        "creator": "TheBlackCat",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-09T17:47:27.000Z",
+        "package": "python-QtPy",
+        "updated_when": "2018-11-09T18:50:33.146Z",
+        "approver": null,
+        "id": 1164063,
+        "state": "review",
+        "request_type": "submit",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 647645
+      }
+    ],
+    "broken_packages": [
+      {
+        "details": null,
+        "project": "openSUSE:Factory:Staging:adi:36",
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "python-QtPy",
+        "state": "failed"
+      }
+    ],
+    "obsolete_requests": [],
+    "missing_reviews": [
+      {
+        "request": 647645,
+        "package": "python-QtPy",
+        "by": "opensuse-review-team",
+        "id": 2803677,
+        "state": "new"
+      },
+      {
+        "request": 647645,
+        "id": 2803680,
+        "by": "repo-checker",
+        "package": "python-QtPy",
+        "state": "new"
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": []
+  },
+  {
+    "overall_state": "failed",
+    "description": "requests:\n- {author: tiwai, id: 646700, package: lmms, type: submit}\nrequests_comment: 3\n",
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:38",
+    "checks": [],
+    "obsolete_requests": [],
+    "broken_packages": [
+      {
+        "project": "openSUSE:Factory:Staging:adi:38",
+        "details": "nothing provides libfluidsynth.so.1()(64bit) needed by carla",
+        "arch": "x86_64",
+        "package": "lmms",
+        "repository": "standard",
+        "state": "unresolvable"
+      }
+    ],
+    "selected_requests": [
+      {
+        "updated_at": "2018-11-07T17:39:59.052Z",
+        "creator": "tiwai",
+        "updated_when": "2018-11-07T17:39:59.052Z",
+        "package": "lmms",
+        "created_at": "2018-11-06T15:30:56.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1161225,
+        "approver": null,
+        "number": 646700,
+        "accept_at": null,
+        "description": "- add lmms-fluidsynth.patch: backport upstream fix for fluidsynth API change\n- remove lmms-1.2.0-undefined_ref.patch, already applied upstream in this release\n- add lmms-1.2.0-libdir.patch: upstream patch to find plugin dir (use absolute paths in CMAKE_INSTALL_LIBDIR)\n- change lmms-1.2.0-crippled_stk.patch to match current upstream source (tiny datatype change)\n- install bash completions, by hand ATM until upstream finds a way to make DESTDIR work\n\n- Update to version 1.2.0rc7+git20180925.a2685c1cc:\n  * Bump version to 1.2.0-rc7\n  * Update the LMMS logo and mimetypes (#4519)\n  * Add bash completion (#4534) (#4604)\n  * Specify infinte timeout in tryLock on export\n  * Update UI 60 times per second (#4570)\n  * Add Carla support for MacOS (#4558)\n  * Fallback to default audio/MIDI backends if invalid one is set\n  * Validate audio/MIDI backend when opening setup dialog\n  * Restructure help\n  * Fix decimal separator handling (#4547)\n  * Set VST program first when restoring settings\n  * Initialise OLE in RemoteVstPlugin\n  * Link RemoteVstPlugin with -mwindows\n  * Fix VST windows resizing a little incorrectly\n  * Fix kVstTransportChanged flag usage in VST sync\n  * Fix hang when updateInOutCount called from processReplacing\n  * Suspend plugin when changing sample rate/buffer size\n  * Fix invisible editors on project load by validating size (#4502)\n  * Allow building with sndio support on more systems than just OpenBSD (#4486)\n  * Remove Qt temporary files after loading ZynAddSubFX settings (#4551)\n  * Don't try to clear null buffer in NotePlayHandle::play (#4545)\n  * Make the oscilloscope colors available as properties\n  * Fix Freeboy noise channel playback (#4538)",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory"
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "missing_reviews": [
+      {
+        "request": 646700,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2795535,
+        "package": "lmms"
+      }
+    ]
+  },
+  {
+    "selected_requests": [
+      {
+        "updated_when": "2018-08-23T13:36:48.547Z",
+        "package": "ocaml-extlib",
+        "created_at": "2018-07-05T08:16:40.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "updated_at": "2018-08-23T13:36:48.547Z",
+        "creator": "factory-maintainer",
+        "number": 620955,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "Automatic submission by obs-autosubmit",
+        "project": "openSUSE:Factory",
+        "request_type": "submit",
+        "state": "review",
+        "id": 1083688,
+        "approver": null
+      }
+    ],
+    "obsolete_requests": [],
+    "broken_packages": [
+      {
+        "project": "openSUSE:Factory:Staging:adi:39",
+        "details": "nothing provides ocamlfind(cppo_ocamlbuild)",
+        "arch": "x86_64",
+        "package": "ocaml-extlib",
+        "repository": "standard",
+        "state": "unresolvable"
+      }
+    ],
+    "checks": [],
+    "missing_reviews": [],
+    "building_repositories": [],
+    "untracked_requests": [],
+    "description": "requests:\n- {author: factory-maintainer, id: 620955, package: ocaml-extlib, type: submit}\nrequests_comment: 3\n",
+    "overall_state": "failed",
+    "name": "openSUSE:Factory:Staging:adi:39",
+    "missing_checks": []
+  },
+  {
+    "missing_reviews": [
+      {
+        "id": 2787291,
+        "by": "repo-checker",
+        "package": "apache2-mod_auth_openidc",
+        "state": "new",
+        "request": 645516
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "checks": [],
+    "selected_requests": [
+      {
+        "approver": null,
+        "request_type": "submit",
+        "state": "review",
+        "id": 1157670,
+        "superseded_by_id": null,
+        "description": "It can be probably needed because of fate#323817 and fate#324447",
+        "project": "openSUSE:Factory",
+        "number": 645516,
+        "accept_at": null,
+        "updated_at": "2018-11-09T10:20:15.566Z",
+        "creator": "kstreitova",
+        "priority": "moderate",
+        "created_at": "2018-10-30T11:40:58.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-09T10:20:15.566Z",
+        "package": "apache2-mod_auth_openidc"
+      }
+    ],
+    "broken_packages": [
+      {
+        "state": "unresolvable",
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "apache2-mod_auth_openidc",
+        "details": "nothing provides pkgconfig(cjose) >= 0.4.1",
+        "project": "openSUSE:Factory:Staging:adi:40"
+      }
+    ],
+    "obsolete_requests": [],
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:40",
+    "overall_state": "failed",
+    "description": "requests:\n- {author: kstreitova, id: 645516, package: apache2-mod_auth_openidc, type: submit}\nrequests_comment: 3\n"
+  },
+  {
+    "description": "requests:\n- {author: scarabeus_iv, id: 640545, package: nut, type: submit}\nrequests_comment: 3\n",
+    "overall_state": "failed",
+    "name": "openSUSE:Factory:Staging:adi:44",
+    "missing_checks": [],
+    "selected_requests": [
+      {
+        "number": 640545,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "state": "review",
+        "request_type": "submit",
+        "id": 1142690,
+        "approver": null,
+        "updated_when": "2018-10-08T09:14:18.597Z",
+        "package": "nut",
+        "priority": "moderate",
+        "created_at": "2018-10-08T08:05:01.000Z",
+        "superseded_by": null,
+        "updated_at": "2018-10-08T09:14:18.597Z",
+        "creator": "scarabeus_iv"
+      }
+    ],
+    "obsolete_requests": [],
+    "broken_packages": [
+      {
+        "state": "failed",
+        "arch": "x86_64",
+        "package": "nut",
+        "repository": "standard",
+        "project": "openSUSE:Factory:Staging:adi:44",
+        "details": null
+      }
+    ],
+    "checks": [],
+    "missing_reviews": [],
+    "untracked_requests": [],
+    "building_repositories": []
+  },
+  {
+    "description": "requests:\n- {author: sbrabec, id: 647442, package: verilator, type: submit}\nrequests_comment: 3\n",
+    "overall_state": "failed",
+    "name": "openSUSE:Factory:Staging:adi:5",
+    "missing_checks": [],
+    "broken_packages": [
+      {
+        "arch": "x86_64",
+        "package": "verilator",
+        "repository": "standard",
+        "state": "unresolvable",
+        "project": "openSUSE:Factory:Staging:adi:5",
+        "details": "nothing provides perl-SystemPerl-devel"
+      }
+    ],
+    "obsolete_requests": [],
+    "selected_requests": [
+      {
+        "updated_at": "2018-11-09T06:49:12.820Z",
+        "creator": "sbrabec",
+        "package": "verilator",
+        "updated_when": "2018-11-09T06:49:12.820Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-08T21:14:42.000Z",
+        "id": 1163454,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 647442,
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Update to version 3.904 (see Changes)\r\n"
+      }
+    ],
+    "checks": [],
+    "building_repositories": [],
+    "untracked_requests": [],
+    "missing_reviews": [
+      {
+        "request": 647442,
+        "state": "new",
+        "id": 2802183,
+        "by": "opensuse-review-team",
+        "package": "verilator"
+      },
+      {
+        "request": 647442,
+        "state": "new",
+        "package": "verilator",
+        "id": 2802186,
+        "by": "repo-checker"
+      }
+    ]
+  },
+  {
+    "untracked_requests": [],
+    "building_repositories": [],
+    "missing_reviews": [],
+    "obsolete_requests": [],
+    "broken_packages": [
+      {
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "firehol",
+        "state": "unresolvable",
+        "details": "nothing provides iptables-backend-legacy",
+        "project": "openSUSE:Factory:Staging:adi:56"
+      }
+    ],
+    "selected_requests": [
+      {
+        "id": 1114505,
+        "request_type": "submit",
+        "state": "review",
+        "approver": null,
+        "accept_at": null,
+        "number": 631187,
+        "project": "openSUSE:Factory",
+        "description": "Automatic submission by obs-autosubmit",
+        "superseded_by_id": null,
+        "updated_at": "2018-08-30T12:42:02.728Z",
+        "creator": "factory-maintainer",
+        "package": "firehol",
+        "updated_when": "2018-08-30T12:42:02.728Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-08-23T20:49:29.000Z"
+      }
+    ],
+    "checks": [],
+    "name": "openSUSE:Factory:Staging:adi:56",
+    "missing_checks": [],
+    "description": "requests:\n- {author: factory-maintainer, id: 631187, package: firehol, type: submit}\nrequests_comment: 3\n",
+    "overall_state": "failed"
+  },
+  {
+    "missing_reviews": [
+      {
+        "package": "rubygem-passenger",
+        "by": "opensuse-review-team",
+        "id": 2794233,
+        "state": "declined",
+        "request": 646560
+      },
+      {
+        "by": "repo-checker",
+        "id": 2794236,
+        "package": "rubygem-passenger",
+        "state": "new",
+        "request": 646560
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "selected_requests": [
+      {
+        "approver": null,
+        "request_type": "submit",
+        "state": "declined",
+        "id": 1160805,
+        "superseded_by_id": null,
+        "description": null,
+        "project": "openSUSE:Factory",
+        "number": 646560,
+        "accept_at": null,
+        "creator": "mschnitzer",
+        "updated_at": "2018-11-09T11:23:42.776Z",
+        "priority": "moderate",
+        "created_at": "2018-11-06T06:07:30.000Z",
+        "superseded_by": null,
+        "updated_when": "2018-11-09T11:23:42.776Z",
+        "package": "rubygem-passenger"
+      }
+    ],
+    "broken_packages": [
+      {
+        "state": "failed",
+        "repository": "standard",
+        "package": "rubygem-passenger",
+        "arch": "x86_64",
+        "details": null,
+        "project": "openSUSE:Factory:Staging:adi:62"
+      }
+    ],
+    "obsolete_requests": [
+      {
+        "accept_at": null,
+        "number": 646560,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "id": 1160805,
+        "state": "declined",
+        "request_type": "submit",
+        "approver": null,
+        "package": "rubygem-passenger",
+        "updated_when": "2018-11-09T11:23:42.776Z",
+        "superseded_by": null,
+        "created_at": "2018-11-06T06:07:30.000Z",
+        "priority": "moderate",
+        "creator": "mschnitzer",
+        "updated_at": "2018-11-09T11:23:42.776Z"
+      }
+    ],
+    "checks": [],
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:62",
+    "description": "requests:\n- {author: mschnitzer, id: 646560, package: rubygem-passenger, type: submit}\nrequests_comment: 3\n",
+    "overall_state": "unacceptable"
+  },
+  {
+    "name": "openSUSE:Factory:Staging:adi:65",
+    "missing_checks": [],
+    "description": "requests:\n- {author: badshah400, id: 645673, package: python-pysmb, type: submit}\n- {author: badshah400, id: 645675, package: python-pykeepass, type: submit}\n- {author: namtrac, id: 645723, package: python-easypysmb, type: submit}\nrequests_comment: 10\n",
+    "overall_state": "unacceptable",
+    "missing_reviews": [
+      {
+        "request": 645723,
+        "state": "declined",
+        "package": "python-easypysmb",
+        "id": 2788989,
+        "by": "opensuse-review-team"
+      }
+    ],
+    "building_repositories": [],
+    "untracked_requests": [],
+    "selected_requests": [
+      {
+        "superseded_by": null,
+        "created_at": "2018-10-31T08:14:49.000Z",
+        "priority": "moderate",
+        "package": "python-pysmb",
+        "updated_when": "2018-11-07T15:37:31.041Z",
+        "creator": "badshah400",
+        "updated_at": "2018-11-07T15:37:31.041Z",
+        "project": "openSUSE:Factory",
+        "description": "\r\nNew package: python-pysmb: an SMB/CIFS library written in Python. It implements the client-side SMB/CIFS protocol which allows your Python application to access and transfer files to/from SMB/CIFS shared folders like your Windows file sharing and Samba folders.",
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 645673,
+        "approver": null,
+        "id": 1158141,
+        "request_type": "submit",
+        "state": "review"
+      },
+      {
+        "updated_at": "2018-11-09T10:43:53.846Z",
+        "creator": "badshah400",
+        "updated_when": "2018-11-09T10:43:53.846Z",
+        "package": "python-pykeepass",
+        "created_at": "2018-10-31T08:19:05.000Z",
+        "priority": "moderate",
+        "superseded_by": null,
+        "state": "review",
+        "request_type": "submit",
+        "id": 1158147,
+        "approver": null,
+        "number": 645675,
+        "accept_at": null,
+        "superseded_by_id": null,
+        "description": "New package: python-pykeepass is a python library that allows you to write entries to a KeePass database (depends on sr#645673 and sr#645674)\r\n",
+        "project": "openSUSE:Factory"
+      },
+      {
+        "updated_at": "2018-11-08T17:11:33.320Z",
+        "creator": "namtrac",
+        "package": "python-easypysmb",
+        "updated_when": "2018-11-08T17:11:33.320Z",
+        "superseded_by": null,
+        "created_at": "2018-10-31T11:47:37.000Z",
+        "priority": "moderate",
+        "id": 1158291,
+        "state": "declined",
+        "request_type": "submit",
+        "approver": null,
+        "accept_at": null,
+        "number": 645723,
+        "project": "openSUSE:Factory",
+        "description": "- Ensure neutrality of description.\r\n- Initial package.\r\n",
+        "superseded_by_id": null
+      }
+    ],
+    "obsolete_requests": [
+      {
+        "accept_at": null,
+        "number": 645723,
+        "project": "openSUSE:Factory",
+        "description": "- Ensure neutrality of description.\r\n- Initial package.\r\n",
+        "superseded_by_id": null,
+        "id": 1158291,
+        "state": "declined",
+        "request_type": "submit",
+        "approver": null,
+        "package": "python-easypysmb",
+        "updated_when": "2018-11-08T17:11:33.320Z",
+        "superseded_by": null,
+        "created_at": "2018-10-31T11:47:37.000Z",
+        "priority": "moderate",
+        "updated_at": "2018-11-08T17:11:33.320Z",
+        "creator": "namtrac"
+      }
+    ],
+    "broken_packages": [],
+    "checks": []
+  },
+  {
+    "missing_reviews": [
+      {
+        "request": 646754,
+        "state": "new",
+        "by": "repo-checker",
+        "id": 2796420,
+        "package": "cargo-vendor"
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "selected_requests": [
+      {
+        "request_type": "submit",
+        "state": "review",
+        "id": 1160685,
+        "approver": null,
+        "number": 646520,
+        "accept_at": null,
+        "description": "- Add missing runtime requirement for python3-setuptools\r\n",
+        "superseded_by_id": null,
+        "project": "openSUSE:Factory",
+        "updated_at": "2018-11-07T04:19:48.746Z",
+        "creator": "Pharaoh_Atem",
+        "updated_when": "2018-11-07T04:19:48.746Z",
+        "package": "rust-packaging",
+        "created_at": "2018-11-06T03:05:41.000Z",
+        "priority": "moderate",
+        "superseded_by": null
+      },
+      {
+        "creator": "luke_nukem",
+        "updated_at": "2018-11-09T11:12:55.101Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-06T21:22:39.000Z",
+        "package": "cargo-vendor",
+        "updated_when": "2018-11-09T11:12:55.101Z",
+        "approver": null,
+        "id": 1161390,
+        "request_type": "submit",
+        "state": "review",
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": "- Re-export rustflags before install to prevent the rebuild of the\r\n  binary when cargo install detects the flags have changed (to\r\n  none).\r\n- Update to 0.1.21\r\n  + no changelog provided\r\n",
+        "accept_at": null,
+        "number": 646754
+      }
+    ],
+    "obsolete_requests": [],
+    "broken_packages": [
+      {
+        "details": "nothing provides rust >= 1.30.0, nothing provides rust-std-static >= 1.30.0",
+        "project": "openSUSE:Factory:Staging:adi:67",
+        "state": "unresolvable",
+        "repository": "standard",
+        "arch": "x86_64",
+        "package": "cargo-vendor"
+      }
+    ],
+    "checks": [],
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:67",
+    "description": "requests:\n- {author: Pharaoh_Atem, id: 646520, package: rust-packaging, type: submit}\n- {author: luke_nukem, id: 646754, package: cargo-vendor, type: submit}\nrequests_comment: 7\n",
+    "overall_state": "failed"
+  },
+  {
+    "missing_reviews": [
+      {
+        "by": "opensuse-review-team",
+        "id": 2799690,
+        "package": "x86info",
+        "state": "new",
+        "request": 647235
+      },
+      {
+        "state": "declined",
+        "package": "osslsigncode",
+        "id": 2796564,
+        "by": "legal-auto",
+        "request": 646823
+      }
+    ],
+    "untracked_requests": [],
+    "building_repositories": [],
+    "checks": [],
+    "selected_requests": [
+      {
+        "updated_at": "2018-11-09T11:13:57.770Z",
+        "creator": "msmeissn",
+        "package": "osslsigncode",
+        "updated_when": "2018-11-09T11:13:57.770Z",
+        "superseded_by": null,
+        "priority": "moderate",
+        "created_at": "2018-11-07T07:47:06.000Z",
+        "id": 1161597,
+        "request_type": "submit",
+        "state": "declined",
+        "approver": null,
+        "accept_at": null,
+        "number": 646823,
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null
+      },
+      {
+        "project": "openSUSE:Factory",
+        "superseded_by_id": null,
+        "description": null,
+        "accept_at": null,
+        "number": 647235,
+        "approver": null,
+        "id": 1162833,
+        "request_type": "submit",
+        "state": "review",
+        "superseded_by": null,
+        "created_at": "2018-11-08T08:13:12.000Z",
+        "priority": "moderate",
+        "package": "x86info",
+        "updated_when": "2018-11-09T11:17:08.115Z",
+        "creator": "dirkmueller",
+        "updated_at": "2018-11-09T11:17:08.115Z"
+      }
+    ],
+    "broken_packages": [],
+    "obsolete_requests": [
+      {
+        "superseded_by": null,
+        "created_at": "2018-11-07T07:47:06.000Z",
+        "priority": "moderate",
+        "package": "osslsigncode",
+        "updated_when": "2018-11-09T11:13:57.770Z",
+        "updated_at": "2018-11-09T11:13:57.770Z",
+        "creator": "msmeissn",
+        "project": "openSUSE:Factory",
+        "description": null,
+        "superseded_by_id": null,
+        "accept_at": null,
+        "number": 646823,
+        "approver": null,
+        "id": 1161597,
+        "request_type": "submit",
+        "state": "declined"
+      }
+    ],
+    "missing_checks": [],
+    "name": "openSUSE:Factory:Staging:adi:7",
+    "overall_state": "unacceptable",
+    "description": "requests:\n- {author: msmeissn, id: 646823, package: osslsigncode, type: submit}\n- {author: dirkmueller, id: 647235, package: x86info, type: submit}\nrequests_comment: 7\n"
+  }
 ]

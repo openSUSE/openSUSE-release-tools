@@ -21,7 +21,7 @@ PROJECT = 'openSUSE:Factory'
 
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 
-DEBUG = True
+DEBUG = False
 
 
 # The idiotic routing system of httpretty use a hash table.  Because
