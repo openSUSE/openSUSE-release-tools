@@ -8,6 +8,7 @@ environments:
     path: heroes
     targets:
     - check-source
+    - obs-operator
     - repo-checker
 kind: ksonnet.io/app
 name: openSUSE-release-tools
