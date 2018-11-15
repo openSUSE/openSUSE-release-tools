@@ -206,11 +206,11 @@ class Config(object):
                 for k, v in DEFAULT[prj_pattern].items():
                     if k.startswith('_'):
                         continue
-                    if isinstance(v, basestring) and '%(project)s' in v:
+                    if isinstance(v, str) and '%(project)s' in v:
                         defaults[k] = v % {'project': project}
-                    elif isinstance(v, basestring) and '%(project.lower)s' in v:
+                    elif isinstance(v, str) and '%(project.lower)s' in v:
                         defaults[k] = v % {'project.lower': project.lower()}
-                    elif isinstance(v, basestring) and '%(version)s' in v:
+                    elif isinstance(v, str) and '%(version)s' in v:
                         defaults[k] = v % {'version': match.group('version')}
                     else:
                         defaults[k] = v
