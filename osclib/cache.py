@@ -20,6 +20,8 @@ except ImportError:
     from urllib2 import URLError, HTTPError
     from StringIO import StringIO
 
+from io import BytesIO
+
 from osc import conf
 from osc.core import urlopen
 from osclib.cache_manager import CacheManager
@@ -199,11 +201,10 @@ class Cache(object):
             # be replaced with urlopen('file://...') to be consistent, but until
             # the need arrises StringIO has less overhead.
             text = data.read()
-            text.decode('utf-8')
-            data = StringIO(text)
+            data = BytesIO(text)
 
             if conf.config['debug']: print('CACHE_PUT', url, project, file=sys.stderr)
-            f = open(path, 'w')
+            f = open(path, 'wb')
             f.write(text)
             f.close()
 
