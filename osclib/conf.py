@@ -223,13 +223,6 @@ class Config(object):
         # Update the configuration, only when it is necessary
         conf.config[self.project] = self.read_section(self.project, defaults)
 
-        # Take the common parameters and check that are there
-        params = [set(d) for d in DEFAULT.values()]
-        params = reduce(operator.__and__, params)
-        if not all(p in conf.config[self.project] for p in params):
-            msg = 'Please, add [%s] section in %s, see %s for details' % (self.project, self.conf_file, __file__)
-            raise Exception(msg)
-
     def read_section(self, section, defaults):
         """OSC parser is a bit buggy. Re-read the configuration file to find
         extra sections.
