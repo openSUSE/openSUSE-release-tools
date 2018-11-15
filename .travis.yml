@@ -74,6 +74,64 @@ matrix:
         - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint -c .noserc
       after_success:
         - coveralls
+    - env: TEST_SUITE=nosetests-osc-python3
+      sudo: required
+      services:
+        - docker
+      language: python
+      python: 2.7
+      before_install:
+        # provides xmllint used by test_bootstrap_copy (tests.freeze_tests.TestFreeze)
+        - sudo apt-get install libxml2-utils
+      install:
+        # urlgrabber needed to install osc from git in requirements.txt
+        # m2crypto for osc to be runable as used in docker-compose-obs
+        - pip install pycurl urlgrabber m2crypto pika
+        - sed -i 's|osc|osc@python3|' requirements.txt
+        - pip install -r requirements.txt
+        - pip install python-coveralls
+        - pip install nose-exclude
+      before_script:
+        # travis-ci/travis-ci#7008: stop services to make room for OBS setup
+        - sudo service mysql stop
+        - sudo service memcached stop
+        - ./dist/ci/docker-compose-obs
+        # Needs python prefix to use the correct interpretor.
+        - python ./obs_clone.py --cache --debug --apiurl-target local
+      script:
+        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint -c .noserc
+      after_success:
+        - coveralls
+    - env: TEST_SUITE=nosetests-osc-python3
+      sudo: required
+      services:
+        - docker
+      language: python
+      python: 3.6
+      before_install:
+        # provides xmllint used by test_bootstrap_copy (tests.freeze_tests.TestFreeze)
+        - sudo apt-get install libxml2-utils
+      install:
+        # m2crypto for osc to be runable as used in docker-compose-obs
+        - pip install pycurl m2crypto pika
+        - sed -i 's|osc|osc@python3|' requirements.txt
+        - sed -i 's|urlgrabber||' requirements.txt
+        - pip install -r requirements.txt
+        - pip install python-coveralls
+        - pip install nose-exclude
+      before_script:
+        # travis-ci/travis-ci#7008: stop services to make room for OBS setup
+        - sudo service mysql stop
+        - sudo service memcached stop
+        - ./dist/ci/docker-compose-obs
+        # Needs python prefix to use the correct interpretor.
+        - python ./obs_clone.py --cache --debug --apiurl-target local
+      script:
+        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint -c .noserc
+      after_success:
+        - coveralls
+  allow_failures:
+    - env: TEST_SUITE=nosetests-osc-python3
 
 deploy:
   provider: script
