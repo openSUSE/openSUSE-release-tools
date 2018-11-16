@@ -1,8 +1,9 @@
+from __future__ import print_function
+
 from colorama import Fore
 from osc import oscerr
 from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
-
 
 class ListCommand:
     SOURCE_PROJECT_STRIP = [
@@ -34,7 +35,7 @@ class ListCommand:
 
         hide_source = self.api.project == 'openSUSE:Factory'
         for group in sorted(splitter.grouped.keys()):
-            print Fore.YELLOW + group
+            print(Fore.YELLOW + group)
 
             for request in splitter.grouped[group]['requests']:
                 request_id = int(request.get('id'))
@@ -58,13 +59,13 @@ class ListCommand:
                 if message:
                     line += '\n' + Fore.WHITE + message + Fore.RESET
 
-                print ' ', line
+                print(' ' + line)
 
         if len(splitter.other):
             non_ring_packages = []
             for request in splitter.other:
                 non_ring_packages.append(request.find('./action/target').get('package'))
-            print 'Not in a ring:', ' '.join(sorted(non_ring_packages))
+            print('Not in a ring: ' + ' '.join(sorted(non_ring_packages)))
 
         # Print requests not handled by staging process to highlight them.
         splitter.stageable = False

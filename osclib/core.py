@@ -316,7 +316,7 @@ def attribute_value_load(apiurl, project, name, namespace='OSRT'):
     if not len(value):
         return None
 
-    return value[0]
+    return str(value[0])
 
 # New attributes must be defined manually before they can be used. Example:
 #   `osc api /attribute/OSRT/IgnoredIssues/_meta outputs`

@@ -28,7 +28,12 @@ except ImportError:
 
 from osc import conf
 import osc.core
-import urllib2
+try:
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError, URLError
+
 from itertools import count
 
 class PackageLookup(object):
@@ -57,7 +62,7 @@ class PackageLookup(object):
         try:
             return osc.core.http_GET(osc.core.makeurl(self.apiurl,
                                 ['source', prj, '00Meta', 'lookup.yml']))
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             # in case the project doesn't exist yet (like sle update)
             if e.code != 404:
                 raise e
@@ -458,7 +463,7 @@ class ReviewBot(object):
         url = osc.core.makeurl(apiurl, ('source', project, package), query=query)
         try:
             return ET.parse(osc.core.http_GET(url)).getroot()
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (HTTPError, URLError):
             return None
 
     def get_originproject(self, project, package, rev=None):
@@ -493,7 +498,7 @@ class ReviewBot(object):
         url = osc.core.makeurl(self.apiurl, ('source', src_project, src_package), query=query)
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError:
+        except HTTPError:
             return (None, None)
 
         if root is not None:
@@ -521,7 +526,7 @@ class ReviewBot(object):
                 return True
             if self.review_group and self._has_open_review_by(root, 'by_group', self.review_group):
                 return True
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             print('ERROR in URL %s [%s]' % (url, e))
         return False
 
@@ -670,7 +675,7 @@ class ReviewBot(object):
         self.logger.debug("checking %s in %s"%(package, project))
         try:
             si = osc.core.show_package_meta(self.apiurl, project, package)
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (HTTPError, URLError):
             si = None
         if si is None:
             self.logger.debug("new package")
@@ -686,7 +691,7 @@ class ReviewBot(object):
             u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': history_limit })
             try:
                 r = osc.core.http_GET(u)
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 self.logger.debug("package has no history!?")
                 return None
 

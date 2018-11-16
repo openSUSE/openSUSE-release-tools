@@ -12,7 +12,12 @@ import cmdln
 import requests as REQ
 import json
 import time
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
 
 try:
     from xml.etree import cElementTree as ET
@@ -53,7 +58,7 @@ class LegalAuto(ReviewBot.ReviewBot):
     def retried_GET(self, url):
         try:
             return http_GET(url)
-        except urllib2.HTTPError, e:
+        except HTTPError, e:
             if 500 <= e.code <= 599:
                 print 'Retrying {}'.format(url)
                 time.sleep(1)

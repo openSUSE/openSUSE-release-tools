@@ -16,7 +16,13 @@ except ImportError:
 import osc.core
 from osclib.conf import Config
 from osclib.core import devel_project_get
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import yaml
 import ReviewBot
 from check_source_in_factory import FactorySourceChecker
@@ -64,7 +70,7 @@ class Leaper(ReviewBot.ReviewBot):
             root = ET.parse(osc.core.http_GET(osc.core.makeurl(self.apiurl, ['source', project],
                                      query=query))).getroot()
             packages = [i.get('name') for i in root.findall('entry')]
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             # in case the project doesn't exist yet (like sle update)
             if e.code != 404:
                 raise e
@@ -583,4 +589,3 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit( app.main() )
-

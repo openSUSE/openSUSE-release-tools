@@ -1,4 +1,11 @@
-from cStringIO import StringIO
+from __future__ import print_function
+
+try:
+    # python2
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 from datetime import datetime
 import dateutil.parser
 import json
@@ -156,7 +163,7 @@ class StagingAPI(object):
                 return func(url)
             except HTTPError as e:
                 if 500 <= e.code <= 599:
-                    print 'Error {}, retrying {} in {}s'.format(e.code, url, retry_sleep_seconds)
+                    print('Error {}, retrying {} in {}s'.format(e.code, url, retry_sleep_seconds))
                     time.sleep(retry_sleep_seconds)
                     # increase sleep time up to one minute to avoid hammering
                     # the server in case of real problems
@@ -1606,10 +1613,10 @@ class StagingAPI(object):
         u = self.makeurl(['build', prj], query=query)
 
         try:
-            print "tried to trigger rebuild for project '%s' package '%s'" % (prj, pkg)
+            print("tried to trigger rebuild for project '%s' package '%s'" % (prj, pkg))
             http_POST(u)
         except:
-            print "could not trigger rebuild for project '%s' package '%s'" % (prj, pkg)
+            print("could not trigger rebuild for project '%s' package '%s'" % (prj, pkg))
 
     def _candidate_adi_project(self):
         """Decide a candidate name for an ADI project."""

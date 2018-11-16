@@ -8,7 +8,12 @@ import logging
 import signal
 import sys
 import time
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
 
 import osc.conf
 import osc.core
@@ -48,7 +53,7 @@ class ToolBase(object):
     def retried_GET(self, url):
         try:
             return http_GET(url)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if 500 <= e.code <= 599:
                 print 'Retrying {}'.format(url)
                 time.sleep(1)

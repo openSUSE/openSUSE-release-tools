@@ -4,7 +4,11 @@ from xml.etree import cElementTree as ET
 import sys
 import cmdln
 import logging
-import urllib2
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
 import osc.core
 
 import ToolBase
@@ -158,7 +162,7 @@ class BiArchTool(ToolBase.ToolBase):
             try:
                 x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev': '1'})))
             # catch deleted packages
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 if e.code == 404:
                     continue
                 raise e
@@ -202,7 +206,7 @@ class BiArchTool(ToolBase.ToolBase):
                     self.http_PUT(pkgmetaurl, data=ET.tostring(pkgmeta))
                     if self.caching:
                         self._invalidate__cached_GET(pkgmetaurl)
-                except urllib2.HTTPError as e:
+                except HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
     def add_explicit_disable(self, wipebinaries=False):
@@ -242,7 +246,7 @@ class BiArchTool(ToolBase.ToolBase):
                             'cmd' : 'wipe',
                             'arch': self.arch,
                             'package' : pkg }))
-                except urllib2.HTTPError as e:
+                except HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
 
@@ -326,7 +330,7 @@ class BiArchTool(ToolBase.ToolBase):
                         'cmd' : 'wipe',
                         'arch': self.arch,
                         'package' : pkg }))
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 logger.error('failed to update %s: %s', pkg, e)
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
@@ -399,4 +403,3 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit( app.main() )
-

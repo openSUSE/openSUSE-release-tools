@@ -13,7 +13,11 @@ except ImportError:
 
 import osc.conf
 import osc.core
-import urllib2
+try:
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError, URLError
 import yaml
 
 from osclib.memoize import memoize
@@ -56,7 +60,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         url = osc.core.makeurl(apiurl, ('source', project, '00Meta', 'lookup.yml'))
         try:
             return yaml.safe_load(osc.core.http_GET(url))
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (HTTPError, URLError):
             return None
 
     # check if pkgname was submitted by the correct maintainer. If not, set
@@ -165,4 +169,3 @@ if __name__ == "__main__":
     app = ReviewBot.CommandLineInterface()
     app.clazz = MaintenanceChecker
     sys.exit( app.main() )
-

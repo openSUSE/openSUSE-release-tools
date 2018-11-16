@@ -4,7 +4,13 @@ import argparse
 import itertools
 import logging
 import sys
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import time
 from xml.etree import cElementTree as ET
 
@@ -79,7 +85,7 @@ class UpdateCrawler(object):
     def retried_GET(self, url):
         try:
             return http_GET(url)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if 500 <= e.code <= 599:
                 print 'Retrying {}'.format(url)
                 time.sleep(1)
@@ -191,7 +197,7 @@ class UpdateCrawler(object):
                 )))
             if root.get('project') is None and root.get('cicount'):
                 return True
-        except urllib2.HTTPError as err:
+        except HTTPError as err:
             # if there is no link, it can't be a link
             if err.code == 404:
                 return False
@@ -370,4 +376,3 @@ if __name__ == '__main__':
         http_DELETE = dryrun('DELETE')
 
     sys.exit(main(args))
-

@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from ConfigParser import ConfigParser
+from osc import OscConfigParser
 from collections import OrderedDict
 import io
 import os
@@ -206,11 +206,11 @@ class Config(object):
                 for k, v in DEFAULT[prj_pattern].items():
                     if k.startswith('_'):
                         continue
-                    if isinstance(v, basestring) and '%(project)s' in v:
+                    if isinstance(v, str) and '%(project)s' in v:
                         defaults[k] = v % {'project': project}
-                    elif isinstance(v, basestring) and '%(project.lower)s' in v:
+                    elif isinstance(v, str) and '%(project.lower)s' in v:
                         defaults[k] = v % {'project.lower': project.lower()}
-                    elif isinstance(v, basestring) and '%(version)s' in v:
+                    elif isinstance(v, str) and '%(version)s' in v:
                         defaults[k] = v % {'version': match.group('version')}
                     else:
                         defaults[k] = v
@@ -223,19 +223,12 @@ class Config(object):
         # Update the configuration, only when it is necessary
         conf.config[self.project] = self.read_section(self.project, defaults)
 
-        # Take the common parameters and check that are there
-        params = [set(d) for d in DEFAULT.values()]
-        params = reduce(operator.__and__, params)
-        if not all(p in conf.config[self.project] for p in params):
-            msg = 'Please, add [%s] section in %s, see %s for details' % (self.project, self.conf_file, __file__)
-            raise Exception(msg)
-
     def read_section(self, section, defaults):
         """OSC parser is a bit buggy. Re-read the configuration file to find
         extra sections.
 
         """
-        cp = ConfigParser(defaults=defaults)
+        cp = OscConfigParser.OscConfigParser(defaults=defaults)
         cp.read(self.conf_file)
         if cp.has_section(section):
             return dict(cp.items(section))
@@ -246,7 +239,7 @@ class Config(object):
         from osclib.core import attribute_value_load
         config = attribute_value_load(apiurl, self.project, 'Config')
         if config:
-            cp = ConfigParser()
+            cp = OscConfigParser.OscConfigParser()
             config = '[remote]\n' + config
             cp.readfp(io.BytesIO(config))
             return dict(cp.items('remote'))

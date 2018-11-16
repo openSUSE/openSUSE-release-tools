@@ -3,7 +3,12 @@
 import argparse
 import logging
 import sys
-import urllib2
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import re
 from xml.etree import cElementTree as ET
 
@@ -53,7 +58,7 @@ class CompareList(object):
             url = makeurl(self.apiurl, ['source', project, '_meta'])
         try:
             http_GET(url)
-        except urllib2.HTTPError:
+        except HTTPError:
             return False
         return True
 

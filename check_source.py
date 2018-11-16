@@ -17,7 +17,12 @@ from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
-import urllib2
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import ReviewBot
 from osclib.conf import str2bool
 
@@ -124,7 +129,7 @@ class CheckSource(ReviewBot.ReviewBot):
             shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
             old_info = self.package_source_parse(target_project, target_package)
-        except urllib2.HTTPError:
+        except HTTPError:
             self.logger.error('failed to checkout %s/%s' % (target_project, target_package))
 
         CheckSource.checkout_package(self.apiurl, source_project, source_package, revision=source_revision,
@@ -218,7 +223,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         try:
             xml = ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             self.logger.error('ERROR in URL %s [%s]' % (url, e))
             return ret
 
@@ -261,7 +266,7 @@ class CheckSource(ReviewBot.ReviewBot):
         try:
             result = osc.core.show_project_sourceinfo(self.apiurl, action.tgt_project, True, (action.tgt_package))
             root = ET.fromstring(result)
-        except urllib2.HTTPError:
+        except HTTPError:
             return None
 
         # Decline the delete request if there is another delete/submit request against the same package

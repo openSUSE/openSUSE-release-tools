@@ -1,4 +1,9 @@
-import urllib2
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 from xml.etree import cElementTree as ET
 
 from osc.core import http_GET
@@ -140,7 +145,7 @@ class CycleDetector(object):
             # print('Generating _builddepinfo for (%s, %s, %s)' % (project, repository, arch))
             url = makeurl(self.apiurl, ['build/%s/%s/%s/_builddepinfo' % (project, repository, arch)])
             root = http_GET(url).read()
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             print('ERROR in URL %s [%s]' % (url, e))
         return root
 

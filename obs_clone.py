@@ -10,7 +10,13 @@ from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import show_upstream_rev
 from osclib.core import project_pseudometa_package
-from urllib2 import HTTPError
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import argparse
 import osc.conf
 import sys

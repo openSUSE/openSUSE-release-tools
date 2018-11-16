@@ -17,7 +17,13 @@ import json
 import os
 import re
 import sys
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import logging
 import signal
 import time
@@ -101,7 +107,7 @@ class ToTestBase(object):
         url = self.api.makeurl(['build', project, self.product_repo, self.product_arch, product])
         try:
             f = self.api.retried_GET(url)
-        except urllib2.HTTPError:
+        except HTTPError:
             return []
 
         ret = []
