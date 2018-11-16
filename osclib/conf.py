@@ -240,8 +240,8 @@ class Config(object):
         config = attribute_value_load(apiurl, self.project, 'Config')
         if config:
             cp = OscConfigParser.OscConfigParser()
-            config = '[remote]\n' + config
-            cp.readfp(io.BytesIO(config))
+            config = u'[remote]\n' + config
+            cp.readfp(io.StringIO(config))
             return dict(cp.items('remote'))
 
         return None
