@@ -51,6 +51,12 @@ class NotFoundException(Exception):
     pass
 
 
+class ImageProduct(object):
+    def __init__(self, package, archs):
+        self.package = package
+        self.archs = archs
+
+
 class ToTestBase(object):
 
     """Base class to store the basic interface"""
@@ -58,7 +64,13 @@ class ToTestBase(object):
     product_repo = 'images'
     product_arch = 'local'
     livecd_repo = 'images'
-    livecd_archs = ['i586', 'x86_64']
+    totest_container_repo = 'containers'
+
+    main_products = []
+    ftp_products = []
+    container_products = []
+    livecd_products = []
+    image_products = []
 
     def __init__(self, project, dryrun=False, norelease=False, api_url=None, openqa_server='https://openqa.opensuse.org', test_subproject=None):
         self.project = project
@@ -103,8 +115,13 @@ class ToTestBase(object):
     def current_version(self):
         return self.release_version()
 
-    def binaries_of_product(self, project, product):
-        url = self.api.makeurl(['build', project, self.product_repo, self.product_arch, product])
+    def binaries_of_product(self, project, product, repo=None, arch=None):
+        if repo is None:
+            repo = self.product_repo
+        if arch is None:
+            arch = self.product_arch
+
+        url = self.api.makeurl(['build', project, repo, arch, product])
         try:
             f = self.api.retried_GET(url)
         except HTTPError:
@@ -137,10 +154,10 @@ class ToTestBase(object):
                 return result.group(1)
         raise NotFoundException("can't find %s ftp version" % project)
 
-    def iso_build_version(self, project, tree, base=None):
+    def iso_build_version(self, project, tree, base=None, repo=None, arch=None):
         if not base:
             base = self.project_base
-        for binary in self.binaries_of_product(project, tree):
+        for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
             result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz)', binary)
             if result:
                 return result.group(1)
@@ -384,7 +401,7 @@ class ToTestBase(object):
             return None
 
         # docker container has no size limit
-        if re.match(r'opensuse-leap-image.*', package):
+        if re.match(r'opensuse-.*-image.*', package):
             return None
 
         if '-Addon-NonOss-ftp-ftp' in package:
@@ -448,46 +465,69 @@ class ToTestBase(object):
             if not self.package_ok(self.project, product, self.product_repo, self.product_arch):
                 return False
 
+        for product in self.image_products + self.container_products:
+            for arch in product.archs:
+                if not self.package_ok(self.project, product.package, self.product_repo, arch):
+                    return False
+
         if len(self.livecd_products):
             if not self.all_repos_done('%s:Live' % self.project):
                 return False
 
-            for arch in self.livecd_archs:
-                for product in self.livecd_products:
-                    if not self.package_ok('%s:Live' % self.project, product, self.livecd_repo, arch):
+            for product in self.livecd_products:
+                for arch in product.archs:
+                    if not self.package_ok('%s:Live' % self.project, product.package,
+                                           self.product_repo, arch):
                         return False
 
         return True
 
-    def _release_package(self, project, package, set_release=None):
+    def _release_package(self, project, package, set_release=None, repository=None,
+                         target_project=None, target_repository=None):
         query = {'cmd': 'release'}
 
         if set_release:
             query['setrelease'] = set_release
 
-        # FIXME: make configurable. openSUSE:Factory:ARM currently has multiple
-        # repos with release targets, so obs needs to know which one to release
-        if project == 'openSUSE:Factory:ARM':
-            query['repository'] = 'images'
+        if repository is not None:
+            query['repository'] = repository
+
+        if target_project is not None:
+            # Both need to be set
+            query['target_project'] = target_project
+            query['target_repository'] = target_repository
 
         baseurl = ['source', project, package]
 
         url = self.api.makeurl(baseurl, query=query)
         if self.dryrun or self.norelease:
-            logger.info("release %s/%s (%s)" % (project, package, set_release))
+            logger.info("release %s/%s (%s)" % (project, package, query))
         else:
             self.api.retried_POST(url)
 
     def _release(self, set_release=None):
         for product in self.ftp_products:
-            self._release_package(self.project, product)
+            self._release_package(self.project, product, repository=self.product_repo)
 
         for cd in self.livecd_products:
             self._release_package('%s:Live' %
-                                  self.project, cd, set_release=set_release)
+                                  self.project, cd.package, set_release=set_release,
+                                  repository=self.livecd_repo)
+
+        for image in self.image_products:
+            self._release_package(self.project, image.package, set_release=set_release,
+                                  repository=self.product_repo)
 
         for cd in self.main_products:
-            self._release_package(self.project, cd, set_release=set_release)
+            self._release_package(self.project, cd, set_release=set_release,
+                                  repository=self.product_repo)
+
+        for container in self.container_products:
+            # Containers are built in the same repo as other image products,
+            # but released into a different repo in :ToTest
+            self._release_package(self.project, container.package, repository=self.product_repo,
+                                  target_project=self.test_project,
+                                  target_repository=self.totest_container_repo)
 
     def update_totest(self, snapshot=None):
         release = 'Snapshot%s' % snapshot if snapshot else None
@@ -501,7 +541,13 @@ class ToTestBase(object):
         logger.info('Publish test project content')
         if not (self.dryrun or self.norelease):
             self.api.switch_flag_in_prj(
-                self.test_project, flag='publish', state='enable')
+                self.test_project, flag='publish', state='enable',
+                repository=self.product_repo)
+        if self.container_products:
+            logger.info('Releasing container products from ToTest')
+            for container in self.container_products:
+                self._release_package(self.test_project, container.package,
+                                      repository=self.totest_container_repo)
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
@@ -514,7 +560,9 @@ class ToTestBase(object):
             return True
 
         for flag in root.find('publish'):
-            if flag.get('repository', None) or flag.get('arch', None):
+            if flag.get('repository', None) not in [None, self.product_repo]:
+                continue
+            if flag.get('arch', None):
                 continue
             if flag.tag == 'enable':
                 return True
@@ -658,7 +706,7 @@ class ToTestBaseNew(ToTestBase):
         # XXX still legacy
         for cd in self.livecd_products:
             self._release_package('%s:Live' %
-                                  self.project, cd, set_release=set_release)
+                                  self.project, cd.package, set_release=set_release)
 
     def release_version(self):
         url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
@@ -686,8 +734,12 @@ class ToTestBaseNew(ToTestBase):
                     # XXX: don't care about nonoss atm.
                     continue
                 builds.add(self.ftp_build_version(self.project, p))
-            for p in self.main_products + self.livecd_products:
+            for p in self.main_products:
                 builds.add(self.iso_build_version(self.project, p))
+            for p in self.livecd_products + self.image_products:
+                for arch in p.archs:
+                    builds.add(self.iso_build_version(self.project, p.package,
+                                                      arch=p.arch))
 
             ret = (len(builds) == 1)
             if ret is False:
@@ -712,9 +764,9 @@ class ToTestFactory(ToTestBase):
     ftp_products = ['000product:openSUSE-ftp-ftp-i586_x86_64',
                     '000product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64']
 
-    livecd_products = ['livecd-tumbleweed-kde',
-                       'livecd-tumbleweed-gnome',
-                       'livecd-tumbleweed-x11']
+    livecd_products = [ImageProduct('livecd-tumbleweed-kde', ['i586', 'x86_64']),
+                       ImageProduct('livecd-tumbleweed-gnome', ['i586', 'x86_64']),
+                       ImageProduct('livecd-tumbleweed-x11', ['i586', 'x86_64'])]
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
@@ -734,8 +786,6 @@ class ToTestFactoryPowerPC(ToTestBase):
                      '000product:openSUSE-cd-mini-ppc64le']
 
     ftp_products = ['000product:openSUSE-ftp-ftp-ppc64_ppc64le']
-
-    livecd_products = []
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
@@ -758,8 +808,6 @@ class ToTestFactoryzSystems(ToTestBase):
                      '000product:openSUSE-cd-mini-s390x']
 
     ftp_products = ['000product:openSUSE-ftp-ftp-s390x']
-
-    livecd_products = []
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
@@ -786,8 +834,7 @@ class ToTestFactoryARM(ToTestFactory):
                     '000product:openSUSE-ftp-ftp-armv7hl',
                     '000product:openSUSE-ftp-ftp-armv6hl']
 
-    livecd_products = ['JeOS']
-    livecd_archs = ['armv7l']
+    livecd_products = [ImageProduct('JeOS', ['armv7l'])]
 
     def __init__(self, *args, **kwargs):
         ToTestFactory.__init__(self, *args, **kwargs)
@@ -812,8 +859,6 @@ class ToTest151(ToTestBaseNew):
                     '000product:openSUSE-Addon-NonOss-ftp-ftp-x86_64'
                     ]
 
-    livecd_products = []
-
     def openqa_group(self):
         return 'openSUSE Leap 15'
 
@@ -831,8 +876,7 @@ class ToTest151ARM(ToTest151):
                     '000product:openSUSE-ftp-ftp-armv7hl',
                     ]
 
-    livecd_products = ['JeOS']
-    livecd_archs = ['armv7l']
+    livecd_products = [ImageProduct('JeOS', ['armv7l'])]
 
     # Leap 15.1 ARM still need to update snapshot
     set_snapshot_number = True
@@ -856,8 +900,6 @@ class ToTest150Ports(ToTestBaseNew):
                     '000product:openSUSE-ftp-ftp-armv7hl',
                     ]
 
-    livecd_products = []
-
     # Leap 15.0 Ports still need to update snapshot
     set_snapshot_number = True
 
@@ -877,23 +919,18 @@ class ToTest150Ports(ToTestBaseNew):
 
 
 class ToTest150Images(ToTestBaseNew):
-    main_products = [
-        'livecd-leap-gnome',
-        'livecd-leap-kde',
-        'livecd-leap-x11',
-        'opensuse-leap-image:docker',
-        'opensuse-leap-image:lxc',
-        'kiwi-templates-Leap15-JeOS:MS-HyperV',
-        'kiwi-templates-Leap15-JeOS:OpenStack-Cloud',
-        'kiwi-templates-Leap15-JeOS:VMware',
-        'kiwi-templates-Leap15-JeOS:XEN',
-        'kiwi-templates-Leap15-JeOS:kvm-and-xen',
+    image_products = [
+        ImageProduct('livecd-leap-gnome', ['x86_64']),
+        ImageProduct('livecd-leap-kde', ['x86_64']),
+        ImageProduct('livecd-leap-x11', ['x86_64']),
+        ImageProduct('opensuse-leap-image:docker', ['x86_64']),
+        ImageProduct('opensuse-leap-image:lxc', ['x86_64']),
+        ImageProduct('kiwi-templates-Leap15-JeOS:MS-HyperV', ['x86_64']),
+        ImageProduct('kiwi-templates-Leap15-JeOS:OpenStack-Cloud', ['x86_64']),
+        ImageProduct('kiwi-templates-Leap15-JeOS:VMware', ['x86_64']),
+        ImageProduct('kiwi-templates-Leap15-JeOS:XEN', ['x86_64']),
+        ImageProduct('kiwi-templates-Leap15-JeOS:kvm-and-xen', ['x86_64']),
     ]
-
-    ftp_products = []
-
-    livecd_products = []
-    product_arch = 'x86_64'
 
     # docker image has a different number
     need_same_build_number = False
@@ -908,8 +945,13 @@ class ToTest150Images(ToTestBaseNew):
     def write_version_to_dashboard(self, target, version):
         super(ToTest150Images, self).write_version_to_dashboard('{}_images'.format(target), version)
 
+    def current_version(self):
+        return self.iso_build_version(self.project, self.image_products[0].package,
+                                      arch=self.image_products[0].archs[0])
+
     def get_current_snapshot(self):
-        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
+        return self.iso_build_version(self.project + ':ToTest', self.image_products[0].package,
+                                      arch=self.image_products[0].archs[0])
 
     def _release(self, set_release=None):
         ToTestBase._release(self, set_release)
@@ -918,6 +960,7 @@ class ToTest150Images(ToTestBaseNew):
         return 13
 
 class ToTest151Images(ToTest150Images):
+    container_products = [ImageProduct('opensuse-leap-image:docker', ['x86_64'])]
 
     def openqa_group(self):
         return 'openSUSE Leap 15.1 Images'
@@ -954,8 +997,6 @@ class ToTestSLE12(ToTestSLE):
         '_product:SLES-ftp-POOL-x86_64',
     ]
 
-    livecd_products = []
-
 class ToTestSLE15(ToTestSLE):
     main_products = [
         '000product:SLES-cd-DVD-aarch64',
@@ -970,8 +1011,6 @@ class ToTestSLE15(ToTestSLE):
         '000product:SLES-ftp-POOL-s390x',
         '000product:SLES-ftp-POOL-x86_64',
     ]
-
-    livecd_products = []
 
 
 class CommandlineInterface(cmdln.Cmdln):
