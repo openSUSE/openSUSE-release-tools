@@ -3,9 +3,9 @@ from __future__ import print_function
 import re
 
 try:
-    from urllib.request import HTTPError
+    from urllib.error import HTTPError
 except ImportError:
-    #python 2.x
+    # python 2.x
     from urllib2 import HTTPError
 
 from osc import oscerr

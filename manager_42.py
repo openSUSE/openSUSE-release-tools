@@ -12,7 +12,13 @@ import osc.conf
 import osc.core
 from osc.core import get_commitlog
 from osc.core import get_request_list
-import urllib2
+
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import subprocess
 import time
 import yaml
@@ -86,7 +92,7 @@ class Manager42(object):
         self.lookup = {}
         try:
             self.lookup = yaml.safe_load(self._load_lookup_file(project))
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code != 404:
                 raise
 
@@ -118,7 +124,7 @@ class Manager42(object):
     def retried_GET(self, url):
         try:
             return http_GET(url)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if 500 <= e.code <= 599:
                 logger.warn('Retrying {}'.format(url))
                 time.sleep(1)
@@ -135,7 +141,7 @@ class Manager42(object):
                                  query=query)))
             packages = [i.get('name') for i in root.findall('entry')]
 
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 logger.error("{}: {}".format(project, e))
                 packages = []
@@ -158,7 +164,7 @@ class Manager42(object):
         for package in sorted(packages):
             try:
                 self.check_one_package(package)
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 logger.error("Failed to check {}: {}".format(package, e))
                 pass
 
@@ -225,7 +231,7 @@ class Manager42(object):
                 query['deleted'] = 1
             return self.cached_GET(makeurl(self.apiurl,
                                    ['source', project, package, '_history'], query))
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 return None
             raise
@@ -360,7 +366,7 @@ class Manager42(object):
         try:
             link = self.cached_GET(makeurl(self.apiurl,
                                     ['source', project, package, '_link']))
-        except urllib2.HTTPError:
+        except HTTPError:
             return None
         return ET.fromstring(link)
 
@@ -430,4 +436,3 @@ if __name__ == '__main__':
         http_DELETE = dryrun('DELETE')
 
     sys.exit(main(args))
-

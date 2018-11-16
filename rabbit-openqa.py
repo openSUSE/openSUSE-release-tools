@@ -19,7 +19,7 @@ try:
     from urllib.error import HTTPError, URLError
     from urllib.parse import quote_plus
 except ImportError:
-    #python 2.x
+    # python 2.x
     from urllib2 import HTTPError, URLError
     from urllib import quote_plus
 

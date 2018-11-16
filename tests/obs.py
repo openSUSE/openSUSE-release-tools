@@ -6,7 +6,12 @@ import re
 import string
 import time
 import urllib
-import urllib2
+try:
+    from urllib.parse import unquote
+except ImportError:
+    # python 2.x
+    from urllib import unquote
+
 import urlparse
 import xml.etree.cElementTree as ET
 
@@ -852,7 +857,7 @@ class OBS(object):
     @GET('/search/request')
     def search_request(self, request, uri, headers):
         """Return a search result for /search/request."""
-        query = urllib2.unquote(urlparse.urlparse(uri).query)
+        query = unquote(urlparse.urlparse(uri).query)
         assert query in (
             "match=state/@name='review'+and+review[@by_group='factory-staging'+and+@state='new']+and+(target[@project='openSUSE:Factory']+or+target[@project='openSUSE:Factory:NonFree'])",
             "match=state/@name='review'+and+review[@by_user='factory-repo-checker'+and+@state='new']+and+(target[@project='openSUSE:Factory']+or+target[@project='openSUSE:Factory:NonFree'])"

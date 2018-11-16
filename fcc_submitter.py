@@ -3,7 +3,13 @@
 import argparse
 import logging
 import sys
-import urllib2
+
+try:
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError, URLError
+
 import random
 import re
 from xml.etree import cElementTree as ET
@@ -115,7 +121,7 @@ class FccFreezer(object):
         l = ET.tostring(flink)
         try:
             http_PUT(url, data=l)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             raise e
 
 class FccSubmitter(object):
@@ -159,7 +165,7 @@ class FccSubmitter(object):
     def get_link(self, project, package):
         try:
             link = http_GET(makeurl(self.apiurl, ['source', project, package, '_link'])).read()
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (HTTPError, URLError):
             return None
         return ET.fromstring(link)
 
@@ -201,7 +207,7 @@ class FccSubmitter(object):
         try:
             logging.debug("Gathering package_meta %s/%s" % (tgt_project, tgt_package))
             osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (HTTPError, URLError):
             return True
         return False
 
@@ -222,7 +228,7 @@ class FccSubmitter(object):
     def check_multiple_specfiles(self, project, package):
         try:
             url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 return None
             raise e
@@ -283,7 +289,7 @@ class FccSubmitter(object):
         url = makeurl(self.apiurl, ['source', project, package, '{}?expand=1'.format('fcc_skip_pkgs')])
         try:
             return http_GET(url).read()
-        except urllib2.HTTPError:
+        except HTTPError:
             return ''
 
     def crawl(self):

@@ -24,7 +24,12 @@ import osc.conf
 import osc.core
 from osc.util.cpio import CpioRead
 
-import urllib2
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import rpm
 from collections import namedtuple
 from osclib.pkgcache import PkgCache
@@ -783,7 +788,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             [ 'view=cpioheaders' ])
         try:
             r = osc.core.http_GET(u)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             raise FetchError('failed to fetch header information: %s'%e)
         tmpfile = NamedTemporaryFile(prefix="cpio-", delete=False)
         for chunk in r:
@@ -813,7 +818,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ('build', prj, repo, arch, pkg))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError:
+        except HTTPError:
             return None
 
         return dict([(node.attrib['filename'], node.attrib['mtime']) for node in root.findall('binary')])
@@ -828,7 +833,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     'srcmd5' : rev }
             url = osc.core.makeurl(self.apiurl, ('build', src_project, '_result'), query)
             return ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code != 404:
                 self.logger.error('ERROR in URL %s [%s]' % (url, e))
                 raise
@@ -855,7 +860,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ('source', project, '_meta'))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError:
+        except HTTPError:
             return None
 
         repos = set()
@@ -912,7 +917,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ('source', src_project, '_meta'))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
-        except urllib2.HTTPError:
+        except HTTPError:
             return None
 
         # set of source repo name, target repo name, arch
@@ -1087,4 +1092,3 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit( app.main() )
-

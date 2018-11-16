@@ -11,10 +11,10 @@ import sys
 try:
     from urllib.parse import unquote
     from urllib.parse import urlsplit, SplitResult
-    from urllib.request import URLError, HTTPError
+    from urllib.error import URLError, HTTPError
     from io import StringIO
 except ImportError:
-    #python 2.x
+    # python 2.x
     from urlparse import urlsplit, SplitResult
     from urllib import unquote
     from urllib2 import URLError, HTTPError

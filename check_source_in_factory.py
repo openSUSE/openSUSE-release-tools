@@ -13,7 +13,12 @@ except ImportError:
 
 import osc.conf
 import osc.core
-import urllib2
+try:
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError, URLError
+
 import yaml
 import ReviewBot
 
@@ -89,7 +94,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                         sr = srprefix
                         break
             requests = osc.core.get_request_list(apiurl, project, package, None, ['new', 'review'], 'submit')
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (HTTPError, URLError):
             self.logger.error("caught exception while checking %s/%s", project, package)
             return None
 
@@ -169,4 +174,3 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit( app.main() )
-

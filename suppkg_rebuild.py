@@ -3,7 +3,12 @@
 import argparse
 import logging
 import sys
-import urllib2
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import re
 import yaml
 from xml.etree import cElementTree as ET
@@ -80,7 +85,7 @@ class StagingHelper(object):
             url = makeurl(self.apiurl, ['source', project, pkg], query=query)
             try:
                 root = ET.parse(http_GET(url)).getroot()
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 if e.code == 404:
                     continue
                 raise
