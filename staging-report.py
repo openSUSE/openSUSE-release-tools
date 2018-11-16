@@ -97,17 +97,13 @@ class StagingReport(object):
     def report(self, project, aggregate=True, force=False):
         info = self.api.project_status(project, aggregate)
 
-        # Some staging projects do not have info like
-        # openSUSE:Factory:Staging:Gcc49
-        if not info:
-            return
-
-        if info['overall_state'] == 'empty':
-            return
-
-        # The 'unacceptable' status means that the project will be
-        # replaced soon. Better do not disturb with noise.
-        if info['overall_state'] == 'unacceptable':
+        # Do not attempt to process projects without staging info, or projects
+        # in a pending state that will change before settling. This avoids
+        # intermediate notifications that may end up being spammy and for
+        # long-lived stagings where checks may be re-triggered multiple times
+        # and thus enter pending state (not seen on first run) which is not
+        # useful to report.
+        if not info or not self.api.project_status_final(info):
             return
 
         report_broken_packages = self._report_broken_packages(info)
