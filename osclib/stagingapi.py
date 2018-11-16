@@ -1036,6 +1036,10 @@ class StagingAPI(object):
 
         return requests
 
+    def project_status_final(self, status):
+        """Determine if staging project is both active and no longer pending."""
+        return status['overall_state'] in ['acceptable', 'review', 'failed']
+
     def days_since_last_freeze(self, project):
         """
         Checks the last update for the frozen links
