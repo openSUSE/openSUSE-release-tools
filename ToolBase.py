@@ -13,13 +13,13 @@ import time
 
 try:
     from urllib.error import HTTPError
+    from urllib.parse import quote_plus
 except ImportError:
     # python 2.x
     from urllib2 import HTTPError
-
+    from urllib import quote_plus
 import osc.conf
 import osc.core
-from urllib import quote_plus
 
 from osclib.memoize import memoize
 

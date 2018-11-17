@@ -10,7 +10,6 @@ from collections import namedtuple
 import sys
 import cmdln
 import logging
-import urllib2
 import filecmp
 from osc.core import checkout_package
 from osc.core import http_GET, http_PUT
@@ -40,7 +39,12 @@ import subprocess
 import re
 import yaml
 import requests
-import urlparse
+try:
+    from urllib.parse import urljoin, urlparse
+except ImportError:
+    # python 2.x
+    from urlparse import urljoin, urlparse
+
 import gzip
 import tempfile
 import traceback
@@ -990,7 +994,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
         path_prefix = 'suse/' if name and repo_style == 'build' else ''
-        url = urlparse.urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
+        url = urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
         repomd = requests.get(url)
         ns = {'r': 'http://linux.duke.edu/metadata/repo'}
         root = ET.fromstring(repomd.content)
@@ -1017,7 +1021,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
         repo.add_repomdxml(f, 0)
-        url = urlparse.urljoin(baseurl, path_prefix + location)
+        url = urljoin(baseurl, path_prefix + location)
         with requests.get(url, stream=True) as primary:
             sha256 = hashlib.sha256(primary.content).hexdigest()
             if sha256 != sha256_expected:
@@ -1050,7 +1054,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # Could look at .repo file or repomd.xml, but larger change.
             return 'update-' + os.path.basename(os.path.normpath(baseurl)), 'update'
 
-        url = urlparse.urljoin(baseurl, 'media.1/media')
+        url = urljoin(baseurl, 'media.1/media')
         with requests.get(url) as media:
             for i, line in enumerate(media.iter_lines()):
                 if i != 1:
@@ -1060,7 +1064,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if name is not None and '-Build' in name:
             return name, 'media'
 
-        url = urlparse.urljoin(baseurl, 'media.1/build')
+        url = urljoin(baseurl, 'media.1/build')
         with requests.get(url) as build:
             name = build.content.strip()
 
@@ -1283,7 +1287,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 return
 
         # Cache dir specific to hostname and project.
-        host = urlparse.urlparse(api.apiurl).hostname
+        host = urlparse(api.apiurl).hostname
         cache_dir = CacheManager.directory('pkglistgen', host, opts.project)
 
         if not opts.no_checkout:
@@ -1433,13 +1437,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 logger.warning('no baseurl configured for {}'.format(project))
                 continue
 
-            urls = [urlparse.urljoin(baseurl, 'repo/oss/')]
+            urls = [urljoin(baseurl, 'repo/oss/')]
             if baseurl_update:
-                urls.append(urlparse.urljoin(baseurl_update, 'oss/'))
+                urls.append(urljoin(baseurl_update, 'oss/'))
             if project_config.get('nonfree'):
-                urls.append(urlparse.urljoin(baseurl, 'repo/non-oss/'))
+                urls.append(urljoin(baseurl, 'repo/non-oss/'))
                 if baseurl_update:
-                    urls.append(urlparse.urljoin(baseurl_update, 'non-oss/'))
+                    urls.append(urljoin(baseurl_update, 'non-oss/'))
 
             names = []
             for url in urls:
