@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import sys
 import os
 import osc
@@ -39,7 +41,7 @@ def compare_results(factory, rebuild, testmode):
     com_res = set(rebuild).symmetric_difference(set(factory))
 
     if testmode != False:
-        print com_res
+        print(com_res)
 
     return com_res
 
@@ -69,22 +71,22 @@ def rebuild_pkg_in_factory(package, prj, arch, testmode, code=None):
     u = osc.core.makeurl(osc.conf.config['apiurl'], ['build', prj], query=query)
 
     if testmode != False:
-        print "Trigger rebuild for this package: " +  u
+        print("Trigger rebuild for this package: " +  u)
 
     else:
         try:
-            print 'tried to trigger rebuild for project \'%s\' package \'%s\'' % (prj, pkg)
+            print('tried to trigger rebuild for project \'%s\' package \'%s\'' % (prj, pkg))
             f = osc.core.http_POST(u)
 
         except:
-            print 'could not trigger rebuild for project \'%s\' package \'%s\'' % (prj, pkg)
+            print('could not trigger rebuild for project \'%s\' package \'%s\'' % (prj, pkg))
 
 testmode = False
 try:
     if sys.argv[1] != None:
         if sys.argv[1] == '-test':
             testmode = True
-            print "testmode: "+str(testmode)
+            print("testmode: "+str(testmode))
     else:
         testmode = False
 except:
@@ -97,10 +99,8 @@ for arch in architectures:
     fact_result = check_pkgs(fact_result)
     result = compare_results(fact_result, rebuild_result, testmode)
 
-    print sorted(result)
+    print(sorted(result))
 
     for package in result:
         rebuild_pkg_in_factory(package, 'openSUSE:Factory', arch, testmode, None)
         rebuild_pkg_in_factory(package, 'openSUSE:Factory:Rebuild', arch, testmode, None)
-
-
