@@ -4,7 +4,12 @@ import logging
 import httpretty
 import osc
 import re
-import urlparse
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    # python 2.x
+    from urlparse import urlparse
 
 from check_maintenance_incidents import MaintenanceChecker
 
@@ -122,7 +127,7 @@ class TestMaintenance(unittest.TestCase):
         result = { 'devel_review_added' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
+            u = urlparse(uri)
             if u.query == 'by_package=mysql-workbench&cmd=addreview&by_project=server%3Adatabase':
                 result['devel_review_added'] = True
             return (200, headers, '<status code="ok"/>')
@@ -241,7 +246,7 @@ class TestMaintenance(unittest.TestCase):
         result = { 'devel_review_added' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
+            u = urlparse(uri)
             if u.query == 'by_package=mysql-workbench&cmd=addreview&by_project=server%3Adatabase':
                 result['devel_review_added'] = True
             return (200, headers, '<status code="ok"/>')
@@ -350,7 +355,7 @@ class TestMaintenance(unittest.TestCase):
         result = { 'factory_review_added' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
+            u = urlparse(uri)
             if u.query == 'cmd=addreview&by_user=factory-source':
                 result['factory_review_added'] = True
             return (200, headers, '<status code="ok"/>')
@@ -367,4 +372,3 @@ class TestMaintenance(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

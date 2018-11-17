@@ -4,8 +4,13 @@ import logging
 import httpretty
 import osc
 import re
-import urlparse
 from osclib.cache import Cache
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    # python 2.x
+    from urlparse import urlparse
 
 from check_source_in_factory import FactorySourceChecker
 
@@ -141,7 +146,7 @@ class TestFactorySourceAccept(unittest.TestCase):
         result = { 'status' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
+            u = urlparse(uri)
             if u.query == 'newstate=accepted&cmd=changereviewstate&by_user=factory-source':
                 result['status'] = True
             else:
@@ -265,7 +270,7 @@ class TestFactorySourceAccept(unittest.TestCase):
         result = { 'factory_source_declined' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
+            u = urlparse(uri)
             if u.query == 'newstate=declined&cmd=changereviewstate&by_user=factory-source':
                 result['factory_source_declined'] = True
             return (200, headers, '<status code="ok"/>')
@@ -282,4 +287,3 @@ class TestFactorySourceAccept(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
