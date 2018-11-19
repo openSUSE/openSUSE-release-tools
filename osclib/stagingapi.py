@@ -1213,9 +1213,7 @@ class StagingAPI(object):
             # Skip inner-project links for letter staging
             if not self.is_adi_project(project) and sub_prj == project:
                 continue
-            if self._supersede:
-                disable_build = self._package_disabled.get('/'.join([sub_prj, sub_pkg]), False)
-            self.create_package_container(sub_prj, sub_pkg, disable_build=disable_build)
+            self.create_package_container(sub_prj, sub_pkg)
 
             root = ET.Element('link', package=tar_pkg, project=project)
             url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
