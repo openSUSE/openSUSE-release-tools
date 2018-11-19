@@ -189,11 +189,9 @@ class Leaper(ReviewBot.ReviewBot):
 
                 for prj in other_projects_to_check:
                     if self.is_package_in_project(prj, package):
-                        self.logger.info('checking {}'.format(prj))
+                        self.logger.debug('checking {}'.format(prj))
                         if self._check_factory(package, src_srcinfo, prj) is True:
                             self.logger.info('found source match in {}'.format(prj))
-                        else:
-                            self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
 
                 devel_project, devel_package = devel_project_get(self.apiurl, 'openSUSE.org:openSUSE:Factory', package)
                 if devel_project is not None:
