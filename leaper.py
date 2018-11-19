@@ -163,7 +163,7 @@ class Leaper(ReviewBot.ReviewBot):
             elif in_factory is None:
                 self.pending_factory_submission = True
             else:
-                if self.is_package_in_project(prj, package):
+                if not self.is_package_in_project(prj, package):
                     self.logger.info('the package is not in Factory, nor submitted there')
                 else:
                     self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
