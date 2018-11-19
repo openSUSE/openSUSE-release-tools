@@ -216,6 +216,11 @@ class Leaper(ReviewBot.ReviewBot):
                 else:
                     # only log origin state if it's taken into consideration for the review result
                     self.logger.info("Submitted from a different origin than expected ('%s')", origin)
+                    self.needs_release_manager = True
+                    # no result so far and also no factory submission to wait
+                    # for. So just pass to avoid requring too much overrides
+                    if not self.pending_factory_submission:
+                        review_result = True
 
             if not review_result and self.override_allow:
                 # Rather than decline, leave review open in-case of change and
