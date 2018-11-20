@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 from xml.etree import cElementTree as ET
 import cmdln
 import datetime
@@ -11,13 +13,13 @@ import time
 
 try:
     from urllib.error import HTTPError
+    from urllib.parse import quote_plus
 except ImportError:
     # python 2.x
     from urllib2 import HTTPError
-
+    from urllib import quote_plus
 import osc.conf
 import osc.core
-from urllib import quote_plus
 
 from osclib.memoize import memoize
 
@@ -55,7 +57,7 @@ class ToolBase(object):
             return http_GET(url)
         except HTTPError as e:
             if 500 <= e.code <= 599:
-                print 'Retrying {}'.format(url)
+                print('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             logging.error('%s: %s', e, url)

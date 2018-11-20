@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 from pprint import pprint
 import os, sys, re
 import logging

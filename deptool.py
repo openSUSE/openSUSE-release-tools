@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 from pprint import pprint
 import os
 import sys
@@ -158,7 +160,7 @@ class DepTool(cmdln.Cmdln):
                 return False
 
             for s in trans.newsolvables():
-                print ','.join(packages), s.name
+                print(','.join(packages), s.name)
                 if opts.explain and s.name in opts.explain:
                     reason, rule = solver.describe_decision(s)
                     ruleinfo = None
@@ -310,7 +312,7 @@ class DepTool(cmdln.Cmdln):
                                     if kindid == solv.SOLVABLE_PROVIDES and r == s:
                                         continue
                                     if not kindprinted:
-                                        print kind
+                                        print(kind)
                                         kindprinted = True
                                     print('  {}: {}-{}@{}'.format(p, r.name, r.evr, r.arch))
 
@@ -338,7 +340,7 @@ class DepTool(cmdln.Cmdln):
                     continue
                 for r in sel.solvables():
                     if not kindprinted:
-                        print kind
+                        print(kind)
                         kindprinted = True
                     print('  {}-{}@{}'.format(r.name, r.evr, r.arch))
 

@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import argparse
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -46,7 +48,7 @@ class StagingReport(object):
 
         if write_comment or force:
             if osc.conf.config['debug']:
-                print 'Updating comment'
+                print('Updating comment')
             if comment:
                 self.comment.delete(comment['id'])
             self.comment.add_comment(project_name=project, comment=report)
@@ -124,9 +126,9 @@ class StagingReport(object):
         self.update_status_comment(project, report, force=force, only_replace=only_replace)
 
         if osc.conf.config['debug']:
-            print project
-            print '-' * len(project)
-            print report
+            print(project)
+            print('-' * len(project))
+            print(report)
 
 
 if __name__ == '__main__':

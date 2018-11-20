@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import print_function
+
 from ConfigParser import ConfigParser
 from xdg.BaseDirectory import load_first_config
 from lxml import etree as ET
@@ -204,7 +206,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                         continue
                     person = self.tool.resolve_person(o.name)
                     if person.email.endswith('@suse.com'):
-                        print p, o.name
+                        print(p, o.name)
                     else:
                         logger.debug('%s skipped', o.name)
 

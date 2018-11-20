@@ -5,14 +5,14 @@ import os
 import re
 import string
 import time
-import urllib
+
 try:
-    from urllib.parse import unquote
+    from urllib.parse import unquote, urlparse, urlencode, parse_qs, urljoin
 except ImportError:
     # python 2.x
-    from urllib import unquote
+    from urllib import unquote, urlencode
+    from urlparse import urlparse, urljoin, parse_qs
 
-import urlparse
 import xml.etree.cElementTree as ET
 
 import httpretty
@@ -42,7 +42,7 @@ _table = {
 
 def router_handler(route_table, method, request, uri, headers):
     """Route the URLs in a deterministic way."""
-    uri_parsed = urlparse.urlparse(uri)
+    uri_parsed = urlparse(uri)
     for path, fn in route_table:
         match = False
         if not isinstance(path, str):
@@ -416,13 +416,13 @@ class OBS(object):
 
     def _request(self, request_id):
         """Utility function to recover a request from the ID."""
-        template = string.Template(self._fixture(urlparse.urljoin(APIURL, '/request/' + request_id)))
+        template = string.Template(self._fixture(urljoin(APIURL, '/request/' + request_id)))
         return template.substitute(self.requests[request_id])
 
     @POST(re.compile(r'/request/\d+'))
     def review_request(self, request, uri, headers):
         request_id = re.search(r'(\d+)', uri).group(1)
-        qs = urlparse.parse_qs(urlparse.urlparse(uri).query)
+        qs = parse_qs(urlparse(uri).query)
 
         response = (404, headers, '<result>Not found</result>')
 
@@ -457,7 +457,7 @@ class OBS(object):
     @GET('/request')
     def request_search(self, request, uri, headers):
         """Request search function."""
-        qs = urlparse.parse_qs(urlparse.urlparse(uri).query)
+        qs = parse_qs(urlparse(uri).query)
         states = qs['states'][0].split(',')
 
         response = (404, headers, '<result>Not found</result>')
@@ -738,7 +738,7 @@ class OBS(object):
     @GET(re.compile(r'/source/home:Admin/\w+'))
     def source_project(self, request, uri, headers):
         """Return information of a source package."""
-        qs = urlparse.parse_qs(urlparse.urlparse(uri).query)
+        qs = parse_qs(urlparse(uri).query)
         index = re.search(r'/source/([\w:]+/\w+)', uri).group(1)
         project, package = index.split('/')
         response = (404, headers, '<result>Not found</result>')
@@ -830,7 +830,7 @@ class OBS(object):
     @GET('/search/project/id')
     def search_project_id(self, request, uri, headers):
         """Return a search result /search/project/id."""
-        assert urlparse.urlparse(uri).query == urllib.urlencode(
+        assert urlparse(uri).query == urlencode(
             {'match': 'starts-with(@name, "openSUSE:Factory:Staging:")'})
 
         response = (404, headers, '<result>Not found</result>')
@@ -857,7 +857,7 @@ class OBS(object):
     @GET('/search/request')
     def search_request(self, request, uri, headers):
         """Return a search result for /search/request."""
-        query = unquote(urlparse.urlparse(uri).query)
+        query = unquote(urlparse(uri).query)
         assert query in (
             "match=state/@name='review'+and+review[@by_group='factory-staging'+and+@state='new']+and+(target[@project='openSUSE:Factory']+or+target[@project='openSUSE:Factory:NonFree'])",
             "match=state/@name='review'+and+review[@by_user='factory-repo-checker'+and+@state='new']+and+(target[@project='openSUSE:Factory']+or+target[@project='openSUSE:Factory:NonFree'])"
@@ -896,7 +896,7 @@ class OBS(object):
     @GET('/search/request/id')
     def search_request_id(self, request, uri, headers):
         """Return a search result for /search/request/id."""
-        query = urlparse.urlparse(uri).query
+        query = urlparse(uri).query
         project = re.search(r"@by_project='([^']+)'", query).group(1)
 
         response = (404, headers, '<result>Not found</result>')
@@ -978,7 +978,7 @@ class OBS(object):
         """Return a JSON fixture."""
         response = (404, headers, '<result>Not found</result>')
         try:
-            path = urlparse.urlparse(uri).path + '.json'
+            path = urlparse(uri).path + '.json'
             template = string.Template(self._fixture(path=path))
             response = (200, headers, template.substitute({
                 'update_at_too_recent': (datetime.utcnow() - timedelta(minutes=2)).isoformat(),
@@ -1016,7 +1016,7 @@ class OBS(object):
     def _fixture(self, uri=None, path=None, filename=None):
         """Read a file as a fixture."""
         if not path:
-            path = urlparse.urlparse(uri).path
+            path = urlparse(uri).path
         path = path[1:] if path.startswith('/') else path
 
         if filename:

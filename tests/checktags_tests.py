@@ -6,7 +6,13 @@ import unittest
 import logging
 import httpretty
 import osc
-import urlparse
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    # python 2.x
+    from urlparse import urlparse
+
 import sys
 import re
 from osclib.cache import Cache
@@ -202,7 +208,7 @@ Pico text editor while also offering a few enhancements.</description>
         result = {'state_accepted': None}
 
         def change_request(result, method, uri, headers):
-            u = urlparse.urlparse(uri)
+            u = urlparse(uri)
             if u.query == 'newstate=accepted&cmd=changereviewstate&by_user=maintbot':
                 result['state_accepted'] = True
             elif u.query == 'newstate=declined&cmd=changereviewstate&by_user=maintbot':
@@ -282,4 +288,3 @@ Pico text editor while also offering a few enhancements.</description>
 
 if __name__ == '__main__':
     unittest.main()
-

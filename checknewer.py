@@ -1,6 +1,8 @@
 #!/usr/bin/python2
 # check if all packages in a repo are newer than all other repos
 
+from __future__ import print_function
+
 import sys
 import os
 import re
