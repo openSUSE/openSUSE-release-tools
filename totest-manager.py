@@ -890,6 +890,29 @@ class ToTest151ARM(ToTest151):
         return 10
 
 
+class ToTest151PowerPC(ToTest151):
+    main_products = [
+        '000product:openSUSE-cd-mini-ppc64le',
+        '000product:openSUSE-dvd5-dvd-ppc64le',
+    ]
+
+    ftp_products = ['000product:openSUSE-ftp-ftp-ppc64le',
+                    ]
+
+    # no livecd for PowerPC
+    livecd_products = []
+    livecd_archs = []
+
+    # TODO: what meaning/purpose ?
+    set_snapshot_number = True
+
+    def openqa_group(self):
+        return 'openSUSE Leap 15 PowerPC'
+
+    def jobs_num(self):
+        return 10
+
+
 class ToTest150Ports(ToTestBaseNew):
     main_products = [
         '000product:openSUSE-cd-mini-aarch64',
@@ -1025,6 +1048,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'openSUSE:Factory:zSystems': ToTestFactoryzSystems,
             'openSUSE:Leap:15.1': ToTest151,
             'openSUSE:Leap:15.1:ARM': ToTest151ARM,
+            'openSUSE:Leap:15.1:PowerPC': ToTest151PowerPC,
             'openSUSE:Leap:15.0:Ports': ToTest150Ports,
             'openSUSE:Leap:15.0:Images': ToTest150Images,
             'openSUSE:Leap:15.1:Images': ToTest151Images,
