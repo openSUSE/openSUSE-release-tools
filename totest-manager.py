@@ -838,6 +838,9 @@ class ToTestFactoryARM(ToTestFactory):
 
     livecd_products = [ImageProduct('JeOS', ['armv7l'])]
 
+    # JeOS doesn't follow build numbers of main isos
+    need_same_build_number = False
+
     def __init__(self, *args, **kwargs):
         ToTestFactory.__init__(self, *args, **kwargs)
 
