@@ -278,7 +278,10 @@ def project_pseudometa_package(apiurl, project):
 
 def project_pseudometa_file_load(apiurl, project, filename, revision=None):
     project, package = project_pseudometa_package(apiurl, project)
-    return source_file_load(apiurl, project, package, filename, revision)
+    source_file = source_file_load(apiurl, project, package, filename, revision)
+    if source_file is not None:
+        source_file = source_file.rstrip()
+    return source_file
 
 def project_pseudometa_file_save(apiurl, project, filename, content, comment=None):
     project, package = project_pseudometa_package(apiurl, project)

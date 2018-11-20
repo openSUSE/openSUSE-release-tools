@@ -11,7 +11,7 @@ from osc import conf
 from osclib.memoize import memoize
 
 
-# Sane defatuls for openSUSE and SUSE.  The string interpolation rule
+# Sane defaults for openSUSE and SUSE.  The string interpolation rule
 # is as this:
 #
 # * %(project)s to replace the name of the project.
@@ -49,6 +49,16 @@ DEFAULT = {
         'mail-maintainer': 'Dominique Leuenberger <dimstar@suse.de>',
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
+    },
+    r'openSUSE:(?P<project>Factory):ARM$': {
+        'product': 'openSUSE.product',
+        'openqa': 'https://openqa.opensuse.org',
+        'main-repo': 'standard',
+        'pseudometa_package': 'openSUSE:%(project)s:ARM:Staging/dashboard',
+        'download-baseurl': 'http://download.opensuse.org/ports/aarch64/tumbleweed/',
+        'mail-list': 'opensuse-arm@opensuse.org',
+        'mail-maintainer': 'Dirk Mueller <dmueller@suse.com>',
+        'mail-noreply': 'noreply@opensuse.org',
     },
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))(?::NonFree)?$': {
         'staging': 'openSUSE:%(project)s:Staging',
@@ -98,6 +108,16 @@ DEFAULT = {
         'mail-maintainer': 'Ludwig Nussel <ludwig.nussel@suse.de>',
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
+    },
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)):ARM$': {
+        'product': 'openSUSE.product',
+        'openqa': 'https://openqa.opensuse.org',
+        'main-repo': 'ports',
+        'pseudometa_package': 'openSUSE:%(project)s:ARM:Staging/dashboard',
+        'download-baseurl': 'http://download.opensuse.org/ports/aarch64/distribution/leap/%(version)s/',
+        'mail-list': 'opensuse-arm@opensuse.org',
+        'mail-maintainer': 'Dirk Mueller <dmueller@suse.com>',
+        'mail-noreply': 'noreply@opensuse.org',
     },
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)(?::NonFree)?:Update)$': {
         'main-repo': 'standard',
