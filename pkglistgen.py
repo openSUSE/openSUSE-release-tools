@@ -1328,11 +1328,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             repos_ = self.repos
             opts_nonfree = copy.deepcopy(opts)
             opts_nonfree.project = nonfree
-            self.repos = self.tool.expand_repos(nonfree, main_repo)
+            self.tool.repos = self.tool.expand_repos(nonfree, main_repo)
             self.tool.update_repos(opts_nonfree)
 
             # Switch repo back to main target project.
-            self.repos = repos_
+            self.tool.repos = repos_
 
             print('-> update_merge')
             self.update_merge(nonfree if drop_list else False)
