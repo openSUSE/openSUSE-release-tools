@@ -533,7 +533,8 @@ class ToTestBase(object):
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
         if not (self.dryrun or self.norelease):
-            self.api.switch_flag_in_prj(self.test_project, flag='publish', state='disable')
+            self.api.switch_flag_in_prj(self.test_project, flag='publish', state='disable',
+                                        repository=self.product_repo)
 
         self._release(set_release=release)
 
