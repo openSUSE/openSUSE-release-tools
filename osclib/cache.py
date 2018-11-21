@@ -99,16 +99,17 @@ class Cache(object):
         r'/source$': TTL_LONG,
         # Sources will be expired with project, could be done on package level.
         r'/source/([^/?]+)(?:\?.*)?$': TTL_LONG,
-        # Project will be marked changed when packages are added/removed.
-        r'/source/([^/]+)/_meta$': TTL_LONG,
         r'/source/([^/]+)/(?:[^/]+)/(?:_meta|_link)$': TTL_LONG,
         r'/source/([^/]+)/dashboard/[^/]+': TTL_LONG,
         r'/source/([^/]+)/_attribute/[^/]+': TTL_DUPLICATE,
-        # Handles clearing local cache on package deletes. Lots of queries like
-        # updating project info, comment, and package additions.
-        r'/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_LONG,
         # Presumably users are not interweaving in short windows.
         r'/statistics/latest_updated': TTL_SHORT,
+        # Use TTL_DUPLICATE for project _meta as only description changes are listed in latest_updated:
+        # https://github.com/openSUSE/open-build-service/issues/6323
+        r'/source/([^/]+)/_meta$': TTL_DUPLICATE,
+        ## Handles clearing local cache on package deletes. Lots of queries like
+        ## updating project info, comment, and package additions.
+        r'/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_DUPLICATE,
     }
 
     last_updated = {}
