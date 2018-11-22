@@ -163,7 +163,7 @@ class Leaper(ReviewBot.ReviewBot):
             elif in_factory is None:
                 self.pending_factory_submission = True
             else:
-                if self.is_package_in_project(prj, package):
+                if not self.is_package_in_project(prj, package):
                     self.logger.info('the package is not in Factory, nor submitted there')
                 else:
                     self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
@@ -189,11 +189,9 @@ class Leaper(ReviewBot.ReviewBot):
 
                 for prj in other_projects_to_check:
                     if self.is_package_in_project(prj, package):
-                        self.logger.info('checking {}'.format(prj))
+                        self.logger.debug('checking {}'.format(prj))
                         if self._check_factory(package, src_srcinfo, prj) is True:
                             self.logger.info('found source match in {}'.format(prj))
-                        else:
-                            self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, prj, package)))
 
                 devel_project, devel_package = devel_project_get(self.apiurl, 'openSUSE.org:openSUSE:Factory', package)
                 if devel_project is not None:
@@ -218,6 +216,11 @@ class Leaper(ReviewBot.ReviewBot):
                 else:
                     # only log origin state if it's taken into consideration for the review result
                     self.logger.info("Submitted from a different origin than expected ('%s')", origin)
+                    self.needs_release_manager = True
+                    # no result so far and also no factory submission to wait
+                    # for. So just pass to avoid requring too much overrides
+                    if not self.pending_factory_submission:
+                        review_result = True
 
             if not review_result and self.override_allow:
                 # Rather than decline, leave review open in-case of change and
