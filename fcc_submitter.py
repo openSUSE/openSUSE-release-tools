@@ -22,8 +22,8 @@ from osclib.core import project_pseudometa_package
 from osc import oscerr
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:Leap:15.0'
-OPENSUSE_PREVERSION = 'openSUSE:Leap:42.3'
+OPENSUSE = 'openSUSE:Leap:15.1'
+OPENSUSE_PREVERSION = 'openSUSE:Leap:15.0'
 FCC = '{}:Staging:FactoryCandidates'.format(OPENSUSE)
 
 makeurl = osc.core.makeurl
@@ -133,7 +133,10 @@ class FccSubmitter(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         self.sle_base_prjs = [
+                'SUSE:SLE-15-SP1:GA',
                 'SUSE:SLE-15:GA',
+                'SUSE:SLE-12-SP4:Update',
+                'SUSE:SLE-12-SP4:GA',
                 'SUSE:SLE-12-SP3:Update',
                 'SUSE:SLE-12-SP3:GA',
                 'SUSE:SLE-12-SP2:Update',
