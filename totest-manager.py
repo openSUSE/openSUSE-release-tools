@@ -984,6 +984,18 @@ class ToTest150Images(ToTestBaseNew):
         return 13
 
 class ToTest151Images(ToTest150Images):
+    image_products = [
+        ImageProduct('livecd-leap-gnome', ['x86_64']),
+        ImageProduct('livecd-leap-kde', ['x86_64']),
+        ImageProduct('livecd-leap-x11', ['x86_64']),
+        ImageProduct('opensuse-leap-image:lxc', ['x86_64']),
+        ImageProduct('openSUSE-Leap-15.1-JeOS:MS-HyperV', ['x86_64']),
+        ImageProduct('openSUSE-Leap-15.1-JeOS:OpenStack-Cloud', ['x86_64']),
+        ImageProduct('openSUSE-Leap-15.1-JeOS:VMware', ['x86_64']),
+        ImageProduct('openSUSE-Leap-15.1-JeOS:XEN', ['x86_64']),
+        ImageProduct('openSUSE-Leap-15.1-JeOS:kvm-and-xen', ['x86_64']),
+    ]
+
     container_products = [ImageProduct('opensuse-leap-image:docker', ['x86_64'])]
 
     def openqa_group(self):
