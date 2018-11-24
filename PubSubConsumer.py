@@ -122,7 +122,7 @@ class PubSubConsumer(object):
         :param str reply_text: The text reason the channel was closed
 
         """
-        self.logger.warning('Channel %i was closed: (%s) %s',
+        self.logger.info('Channel %i was closed: (%s) %s',
                             channel, reply_code, reply_text)
         self._connection.close()
 
