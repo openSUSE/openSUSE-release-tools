@@ -623,6 +623,8 @@ exit 0
 %files rabbit-openqa
 %defattr(-,root,root,-)
 %{_bindir}/osrt-rabbit-openqa
+%{_bindir}/osrt-rabbit-build
+%{_bindir}/osrt-rabbit-watch-pipelines
 %{_datadir}/%{source_dir}/rabbit-openqa.py
 %{_unitdir}/osrt-rabbit-openqa.service
 
