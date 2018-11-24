@@ -160,8 +160,8 @@ class Project(object):
 
 
 class Listener(PubSubConsumer):
-    def __init__(self, amqp_prefix, amqp_url, openqa_url):
-        super(Listener, self).__init__(amqp_url, logging.getLogger(__name__))
+    def __init__(self, amqp_prefix, openqa_url):
+        super(Listener, self).__init__(amqp_prefix, logging.getLogger(__name__))
         self.projects = []
         self.amqp_prefix = amqp_prefix
         self.openqa_url = openqa_url
@@ -249,16 +249,14 @@ if __name__ == '__main__':
 
     if apiurl.endswith('suse.de'):
         amqp_prefix = 'suse'
-        amqp_url = "amqps://suse:suse@rabbit.suse.de"
         openqa_url = 'https://openqa.suse.de'
     else:
         amqp_prefix = 'opensuse'
-        amqp_url = "amqps://opensuse:opensuse@rabbit.opensuse.org"
         openqa_url = 'https://openqa.opensuse.org'
 
     logging.basicConfig(level=logging.INFO)
 
-    l = Listener(amqp_prefix, amqp_url, openqa_url)
+    l = Listener(amqp_prefix, openqa_url)
     url = makeurl(apiurl, ['search', 'project', 'id'], {'match': 'attribute/@name="OSRT:OpenQAMapping"'})
     f = http_GET(url)
     root = ET.parse(f).getroot()

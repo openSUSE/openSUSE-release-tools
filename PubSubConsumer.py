@@ -16,7 +16,7 @@ class PubSubConsumer(object):
 
     """
 
-    def __init__(self, amqp_url, logger):
+    def __init__(self, amqp_prefix, logger):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
 
@@ -27,7 +27,7 @@ class PubSubConsumer(object):
         self._channel = None
         self._closing = False
         self._consumer_tag = None
-        self._url = amqp_url
+        self._prefix = amqp_prefix
         self.logger = logger
 
     def connect(self):
@@ -38,8 +38,15 @@ class PubSubConsumer(object):
         :rtype: pika.SelectConnection
 
         """
-        self.logger.info('Connecting to %s', self._url)
-        return pika.SelectConnection(pika.URLParameters(self._url),
+        self.logger.info('Connecting to %s', self._prefix)
+        account = 'opensuse'
+        server = 'rabbit.opensuse.org'
+        if self._prefix == 'suse':
+            account = 'suse'
+            server = 'rabbit.suse.de'
+        credentials = pika.PlainCredentials(account, account)
+        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, ssl=True, socket_timeout=10)
+        return pika.SelectConnection(parameters,
                                      self.on_connection_open,
                                      stop_ioloop_on_close=False)
 
