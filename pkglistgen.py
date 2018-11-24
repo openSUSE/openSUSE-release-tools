@@ -1154,6 +1154,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-s', '--scope', action='append', default=['all'], help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
+    @cmdln.option('--staging', help='Only solve that one staging')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -1162,6 +1163,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
 
         self.error_occured = False
+
+        if opts.staging:
+            match = re.match('(.*):Staging:(.*)', opts.staging)
+            opts.scope = ['staging:' + match.group(2)]
+            opts.project = match.group(1)
 
         if not opts.project:
             raise ValueError('project is required')
