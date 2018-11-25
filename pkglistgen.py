@@ -1197,6 +1197,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         config = Config(apiurl, target_project)
         api = StagingAPI(apiurl, target_project)
 
+        if apiurl.find('suse.de') > 0:
+            # used by product converter
+            os.environ['OBS_NAME'] = 'build.suse.de'
+
         target_config = conf.config[target_project]
         if opts.scope == 'ports':
             archs_key = 'pkglistgen-archs-ports'
