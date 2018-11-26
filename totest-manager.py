@@ -11,33 +11,35 @@
 
 from __future__ import print_function
 
-import cmdln
 import datetime
 import json
+import logging
 import os
 import re
+import signal
 import sys
+import time
+from xml.etree import cElementTree as ET
+
+import cmdln
+
+from openqa_client.client import OpenQA_Client
+
+import osc
+from osc.core import makeurl
+
+from osclib.conf import Config
+from osclib.stagingapi import StagingAPI
+
+import pika
+
+import yaml
 
 try:
     from urllib.error import HTTPError
 except ImportError:
     # python 2.x
     from urllib2 import HTTPError
-
-import logging
-import signal
-import time
-import yaml
-import pika
-
-from xml.etree import cElementTree as ET
-from openqa_client.client import OpenQA_Client
-
-import osc
-
-from osclib.conf import Config
-from osclib.stagingapi import StagingAPI
-from osc.core import makeurl
 
 logger = logging.getLogger()
 
