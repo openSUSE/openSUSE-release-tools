@@ -1258,7 +1258,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.error_occured = True
 
     def update_and_solve_target(self, api, target_project, target_config, main_repo, opts,
-                                skip_release=False, drop_list=False):
+                                drop_list=False):
         print('[{}] {}/{}: update and solve'.format(opts.scope, opts.project, main_repo))
 
         group = target_config.get('pkglistgen-group', '000package-groups')
@@ -1286,15 +1286,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 print('{}/{} build in progress'.format(opts.project, product))
                 return
 
-        checkout_list = [group, product]
-        if not skip_release:
-            checkout_list.append(release)
+        checkout_list = [group, product, release]
 
-            if packages.find('entry[@name="{}"]'.format(release)) is None:
-                if not self.options.dry:
-                    undelete_package(api.apiurl, opts.project, release, 'revive')
-                print('{} undeleted, skip dvd until next cycle'.format(release))
-                return
+        if packages.find('entry[@name="{}"]'.format(release)) is None:
+            if not self.options.dry:
+                undelete_package(api.apiurl, opts.project, release, 'revive')
+            print('{} undeleted, skip dvd until next cycle'.format(release))
+            return
 
         # Cache dir specific to hostname and project.
         host = urlparse(api.apiurl).hostname
@@ -1315,8 +1313,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 continue
             checkout_package(api.apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
 
-        if not skip_release:
-            self.unlink_all_except(release_dir)
+        self.unlink_all_except(release_dir)
         self.unlink_all_except(product_dir)
         self.copy_directory_contents(group_dir, product_dir,
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
@@ -1393,21 +1390,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
-        if skip_release:
-            self.tool.unlink_list(None, spec_files)
-        else:
-            self.move_list(spec_files, release_dir)
-            inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-            self.move_list(inc_files, release_dir)
+        self.move_list(spec_files, release_dir)
+        inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+        self.move_list(inc_files, release_dir)
 
         self.multibuild_from_glob(product_dir, '*.kiwi')
         self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
 
-        if not skip_release:
-            self.multibuild_from_glob(release_dir, '*.spec')
-            self.build_stub(release_dir, 'spec')
-            self.commit_package(release_dir)
+        self.multibuild_from_glob(release_dir, '*.spec')
+        self.build_stub(release_dir, 'spec')
+        self.commit_package(release_dir)
 
         if api.item_exists(opts.project, '000product-summary'):
             summary_str = "# Summary of packages in groups"
