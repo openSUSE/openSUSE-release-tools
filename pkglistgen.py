@@ -1155,6 +1155,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     @cmdln.option('--staging', help='Only solve that one staging')
+    @cmdln.option('--only-release-packages', action='store_true', help='Generate 000release-packages only')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -1314,7 +1315,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             checkout_package(api.apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
 
         self.unlink_all_except(release_dir)
-        self.unlink_all_except(product_dir)
+        if not opts.only_release_packages:
+            self.unlink_all_except(product_dir)
         self.copy_directory_contents(group_dir, product_dir,
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
         self.change_extension(product_dir, '.spec.in', '.spec')
@@ -1350,7 +1352,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.include_suggested = str2bool(target_config.get('pkglistgen-include-suggested'))
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
-        summary = self.do_solve('solve', opts)
+        if not opts.only_release_packages:
+            summary = self.do_solve('solve', opts)
 
         if opts.stop_after_solve:
             return
@@ -1394,13 +1397,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
         self.move_list(inc_files, release_dir)
 
-        self.multibuild_from_glob(product_dir, '*.kiwi')
-        self.build_stub(product_dir, 'kiwi')
-        self.commit_package(product_dir)
-
         self.multibuild_from_glob(release_dir, '*.spec')
         self.build_stub(release_dir, 'spec')
         self.commit_package(release_dir)
+
+        if opts.only_release_packages:
+            return
+
+        self.multibuild_from_glob(product_dir, '*.kiwi')
+        self.build_stub(product_dir, 'kiwi')
+        self.commit_package(product_dir)
 
         if api.item_exists(opts.project, '000product-summary'):
             summary_str = "# Summary of packages in groups"
