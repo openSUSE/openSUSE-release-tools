@@ -739,7 +739,7 @@ class ToTestBaseNew(ToTestBase):
             for p in self.livecd_products + self.image_products:
                 for arch in p.archs:
                     builds.add(self.iso_build_version(self.project, p.package,
-                                                      arch=p.arch))
+                                                      arch=arch))
 
             ret = (len(builds) == 1)
             if ret is False:
