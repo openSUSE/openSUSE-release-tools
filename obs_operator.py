@@ -1,4 +1,6 @@
-#!/usr/bin/python3
+#!/usr/bin/python3 -u
+# Without the -u option for unbuffered output nothing shows up in journal or
+# kubernetes logs.
 
 import argparse
 from http.cookies import SimpleCookie

@@ -21,6 +21,7 @@
   <packages type="image">
     <package name="openSUSE-release-tools-check-source"/>
     <package name="openSUSE-release-tools-leaper"/>
+    <package name="openSUSE-release-tools-obs-operator"/>
     <package name="openSUSE-release-tools-pkglistgen"/>
     <package name="openSUSE-release-tools-repo-checker"/>
     <package name="openSUSE-release-tools-staging-bot"/>

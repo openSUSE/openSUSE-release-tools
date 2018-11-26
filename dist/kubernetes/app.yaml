@@ -7,8 +7,9 @@ environments:
     k8sVersion: v1.8.0
     path: heroes
     targets:
-    - check-source
-    - repo-checker
+    #- check-source
+    - obs-operator
+    #- repo-checker
 kind: ksonnet.io/app
 name: openSUSE-release-tools
 version: 0.0.1
