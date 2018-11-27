@@ -432,8 +432,8 @@ class ReviewBot(object):
         # to find the real package name
         (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
         if linkpkg is None or linkprj is None or linkprj != a.tgt_project:
-            self.logger.error("%s/%s is not a link to %s"%(a.src_project, pkgname, a.tgt_project))
-            return False
+            self.logger.warning("%s/%s is not a link to %s"%(a.src_project, pkgname, a.tgt_project))
+            return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
         else:
             pkgname = linkpkg
         return self.check_source_submission(a.src_project, a.src_package, None, a.tgt_project, pkgname)
