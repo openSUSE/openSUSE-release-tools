@@ -27,7 +27,6 @@ License:        GPL-2.0-or-later AND MIT
 Group:          Development/Tools/Other
 Url:            https://github.com/openSUSE/openSUSE-release-tools
 Source:         %{name}-%{version}.tar.xz
-Source99:       osrt-worker-obs.kiwi
 BuildArch:      noarch
 # Requires sr#512849 which provides osc_plugin_dir.
 BuildRequires:  osc >= 0.159.0
