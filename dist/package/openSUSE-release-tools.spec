@@ -625,6 +625,7 @@ exit 0
 %{_bindir}/osrt-rabbit-openqa
 %{_bindir}/osrt-rabbit-build
 %{_bindir}/osrt-rabbit-watch-pipelines
+%{_bindir}/osrt-report-status
 %{_datadir}/%{source_dir}/rabbit-openqa.py
 %{_unitdir}/osrt-rabbit-openqa.service
 
