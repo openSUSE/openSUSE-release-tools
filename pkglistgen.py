@@ -1540,14 +1540,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         f.close()
 
     def commit_package(self, path):
-        package = Package(path)
         if self.options.dry:
+            package = Package(path)
             for i in package.get_diff():
                 print(''.join(i))
         else:
             # No proper API function to perform the same operation.
             print(subprocess.check_output(
                 ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True))
+            package = Package(path)
             package.commit(msg='Automatic update', skip_local_service_run=True)
 
 
