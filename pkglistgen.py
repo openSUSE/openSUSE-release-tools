@@ -1387,8 +1387,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             print(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
 
-        delete_kiwis = target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' ')
-        self.tool.unlink_list(product_dir, delete_kiwis)
+        for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' '):
+            delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
+            self.tool.unlink_list(product_dir, delete_kiwis)
         if opts.scope == 'staging':
             self.strip_medium_from_staging(product_dir)
 
