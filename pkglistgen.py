@@ -24,6 +24,7 @@ from osclib.conf import Config, str2bool
 from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.core import source_file_ensure
+from osclib.core import source_file_load
 from osclib.core import target_archs
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
@@ -774,6 +775,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             tool.architectures = ARCHITECTURES
         return tool
 
+    def _product_converter_enabled(self, api, project, product):
+        servicefile = ET.fromstring(source_file_load(api.apiurl, project, product, '_service'))
+
+        return not servicefile.findall('./service[@name="product_converter"][@mode="disabled"]')
+
     def do_list(self, subcmd, opts):
         """${cmd_name}: list all groups
 
@@ -1235,6 +1241,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
             return self.error_occured
 
+    def execute_product_service(self, product_dir, project):
+        print('-> product service')
+        for product_file in glob.glob(os.path.join(product_dir, '*.product')):
+            print(subprocess.check_output(
+                [PRODUCT_SERVICE, product_file, product_dir, project]))
+
     def update_and_solve_target_wrapper(self, *args, **kwargs):
         try:
             self.update_and_solve_target(*args, **kwargs)
@@ -1276,8 +1288,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 print('{}/{} build in progress'.format(opts.project, product))
                 return
 
+        product_converter_enabled = self._product_converter_enabled(api, opts.project, product)
+
         checkout_list = [group, product]
-        if not skip_release:
+        if not skip_release and not product_converter_enabled:
             checkout_list.append(release)
 
             if packages.find('entry[@name="{}"]'.format(release)) is None:
@@ -1305,9 +1319,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 continue
             checkout_package(api.apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
 
-        if not skip_release:
-            self.unlink_all_except(release_dir)
-        self.unlink_all_except(product_dir)
+        if not product_converter_enabled:
+            if not skip_release:
+                self.unlink_all_except(release_dir)
+            self.unlink_all_except(product_dir)
         self.copy_directory_contents(group_dir, product_dir,
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
         self.change_extension(product_dir, '.spec.in', '.spec')
@@ -1372,10 +1387,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         self.tool.unlink_list(product_dir, delete_products)
 
-        print('-> product service')
-        for product_file in glob.glob(os.path.join(product_dir, '*.product')):
-            print(subprocess.check_output(
-                [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
+        if not product_converter_enabled:
+            self.execute_product_service(product_dir, opts.project)
 
         delete_kiwis = target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' ')
         self.tool.unlink_list(product_dir, delete_kiwis)
@@ -1385,16 +1398,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
         if skip_release:
             self.tool.unlink_list(None, spec_files)
-        else:
+        elif not product_converter_enabled:
             self.move_list(spec_files, release_dir)
             inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
             self.move_list(inc_files, release_dir)
 
-        self.multibuild_from_glob(product_dir, '*.kiwi')
-        self.build_stub(product_dir, 'kiwi')
+        if not product_converter_enabled:
+            self.multibuild_from_glob(product_dir, '*.kiwi')
+            self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
 
-        if not skip_release:
+        if not skip_release and not product_converter_enabled:
             self.multibuild_from_glob(release_dir, '*.spec')
             self.build_stub(release_dir, 'spec')
             self.commit_package(release_dir)
