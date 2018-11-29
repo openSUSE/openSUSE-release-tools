@@ -156,4 +156,6 @@ before_cache:
 notifications:
   email:
     recipients:
-      - opensuse-releaseteam@suse.de
+      # Avoid spam from forks by using secure value that is only available in
+      # main project (see travis-ci/travis-ci#5063).
+      - secure: "CpMzZ1W2x9KCCsrWiYXy8PVfR8vJfuR6ewm/oui7F/hCQ736YHbtQpCbC7GjVoDNpsnWc0XbvFjOl0ehwFBRo1FM1ejy4Zc+XdZSgVFvJ6zUHW/S7uxBZ3YuC07YCzQnHIHh0TCFkFK9GCw0lrcPpsjgneux+C8JQ6tz16H5AmA="
