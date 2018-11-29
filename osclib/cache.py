@@ -107,8 +107,8 @@ class Cache(object):
         # Use TTL_DUPLICATE for project _meta as only description changes are listed in latest_updated:
         # https://github.com/openSUSE/open-build-service/issues/6323
         r'/source/([^/]+)/_meta$': TTL_DUPLICATE,
-        ## Handles clearing local cache on package deletes. Lots of queries like
-        ## updating project info, comment, and package additions.
+        # Handles clearing local cache on package deletes. Lots of queries like
+        # updating project info, comment, and package additions.
         r'/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_DUPLICATE,
     }
 
