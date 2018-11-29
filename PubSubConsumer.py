@@ -1,6 +1,6 @@
 import logging
 import pika
-
+import sys
 
 class PubSubConsumer(object):
     """This is an example consumer that will handle unexpected interactions
@@ -328,8 +328,10 @@ def main():
                   '-35s %(lineno) -5d: %(message)s')
 
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-    example = PubSubConsumer('amqps://opensuse:opensuse@rabbit.opensuse.org',
-                             logging.getLogger(__name__))
+    amqp_prefix = 'opensuse'
+    if len(sys.argv) > 1:
+        amqp_prefix = sys.argv[1]
+    example = PubSubConsumer(amqp_prefix, logging.getLogger(__name__))
     try:
         example.run()
     except KeyboardInterrupt:
