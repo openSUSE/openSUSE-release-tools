@@ -98,8 +98,6 @@ DEFAULT = {
         # - F-C-C submitter requests (maxlin_factory)
         'unselect-cleanup-whitelist': 'leaper maxlin_factory',
         'pkglistgen-archs': 'x86_64',
-        'pkglistgen-archs-arm': 'aarch64',
-        'pkglistgen-archs-ports': 'aarch64 ppc64le',
         'pkglistgen-locales-from': 'openSUSE.product',
         'pkglistgen-include-suggested': 'False',
         'pkglistgen-delete-kiwis-rings': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',

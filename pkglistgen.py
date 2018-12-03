@@ -747,7 +747,7 @@ class PkgListGen(ToolBase.ToolBase):
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['all', 'target', 'rings', 'staging', 'arm']
+    SCOPES = ['all', 'target', 'rings', 'staging']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -1203,10 +1203,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             os.environ['OBS_NAME'] = 'build.suse.de'
 
         target_config = conf.config[target_project]
-        if opts.scope == 'arm':
-            archs_key = 'pkglistgen-archs-arm'
-        else:
-            archs_key = 'pkglistgen-archs'
+        archs_key = 'pkglistgen-archs'
 
         if archs_key in target_config:
             self.options.architectures = target_config.get(archs_key).split(' ')
@@ -1214,11 +1211,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if opts.scope == 'target':
             self.repos = self.tool.expand_repos(target_project, main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
-        elif opts.scope == 'arm':
-            main_repo = 'ports'
-            opts.project += ':ARM'
-            self.repos = self.tool.expand_repos(opts.project, main_repo)
             self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
@@ -1318,7 +1310,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.tool.update_repos(opts)
 
         nonfree = target_config.get('nonfree')
-        if opts.scope != 'arm' and nonfree and drop_list:
+        if nonfree and drop_list:
             print('-> do_update nonfree')
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
