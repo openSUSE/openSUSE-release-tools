@@ -1203,9 +1203,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             os.environ['OBS_NAME'] = 'build.suse.de'
 
         target_config = conf.config[target_project]
-        if opts.scope == 'ports':
-            archs_key = 'pkglistgen-archs-ports'
-        elif opts.scope == 'arm':
+        if opts.scope == 'arm':
             archs_key = 'pkglistgen-archs-arm'
         else:
             archs_key = 'pkglistgen-archs'
@@ -1217,25 +1215,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.scope == 'target':
             self.repos = self.tool.expand_repos(target_project, main_repo)
             self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
-            return self.error_occured
         elif opts.scope == 'arm':
             main_repo = 'ports'
             opts.project += ':ARM'
             self.repos = self.tool.expand_repos(opts.project, main_repo)
             self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
-            return self.error_occured
-        elif opts.scope == 'ports':
-            # TODO Continue supporting #1297, but should be abstracted.
-            main_repo = 'ports'
-            opts.project += ':Ports'
-            self.repos = self.tool.expand_repos(opts.project, main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
-            return self.error_occured
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
             self.repos = self.tool.expand_repos(api.rings[1], main_repo)
             self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
-            return self.error_occured
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
             for letter in letters:
@@ -1244,7 +1232,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 opts.project = api.prj_from_short(letter)
                 self.repos = self.tool.expand_repos(opts.project, main_repo)
                 self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
-            return self.error_occured
+        return self.error_occured
 
     def update_and_solve_target_wrapper(self, *args, **kwargs):
         try:
@@ -1330,7 +1318,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.tool.update_repos(opts)
 
         nonfree = target_config.get('nonfree')
-        if opts.scope not in ('arm', 'ports') and nonfree and drop_list:
+        if opts.scope != 'arm' and nonfree and drop_list:
             print('-> do_update nonfree')
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
