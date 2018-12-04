@@ -747,7 +747,7 @@ class PkgListGen(ToolBase.ToolBase):
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['all', 'target', 'rings', 'staging', 'arm']
+    SCOPES = ['all', 'target', 'rings', 'staging']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -1071,7 +1071,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if name is not None and '-Build' in name:
             return name, 'build'
 
-        raise Exception('media.1/{media,build} includes no build number')
+        raise Exception(baseurl + '/media.1/{media,build} includes no build number')
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
@@ -1154,6 +1154,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-s', '--scope', action='append', default=['all'], help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
+    @cmdln.option('--staging', help='Only solve that one staging')
+    @cmdln.option('--only-release-packages', action='store_true', help='Generate 000release-packages only')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -1163,13 +1165,26 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.error_occured = False
 
+        if opts.staging:
+            match = re.match('(.*):Staging:(.*)', opts.staging)
+            opts.scope = ['staging:' + match.group(2)]
+            opts.project = match.group(1)
+
         if not opts.project:
             raise ValueError('project is required')
         opts.staging_project = None
 
+        apiurl = conf.config['apiurl']
+        config = Config(apiurl, opts.project)
+        target_config = conf.config[opts.project]
+
+        if apiurl.find('suse.de') > 0:
+            # used by product converter
+            os.environ['OBS_NAME'] = 'build.suse.de'
+
         # special case for all
         if opts.scope == ['all']:
-            opts.scope = self.SCOPES[1:]
+            opts.scope = target_config.get('pkglistgen-scopes', 'target').split(' ')
 
         for scope in opts.scope:
             if scope.startswith('staging:'):
@@ -1179,25 +1194,18 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             if scope not in self.SCOPES:
                 raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
             opts.scope = scope
-            self.real_update_and_solve(copy.deepcopy(opts))
+            self.real_update_and_solve(target_config, copy.deepcopy(opts))
         return self.error_occured
 
     # note: scope is a value here - while it's an array above
-    def real_update_and_solve(self, opts):
+    def real_update_and_solve(self, target_config, opts):
         # Store target project as opts.project will contain subprojects.
         target_project = opts.project
 
         apiurl = conf.config['apiurl']
-        config = Config(apiurl, target_project)
         api = StagingAPI(apiurl, target_project)
 
-        target_config = conf.config[target_project]
-        if opts.scope == 'ports':
-            archs_key = 'pkglistgen-archs-ports'
-        elif opts.scope == 'arm':
-            archs_key = 'pkglistgen-archs-arm'
-        else:
-            archs_key = 'pkglistgen-archs'
+        archs_key = 'pkglistgen-archs'
 
         if archs_key in target_config:
             self.options.architectures = target_config.get(archs_key).split(' ')
@@ -1206,25 +1214,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.scope == 'target':
             self.repos = self.tool.expand_repos(target_project, main_repo)
             self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
-            return self.error_occured
-        elif opts.scope == 'arm':
-            main_repo = 'ports'
-            opts.project += ':ARM'
-            self.repos = self.tool.expand_repos(opts.project, main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
-            return self.error_occured
-        elif opts.scope == 'ports':
-            # TODO Continue supporting #1297, but should be abstracted.
-            main_repo = 'ports'
-            opts.project += ':Ports'
-            self.repos = self.tool.expand_repos(opts.project, main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
-            return self.error_occured
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
             self.repos = self.tool.expand_repos(api.rings[1], main_repo)
             self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
-            return self.error_occured
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
             for letter in letters:
@@ -1233,7 +1226,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 opts.project = api.prj_from_short(letter)
                 self.repos = self.tool.expand_repos(opts.project, main_repo)
                 self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
-            return self.error_occured
+        return self.error_occured
 
     def update_and_solve_target_wrapper(self, *args, **kwargs):
         try:
@@ -1248,7 +1241,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.error_occured = True
 
     def update_and_solve_target(self, api, target_project, target_config, main_repo, opts,
-                                skip_release=False, drop_list=False):
+                                drop_list=False):
         print('[{}] {}/{}: update and solve'.format(opts.scope, opts.project, main_repo))
 
         group = target_config.get('pkglistgen-group', '000package-groups')
@@ -1276,15 +1269,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 print('{}/{} build in progress'.format(opts.project, product))
                 return
 
-        checkout_list = [group, product]
-        if not skip_release:
-            checkout_list.append(release)
+        checkout_list = [group, product, release]
 
-            if packages.find('entry[@name="{}"]'.format(release)) is None:
-                if not self.options.dry:
-                    undelete_package(api.apiurl, opts.project, release, 'revive')
-                print('{} undeleted, skip dvd until next cycle'.format(release))
-                return
+        if packages.find('entry[@name="{}"]'.format(release)) is None:
+            if not self.options.dry:
+                undelete_package(api.apiurl, opts.project, release, 'revive')
+            print('{} undeleted, skip dvd until next cycle'.format(release))
+            return
 
         # Cache dir specific to hostname and project.
         host = urlparse(api.apiurl).hostname
@@ -1305,9 +1296,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 continue
             checkout_package(api.apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
 
-        if not skip_release:
-            self.unlink_all_except(release_dir)
-        self.unlink_all_except(product_dir)
+        self.unlink_all_except(release_dir)
+        if not opts.only_release_packages:
+            self.unlink_all_except(product_dir)
         self.copy_directory_contents(group_dir, product_dir,
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
         self.change_extension(product_dir, '.spec.in', '.spec')
@@ -1321,7 +1312,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.tool.update_repos(opts)
 
         nonfree = target_config.get('nonfree')
-        if opts.scope not in ('arm', 'ports') and nonfree and drop_list:
+        if nonfree and drop_list:
             print('-> do_update nonfree')
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
@@ -1343,7 +1334,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.include_suggested = str2bool(target_config.get('pkglistgen-include-suggested'))
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
-        summary = self.do_solve('solve', opts)
+        if not opts.only_release_packages:
+            summary = self.do_solve('solve', opts)
 
         if opts.stop_after_solve:
             return
@@ -1377,27 +1369,27 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             print(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
 
-        delete_kiwis = target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' ')
-        self.tool.unlink_list(product_dir, delete_kiwis)
+        for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' '):
+            delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
+            self.tool.unlink_list(product_dir, delete_kiwis)
         if opts.scope == 'staging':
             self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
-        if skip_release:
-            self.tool.unlink_list(None, spec_files)
-        else:
-            self.move_list(spec_files, release_dir)
-            inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-            self.move_list(inc_files, release_dir)
+        self.move_list(spec_files, release_dir)
+        inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+        self.move_list(inc_files, release_dir)
+
+        self.multibuild_from_glob(release_dir, '*.spec')
+        self.build_stub(release_dir, 'spec')
+        self.commit_package(release_dir)
+
+        if opts.only_release_packages:
+            return
 
         self.multibuild_from_glob(product_dir, '*.kiwi')
         self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
-
-        if not skip_release:
-            self.multibuild_from_glob(release_dir, '*.spec')
-            self.build_stub(release_dir, 'spec')
-            self.commit_package(release_dir)
 
         if api.item_exists(opts.project, '000product-summary'):
             summary_str = "# Summary of packages in groups"
@@ -1432,6 +1424,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             project_config = conf.config[project]
 
             baseurl = project_config.get('download-baseurl')
+            if not baseurl:
+                baseurl = project_config.get('download-baseurl-' + project.replace(':', '-'))
             baseurl_update = project_config.get('download-baseurl-update')
             if not baseurl:
                 logger.warning('no baseurl configured for {}'.format(project))
@@ -1530,14 +1524,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         f.close()
 
     def commit_package(self, path):
-        package = Package(path)
         if self.options.dry:
+            package = Package(path)
             for i in package.get_diff():
                 print(''.join(i))
         else:
             # No proper API function to perform the same operation.
             print(subprocess.check_output(
                 ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True))
+            package = Package(path)
             package.commit(msg='Automatic update', skip_local_service_run=True)
 
 
