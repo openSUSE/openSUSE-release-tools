@@ -1071,7 +1071,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if name is not None and '-Build' in name:
             return name, 'build'
 
-        raise Exception('media.1/{media,build} includes no build number')
+        raise Exception(baseurl + '/media.1/{media,build} includes no build number')
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
