@@ -113,6 +113,8 @@ DEFAULT = {
         'openqa': 'https://openqa.opensuse.org',
         'main-repo': 'ports',
         'pseudometa_package': 'openSUSE:%(project)s:ARM:Staging/dashboard',
+        'pkglistgen-product-family-include': 'openSUSE:Leap:15.0:ARM',
+        'download-baseurl-openSUSE-Leap-15.0-ARM': 'http://download.opensuse.org/ports/aarch64/distribution/leap/15.0/',
         'mail-list': 'opensuse-arm@opensuse.org',
         'mail-maintainer': 'Dirk Mueller <dmueller@suse.com>',
         'mail-noreply': 'noreply@opensuse.org',

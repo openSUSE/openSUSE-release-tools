@@ -11,6 +11,9 @@ def project_list_family(apiurl, project):
     if project == 'openSUSE:Factory':
         return [project]
 
+    if project.endswith(':ARM') or project.endswith(':PowerPC'):
+        return [project]
+
     count_original = project.count(':')
     if project.startswith('SUSE:SLE'):
         project = ':'.join(project.split(':')[:2])

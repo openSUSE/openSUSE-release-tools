@@ -1424,6 +1424,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             project_config = conf.config[project]
 
             baseurl = project_config.get('download-baseurl')
+            if not baseurl:
+                baseurl = project_config.get('download-baseurl-' + project.replace(':', '-'))
             baseurl_update = project_config.get('download-baseurl-update')
             if not baseurl:
                 logger.warning('no baseurl configured for {}'.format(project))
