@@ -1174,9 +1174,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             raise ValueError('project is required')
         opts.staging_project = None
 
+        apiurl = conf.config['apiurl']
+        config = Config(apiurl, opts.project)
+        target_config = conf.config[opts.project]
+
+        if apiurl.find('suse.de') > 0:
+            # used by product converter
+            os.environ['OBS_NAME'] = 'build.suse.de'
+
         # special case for all
         if opts.scope == ['all']:
-            opts.scope = self.SCOPES[1:]
+            opts.scope = target_config.get('pkglistgen-scopes', 'target').split(' ')
 
         for scope in opts.scope:
             if scope.startswith('staging:'):
@@ -1186,23 +1194,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             if scope not in self.SCOPES:
                 raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
             opts.scope = scope
-            self.real_update_and_solve(copy.deepcopy(opts))
+            self.real_update_and_solve(target_config, copy.deepcopy(opts))
         return self.error_occured
 
     # note: scope is a value here - while it's an array above
-    def real_update_and_solve(self, opts):
+    def real_update_and_solve(self, target_config, opts):
         # Store target project as opts.project will contain subprojects.
         target_project = opts.project
 
         apiurl = conf.config['apiurl']
-        config = Config(apiurl, target_project)
         api = StagingAPI(apiurl, target_project)
 
-        if apiurl.find('suse.de') > 0:
-            # used by product converter
-            os.environ['OBS_NAME'] = 'build.suse.de'
-
-        target_config = conf.config[target_project]
         archs_key = 'pkglistgen-archs'
 
         if archs_key in target_config:
