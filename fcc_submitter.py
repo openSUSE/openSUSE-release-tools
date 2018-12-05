@@ -308,6 +308,8 @@ class FccSubmitter(object):
         # get souce packages from target
         target_packages = self.get_source_packages(self.to_prj)
         deleted_packages = self.get_deleted_packages(self.to_prj)
+        if self.to_prj.startswith("openSUSE:"):
+            deleted_packages = deleted_packages + self.get_deleted_packages(OPENSUSE_PREVERSION)
 
         pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, 'openSUSE:Factory')
         skip_pkgs_list = self.load_skip_pkgs_list(pseudometa_project, pseudometa_package).splitlines()
