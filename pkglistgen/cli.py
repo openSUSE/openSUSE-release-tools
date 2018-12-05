@@ -567,7 +567,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         opts.filtered_architectures = []
         # make sure we only calculcate existant architectures
         for arch in target_archs(api.apiurl, opts.project, main_repo):
-            if arch in self.options.architectures:
+            if arch in self.tool.architectures:
                 opts.filtered_architectures.append(arch)
 
         url = api.makeurl(['source', opts.project])
