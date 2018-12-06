@@ -39,6 +39,9 @@ class Group(object):
         # with recommends on actual package names, not virtual
         # provides.
         self.expand_recommended = set()
+        # special feature for Tumbleweed. Just like the above but for
+        # suggested (recommends are default)
+        self.expand_suggested = set()
 
         pkglist.groups[self.safe_name] = self
         self.logger = logging.getLogger(__name__)
@@ -70,6 +73,9 @@ class Group(object):
                     self.silents.add(name)
                 elif rel == 'recommended':
                     self.expand_recommended.add(name)
+                elif rel == 'suggested':
+                    self.expand_suggested.add(name)
+                    self.expand_recommended.add(name)
                 else:
                     arch = rel
 
@@ -86,6 +92,7 @@ class Group(object):
         self.locked.update(group.locked)
         self.silents.update(group.silents)
         self.expand_recommended.update(group.expand_recommended)
+        self.expand_suggested.update(group.expand_suggested)
 
     # do not repeat packages
     def ignore(self, without):
@@ -104,7 +111,7 @@ class Group(object):
             self.ignore(g)
         self.ignored.add(without)
 
-    def solve(self, use_recommends=False, include_suggested=False):
+    def solve(self, use_recommends=False):
         """ base: list of base groups or None """
 
         solved = dict()
@@ -113,14 +120,13 @@ class Group(object):
 
         self.srcpkgs = dict()
         self.recommends = dict()
-        self.suggested = dict()
         for arch in self.pkglist.filtered_architectures:
             pool = self.pkglist._prepare_pool(arch)
             solver = pool.Solver()
             solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, not use_recommends)
 
             # pool.set_debuglevel(10)
-            suggested = []
+            suggested = dict()
 
             # packages resulting from explicit recommended expansion
             extra = []
@@ -168,16 +174,13 @@ class Group(object):
                         self.unresolvable[arch][n] = str(problem)
                     return
 
-                if hasattr(solver, 'get_recommended'):
-                    for s in solver.get_recommended():
-                        if s.name in locked:
-                            continue
-                        self.recommends.setdefault(s.name, group + ':' + n)
+                for s in solver.get_recommended():
+                    if s.name in locked:
+                        continue
+                    self.recommends.setdefault(s.name, group + ':' + n)
+                if n in self.expand_suggested:
                     for s in solver.get_suggested():
-                        suggested.append([s.name, group + ':suggested:' + n])
-                        self.suggested.setdefault(s.name, group + ':' + n)
-                else:
-                    self.logger.warn('newer libsolv needed for recommends!')
+                        suggested[s.name] = group + ':suggested:' + n
 
                 trans = solver.transaction()
                 if trans.isempty():
@@ -186,8 +189,8 @@ class Group(object):
 
                 for s in trans.newsolvables():
                     solved[arch].setdefault(s.name, group + ':' + n)
-                    reason, rule = solver.describe_decision(s)
                     if None:
+                        reason, rule = solver.describe_decision(s)
                         print(self.name, s.name, reason, rule.info().problemstr())
                     # don't ask me why, but that's how it seems to work
                     if s.lookup_void(solv.SOLVABLE_SOURCENAME):
@@ -199,17 +202,26 @@ class Group(object):
             start = time.time()
             for n, group in self.packages[arch]:
                 solve_one_package(n, group)
+
+            jobs = list(self.pkglist.lockjobs[arch])
+            locked = self.locked | self.pkglist.unwanted
+            for l in locked:
+                sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
+                # if we can't find it, it probably is not as important
+                if not sel.isempty():
+                    jobs += sel.jobs(solv.Job.SOLVER_LOCK)
+
+            for n in solved[arch].keys() + suggested.keys():
+                sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
+                jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
+
+            solver.solve(jobs)
+            trans = solver.transaction()
+            for s in trans.newsolvables():
+                solved[arch].setdefault(s.name, group + ':expansion')
+
             end = time.time()
             self.logger.info('%s - solving took %f', self.name, end - start)
-
-            if include_suggested:
-                seen = set()
-                while suggested:
-                    n, group = suggested.pop()
-                    if n in seen:
-                        continue
-                    seen.add(n)
-                    solve_one_package(n, group)
 
         common = None
         # compute common packages across all architectures
@@ -285,7 +297,6 @@ class Group(object):
 
     def filter_already_selected(self, modules):
         self._filter_already_selected(modules, self.recommends)
-        self._filter_already_selected(modules, self.suggested)
 
     def toxml(self, arch, ignore_broken=False, comment=None):
         packages = self.solved_packages.get(arch, dict())

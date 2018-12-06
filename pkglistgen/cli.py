@@ -391,7 +391,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
     @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
-    @cmdln.option('--include-suggested', action='store_true', help='include suggested packges also')
     @cmdln.option('--locale', action='append', help='locales to inclues')
     @cmdln.option('--locales-from', metavar='FILE', help='get supported locales from product file FILE')
     def do_solve(self, subcmd, opts):
@@ -412,10 +411,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.ignore_unresolvable:
             self.tool.ignore_broken = True
         global_use_recommends = not opts.ignore_recommended
-        if opts.include_suggested:
-            if opts.ignore_recommended:
-                raise cmdln.CmdlnUserError("--ignore-recommended and --include-suggested don't work together")
-            self.tool.include_suggested = True
         if opts.locale:
             for l in opts.locale:
                 self.tool.locales |= set(l.split(','))
@@ -647,7 +642,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         print('-> do_solve')
         opts.ignore_unresolvable = str2bool(target_config.get('pkglistgen-ignore-unresolvable'))
         opts.ignore_recommended = str2bool(target_config.get('pkglistgen-ignore-recommended'))
-        opts.include_suggested = str2bool(target_config.get('pkglistgen-include-suggested'))
         opts.locale = target_config.get('pkglistgen-local')
         opts.locales_from = target_config.get('pkglistgen-locales-from')
         if not opts.only_release_packages:

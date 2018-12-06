@@ -32,7 +32,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.output_dir = '.'
         self.lockjobs = dict()
         self.ignore_broken = False
-        self.include_suggested = False
         self.unwanted = set()
         self.output = None
         self.locales = set()
@@ -124,7 +123,7 @@ class PkgListGen(ToolBase.ToolBase):
         g = self.groups[groupname]
         for i in includes:
             g.inherit(self.groups[i])
-        g.solve(use_recommends, self.include_suggested)
+        g.solve(use_recommends)
         for e in excludes:
             g.ignore(self.groups[e])
 
@@ -181,6 +180,9 @@ class PkgListGen(ToolBase.ToolBase):
                         "failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
                 continue
             for solvable in repo.solvables_iter():
+                solvable.unset(solv.SOLVABLE_CONFLICTS)
+                solvable.unset(solv.SOLVABLE_OBSOLETES)
+                # only take the first solvable in the repo chain
                 if solvable.name in solvables:
                     self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE | solv.Job.SOLVER_LOCK, solvable.id))
                 solvables.add(solvable.name)
