@@ -89,27 +89,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             tool.architectures = ARCHITECTURES
         return tool
 
-    def do_list(self, subcmd, opts):
-        """${cmd_name}: list all groups
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
-        self.tool.load_all_groups()
-
-        for name in sorted(self.tool.groups.keys()):
-            print(name)
-
-    def do_list_products(self, subcmd, opts):
-        """${cmd_name}: list all products
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
-        self.tool.list_products()
-
     def update_merge(self, nonfree):
         """Merge free and nonfree solv files or copy free to merged"""
         for project, repo in self.repos:

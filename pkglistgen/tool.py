@@ -104,21 +104,6 @@ class PkgListGen(ToolBase.ToolBase):
                     fh.write(x)
         return summary
 
-    def _parse_product(self, root):
-        print(root.find('.//products/product/name').text)
-        for mnode in root.findall(".//mediasets/media"):
-            name = mnode.get('name')
-            print('  {}'.format(name))
-            for node in mnode.findall(".//use"):
-                print('    {}'.format(node.get('group')))
-
-    def list_products(self):
-        for fn in glob.glob('*.product'):
-            with open(os.path.join(self.input_dir, fn), 'r') as fh:
-                self.logger.debug("reading %s", fn)
-                root = ET.parse(fh).getroot()
-                self._parse_product(root)
-
     def solve_module(self, groupname, includes, excludes, use_recommends):
         g = self.groups[groupname]
         for i in includes:
