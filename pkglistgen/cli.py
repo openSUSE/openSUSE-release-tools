@@ -3,76 +3,27 @@
 # TODO: solve all devel packages to include
 from __future__ import print_function
 
-import copy
-import filecmp
-import glob
-import logging
+import cmdln
 import os
-import os.path
 import re
-import shutil
-import string
-import subprocess
-import sys
+import ToolBase
 import traceback
 
-import cmdln
-
-from lxml import etree as ET
-
 from osc import conf
-from osc.core import checkout_package
-from osc.core import http_GET, http_PUT
-from osc.core import HTTPError
-from osc.core import makeurl
-from osc.core import undelete_package
-from osclib.cache_manager import CacheManager
-from osclib.conf import Config, str2bool
-from osclib.core import source_file_ensure
+from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-from osclib.util import project_list_family
-from osclib.util import project_list_family_prior
-try:
-    from urllib.parse import urljoin, urlparse
-except ImportError:
-    # python 2.x
-    from urlparse import urljoin, urlparse
-
-import solv
-
-import yaml
-
-import ToolBase
-
 from pkglistgen import solv_utils
 from pkglistgen.tool import PkgListGen, CACHEDIR
-
-logger = logging.getLogger()
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
-        self.repos = []
-
-    def get_optparser(self):
-        parser = ToolBase.CommandLineInterface.get_optparser(self)
-        parser.add_option('-i', '--input-dir', dest='input_dir', metavar='DIR',
-                          help='input directory', default='.')
-        parser.add_option('-o', '--output-dir', dest='output_dir', metavar='DIR',
-                          help='input directory', default='.')
-        parser.add_option('-a', '--architecture', dest='architectures', metavar='ARCH',
-                          help='architecure', action='append')
-        return parser
 
     def setup_tool(self):
         tool = PkgListGen()
-        tool.input_dir = self.options.input_dir
-        tool.output_dir = self.options.output_dir
-        tool.repos = self.repos
         tool.dry_run = self.options.dry
-        tool.init_architectures(self.options.architectures)
         return tool
 
     def do_create_sle_weakremovers(self, subcmd, opts, target, *prjs):
@@ -90,6 +41,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
         self.tool.create_sle_weakremovers(target, prjs)
 
+    @cmdln.option('-o', '--output-dir', dest='output_dir', metavar='DIR', help='output directory', default='.')
     def do_create_droplist(self, subcmd, opts, *oldsolv):
         """${cmd_name}: generate list of obsolete packages
 
@@ -103,61 +55,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
+        return self.tool.create_droplist(oldsolv, output_dir=self.options.output_dir)
 
-        drops = dict()
-
-        for arch in self.tool.architectures:
-
-            for old in oldsolv:
-
-                logger.debug("%s: processing %s", arch, old)
-
-                pool = solv.Pool()
-                pool.setarch(arch)
-
-                for project, repo in self.tool.repos:
-                    fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                    r = pool.add_repo(project)
-                    r.add_solv(fn)
-
-                sysrepo = pool.add_repo(os.path.basename(old).replace('.merged.solv', ''))
-                sysrepo.add_solv(old)
-
-                pool.createwhatprovides()
-
-                for s in sysrepo.solvables:
-                    haveit = False
-                    for s2 in pool.whatprovides(s.nameid):
-                        if s2.repo == sysrepo or s.nameid != s2.nameid:
-                            continue
-                        haveit = True
-                    if haveit:
-                        continue
-                    nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
-                    for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
-                        if s2.repo == sysrepo:
-                            continue
-                        haveit = True
-                    if haveit:
-                        continue
-                    if s.name not in drops:
-                        drops[s.name] = sysrepo.name
-
-                # mark it explicitly to avoid having 2 pools while GC is not run
-                del pool
-
-        ofh = sys.stdout
-        if self.options.output_dir:
-            name = os.path.join(self.options.output_dir, 'obsoletepackages.inc')
-            ofh = open(name, 'w')
-
-        for reponame in sorted(set(drops.values())):
-            print("<!-- %s -->" % reponame, file=ofh)
-            for p in sorted(drops):
-                if drops[p] != reponame:
-                    continue
-                print("  <obsoletepackage>%s</obsoletepackage>" % p, file=ofh)
-
+    @cmdln.option('-o', '--output-dir', dest='output_dir', metavar='DIR', help='output directory', default='.')
     @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
     def do_dump_solv(self, subcmd, opts, baseurl):
         """${cmd_name}: fetch repomd and dump solv
@@ -176,7 +76,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
-    @cmdln.option('-s', '--scope', action='append', default=['all'], help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
+    @cmdln.option('-s', '--scope', action='append', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     @cmdln.option('--staging', help='Only solve that one staging')
@@ -193,41 +93,21 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.staging:
             match = re.match('(.*):Staging:(.*)', opts.staging)
             opts.scope = ['staging:' + match.group(2)]
+            if opts.project:
+                raise ValueError('--staging and --project conflict')
             opts.project = match.group(1)
-
-        if not opts.project:
+        elif not opts.project:
             raise ValueError('project is required')
-        opts.staging_project = None
+        elif not opts.scope:
+            opts.scope = ['all']
 
         apiurl = conf.config['apiurl']
         config = Config(apiurl, opts.project)
         target_config = conf.config[opts.project]
 
-        if apiurl.find('suse.de') > 0:
-            # used by product converter
-            os.environ['OBS_NAME'] = 'build.suse.de'
-
-        # special case for all
-        if opts.scope == ['all']:
-            opts.scope = target_config.get('pkglistgen-scopes', 'target').split(' ')
-
-        for scope in opts.scope:
-            if scope.startswith('staging:'):
-                opts.staging_project = re.match('staging:(.*)', scope).group(1)
-                opts.staging_project = opts.staging_project.upper()
-                scope = 'staging'
-            if scope not in self.SCOPES:
-                raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
-            opts.scope = scope
-            self.real_update_and_solve(target_config, copy.deepcopy(opts))
-        return self.error_occured
-
-    # note: scope is a value here - while it's an array above
-    def real_update_and_solve(self, target_config, opts):
         # Store target project as opts.project will contain subprojects.
         target_project = opts.project
 
-        apiurl = conf.config['apiurl']
         api = StagingAPI(apiurl, target_project)
 
         archs_key = 'pkglistgen-archs'
@@ -236,103 +116,44 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             self.options.architectures = target_config.get(archs_key).split(' ')
         main_repo = target_config['main-repo']
 
-        if opts.scope == 'target':
-            self.repos = self.tool.expand_repos(target_project, main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo,
-             project=opts.project, scope=opts.scope, force=opts.force,
-              no_checkout=opts.no_checkout, only_release_packages=opts.only_release_packages,
-              stop_after_solve=opts.stop_after_solve,
-                                                 drop_list=True)
-        elif opts.scope == 'rings':
-            opts.project = api.rings[1]
-            self.repos = self.tool.expand_repos(api.rings[1], main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo,
-                                                 project=opts.project, scope=opts.scope, force=opts.force,
-                                                  no_checkout=opts.no_checkout, only_release_packages=opts.only_release_packages,
-                                                  stop_after_solve=opts.stop_after_solve)
-        elif opts.scope == 'staging':
-            letters = api.get_staging_projects_short()
-            for letter in letters:
-                if opts.staging_project and letter != opts.staging_project:
-                    continue
-                opts.project = api.prj_from_short(letter)
-                self.repos = self.tool.expand_repos(opts.project, main_repo)
-                self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo,
-                                                     project=opts.project, scope=opts.scope, force=opts.force,
-                                                      no_checkout=opts.no_checkout, only_release_packages=opts.only_release_packages,
-                                                      stop_after_solve=opts.stop_after_solve)
-        return self.error_occured
+        if apiurl.find('suse.de') > 0:
+            # used by product converter
+            os.environ['OBS_NAME'] = 'build.suse.de'
 
-    def update_and_solve_target_wrapper(self, *args, **kwargs):
-        try:
-            self.tool.update_and_solve_target(*args, **kwargs)
-        except Exception as e:
-            # Print exception, but continue to prevent problems effecting one
-            # project from killing the whole process. Downside being a common
-            # error will be duplicated for each project. Common exceptions could
-            # be excluded if a set list is determined, but that is likely not
-            # practical.
-            traceback.print_exc()
-            self.error_occured = True
+        print('scope', opts.scope)
+        # special case for all
+        if opts.scope == ['all']:
+            opts.scope = target_config.get('pkglistgen-scopes', 'target').split(' ')
 
+        def solve_project(project, scope):
+            try:
+                self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
+                                project=project, scope=scope, force=opts.force,
+                                no_checkout=opts.no_checkout,
+                                only_release_packages=opts.only_release_packages,
+                                stop_after_solve=opts.stop_after_solve, drop_list=(scope == 'target'))
+            except Exception as e:
+                # Print exception, but continue to prevent problems effecting one
+                # project from killing the whole process. Downside being a common
+                # error will be duplicated for each project. Common exceptions could
+                # be excluded if a set list is determined, but that is likely not
+                # practical.
+                traceback.print_exc()
+                self.error_occured = True
 
-    def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
-        """Dump solv files (do_dump_solv) for all products in family."""
-        prior = set()
-
-        project_family = project_list_family_prior(
-            apiurl, target_project, include_self=True, last=family_last)
-        if family_include:
-            # Include projects from a different family if desired.
-            project_family.extend(project_list_family(apiurl, family_include))
-
-        for project in project_family:
-            config = Config(apiurl, project)
-            project_config = conf.config[project]
-
-            baseurl = project_config.get('download-baseurl')
-            if not baseurl:
-                baseurl = project_config.get('download-baseurl-' + project.replace(':', '-'))
-            baseurl_update = project_config.get('download-baseurl-update')
-            if not baseurl:
-                logger.warning('no baseurl configured for {}'.format(project))
-                continue
-
-            urls = [urljoin(baseurl, 'repo/oss/')]
-            if baseurl_update:
-                urls.append(urljoin(baseurl_update, 'oss/'))
-            if project_config.get('nonfree'):
-                urls.append(urljoin(baseurl, 'repo/non-oss/'))
-                if baseurl_update:
-                    urls.append(urljoin(baseurl_update, 'non-oss/'))
-
-            names = []
-            for url in urls:
-                project_display = project
-                if 'update' in url:
-                    project_display += ':Update'
-                print('-> dump_solv for {}/{}'.format(
-                    project_display, os.path.basename(os.path.normpath(url))))
-                logger.debug(url)
-
-                output_dir = os.path.join(cache_dir_solv, project)
-                if not os.path.exists(output_dir):
-                    os.makedirs(output_dir)
-
-                solv_name = solv_utils.dump_solv(baseurl=url, output_dir=output_dir, overwrite=False)
-                if solv_name:
-                    names.append(solv_name)
-
-            if not len(names):
-                logger.warning('no solv files were dumped for {}'.format(project))
-                continue
-
-            # Merge nonfree solv with free solv or copy free solv as merged.
-            merged = names[0].replace('.solv', '.merged.solv')
-            if len(names) >= 2:
-                solv_utils.solv_merge(merged, *names)
+        for scope in opts.scope:
+            if scope.startswith('staging:'):
+                letter = re.match('staging:(.*)', scope).group(1)
+                solve_project(api.prj_from_short(letter.upper()), 'staging')
+            elif scope == 'target':
+                solve_project(target_project, scope)
+            elif scope == 'rings':
+                solve_project(api.rings[1], scope)
+            elif scope == 'staging':
+                letters = api.get_staging_projects_short()
+                for letter in letters:
+                    solve_project(api.prj_from_short(letter), scope)
             else:
-                shutil.copyfile(names[0], merged)
-            prior.add(merged)
+                raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
 
-        return prior
+        return self.error_occured

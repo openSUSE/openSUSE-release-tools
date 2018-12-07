@@ -58,12 +58,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.logger = logging.getLogger(__name__)
         self.filtered_architectures = None
         self.dry_run = False
-
-    def init_architectures(self, architectures):
-        if architectures:
-            self.architectures = architectures
-        else:
-            self.architectures = ARCHITECTURES
+        self.architectures = ARCHITECTURES
 
     def filter_architectures(self, architectures):
         self.filtered_architectures = list(set(architectures) & set(self.architectures))
@@ -431,6 +426,62 @@ class PkgListGen(ToolBase.ToolBase):
                     print('Provides: weakremover({})'.format(name))
                 print('%endif')
 
+
+    def create_droplist(self, output_dir):
+        drops = dict()
+
+        for arch in self.architectures:
+
+            for old in oldsolv:
+
+                logger.debug("%s: processing %s", arch, old)
+
+                pool = solv.Pool()
+                pool.setarch(arch)
+
+                for project, repo in self.repos:
+                    fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                    r = pool.add_repo(project)
+                    r.add_solv(fn)
+
+                sysrepo = pool.add_repo(os.path.basename(old).replace('.merged.solv', ''))
+                sysrepo.add_solv(old)
+
+                pool.createwhatprovides()
+
+                for s in sysrepo.solvables:
+                    haveit = False
+                    for s2 in pool.whatprovides(s.nameid):
+                        if s2.repo == sysrepo or s.nameid != s2.nameid:
+                            continue
+                        haveit = True
+                    if haveit:
+                        continue
+                    nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
+                    for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
+                        if s2.repo == sysrepo:
+                            continue
+                        haveit = True
+                    if haveit:
+                        continue
+                    if s.name not in drops:
+                        drops[s.name] = sysrepo.name
+
+                # mark it explicitly to avoid having 2 pools while GC is not run
+                del pool
+
+        ofh = sys.stdout
+        if output_dir:
+            name = os.path.join(output_dir, 'obsoletepackages.inc')
+            ofh = open(name, 'w')
+
+        for reponame in sorted(set(drops.values())):
+            print("<!-- %s -->" % reponame, file=ofh)
+            for p in sorted(drops):
+                if drops[p] != reponame:
+                    continue
+                print("  <obsoletepackage>%s</obsoletepackage>" % p, file=ofh)
+
     def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
         """
         Generates solv from pre-published repository contained in local cache.
@@ -542,6 +593,7 @@ class PkgListGen(ToolBase.ToolBase):
     def update_and_solve_target(self, api, target_project, target_config, main_repo,
                                 project, scope, force, no_checkout,
                                 only_release_packages, stop_after_solve, drop_list=False):
+        self.repos = self.expand_repos(project, main_repo)
         print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
 
         group = target_config.get('pkglistgen-group', '000package-groups')
@@ -636,8 +688,7 @@ class PkgListGen(ToolBase.ToolBase):
             cache_dir_solv = CacheManager.directory('pkglistgen', 'solv')
             family_last = target_config.get('pkglistgen-product-family-last')
             family_include = target_config.get('pkglistgen-product-family-include')
-            solv_prior = self.solv_cache_update(
-                api.apiurl, cache_dir_solv, target_project, family_last, family_include, opts)
+            solv_prior = solv_utils.solv_cache_update(api.apiurl, cache_dir_solv, target_project, family_last, family_include)
 
             # Include pre-final release solv files for target project. These
             # files will only exist from previous runs.

@@ -140,3 +140,65 @@ def solv_merge(solv_merged, *solvs):
 
     if p.returncode:
         raise Exception('failed to create merged solv file')
+
+
+def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, family_include):
+    """Dump solv files (do_dump_solv) for all products in family."""
+    prior = set()
+
+    project_family = project_list_family_prior(
+        apiurl, target_project, include_self=True, last=family_last)
+    if family_include:
+        # Include projects from a different family if desired.
+        project_family.extend(project_list_family(apiurl, family_include))
+
+    for project in project_family:
+        config = Config(apiurl, project)
+        project_config = conf.config[project]
+
+        baseurl = project_config.get('download-baseurl')
+        if not baseurl:
+            baseurl = project_config.get('download-baseurl-' + project.replace(':', '-'))
+        baseurl_update = project_config.get('download-baseurl-update')
+        if not baseurl:
+            logger.warning('no baseurl configured for {}'.format(project))
+            continue
+
+        urls = [urljoin(baseurl, 'repo/oss/')]
+        if baseurl_update:
+            urls.append(urljoin(baseurl_update, 'oss/'))
+        if project_config.get('nonfree'):
+            urls.append(urljoin(baseurl, 'repo/non-oss/'))
+            if baseurl_update:
+                urls.append(urljoin(baseurl_update, 'non-oss/'))
+
+        names = []
+        for url in urls:
+            project_display = project
+            if 'update' in url:
+                project_display += ':Update'
+            print('-> dump_solv for {}/{}'.format(
+                project_display, os.path.basename(os.path.normpath(url))))
+            logger.debug(url)
+
+            output_dir = os.path.join(cache_dir_solv, project)
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            solv_name = dump_solv(baseurl=url, output_dir=output_dir, overwrite=False)
+            if solv_name:
+                names.append(solv_name)
+
+        if not len(names):
+            logger.warning('no solv files were dumped for {}'.format(project))
+            continue
+
+        # Merge nonfree solv with free solv or copy free solv as merged.
+        merged = names[0].replace('.solv', '.merged.solv')
+        if len(names) >= 2:
+            solv_merge(merged, *names)
+        else:
+            shutil.copyfile(names[0], merged)
+        prior.add(merged)
+
+    return prior
