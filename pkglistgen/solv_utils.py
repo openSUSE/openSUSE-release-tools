@@ -202,3 +202,21 @@ def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, famil
         prior.add(merged)
 
     return prior
+
+
+def update_merge(self, nonfree, repos, architecture):
+    """Merge free and nonfree solv files or copy free to merged"""
+    for project, repo in repos:
+        for arch in architectures:
+            solv_file = os.path.join(
+                CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+            solv_file_merged = os.path.join(
+                CACHEDIR, 'repo-{}-{}-{}.merged.solv'.format(project, repo, arch))
+
+            if not nonfree:
+                shutil.copyfile(solv_file, solv_file_merged)
+                continue
+
+            solv_file_nonfree = os.path.join(
+                CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
+            solv_merge(solv_file_merged, solv_file, solv_file_nonfree)

@@ -364,7 +364,7 @@ class PkgListGen(ToolBase.ToolBase):
         for prj in list(oldprjs) + [target]:
             self.repos += self.expand_repos(prj, 'standard')
 
-        #self.update_repos(self.architectures)
+        self.update_repos(self.architectures)
 
         drops = dict()
         for arch in self.architectures:
@@ -544,26 +544,12 @@ class PkgListGen(ToolBase.ToolBase):
         self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
         return self._write_all_groups()
 
-    def update_merge(self, nonfree):
-        """Merge free and nonfree solv files or copy free to merged"""
-        for project, repo in self.repos:
-            for arch in self.architectures:
-                solv_file = os.path.join(
-                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                solv_file_merged = os.path.join(
-                    CACHEDIR, 'repo-{}-{}-{}.merged.solv'.format(project, repo, arch))
-
-                if not nonfree:
-                    shutil.copyfile(solv_file, solv_file_merged)
-                    continue
-
-                solv_file_nonfree = os.path.join(
-                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
-                solv_utils.solv_merge(solv_file_merged, solv_file, solv_file_nonfree)
 
     # staging projects don't need source and debug medium - and the glibc source
     # rpm conflicts between standard and bootstrap_copy repository causing the
     # product builder to fail
+
+
     def strip_medium_from_staging(self, path):
         medium = re.compile('name="(DEBUG|SOURCE)MEDIUM"')
         for name in glob.glob(os.path.join(path, '*.kiwi')):
@@ -671,13 +657,13 @@ class PkgListGen(ToolBase.ToolBase):
             self.repos = repos_
 
             print('-> update_merge')
-            self.update_merge(nonfree if drop_list else False)
+            solv_utils.update_merge(nonfree if drop_list else False, self.repos, self.architectures)
 
         if not only_release_packages:
             summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
-                                              ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
-                                              locale = target_config.get('pkglistgen-local'),
-                                              locales_from = target_config.get('pkglistgen-locales-from'))
+                                         ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
+                                         locale = target_config.get('pkglistgen-local'),
+                                         locales_from = target_config.get('pkglistgen-locales-from'))
 
         if stop_after_solve:
             return
