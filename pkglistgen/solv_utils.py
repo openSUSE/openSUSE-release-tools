@@ -9,6 +9,7 @@ import tempfile
 import hashlib
 import gzip
 import io
+import subprocess
 
 from lxml import etree as ET
 
@@ -122,3 +123,20 @@ def dump_solv(baseurl, output_dir, overwrite):
         else:
             os.rename(name + '.new', name)
         return name
+
+def solv_merge(solv_merged, *solvs):
+    solvs = list(solvs)  # From tuple.
+
+    if os.path.exists(solv_merged):
+        modified = map(os.path.getmtime, [solv_merged] + solvs)
+        if max(modified) <= modified[0]:
+            # The two inputs were modified before or at the same as merged.
+            logger.debug('merge skipped for {}'.format(solv_merged))
+            return
+
+    with open(solv_merged, 'w') as handle:
+        p = subprocess.Popen(['mergesolv'] + solvs, stdout=handle)
+        p.communicate()
+
+    if p.returncode:
+        raise Exception('failed to create merged solv file')

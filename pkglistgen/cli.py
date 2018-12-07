@@ -25,13 +25,10 @@ from osc.core import checkout_package
 from osc.core import http_GET, http_PUT
 from osc.core import HTTPError
 from osc.core import makeurl
-from osc.core import Package
-from osc.core import show_results_meta
 from osc.core import undelete_package
 from osclib.cache_manager import CacheManager
 from osclib.conf import Config, str2bool
 from osclib.core import source_file_ensure
-from osclib.core import target_archs
 from osclib.stagingapi import StagingAPI
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
@@ -51,8 +48,6 @@ from pkglistgen import solv_utils
 from pkglistgen.tool import PkgListGen, CACHEDIR
 
 logger = logging.getLogger()
-
-PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging']
@@ -76,42 +71,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         tool.input_dir = self.options.input_dir
         tool.output_dir = self.options.output_dir
         tool.repos = self.repos
+        tool.dry_run = self.options.dry
         tool.init_architectures(self.options.architectures)
         return tool
-
-    def update_merge(self, nonfree):
-        """Merge free and nonfree solv files or copy free to merged"""
-        for project, repo in self.repos:
-            for arch in self.tool.architectures:
-                solv_file = os.path.join(
-                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                solv_file_merged = os.path.join(
-                    CACHEDIR, 'repo-{}-{}-{}.merged.solv'.format(project, repo, arch))
-
-                if not nonfree:
-                    shutil.copyfile(solv_file, solv_file_merged)
-                    continue
-
-                solv_file_nonfree = os.path.join(
-                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
-                self.solv_merge(solv_file_merged, solv_file, solv_file_nonfree)
-
-    def solv_merge(self, solv_merged, *solvs):
-        solvs = list(solvs)  # From tuple.
-
-        if os.path.exists(solv_merged):
-            modified = map(os.path.getmtime, [solv_merged] + solvs)
-            if max(modified) <= modified[0]:
-                # The two inputs were modified before or at the same as merged.
-                logger.debug('merge skipped for {}'.format(solv_merged))
-                return
-
-        with open(solv_merged, 'w') as handle:
-            p = subprocess.Popen(['mergesolv'] + solvs, stdout=handle)
-            p.communicate()
-
-        if p.returncode:
-            raise Exception('failed to create merged solv file')
 
     def do_create_sle_weakremovers(self, subcmd, opts, target, *prjs):
         """${cmd_name}: generate list of obsolete packages for SLE
@@ -303,7 +265,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def update_and_solve_target_wrapper(self, *args, **kwargs):
         try:
-            self.update_and_solve_target(*args, **kwargs)
+            self.tool.update_and_solve_target(*args, **kwargs)
         except Exception as e:
             # Print exception, but continue to prevent problems effecting one
             # project from killing the whole process. Downside being a common
@@ -368,73 +330,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # Merge nonfree solv with free solv or copy free solv as merged.
             merged = names[0].replace('.solv', '.merged.solv')
             if len(names) >= 2:
-                self.solv_merge(merged, *names)
+                solv_utils.solv_merge(merged, *names)
             else:
                 shutil.copyfile(names[0], merged)
             prior.add(merged)
 
         return prior
-
-    # staging projects don't need source and debug medium - and the glibc source
-    # rpm conflicts between standard and bootstrap_copy repository causing the
-    # product builder to fail
-    def strip_medium_from_staging(self, path):
-        medium = re.compile('name="(DEBUG|SOURCE)MEDIUM"')
-        for name in glob.glob(os.path.join(path, '*.kiwi')):
-            lines = open(name).readlines()
-            lines = [l for l in lines if not medium.search(l)]
-            open(name, 'w').writelines(lines)
-
-    def move_list(self, file_list, destination):
-        for name in file_list:
-            os.rename(name, os.path.join(destination, os.path.basename(name)))
-
-    def unlink_all_except(self, path, ignore_list=['_service'], ignore_hidden=True):
-        for name in os.listdir(path):
-            if name in ignore_list or (ignore_hidden and name.startswith('.')):
-                continue
-
-            name_path = os.path.join(path, name)
-            if os.path.isfile(name_path):
-                os.unlink(name_path)
-
-    def copy_directory_contents(self, source, destination, ignore_list=[]):
-        for name in os.listdir(source):
-            name_path = os.path.join(source, name)
-            if name in ignore_list or not os.path.isfile(name_path):
-                continue
-
-            shutil.copy(name_path, os.path.join(destination, name))
-
-    def change_extension(self, path, original, final):
-        for name in glob.glob(os.path.join(path, '*{}'.format(original))):
-            # Assumes the extension is only found at the end.
-            os.rename(name, name.replace(original, final))
-
-    def multibuild_from_glob(self, destination, pathname):
-        root = ET.Element('multibuild')
-        for name in sorted(glob.glob(os.path.join(destination, pathname))):
-            package = ET.SubElement(root, 'package')
-            package.text = os.path.splitext(os.path.basename(name))[0]
-
-        with open(os.path.join(destination, '_multibuild'), 'w+b') as f:
-            f.write(ET.tostring(root, pretty_print=True))
-
-    def build_stub(self, destination, extension):
-        f = file(os.path.join(destination, '.'.join(['stub', extension])), 'w+')
-        f.write('# prevent building single {} files twice\n'.format(extension))
-        f.write('Name: stub\n')
-        f.write('Version: 0.0\n')
-        f.close()
-
-    def commit_package(self, path):
-        if self.options.dry:
-            package = Package(path)
-            for i in package.get_diff():
-                print(''.join(i))
-        else:
-            # No proper API function to perform the same operation.
-            print(subprocess.check_output(
-                ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True))
-            package = Package(path)
-            package.commit(msg='Automatic update', skip_local_service_run=True)

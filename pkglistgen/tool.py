@@ -1,24 +1,43 @@
 from __future__ import print_function
+
 import ToolBase
 import glob
 import logging
 import os
 import re
 import solv
+import shutil
 import subprocess
 import yaml
 from lxml import etree as ET
 
+from osc import conf
+from osc.core import checkout_package
+
+from osc.core import http_GET, http_PUT
 from osc.core import HTTPError
+from osc.core import show_results_meta
+from osc.core import Package
+from osclib.core import target_archs
+from osclib.conf import Config, str2bool
 from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.cache_manager import CacheManager
 
+try:
+    from urllib.parse import urljoin, urlparse
+except ImportError:
+    # python 2.x
+    from urlparse import urljoin, urlparse
+
+from pkglistgen import file_utils
 from pkglistgen.group import Group, ARCHITECTURES
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 # share header cache with repochecker
 CACHEDIR = CacheManager.directory('repository-meta')
+
+PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
 class PkgListGen(ToolBase.ToolBase):
 
@@ -38,6 +57,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.did_update = False
         self.logger = logging.getLogger(__name__)
         self.filtered_architectures = None
+        self.dry_run = False
 
     def init_architectures(self, architectures):
         if architectures:
@@ -317,7 +337,7 @@ class PkgListGen(ToolBase.ToolBase):
                     continue
 
                 # Either hash changed or new, so remove any old hash files.
-                self.unlink_list(None, glob.glob(solv_file + '::*'))
+                file_utils.unlink_list(None, glob.glob(solv_file + '::*'))
                 global_update = True
 
                 self.logger.debug('updating %s', d)
@@ -343,16 +363,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.did_update = True
 
         return global_update
-
-    def unlink_list(self, path, names):
-        for name in names:
-            if path is None:
-                name_path = name
-            else:
-                name_path = os.path.join(path, name)
-
-            if os.path.isfile(name_path):
-                os.unlink(name_path)
 
     def create_sle_weakremovers(self, target, oldprjs):
         self.repos = []
@@ -422,13 +432,9 @@ class PkgListGen(ToolBase.ToolBase):
                 print('%endif')
 
     def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
-        """${cmd_name}: Solve groups
-
+        """
         Generates solv from pre-published repository contained in local cache.
         Use dump_solv to extract solv from published repository.
-
-        ${cmd_usage}
-        ${cmd_option_list}
         """
 
         self.load_all_groups()
@@ -478,7 +484,7 @@ class PkgListGen(ToolBase.ToolBase):
             for arch in self.filtered_architectures:
                 overlapped |= set(overlap.solved_packages[arch])
             for module in modules:
-                if module.name == 'overlap' or mfodule in overlap.ignored:
+                if module.name == 'overlap' or module in overlap.ignored:
                     continue
                 for arch in ['*'] + self.filtered_architectures:
                     for p in overlapped:
@@ -487,8 +493,55 @@ class PkgListGen(ToolBase.ToolBase):
         self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
         return self._write_all_groups()
 
+    def update_merge(self, nonfree):
+        """Merge free and nonfree solv files or copy free to merged"""
+        for project, repo in self.repos:
+            for arch in self.architectures:
+                solv_file = os.path.join(
+                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                solv_file_merged = os.path.join(
+                    CACHEDIR, 'repo-{}-{}-{}.merged.solv'.format(project, repo, arch))
+
+                if not nonfree:
+                    shutil.copyfile(solv_file, solv_file_merged)
+                    continue
+
+                solv_file_nonfree = os.path.join(
+                    CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
+                solv_utils.solv_merge(solv_file_merged, solv_file, solv_file_nonfree)
+
+    # staging projects don't need source and debug medium - and the glibc source
+    # rpm conflicts between standard and bootstrap_copy repository causing the
+    # product builder to fail
+    def strip_medium_from_staging(self, path):
+        medium = re.compile('name="(DEBUG|SOURCE)MEDIUM"')
+        for name in glob.glob(os.path.join(path, '*.kiwi')):
+            lines = open(name).readlines()
+            lines = [l for l in lines if not medium.search(l)]
+            open(name, 'w').writelines(lines)
+
+    def build_stub(self, destination, extension):
+        f = file(os.path.join(destination, '.'.join(['stub', extension])), 'w+')
+        f.write('# prevent building single {} files twice\n'.format(extension))
+        f.write('Name: stub\n')
+        f.write('Version: 0.0\n')
+        f.close()
+
+    def commit_package(self, path):
+        if self.dry_run:
+            package = Package(path)
+            for i in package.get_diff():
+                print(''.join(i))
+        else:
+            # No proper API function to perform the same operation.
+            print(subprocess.check_output(
+                ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True))
+            package = Package(path)
+            package.commit(msg='Automatic update', skip_local_service_run=True)
+
     def update_and_solve_target(self, api, target_project, target_config, main_repo,
-                                project, scope, force, no_checkout, only_release_packages, stop_after_solve,drop_list=False):
+                                project, scope, force, no_checkout,
+                                only_release_packages, stop_after_solve, drop_list=False):
         print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
 
         group = target_config.get('pkglistgen-group', '000package-groups')
@@ -498,7 +551,7 @@ class PkgListGen(ToolBase.ToolBase):
         url = api.makeurl(['source', project])
         packages = ET.parse(http_GET(url)).getroot()
         if packages.find('entry[@name="{}"]'.format(product)) is None:
-            if not self.options.dry:
+            if not self.dry_run:
                 undelete_package(api.apiurl, project, product, 'revive')
             # TODO disable build.
             print('{} undeleted, skip dvd until next cycle'.format(product))
@@ -513,7 +566,7 @@ class PkgListGen(ToolBase.ToolBase):
         checkout_list = [group, product, release]
 
         if packages.find('entry[@name="{}"]'.format(release)) is None:
-            if not self.options.dry:
+            if not self.dry_run:
                 undelete_package(api.apiurl, project, release, 'revive')
             print('{} undeleted, skip dvd until next cycle'.format(release))
             return
@@ -537,22 +590,21 @@ class PkgListGen(ToolBase.ToolBase):
                 continue
             checkout_package(api.apiurl, project, package, expand_link=True, prj_dir=cache_dir)
 
-        self.unlink_all_except(release_dir)
+        file_utils.unlink_all_except(release_dir)
         if not only_release_packages:
-            self.unlink_all_except(product_dir)
-        self.copy_directory_contents(group_dir, product_dir,
+            file_utils.unlink_all_except(product_dir)
+        file_utils.copy_directory_contents(group_dir, product_dir,
                                      ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
-        self.change_extension(product_dir, '.spec.in', '.spec')
-        self.change_extension(product_dir, '.product.in', '.product')
+        file_utils.change_extension(product_dir, '.spec.in', '.spec')
+        file_utils.change_extension(product_dir, '.product.in', '.product')
 
-        self.options.input_dir = group_dir
-        self.options.output_dir = product_dir
-        self.postoptparse()
+        self.input_dir = group_dir
+        self.output_dir = product_dir
 
         print('-> do_update')
         # make sure we only calculcate existant architectures
-        self.tool.filter_architectures(target_archs(api.apiurl, project, main_repo))
-        self.tool.update_repos(self.tool.filtered_architectures)
+        self.filter_architectures(target_archs(api.apiurl, project, main_repo))
+        self.update_repos(self.filtered_architectures)
 
         nonfree = target_config.get('nonfree')
         if nonfree and drop_list:
@@ -560,17 +612,17 @@ class PkgListGen(ToolBase.ToolBase):
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
             repos_ = self.repos
-            self.tool.repos = self.tool.expand_repos(nonfree, main_repo)
-            self.tool.update_repos(self.tool.filtered_architectures)
+            self.repos = self.expand_repos(nonfree, main_repo)
+            self.update_repos(self.filtered_architectures)
 
             # Switch repo back to main target project.
-            self.tool.repos = repos_
+            self.repos = repos_
 
             print('-> update_merge')
             self.update_merge(nonfree if drop_list else False)
 
         if not only_release_packages:
-            summary = self.tool.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
+            summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
                                               ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
                                               locale = target_config.get('pkglistgen-local'),
                                               locales_from = target_config.get('pkglistgen-locales-from'))
@@ -600,7 +652,7 @@ class PkgListGen(ToolBase.ToolBase):
             self.do_create_droplist('create_droplist', opts, *solv_prior)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
-        self.tool.unlink_list(product_dir, delete_products)
+        file_utils.unlink_list(product_dir, delete_products)
 
         print('-> product service')
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
@@ -609,23 +661,23 @@ class PkgListGen(ToolBase.ToolBase):
 
         for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(scope), '').split(' '):
             delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
-            self.tool.unlink_list(product_dir, delete_kiwis)
+            file_utils.unlink_list(product_dir, delete_kiwis)
         if scope == 'staging':
             self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
-        self.move_list(spec_files, release_dir)
+        file_utils.move_list(spec_files, release_dir)
         inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-        self.move_list(inc_files, release_dir)
+        file_utils.move_list(inc_files, release_dir)
 
-        self.multibuild_from_glob(release_dir, '*.spec')
+        file_utils.multibuild_from_glob(release_dir, '*.spec')
         self.build_stub(release_dir, 'spec')
         self.commit_package(release_dir)
 
         if only_release_packages:
             return
 
-        self.multibuild_from_glob(product_dir, '*.kiwi')
+        file_utils.multibuild_from_glob(product_dir, '*.kiwi')
         self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
 
