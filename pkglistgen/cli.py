@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-# TODO: implement equivalent of namespace namespace:language(de) @SYSTEM
 # TODO: solve all devel packages to include
 from __future__ import print_function
 
@@ -110,14 +109,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
 
         self.tool.list_products()
-
-    def do_update(self, subcmd, opts):
-        """${cmd_name}: Update groups
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-        self.tool.update_repos(opts)
 
     def update_merge(self, nonfree):
         """Merge free and nonfree solv files or copy free to merged"""
