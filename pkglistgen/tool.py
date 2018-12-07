@@ -278,12 +278,13 @@ class PkgListGen(ToolBase.ToolBase):
                 return 'devel package of ' + g.develpkgs[package]
         return None
 
-    def update_repos(self, opts):
+    def update_repos(self, architectures):
         # only there to parse the repos
         bs_mirrorfull = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
         global_update = False
+
         for project, repo in self.repos:
-            for arch in opts.filtered_architectures:
+            for arch in architectures:
                 # TODO: refactor to common function with repo_checker.py
                 d = os.path.join(CACHEDIR, project, repo, arch)
                 if not os.path.exists(d):
@@ -342,3 +343,65 @@ class PkgListGen(ToolBase.ToolBase):
 
             if os.path.isfile(name_path):
                 os.unlink(name_path)
+
+    def create_sle_weakremovers(self, prjs):
+        self.repos = []
+        for prj in prjs:
+            self.logger.debug("processing %s", prj)
+            self.repos += self.expand_repos(prj, 'standard')
+
+        self.update_repos(self.architectures)
+
+        drops = dict()
+        for arch in self.architectures:
+            pool = solv.Pool()
+            pool.setarch(arch)
+
+            sysrepo = None
+            for prp in prjs:
+                fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(prp, 'standard', arch))
+                r = pool.add_repo('/'.join([prj, 'standard']))
+                r.add_solv(fn)
+                if not sysrepo:
+                    sysrepo = r
+
+            pool.createwhatprovides()
+
+            for s in pool.solvables_iter():
+                if s.repo == sysrepo or not (s.arch == 'noarch' or s.arch == arch):
+                    continue
+                haveit = False
+                for s2 in pool.whatprovides(s.nameid):
+                    if s2.repo == sysrepo and s.nameid == s2.nameid:
+                        haveit = True
+                if haveit:
+                    continue
+                nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
+                for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
+                    if s2.repo == sysrepo:
+                        continue
+                    haveit = True
+                if haveit:
+                    continue
+                if s.name not in drops:
+                    drops[s.name] = {'repo': s.repo.name, 'archs': []}
+                if arch not in drops[s.name]['archs']:
+                    drops[s.name]['archs'].append(arch)
+
+        for prp in prjs:
+            exclusives = dict()
+            print('#', prp)
+            for name in sorted(drops.keys()):
+                if drops[name]['repo'] != prp:
+                    continue
+                if len(drops[name]['archs']) == len(self.architectures):
+                    print('Provides: weakremover({})'.format(name))
+                else:
+                    jarch = ' '.join(sorted(drops[name]['archs']))
+                    exclusives.setdefault(jarch, []).append(name)
+
+            for arch in sorted(exclusives.keys()):
+                print('%ifarch {}'.format(arch))
+                for name in sorted(exclusives[arch]):
+                    print('Provides: weakremover({})'.format(name))
+                print('%endif')

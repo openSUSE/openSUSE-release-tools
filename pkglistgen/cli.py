@@ -124,63 +124,19 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             raise Exception('failed to create merged solv file')
 
     def do_create_sle_weakremovers(self, subcmd, opts, *prjs):
-        for prj in prjs:
-            logger.debug("processing %s", prj)
-            self.tool.expand_repos(prj, 'standard')
-            opts.project = prj
-            self.tool.update_repos(opts)
+        """${cmd_name}: generate list of obsolete packages for SLE
 
-        drops = dict()
-        for arch in self.tool.architectures:
-            pool = solv.Pool()
-            pool.setarch(arch)
+        The globally specified repositories are taken as the current
+        package set. All solv files specified on the command line
+        are old versions of those repos.
 
-            sysrepo = None
-            for prp in prjs:
-                fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(prp, 'standard', arch))
-                r = pool.add_repo('/'.join([prj, 'standard']))
-                r.add_solv(fn)
-                if not sysrepo:
-                    sysrepo = r
+        The command outputs the weakremovers.inc to be used in
+        000package-groups
 
-            pool.createwhatprovides()
-
-            for s in pool.solvables_iter():
-                if s.repo == sysrepo or not (s.arch == 'noarch' or s.arch == arch):
-                    continue
-                haveit = False
-                for s2 in pool.whatprovides(s.nameid):
-                    if s2.repo == sysrepo and s.nameid == s2.nameid:
-                        haveit = True
-                if haveit:
-                    continue
-                nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
-                for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
-                    if s2.repo == sysrepo:
-                        continue
-                    haveit = True
-                if haveit:
-                    continue
-                if s.name not in drops:
-                    drops[s.name] = {'repo': s.repo.name, 'archs': []}
-                if arch not in drops[s.name]['archs']:
-                    drops[s.name]['archs'].append(arch)
-        for prp in prjs:
-            exclusives = dict()
-            print('#', prp)
-            for name in sorted(drops.keys()):
-                if drops[name]['repo'] != prp:
-                    continue
-                if len(drops[name]['archs']) == len(self.tool.architectures):
-                    print('Provides: weakremover({})'.format(name))
-                else:
-                    jarch = ' '.join(sorted(drops[name]['archs']))
-                    exclusives.setdefault(jarch, []).append(name)
-            for arch in sorted(exclusives.keys()):
-                print('%ifarch {}'.format(arch))
-                for name in sorted(exclusives[arch]):
-                    print('Provides: weakremover({})'.format(name))
-                print('%endif')
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        self.tool.create_sle_weakremovers(prjs)
 
     def do_create_droplist(self, subcmd, opts, *oldsolv):
         """${cmd_name}: generate list of obsolete packages
@@ -590,7 +546,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.postoptparse()
 
         print('-> do_update')
-        self.tool.update_repos(opts)
+        self.tool.update_repos(opts.filtered_architectures)
 
         nonfree = target_config.get('nonfree')
         if nonfree and drop_list:
@@ -598,10 +554,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
             # Switch to nonfree repo (ugly, but that's how the code was setup).
             repos_ = self.repos
-            opts_nonfree = copy.deepcopy(opts)
-            opts_nonfree.project = nonfree
             self.tool.repos = self.tool.expand_repos(nonfree, main_repo)
-            self.tool.update_repos(opts_nonfree)
+            self.tool.update_repos(opts.filtered_architectures)
 
             # Switch repo back to main target project.
             self.tool.repos = repos_
