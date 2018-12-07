@@ -6,19 +6,14 @@ from __future__ import print_function
 import copy
 import filecmp
 import glob
-import gzip
-import hashlib
-import io
 import logging
 import os
 import os.path
-import random
 import re
 import shutil
 import string
 import subprocess
 import sys
-import tempfile
 import traceback
 
 import cmdln
@@ -46,14 +41,13 @@ except ImportError:
     # python 2.x
     from urlparse import urljoin, urlparse
 
-import requests
-
 import solv
 
 import yaml
 
 import ToolBase
 
+from pkglistgen import solv_utils
 from pkglistgen.tool import PkgListGen, CACHEDIR
 
 logger = logging.getLogger()
@@ -216,100 +210,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-
-        name = None
-        ofh = sys.stdout
-        if self.options.output_dir:
-            build, repo_style = self.dump_solv_build(baseurl)
-            name = os.path.join(self.options.output_dir, '{}.solv'.format(build))
-            # For update repo name never changes so always update.
-            if not opts.overwrite and repo_style != 'update' and os.path.exists(name):
-                logger.info("%s exists", name)
-                return name
-
-        pool = solv.Pool()
-        pool.setarch()
-
-        repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
-        path_prefix = 'suse/' if name and repo_style == 'build' else ''
-        url = urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
-        repomd = requests.get(url)
-        ns = {'r': 'http://linux.duke.edu/metadata/repo'}
-        root = ET.fromstring(repomd.content)
-        primary_element = root.find('.//r:data[@type="primary"]', ns)
-        location = primary_element.find('r:location', ns).get('href')
-        sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
-
-        # No build information in update repo to use repomd checksum in name.
-        if repo_style == 'update':
-            name = os.path.join(self.options.output_dir, '{}::{}.solv'.format(build, sha256_expected))
-            if not opts.overwrite and os.path.exists(name):
-                logger.info("%s exists", name)
-                return name
-
-            # Only consider latest update repo so remove old versions.
-            # Pre-release builds only make sense for non-update repos and once
-            # releases then only relevant for next product which does not
-            # consider pre-release from previous version.
-            for old_solv in glob.glob(os.path.join(self.options.output_dir, '{}::*.solv'.format(build))):
-                os.remove(old_solv)
-
-        f = tempfile.TemporaryFile()
-        f.write(repomd.content)
-        f.flush()
-        os.lseek(f.fileno(), 0, os.SEEK_SET)
-        repo.add_repomdxml(f, 0)
-        url = urljoin(baseurl, path_prefix + location)
-        with requests.get(url, stream=True) as primary:
-            sha256 = hashlib.sha256(primary.content).hexdigest()
-            if sha256 != sha256_expected:
-                raise Exception('checksums do not match {} != {}'.format(sha256, sha256_expected))
-
-            content = gzip.GzipFile(fileobj=io.BytesIO(primary.content))
-            os.lseek(f.fileno(), 0, os.SEEK_SET)
-            f.write(content.read())
-            f.flush()
-            os.lseek(f.fileno(), 0, os.SEEK_SET)
-            repo.add_rpmmd(f, None, 0)
-            repo.create_stubs()
-
-            ofh = open(name + '.new', 'w')
-            repo.write(ofh)
-
-        if name is not None:
-            # Only update file if overwrite or different.
-            ofh.flush()  # Ensure entirely written before comparing.
-            if not opts.overwrite and os.path.exists(name) and filecmp.cmp(name + '.new', name, shallow=False):
-                logger.debug('file identical, skip dumping')
-                os.remove(name + '.new')
-            else:
-                os.rename(name + '.new', name)
-            return name
-
-    def dump_solv_build(self, baseurl):
-        """Determine repo format and build string from remote repository."""
-        if 'update' in baseurl:
-            # Could look at .repo file or repomd.xml, but larger change.
-            return 'update-' + os.path.basename(os.path.normpath(baseurl)), 'update'
-
-        url = urljoin(baseurl, 'media.1/media')
-        with requests.get(url) as media:
-            for i, line in enumerate(media.iter_lines()):
-                if i != 1:
-                    continue
-                name = line
-
-        if name is not None and '-Build' in name:
-            return name, 'media'
-
-        url = urljoin(baseurl, 'media.1/build')
-        with requests.get(url) as build:
-            name = build.content.strip()
-
-        if name is not None and '-Build' in name:
-            return name, 'build'
-
-        raise Exception(baseurl + '/media.1/{media,build} includes no build number')
+        return solv_utils.dump_solv(baseurl=baseurl, output_dir=self.options.output_dir, overwrite=opts.overwrite)
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
@@ -375,11 +276,18 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if opts.scope == 'target':
             self.repos = self.tool.expand_repos(target_project, main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts, drop_list=True)
+            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo,
+             project=opts.project, scope=opts.scope, force=opts.force,
+              no_checkout=opts.no_checkout, only_release_packages=opts.only_release_packages,
+              stop_after_solve=opts.stop_after_solve,
+                                                 drop_list=True)
         elif opts.scope == 'rings':
             opts.project = api.rings[1]
             self.repos = self.tool.expand_repos(api.rings[1], main_repo)
-            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
+            self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo,
+                                                 project=opts.project, scope=opts.scope, force=opts.force,
+                                                  no_checkout=opts.no_checkout, only_release_packages=opts.only_release_packages,
+                                                  stop_after_solve=opts.stop_after_solve)
         elif opts.scope == 'staging':
             letters = api.get_staging_projects_short()
             for letter in letters:
@@ -387,7 +295,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     continue
                 opts.project = api.prj_from_short(letter)
                 self.repos = self.tool.expand_repos(opts.project, main_repo)
-                self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo, opts)
+                self.update_and_solve_target_wrapper(api, target_project, target_config, main_repo,
+                                                     project=opts.project, scope=opts.scope, force=opts.force,
+                                                      no_checkout=opts.no_checkout, only_release_packages=opts.only_release_packages,
+                                                      stop_after_solve=opts.stop_after_solve)
         return self.error_occured
 
     def update_and_solve_target_wrapper(self, *args, **kwargs):
@@ -402,165 +313,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             traceback.print_exc()
             self.error_occured = True
 
-    def update_and_solve_target(self, api, target_project, target_config, main_repo, opts,
-                                drop_list=False):
-        print('[{}] {}/{}: update and solve'.format(opts.scope, opts.project, main_repo))
-
-        group = target_config.get('pkglistgen-group', '000package-groups')
-        product = target_config.get('pkglistgen-product', '000product')
-        release = target_config.get('pkglistgen-release', '000release-packages')
-
-        url = api.makeurl(['source', opts.project])
-        packages = ET.parse(http_GET(url)).getroot()
-        if packages.find('entry[@name="{}"]'.format(product)) is None:
-            if not self.options.dry:
-                undelete_package(api.apiurl, opts.project, product, 'revive')
-            # TODO disable build.
-            print('{} undeleted, skip dvd until next cycle'.format(product))
-            return
-        elif not opts.force:
-            root = ET.fromstringlist(show_results_meta(api.apiurl, opts.project, product,
-                                                       repository=[main_repo], multibuild=True))
-            if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
-                print('{}/{} build in progress'.format(opts.project, product))
-                return
-
-        checkout_list = [group, product, release]
-
-        if packages.find('entry[@name="{}"]'.format(release)) is None:
-            if not self.options.dry:
-                undelete_package(api.apiurl, opts.project, release, 'revive')
-            print('{} undeleted, skip dvd until next cycle'.format(release))
-            return
-
-        # Cache dir specific to hostname and project.
-        host = urlparse(api.apiurl).hostname
-        cache_dir = CacheManager.directory('pkglistgen', host, opts.project)
-
-        if not opts.no_checkout:
-            if os.path.exists(cache_dir):
-                shutil.rmtree(cache_dir)
-            os.makedirs(cache_dir)
-
-        group_dir = os.path.join(cache_dir, group)
-        product_dir = os.path.join(cache_dir, product)
-        release_dir = os.path.join(cache_dir, release)
-
-        for package in checkout_list:
-            if opts.no_checkout:
-                print("Skipping checkout of {}/{}".format(opts.project, package))
-                continue
-            checkout_package(api.apiurl, opts.project, package, expand_link=True, prj_dir=cache_dir)
-
-        self.unlink_all_except(release_dir)
-        if not opts.only_release_packages:
-            self.unlink_all_except(product_dir)
-        self.copy_directory_contents(group_dir, product_dir,
-                                     ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
-        self.change_extension(product_dir, '.spec.in', '.spec')
-        self.change_extension(product_dir, '.product.in', '.product')
-
-        self.options.input_dir = group_dir
-        self.options.output_dir = product_dir
-        self.postoptparse()
-
-        print('-> do_update')
-        # make sure we only calculcate existant architectures
-        self.tool.filter_architectures(target_archs(api.apiurl, opts.project, main_repo))
-        self.tool.update_repos(self.tool.filtered_architectures)
-
-        nonfree = target_config.get('nonfree')
-        if nonfree and drop_list:
-            print('-> do_update nonfree')
-
-            # Switch to nonfree repo (ugly, but that's how the code was setup).
-            repos_ = self.repos
-            self.tool.repos = self.tool.expand_repos(nonfree, main_repo)
-            self.tool.update_repos(self.tool.filtered_architectures)
-
-            # Switch repo back to main target project.
-            self.tool.repos = repos_
-
-            print('-> update_merge')
-            self.update_merge(nonfree if drop_list else False)
-
-        if not opts.only_release_packages:
-            summary = self.tool.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
-                                              ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
-                                              locale = target_config.get('pkglistgen-local'),
-                                              locales_from = target_config.get('pkglistgen-locales-from'))
-
-        if opts.stop_after_solve:
-            return
-
-        if drop_list:
-            # Ensure solv files from all releases in product family are updated.
-            print('-> solv_cache_update')
-            cache_dir_solv = CacheManager.directory('pkglistgen', 'solv')
-            family_last = target_config.get('pkglistgen-product-family-last')
-            family_include = target_config.get('pkglistgen-product-family-include')
-            solv_prior = self.solv_cache_update(
-                api.apiurl, cache_dir_solv, target_project, family_last, family_include, opts)
-
-            # Include pre-final release solv files for target project. These
-            # files will only exist from previous runs.
-            cache_dir_solv_current = os.path.join(cache_dir_solv, target_project)
-            solv_prior.update(glob.glob(os.path.join(cache_dir_solv_current, '*.merged.solv')))
-            for solv_file in solv_prior:
-                logger.debug(solv_file.replace(cache_dir_solv, ''))
-
-            print('-> do_create_droplist')
-            # Reset to product after solv_cache_update().
-            self.options.output_dir = product_dir
-            self.do_create_droplist('create_droplist', opts, *solv_prior)
-
-        delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
-        self.tool.unlink_list(product_dir, delete_products)
-
-        print('-> product service')
-        for product_file in glob.glob(os.path.join(product_dir, '*.product')):
-            print(subprocess.check_output(
-                [PRODUCT_SERVICE, product_file, product_dir, opts.project]))
-
-        for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(opts.scope), '').split(' '):
-            delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
-            self.tool.unlink_list(product_dir, delete_kiwis)
-        if opts.scope == 'staging':
-            self.strip_medium_from_staging(product_dir)
-
-        spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
-        self.move_list(spec_files, release_dir)
-        inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-        self.move_list(inc_files, release_dir)
-
-        self.multibuild_from_glob(release_dir, '*.spec')
-        self.build_stub(release_dir, 'spec')
-        self.commit_package(release_dir)
-
-        if opts.only_release_packages:
-            return
-
-        self.multibuild_from_glob(product_dir, '*.kiwi')
-        self.build_stub(product_dir, 'kiwi')
-        self.commit_package(product_dir)
-
-        if api.item_exists(opts.project, '000product-summary'):
-            summary_str = "# Summary of packages in groups"
-            for group in sorted(summary.keys()):
-                # the unsorted group should appear filtered by
-                # unneeded.yml - so we need the content of unsorted.yml
-                # not unsorted.group (this grew a little unnaturally)
-                if group == 'unsorted':
-                    continue
-                summary_str += "\n" + group + ":\n"
-                for package in sorted(summary[group]):
-                    summary_str += "  - " + package + "\n"
-
-            source_file_ensure(api.apiurl, opts.project, '000product-summary',
-                               'summary.yml', summary_str, 'Updating summary.yml')
-            unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
-            source_file_ensure(api.apiurl, opts.project, '000product-summary',
-                               'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
 
     def solv_cache_update(self, apiurl, cache_dir_solv, target_project, family_last, family_include, opts):
         """Dump solv files (do_dump_solv) for all products in family."""
@@ -597,16 +349,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 project_display = project
                 if 'update' in url:
                     project_display += ':Update'
-                print('-> do_dump_solv for {}/{}'.format(
+                print('-> dump_solv for {}/{}'.format(
                     project_display, os.path.basename(os.path.normpath(url))))
                 logger.debug(url)
 
-                self.options.output_dir = os.path.join(cache_dir_solv, project)
-                if not os.path.exists(self.options.output_dir):
-                    os.makedirs(self.options.output_dir)
+                output_dir = os.path.join(cache_dir_solv, project)
+                if not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
 
-                opts.overwrite = False
-                solv_name = self.do_dump_solv('dump_solv', opts, url)
+                solv_name = solv_utils.dump_solv(baseurl=url, output_dir=output_dir, overwrite=False)
                 if solv_name:
                     names.append(solv_name)
 

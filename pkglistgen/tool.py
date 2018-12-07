@@ -478,7 +478,7 @@ class PkgListGen(ToolBase.ToolBase):
             for arch in self.filtered_architectures:
                 overlapped |= set(overlap.solved_packages[arch])
             for module in modules:
-                if module.name == 'overlap' or module in overlap.ignored:
+                if module.name == 'overlap' or mfodule in overlap.ignored:
                     continue
                 for arch in ['*'] + self.filtered_architectures:
                     for p in overlapped:
@@ -486,3 +486,163 @@ class PkgListGen(ToolBase.ToolBase):
 
         self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
         return self._write_all_groups()
+
+    def update_and_solve_target(self, api, target_project, target_config, main_repo,
+                                project, scope, force, no_checkout, only_release_packages, stop_after_solve,drop_list=False):
+        print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
+
+        group = target_config.get('pkglistgen-group', '000package-groups')
+        product = target_config.get('pkglistgen-product', '000product')
+        release = target_config.get('pkglistgen-release', '000release-packages')
+
+        url = api.makeurl(['source', project])
+        packages = ET.parse(http_GET(url)).getroot()
+        if packages.find('entry[@name="{}"]'.format(product)) is None:
+            if not self.options.dry:
+                undelete_package(api.apiurl, project, product, 'revive')
+            # TODO disable build.
+            print('{} undeleted, skip dvd until next cycle'.format(product))
+            return
+        elif not force:
+            root = ET.fromstringlist(show_results_meta(api.apiurl, project, product,
+                                                       repository=[main_repo], multibuild=True))
+            if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
+                print('{}/{} build in progress'.format(project, product))
+                return
+
+        checkout_list = [group, product, release]
+
+        if packages.find('entry[@name="{}"]'.format(release)) is None:
+            if not self.options.dry:
+                undelete_package(api.apiurl, project, release, 'revive')
+            print('{} undeleted, skip dvd until next cycle'.format(release))
+            return
+
+        # Cache dir specific to hostname and project.
+        host = urlparse(api.apiurl).hostname
+        cache_dir = CacheManager.directory('pkglistgen', host, project)
+
+        if not no_checkout:
+            if os.path.exists(cache_dir):
+                shutil.rmtree(cache_dir)
+            os.makedirs(cache_dir)
+
+        group_dir = os.path.join(cache_dir, group)
+        product_dir = os.path.join(cache_dir, product)
+        release_dir = os.path.join(cache_dir, release)
+
+        for package in checkout_list:
+            if no_checkout:
+                print("Skipping checkout of {}/{}".format(project, package))
+                continue
+            checkout_package(api.apiurl, project, package, expand_link=True, prj_dir=cache_dir)
+
+        self.unlink_all_except(release_dir)
+        if not only_release_packages:
+            self.unlink_all_except(product_dir)
+        self.copy_directory_contents(group_dir, product_dir,
+                                     ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
+        self.change_extension(product_dir, '.spec.in', '.spec')
+        self.change_extension(product_dir, '.product.in', '.product')
+
+        self.options.input_dir = group_dir
+        self.options.output_dir = product_dir
+        self.postoptparse()
+
+        print('-> do_update')
+        # make sure we only calculcate existant architectures
+        self.tool.filter_architectures(target_archs(api.apiurl, project, main_repo))
+        self.tool.update_repos(self.tool.filtered_architectures)
+
+        nonfree = target_config.get('nonfree')
+        if nonfree and drop_list:
+            print('-> do_update nonfree')
+
+            # Switch to nonfree repo (ugly, but that's how the code was setup).
+            repos_ = self.repos
+            self.tool.repos = self.tool.expand_repos(nonfree, main_repo)
+            self.tool.update_repos(self.tool.filtered_architectures)
+
+            # Switch repo back to main target project.
+            self.tool.repos = repos_
+
+            print('-> update_merge')
+            self.update_merge(nonfree if drop_list else False)
+
+        if not only_release_packages:
+            summary = self.tool.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
+                                              ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
+                                              locale = target_config.get('pkglistgen-local'),
+                                              locales_from = target_config.get('pkglistgen-locales-from'))
+
+        if stop_after_solve:
+            return
+
+        if drop_list:
+            # Ensure solv files from all releases in product family are updated.
+            print('-> solv_cache_update')
+            cache_dir_solv = CacheManager.directory('pkglistgen', 'solv')
+            family_last = target_config.get('pkglistgen-product-family-last')
+            family_include = target_config.get('pkglistgen-product-family-include')
+            solv_prior = self.solv_cache_update(
+                api.apiurl, cache_dir_solv, target_project, family_last, family_include, opts)
+
+            # Include pre-final release solv files for target project. These
+            # files will only exist from previous runs.
+            cache_dir_solv_current = os.path.join(cache_dir_solv, target_project)
+            solv_prior.update(glob.glob(os.path.join(cache_dir_solv_current, '*.merged.solv')))
+            for solv_file in solv_prior:
+                logger.debug(solv_file.replace(cache_dir_solv, ''))
+
+            print('-> do_create_droplist')
+            # Reset to product after solv_cache_update().
+            self.options.output_dir = product_dir
+            self.do_create_droplist('create_droplist', opts, *solv_prior)
+
+        delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
+        self.tool.unlink_list(product_dir, delete_products)
+
+        print('-> product service')
+        for product_file in glob.glob(os.path.join(product_dir, '*.product')):
+            print(subprocess.check_output(
+                [PRODUCT_SERVICE, product_file, product_dir, project]))
+
+        for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(scope), '').split(' '):
+            delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
+            self.tool.unlink_list(product_dir, delete_kiwis)
+        if scope == 'staging':
+            self.strip_medium_from_staging(product_dir)
+
+        spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
+        self.move_list(spec_files, release_dir)
+        inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+        self.move_list(inc_files, release_dir)
+
+        self.multibuild_from_glob(release_dir, '*.spec')
+        self.build_stub(release_dir, 'spec')
+        self.commit_package(release_dir)
+
+        if only_release_packages:
+            return
+
+        self.multibuild_from_glob(product_dir, '*.kiwi')
+        self.build_stub(product_dir, 'kiwi')
+        self.commit_package(product_dir)
+
+        if api.item_exists(project, '000product-summary'):
+            summary_str = "# Summary of packages in groups"
+            for group in sorted(summary.keys()):
+                # the unsorted group should appear filtered by
+                # unneeded.yml - so we need the content of unsorted.yml
+                # not unsorted.group (this grew a little unnaturally)
+                if group == 'unsorted':
+                    continue
+                summary_str += "\n" + group + ":\n"
+                for package in sorted(summary[group]):
+                    summary_str += "  - " + package + "\n"
+
+            source_file_ensure(api.apiurl, project, '000product-summary',
+                               'summary.yml', summary_str, 'Updating summary.yml')
+            unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
+            source_file_ensure(api.apiurl, project, '000product-summary',
+                               'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
