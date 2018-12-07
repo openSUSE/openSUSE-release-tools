@@ -123,7 +123,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if p.returncode:
             raise Exception('failed to create merged solv file')
 
-    def do_create_sle_weakremovers(self, subcmd, opts, *prjs):
+    def do_create_sle_weakremovers(self, subcmd, opts, target, *prjs):
         """${cmd_name}: generate list of obsolete packages for SLE
 
         The globally specified repositories are taken as the current
@@ -136,7 +136,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        self.tool.create_sle_weakremovers(prjs)
+        self.tool.create_sle_weakremovers(target, prjs)
 
     def do_create_droplist(self, subcmd, opts, *oldsolv):
         """${cmd_name}: generate list of obsolete packages

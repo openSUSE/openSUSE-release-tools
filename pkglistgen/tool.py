@@ -344,13 +344,12 @@ class PkgListGen(ToolBase.ToolBase):
             if os.path.isfile(name_path):
                 os.unlink(name_path)
 
-    def create_sle_weakremovers(self, prjs):
+    def create_sle_weakremovers(self, target, oldprjs):
         self.repos = []
-        for prj in prjs:
-            self.logger.debug("processing %s", prj)
+        for prj in list(oldprjs) + [target]:
             self.repos += self.expand_repos(prj, 'standard')
 
-        self.update_repos(self.architectures)
+        #self.update_repos(self.architectures)
 
         drops = dict()
         for arch in self.architectures:
@@ -358,17 +357,21 @@ class PkgListGen(ToolBase.ToolBase):
             pool.setarch(arch)
 
             sysrepo = None
-            for prp in prjs:
-                fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(prp, 'standard', arch))
-                r = pool.add_repo('/'.join([prj, 'standard']))
+            for project, repo in self.repos:
+                self.logger.debug("processing %s/%s/%s", project, repo, arch)
+                fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                r = pool.add_repo('/'.join([project, repo]))
                 r.add_solv(fn)
-                if not sysrepo:
+                if project == target and repo == 'standard':
                     sysrepo = r
 
             pool.createwhatprovides()
 
             for s in pool.solvables_iter():
-                if s.repo == sysrepo or not (s.arch == 'noarch' or s.arch == arch):
+                # we only want the old repos
+                if s.repo == sysrepo: continue
+                # ignore imported solvables. too dangerous
+                if s.arch != 'noarch' and s.arch != arch:
                     continue
                 haveit = False
                 for s2 in pool.whatprovides(s.nameid):
@@ -376,23 +379,25 @@ class PkgListGen(ToolBase.ToolBase):
                         haveit = True
                 if haveit:
                     continue
+                haveit = False
+
+                # check for already obsoleted packages
                 nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
                 for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
-                    if s2.repo == sysrepo:
-                        continue
+                    if s2.repo == sysrepo: continue
                     haveit = True
                 if haveit:
                     continue
-                if s.name not in drops:
-                    drops[s.name] = {'repo': s.repo.name, 'archs': []}
-                if arch not in drops[s.name]['archs']:
-                    drops[s.name]['archs'].append(arch)
+                drops.setdefault(s.name, {'repo': s.repo.name, 'archs': set()})
+                drops[s.name]['archs'].add(arch)
 
-        for prp in prjs:
+        for project, repo in sorted(self.repos):
             exclusives = dict()
-            print('#', prp)
+            print('#', project)
             for name in sorted(drops.keys()):
-                if drops[name]['repo'] != prp:
+                #
+                if drops[name]['repo'] != '{}/{}'.format(project, repo):
+                    #print(drops[name]['repo'], '!=', '{}/{}'.format(project, repo))
                     continue
                 if len(drops[name]['archs']) == len(self.architectures):
                     print('Provides: weakremover({})'.format(name))
