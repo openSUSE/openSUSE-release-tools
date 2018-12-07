@@ -54,7 +54,6 @@ import yaml
 
 import ToolBase
 
-from pkglistgen.group import ARCHITECTURES
 from pkglistgen.tool import PkgListGen, CACHEDIR
 
 logger = logging.getLogger()
@@ -83,10 +82,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         tool.input_dir = self.options.input_dir
         tool.output_dir = self.options.output_dir
         tool.repos = self.repos
-        if self.options.architectures:
-            tool.architectures = self.options.architectures
-        else:
-            tool.architectures = ARCHITECTURES
+        tool.init_architectures(self.options.architectures)
         return tool
 
     def update_merge(self, nonfree):
@@ -315,77 +311,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         raise Exception(baseurl + '/media.1/{media,build} includes no build number')
 
-    @cmdln.option('--ignore-unresolvable', action='store_true', help='ignore unresolvable and missing packges')
-    @cmdln.option('--ignore-recommended', action='store_true', help='do not include recommended packages automatically')
-    @cmdln.option('--locale', action='append', help='locales to inclues')
-    @cmdln.option('--locales-from', metavar='FILE', help='get supported locales from product file FILE')
-    def do_solve(self, subcmd, opts):
-        """${cmd_name}: Solve groups
-
-        Generates solv from pre-published repository contained in local cache.
-        Use dump_solv to extract solv from published repository.
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
-        self.tool.load_all_groups()
-        if not self.tool.output:
-            logger.error('OUTPUT not defined')
-            return
-
-        if opts.ignore_unresolvable:
-            self.tool.ignore_broken = True
-        global_use_recommends = not opts.ignore_recommended
-        if opts.locale:
-            for l in opts.locale:
-                self.tool.locales |= set(l.split(','))
-        if opts.locales_from:
-            with open(os.path.join(self.tool.input_dir, opts.locales_from), 'r') as fh:
-                root = ET.parse(fh).getroot()
-                self.tool.locales |= set([lang.text for lang in root.findall(".//linguas/language")])
-        self.tool.filtered_architectures = opts.filtered_architectures
-
-        modules = []
-        # the yml parser makes an array out of everything, so
-        # we loop a bit more than what we support
-        for group in self.tool.output:
-            groupname = group.keys()[0]
-            settings = group[groupname]
-            if not settings:  # e.g. unsorted
-                settings = {}
-            includes = settings.get('includes', [])
-            excludes = settings.get('excludes', [])
-            use_recommends = settings.get('recommends', global_use_recommends)
-            self.tool.solve_module(groupname, includes, excludes, use_recommends)
-            g = self.tool.groups[groupname]
-            g.conflicts = settings.get('conflicts', [])
-            g.default_support_status = settings.get('default-support', 'unsupported')
-            modules.append(g)
-
-        # not defined for openSUSE
-        overlap = self.tool.groups.get('overlap')
-        for module in modules:
-            module.check_dups(modules, overlap)
-            module.collect_devel_packages()
-            module.filter_already_selected(modules)
-
-        if overlap:
-            ignores = [x.name for x in overlap.ignored]
-            self.tool.solve_module(overlap.name, [], ignores, use_recommends=False)
-            overlapped = set(overlap.solved_packages['*'])
-            for arch in self.tool.filtered_architectures:
-                overlapped |= set(overlap.solved_packages[arch])
-            for module in modules:
-                if module.name == 'overlap' or module in overlap.ignored:
-                    continue
-                for arch in ['*'] + self.tool.filtered_architectures:
-                    for p in overlapped:
-                        module.solved_packages[arch].pop(p, None)
-
-        self.tool._collect_unsorted_packages(modules, self.tool.groups.get('unsorted'))
-        return self.tool._write_all_groups()
-
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
     @cmdln.option('-s', '--scope', action='append', default=['all'], help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
@@ -485,12 +410,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         product = target_config.get('pkglistgen-product', '000product')
         release = target_config.get('pkglistgen-release', '000release-packages')
 
-        opts.filtered_architectures = []
-        # make sure we only calculcate existant architectures
-        for arch in target_archs(api.apiurl, opts.project, main_repo):
-            if arch in self.tool.architectures:
-                opts.filtered_architectures.append(arch)
-
         url = api.makeurl(['source', opts.project])
         packages = ET.parse(http_GET(url)).getroot()
         if packages.find('entry[@name="{}"]'.format(product)) is None:
@@ -546,7 +465,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.postoptparse()
 
         print('-> do_update')
-        self.tool.update_repos(opts.filtered_architectures)
+        # make sure we only calculcate existant architectures
+        self.tool.filter_architectures(target_archs(api.apiurl, opts.project, main_repo))
+        self.tool.update_repos(self.tool.filtered_architectures)
 
         nonfree = target_config.get('nonfree')
         if nonfree and drop_list:
@@ -555,7 +476,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # Switch to nonfree repo (ugly, but that's how the code was setup).
             repos_ = self.repos
             self.tool.repos = self.tool.expand_repos(nonfree, main_repo)
-            self.tool.update_repos(opts.filtered_architectures)
+            self.tool.update_repos(self.tool.filtered_architectures)
 
             # Switch repo back to main target project.
             self.tool.repos = repos_
@@ -563,13 +484,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             print('-> update_merge')
             self.update_merge(nonfree if drop_list else False)
 
-        print('-> do_solve')
-        opts.ignore_unresolvable = str2bool(target_config.get('pkglistgen-ignore-unresolvable'))
-        opts.ignore_recommended = str2bool(target_config.get('pkglistgen-ignore-recommended'))
-        opts.locale = target_config.get('pkglistgen-local')
-        opts.locales_from = target_config.get('pkglistgen-locales-from')
         if not opts.only_release_packages:
-            summary = self.do_solve('solve', opts)
+            summary = self.tool.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
+                                              ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
+                                              locale = target_config.get('pkglistgen-local'),
+                                              locales_from = target_config.get('pkglistgen-locales-from'))
 
         if opts.stop_after_solve:
             return

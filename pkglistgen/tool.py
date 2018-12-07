@@ -14,7 +14,7 @@ from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.cache_manager import CacheManager
 
-from pkglistgen.group import Group
+from pkglistgen.group import Group, ARCHITECTURES
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 # share header cache with repochecker
@@ -37,6 +37,16 @@ class PkgListGen(ToolBase.ToolBase):
         self.locales = set()
         self.did_update = False
         self.logger = logging.getLogger(__name__)
+        self.filtered_architectures = None
+
+    def init_architectures(self, architectures):
+        if architectures:
+            self.architectures = architectures
+        else:
+            self.architectures = ARCHITECTURES
+
+    def filter_architectures(self, architectures):
+        self.filtered_architectures = list(set(architectures) & set(self.architectures))
 
     def _load_supportstatus(self):
         # XXX
@@ -410,3 +420,69 @@ class PkgListGen(ToolBase.ToolBase):
                 for name in sorted(exclusives[arch]):
                     print('Provides: weakremover({})'.format(name))
                 print('%endif')
+
+    def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
+        """${cmd_name}: Solve groups
+
+        Generates solv from pre-published repository contained in local cache.
+        Use dump_solv to extract solv from published repository.
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        self.load_all_groups()
+        if not self.output:
+            self.logger.error('OUTPUT not defined')
+            return
+
+        if ignore_unresolvable:
+            self.ignore_broken = True
+        global_use_recommends = not ignore_recommended
+        if locale:
+            for l in locale:
+                self.locales |= set(l.split(','))
+        if locales_from:
+            with open(os.path.join(self.input_dir, locales_from), 'r') as fh:
+                root = ET.parse(fh).getroot()
+                self.locales |= set([lang.text for lang in root.findall(".//linguas/language")])
+
+        modules = []
+        # the yml parser makes an array out of everything, so
+        # we loop a bit more than what we support
+        for group in self.output:
+            groupname = group.keys()[0]
+            settings = group[groupname]
+            if not settings:  # e.g. unsorted
+                settings = {}
+            includes = settings.get('includes', [])
+            excludes = settings.get('excludes', [])
+            use_recommends = settings.get('recommends', global_use_recommends)
+            self.solve_module(groupname, includes, excludes, use_recommends)
+            g = self.groups[groupname]
+            g.conflicts = settings.get('conflicts', [])
+            g.default_support_status = settings.get('default-support', 'unsupported')
+            modules.append(g)
+
+        # not defined for openSUSE
+        overlap = self.groups.get('overlap')
+        for module in modules:
+            module.check_dups(modules, overlap)
+            module.collect_devel_packages()
+            module.filter_already_selected(modules)
+
+        if overlap:
+            ignores = [x.name for x in overlap.ignored]
+            self.solve_module(overlap.name, [], ignores, use_recommends=False)
+            overlapped = set(overlap.solved_packages['*'])
+            for arch in self.filtered_architectures:
+                overlapped |= set(overlap.solved_packages[arch])
+            for module in modules:
+                if module.name == 'overlap' or module in overlap.ignored:
+                    continue
+                for arch in ['*'] + self.filtered_architectures:
+                    for p in overlapped:
+                        module.solved_packages[arch].pop(p, None)
+
+        self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
+        return self._write_all_groups()
