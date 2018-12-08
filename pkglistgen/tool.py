@@ -642,7 +642,9 @@ class PkgListGen(ToolBase.ToolBase):
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
         file_utils.copy_directory_contents(group_dir, product_dir,
-                                     ['supportstatus.txt', 'groups.yml', 'package-groups.changes'])
+                                     ['supportstatus.txt', 'groups.yml',
+                                      'reference-unsorted.yml', 'reference-summary.yml',
+                                      'package-groups.changes'])
         file_utils.change_extension(product_dir, '.spec.in', '.spec')
         file_utils.change_extension(product_dir, '.product.in', '.product')
 
@@ -731,20 +733,31 @@ class PkgListGen(ToolBase.ToolBase):
         self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
 
-        if api.item_exists(project, '000product-summary'):
-            summary_str = "# Summary of packages in groups"
-            for group in sorted(summary.keys()):
-                # the unsorted group should appear filtered by
-                # unneeded.yml - so we need the content of unsorted.yml
-                # not unsorted.group (this grew a little unnaturally)
-                if group == 'unsorted':
-                    continue
-                summary_str += "\n" + group + ":\n"
-                for package in sorted(summary[group]):
-                    summary_str += "  - " + package + "\n"
+        reference_summary = os.path.join(group_dir, 'reference-summary.yml')
+        if os.path.isfile(reference_summary):
+            summary_file = os.path.join(product_dir, 'summary.yml')
+            with open(summary_file, 'w') as f:
+                f.write("# Summary of packages in groups")
+                for group in sorted(summary.keys()):
+                    # the unsorted group should appear filtered by
+                    # unneeded.yml - so we need the content of unsorted.yml
+                    # not unsorted.group (this grew a little unnaturally)
+                    if group == 'unsorted':
+                        continue
+                    f.write("\n" + group + ":\n")
+                    for package in sorted(summary[group]):
+                        f.write("  - " + package + "\n")
 
-            source_file_ensure(api.apiurl, project, '000product-summary',
-                               'summary.yml', summary_str, 'Updating summary.yml')
-            unsorted_yml = open(os.path.join(product_dir, 'unsorted.yml')).read()
-            source_file_ensure(api.apiurl, project, '000product-summary',
-                               'unsorted.yml', unsorted_yml, 'Updating unsorted.yml')
+
+            try:
+                subprocess.check_output(["diff", "-u", reference_summary, summary_file])
+            except subprocess.CalledProcessError, e:
+                print(e.output)
+                self.error_occured = True
+            reference_unsorted = os.path.join(group_dir, 'reference-unsorted.yml')
+            unsorted_file = os.path.join(product_dir, 'unsorted.yml')
+            try:
+                subprocess.check_output(["diff", "-u", reference_unsorted, unsorted_file])
+            except subprocess.CalledProcessError, e:
+                print(e.output)
+                self.error_occured = True
