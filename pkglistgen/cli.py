@@ -120,7 +120,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             # used by product converter
             os.environ['OBS_NAME'] = 'build.suse.de'
 
-        print('scope', opts.scope)
         # special case for all
         if opts.scope == ['all']:
             opts.scope = target_config.get('pkglistgen-scopes', 'target').split(' ')

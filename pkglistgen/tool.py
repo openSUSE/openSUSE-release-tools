@@ -107,7 +107,20 @@ class PkgListGen(ToolBase.ToolBase):
             if u:
                 self.unwanted |= u
 
-    def _write_all_groups(self):
+    # required to generate release spec files (only)
+    def write_group_stubs(self):
+        archs = ['*'] + self.architectures
+        for name in self.groups:
+            group = self.groups[name]
+            group.solved_packages = dict()
+            fn = '{}.group'.format(group.name)
+            with open(os.path.join(self.output_dir, fn), 'w') as fh:
+                for arch in archs:
+                    x = group.toxml(arch, self.ignore_broken, None)
+                    x = ET.tostring(x, pretty_print=True)
+                    fh.write(x)
+
+    def write_all_groups(self):
         self._check_supplements()
         summary = dict()
         archs = ['*'] + self.architectures
@@ -125,7 +138,6 @@ class PkgListGen(ToolBase.ToolBase):
                     comment = None
                     x = ET.tostring(x, pretty_print=True)
                     x = re.sub(r'\s*<!-- reason:', ' <!-- reason:', x)
-                    # fh.write(ET.tostring(x, pretty_print = True, doctype = '<?xml version="1.0" encoding="UTF-8"?>'))
                     fh.write(x)
         return summary
 
@@ -542,14 +554,12 @@ class PkgListGen(ToolBase.ToolBase):
                         module.solved_packages[arch].pop(p, None)
 
         self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
-        return self._write_all_groups()
+        return self.write_all_groups()
 
 
     # staging projects don't need source and debug medium - and the glibc source
     # rpm conflicts between standard and bootstrap_copy repository causing the
     # product builder to fail
-
-
     def strip_medium_from_staging(self, path):
         medium = re.compile('name="(DEBUG|SOURCE)MEDIUM"')
         for name in glob.glob(os.path.join(path, '*.kiwi')):
@@ -659,7 +669,10 @@ class PkgListGen(ToolBase.ToolBase):
             print('-> update_merge')
             solv_utils.update_merge(nonfree if drop_list else False, self.repos, self.architectures)
 
-        if not only_release_packages:
+        if only_release_packages:
+            self.load_all_groups()
+            self.write_group_stubs()
+        else:
             summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
                                          ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
                                          locale = target_config.get('pkglistgen-local'),
