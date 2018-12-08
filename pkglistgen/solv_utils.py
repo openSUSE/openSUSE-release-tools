@@ -1,21 +1,33 @@
 from __future__ import print_function
 
+import filecmp
+import glob
+import gzip
+import hashlib
+import io
 import logging
 import os.path
 import random
 import string
-import sys
-import tempfile
-import hashlib
-import gzip
-import io
 import subprocess
+import sys
+import shutil
+import tempfile
 
 from lxml import etree as ET
+
+from osc import conf
+from osclib.util import project_list_family
+from osclib.util import project_list_family_prior
+from osclib.conf import Config
+from osclib.cache_manager import CacheManager
 
 import requests
 
 import solv
+
+# share header cache with repochecker
+CACHEDIR = CacheManager.directory('repository-meta')
 
 try:
     from urllib.parse import urljoin
@@ -62,7 +74,7 @@ def dump_solv(baseurl, output_dir, overwrite):
         name = os.path.join(output_dir, '{}.solv'.format(build))
         # For update repo name never changes so always update.
         if not overwrite and repo_style != 'update' and os.path.exists(name):
-            logger.info("%s exists", name)
+            logger.info('%s exists', name)
             return name
 
     pool = solv.Pool()
@@ -82,7 +94,7 @@ def dump_solv(baseurl, output_dir, overwrite):
     if repo_style == 'update':
         name = os.path.join(output_dir, '{}::{}.solv'.format(build, sha256_expected))
         if not overwrite and os.path.exists(name):
-            logger.info("%s exists", name)
+            logger.info('%s exists', name)
             return name
 
         # Only consider latest update repo so remove old versions.
@@ -153,7 +165,7 @@ def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, famil
         project_family.extend(project_list_family(apiurl, family_include))
 
     for project in project_family:
-        config = Config(apiurl, project)
+        Config(apiurl, project)
         project_config = conf.config[project]
 
         baseurl = project_config.get('download-baseurl')
@@ -204,7 +216,7 @@ def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, famil
     return prior
 
 
-def update_merge(self, nonfree, repos, architecture):
+def update_merge(self, nonfree, repos, architectures):
     """Merge free and nonfree solv files or copy free to merged"""
     for project, repo in repos:
         for arch in architectures:

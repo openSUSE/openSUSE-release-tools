@@ -13,7 +13,7 @@ from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from pkglistgen import solv_utils
-from pkglistgen.tool import PkgListGen, CACHEDIR
+from pkglistgen.tool import PkgListGen
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging']
@@ -39,7 +39,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        self.tool.create_sle_weakremovers(target, prjs)
+        return self.tool.create_sle_weakremovers(target, prjs)
 
     @cmdln.option('-o', '--output-dir', dest='output_dir', metavar='DIR', help='output directory', default='.')
     def do_create_droplist(self, subcmd, opts, *oldsolv):
@@ -55,7 +55,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        return self.tool.create_droplist(oldsolv, output_dir=self.options.output_dir)
+        return self.tool.create_droplist(self.options.output_dir, oldsolv)
 
     @cmdln.option('-o', '--output-dir', dest='output_dir', metavar='DIR', help='output directory', default='.')
     @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
@@ -88,8 +88,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        self.error_occured = False
-
         if opts.staging:
             match = re.match('(.*):Staging:(.*)', opts.staging)
             opts.scope = ['staging:' + match.group(2)]
@@ -102,7 +100,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             opts.scope = ['all']
 
         apiurl = conf.config['apiurl']
-        config = Config(apiurl, opts.project)
+        Config(apiurl, opts.project)
         target_config = conf.config[opts.project]
 
         # Store target project as opts.project will contain subprojects.
@@ -124,14 +122,17 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if opts.scope == ['all']:
             opts.scope = target_config.get('pkglistgen-scopes', 'target').split(' ')
 
+        self.error_occured = False
+
         def solve_project(project, scope):
             try:
-                self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
+                if self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
                                 project=project, scope=scope, force=opts.force,
                                 no_checkout=opts.no_checkout,
                                 only_release_packages=opts.only_release_packages,
-                                stop_after_solve=opts.stop_after_solve, drop_list=(scope == 'target'))
-            except Exception as e:
+                                stop_after_solve=opts.stop_after_solve, drop_list=(scope == 'target')):
+                    self.error_occured = True
+            except Exception:
                 # Print exception, but continue to prevent problems effecting one
                 # project from killing the whole process. Downside being a common
                 # error will be duplicated for each project. Common exceptions could

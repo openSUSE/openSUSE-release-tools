@@ -9,33 +9,33 @@ import solv
 import shutil
 import subprocess
 import yaml
+import sys
+
 from lxml import etree as ET
 
-from osc import conf
 from osc.core import checkout_package
 
-from osc.core import http_GET, http_PUT
+from osc.core import http_GET
 from osc.core import HTTPError
 from osc.core import show_results_meta
 from osc.core import Package
+from osc.core import undelete_package
 from osclib.core import target_archs
-from osclib.conf import Config, str2bool
+from osclib.conf import str2bool
 from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.cache_manager import CacheManager
 
 try:
-    from urllib.parse import urljoin, urlparse
+    from urllib.parse import urlparse
 except ImportError:
     # python 2.x
-    from urlparse import urljoin, urlparse
+    from urlparse import urlparse
 
-from pkglistgen import file_utils
+from pkglistgen import file_utils, solv_utils
 from pkglistgen.group import Group, ARCHITECTURES
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-# share header cache with repochecker
-CACHEDIR = CacheManager.directory('repository-meta')
 
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
@@ -85,7 +85,7 @@ class PkgListGen(ToolBase.ToolBase):
         output = None
         unwanted = None
         with open(fn, 'r') as fh:
-            self.logger.debug("reading %s", fn)
+            self.logger.debug('reading %s', fn)
             for groupname, group in yaml.safe_load(fh).items():
                 if groupname == 'OUTPUT':
                     output = group
@@ -194,12 +194,12 @@ class PkgListGen(ToolBase.ToolBase):
 
         for project, reponame in self.repos:
             repo = pool.add_repo(project)
-            s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
+            s = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
             r = repo.add_solv(s)
             if not r:
                 if not self.did_update:
                     raise Exception(
-                        "failed to add repo {}/{}/{}. Need to run update first?".format(project, reponame, arch))
+                        'failed to add repo {}/{}/{}. Need to run update first?'.format(project, reponame, arch))
                 continue
             for solvable in repo.solvables_iter():
                 solvable.unset(solv.SOLVABLE_CONFLICTS)
@@ -227,7 +227,7 @@ class PkgListGen(ToolBase.ToolBase):
         if not os.path.isfile(filename):
             return set()
         fh = open(filename, 'r')
-        self.logger.debug("reading %s", filename)
+        self.logger.debug('reading %s', filename)
         result = set()
         for groupname, group in yaml.safe_load(fh).items():
             result.update(group)
@@ -247,7 +247,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         for arch in self.filtered_architectures:
             pool = self._prepare_pool(arch)
-            sel = pool.Selection()
+            pool.Selection()
             archpacks = [s.name for s in pool.solvables_iter()]
 
             # copy
@@ -288,18 +288,18 @@ class PkgListGen(ToolBase.ToolBase):
                     del unsorted.solved_packages[arch][p]
 
         with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
-            fh.write("unsorted:\n")
+            fh.write('unsorted:\n')
             for p in sorted(packages.keys()):
-                fh.write("  - ")
+                fh.write('  - ')
                 fh.write(p)
                 if len(packages[p]) != len(self.filtered_architectures):
-                    fh.write(": [")
+                    fh.write(': [')
                     fh.write(','.join(sorted(packages[p])))
-                    fh.write("]")
+                    fh.write(']')
                     reason = self._find_reason(p, modules)
                     if reason:
                         fh.write(' # ' + reason)
-                fh.write(" \n")
+                fh.write(' \n')
 
     # give a hint if the package is related to a group
     def _find_reason(self, package, modules):
@@ -323,7 +323,7 @@ class PkgListGen(ToolBase.ToolBase):
         for project, repo in self.repos:
             for arch in architectures:
                 # TODO: refactor to common function with repo_checker.py
-                d = os.path.join(CACHEDIR, project, repo, arch)
+                d = os.path.join(solv_utils.CACHEDIR, project, repo, arch)
                 if not os.path.exists(d):
                     os.makedirs(d)
 
@@ -335,7 +335,7 @@ class PkgListGen(ToolBase.ToolBase):
 
                 # Would be preferable to include hash in name, but cumbersome to handle without
                 # reworking a fair bit since the state needs to be tracked.
-                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                solv_file = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
                 solv_file_hash = '{}::{}'.format(solv_file, state)
                 if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
                     # Solve file exists and hash unchanged, skip updating solv.
@@ -385,8 +385,8 @@ class PkgListGen(ToolBase.ToolBase):
 
             sysrepo = None
             for project, repo in self.repos:
-                self.logger.debug("processing %s/%s/%s", project, repo, arch)
-                fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                self.logger.debug('processing %s/%s/%s', project, repo, arch)
+                fn = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
                 r = pool.add_repo('/'.join([project, repo]))
                 r.add_solv(fn)
                 if project == target and repo == 'standard':
@@ -439,20 +439,20 @@ class PkgListGen(ToolBase.ToolBase):
                 print('%endif')
 
 
-    def create_droplist(self, output_dir):
+    def create_droplist(self, output_dir, oldsolv):
         drops = dict()
 
         for arch in self.architectures:
 
             for old in oldsolv:
 
-                logger.debug("%s: processing %s", arch, old)
+                self.logger.debug('%s: processing %s', arch, old)
 
                 pool = solv.Pool()
                 pool.setarch(arch)
 
                 for project, repo in self.repos:
-                    fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                    fn = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
                     r = pool.add_repo(project)
                     r.add_solv(fn)
 
@@ -488,11 +488,11 @@ class PkgListGen(ToolBase.ToolBase):
             ofh = open(name, 'w')
 
         for reponame in sorted(set(drops.values())):
-            print("<!-- %s -->" % reponame, file=ofh)
+            print('<!-- %s -->' % reponame, file=ofh)
             for p in sorted(drops):
                 if drops[p] != reponame:
                     continue
-                print("  <obsoletepackage>%s</obsoletepackage>" % p, file=ofh)
+                print('  <obsoletepackage>%s</obsoletepackage>' % p, file=ofh)
 
     def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
         """
@@ -514,7 +514,7 @@ class PkgListGen(ToolBase.ToolBase):
         if locales_from:
             with open(os.path.join(self.input_dir, locales_from), 'r') as fh:
                 root = ET.parse(fh).getroot()
-                self.locales |= set([lang.text for lang in root.findall(".//linguas/language")])
+                self.locales |= set([lang.text for lang in root.findall('.//linguas/language')])
 
         modules = []
         # the yml parser makes an array out of everything, so
@@ -556,11 +556,10 @@ class PkgListGen(ToolBase.ToolBase):
         self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
         return self.write_all_groups()
 
-
-    # staging projects don't need source and debug medium - and the glibc source
-    # rpm conflicts between standard and bootstrap_copy repository causing the
-    # product builder to fail
     def strip_medium_from_staging(self, path):
+        # staging projects don't need source and debug medium - and the glibc source
+        # rpm conflicts between standard and bootstrap_copy repository causing the
+        # product builder to fail
         medium = re.compile('name="(DEBUG|SOURCE)MEDIUM"')
         for name in glob.glob(os.path.join(path, '*.kiwi')):
             lines = open(name).readlines()
@@ -568,11 +567,10 @@ class PkgListGen(ToolBase.ToolBase):
             open(name, 'w').writelines(lines)
 
     def build_stub(self, destination, extension):
-        f = file(os.path.join(destination, '.'.join(['stub', extension])), 'w+')
-        f.write('# prevent building single {} files twice\n'.format(extension))
-        f.write('Name: stub\n')
-        f.write('Version: 0.0\n')
-        f.close()
+        with open(os.path.join(destination, '.'.join(['stub', extension])), 'w+') as f:
+            f.write('# prevent building single {} files twice\n'.format(extension))
+            f.write('Name: stub\n')
+            f.write('Version: 0.0\n')
 
     def commit_package(self, path):
         if self.dry_run:
@@ -634,7 +632,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         for package in checkout_list:
             if no_checkout:
-                print("Skipping checkout of {}/{}".format(project, package))
+                print('Skipping checkout of {}/{}'.format(project, package))
                 continue
             checkout_package(api.apiurl, project, package, expand_link=True, prj_dir=cache_dir)
 
@@ -696,12 +694,11 @@ class PkgListGen(ToolBase.ToolBase):
             cache_dir_solv_current = os.path.join(cache_dir_solv, target_project)
             solv_prior.update(glob.glob(os.path.join(cache_dir_solv_current, '*.merged.solv')))
             for solv_file in solv_prior:
-                logger.debug(solv_file.replace(cache_dir_solv, ''))
+                self.logger.debug(solv_file.replace(cache_dir_solv, ''))
 
             print('-> do_create_droplist')
             # Reset to product after solv_cache_update().
-            self.options.output_dir = product_dir
-            self.do_create_droplist('create_droplist', opts, *solv_prior)
+            self.create_droplist(product_dir, *solv_prior)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         file_utils.unlink_list(product_dir, delete_products)
@@ -733,31 +730,33 @@ class PkgListGen(ToolBase.ToolBase):
         self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
 
+        error_output = ''
         reference_summary = os.path.join(group_dir, 'reference-summary.yml')
         if os.path.isfile(reference_summary):
             summary_file = os.path.join(product_dir, 'summary.yml')
             with open(summary_file, 'w') as f:
-                f.write("# Summary of packages in groups")
+                f.write('# Summary of packages in groups')
                 for group in sorted(summary.keys()):
                     # the unsorted group should appear filtered by
                     # unneeded.yml - so we need the content of unsorted.yml
                     # not unsorted.group (this grew a little unnaturally)
                     if group == 'unsorted':
                         continue
-                    f.write("\n" + group + ":\n")
+                    f.write('\n' + group + ':\n')
                     for package in sorted(summary[group]):
-                        f.write("  - " + package + "\n")
-
+                        f.write('  - ' + package + '\n')
 
             try:
-                subprocess.check_output(["diff", "-u", reference_summary, summary_file])
-            except subprocess.CalledProcessError, e:
-                print(e.output)
-                self.error_occured = True
+                error_output += subprocess.check_output(['diff', '-u', reference_summary, summary_file])
+            except subprocess.CalledProcessError as e:
+                error_output += e.output
             reference_unsorted = os.path.join(group_dir, 'reference-unsorted.yml')
             unsorted_file = os.path.join(product_dir, 'unsorted.yml')
             try:
-                subprocess.check_output(["diff", "-u", reference_unsorted, unsorted_file])
-            except subprocess.CalledProcessError, e:
-                print(e.output)
-                self.error_occured = True
+                error_output += subprocess.check_output(['diff', '-u', reference_unsorted, unsorted_file])
+            except subprocess.CalledProcessError as e:
+                error_output += e.output
+
+        if len(error_output) > 0:
+            self.logger.error('Difference in yml:\n' + error_output)
+            return True

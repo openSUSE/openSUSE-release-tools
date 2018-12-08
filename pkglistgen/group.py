@@ -145,7 +145,7 @@ class Group(object):
                                 # only add recommends that exist as packages
                                 rec = pool.select(dep.str(), solv.Selection.SELECTION_NAME)
                                 if not rec.isempty():
-                                    extra.append([dep.str(), group + ":recommended:" + n])
+                                    extra.append([dep.str(), group + ':recommended:' + n])
 
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
@@ -166,7 +166,7 @@ class Group(object):
                 problems = solver.solve(jobs)
                 if problems:
                     for problem in problems:
-                        msg = 'unresolvable: %s.%s: %s', self.name, arch, problem
+                        msg = 'unresolvable: {}:{}.{}: {}'.format(self.name, n, arch, problem)
                         if self.pkglist.ignore_broken:
                             self.logger.debug(msg)
                         else:
@@ -259,21 +259,21 @@ class Group(object):
             for arch in self.pkglist.filtered_architectures:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
-                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name + "\n"
+                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name + '\n'
                 for p in sorted(packages & mp):
                     for arch in m.solved_packages.keys():
                         if m.solved_packages[arch].get(p, None):
-                            overlap.comment += "  # " + m.name + "." + arch + ': ' + m.solved_packages[arch][p] + "\n"
+                            overlap.comment += '  # ' + m.name + '.' + arch + ': ' + m.solved_packages[arch][p] + '\n'
                         if self.solved_packages[arch].get(p, None):
-                            overlap.comment += "  # " + self.name + "." + \
-                                arch + ': ' + self.solved_packages[arch][p] + "\n"
-                    overlap.comment += '  - ' + p + "\n"
+                            overlap.comment += '  # ' + self.name + '.' + \
+                                arch + ': ' + self.solved_packages[arch][p] + '\n'
+                    overlap.comment += '  - ' + p + '\n'
                     overlap._add_to_packages(p)
 
     def collect_devel_packages(self):
         for arch in self.pkglist.filtered_architectures:
             pool = self.pkglist._prepare_pool(arch)
-            sel = pool.Selection()
+            pool.Selection()
             for s in pool.solvables_iter():
                 if s.name.endswith('-devel'):
                     # don't ask me why, but that's how it seems to work
@@ -343,7 +343,7 @@ class Group(object):
             attrs = {'name': name}
             if status is not None:
                 attrs['supportstatus'] = status
-            p = ET.SubElement(packagelist, 'package', attrs)
+            ET.SubElement(packagelist, 'package', attrs)
             if name in packages and packages[name]:
                 c = ET.Comment(' reason: {} '.format(packages[name]))
                 packagelist.append(c)
