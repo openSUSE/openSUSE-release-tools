@@ -770,6 +770,17 @@ class ToTestFactory(ToTestBase):
                        ImageProduct('livecd-tumbleweed-gnome', ['i586', 'x86_64']),
                        ImageProduct('livecd-tumbleweed-x11', ['i586', 'x86_64'])]
 
+    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['i586', 'x86_64'])]
+
+    image_products = [
+        ImageProduct('opensuse-tumbleweed-image:lxc', ['i586', 'x86_64']),
+        ImageProduct('openSUSE-Tumbleweed-JeOS:MS-HyperV', ['x86_64']),
+        ImageProduct('openSUSE-Tumbleweed-JeOS:OpenStack-Cloud', ['x86_64']),
+        ImageProduct('openSUSE-Tumbleweed-JeOS:VMware', ['x86_64']),
+        ImageProduct('openSUSE-Tumbleweed-JeOS:XEN', ['x86_64']),
+        ImageProduct('openSUSE-Tumbleweed-JeOS:kvm-and-xen', ['x86_64']),
+    ]
+
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
 
@@ -788,6 +799,10 @@ class ToTestFactoryPowerPC(ToTestBase):
                      '000product:openSUSE-cd-mini-ppc64le']
 
     ftp_products = ['000product:openSUSE-ftp-ftp-ppc64_ppc64le']
+
+    image_products = [ImageProduct('opensuse-tumbleweed-image:lxc', ['ppc64le'])]
+
+    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['ppc64le'])]
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
@@ -837,6 +852,10 @@ class ToTestFactoryARM(ToTestFactory):
                     '000product:openSUSE-ftp-ftp-armv6hl']
 
     livecd_products = [ImageProduct('JeOS', ['armv7l'])]
+
+    image_products = [ImageProduct('opensuse-tumbleweed-image:lxc', ['armv6l', 'armv7l', 'aarch64'])]
+
+    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['aarch64'])]
 
     # JeOS doesn't follow build numbers of main isos
     need_same_build_number = False
@@ -903,10 +922,6 @@ class ToTest151PowerPC(ToTest151):
 
     ftp_products = ['000product:openSUSE-ftp-ftp-ppc64le',
                     ]
-
-    # no livecd for PowerPC
-    livecd_products = []
-    livecd_archs = []
 
     # TODO: what meaning/purpose ?
     set_snapshot_number = True
