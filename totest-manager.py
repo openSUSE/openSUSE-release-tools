@@ -902,8 +902,6 @@ class ToTest151ARM(ToTest151):
 
     livecd_products = [ImageProduct('JeOS', ['armv7l'])]
 
-    # Leap 15.1 ARM still need to update snapshot
-    set_snapshot_number = True
     # JeOS doesn't follow build numbers of main isos
     need_same_build_number = False
 
@@ -1002,6 +1000,7 @@ class ToTest150Images(ToTestBaseNew):
     def jobs_num(self):
         return 13
 
+
 class ToTest151Images(ToTest150Images):
     image_products = [
         ImageProduct('livecd-leap-gnome', ['x86_64']),
@@ -1036,6 +1035,7 @@ class ToTestSLE(ToTestBaseNew):
 
     def iso_build_version(self, project, tree):
         return super(ToTestSLE, self).iso_build_version(project, tree, base='SLE')
+
 
 class ToTestSLE12(ToTestSLE):
     main_products = [
