@@ -21,7 +21,7 @@ class CheckDuplicateBinariesCommand(object):
                 binaries.setdefault(arch, {})
 
                 if pb.name in binaries[arch]:
-                    duplicates.setdefault(arch, {})
+                    duplicates.setdefault(str(arch), {})
                     duplicates[arch].setdefault(pb.name, set())
                     duplicates[arch][pb.name].add(pb.package)
                     duplicates[arch][pb.name].add(binaries[arch][pb.name])
