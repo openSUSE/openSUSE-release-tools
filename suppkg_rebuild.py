@@ -51,17 +51,17 @@ class StagingHelper(object):
         return pkg_list
 
     def get_project_binarylist(self, project, repository, arch):
-        query = {'view': 'binarylist', 'repository': repository, 'arch': arch}
-        root = ET.parse(http_GET(makeurl(self.apiurl, ['build', project, '_result'],
+        query = {'view': 'binaryversions'}
+        root = ET.parse(http_GET(makeurl(self.apiurl, ['build', project, repository, arch],
             query=query))).getroot()
         return root
 
     def process_project_binarylist(self, project, repository, arch):
         prj_binarylist = self.get_project_binarylist(project, repository, arch)
         files = {}
-        for package in prj_binarylist.findall('./result/binarylist'):
+        for package in prj_binarylist.findall('./binaryversionlist'):
             for binary in package.findall('binary'):
-                result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', binary.attrib['filename'])
+                result = re.match(r'(.*)-([^-]*)-([^-]*)\.([^-\.]+)\.rpm', binary.attrib['name'])
                 if not result:
                     continue
                 bname = result.group(1)
@@ -73,7 +73,7 @@ class StagingHelper(object):
                     continue
                 if result.group(4) == 'src':
                     continue
-                files[bname] = package.attrib['package']
+                files[bname] = package.attrib['package'].split(':', 1)[0]
 
         return files
 
