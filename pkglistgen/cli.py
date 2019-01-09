@@ -14,6 +14,7 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from pkglistgen import solv_utils
 from pkglistgen.tool import PkgListGen
+from pkglistgen.update_repo_handler import update_project
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging']
@@ -41,38 +42,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
         return self.tool.create_sle_weakremovers(target, prjs)
 
-    @cmdln.option('-o', '--output-dir', dest='output_dir', metavar='DIR', help='output directory', default='.')
-    def do_create_droplist(self, subcmd, opts, *oldsolv):
-        """${cmd_name}: generate list of obsolete packages
+    def do_handle_update_repos(self, subcmd, opts, project):
+        """${cmd_name}: Update 00update-repos
 
-        The globally specified repositories are taken as the current
-        package set. All solv files specified on the command line
-        are old versions of those repos.
-
-        The command outputs all package names that are no longer
-        contained in or provided by the current repos.
+        Reads config.yml from 00update-repos and will create required solv files
 
         ${cmd_usage}
         ${cmd_option_list}
         """
-        return self.tool.create_droplist(self.options.output_dir, oldsolv)
-
-    @cmdln.option('-o', '--output-dir', dest='output_dir', metavar='DIR', help='output directory', default='.')
-    @cmdln.option('--overwrite', action='store_true', help='overwrite if output file exists')
-    def do_dump_solv(self, subcmd, opts, baseurl):
-        """${cmd_name}: fetch repomd and dump solv
-
-        Dumps solv from published repository. Use solve to generate from
-        pre-published repository.
-
-        If an output directory is specified, a file named according
-        to the build is created there. Otherwise the solv file is
-        dumped to stdout.
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-        return solv_utils.dump_solv(baseurl=baseurl, output_dir=self.options.output_dir, overwrite=opts.overwrite)
+        return update_project(conf.config['apiurl'], project)
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')

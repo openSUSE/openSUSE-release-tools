@@ -438,11 +438,11 @@ class PkgListGen(ToolBase.ToolBase):
                     print('Provides: weakremover({})'.format(name))
                 print('%endif')
 
-
+    # TODO: no longer used, needs to be migrated
     def create_droplist(self, output_dir, oldsolv):
         drops = dict()
 
-        for arch in self.architectures:
+        for arch in self.filtered_architectures:
 
             for old in oldsolv:
 
@@ -495,11 +495,6 @@ class PkgListGen(ToolBase.ToolBase):
                 print('  <obsoletepackage>%s</obsoletepackage>' % p, file=ofh)
 
     def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
-        """
-        Generates solv from pre-published repository contained in local cache.
-        Use dump_solv to extract solv from published repository.
-        """
-
         self.load_all_groups()
         if not self.output:
             self.logger.error('OUTPUT not defined')
@@ -654,21 +649,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.filter_architectures(target_archs(api.apiurl, project, main_repo))
         self.update_repos(self.filtered_architectures)
 
-        nonfree = target_config.get('nonfree')
-        if nonfree and drop_list:
-            print('-> do_update nonfree')
-
-            # Switch to nonfree repo (ugly, but that's how the code was setup).
-            repos_ = self.repos
-            self.repos = self.expand_repos(nonfree, main_repo)
-            self.update_repos(self.filtered_architectures)
-
-            # Switch repo back to main target project.
-            self.repos = repos_
-
-            print('-> update_merge')
-            solv_utils.update_merge(nonfree if drop_list else False, self.repos, self.architectures)
-
         if only_release_packages:
             self.load_all_groups()
             self.write_group_stubs()
@@ -680,25 +660,6 @@ class PkgListGen(ToolBase.ToolBase):
 
         if stop_after_solve:
             return
-
-        if drop_list:
-            # Ensure solv files from all releases in product family are updated.
-            print('-> solv_cache_update')
-            cache_dir_solv = CacheManager.directory('pkglistgen', 'solv')
-            family_last = target_config.get('pkglistgen-product-family-last')
-            family_include = target_config.get('pkglistgen-product-family-include')
-            solv_prior = solv_utils.solv_cache_update(api.apiurl, cache_dir_solv, target_project, family_last, family_include)
-
-            # Include pre-final release solv files for target project. These
-            # files will only exist from previous runs.
-            cache_dir_solv_current = os.path.join(cache_dir_solv, target_project)
-            solv_prior.update(glob.glob(os.path.join(cache_dir_solv_current, '*.merged.solv')))
-            for solv_file in solv_prior:
-                self.logger.debug(solv_file.replace(cache_dir_solv, ''))
-
-            print('-> do_create_droplist')
-            # Reset to product after solv_cache_update().
-            self.create_droplist(product_dir, *solv_prior)
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         file_utils.unlink_list(product_dir, delete_products)
@@ -715,9 +676,9 @@ class PkgListGen(ToolBase.ToolBase):
             self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
-        file_utils.move_list(spec_files, release_dir)
+        file_utils.copy_list(spec_files, release_dir)
         inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-        file_utils.move_list(inc_files, release_dir)
+        file_utils.copy_list(inc_files, release_dir)
 
         file_utils.multibuild_from_glob(release_dir, '*.spec')
         self.build_stub(release_dir, 'spec')

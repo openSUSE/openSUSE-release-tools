@@ -5,6 +5,10 @@ import shutil
 
 from lxml import etree as ET
 
+def copy_list(file_list, destination):
+    for name in file_list:
+        shutil.copy(name, os.path.join(destination, os.path.basename(name)))
+
 def move_list(file_list, destination):
     for name in file_list:
         os.rename(name, os.path.join(destination, os.path.basename(name)))
@@ -49,4 +53,3 @@ def unlink_list(path, names):
 
         if os.path.isfile(name_path):
             os.unlink(name_path)
-

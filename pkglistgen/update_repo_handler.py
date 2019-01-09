@@ -7,6 +7,7 @@ import hashlib
 import io
 import logging
 import os.path
+import re
 import random
 import string
 import subprocess
@@ -17,6 +18,7 @@ import tempfile
 from lxml import etree as ET
 
 from osc import conf
+import osc.core
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
 from osclib.conf import Config
@@ -25,6 +27,8 @@ from osclib.cache_manager import CacheManager
 import requests
 
 import solv
+
+import yaml
 
 # share header cache with repochecker
 CACHEDIR = CacheManager.directory('repository-meta')
@@ -43,67 +47,53 @@ def dump_solv_build(baseurl):
     if not baseurl.endswith('/'):
         baseurl += '/'
 
-    if 'update' in baseurl:
-        # Could look at .repo file or repomd.xml, but larger change.
-        return 'update-' + os.path.basename(os.path.normpath(baseurl)), 'update'
-
+    buildre = re.compile('.*-Build(.*)')
     url = urljoin(baseurl, 'media.1/media')
     with requests.get(url) as media:
         for i, line in enumerate(media.iter_lines()):
             if i != 1:
                 continue
-            name = line
-
-    if name is not None and '-Build' in name:
-        return name, 'media'
+            build = buildre.match(line)
+            if build:
+                return build.group(1)
 
     url = urljoin(baseurl, 'media.1/build')
     with requests.get(url) as build:
         name = build.content.strip()
+        build = buildre.match(name)
+        if build:
+            return build.group(1)
 
-    if name is not None and '-Build' in name:
-        return name, 'build'
+    url = urljoin(baseurl, 'repodata/repomd.xml')
+    with requests.get(url) as media:
+        root = ET.parse(url)
+        rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
+        if rev is not None:
+            return rev.text
 
-    raise Exception(baseurl + 'media.1/{media,build} includes no build number')
+    raise Exception(baseurl + 'includes no build number')
 
-def dump_solv(baseurl, output_dir, overwrite):
+def dump_solv(baseurl, output_dir):
     name = None
     ofh = sys.stdout
     if output_dir:
-        build, repo_style = dump_solv_build(baseurl)
+        build = dump_solv_build(baseurl)
         name = os.path.join(output_dir, '{}.solv'.format(build))
-        # For update repo name never changes so always update.
-        if not overwrite and repo_style != 'update' and os.path.exists(name):
-            logger.info('%s exists', name)
-            return name
 
     pool = solv.Pool()
     pool.setarch()
 
     repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
-    path_prefix = 'suse/' if name and repo_style == 'build' else ''
-    url = urljoin(baseurl, path_prefix + 'repodata/repomd.xml')
+    url = urljoin(baseurl, 'repodata/repomd.xml')
     repomd = requests.get(url)
     ns = {'r': 'http://linux.duke.edu/metadata/repo'}
     root = ET.fromstring(repomd.content)
+    print(url, root)
     primary_element = root.find('.//r:data[@type="primary"]', ns)
     location = primary_element.find('r:location', ns).get('href')
     sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
 
-    # No build information in update repo to use repomd checksum in name.
-    if repo_style == 'update':
-        name = os.path.join(output_dir, '{}::{}.solv'.format(build, sha256_expected))
-        if not overwrite and os.path.exists(name):
-            logger.info('%s exists', name)
-            return name
-
-        # Only consider latest update repo so remove old versions.
-        # Pre-release builds only make sense for non-update repos and once
-        # releases then only relevant for next product which does not
-        # consider pre-release from previous version.
-        for old_solv in glob.glob(os.path.join(output_dir, '{}::*.solv'.format(build))):
-            os.remove(old_solv)
-
+    path_prefix = 'TODO'
     f = tempfile.TemporaryFile()
     f.write(repomd.content)
     f.flush()
@@ -129,30 +119,8 @@ def dump_solv(baseurl, output_dir, overwrite):
     if name is not None:
         # Only update file if overwrite or different.
         ofh.flush()  # Ensure entirely written before comparing.
-        if not overwrite and os.path.exists(name) and filecmp.cmp(name + '.new', name, shallow=False):
-            logger.debug('file identical, skip dumping')
-            os.remove(name + '.new')
-        else:
-            os.rename(name + '.new', name)
+        os.rename(name + '.new', name)
         return name
-
-def solv_merge(solv_merged, *solvs):
-    solvs = list(solvs)  # From tuple.
-
-    if os.path.exists(solv_merged):
-        modified = map(os.path.getmtime, [solv_merged] + solvs)
-        if max(modified) <= modified[0]:
-            # The two inputs were modified before or at the same as merged.
-            logger.debug('merge skipped for {}'.format(solv_merged))
-            return
-
-    with open(solv_merged, 'w') as handle:
-        p = subprocess.Popen(['mergesolv'] + solvs, stdout=handle)
-        p.communicate()
-
-    if p.returncode:
-        raise Exception('failed to create merged solv file')
-
 
 def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, family_include):
     """Dump solv files (do_dump_solv) for all products in family."""
@@ -172,6 +140,9 @@ def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, famil
         if not baseurl:
             baseurl = project_config.get('download-baseurl-' + project.replace(':', '-'))
         baseurl_update = project_config.get('download-baseurl-update')
+        print(project, baseurl, baseurl_update)
+        continue
+
         if not baseurl:
             logger.warning('no baseurl configured for {}'.format(project))
             continue
@@ -205,14 +176,7 @@ def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, famil
             logger.warning('no solv files were dumped for {}'.format(project))
             continue
 
-        # Merge nonfree solv with free solv or copy free solv as merged.
-        merged = names[0].replace('.solv', '.merged.solv')
-        if len(names) >= 2:
-            solv_merge(merged, *names)
-        else:
-            shutil.copyfile(names[0], merged)
-        prior.add(merged)
-
+    print(prior)
     return prior
 
 
@@ -231,4 +195,14 @@ def update_merge(nonfree, repos, architectures):
 
             solv_file_nonfree = os.path.join(
                 CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
-            solv_merge(solv_file_merged, solv_file, solv_file_nonfree)
+
+def fetch_item(key, opts):
+    ret = dump_solv(opts['url'], '/tmp')
+    print(key, opts, ret)
+
+def update_project(apiurl, project):
+    url = osc.core.makeurl(apiurl, ['source', project, '00update-repos', 'config.yml'])
+    root = yaml.safe_load(osc.core.http_GET(url))
+    for item in root:
+        key = item.keys()[0]
+        fetch_item(key, item[key])
