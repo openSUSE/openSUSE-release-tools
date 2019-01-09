@@ -279,21 +279,25 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = "There is a pending request %s to %s/%s in process." % (','.join(ids), action.tgt_project, action.tgt_package)
             return False
 
-        # Decline the delete request against linked package.
-        links = root.findall('sourceinfo/linked')
-        if links is None or len(links) == 0:
-            if not self.ignore_devel:
-                self.devel_project_review_ensure(request, action.tgt_project, action.tgt_package)
-
-            if not self.skip_add_reviews and self.repo_checker is not None:
-                self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')
-            return True
-        else:
-            linked = links[0]
-            linked_project = linked.get('project')
-            linked_package = linked.get('package')
-            self.review_messages['declined'] = "This is an incorrect request, it's a linked package to %s/%s" % (linked_project, linked_package)
+        # Decline delete requests against linked flavor package
+        linked = root.find('sourceinfo/linked')
+        if not (linked is None or self.check_linked_package(action, linked)):
             return False
+
+        if not self.ignore_devel:
+            self.devel_project_review_ensure(request, action.tgt_project, action.tgt_package)
+
+        if not self.skip_add_reviews and self.repo_checker is not None:
+            self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')
+
+        return True
+
+    def check_linked_package(self, action, linked):
+        if linked.get('project', action.tgt_project) != action.tgt_project:
+            return True
+        linked_package = linked.get('package')
+        self.review_messages['declined'] = "Delete the package %s instead" % (linked_package)
+        return False
 
     def check_action_delete_project(self, request, action):
         # Presumably if the request is valid the bot should be disabled or
