@@ -921,9 +921,6 @@ class ToTest151PowerPC(ToTest151):
     ftp_products = ['000product:openSUSE-ftp-ftp-ppc64le',
                     ]
 
-    # TODO: what meaning/purpose ?
-    set_snapshot_number = True
-
     def openqa_group(self):
         return 'openSUSE Leap 15 PowerPC'
 
