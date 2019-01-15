@@ -212,12 +212,8 @@ class PkgListGen(ToolBase.ToolBase):
         pool.addfileprovides()
         pool.createwhatprovides()
 
-        # https://github.com/openSUSE/libsolv/issues/231
-        if hasattr(pool, 'set_namespaceproviders'):
-            for l in self.locales:
-                pool.set_namespaceproviders(solv.NAMESPACE_LANGUAGE, pool.Dep(l), True)
-        else:
-            self.logger.warn('libsolv missing set_namespaceproviders()')
+        for l in self.locales:
+            pool.set_namespaceproviders(solv.NAMESPACE_LANGUAGE, pool.Dep(l), True)
 
         return pool
 
