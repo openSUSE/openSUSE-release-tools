@@ -124,6 +124,7 @@ class Group(object):
             pool = self.pkglist._prepare_pool(arch)
             solver = pool.Solver()
             solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, not use_recommends)
+            solver.set_flag(solver.SOLVER_FLAG_ADD_ALREADY_RECOMMENDED, use_recommends)
 
             # pool.set_debuglevel(10)
             suggested = dict()

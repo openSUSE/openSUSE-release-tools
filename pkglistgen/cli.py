@@ -8,6 +8,7 @@ import os
 import re
 import ToolBase
 import traceback
+import logging
 
 from osc import conf
 from osclib.conf import Config
@@ -25,6 +26,11 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def setup_tool(self):
         tool = PkgListGen()
         tool.dry_run = self.options.dry
+        if self.options.debug:
+            logging.basicConfig(level=logging.DEBUG)
+        elif self.options.verbose:
+            logging.basicConfig(level=logging.INFO)
+
         return tool
 
     def do_create_sle_weakremovers(self, subcmd, opts, target, *prjs):
