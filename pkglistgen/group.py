@@ -213,6 +213,7 @@ class Group(object):
                     jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
             for n in solved[arch].keys() + suggested.keys():
+                if n in locked: continue
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
