@@ -167,7 +167,7 @@ class ToTestBase(object):
 
     def release_version(self):
         url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
-                                '000product:%s-release' % self.project_base])
+                                '000release-packages:%s-release' % self.project_base])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for binary in root.findall('binary'):
