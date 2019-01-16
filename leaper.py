@@ -208,6 +208,12 @@ class Leaper(ReviewBot.ReviewBot):
                     self.logger.info('no devel project found for {}/{}'.format('openSUSE.org:openSUSE:Factory', package))
 
                 self.logger.info('no matching sources found anywhere. Needs a human to decide whether that is ok. Please provide some justification to help that person.')
+            else:
+                leap = 'openSUSE.org:openSUSE:Leap:15.1'
+                if not self.is_package_in_project(target_project, package) \
+                    and self.is_package_in_project(leap, package) \
+                    and self._check_factory(package, src_srcinfo, leap) is False:
+                    self.logger.info('different sources in {}'.format(self.rdiff_link(src_project, src_package, src_rev, leap, package)))
 
             if not review_result and origin is not None:
                 review_result = origin_same
