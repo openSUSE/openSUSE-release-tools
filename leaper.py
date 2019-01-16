@@ -217,7 +217,7 @@ class Leaper(ReviewBot.ReviewBot):
 
             if not review_result and origin is not None:
                 review_result = origin_same
-                if origin_same:
+                if origin_same or origin == 'openSUSE.org:openSUSE:Factory' and self.pending_factory_submission:
                     self.logger.info("ok, origin %s unchanged", origin)
                 else:
                     # only log origin state if it's taken into consideration for the review result
