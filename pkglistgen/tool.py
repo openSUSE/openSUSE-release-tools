@@ -672,9 +672,11 @@ class PkgListGen(ToolBase.ToolBase):
 
         print('-> product service')
         product_version = attribute_value_load(api.apiurl, project, 'ProductVersion')
+        if not product_version:
+            # for stagings the product version doesn't matter (I hope)
+            product_version = '1'
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
-            if product_version:
-                self.replace_product_version(product_file, product_version)
+            self.replace_product_version(product_file, product_version)
             print(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, project]))
 
