@@ -20,6 +20,7 @@ from osc.core import HTTPError
 from osc.core import show_results_meta
 from osc.core import Package
 from osc.core import undelete_package
+from osclib.core import attribute_value_load
 from osclib.core import target_archs
 from osclib.conf import str2bool
 from osclib.core import repository_path_expand
@@ -575,6 +576,14 @@ class PkgListGen(ToolBase.ToolBase):
             package = Package(path)
             package.commit(msg='Automatic update', skip_local_service_run=True)
 
+    def replace_product_version(self, product_file, product_version):
+        product_version = '<version>{}</version>'.format(product_version)
+        lines = open(product_file).readlines()
+        new_lines = []
+        for line in lines:
+            new_lines.append(line.replace('<version></version>', product_version))
+        open(product_file, 'w').write(''.join(new_lines))
+
     def update_and_solve_target(self, api, target_project, target_config, main_repo,
                                 project, scope, force, no_checkout,
                                 only_release_packages, stop_after_solve, drop_list=False):
@@ -661,7 +670,10 @@ class PkgListGen(ToolBase.ToolBase):
         file_utils.unlink_list(product_dir, delete_products)
 
         print('-> product service')
+        product_version = attribute_value_load(api.apiurl, project, 'ProductVersion')
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
+            if product_version:
+                self.replace_product_version(product_file, product_version)
             print(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, project]))
 
