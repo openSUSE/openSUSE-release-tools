@@ -685,9 +685,9 @@ class PkgListGen(ToolBase.ToolBase):
             self.strip_medium_from_staging(product_dir)
 
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
-        file_utils.copy_list(spec_files, release_dir)
+        file_utils.move_list(spec_files, release_dir)
         inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-        file_utils.copy_list(inc_files, release_dir)
+        file_utils.move_list(inc_files, release_dir)
 
         file_utils.multibuild_from_glob(release_dir, '*.spec')
         self.build_stub(release_dir, 'spec')
