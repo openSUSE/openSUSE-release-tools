@@ -83,11 +83,42 @@ class Leaper(ReviewBot.ReviewBot):
             self.packages[project] = self.get_source_packages(project)
         return True if package in self.packages[project] else False
 
+    # this is so bad
+    def _webui_from_api(self, apiurl):
+        return apiurl.replace('//api.', '//build.')
+
+    # OBS is not smart enough to redirect to the mapped instance and just
+    # displays 404 so we have to do it ourselves
+    def package_link(self, project, package):
+        apiurl = self.apiurl
+        for prefix, url, srprefix in self.config.project_namespace_api_map:
+            if project.startswith(prefix):
+                apiurl = url
+                project = project[len(prefix):]
+                break
+
+        return '[%(project)s/%(package)s](%(url)s/package/show/%(project)s/%(package)s)'%{
+                    'url': self._webui_from_api(apiurl),
+                    'project': project,
+                    'package': package,
+                    }
+
     def rdiff_link(self, src_project, src_package, src_rev, target_project, target_package = None):
         if target_package is None:
             target_package = src_package
 
-        return '[%(target_project)s/%(target_package)s](/package/show/%(target_project)s/%(target_package)s) ([diff](/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s))'%{
+        apiurl = self.apiurl
+        for prefix, url, srprefix in self.config.project_namespace_api_map:
+            # can't rdiff if both sides are remote
+            # https://github.com/openSUSE/open-build-service/issues/4601
+            if target_project.startswith(prefix) and src_project.startswith(prefix):
+                apiurl = url
+                src_project = src_project[len(prefix):]
+                target_project = target_project[len(prefix):]
+                break
+
+        return self.package_link(target_project, target_package) + ' ([diff](%(url)s/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s))'%{
+                'url': self._webui_from_api(apiurl),
                 'src_project': src_project,
                 'src_package': src_package,
                 'src_rev': src_rev,
