@@ -13,6 +13,8 @@ from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
 from osc.core import delete_package, search, set_devel_project
 from osclib.config_command import ConfigCommand
+from osclib.core import attribute_value_save
+from osclib.core import attribute_value_load
 from osclib.core import source_file_load
 from osclib.core import source_file_save
 from datetime import date
@@ -279,6 +281,11 @@ class AcceptCommand(object):
                     source_file_save(self.api.apiurl, project, package, '_link', link)
         return True
 
+    def update_version_attribute(self, project, version):
+        version_attr = attribute_value_load(self.api.apiurl, project, 'ProductVersion')
+        if version_attr != version:
+            attribute_value_save(self.api.apiurl, project, 'ProductVersion', version)
+
     def update_factory_version(self):
         """Update project (Factory, 13.2, ...) version if is necessary."""
 
@@ -287,6 +294,7 @@ class AcceptCommand(object):
 
         project = self.api.project
         curr_version = date.today().strftime('%Y%m%d')
+        update_version_attr = False
         url = self.api.makeurl(['source', project], {'view': 'productlist'})
 
         products = ET.parse(http_GET(url)).getroot()
@@ -298,7 +306,11 @@ class AcceptCommand(object):
             new_product = re.sub(r'<version>\d{8}</version>', '<version>%s</version>' % curr_version, product_spec)
 
             if product_spec != new_product:
+                update_version_attr = True
                 http_PUT(url + '?comment=Update+version', data=new_product)
+
+        if update_version_attr:
+            self.update_version_attribute(project, curr_version)
 
         service = {'cmd': 'runservice'}
 
@@ -307,6 +319,8 @@ class AcceptCommand(object):
         for ports in ports_prjs:
             project = self.api.project + ':' + ports
             if self.api.item_exists(project):
+                if update_version_attr:
+                    self.update_version_attribute(project, curr_version)
                 baseurl = ['source', project, '000product']
                 url = self.api.makeurl(baseurl, query=service)
                 self.api.retried_POST(url)
