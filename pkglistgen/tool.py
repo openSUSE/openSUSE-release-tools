@@ -34,7 +34,7 @@ except ImportError:
     from urlparse import urlparse
 
 from pkglistgen import file_utils, solv_utils
-from pkglistgen.group import Group, ARCHITECTURES
+from pkglistgen.group import Group
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -59,10 +59,10 @@ class PkgListGen(ToolBase.ToolBase):
         self.logger = logging.getLogger(__name__)
         self.filtered_architectures = None
         self.dry_run = False
-        self.architectures = ARCHITECTURES
+        self.all_architectures = None
 
     def filter_architectures(self, architectures):
-        self.filtered_architectures = list(set(architectures) & set(self.architectures))
+        self.filtered_architectures = list(set(architectures) & set(self.all_architectures))
 
     def _load_supportstatus(self):
         # XXX
@@ -110,7 +110,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     # required to generate release spec files (only)
     def write_group_stubs(self):
-        archs = ['*'] + self.architectures
+        archs = ['*'] + self.all_architectures
         for name in self.groups:
             group = self.groups[name]
             group.solved_packages = dict()
@@ -124,7 +124,7 @@ class PkgListGen(ToolBase.ToolBase):
     def write_all_groups(self):
         self._check_supplements()
         summary = dict()
-        archs = ['*'] + self.architectures
+        archs = ['*'] + self.all_architectures
         for name in self.groups:
             group = self.groups[name]
             if not group.solved:
@@ -373,10 +373,10 @@ class PkgListGen(ToolBase.ToolBase):
         for prj in list(oldprjs) + [target]:
             self.repos += self.expand_repos(prj, 'standard')
 
-        self.update_repos(self.architectures)
+        self.update_repos(self.all_architectures)
 
         drops = dict()
-        for arch in self.architectures:
+        for arch in self.all_architectures:
             pool = solv.Pool()
             pool.setarch(arch)
 
@@ -423,7 +423,7 @@ class PkgListGen(ToolBase.ToolBase):
                 if drops[name]['repo'] != '{}/{}'.format(project, repo):
                     #print(drops[name]['repo'], '!=', '{}/{}'.format(project, repo))
                     continue
-                if len(drops[name]['archs']) == len(self.architectures):
+                if len(drops[name]['archs']) == len(self.all_architectures):
                     print('Provides: weakremover({})'.format(name))
                 else:
                     jarch = ' '.join(sorted(drops[name]['archs']))
@@ -587,6 +587,7 @@ class PkgListGen(ToolBase.ToolBase):
     def update_and_solve_target(self, api, target_project, target_config, main_repo,
                                 project, scope, force, no_checkout,
                                 only_release_packages, stop_after_solve, drop_list=False):
+        self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.repos = self.expand_repos(project, main_repo)
         print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
 

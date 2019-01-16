@@ -92,10 +92,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         api = StagingAPI(apiurl, target_project)
 
-        archs_key = 'pkglistgen-archs'
-
-        if archs_key in target_config:
-            self.options.architectures = target_config.get(archs_key).split(' ')
         main_repo = target_config['main-repo']
 
         if apiurl.find('suse.de') > 0:

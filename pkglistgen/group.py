@@ -8,15 +8,13 @@ from lxml import etree as ET
 
 import solv
 
-ARCHITECTURES = ['x86_64', 'ppc64le', 's390x', 'aarch64']
-
 class Group(object):
 
     def __init__(self, name, pkglist):
         self.name = name
         self.safe_name = re.sub(r'\W', '_', name.lower())
         self.pkglist = pkglist
-        self.architectures = pkglist.architectures
+        self.architectures = pkglist.all_architectures
         self.conditional = None
         self.packages = dict()
         self.locked = set()
@@ -25,7 +23,7 @@ class Group(object):
         self.not_found = dict()
         self.unresolvable = dict()
         self.default_support_status = None
-        for a in ARCHITECTURES:
+        for a in self.architectures:
             self.packages[a] = []
             self.unresolvable[a] = dict()
 
@@ -120,6 +118,7 @@ class Group(object):
 
         self.srcpkgs = dict()
         self.recommends = dict()
+        self.suggested = dict()
         for arch in self.pkglist.filtered_architectures:
             pool = self.pkglist._prepare_pool(arch)
             solver = pool.Solver()
@@ -182,6 +181,7 @@ class Group(object):
                 if n in self.expand_suggested:
                     for s in solver.get_suggested():
                         suggested[s.name] = group + ':suggested:' + n
+                        self.suggested.setdefault(s.name, suggested[s.name])
 
                 trans = solver.transaction()
                 if trans.isempty():
