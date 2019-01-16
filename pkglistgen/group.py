@@ -50,6 +50,9 @@ class Group(object):
             archs = [arch]
 
         for a in archs:
+            # we use groups.yml for powerpc through a branch,
+            # so ignore inapplicable architectures
+            if not a in self.packages: continue
             self.packages[a].append([package, self.name])
 
     def parse_yml(self, packages):
