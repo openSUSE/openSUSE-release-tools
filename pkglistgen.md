@@ -35,6 +35,8 @@ You can also adapt the solving on a package level by putting a hash into the pac
 
  * recommended
  Evaluate also 'Recommends' in package to determine dependencies. Otherwise only 'required' are considered. Used mainly for patterns in SLE. It can not be combined with platforms, For architecture specific recommends, use patterns.
+ * suggested
+ Evaluate also 'Suggests' in package to determine dependencies. This implies recommended
  * architecture (e.g. x86_64,s390x,ppc64le,aarch64)
  Makes the entry specific to the listed architectures. Will get ignored if used in combination with 'recommended'.
  * locked

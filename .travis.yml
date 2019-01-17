@@ -71,7 +71,7 @@ matrix:
         # Needs python prefix to use the correct interpretor.
         - python ./obs_clone.py --cache --debug --apiurl-target local
       script:
-        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint -c .noserc
+        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint --exclude-dir=./pkglistgen -c .noserc
       after_success:
         - coveralls
     - env: TEST_SUITE=nosetests-osc-python3
@@ -99,7 +99,7 @@ matrix:
         # Needs python prefix to use the correct interpretor.
         - python ./obs_clone.py --cache --debug --apiurl-target local
       script:
-        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint -c .noserc
+        - nosetests --with-coverage --cover-package=. --cover-inclusive --exclude-dir=./oqamaint --exclude-dir=./pkglistgen -c .noserc
       after_success:
         - coveralls
     - env: TEST_SUITE=nosetests-osc-python3

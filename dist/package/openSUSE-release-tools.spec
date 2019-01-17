@@ -441,7 +441,6 @@ exit 0
 %{_bindir}/osrt-check_source_in_factory
 %{_bindir}/osrt-check_tags_in_requests
 %{_bindir}/osrt-compare_pkglist
-%{_bindir}/osrt-create_test_dvds
 %{_bindir}/osrt-deptool
 %{_bindir}/osrt-fcc_submitter
 %{_bindir}/osrt-findfileconflicts
