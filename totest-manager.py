@@ -592,7 +592,7 @@ class ToTestBase(object):
         can_release = ((current_snapshot is None or current_result != QA_INPROGRESS) and snapshotable)
 
         # not overwriting
-        if new_snapshot == current_snapshot:
+        if new_snapshot == current_qa_version:
             logger.debug("no change in snapshot version")
             can_release = False
         elif not self.all_repos_done(self.test_project):
