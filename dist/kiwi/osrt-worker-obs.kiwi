@@ -6,7 +6,7 @@
     <specification>openSUSE Release Tools (OSRT) worker for OBS container image</specification>
   </description>
   <preferences>
-    <type image="docker" derived_from="obsrepositories:/opensuse/tumbleweed#current">
+    <type image="docker" derived_from="obsrepositories:/opensuse/tumbleweed">
 <!--       <containerconfig name="osrt/worker-obs" tag="%%TAG%%" additionaltags="latest"/> -->
       <containerconfig name="osrt/worker-obs" tag="latest"/>
     </type>
