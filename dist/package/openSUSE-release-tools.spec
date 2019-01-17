@@ -467,6 +467,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/metrics_release.py
 %exclude %{_bindir}/osrt-staging-report
+%exclude %{_datadir}/%{source_dir}/pkglistgen
 %exclude %{_datadir}/%{source_dir}/pkglistgen.py
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
@@ -614,6 +615,7 @@ exit 0
 %files pkglistgen
 %defattr(-,root,root,-)
 %{_bindir}/osrt-pkglistgen
+%{_datadir}/%{source_dir}/pkglistgen
 %{_datadir}/%{source_dir}/pkglistgen.py
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
