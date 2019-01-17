@@ -44,6 +44,10 @@ class PkgListGen(ToolBase.ToolBase):
 
     def __init__(self):
         ToolBase.ToolBase.__init__(self)
+        self.logger = logging.getLogger(__name__)
+        self.reset()
+
+    def reset(self):
         # package -> supportatus
         self.packages = dict()
         self.groups = dict()
@@ -56,7 +60,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.output = None
         self.locales = set()
         self.did_update = False
-        self.logger = logging.getLogger(__name__)
         self.filtered_architectures = None
         self.dry_run = False
         self.all_architectures = None
