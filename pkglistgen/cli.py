@@ -106,6 +106,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         def solve_project(project, scope):
             try:
+                self.tool.reset()
                 if self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
                                 project=project, scope=scope, force=opts.force,
                                 no_checkout=opts.no_checkout,
