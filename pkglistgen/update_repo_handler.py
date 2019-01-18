@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import filecmp
 import glob
 import gzip
 import hashlib
@@ -19,9 +18,6 @@ from lxml import etree as ET
 
 from osc import conf
 import osc.core
-from osclib.util import project_list_family
-from osclib.util import project_list_family_prior
-from osclib.conf import Config
 from osclib.cache_manager import CacheManager
 
 import requests
@@ -31,23 +27,27 @@ import solv
 import yaml
 
 try:
-    from urllib.parse import urljoin
+    from urllib.parse import urljoin, urlparse
 except ImportError:
     # python 2.x
-    from urlparse import urljoin
+    from urlparse import urljoin, urlparse
 
 logger = logging.getLogger()
 
 def dump_solv_build(baseurl):
     """Determine repo format and build string from remote repository."""
 
-    buildre = re.compile('.*-Build(.*)')
+    buildre = re.compile(r'.*-Build(.*)')
+    factoryre = re.compile(r'openSUSE-(\d*)-i586-x86_64-Build.*')
     url = urljoin(baseurl, 'media.1/media')
     with requests.get(url) as media:
         if media.status_code == requests.codes.ok:
             for i, line in enumerate(media.iter_lines()):
                 if i != 1:
                     continue
+                build = factoryre.match(line)
+                if build:
+                    return build.group(1)
                 build = buildre.match(line)
                 if build:
                     return build.group(1)
@@ -120,7 +120,7 @@ def parse_susetags(repo, baseurl):
     defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
     descrdir = repo.meta.lookup_str(solv.SUSETAGS_DESCRDIR)
     if not descrdir:
-        descrdir = "suse/setup/descr"
+        descrdir = 'suse/setup/descr'
 
     url = urljoin(baseurl, descrdir + '/packages.gz')
     with requests.get(url, stream=True) as packages:
@@ -152,37 +152,21 @@ def dump_solv(name, baseurl):
 
     return name
 
-def fetch_item(key, opts):
-    baseurl = opts['url']
-    if not baseurl.endswith('/'):
-        baseurl += '/'
-
-    output_dir = '/space/opensuse/home:coolo/00update-repos'
-    if opts.get('refresh', False):
-        build = dump_solv_build(baseurl)
-        name = os.path.join(output_dir, key + '_{}.solv'.format(build))
-    else:
-        name = os.path.join(output_dir, key + '.solv')
-
-    if os.path.exists(name):
-        return name
-
-    return dump_solv(name, baseurl)
-
-def print_repo_delta(repo1, repo2, packages_file):
+def print_repo_delta(pool, repo2, packages_file):
     print('=Ver: 2.0', file=packages_file)
     present = dict()
-    for s in repo1.solvables:
-        present["{}/{}".format(s.name, s.arch)] = s.evr
+    for s in pool.solvables_iter():
+        if s.repo != repo2:
+            key = '{}/{}'.format(s.name, s.arch)
+            present.setdefault(key, {})
+            present[key][s.evr] = s.repo
     for s in repo2.solvables:
-        key = "{}/{}".format(s.name, s.arch)
-        if key in present:
-            if present[key] != s.evr:
-                print('# UPDATE', s.name, s.arch, present[key], '->', s.evr, file=packages_file)
-            else:
-                continue
-        else:
-            print('# NEW', s.name,s.arch, file=packages_file)
+        if s.arch == 'src': continue
+        key = '{}/{}'.format(s.name, s.arch)
+        if present.get(key, {}).get(s.evr):
+            continue
+        elif not key in present:
+            print('# NEW', s.name, s.arch, file=packages_file)
         evr = s.evr.split('-')
         release = evr.pop()
         print('=Pkg:', s.name, '-'.join(evr), release, s.arch, file=packages_file)
@@ -192,37 +176,64 @@ def print_repo_delta(repo1, repo2, packages_file):
         print('-Prv:', file=packages_file)
 
 def update_project(apiurl, project):
-    url = osc.core.makeurl(apiurl, ['source', project, '00update-repos', 'config.yml'])
-    root = yaml.safe_load(osc.core.http_GET(url))
+    # Cache dir specific to hostname and project.
+    host = urlparse(apiurl).hostname
+    cache_dir = CacheManager.directory('update_repo_handler', host, project)
+    repo_dir = os.path.join(cache_dir, '000update-repos')
+
+    # development aid
+    checkout = True
+    if checkout:
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+        os.makedirs(cache_dir)
+
+        osc.core.checkout_package(apiurl, project, '000update-repos', expand_link=True, prj_dir=cache_dir)
+
+    root = yaml.safe_load(open(os.path.join(repo_dir, 'config.yml')))
     for item in root:
         key = item.keys()[0]
+        opts = item[key]
         # cast 15.1 to string :)
-        #fetch_item(str(key), item[key])
+        key = str(key)
+        if not opts['url'].endswith('/'):
+            opts['url'] += '/'
 
-    pool = solv.Pool()
-    pool.setarch()
+        if opts.get('refresh', False):
+            opts['build'] = dump_solv_build(opts['url'])
+            path = '{}_{}.packages'.format(key, opts['build'])
+        else:
+            path = key + '.packages'
+        packages_file = os.path.join(repo_dir, path)
 
-    repo0 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+        if os.path.exists(packages_file + '.xz'):
+            print(path, 'already exists')
+            continue
 
-    prevfile = None
-    for file in glob.glob('/space/opensuse/home:coolo/00update-repos/15.1_*.solv'):
-        if prevfile:
-            repo1 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
-            repo1.add_solv(prevfile)
+        solv_file = packages_file + '.solv'
+        dump_solv(solv_file, opts['url'])
 
-            repo2 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
-            repo2.add_solv(file)
-            p = file.replace('.solv', '.packages')
-            print_repo_delta(repo1, repo2, open(p, 'w'))
-        prevfile = file
+        pool = solv.Pool()
+        pool.setarch()
 
-    #repo2 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
-    #repo2.add_solv('/space/opensuse/home:coolo/00update-repos/15.1_297.3.solv')
+        if opts.get('refresh', False):
+            for file in glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key))):
+                repo = pool.add_repo(file)
+                defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+                f = tempfile.TemporaryFile()
+                # FIXME: port to lzma module with python3
+                st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+                os.lseek(f.fileno(), 0, os.SEEK_SET)
+                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
 
-    #print_repo_delta(repo1, repo2, open('/space/opensuse/home:coolo/00update-repos/15.1_297.3.packages', 'w'))
+        repo1 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+        repo1.add_solv(solv_file)
 
+        print_repo_delta(pool, repo1, open(packages_file, 'w'))
+        subprocess.call(['xz', '-9', packages_file])
+        os.unlink(solv_file)
 
-def import_one(pool):
-    repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
-    defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
-    repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
+        url = osc.core.makeurl(apiurl, ['source', project, '000update-repos', path + '.xz'])
+        osc.core.http_PUT(url, data=open(packages_file + '.xz').read())
+
+        del pool

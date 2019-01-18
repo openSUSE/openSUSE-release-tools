@@ -13,7 +13,6 @@ import logging
 from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-from pkglistgen import solv_utils
 from pkglistgen.tool import PkgListGen
 from pkglistgen.update_repo_handler import update_project
 
@@ -33,21 +32,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         return tool
 
-    def do_create_sle_weakremovers(self, subcmd, opts, target, *prjs):
-        """${cmd_name}: generate list of obsolete packages for SLE
-
-        The globally specified repositories are taken as the current
-        package set. All solv files specified on the command line
-        are old versions of those repos.
-
-        The command outputs the weakremovers.inc to be used in
-        000package-groups
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-        return self.tool.create_sle_weakremovers(target, prjs)
-
     def do_handle_update_repos(self, subcmd, opts, project):
         """${cmd_name}: Update 00update-repos
 
@@ -56,7 +40,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        return update_project(conf.config['apiurl'], project)
+        update_project(conf.config['apiurl'], project)
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
