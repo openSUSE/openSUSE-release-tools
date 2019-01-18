@@ -1,0 +1,13 @@
+origins:
+- <devel>:
+    additional_reviews:
+    - <config:review-team>
+    - <config:legal-review-group>
+- openSUSE:Leap:15*: {}
+- SUSE:SLE-15*: {}
+- openSUSE:Factory:
+    pending_submission_consider: true
+- '*~':
+    additional_reviews:
+    - <config:review-team>
+    - <config:legal-review-group>

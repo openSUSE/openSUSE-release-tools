@@ -15,6 +15,7 @@ except ImportError:
 from osc.core import get_binarylist
 from osc.core import get_commitlog
 from osc.core import get_dependson
+from osc.core import get_project_sourceinfo
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
@@ -444,3 +445,27 @@ def project_meta_revision(apiurl, project):
     root = ET.fromstringlist(get_commitlog(
         apiurl, project, '_project', None, format='xml', meta=True))
     return int(root.find('logentry').get('revision'))
+
+# Combination of osc.core.(get|show)_project_sourceinfo with addition of expand.
+@memoize(session=True)
+def project_source_info(apiurl, project, package=None, aggregate=False):
+    if package and aggregate:
+        return project_source_info(apiurl, project)
+
+    query = {'view': 'info', 'nofilename': 1}
+    if package:
+        query['package'] = package
+    else:
+        query['expand'] = 1
+
+    url = makeurl(apiurl, ['source', project], query)
+    root = ET.parse(http_GET(url)).getroot()
+
+    source_infos = {}
+    for source_info in root.findall('sourceinfo'):
+        if package and package == source_info.get('package'):
+            return source_info
+
+        source_infos[source_info.get('package')] = source_info
+
+    return source_infos

@@ -1,0 +1,5 @@
+<definition name="OriginConfig" namespace="OSRT">
+  <description>OriginManager configuration</description>
+  <count>1</count>
+  <modifiable_by role="maintainer"/>
+</definition>

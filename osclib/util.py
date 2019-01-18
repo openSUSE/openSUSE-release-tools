@@ -2,7 +2,7 @@ from osc import conf
 from osclib.core import project_list_prefix
 
 
-def project_list_family(apiurl, project):
+def project_list_family(apiurl, project, include_update=False):
     """
     Determine the available projects within the same product family.
 
@@ -17,21 +17,23 @@ def project_list_family(apiurl, project):
     count_original = project.count(':')
     if project.startswith('SUSE:SLE'):
         project = ':'.join(project.split(':')[:2])
-        family_filter = lambda p: p.count(':') == count_original and p.endswith(':GA')
+        family_filter = lambda p: p.count(':') == count_original and (
+            p.endswith(':GA') or (include_update and p.endswith(':Update')))
     else:
-        family_filter = lambda p: p.count(':') == count_original
+        family_filter = lambda p: p.count(':') == count_original or (
+            include_update and p.count(':') == count_original + 1 and p.endswith(':Update'))
 
     prefix = ':'.join(project.split(':')[:-1])
     projects = project_list_prefix(apiurl, prefix)
 
     return filter(family_filter, projects)
 
-def project_list_family_prior(apiurl, project, include_self=False, last=None):
+def project_list_family_prior(apiurl, project, include_self=False, last=None, include_update=False):
     """
     Determine the available projects within the same product family released
     prior to the specified project.
     """
-    projects = project_list_family(apiurl, project)
+    projects = project_list_family(apiurl, project, include_update)
     past = False
     prior = []
     for entry in sorted(projects, key=project_list_family_sorter, reverse=True):
@@ -47,6 +49,21 @@ def project_list_family_prior(apiurl, project, include_self=False, last=None):
             break
 
     return prior
+
+def project_list_family_prior_prefix(apiurl, project_prefix, project=None, include_update=True):
+    if project:
+        projects = project_list_family_prior(apiurl, project, include_update=include_update)
+    else:
+        if ':Leap:' in project_prefix:
+            project = project_prefix
+
+        if ':SLE-' in project_prefix:
+            project = project_prefix + ':GA'
+
+        projects = project_list_family(apiurl, project, include_update)
+        projects = sorted(projects, key=project_list_family_sorter, reverse=True)
+
+    return [p for p in projects if p.startswith(project_prefix)]
 
 def project_list_family_sorter(project):
     """Extract key to be used as sorter (oldest to newest)."""
