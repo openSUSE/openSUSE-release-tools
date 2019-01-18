@@ -165,11 +165,31 @@ def fetch_item(key, opts):
         name = os.path.join(output_dir, key + '.solv')
 
     if os.path.exists(name):
-        print(name, 'exists')
-        return
+        return name
 
-    ret = dump_solv(name, baseurl)
-    print(key, opts, ret)
+    return dump_solv(name, baseurl)
+
+def print_repo_delta(repo1, repo2, packages_file):
+    print('=Ver: 2.0', file=packages_file)
+    present = dict()
+    for s in repo1.solvables:
+        present["{}/{}".format(s.name, s.arch)] = s.evr
+    for s in repo2.solvables:
+        key = "{}/{}".format(s.name, s.arch)
+        if key in present:
+            if present[key] != s.evr:
+                print('# UPDATE', s.name, s.arch, present[key], '->', s.evr, file=packages_file)
+            else:
+                continue
+        else:
+            print('# NEW', s.name,s.arch, file=packages_file)
+        evr = s.evr.split('-')
+        release = evr.pop()
+        print('=Pkg:', s.name, '-'.join(evr), release, s.arch, file=packages_file)
+        print('+Prv:', file=packages_file)
+        for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):
+            print(dep, file=packages_file)
+        print('-Prv:', file=packages_file)
 
 def update_project(apiurl, project):
     url = osc.core.makeurl(apiurl, ['source', project, '00update-repos', 'config.yml'])
@@ -177,4 +197,32 @@ def update_project(apiurl, project):
     for item in root:
         key = item.keys()[0]
         # cast 15.1 to string :)
-        fetch_item(str(key), item[key])
+        #fetch_item(str(key), item[key])
+
+    pool = solv.Pool()
+    pool.setarch()
+
+    repo0 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+
+    prevfile = None
+    for file in glob.glob('/space/opensuse/home:coolo/00update-repos/15.1_*.solv'):
+        if prevfile:
+            repo1 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+            repo1.add_solv(prevfile)
+
+            repo2 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+            repo2.add_solv(file)
+            p = file.replace('.solv', '.packages')
+            print_repo_delta(repo1, repo2, open(p, 'w'))
+        prevfile = file
+
+    #repo2 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+    #repo2.add_solv('/space/opensuse/home:coolo/00update-repos/15.1_297.3.solv')
+
+    #print_repo_delta(repo1, repo2, open('/space/opensuse/home:coolo/00update-repos/15.1_297.3.packages', 'w'))
+
+
+def import_one(pool):
+    repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+    defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+    repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
