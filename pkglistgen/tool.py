@@ -376,7 +376,8 @@ class PkgListGen(ToolBase.ToolBase):
         return global_update
 
     def create_weakremovers(self, target, target_config, directory):
-        self.repos = self.expand_repos(target, 'standard')
+        main_repo = target_config.get('main-repo', 'standard')
+        self.repos = self.expand_repos(target, main_repo)
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.update_repos(self.all_architectures)
 
@@ -392,7 +393,7 @@ class PkgListGen(ToolBase.ToolBase):
                 fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
                 r = pool.add_repo('/'.join([project, repo]))
                 r.add_solv(fn)
-                if project == target and repo == 'standard':
+                if project == target and repo == main_repo:
                     sysrepo = r
 
             pool.createwhatprovides()
@@ -565,6 +566,7 @@ class PkgListGen(ToolBase.ToolBase):
         group = target_config.get('pkglistgen-group', '000package-groups')
         product = target_config.get('pkglistgen-product', '000product')
         release = target_config.get('pkglistgen-release', '000release-packages')
+        oldrepos = target_config.get('pkglistgen-repos', '000update-repos')
 
         url = api.makeurl(['source', project])
         packages = ET.parse(http_GET(url)).getroot()
@@ -582,6 +584,8 @@ class PkgListGen(ToolBase.ToolBase):
                 return
 
         checkout_list = [group, product, release]
+        if drop_list and not only_release_packages:
+            checkout_list.append(oldrepos)
 
         if packages.find('entry[@name="{}"]'.format(release)) is None:
             if not self.dry_run:
@@ -601,6 +605,7 @@ class PkgListGen(ToolBase.ToolBase):
         group_dir = os.path.join(cache_dir, group)
         product_dir = os.path.join(cache_dir, product)
         release_dir = os.path.join(cache_dir, release)
+        oldrepos_dir = os.path.join(cache_dir, oldrepos)
 
         for package in checkout_list:
             if no_checkout:
@@ -660,7 +665,14 @@ class PkgListGen(ToolBase.ToolBase):
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
         file_utils.move_list(spec_files, release_dir)
         inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+        # filter special inc file
+        inc_files = filter(lambda file: file.endswith('weakremovers.inc'))
         file_utils.move_list(inc_files, release_dir)
+
+        # do not overwrite weakremovers.inc if it exists
+        # we will commit there afterwards if needed
+        if not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
+            file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
 
         file_utils.multibuild_from_glob(release_dir, '*.spec')
         self.build_stub(release_dir, 'spec')
