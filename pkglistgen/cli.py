@@ -24,7 +24,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def setup_tool(self):
         tool = PkgListGen()
-        tool.dry_run = self.options.dry
         if self.options.debug:
             logging.basicConfig(level=logging.DEBUG)
         elif self.options.verbose:
@@ -91,11 +90,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         def solve_project(project, scope):
             try:
                 self.tool.reset()
+                self.tool.dry_run = self.options.dry
                 if self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
                                 project=project, scope=scope, force=opts.force,
                                 no_checkout=opts.no_checkout,
                                 only_release_packages=opts.only_release_packages,
-                                stop_after_solve=opts.stop_after_solve, drop_list=(scope == 'target')):
+                                stop_after_solve=opts.stop_after_solve):
                     self.error_occured = True
             except Exception:
                 # Print exception, but continue to prevent problems effecting one
