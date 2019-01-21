@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import yaml
 import sys
+import tempfile
 
 from lxml import etree as ET
 
@@ -33,12 +34,15 @@ except ImportError:
     # python 2.x
     from urlparse import urlparse
 
-from pkglistgen import file_utils, solv_utils
+from pkglistgen import file_utils
 from pkglistgen.group import Group
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
+
+# share header cache with repochecker
+CACHEDIR = CacheManager.directory('repository-meta')
 
 class PkgListGen(ToolBase.ToolBase):
 
@@ -198,7 +202,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         for project, reponame in self.repos:
             repo = pool.add_repo(project)
-            s = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
+            s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
             r = repo.add_solv(s)
             if not r:
                 if not self.did_update:
@@ -323,7 +327,7 @@ class PkgListGen(ToolBase.ToolBase):
         for project, repo in self.repos:
             for arch in architectures:
                 # TODO: refactor to common function with repo_checker.py
-                d = os.path.join(solv_utils.CACHEDIR, project, repo, arch)
+                d = os.path.join(CACHEDIR, project, repo, arch)
                 if not os.path.exists(d):
                     os.makedirs(d)
 
@@ -335,7 +339,7 @@ class PkgListGen(ToolBase.ToolBase):
 
                 # Would be preferable to include hash in name, but cumbersome to handle without
                 # reworking a fair bit since the state needs to be tracked.
-                solv_file = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
                 solv_file_hash = '{}::{}'.format(solv_file, state)
                 if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
                     # Solve file exists and hash unchanged, skip updating solv.
@@ -371,128 +375,104 @@ class PkgListGen(ToolBase.ToolBase):
 
         return global_update
 
-    def create_sle_weakremovers(self, target, oldprjs):
-        self.repos = []
-        for prj in list(oldprjs) + [target]:
-            self.repos += self.expand_repos(prj, 'standard')
-
-        self.update_repos(self.all_architectures)
-
+    def create_weakremovers(self, target, target_config, directory, output):
         drops = dict()
-        for arch in self.all_architectures:
-            pool = solv.Pool()
-            pool.setarch(arch)
+        dropped_repos = dict()
 
-            sysrepo = None
-            for project, repo in self.repos:
-                self.logger.debug('processing %s/%s/%s', project, repo, arch)
-                fn = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                r = pool.add_repo('/'.join([project, repo]))
-                r.add_solv(fn)
-                if project == target and repo == 'standard':
-                    sysrepo = r
+        root = yaml.safe_load(open(os.path.join(directory, 'config.yml')))
+        for item in root:
+            key = item.keys()[0]
+            opts = item[key]
+            # cast 15.1 to string :)
+            key = str(key)
 
-            pool.createwhatprovides()
+            oldrepos = set(glob.glob(os.path.join(directory, '{}_*.packages.xz'.format(key))))
+            oldrepos |= set(glob.glob(os.path.join(directory, '{}.packages.xz'.format(key))))
+            for oldrepo in sorted(oldrepos):
+                pool = solv.Pool()
+                pool.setarch()
 
-            for s in pool.solvables_iter():
-                # we only want the old repos
-                if s.repo == sysrepo: continue
-                # ignore imported solvables. too dangerous
-                if s.arch != 'noarch' and s.arch != arch:
-                    continue
-                haveit = False
-                for s2 in pool.whatprovides(s.nameid):
-                    if s2.repo == sysrepo and s.nameid == s2.nameid:
+                oldsysrepo = pool.add_repo(oldrepo)
+                defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+                f = tempfile.TemporaryFile()
+                # FIXME: port to lzma module with python3
+                st = subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
+                os.lseek(f.fileno(), 0, os.SEEK_SET)
+                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
+
+                for arch in self.all_architectures:
+                    for project, repo in self.repos:
+                        fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
+                        r = pool.add_repo('/'.join([project, repo]))
+                        r.add_solv(fn)
+
+                pool.createwhatprovides()
+
+                for s in oldsysrepo.solvables_iter():
+                    if s.arch == 'src':
+                        continue
+
+                    oldarch = s.arch
+                    if oldarch == 'i686':
+                        oldarch = 'i586'
+
+                    #print('check', s.name, oldarch)
+                    haveit = False
+                    for s2 in pool.whatprovides(s.nameid):
+                        if s2.repo == oldsysrepo or s.nameid != s2.nameid:
+                            continue
+                        newarch = s2.arch
+                        if newarch == 'i686':
+                            newarch = 'i586'
+                        if oldarch != newarch and newarch != 'noarch' and oldarch != 'noarch':
+                            continue
                         haveit = True
-                if haveit:
-                    continue
-                haveit = False
+                        break
+                    if haveit:
+                        continue
 
-                # check for already obsoleted packages
-                nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
-                for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
-                    if s2.repo == sysrepo: continue
-                    haveit = True
-                if haveit:
-                    continue
-                drops.setdefault(s.name, {'repo': s.repo.name, 'archs': set()})
-                drops[s.name]['archs'].add(arch)
+                    # check for already obsoleted packages
+                    nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
+                    for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
+                        if s2.repo == oldsysrepo:
+                            continue
+                        haveit = True
+                        break
+                    if haveit:
+                        continue
+                    drops.setdefault(s.name, {'repo': key, 'archs': set()})
+                    if oldarch == 'noarch':
+                        drops[s.name]['archs'] |= set(self.all_architectures)
+                    else:
+                        drops[s.name]['archs'].add(oldarch)
+                    dropped_repos[key] = 1
 
-        for project, repo in sorted(self.repos):
+                del pool
+
+        for repo in sorted(dropped_repos.keys()):
+            repo_output = False
             exclusives = dict()
-            print('#', project)
             for name in sorted(drops.keys()):
-                #
-                if drops[name]['repo'] != '{}/{}'.format(project, repo):
-                    #print(drops[name]['repo'], '!=', '{}/{}'.format(project, repo))
+                if drops[name]['repo'] != repo:
                     continue
                 if len(drops[name]['archs']) == len(self.all_architectures):
-                    print('Provides: weakremover({})'.format(name))
+                    if not repo_output:
+                        print('#', repo, file=output)
+                        repo_output = True
+                    print('Provides: weakremover({})'.format(name), file=output)
                 else:
                     jarch = ' '.join(sorted(drops[name]['archs']))
                     exclusives.setdefault(jarch, []).append(name)
 
             for arch in sorted(exclusives.keys()):
-                print('%ifarch {}'.format(arch))
+                if not repo_output:
+                    print('#', repo, file=output)
+                    repo_output = True
+                print('%ifarch {}'.format(arch), file=output)
                 for name in sorted(exclusives[arch]):
-                    print('Provides: weakremover({})'.format(name))
-                print('%endif')
-
-    # TODO: no longer used, needs to be migrated
-    def create_droplist(self, output_dir, oldsolv):
-        drops = dict()
-
-        for arch in self.filtered_architectures:
-
-            for old in oldsolv:
-
-                self.logger.debug('%s: processing %s', arch, old)
-
-                pool = solv.Pool()
-                pool.setarch(arch)
-
-                for project, repo in self.repos:
-                    fn = os.path.join(solv_utils.CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                    r = pool.add_repo(project)
-                    r.add_solv(fn)
-
-                sysrepo = pool.add_repo(os.path.basename(old).replace('.merged.solv', ''))
-                sysrepo.add_solv(old)
-
-                pool.createwhatprovides()
-
-                for s in sysrepo.solvables:
-                    haveit = False
-                    for s2 in pool.whatprovides(s.nameid):
-                        if s2.repo == sysrepo or s.nameid != s2.nameid:
-                            continue
-                        haveit = True
-                    if haveit:
-                        continue
-                    nevr = pool.rel2id(s.nameid, s.evrid, solv.REL_EQ)
-                    for s2 in pool.whatmatchesdep(solv.SOLVABLE_OBSOLETES, nevr):
-                        if s2.repo == sysrepo:
-                            continue
-                        haveit = True
-                    if haveit:
-                        continue
-                    if s.name not in drops:
-                        drops[s.name] = sysrepo.name
-
-                # mark it explicitly to avoid having 2 pools while GC is not run
-                del pool
-
-        ofh = sys.stdout
-        if output_dir:
-            name = os.path.join(output_dir, 'obsoletepackages.inc')
-            ofh = open(name, 'w')
-
-        for reponame in sorted(set(drops.values())):
-            print('<!-- %s -->' % reponame, file=ofh)
-            for p in sorted(drops):
-                if drops[p] != reponame:
-                    continue
-                print('  <obsoletepackage>%s</obsoletepackage>' % p, file=ofh)
+                    print('Provides: weakremover({})'.format(name), file=output)
+                print('%endif', file=output)
+        output.flush()
 
     def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
         self.load_all_groups()
@@ -589,7 +569,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def update_and_solve_target(self, api, target_project, target_config, main_repo,
                                 project, scope, force, no_checkout,
-                                only_release_packages, stop_after_solve, drop_list=False):
+                                only_release_packages, stop_after_solve):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.repos = self.expand_repos(project, main_repo)
         print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
@@ -597,6 +577,7 @@ class PkgListGen(ToolBase.ToolBase):
         group = target_config.get('pkglistgen-group', '000package-groups')
         product = target_config.get('pkglistgen-product', '000product')
         release = target_config.get('pkglistgen-release', '000release-packages')
+        oldrepos = target_config.get('pkglistgen-repos', '000update-repos')
 
         url = api.makeurl(['source', project])
         packages = ET.parse(http_GET(url)).getroot()
@@ -613,7 +594,10 @@ class PkgListGen(ToolBase.ToolBase):
                 print('{}/{} build in progress'.format(project, product))
                 return
 
+        drop_list = api.item_exists(project, oldrepos)
         checkout_list = [group, product, release]
+        if drop_list and not only_release_packages:
+            checkout_list.append(oldrepos)
 
         if packages.find('entry[@name="{}"]'.format(release)) is None:
             if not self.dry_run:
@@ -633,6 +617,7 @@ class PkgListGen(ToolBase.ToolBase):
         group_dir = os.path.join(cache_dir, group)
         product_dir = os.path.join(cache_dir, product)
         release_dir = os.path.join(cache_dir, release)
+        oldrepos_dir = os.path.join(cache_dir, oldrepos)
 
         for package in checkout_list:
             if no_checkout:
@@ -640,7 +625,7 @@ class PkgListGen(ToolBase.ToolBase):
                 continue
             checkout_package(api.apiurl, project, package, expand_link=True, prj_dir=cache_dir)
 
-        file_utils.unlink_all_except(release_dir)
+        file_utils.unlink_all_except(release_dir, ['weakremovers.inc'])
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
         file_utils.copy_directory_contents(group_dir, product_dir,
@@ -670,6 +655,10 @@ class PkgListGen(ToolBase.ToolBase):
         if stop_after_solve:
             return
 
+        if drop_list:
+            weakremovers_file = os.path.join(release_dir, 'weakremovers.inc')
+            self.create_weakremovers(project, target_config, oldrepos_dir, output=open(weakremovers_file, 'w'))
+
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         file_utils.unlink_list(product_dir, delete_products)
 
@@ -692,7 +681,14 @@ class PkgListGen(ToolBase.ToolBase):
         spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
         file_utils.move_list(spec_files, release_dir)
         inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+        # filter special inc file
+        inc_files = filter(lambda file: file.endswith('weakremovers.inc'), inc_files)
         file_utils.move_list(inc_files, release_dir)
+
+        # do not overwrite weakremovers.inc if it exists
+        # we will commit there afterwards if needed
+        if not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
+            file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
 
         file_utils.multibuild_from_glob(release_dir, '*.spec')
         self.build_stub(release_dir, 'spec')

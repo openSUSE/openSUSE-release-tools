@@ -13,7 +13,6 @@ import logging
 from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-from pkglistgen import solv_utils
 from pkglistgen.tool import PkgListGen
 from pkglistgen.update_repo_handler import update_project
 
@@ -25,28 +24,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def setup_tool(self):
         tool = PkgListGen()
-        tool.dry_run = self.options.dry
         if self.options.debug:
             logging.basicConfig(level=logging.DEBUG)
         elif self.options.verbose:
             logging.basicConfig(level=logging.INFO)
 
         return tool
-
-    def do_create_sle_weakremovers(self, subcmd, opts, target, *prjs):
-        """${cmd_name}: generate list of obsolete packages for SLE
-
-        The globally specified repositories are taken as the current
-        package set. All solv files specified on the command line
-        are old versions of those repos.
-
-        The command outputs the weakremovers.inc to be used in
-        000package-groups
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-        return self.tool.create_sle_weakremovers(target, prjs)
 
     def do_handle_update_repos(self, subcmd, opts, project):
         """${cmd_name}: Update 00update-repos
@@ -107,11 +90,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         def solve_project(project, scope):
             try:
                 self.tool.reset()
+                self.tool.dry_run = self.options.dry
                 if self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
                                 project=project, scope=scope, force=opts.force,
                                 no_checkout=opts.no_checkout,
                                 only_release_packages=opts.only_release_packages,
-                                stop_after_solve=opts.stop_after_solve, drop_list=(scope == 'target')):
+                                stop_after_solve=opts.stop_after_solve):
                     self.error_occured = True
             except Exception:
                 # Print exception, but continue to prevent problems effecting one

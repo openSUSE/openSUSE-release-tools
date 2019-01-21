@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import filecmp
 import glob
 import gzip
 import hashlib
@@ -19,9 +18,6 @@ from lxml import etree as ET
 
 from osc import conf
 import osc.core
-from osclib.util import project_list_family
-from osclib.util import project_list_family_prior
-from osclib.conf import Config
 from osclib.cache_manager import CacheManager
 
 import requests
@@ -30,77 +26,71 @@ import solv
 
 import yaml
 
-# share header cache with repochecker
-CACHEDIR = CacheManager.directory('repository-meta')
-
 try:
-    from urllib.parse import urljoin
+    from urllib.parse import urljoin, urlparse
 except ImportError:
     # python 2.x
-    from urlparse import urljoin
+    from urlparse import urljoin, urlparse
 
 logger = logging.getLogger()
 
 def dump_solv_build(baseurl):
     """Determine repo format and build string from remote repository."""
 
-    if not baseurl.endswith('/'):
-        baseurl += '/'
-
-    buildre = re.compile('.*-Build(.*)')
+    buildre = re.compile(r'.*-Build(.*)')
+    factoryre = re.compile(r'openSUSE-(\d*)-i586-x86_64-Build.*')
     url = urljoin(baseurl, 'media.1/media')
     with requests.get(url) as media:
-        for i, line in enumerate(media.iter_lines()):
-            if i != 1:
-                continue
-            build = buildre.match(line)
-            if build:
-                return build.group(1)
+        if media.status_code == requests.codes.ok:
+            for i, line in enumerate(media.iter_lines()):
+                if i != 1:
+                    continue
+                build = factoryre.match(line)
+                if build:
+                    return build.group(1)
+                build = buildre.match(line)
+                if build:
+                    return build.group(1)
 
     url = urljoin(baseurl, 'media.1/build')
     with requests.get(url) as build:
-        name = build.content.strip()
-        build = buildre.match(name)
-        if build:
-            return build.group(1)
+        if build.status_code == requests.codes.ok:
+            name = build.content.strip()
+            build = buildre.match(name)
+            if build:
+                return build.group(1)
 
     url = urljoin(baseurl, 'repodata/repomd.xml')
     with requests.get(url) as media:
-        root = ET.parse(url)
-        rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
-        if rev is not None:
-            return rev.text
+        if media.status_code == requests.codes.ok:
+            root = ET.parse(url)
+            rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
+            if rev is not None:
+                return rev.text
 
     raise Exception(baseurl + 'includes no build number')
 
-def dump_solv(baseurl, output_dir):
-    name = None
-    ofh = sys.stdout
-    if output_dir:
-        build = dump_solv_build(baseurl)
-        name = os.path.join(output_dir, '{}.solv'.format(build))
-
-    pool = solv.Pool()
-    pool.setarch()
-
-    repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+def parse_repomd(repo, baseurl):
     url = urljoin(baseurl, 'repodata/repomd.xml')
     repomd = requests.get(url)
+    if repomd.status_code != requests.codes.ok:
+        return False
+
     ns = {'r': 'http://linux.duke.edu/metadata/repo'}
     root = ET.fromstring(repomd.content)
-    print(url, root)
     primary_element = root.find('.//r:data[@type="primary"]', ns)
     location = primary_element.find('r:location', ns).get('href')
     sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
 
-    path_prefix = 'TODO'
     f = tempfile.TemporaryFile()
     f.write(repomd.content)
     f.flush()
     os.lseek(f.fileno(), 0, os.SEEK_SET)
     repo.add_repomdxml(f, 0)
-    url = urljoin(baseurl, path_prefix + location)
+    url = urljoin(baseurl, location)
     with requests.get(url, stream=True) as primary:
+        if primary.status_code != requests.codes.ok:
+            raise Exception(url + ' does not exist')
         sha256 = hashlib.sha256(primary.content).hexdigest()
         if sha256 != sha256_expected:
             raise Exception('checksums do not match {} != {}'.format(sha256, sha256_expected))
@@ -111,98 +101,139 @@ def dump_solv(baseurl, output_dir):
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
         repo.add_rpmmd(f, None, 0)
-        repo.create_stubs()
+        return True
 
-        ofh = open(name + '.new', 'w')
-        repo.write(ofh)
+    return False
 
-    if name is not None:
-        # Only update file if overwrite or different.
-        ofh.flush()  # Ensure entirely written before comparing.
-        os.rename(name + '.new', name)
-        return name
+def parse_susetags(repo, baseurl):
+    url = urljoin(baseurl, 'content')
+    content = requests.get(url)
+    if content.status_code != requests.codes.ok:
+        return False
 
-def solv_cache_update(apiurl, cache_dir_solv, target_project, family_last, family_include):
-    """Dump solv files (do_dump_solv) for all products in family."""
-    prior = set()
+    f = tempfile.TemporaryFile()
+    f.write(content.content)
+    f.flush()
+    os.lseek(f.fileno(), 0, os.SEEK_SET)
+    repo.add_content(solv.xfopen_fd(None, f.fileno()), 0)
 
-    project_family = project_list_family_prior(
-        apiurl, target_project, include_self=True, last=family_last)
-    if family_include:
-        # Include projects from a different family if desired.
-        project_family.extend(project_list_family(apiurl, family_include))
+    defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+    descrdir = repo.meta.lookup_str(solv.SUSETAGS_DESCRDIR)
+    if not descrdir:
+        descrdir = 'suse/setup/descr'
 
-    for project in project_family:
-        Config(apiurl, project)
-        project_config = conf.config[project]
+    url = urljoin(baseurl, descrdir + '/packages.gz')
+    with requests.get(url, stream=True) as packages:
+        if packages.status_code != requests.codes.ok:
+            raise Exception(url + ' does not exist')
 
-        baseurl = project_config.get('download-baseurl')
-        if not baseurl:
-            baseurl = project_config.get('download-baseurl-' + project.replace(':', '-'))
-        baseurl_update = project_config.get('download-baseurl-update')
-        print(project, baseurl, baseurl_update)
-        continue
+        content = gzip.GzipFile(fileobj=io.BytesIO(packages.content))
+        os.lseek(f.fileno(), 0, os.SEEK_SET)
+        f.write(content.read())
+        f.flush()
+        os.lseek(f.fileno(), 0, os.SEEK_SET)
+        repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
+        return True
+    return False
 
-        if not baseurl:
-            logger.warning('no baseurl configured for {}'.format(project))
+def dump_solv(name, baseurl):
+    pool = solv.Pool()
+    pool.setarch()
+
+    repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+    if not parse_repomd(repo, baseurl) and not parse_susetags(repo, baseurl):
+        raise Exception('neither repomd nor susetags exists in ' + baseurl)
+
+    repo.create_stubs()
+
+    ofh = open(name, 'w')
+    repo.write(ofh)
+    ofh.flush()
+
+    return name
+
+def print_repo_delta(pool, repo2, packages_file):
+    print('=Ver: 2.0', file=packages_file)
+    present = dict()
+    for s in pool.solvables_iter():
+        if s.repo != repo2:
+            key = '{}/{}'.format(s.name, s.arch)
+            present.setdefault(key, {})
+            present[key][s.evr] = s.repo
+    for s in repo2.solvables:
+        if s.arch == 'src': continue
+        key = '{}/{}'.format(s.name, s.arch)
+        if present.get(key, {}).get(s.evr):
             continue
-
-        urls = [urljoin(baseurl, 'repo/oss/')]
-        if baseurl_update:
-            urls.append(urljoin(baseurl_update, 'oss/'))
-        if project_config.get('nonfree'):
-            urls.append(urljoin(baseurl, 'repo/non-oss/'))
-            if baseurl_update:
-                urls.append(urljoin(baseurl_update, 'non-oss/'))
-
-        names = []
-        for url in urls:
-            project_display = project
-            if 'update' in url:
-                project_display += ':Update'
-            print('-> dump_solv for {}/{}'.format(
-                project_display, os.path.basename(os.path.normpath(url))))
-            logger.debug(url)
-
-            output_dir = os.path.join(cache_dir_solv, project)
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-
-            solv_name = dump_solv(baseurl=url, output_dir=output_dir, overwrite=False)
-            if solv_name:
-                names.append(solv_name)
-
-        if not len(names):
-            logger.warning('no solv files were dumped for {}'.format(project))
-            continue
-
-    print(prior)
-    return prior
-
-
-def update_merge(nonfree, repos, architectures):
-    """Merge free and nonfree solv files or copy free to merged"""
-    for project, repo in repos:
-        for arch in architectures:
-            solv_file = os.path.join(
-                CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-            solv_file_merged = os.path.join(
-                CACHEDIR, 'repo-{}-{}-{}.merged.solv'.format(project, repo, arch))
-
-            if not nonfree:
-                shutil.copyfile(solv_file, solv_file_merged)
-                continue
-
-            solv_file_nonfree = os.path.join(
-                CACHEDIR, 'repo-{}-{}-{}.solv'.format(nonfree, repo, arch))
-
-def fetch_item(key, opts):
-    ret = dump_solv(opts['url'], '/tmp')
-    print(key, opts, ret)
+        elif not key in present:
+            print('# NEW', s.name, s.arch, file=packages_file)
+        evr = s.evr.split('-')
+        release = evr.pop()
+        print('=Pkg:', s.name, '-'.join(evr), release, s.arch, file=packages_file)
+        print('+Prv:', file=packages_file)
+        for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):
+            print(dep, file=packages_file)
+        print('-Prv:', file=packages_file)
 
 def update_project(apiurl, project):
-    url = osc.core.makeurl(apiurl, ['source', project, '00update-repos', 'config.yml'])
-    root = yaml.safe_load(osc.core.http_GET(url))
+    # Cache dir specific to hostname and project.
+    host = urlparse(apiurl).hostname
+    cache_dir = CacheManager.directory('update_repo_handler', host, project)
+    repo_dir = os.path.join(cache_dir, '000update-repos')
+
+    # development aid
+    checkout = True
+    if checkout:
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+        os.makedirs(cache_dir)
+
+        osc.core.checkout_package(apiurl, project, '000update-repos', expand_link=True, prj_dir=cache_dir)
+
+    root = yaml.safe_load(open(os.path.join(repo_dir, 'config.yml')))
     for item in root:
         key = item.keys()[0]
-        fetch_item(key, item[key])
+        opts = item[key]
+        # cast 15.1 to string :)
+        key = str(key)
+        if not opts['url'].endswith('/'):
+            opts['url'] += '/'
+
+        if opts.get('refresh', False):
+            opts['build'] = dump_solv_build(opts['url'])
+            path = '{}_{}.packages'.format(key, opts['build'])
+        else:
+            path = key + '.packages'
+        packages_file = os.path.join(repo_dir, path)
+
+        if os.path.exists(packages_file + '.xz'):
+            print(path, 'already exists')
+            continue
+
+        solv_file = packages_file + '.solv'
+        dump_solv(solv_file, opts['url'])
+
+        pool = solv.Pool()
+        pool.setarch()
+
+        if opts.get('refresh', False):
+            for file in glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key))):
+                repo = pool.add_repo(file)
+                defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+                f = tempfile.TemporaryFile()
+                # FIXME: port to lzma module with python3
+                st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+                os.lseek(f.fileno(), 0, os.SEEK_SET)
+                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
+
+        repo1 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+        repo1.add_solv(solv_file)
+
+        print_repo_delta(pool, repo1, open(packages_file, 'w'))
+        subprocess.call(['xz', '-9', packages_file])
+        os.unlink(solv_file)
+
+        url = osc.core.makeurl(apiurl, ['source', project, '000update-repos', path + '.xz'])
+        osc.core.http_PUT(url, data=open(packages_file + '.xz').read())
+
+        del pool
