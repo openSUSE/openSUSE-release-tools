@@ -676,17 +676,15 @@ class ReviewBot(object):
         """check if factory sources contain the package and revision. check head and history"""
         self.logger.debug("checking %s in %s"%(package, project))
         try:
-            si = osc.core.show_package_meta(self.apiurl, project, package)
+            osc.core.show_package_meta(self.apiurl, project, package)
         except (HTTPError, URLError):
-            si = None
-        if si is None:
             self.logger.debug("new package")
             return None
-        else:
-            si = self.get_sourceinfo(project, package)
-            if rev == si.verifymd5:
-                self.logger.debug("srcmd5 matches")
-                return True
+
+        si = self.get_sourceinfo(project, package)
+        if rev == si.verifymd5:
+            self.logger.debug("srcmd5 matches")
+            return True
 
         if history_limit:
             self.logger.debug("%s not the latest version, checking history", rev)

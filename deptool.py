@@ -60,11 +60,13 @@ class DepTool(cmdln.Cmdln):
     def _read_repos(self, repos):
         repodir = '/etc/zypp/repos.d'
         solvfile = '/var/cache/zypp/solv/%s/solv'
+        onlyenabled = False
 
         parser = SafeConfigParser()
 
         if not repos:
             repos = [f for f in os.listdir(repodir) if fnmatch(f, '*.repo')]
+            onlyenabled = True
 
         for r in repos:
             if '/' in r or r.endswith('.solv'):
@@ -80,7 +82,7 @@ class DepTool(cmdln.Cmdln):
                         name = r
                         r += '.repo'
                     parser.read('/'.join((repodir, r)))
-                    if parser.get(name, 'enabled') == '1':
+                    if onlyenabled == False or parser.get(name, 'enabled') == '1':
                         repo = self.pool.add_repo(name)
                         repo.add_solv(solvfile % name)
                         if parser.has_option(name, 'priority'):
