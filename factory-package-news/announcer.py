@@ -8,11 +8,14 @@ from urlparse import urlparse, urljoin
 import smtplib
 from email.mime.text import MIMEText
 import os
+import osc
 import sys
 import email.utils
 import argparse
 import logging
 import yaml
+import json
+import pika
 from xdg.BaseDirectory import save_data_path
 from collections import namedtuple
 
@@ -46,6 +49,60 @@ see https://en.opensuse.org/openSUSE:Submitting_bug_reports
 }
 
 
+def send_amqp_message(version, config):
+    """ Sends a rabbitmq message notifying about a new iso release
+
+    This function sends a message over the openSUSE rabbitmq message bus
+    notifying about a new ISO being released. The message topic is::
+
+        opensuse.release.iso.publish
+
+    The message's body contains the name of the release iso, the link to the
+    base url and the name of the changesfile.
+
+    Args:
+        version (str): version string of the iso
+        config (namedtuple): configuration for this opensuse release, must
+            contain the following keys: iso, url, changesfile
+
+    Returns:
+        Nothing
+    """
+    amqp_url = osc.conf.config.get('ttm_amqp_url')
+    if amqp_url is None:
+        logger.error("No ttm_amqp_url configured in oscrc - No message will be"
+                     " sent")
+        return
+
+    topic = 'opensuse.release.iso.publish'
+    payload = {key: config[key] for key in config
+               if key in ("iso", "url", "changesfile")}
+    payload["version"] = version
+    body = json.dumps(payload)
+
+    # copy-pasta from totest-manager.py:
+    # send amqp event
+    tries = 7  # arbitrary
+    for t in range(tries):
+        try:
+            notify_connection = pika.BlockingConnection(
+                pika.URLParameters(amqp_url))
+            notify_channel = notify_connection.channel()
+            notify_channel.exchange_declare(exchange='pubsub',
+                                            exchange_type='topic',
+                                            passive=True, durable=True)
+            notify_channel.basic_publish(exchange='pubsub',
+                                         routing_key=topic, body=body)
+            notify_connection.close()
+            break
+        except pika.exceptions.ConnectionClosed as e:
+            logger.warn("Sending AMQP event did not work: {!s}. Retrying try "
+                        "{!s} out of {!s}".format(e, t, tries))
+    else:
+        logger.error("Could not send out AMQP event for {!s} tries, aborting."
+                     .format(tries))
+
+
 def _load_config(handle=None):
     d = config_defaults
     y = yaml.safe_load(handle) if handle is not None else {}
@@ -68,6 +125,8 @@ parser.add_argument("--config", metavar="FILE",
                     help="YAML config file to override defaults")
 parser.add_argument("--dump-config", action="store_true",
                     help="dump built in YAML config")
+parser.add_argument("--no-amqp-msg", action="store_true",
+                    help="don't send a rabbitmq message")
 
 options = parser.parse_args()
 
@@ -167,3 +226,5 @@ else:
     os.symlink(version, tmpfn)
     os.rename(tmpfn, current_fn)
 
+    if not options.no_amqp_msg:
+        send_amqp_message(version, config)
