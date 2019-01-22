@@ -16,9 +16,8 @@ def do_cycle(self, subcmd, opts, *args):
     apiurl = self.get_api_url()
 
     print ("digraph depgraph {")
+    args = [pkg.strip() for pkglist in args for pkg in pkglist.split(',') if pkg.strip()]
     for pkgname in args:
-        pkgname = pkgname.strip(',')
-        if len(pkgname) == 0: continue
         try:
             deps = ET.fromstring(get_dependson(apiurl, "openSUSE:Factory", "standard", "x86_64", [pkgname]))
 
