@@ -312,18 +312,12 @@ class AcceptCommand(object):
         if update_version_attr:
             self.update_version_attribute(project, curr_version)
 
-        service = {'cmd': 'runservice'}
-
         ports_prjs = ['PowerPC', 'ARM', 'zSystems' ]
 
         for ports in ports_prjs:
             project = self.api.project + ':' + ports
-            if self.api.item_exists(project):
-                if update_version_attr:
-                    self.update_version_attribute(project, curr_version)
-                baseurl = ['source', project, '000product']
-                url = self.api.makeurl(baseurl, query=service)
-                self.api.retried_POST(url)
+            if self.api.item_exists(project) and update_version_attr:
+                self.update_version_attribute(project, curr_version)
 
     def sync_buildfailures(self):
         """
