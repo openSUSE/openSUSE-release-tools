@@ -1,6 +1,6 @@
 import logging
 import pika
-
+import sys
 
 class PubSubConsumer(object):
     """This is an example consumer that will handle unexpected interactions
@@ -16,7 +16,7 @@ class PubSubConsumer(object):
 
     """
 
-    def __init__(self, amqp_url, logger):
+    def __init__(self, amqp_prefix, logger):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
 
@@ -27,7 +27,7 @@ class PubSubConsumer(object):
         self._channel = None
         self._closing = False
         self._consumer_tag = None
-        self._url = amqp_url
+        self._prefix = amqp_prefix
         self.logger = logger
 
     def connect(self):
@@ -38,8 +38,15 @@ class PubSubConsumer(object):
         :rtype: pika.SelectConnection
 
         """
-        self.logger.info('Connecting to %s', self._url)
-        return pika.SelectConnection(pika.URLParameters(self._url),
+        self.logger.info('Connecting to %s', self._prefix)
+        account = 'opensuse'
+        server = 'rabbit.opensuse.org'
+        if self._prefix == 'suse':
+            account = 'suse'
+            server = 'rabbit.suse.de'
+        credentials = pika.PlainCredentials(account, account)
+        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, ssl=True, socket_timeout=10)
+        return pika.SelectConnection(parameters,
                                      self.on_connection_open,
                                      stop_ioloop_on_close=False)
 
@@ -122,7 +129,7 @@ class PubSubConsumer(object):
         :param str reply_text: The text reason the channel was closed
 
         """
-        self.logger.warning('Channel %i was closed: (%s) %s',
+        self.logger.info('Channel %i was closed: (%s) %s',
                             channel, reply_code, reply_text)
         self._connection.close()
 
@@ -321,8 +328,10 @@ def main():
                   '-35s %(lineno) -5d: %(message)s')
 
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-    example = PubSubConsumer('amqps://opensuse:opensuse@rabbit.opensuse.org',
-                             logging.getLogger(__name__))
+    amqp_prefix = 'opensuse'
+    if len(sys.argv) > 1:
+        amqp_prefix = sys.argv[1]
+    example = PubSubConsumer(amqp_prefix, logging.getLogger(__name__))
     try:
         example.run()
     except KeyboardInterrupt:
