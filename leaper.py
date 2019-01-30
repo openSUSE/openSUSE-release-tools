@@ -443,9 +443,9 @@ class Leaper(ReviewBot.ReviewBot):
             # disabled for reference. Needed again for 16.0 probably
             if False and self.source_in_factory and target_project.startswith('openSUSE:Leap:15.0') \
                 and self.is_package_in_project('openSUSE:Leap:42.3'+subprj, package):
-                    self.logger.info('package was in 42.3')
-                    self.do_check_maintainer_review = False
-                    return True
+                self.logger.info('package was in 42.3')
+                self.do_check_maintainer_review = False
+                return True
 
             is_fine_if_factory = True
             self.needs_release_manager = True
