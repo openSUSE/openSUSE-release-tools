@@ -301,22 +301,22 @@ class DepTool(cmdln.Cmdln):
                         logger.error("%s not found", n)
                         continue
                     for s in sel.solvables():
-                            prov = s.lookup_deparray(solv.SOLVABLE_PROVIDES, 0)
-                            if not prov:
-                                logger.error("%s doesn't provide anything")
+                        prov = s.lookup_deparray(solv.SOLVABLE_PROVIDES, 0)
+                        if not prov:
+                            logger.error("%s doesn't provide anything")
+                            continue
+                        for p in prov:
+                            sel = self.pool.matchdepid(p, solv.Selection.SELECTION_REL | solv.Selection.SELECTION_FLAT, kindid)
+                            if sel.isempty():
+                                logger.debug('nothing %s %s', kind.lower(), p)
                                 continue
-                            for p in prov:
-                                sel = self.pool.matchdepid(p, solv.Selection.SELECTION_REL | solv.Selection.SELECTION_FLAT, kindid)
-                                if sel.isempty():
-                                    logger.debug('nothing %s %s', kind.lower(), p)
+                            for r in sel.solvables():
+                                if kindid == solv.SOLVABLE_PROVIDES and r == s:
                                     continue
-                                for r in sel.solvables():
-                                    if kindid == solv.SOLVABLE_PROVIDES and r == s:
-                                        continue
-                                    if not kindprinted:
-                                        print(kind)
-                                        kindprinted = True
-                                    print('  {}: {}-{}@{}'.format(p, r.name, r.evr, r.arch))
+                                if not kindprinted:
+                                    print(kind)
+                                    kindprinted = True
+                                print('  {}: {}-{}@{}'.format(p, r.name, r.evr, r.arch))
 
     @cmdln.option("-r", "--repo", dest="repo", action="append",
                   help="repo to use")

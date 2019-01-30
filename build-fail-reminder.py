@@ -34,7 +34,7 @@ class RemindedPackage(object):
         return '{} {} {} {}'.format(self.firstfail, self.reminded, self.bug, self.remindCount)
 
 def jdefault(o):
-        return o.__dict__
+    return o.__dict__
 
 MAIL_TEMPLATES = ( u"""Dear %(recepient)s,
 
