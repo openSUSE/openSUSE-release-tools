@@ -77,9 +77,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         main_repo = target_config['main-repo']
 
+        # used by product converter
+        # these needs to be kept in sync with OBS config
         if apiurl.find('suse.de') > 0:
-            # used by product converter
             os.environ['OBS_NAME'] = 'build.suse.de'
+        if apiurl.find('opensuse.org') > 0:
+            os.environ['OBS_NAME'] = 'build.opensuse.org'
 
         # special case for all
         if opts.scope == ['all']:
