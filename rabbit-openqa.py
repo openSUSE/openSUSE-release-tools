@@ -214,7 +214,7 @@ class Listener(PubSubConsumer):
             p.check_published_repo(str(payload['project']), str(payload['repo']), str(payload['buildid']))
 
     def on_openqa_job(self, iso):
-        self.logger.debug('openqa_job_change', iso)
+        self.logger.debug('openqa_job_change %s', iso)
         for p in self.projects:
             p.openqa_job_change(iso)
 
