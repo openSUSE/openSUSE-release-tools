@@ -132,7 +132,7 @@ DEFAULT = {
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
         'onlyadi': True,
-        'leaper-override-group': 'leap-reviewers',
+        'leaper-override-group': 'backports-reviewers',
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
         # review-team optionally added by leaper.py.
