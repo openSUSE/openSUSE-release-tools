@@ -178,10 +178,17 @@ class RepoChecker(ReviewBot.ReviewBot):
     def binary_whitelist(self, override_pair, overridden_pair, arch):
         whitelist = self.binary_list_existing_problem(overridden_pair[0], overridden_pair[1])
 
-        staging = Config.get(self.apiurl, overridden_pair[0]).get('staging')
+        config = Config.get(self.apiurl, overridden_pair[0])
+        staging = config.get('staging')
         if staging:
-            additions = self.staging_api(staging).get_prj_pseudometa(
-                override_pair[0]).get('config', {})
+            api = self.staging_api(staging)
+            if not api.is_adi_project(override_pair[0]):
+                # For "leaky" ring packages in letter stagings, where the
+                # repository setup does not include the target project, that are
+                # not intended to to have all run-time dependencies satisfied.
+                whitelist.update(config.get('repo_checker-binary-whitelist-ring', '').split(' '))
+
+            additions = api.get_prj_pseudometa(override_pair[0]).get('config', {})
             prefix = 'repo_checker-binary-whitelist'
             for key in [prefix, '-'.join([prefix, arch])]:
                 whitelist.update(additions.get(key, '').split(' '))
