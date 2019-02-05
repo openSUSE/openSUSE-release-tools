@@ -82,6 +82,14 @@ my $first_layer = 1;
 
 foreach my $directory (@directories) {
     @rpms = glob("$directory/*.rpm");
+    if ($first_layer) {
+        foreach my $key (keys %toignore) {
+            if (!defined($written_names->{$key})) {
+                $written_names->{$key} = "simulate overridden";
+            }
+        }
+    }
+
     foreach my $package (@rpms) {
         my $name = write_package( $package, $packages_fd, $written_names );
         if ($first_layer && $name && !exists($whitelist{$name})) {
@@ -89,14 +97,7 @@ foreach my $directory (@directories) {
         }
     }
 
-    if ($first_layer) {
-        foreach my $key (keys %toignore) {
-            if (!defined($written_names->{$key})) {
-                $written_names->{$key} = "simulate overridden";
-            }
-        }
-        $first_layer = 0;
-    }
+    $first_layer = 0;
 }
 
 close($packages_fd);
