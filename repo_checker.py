@@ -553,12 +553,14 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.logger.info('{} not ready due to staging build failure(s)'.format(request.reqid))
                 return None
 
-            # Staging setup is convoluted and thus the repository setup does not
-            # contain a path to the target project. Instead the ports repository
-            # is used to import the target prjconf. As such the staging group
-            # repository must be explicitly layered on top of target project.
-            repository_pairs.append([stage_info['prj'], repository])
-            repository_pairs.extend(repository_path_expand(self.apiurl, action.tgt_project, repository))
+            # Staging setup is convoluted as the ports repository is used to
+            # import the target prjconf for non-port, letter stagings. As such
+            # the staging group repository must be explicitly not expanded. For
+            # adi stagings the repository path expands properly and should be.
+            if api.is_adi_project(stage_info['prj']):
+                repository_pairs.extend(repository_path_expand(self.apiurl, stage_info['prj'], repository))
+            else:
+                repository_pairs.append([stage_info['prj'], repository])
         else:
             # Find a repository which links to target project "main" repository.
             repository = repository_path_search(
