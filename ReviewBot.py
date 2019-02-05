@@ -309,7 +309,15 @@ class ReviewBot(object):
             self.logger.warning('no devel project found for {}/{}'.format(project, package))
             return False
 
-        self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
+        try:
+            self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
+        except HTTPError as e:
+            # could happen when the bot is not actually a reviewer and has no permissions
+            if e.code != 403:
+                raise e
+            self.logger.error('failed to add devel project review for {}/{}'.format(devel_project, devel_package))
+            return False
+
         return True
 
     def devel_project_review_ensure(self, request, project, package, message='submitter not devel maintainer'):
