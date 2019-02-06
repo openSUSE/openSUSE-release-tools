@@ -119,12 +119,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         return sorted(archs, reverse=True)
 
     @memoize(session=True)
-    def target_archs_from_prairs(self, repository_pairs, simulate_merge):
-        if simulate_merge:
-            # Restrict top layer archs to the whitelisted archs from merge layer.
-            return set(target_archs(self.apiurl, repository_pairs[0][0], repository_pairs[0][1])).intersection(
-                   set(self.target_archs(repository_pairs[1][0], repository_pairs[1][1])))
-
+    def target_archs_from_pairs(self, repository_pairs, simulate_merge):
         return self.target_archs(repository_pairs[0][0], repository_pairs[0][1])
 
     @memoize(ttl=60, session=True, add_invalidate=True)
@@ -358,7 +353,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
     @memoize(ttl=60, session=True)
     def repository_state(self, repository_pairs, simulate_merge):
-        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
+        archs = self.target_archs_from_pairs(repository_pairs, simulate_merge)
         states = repositories_states(self.apiurl, repository_pairs, archs)
 
         if simulate_merge:
@@ -388,7 +383,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
-        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
+        archs = self.target_archs_from_pairs(repository_pairs, simulate_merge)
         published = repositories_published(self.apiurl, repository_pairs, archs)
 
         if not self.force:
