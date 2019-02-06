@@ -118,10 +118,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
 
-    @memoize(session=True)
-    def target_archs_from_pairs(self, repository_pairs, simulate_merge):
-        return self.target_archs(repository_pairs[0][0], repository_pairs[0][1])
-
     @memoize(ttl=60, session=True, add_invalidate=True)
     def mirror(self, project, repository, arch):
         """Call bs_mirrorfull script to mirror packages."""
@@ -353,7 +349,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
     @memoize(ttl=60, session=True)
     def repository_state(self, repository_pairs, simulate_merge):
-        archs = self.target_archs_from_pairs(repository_pairs, simulate_merge)
+        archs = self.target_archs(repository_pairs[0][0], repository_pairs[0][1])
         states = repositories_states(self.apiurl, repository_pairs, archs)
 
         if simulate_merge:
@@ -383,7 +379,19 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
-        archs = self.target_archs_from_pairs(repository_pairs, simulate_merge)
+        archs = self.target_archs(project, repository)
+        new_pairs = []
+        for pair in repository_pairs:
+            has_all = True
+            for arch in archs:
+                if not repository_arch_state(self.apiurl, pair[0], pair[1], arch):
+                    has_all = False
+                    break
+            # ignore repositories only inherited for config
+            if has_all:
+                new_pairs.append(pair)
+        repository_pairs = new_pairs
+
         published = repositories_published(self.apiurl, repository_pairs, archs)
 
         if not self.force:
@@ -420,10 +428,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         for arch in archs:
             directories = []
             for pair_project, pair_repository in repository_pairs:
-                if not repository_arch_state(self.apiurl, pair_project, pair_repository, arch):
-                    # ignore repositories only inherited for config
-                    continue
-
                 directories.append(self.mirror(pair_project, pair_repository, arch))
 
             if simulate_merge:
