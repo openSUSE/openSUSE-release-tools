@@ -69,8 +69,11 @@ sub package_snippet($) {
    Build::Rpm::add_flagsvers(\%qq, 5052, 5054, 5053) if $qq{5052}; # supplements
    Build::Rpm::add_flagsvers(\%qq, 5055, 5057, 5056) if $qq{5055}; # enhances
 
+    $arch = $qq{'ARCH'}[0];
+    # some packages are more equal than others
+    $arch = 'i586' if $arch eq 'i686';
     $out .= sprintf( "=Pkg: %s %s %s %s\n",
-        $name, $qq{'VERSION'}[0], $qq{'RELEASE'}[0], $qq{'ARCH'}[0] );
+        $name, $qq{'VERSION'}[0], $qq{'RELEASE'}[0], $arch );
     $out .= "+Flx:\n";
     my @modes      = @{ $qq{1030}       || [] };
     my @basenames  = @{ $qq{BASENAMES}  || [] };
