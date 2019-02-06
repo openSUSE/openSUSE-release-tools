@@ -29,6 +29,7 @@ from osclib.core import project_pseudometa_package
 from osclib.core import repository_path_search
 from osclib.core import repository_path_expand
 from osclib.core import repositories_states
+from osclib.core import repository_arch_state
 from osclib.core import repositories_published
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
@@ -194,6 +195,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 whitelist.update(additions.get(key, '').split(' '))
 
         whitelist = filter(None, whitelist)
+        print(whitelist)
         return whitelist
 
     def install_check(self, target_project_pair, arch, directories,
@@ -431,6 +433,10 @@ class RepoChecker(ReviewBot.ReviewBot):
         for arch in archs:
             directories = []
             for pair_project, pair_repository in repository_pairs:
+                if not repository_arch_state(self.apiurl, pair_project, pair_repository, arch):
+                    # ignore repositories only inherited for config
+                    continue
+
                 directories.append(self.mirror(pair_project, pair_repository, arch))
 
             if simulate_merge:
@@ -553,14 +559,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.logger.info('{} not ready due to staging build failure(s)'.format(request.reqid))
                 return None
 
-            # Staging setup is convoluted as the ports repository is used to
-            # import the target prjconf for non-port, letter stagings. As such
-            # the staging group repository must be explicitly not expanded. For
-            # adi stagings the repository path expands properly and should be.
-            if api.is_adi_project(stage_info['prj']):
-                repository_pairs.extend(repository_path_expand(self.apiurl, stage_info['prj'], repository))
-            else:
-                repository_pairs.append([stage_info['prj'], repository])
+            repository_pairs.extend(repository_path_expand(self.apiurl, stage_info['prj'], repository))
         else:
             # Find a repository which links to target project "main" repository.
             repository = repository_path_search(

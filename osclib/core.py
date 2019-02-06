@@ -393,7 +393,13 @@ def repository_arch_state(apiurl, project, repository, arch):
     # just checking the mtimes of the repository's binaries
     url = makeurl(apiurl, ['build', project, repository, arch, '_repository'])
     from osclib.util import sha1_short
-    return sha1_short(http_GET(url).read())
+    try:
+        return sha1_short(http_GET(url).read())
+    except HTTPError as e:
+        # e.g. staging projects inherit the project config from 'ports' repository.
+        # but that repository does not contain the archs we want, as such it has no state
+        if e.code != 404:
+            raise e
 
 def repository_state(apiurl, project, repository, archs=[]):
     if not len(archs):
@@ -403,7 +409,9 @@ def repository_state(apiurl, project, repository, archs=[]):
     # binaries published in repository. As such request binary list and hash.
     combined_state = []
     for arch in archs:
-        combined_state.append(repository_arch_state(apiurl, project, repository, arch))
+        state = repository_arch_state(apiurl, project, repository, arch)
+        if state:
+            combined_state.append(state)
     from osclib.util import sha1_short
     return sha1_short(combined_state)
 
@@ -411,7 +419,9 @@ def repositories_states(apiurl, repository_pairs, archs=[]):
     states = []
 
     for project, repository in repository_pairs:
-        states.append(repository_state(apiurl, project, repository, archs))
+        state = repository_state(apiurl, project, repository, archs)
+        if state:
+            states.append(state)
 
     return states
 
