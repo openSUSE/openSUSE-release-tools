@@ -64,9 +64,12 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.logger.error(ERROR_REPO_SPECIFIED.format(project))
             return
 
+        config = Config.get(self.apiurl, project)
+        arch_whitelist = config.get('repo_checker-arch-whitelist')
+
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         state_hash = self.repository_state(repository_pairs, False)
-        self.repository_check(repository_pairs, state_hash, False, bool(post_comments))
+        self.repository_check(repository_pairs, state_hash, False, bool(post_comments), arch_whitelist=arch_whitelist)
 
     def package_comments(self, project, repository):
         self.logger.info('{} package comments'.format(len(self.package_results)))
@@ -107,13 +110,12 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.comment_write(state='seen', result=reference, bot_name_suffix=bot_name_suffix,
                                project=comment_project, package=comment_package, message=message)
 
-    def target_archs(self, project, repository):
+    def target_archs(self, project, repository, arch_whitelist=None):
         archs = target_archs(self.apiurl, project, repository)
 
         # Check for arch whitelist and use intersection.
-        whitelist = Config.get(self.apiurl, project).get('repo_checker-arch-whitelist')
-        if whitelist:
-            archs = list(set(whitelist.split(' ')).intersection(set(archs)))
+        if arch_whitelist:
+            archs = list(set(arch_whitelist.split(' ')).intersection(set(archs)))
 
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
@@ -373,13 +375,13 @@ class RepoChecker(ReviewBot.ReviewBot):
         return None
 
     @memoize(session=True)
-    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, post_comments=False):
+    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, arch_whitelist=None, post_comments=False):
         comment = []
         project, repository = repository_pairs[0]
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
-        archs = self.target_archs(project, repository)
+        archs = self.target_archs(project, repository, arch_whitelist)
         new_pairs = []
         for pair in repository_pairs:
             has_all = True
@@ -573,6 +575,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         whitelist = None
         config = Config.get(self.apiurl, action.tgt_project)
         staging = config.get('staging')
+        arch_whitelist = config.get('repo_checker-arch-whitelist')
         if staging:
             api = self.staging_api(staging)
             if not api.is_adi_project(repository_pairs[0][0]):
@@ -582,7 +585,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 whitelist = config.get('repo_checker-binary-whitelist-ring', '').split(' ')
 
         state_hash = self.repository_state(repository_pairs, True)
-        if not self.repository_check(repository_pairs, state_hash, True, whitelist=whitelist):
+        if not self.repository_check(repository_pairs, state_hash, True, arch_whitelist=arch_whitelist, whitelist=whitelist):
             return None
 
         self.review_messages['accepted'] = 'cycle and install check passed'
