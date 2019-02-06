@@ -179,23 +179,15 @@ class RepoChecker(ReviewBot.ReviewBot):
     def binary_whitelist(self, override_pair, overridden_pair, arch):
         whitelist = self.binary_list_existing_problem(overridden_pair[0], overridden_pair[1])
 
-        config = Config.get(self.apiurl, overridden_pair[0])
-        staging = config.get('staging')
+        staging = Config.get(self.apiurl, overridden_pair[0]).get('staging')
         if staging:
-            api = self.staging_api(staging)
-            if not api.is_adi_project(override_pair[0]):
-                # For "leaky" ring packages in letter stagings, where the
-                # repository setup does not include the target project, that are
-                # not intended to to have all run-time dependencies satisfied.
-                whitelist.update(config.get('repo_checker-binary-whitelist-ring', '').split(' '))
-
-            additions = api.get_prj_pseudometa(override_pair[0]).get('config', {})
+            additions = self.staging_api(staging).get_prj_pseudometa(
+                override_pair[0]).get('config', {})
             prefix = 'repo_checker-binary-whitelist'
             for key in [prefix, '-'.join([prefix, arch])]:
                 whitelist.update(additions.get(key, '').split(' '))
 
         whitelist = filter(None, whitelist)
-        print(whitelist)
         return whitelist
 
     def install_check(self, target_project_pair, arch, directories,
@@ -390,7 +382,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         return None
 
     @memoize(session=True)
-    def repository_check(self, repository_pairs, state_hash, simulate_merge, post_comments=False):
+    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, post_comments=False):
         comment = []
         project, repository = repository_pairs[0]
         self.logger.info('checking {}/{}@{}[{}]'.format(
@@ -441,7 +433,8 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             if simulate_merge:
                 ignore = self.simulated_merge_ignore(repository_pairs[0], repository_pairs[1], arch)
-                whitelist = self.binary_whitelist(repository_pairs[0], repository_pairs[1], arch)
+                if not whitelist:
+                    whitelist = self.binary_whitelist(repository_pairs[0], repository_pairs[1], arch)
 
                 results = {
                     'cycle': self.cycle_check(repository_pairs[0], repository_pairs[1], arch),
@@ -577,8 +570,20 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
+        # use project_only results by default as reference
+        whitelist = None
+        config = Config.get(self.apiurl, action.tgt_project)
+        staging = config.get('staging')
+        if staging:
+            api = self.staging_api(staging)
+            if not api.is_adi_project(repository_pairs[0][0]):
+                # For "leaky" ring packages in letter stagings, where the
+                # repository setup does not include the target project, that are
+                # not intended to to have all run-time dependencies satisfied.
+                whitelist = config.get('repo_checker-binary-whitelist-ring', '').split(' ')
+
         state_hash = self.repository_state(repository_pairs, True)
-        if not self.repository_check(repository_pairs, state_hash, True):
+        if not self.repository_check(repository_pairs, state_hash, True, whitelist=whitelist):
             return None
 
         self.review_messages['accepted'] = 'cycle and install check passed'
