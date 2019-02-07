@@ -59,7 +59,7 @@ class ListCommand:
                 if message:
                     line += '\n' + Fore.WHITE + message + Fore.RESET
 
-                print(' ' + line)
+                print(' ', line)
 
         if len(splitter.other):
             non_ring_packages = []
