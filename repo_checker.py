@@ -29,6 +29,7 @@ from osclib.core import project_pseudometa_package
 from osclib.core import repository_path_search
 from osclib.core import repository_path_expand
 from osclib.core import repositories_states
+from osclib.core import repository_arch_state
 from osclib.core import repositories_published
 from osclib.core import target_archs
 from osclib.cycle import CycleDetector
@@ -63,9 +64,12 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.logger.error(ERROR_REPO_SPECIFIED.format(project))
             return
 
+        config = Config.get(self.apiurl, project)
+        arch_whitelist = config.get('repo_checker-arch-whitelist')
+
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         state_hash = self.repository_state(repository_pairs, False)
-        self.repository_check(repository_pairs, state_hash, False, bool(post_comments))
+        self.repository_check(repository_pairs, state_hash, False, bool(post_comments), arch_whitelist=arch_whitelist)
 
     def package_comments(self, project, repository):
         self.logger.info('{} package comments'.format(len(self.package_results)))
@@ -106,25 +110,15 @@ class RepoChecker(ReviewBot.ReviewBot):
             self.comment_write(state='seen', result=reference, bot_name_suffix=bot_name_suffix,
                                project=comment_project, package=comment_package, message=message)
 
-    def target_archs(self, project, repository):
+    def target_archs(self, project, repository, arch_whitelist=None):
         archs = target_archs(self.apiurl, project, repository)
 
         # Check for arch whitelist and use intersection.
-        whitelist = Config.get(self.apiurl, project).get('repo_checker-arch-whitelist')
-        if whitelist:
-            archs = list(set(whitelist.split(' ')).intersection(set(archs)))
+        if arch_whitelist:
+            archs = list(set(arch_whitelist.split(' ')).intersection(set(archs)))
 
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
-
-    @memoize(session=True)
-    def target_archs_from_prairs(self, repository_pairs, simulate_merge):
-        if simulate_merge:
-            # Restrict top layer archs to the whitelisted archs from merge layer.
-            return set(target_archs(self.apiurl, repository_pairs[0][0], repository_pairs[0][1])).intersection(
-                   set(self.target_archs(repository_pairs[1][0], repository_pairs[1][1])))
-
-        return self.target_archs(repository_pairs[0][0], repository_pairs[0][1])
 
     @memoize(ttl=60, session=True, add_invalidate=True)
     def mirror(self, project, repository, arch):
@@ -357,7 +351,7 @@ class RepoChecker(ReviewBot.ReviewBot):
 
     @memoize(ttl=60, session=True)
     def repository_state(self, repository_pairs, simulate_merge):
-        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
+        archs = self.target_archs(repository_pairs[0][0], repository_pairs[0][1])
         states = repositories_states(self.apiurl, repository_pairs, archs)
 
         if simulate_merge:
@@ -381,13 +375,25 @@ class RepoChecker(ReviewBot.ReviewBot):
         return None
 
     @memoize(session=True)
-    def repository_check(self, repository_pairs, state_hash, simulate_merge, post_comments=False):
+    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, arch_whitelist=None, post_comments=False):
         comment = []
         project, repository = repository_pairs[0]
         self.logger.info('checking {}/{}@{}[{}]'.format(
             project, repository, state_hash, len(repository_pairs)))
 
-        archs = self.target_archs_from_prairs(repository_pairs, simulate_merge)
+        archs = self.target_archs(project, repository, arch_whitelist)
+        new_pairs = []
+        for pair in repository_pairs:
+            has_all = True
+            for arch in archs:
+                if not repository_arch_state(self.apiurl, pair[0], pair[1], arch):
+                    has_all = False
+                    break
+            # ignore repositories only inherited for config
+            if has_all:
+                new_pairs.append(pair)
+        repository_pairs = new_pairs
+
         published = repositories_published(self.apiurl, repository_pairs, archs)
 
         if not self.force:
@@ -428,7 +434,8 @@ class RepoChecker(ReviewBot.ReviewBot):
 
             if simulate_merge:
                 ignore = self.simulated_merge_ignore(repository_pairs[0], repository_pairs[1], arch)
-                whitelist = self.binary_whitelist(repository_pairs[0], repository_pairs[1], arch)
+                if not whitelist:
+                    whitelist = self.binary_whitelist(repository_pairs[0], repository_pairs[1], arch)
 
                 results = {
                     'cycle': self.cycle_check(repository_pairs[0], repository_pairs[1], arch),
@@ -546,12 +553,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.logger.info('{} not ready due to staging build failure(s)'.format(request.reqid))
                 return None
 
-            # Staging setup is convoluted and thus the repository setup does not
-            # contain a path to the target project. Instead the ports repository
-            # is used to import the target prjconf. As such the staging group
-            # repository must be explicitly layered on top of target project.
-            repository_pairs.append([stage_info['prj'], repository])
-            repository_pairs.extend(repository_path_expand(self.apiurl, action.tgt_project, repository))
+            repository_pairs.extend(repository_path_expand(self.apiurl, stage_info['prj'], repository))
         else:
             # Find a repository which links to target project "main" repository.
             repository = repository_path_search(
@@ -569,8 +571,21 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not isinstance(repository_pairs, list):
             return repository_pairs
 
+        # use project_only results by default as reference
+        whitelist = None
+        config = Config.get(self.apiurl, action.tgt_project)
+        staging = config.get('staging')
+        arch_whitelist = config.get('repo_checker-arch-whitelist')
+        if staging:
+            api = self.staging_api(staging)
+            if not api.is_adi_project(repository_pairs[0][0]):
+                # For "leaky" ring packages in letter stagings, where the
+                # repository setup does not include the target project, that are
+                # not intended to to have all run-time dependencies satisfied.
+                whitelist = config.get('repo_checker-binary-whitelist-ring', '').split(' ')
+
         state_hash = self.repository_state(repository_pairs, True)
-        if not self.repository_check(repository_pairs, state_hash, True):
+        if not self.repository_check(repository_pairs, state_hash, True, arch_whitelist=arch_whitelist, whitelist=whitelist):
             return None
 
         self.review_messages['accepted'] = 'cycle and install check passed'
