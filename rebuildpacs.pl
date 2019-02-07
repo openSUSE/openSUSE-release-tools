@@ -82,7 +82,7 @@ my %parents = (
           xfce4-branding-openSUSE
           kdebase4-openSUSE kde-branding-openSUSE
           bundle-lang-kde bundle-lang-common
-          openSUSE-images installation-images-openSUSE)
+          installation-images-openSUSE)
     ],
     "kdebase4-openSUSE" => [qw(bundle-lang-kde)],
     "kernel-source"     => [qw(perf)],
