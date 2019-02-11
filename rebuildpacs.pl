@@ -82,7 +82,7 @@ my %parents = (
           xfce4-branding-openSUSE
           kdebase4-openSUSE kde-branding-openSUSE
           bundle-lang-kde bundle-lang-common
-          installation-images-openSUSE)
+          installation-images:openSUSE)
     ],
     "kdebase4-openSUSE" => [qw(bundle-lang-kde)],
     "kernel-source"     => [qw(perf)],
@@ -95,11 +95,6 @@ sub check_leaf_package($$) {
 
     my $package     = shift;
     my $rebuildhash = shift;
-
-    if ( system("osc api /source/$project/$package/_meta > /dev/null 2>&1 ") ) {
-        $ignored{$package} = 1;
-        return;
-    }
 
     my @lines = ();
     open( OSC,
@@ -149,17 +144,13 @@ check_leaf_package( "rpmlint-mini", \%torebuild );
 check_leaf_package( "rpmlint",      \%torebuild );
 
 check_leaf_package( "branding-openSUSE",            \%torebuild );
-check_leaf_package( "glib2-branding-openSUSE",      \%torebuild );
 check_leaf_package( "PackageKit-branding-openSUSE", \%torebuild );
-check_leaf_package( "kiwi-config-openSUSE",         \%torebuild );
 check_leaf_package( "xfce4-branding-openSUSE",      \%torebuild );
-check_leaf_package( "kdebase4-openSUSE",            \%torebuild );
-check_leaf_package( "kde-branding-openSUSE",        \%torebuild );
 
-check_leaf_package( "bundle-lang-common",           \%torebuild );
-check_leaf_package( "bundle-lang-kde",              \%torebuild );
-check_leaf_package( "bundle-lang-gnome",            \%torebuild );
-check_leaf_package( "installation-images-openSUSE", \%torebuild );
+check_leaf_package( "installation-images:openSUSE", \%torebuild );
+check_leaf_package( "installation-images:Kubic", \%torebuild );
+check_leaf_package( "installation-images-extras", \%torebuild );
+
 if (%torebuild) {
     my $api = "/build/$project?cmd=rebuild&repository=$repo&arch=$arch";
     for my $package ( sort keys %torebuild ) {
