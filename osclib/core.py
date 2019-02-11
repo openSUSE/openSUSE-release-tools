@@ -232,6 +232,13 @@ def fileinfo_ext(apiurl, project, repo, arch, package, filename):
                   {'view': 'fileinfo_ext'})
     return ET.parse(http_GET(url)).getroot()
 
+def builddepinfo(apiurl, project, repo, arch, order = False):
+    query = {}
+    if order:
+        query['view'] = 'order'
+    url = makeurl(apiurl, ['build', project, repo, arch, '_builddepinfo'], query)
+    return ETL.parse(http_GET(url)).getroot()
+
 def entity_email(apiurl, key, entity_type='person', include_name=False):
     url = makeurl(apiurl, [entity_type, key])
     root = ET.parse(http_GET(url)).getroot()

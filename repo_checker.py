@@ -18,6 +18,7 @@ from osclib.cache_manager import CacheManager
 from osclib.conf import Config
 from osclib.conf import str2bool
 from osclib.core import BINARY_REGEX
+from osclib.core import builddepinfo
 from osclib.core import depends_on
 from osclib.core import devel_project_fallback
 from osclib.core import fileinfo_ext_all
@@ -32,7 +33,6 @@ from osclib.core import repositories_states
 from osclib.core import repository_arch_state
 from osclib.core import repositories_published
 from osclib.core import target_archs
-from osclib.cycle import CycleDetector
 from osclib.memoize import memoize
 from osclib.util import sha1_short
 
@@ -55,7 +55,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         self.comment_handler = True
 
         # RepoChecker options.
-        self.skip_cycle = False
         self.force = False
 
     def project_only(self, project, post_comments=False):
@@ -278,52 +277,27 @@ class RepoChecker(ReviewBot.ReviewBot):
         if section:
             yield InstallSection(section, text)
 
-    @memoize(ttl=60, session=True)
-    def cycle_check_skip(self, project):
-        if self.skip_cycle:
-            return True
-
-        # Look for skip-cycle comment command.
-        comments = self.comment_api.get_comments(project_name=project)
-        users = self.request_override_check_users(project)
-        for _, who in self.comment_api.command_find(
-            comments, self.review_user, 'skip-cycle', users):
-            self.logger.debug('comment command: skip-cycle by {}'.format(who))
-            return True
-
-        return False
-
-    def cycle_check(self, override_pair, overridden_pair, arch):
-        if self.cycle_check_skip(override_pair[0]):
-            self.logger.info('cycle check: skip due to --skip-cycle or comment command')
-            return CheckResult(True, None)
-
-        self.logger.info('cycle check: start')
+    def cycle_check(self, project, repository, arch, cycle_packages):
+        self.logger.info('cycle check: start %s/%s/%s' % (project, repository, arch))
         comment = []
-        first = True
-        cycle_detector = CycleDetector(self.apiurl)
-        for index, (cycle, new_edges, new_packages) in enumerate(
-            cycle_detector.cycles(override_pair, overridden_pair, arch), start=1):
 
-            if not new_packages:
-                continue
+        allowed_cycles = []
+        if cycle_packages:
+            for comma_list in cycle_packages.split(';'):
+                allowed_cycles.append(comma_list.split(','))
 
-            if first:
-                comment.append('### new [cycle(s)](/project/repository_state/{}/{})\n'.format(
-                    override_pair[0], override_pair[1]))
-                first = False
-
-            # New package involved in cycle, build comment.
-            comment.append('- #{}: {} package cycle, {} new edges'.format(
-                index, len(cycle), len(new_edges)))
-
-            comment.append('   - cycle')
-            for package in sorted(cycle):
-                comment.append('      - {}'.format(package))
-
-            comment.append('   - new edges')
-            for edge in sorted(new_edges):
-                comment.append('      - ({}, {})'.format(edge[0], edge[1]))
+        depinfo = builddepinfo(self.apiurl, project, repository, arch, order = False)
+        for cycle in depinfo.findall('cycle'):
+            for package in cycle.findall('package'):
+                package = package.text
+                allowed = False
+                for acycle in allowed_cycles:
+                    if package in acycle:
+                        allowed = True
+                        break
+                if not allowed:
+                    cycled = [p.text for p in cycle.findall('package')]
+                    comment.append('Package {} appears in cycle {}'.format(package, '/'.join(cycled)))
 
         if len(comment):
             # New cycles, post comment.
@@ -375,7 +349,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         return None
 
     @memoize(session=True)
-    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, arch_whitelist=None, post_comments=False):
+    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, arch_whitelist=None, post_comments=False, cycle_packages=None):
         comment = []
         project, repository = repository_pairs[0]
         self.logger.info('checking {}/{}@{}[{}]'.format(
@@ -438,7 +412,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                     whitelist = self.binary_whitelist(repository_pairs[0], repository_pairs[1], arch)
 
                 results = {
-                    'cycle': self.cycle_check(repository_pairs[0], repository_pairs[1], arch),
+                    'cycle': self.cycle_check(repository_pairs[0][0], repository_pairs[0][1], arch, cycle_packages),
                     'install': self.install_check(
                         repository_pairs[1], arch, directories, ignore, whitelist),
                 }
@@ -576,6 +550,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         config = Config.get(self.apiurl, action.tgt_project)
         staging = config.get('staging')
         arch_whitelist = config.get('repo_checker-arch-whitelist')
+        cycle_packages = config.get('repo_checker-allowed-in-cycles')
         if staging:
             api = self.staging_api(staging)
             if not api.is_adi_project(repository_pairs[0][0]):
@@ -585,7 +560,10 @@ class RepoChecker(ReviewBot.ReviewBot):
                 whitelist = config.get('repo_checker-binary-whitelist-ring', '').split(' ')
 
         state_hash = self.repository_state(repository_pairs, True)
-        if not self.repository_check(repository_pairs, state_hash, True, arch_whitelist=arch_whitelist, whitelist=whitelist):
+        if not self.repository_check(repository_pairs, state_hash, True,
+                                     arch_whitelist=arch_whitelist,
+                                     whitelist=whitelist,
+                                     cycle_packages=cycle_packages):
             return None
 
         self.review_messages['accepted'] = 'cycle and install check passed'
@@ -658,16 +636,12 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
-        parser.add_option('--skip-cycle', action='store_true', help='skip cycle check')
         parser.add_option('--force', action='store_true', help='force review even if project is not ready')
 
         return parser
 
     def setup_checker(self):
         bot = ReviewBot.CommandLineInterface.setup_checker(self)
-
-        if self.options.skip_cycle:
-            bot.skip_cycle = self.options.skip_cycle
 
         bot.force = self.options.force
 
@@ -678,6 +652,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         self.checker.check_requests() # Needed to properly init ReviewBot.
         self.checker.project_only(project, opts.post_comments)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app = CommandLineInterface()
     sys.exit(app.main())
