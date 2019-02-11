@@ -770,7 +770,9 @@ class ToTestFactory(ToTestBase):
                        ImageProduct('livecd-tumbleweed-gnome', ['i586', 'x86_64']),
                        ImageProduct('livecd-tumbleweed-x11', ['i586', 'x86_64'])]
 
-    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['i586', 'x86_64'])]
+    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['i586', 'x86_64']),
+                          ImageProduct('kubic-kured-image', ['x86_64']),
+                          ImageProduct('kubic-pause-image', ['i586', 'x86_64'])]
 
     image_products = [
         ImageProduct('opensuse-tumbleweed-image:lxc', ['i586', 'x86_64']),
@@ -802,7 +804,9 @@ class ToTestFactoryPowerPC(ToTestBase):
 
     image_products = [ImageProduct('opensuse-tumbleweed-image:lxc', ['ppc64le'])]
 
-    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['ppc64le'])]
+    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['ppc64le']),
+                          ImageProduct('kubic-kured-image', ['ppc64le']),
+                          ImageProduct('kubic-pause-image', ['ppc64le'])]
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
@@ -855,7 +859,9 @@ class ToTestFactoryARM(ToTestFactory):
 
     image_products = [ImageProduct('opensuse-tumbleweed-image:lxc', ['armv6l', 'armv7l', 'aarch64'])]
 
-    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['aarch64'])]
+    container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['aarch64']),
+                          ImageProduct('kubic-kured-image', ['aarch64']),
+                          ImageProduct('kubic-pause-image', ['aarch64'])]
 
     # JeOS doesn't follow build numbers of main isos
     need_same_build_number = False
