@@ -17,8 +17,8 @@ import osc.core
 
 from osc import oscerr
 
-OPENSUSE = 'openSUSE:Leap:15.0'
-SLE = 'SUSE:SLE-15:GA'
+OPENSUSE = 'openSUSE:Leap:15.1'
+SLE = 'SUSE:SLE-15-SP1:GA'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
