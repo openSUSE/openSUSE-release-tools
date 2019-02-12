@@ -227,6 +227,8 @@ class DepTool(cmdln.Cmdln):
 
     @cmdln.option("-r", "--repo", dest="repo", action="append",
                   help="repo to use")
+    @cmdln.option("--source", action="store_true",
+                  help="print source rpm")
     def do_whatprovides(self, subcmd, opts, *relation):
         """${cmd_name}: list packages providing given relations
 
@@ -239,7 +241,13 @@ class DepTool(cmdln.Cmdln):
         for r in relation:
             i = self.pool.str2id(r)
             for s in self.pool.whatprovides(i):
-                print('- {}-{}@{}:'.format(s.name, s.evr, s.arch))
+                if opts.source:
+                    src = s.name
+                    if not s.lookup_void(solv.SOLVABLE_SOURCENAME):
+                        src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
+                    print(src)
+                else:
+                    print('- {}-{}@{}:'.format(s.name, s.evr, s.arch))
 
     @cmdln.option("-r", "--repo", dest="repo", action="append",
                   help="repo to use")
