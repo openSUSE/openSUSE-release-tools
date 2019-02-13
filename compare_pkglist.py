@@ -80,10 +80,13 @@ class CompareList(object):
         u = makeurl(self.apiurl, ['source', project, package], query=query)
         root = ET.parse(http_GET(u)).getroot()
         links = root.findall('linkinfo/linked')
+        if links is None:
+            return False
+
         for linked in links:
             if linked.get('project') == project and linked.get('package').startswith("%s." % package):
                 return False
-        return links
+        return True
 
     def check_diff(self, package, old_prj, new_prj):
         logging.debug('checking %s ...' % package)
@@ -158,7 +161,7 @@ class CompareList(object):
                 if pkg not in target:
                     # ignore the second specfile package
                     linked = self.is_linked_package(self.old_prj, pkg)
-                    if linked is not None:
+                    if linked:
                         continue
 
                     if self.existin:
