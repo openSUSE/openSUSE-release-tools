@@ -79,8 +79,11 @@ class CompareList(object):
         query = {'withlinked': 1}
         u = makeurl(self.apiurl, ['source', project, package], query=query)
         root = ET.parse(http_GET(u)).getroot()
-        linked = root.find('linkinfo')
-        return linked
+        links = root.findall('linkinfo/linked')
+        for linked in links:
+            if linked.get('project') == project and linked.get('package').startswith("%s." % package):
+                return False
+        return links
 
     def check_diff(self, package, old_prj, new_prj):
         logging.debug('checking %s ...' % package)
@@ -149,7 +152,7 @@ class CompareList(object):
             removed_pkgs_in_target = self.removed_pkglist(dest)
             submit_counter = 0
             for pkg in source:
-                if pkg.startswith('000') or pkg.startswith('_'):
+                if pkg.startswith('00') or pkg.startswith('_'):
                     continue
 
                 if pkg not in target:
