@@ -21,6 +21,7 @@ from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import Request
+from osc.core import search
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osc.core import show_results_meta
@@ -577,3 +578,24 @@ def package_source_hash_history(apiurl, project, package, limit=5, include_proje
                 limit_remaining += -1
                 if limit_remaining == 0:
                     break
+
+@memoize(session=True)
+def project_remote_list(apiurl):
+    remotes = {}
+
+    root = search(apiurl, project='starts-with(remoteurl, "http")')['project']
+    for project in root.findall('project'):
+        # Strip ending /public as the only use-cases for manually checking
+        # remote projects is to query them directly to use an API that does not
+        # work over the interconnect. As such /public will have same problem.
+        remotes[project.get('name')] = re.sub('/public$', '', project.find('remoteurl').text)
+
+    return remotes
+
+def project_remote_apiurl(apiurl, project):
+    remotes = project_remote_list(apiurl)
+    for remote in remotes:
+        if project.startswith(remote + ':'):
+            return remotes[remote], project[len(remote) + 1:]
+
+    return apiurl, project
