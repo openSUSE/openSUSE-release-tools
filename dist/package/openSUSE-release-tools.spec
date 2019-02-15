@@ -247,6 +247,8 @@ Requires:       obs-service-product_converter
 Requires:       osclib = %{version}
 Requires:       python-requests
 Requires:       python-solv
+# for compressing the .packages files in 000update-repos
+Requires:       /usr/bin/xz
 # we use the same user as repo-checker
 PreReq:         openSUSE-release-tools-repo-checker
 
