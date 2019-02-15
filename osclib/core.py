@@ -472,3 +472,19 @@ def entity_exists(apiurl, project, package=None):
         raise e
 
     return True
+
+def entity_source_link(apiurl, project, package=None):
+    try:
+        if package:
+            parts = ['source', project, package, '_link']
+        else:
+            parts = ['source', project, '_meta']
+        url = makeurl(apiurl, parts)
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return None
+
+        raise e
+
+    return root if package else root.find('link')
