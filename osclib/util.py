@@ -44,12 +44,12 @@ def project_list_family(apiurl, project, include_update=False):
 
     return projects
 
-def project_list_family_prior(apiurl, project, include_self=False, last=None):
+def project_list_family_prior(apiurl, project, include_self=False, last=None, include_update=False):
     """
     Determine the available projects within the same product family released
     prior to the specified project.
     """
-    projects = project_list_family(apiurl, project)
+    projects = project_list_family(apiurl, project, include_update)
     past = False
     prior = []
     for entry in sorted(projects, key=project_list_family_sorter, reverse=True):
