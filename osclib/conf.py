@@ -208,8 +208,12 @@ class Config(object):
     @memoize(session=True) # Allow reset by memoize_session_reset() for ReviewBot.
     def get(apiurl, project):
         """Cached version for directly accessing project config."""
-        Config(apiurl, project)
-        return conf.config.get(project, [])
+        # Properly handle loading the config for interconnect projects.
+        from osclib.core import project_remote_apiurl
+        apiurl_remote, project_remote = project_remote_apiurl(apiurl, project)
+
+        Config(apiurl_remote, project_remote)
+        return conf.config.get(project_remote, [])
 
     @property
     def conf(self):
