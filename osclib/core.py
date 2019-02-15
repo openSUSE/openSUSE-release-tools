@@ -626,3 +626,22 @@ def review_short(review):
         return review.by_project
 
     return None
+
+def issue_trackers(apiurl):
+    url = makeurl(apiurl, ['issue_trackers'])
+    root = ET.parse(http_GET(url)).getroot()
+    trackers = {}
+    for tracker in root.findall('issue-tracker'):
+        trackers[tracker.find('name').text] = tracker.find('label').text
+    return trackers
+
+def issue_tracker_by_url(apiurl, tracker_url):
+    url = makeurl(apiurl, ['issue_trackers'])
+    root = ETL.parse(http_GET(url)).getroot()
+    if not tracker_url.endswith('/'):
+        # All trackers are formatted with trailing slash.
+        tracker_url += '/'
+    return next(iter(root.xpath('issue-tracker[url[text()="{}"]]'.format(tracker_url)) or []), None)
+
+def issue_tracker_label_apply(tracker, identifier):
+    return tracker.find('label').text.replace('@@@', identifier)
