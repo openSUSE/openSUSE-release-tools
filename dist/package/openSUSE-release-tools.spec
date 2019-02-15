@@ -188,6 +188,16 @@ Requires:       xz
 %description metrics-access
 Ingest download.o.o Apache access logs and generate metrics.
 
+%package origin-manager
+Summary:        Package origin management tools
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       osclib = %{version}
+Requires(pre):  shadow
+
+%description origin-manager
+Tools for managing the origin of package sources and keeping them in sync.
+
 %package repo-checker
 Summary:        Repository checker service
 Group:          Development/Tools/Other
@@ -391,6 +401,14 @@ if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled osrt-obs-operator 
   /usr/bin/systemctl try-restart --no-block osrt-obs-operator
 fi
 
+%pre origin-manager
+getent passwd osrt-origin-manager > /dev/null || \
+  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-origin-manager" osrt-origin-manager
+exit 0
+
+%postun origin-manager
+%systemd_postun
+
 %pre repo-checker
 getent passwd osrt-repo-checker > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-repo-checker" osrt-repo-checker
@@ -468,6 +486,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/metrics_release.py
+%exclude %{_datadir}/%{source_dir}/origin-manager.py
 %exclude %{_bindir}/osrt-staging-report
 %exclude %{_datadir}/%{source_dir}/pkglistgen
 %exclude %{_datadir}/%{source_dir}/pkglistgen.py
@@ -572,6 +591,11 @@ exit 0
 %files obs-operator
 %{_bindir}/osrt-obs_operator
 %{_unitdir}/osrt-obs-operator.service
+
+%files origin-manager
+%{_bindir}/osrt-origin-manager
+%{_unitdir}/osrt-origin-manager.service
+%{_unitdir}/osrt-origin-manager.timer
 
 %files repo-checker
 %defattr(-,root,root,-)
