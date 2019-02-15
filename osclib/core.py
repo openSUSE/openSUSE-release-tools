@@ -645,3 +645,14 @@ def issue_tracker_by_url(apiurl, tracker_url):
 
 def issue_tracker_label_apply(tracker, identifier):
     return tracker.find('label').text.replace('@@@', identifier)
+
+def request_remote_identifier(apiurl, apiurl_remote, request_id):
+    if apiurl_remote == apiurl:
+        return 'request#{}'.format(request_id)
+
+    # The URL differences make this rather convoluted.
+    tracker = issue_tracker_by_url(apiurl, apiurl_remote.replace('api.', 'build.'))
+    if tracker is not None:
+        return issue_tracker_label_apply(tracker, request_id)
+
+    return request_id
