@@ -119,7 +119,7 @@ def project_version(project):
             version += float(parts[2][2:]) / 10
         return version
 
-    return None
+    return 0
 
 def mail_send(project, to, subject, body, from_key='maintainer', followup_to_key='release-list', dry=False):
     from email.mime.text import MIMEText
