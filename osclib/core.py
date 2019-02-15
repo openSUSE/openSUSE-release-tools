@@ -599,3 +599,30 @@ def project_remote_apiurl(apiurl, project):
             return remotes[remote], project[len(remote) + 1:]
 
     return apiurl, project
+
+def review_find_last(request, who):
+    for review in reversed(request.reviews):
+        if review.who == who:
+            return review
+
+    return None
+
+def reviews_remaining(request):
+    reviews = []
+    for review in request.reviews:
+        if review.state != 'accepted':
+            reviews.append(review_short(review))
+
+    return reviews
+
+def review_short(review):
+    if review.by_user:
+        return review.by_user
+    if review.by_group:
+        return review.by_group
+    if review.by_project:
+        if review.by_package:
+            return '/'.join([review.by_project, review.by_package])
+        return review.by_project
+
+    return None
