@@ -121,6 +121,7 @@ DEFAULT = {
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)(?::NonFree)?:Update)$': {
         'main-repo': 'standard',
         'leaper-override-group': 'leap-reviewers',
+        'repo-checker': 'repo-checker',
         'repo_checker-arch-whitelist': 'x86_64',
         'repo_checker-no-filter': 'True',
         'repo_checker-package-comment-devel': 'True',
