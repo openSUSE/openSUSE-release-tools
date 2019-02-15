@@ -75,6 +75,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             if self.cp.has_option(section, option):
                 settings[option] = self.cp.get(section, option).replace('\n', ' ')
 
+    def print_actions(self, r):
+        for a in r.actions:
+            if a.type == 'submit':
+                print(' '.join(('#', r.reqid, a.type, a.src_project, a.src_package, a.tgt_project)))
+            else:
+                if hasattr(a, 'tgt_package'):
+                    print(' '. join(('#', r.reqid, a.type, a.tgt_project, a.tgt_package)))
+                else:
+                    print(' '. join(('#', r.reqid, a.type, a.tgt_project)))
+
     @cmdln.option('--exclude-project', metavar='PROJECT', action='append', help='exclude review by specific project')
     @cmdln.option('--exclude-user', metavar='USER', action='append', help='exclude review by specific user')
     @cmdln.option('--query', metavar='filterstr', help='filter string')
@@ -120,10 +130,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         rqs = self.tool.find_requests(settings)
         for r in rqs:
-            if r.actions[0].type == 'submit':
-                print(' '.join(('#', r.reqid, r.actions[0].type, r.actions[0].src_project, r.actions[0].src_package, r.actions[0].tgt_project)))
-            else:
-                print(' '. join(('#', r.reqid, r.actions[0].type, r.actions[0].tgt_project)))
+            self.print_actions(r)
             for review in r.reviews:
                 if review.state != 'new':
                     continue
@@ -195,10 +202,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         rqs = self.tool.find_requests(settings)
         for r in rqs:
-            if r.actions[0].type == 'submit':
-                print(' '.join(('#', r.reqid, r.actions[0].type, r.actions[0].src_project, r.actions[0].src_package, r.actions[0].tgt_project)))
-            else:
-                print(' '. join(('#', r.reqid, r.actions[0].type, r.actions[0].tgt_project)))
+            self.print_actions(r)
             print("osc rq {} -m '{}' {}".format(settings['action'], settings['message'], r.reqid))
 
     def help_examples(self):
