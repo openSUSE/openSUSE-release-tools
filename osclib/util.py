@@ -66,6 +66,25 @@ def project_list_family_prior(apiurl, project, include_self=False, last=None, in
 
     return prior
 
+def project_list_family_prior_pattern(apiurl, project_pattern, project=None, include_update=True):
+    project_prefix, project_suffix = project_pattern.split('*', 2)
+    if project:
+        project = project if project.startswith(project_prefix) else None
+
+    if project:
+        projects = project_list_family_prior(apiurl, project, include_update=include_update)
+    else:
+        if ':Leap:' in project_prefix:
+            project = project_prefix
+
+        if ':SLE-' in project_prefix:
+            project = project_prefix + ':GA'
+
+        projects = project_list_family(apiurl, project, include_update)
+        projects = sorted(projects, key=project_list_family_sorter, reverse=True)
+
+    return [p for p in projects if p.startswith(project_prefix)]
+
 def project_list_family_sorter(project):
     """Extract key to be used as sorter (oldest to newest)."""
     version = project_version(project)
