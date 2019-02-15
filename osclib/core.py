@@ -461,3 +461,14 @@ def project_meta_revision(apiurl, project):
     root = ET.fromstringlist(get_commitlog(
         apiurl, project, '_project', None, format='xml', meta=True))
     return int(root.find('logentry').get('revision'))
+
+def entity_exists(apiurl, project, package=None):
+    try:
+        http_GET(makeurl(apiurl, filter(None, ['source', project, package]) + ['_meta']))
+    except HTTPError as e:
+        if e.code == 404:
+            return False
+
+        raise e
+
+    return True

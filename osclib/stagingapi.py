@@ -47,6 +47,7 @@ from osc.core import streamfile
 
 from osclib.cache import Cache
 from osclib.core import devel_project_get
+from osclib.core import entity_exists
 from osclib.core import project_list_prefix
 from osclib.core import project_pseudometa_file_load
 from osclib.core import project_pseudometa_file_save
@@ -1406,15 +1407,7 @@ class StagingAPI(object):
         :param project: project name to check
         :param package: optional package to check
         """
-        if package:
-            url = self.makeurl(['source', project, package, '_meta'])
-        else:
-            url = self.makeurl(['source', project, '_meta'])
-        try:
-            http_GET(url)
-        except HTTPError:
-            return False
-        return True
+        return entity_exists(self.apiurl, project, package)
 
     def package_version(self, project, package):
         """
