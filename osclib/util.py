@@ -8,11 +8,17 @@ def project_list_family(apiurl, project):
 
     Skips < SLE-12 due to format change.
     """
+    if project.endswith(':NonFree'):
+        project = project[:-8]
+        project_suffix = ':NonFree'
+    else:
+        project_suffix = ''
+
     if project == 'openSUSE:Factory':
-        return [project]
+        return [project + project_suffix]
 
     if project.endswith(':ARM') or project.endswith(':PowerPC'):
-        return [project]
+        return [project + project_suffix]
 
     count_original = project.count(':')
     if project.startswith('SUSE:SLE'):
@@ -23,8 +29,16 @@ def project_list_family(apiurl, project):
 
     prefix = ':'.join(project.split(':')[:-1])
     projects = project_list_prefix(apiurl, prefix)
+    projects = filter(family_filter, projects)
 
-    return filter(family_filter, projects)
+    if project_suffix:
+        for i, project in enumerate(projects):
+            if project.endswith(':Update'):
+                projects[i] = project.replace(':Update', project_suffix + ':Update')
+            else:
+                projects[i] += project_suffix
+
+    return projects
 
 def project_list_family_prior(apiurl, project, include_self=False, last=None):
     """
