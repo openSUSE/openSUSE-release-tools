@@ -47,6 +47,7 @@ matrix:
         - pip install flake8
       script:
         - flake8
+        - ./dist/ci/flake-extra
     - env: TEST_SUITE=nosetests
       sudo: required
       services:
