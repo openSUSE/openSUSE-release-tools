@@ -488,3 +488,92 @@ def entity_source_link(apiurl, project, package=None):
         raise e
 
     return root if package else root.find('link')
+
+@memoize(session=True)
+def package_source_link_copy(apiurl, project, package):
+    link = entity_source_link(apiurl, project, package)
+    return link is not None and link.get('cicount') == 'copy'
+
+# Ideally, all package_source_hash* functions would operate on srcmd5, but
+# unfortunately that is not practical for real use-cases. The srcmd5 includes
+# service run information in addition to the presence of a link even if the
+# expanded sources are identical. The verifymd5 sum excludes such information
+# and only covers the sources (as should be the point), but looks at the link
+# sources which means for projects like devel which link to the head revision of
+# downstream all the verifymd5 sums are the same. This makes the summary md5s
+# provided by OBS useless for comparing source and really anything. Instead the
+# individual file md5s are used to generate a sha1 which is used for comparison.
+# In the case of maintenance projects they are structured such that the updates
+# are suffixed packages and the unsuffixed package is empty and only links to
+# a specific suffixed package each revision. As such for maintenance projects
+# the link must be expanded and is safe to do so. Additionally, projects that
+# inherit packages need to same treatment (ie. expanding) until they are
+# overridden within the project.
+@memoize(session=True)
+def package_source_hash(apiurl, project, package, revision=None):
+    query = {}
+    if revision:
+        query['rev'] = revision
+
+    # Will not catch packages that previous had a link, but no longer do.
+    if package_source_link_copy(apiurl, project, package):
+        query['expand'] = 1
+
+    try:
+        url = makeurl(apiurl, ['source', project, package], query)
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return None
+
+        raise e
+
+    if revision and root.find('error') is not None:
+        # OBS returns XML error instead of HTTP 404 if revision not found.
+        return None
+
+    from osclib.util import sha1_short
+    return sha1_short(root.xpath('entry[@name!="_link"]/@md5'))
+
+def package_source_hash_history(apiurl, project, package, limit=5, include_project_link=False):
+    try:
+        # get_commitlog() reverses the order so newest revisions are first.
+        root = ETL.fromstringlist(
+            get_commitlog(apiurl, project, package, None, format='xml'))
+    except HTTPError as e:
+        if e.code == 404:
+            return
+
+        raise e
+
+    if include_project_link:
+        source_hashes = []
+
+    source_md5s = root.xpath('logentry/@srcmd5')
+    for source_md5 in source_md5s[:limit]:
+        source_hash = package_source_hash(apiurl, project, package, source_md5)
+        yield source_hash
+
+        if include_project_link:
+            source_hashes.append(source_hash)
+
+    if include_project_link and (not limit or len(source_md5s) < limit):
+        link = entity_source_link(apiurl, project)
+        if link is None:
+            return
+        project = link.get('project')
+
+        if limit:
+            limit_remaining = limit - len(source_md5s)
+
+        # Allow small margin for duplicates.
+        for source_hash in package_source_hash_history(apiurl, project, package, None, True):
+            if source_hash in source_hashes:
+                continue
+
+            yield source_hash
+
+            if limit:
+                limit_remaining += -1
+                if limit_remaining == 0:
+                    break
