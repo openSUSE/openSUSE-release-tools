@@ -1,7 +1,9 @@
 from osc import conf
 from osclib.core import project_list_prefix
+from osclib.memoize import memoize
 
 
+@memoize(session=True)
 def project_list_family(apiurl, project, include_update=False):
     """
     Determine the available projects within the same product family.
