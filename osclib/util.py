@@ -2,7 +2,7 @@ from osc import conf
 from osclib.core import project_list_prefix
 
 
-def project_list_family(apiurl, project):
+def project_list_family(apiurl, project, include_update=False):
     """
     Determine the available projects within the same product family.
 
@@ -23,9 +23,11 @@ def project_list_family(apiurl, project):
     count_original = project.count(':')
     if project.startswith('SUSE:SLE'):
         project = ':'.join(project.split(':')[:2])
-        family_filter = lambda p: p.count(':') == count_original and p.endswith(':GA')
+        family_filter = lambda p: p.count(':') == count_original and (
+            p.endswith(':GA') or (include_update and p.endswith(':Update')))
     else:
-        family_filter = lambda p: p.count(':') == count_original
+        family_filter = lambda p: p.count(':') == count_original or (
+            include_update and p.count(':') == count_original + 1 and p.endswith(':Update'))
 
     prefix = ':'.join(project.split(':')[:-1])
     projects = project_list_prefix(apiurl, prefix)
