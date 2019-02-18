@@ -160,7 +160,7 @@ class ToTestBase(object):
         if not base:
             base = self.project_base
         for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
-            result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz)', binary)
+            result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz)', binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s iso version" % project)
@@ -1016,6 +1016,22 @@ class ToTest151Images(ToTest150Images):
     def openqa_group(self):
         return 'openSUSE Leap 15.1 Images'
 
+class ToTest151ARMImages(ToTest150Images):
+    # JeOS uses multibuild, but listing all flavors here would be too much
+    image_products = [ImageProduct('JeOS', ['armv7l']),
+                      ImageProduct('JeOS:JeOS-efi.aarch64', ['aarch64'])]
+
+    container_products = [ImageProduct('opensuse-leap-image:docker', ['aarch64'])]
+
+    def openqa_group(self):
+        return 'openSUSE Leap 15.1 ARM Images'
+
+    def _release(self, set_release=None):
+        ToTestBase._release(self, set_release)
+
+    def jobs_num(self):
+        return 2
+
 
 class ToTestSLE(ToTestBaseNew):
     def __init__(self, *args, **kwargs):
@@ -1081,6 +1097,7 @@ class CommandlineInterface(cmdln.Cmdln):
             'openSUSE:Leap:15.0:Ports': ToTest150Ports,
             'openSUSE:Leap:15.0:Images': ToTest150Images,
             'openSUSE:Leap:15.1:Images': ToTest151Images,
+            'openSUSE:Leap:15.1:ARM:Images': ToTest151ARMImages,
             'SUSE:SLE-12-SP4:GA': ToTestSLE12,
             'SUSE:SLE-15:GA': ToTestSLE15,
             'SUSE:SLE-15-SP1:GA': ToTestSLE15,
