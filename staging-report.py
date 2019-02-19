@@ -142,10 +142,11 @@ if __name__ == '__main__':
                         help='project to check (ex. openSUSE:Factory, openSUSE:Leap:15.1)')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
+    parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
 
     args = parser.parse_args()
 
-    osc.conf.get_config()
+    osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
     apiurl = osc.conf.config['apiurl']
