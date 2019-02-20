@@ -121,6 +121,7 @@ DEFAULT = {
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)(?::NonFree)?:Update)$': {
         'main-repo': 'standard',
         'leaper-override-group': 'leap-reviewers',
+        'repo-checker': 'repo-checker',
         'repo_checker-arch-whitelist': 'x86_64',
         'repo_checker-no-filter': 'True',
         'repo_checker-package-comment-devel': 'True',
@@ -207,8 +208,12 @@ class Config(object):
     @memoize(session=True) # Allow reset by memoize_session_reset() for ReviewBot.
     def get(apiurl, project):
         """Cached version for directly accessing project config."""
-        Config(apiurl, project)
-        return conf.config.get(project, [])
+        # Properly handle loading the config for interconnect projects.
+        from osclib.core import project_remote_apiurl
+        apiurl_remote, project_remote = project_remote_apiurl(apiurl, project)
+
+        Config(apiurl_remote, project_remote)
+        return conf.config.get(project_remote, [])
 
     @property
     def conf(self):

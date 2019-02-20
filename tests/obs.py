@@ -827,6 +827,10 @@ class OBS(object):
     #  /search/
     #
 
+    @GET('/search/project')
+    def search_project(self, request, uri, headers):
+        return (200, headers, '<collection matches="0"></collection>')
+
     @GET('/search/project/id')
     def search_project_id(self, request, uri, headers):
         """Return a search result /search/project/id."""

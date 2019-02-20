@@ -21,6 +21,7 @@ from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import Request
+from osc.core import search
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osc.core import show_results_meta
@@ -461,3 +462,197 @@ def project_meta_revision(apiurl, project):
     root = ET.fromstringlist(get_commitlog(
         apiurl, project, '_project', None, format='xml', meta=True))
     return int(root.find('logentry').get('revision'))
+
+def entity_exists(apiurl, project, package=None):
+    try:
+        http_GET(makeurl(apiurl, filter(None, ['source', project, package]) + ['_meta']))
+    except HTTPError as e:
+        if e.code == 404:
+            return False
+
+        raise e
+
+    return True
+
+def entity_source_link(apiurl, project, package=None):
+    try:
+        if package:
+            parts = ['source', project, package, '_link']
+        else:
+            parts = ['source', project, '_meta']
+        url = makeurl(apiurl, parts)
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return None
+
+        raise e
+
+    return root if package else root.find('link')
+
+@memoize(session=True)
+def package_source_link_copy(apiurl, project, package):
+    link = entity_source_link(apiurl, project, package)
+    return link is not None and link.get('cicount') == 'copy'
+
+# Ideally, all package_source_hash* functions would operate on srcmd5, but
+# unfortunately that is not practical for real use-cases. The srcmd5 includes
+# service run information in addition to the presence of a link even if the
+# expanded sources are identical. The verifymd5 sum excludes such information
+# and only covers the sources (as should be the point), but looks at the link
+# sources which means for projects like devel which link to the head revision of
+# downstream all the verifymd5 sums are the same. This makes the summary md5s
+# provided by OBS useless for comparing source and really anything. Instead the
+# individual file md5s are used to generate a sha1 which is used for comparison.
+# In the case of maintenance projects they are structured such that the updates
+# are suffixed packages and the unsuffixed package is empty and only links to
+# a specific suffixed package each revision. As such for maintenance projects
+# the link must be expanded and is safe to do so. Additionally, projects that
+# inherit packages need to same treatment (ie. expanding) until they are
+# overridden within the project.
+@memoize(session=True)
+def package_source_hash(apiurl, project, package, revision=None):
+    query = {}
+    if revision:
+        query['rev'] = revision
+
+    # Will not catch packages that previous had a link, but no longer do.
+    if package_source_link_copy(apiurl, project, package):
+        query['expand'] = 1
+
+    try:
+        url = makeurl(apiurl, ['source', project, package], query)
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return None
+
+        raise e
+
+    if revision and root.find('error') is not None:
+        # OBS returns XML error instead of HTTP 404 if revision not found.
+        return None
+
+    from osclib.util import sha1_short
+    return sha1_short(root.xpath('entry[@name!="_link"]/@md5'))
+
+def package_source_hash_history(apiurl, project, package, limit=5, include_project_link=False):
+    try:
+        # get_commitlog() reverses the order so newest revisions are first.
+        root = ETL.fromstringlist(
+            get_commitlog(apiurl, project, package, None, format='xml'))
+    except HTTPError as e:
+        if e.code == 404:
+            return
+
+        raise e
+
+    if include_project_link:
+        source_hashes = []
+
+    source_md5s = root.xpath('logentry/@srcmd5')
+    for source_md5 in source_md5s[:limit]:
+        source_hash = package_source_hash(apiurl, project, package, source_md5)
+        yield source_hash
+
+        if include_project_link:
+            source_hashes.append(source_hash)
+
+    if include_project_link and (not limit or len(source_md5s) < limit):
+        link = entity_source_link(apiurl, project)
+        if link is None:
+            return
+        project = link.get('project')
+
+        if limit:
+            limit_remaining = limit - len(source_md5s)
+
+        # Allow small margin for duplicates.
+        for source_hash in package_source_hash_history(apiurl, project, package, None, True):
+            if source_hash in source_hashes:
+                continue
+
+            yield source_hash
+
+            if limit:
+                limit_remaining += -1
+                if limit_remaining == 0:
+                    break
+
+@memoize(session=True)
+def project_remote_list(apiurl):
+    remotes = {}
+
+    root = search(apiurl, project='starts-with(remoteurl, "http")')['project']
+    for project in root.findall('project'):
+        # Strip ending /public as the only use-cases for manually checking
+        # remote projects is to query them directly to use an API that does not
+        # work over the interconnect. As such /public will have same problem.
+        remotes[project.get('name')] = re.sub('/public$', '', project.find('remoteurl').text)
+
+    return remotes
+
+def project_remote_apiurl(apiurl, project):
+    remotes = project_remote_list(apiurl)
+    for remote in remotes:
+        if project.startswith(remote + ':'):
+            return remotes[remote], project[len(remote) + 1:]
+
+    return apiurl, project
+
+def review_find_last(request, who):
+    for review in reversed(request.reviews):
+        if review.who == who:
+            return review
+
+    return None
+
+def reviews_remaining(request):
+    reviews = []
+    for review in request.reviews:
+        if review.state != 'accepted':
+            reviews.append(review_short(review))
+
+    return reviews
+
+def review_short(review):
+    if review.by_user:
+        return review.by_user
+    if review.by_group:
+        return review.by_group
+    if review.by_project:
+        if review.by_package:
+            return '/'.join([review.by_project, review.by_package])
+        return review.by_project
+
+    return None
+
+def issue_trackers(apiurl):
+    url = makeurl(apiurl, ['issue_trackers'])
+    root = ET.parse(http_GET(url)).getroot()
+    trackers = {}
+    for tracker in root.findall('issue-tracker'):
+        trackers[tracker.find('name').text] = tracker.find('label').text
+    return trackers
+
+def issue_tracker_by_url(apiurl, tracker_url):
+    url = makeurl(apiurl, ['issue_trackers'])
+    root = ETL.parse(http_GET(url)).getroot()
+    if not tracker_url.endswith('/'):
+        # All trackers are formatted with trailing slash.
+        tracker_url += '/'
+    return next(iter(root.xpath('issue-tracker[url[text()="{}"]]'.format(tracker_url)) or []), None)
+
+def issue_tracker_label_apply(tracker, identifier):
+    return tracker.find('label').text.replace('@@@', identifier)
+
+def request_remote_identifier(apiurl, apiurl_remote, request_id):
+    if apiurl_remote == apiurl:
+        return 'request#{}'.format(request_id)
+
+    # The URL differences make this rather convoluted.
+    tracker = issue_tracker_by_url(apiurl, apiurl_remote.replace('api.', 'build.'))
+    if tracker is not None:
+        return issue_tracker_label_apply(tracker, request_id)
+
+    return request_id

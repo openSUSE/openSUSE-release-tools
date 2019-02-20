@@ -99,6 +99,8 @@ class Cache(object):
         r'/source$': TTL_LONG,
         # Sources will be expired with project, could be done on package level.
         r'/source/([^/?]+)(?:\?.*)?$': TTL_LONG,
+        # Handle origin-manager repetative package_source_hash_history() calls.
+        r'/source/([^/]+)/(?:[^/]+)/(?:_history)$': TTL_SHORT,
         r'/source/([^/]+)/(?:[^/]+)/(?:_meta|_link)$': TTL_LONG,
         r'/source/([^/]+)/dashboard/[^/]+': TTL_LONG,
         r'/source/([^/]+)/_attribute/[^/]+': TTL_DUPLICATE,

@@ -1,37 +1,55 @@
 from osc import conf
 from osclib.core import project_list_prefix
+from osclib.memoize import memoize
 
 
-def project_list_family(apiurl, project):
+@memoize(session=True)
+def project_list_family(apiurl, project, include_update=False):
     """
     Determine the available projects within the same product family.
 
     Skips < SLE-12 due to format change.
     """
+    if project.endswith(':NonFree'):
+        project = project[:-8]
+        project_suffix = ':NonFree'
+    else:
+        project_suffix = ''
+
     if project == 'openSUSE:Factory':
-        return [project]
+        return [project + project_suffix]
 
     if project.endswith(':ARM') or project.endswith(':PowerPC'):
-        return [project]
+        return [project + project_suffix]
 
     count_original = project.count(':')
     if project.startswith('SUSE:SLE'):
         project = ':'.join(project.split(':')[:2])
-        family_filter = lambda p: p.count(':') == count_original and p.endswith(':GA')
+        family_filter = lambda p: p.count(':') == count_original and (
+            p.endswith(':GA') or (include_update and p.endswith(':Update')))
     else:
-        family_filter = lambda p: p.count(':') == count_original
+        family_filter = lambda p: p.count(':') == count_original or (
+            include_update and p.count(':') == count_original + 1 and p.endswith(':Update'))
 
     prefix = ':'.join(project.split(':')[:-1])
     projects = project_list_prefix(apiurl, prefix)
+    projects = filter(family_filter, projects)
 
-    return filter(family_filter, projects)
+    if project_suffix:
+        for i, project in enumerate(projects):
+            if project.endswith(':Update'):
+                projects[i] = project.replace(':Update', project_suffix + ':Update')
+            else:
+                projects[i] += project_suffix
 
-def project_list_family_prior(apiurl, project, include_self=False, last=None):
+    return projects
+
+def project_list_family_prior(apiurl, project, include_self=False, last=None, include_update=False):
     """
     Determine the available projects within the same product family released
     prior to the specified project.
     """
-    projects = project_list_family(apiurl, project)
+    projects = project_list_family(apiurl, project, include_update)
     past = False
     prior = []
     for entry in sorted(projects, key=project_list_family_sorter, reverse=True):
@@ -47,6 +65,25 @@ def project_list_family_prior(apiurl, project, include_self=False, last=None):
             break
 
     return prior
+
+def project_list_family_prior_pattern(apiurl, project_pattern, project=None, include_update=True):
+    project_prefix, project_suffix = project_pattern.split('*', 2)
+    if project:
+        project = project if project.startswith(project_prefix) else None
+
+    if project:
+        projects = project_list_family_prior(apiurl, project, include_update=include_update)
+    else:
+        if ':Leap:' in project_prefix:
+            project = project_prefix
+
+        if ':SLE-' in project_prefix:
+            project = project_prefix + ':GA'
+
+        projects = project_list_family(apiurl, project, include_update)
+        projects = sorted(projects, key=project_list_family_sorter, reverse=True)
+
+    return [p for p in projects if p.startswith(project_prefix)]
 
 def project_list_family_sorter(project):
     """Extract key to be used as sorter (oldest to newest)."""
@@ -82,7 +119,7 @@ def project_version(project):
             version += float(parts[2][2:]) / 10
         return version
 
-    return None
+    return 0
 
 def mail_send(project, to, subject, body, from_key='maintainer', followup_to_key='release-list', dry=False):
     from email.mime.text import MIMEText
