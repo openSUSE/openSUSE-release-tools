@@ -1,6 +1,7 @@
 import logging
 import pika
 import sys
+from datetime import datetime
 
 class PubSubConsumer(object):
     """This is an example consumer that will handle unexpected interactions
@@ -28,7 +29,23 @@ class PubSubConsumer(object):
         self._closing = False
         self._consumer_tag = None
         self._prefix = amqp_prefix
+        self._timer_id = None
         self.logger = logger
+
+    def restart_timer(self):
+        interval = 300
+        if self._timer_id:
+            self._connection.remove_timeout(self._timer_id)
+        else:
+            # check the initial state on first timer hit
+            # so be quick about it
+            interval = 0
+        self._timer_id = self._connection.add_timeout(interval, self.still_alive)
+
+    def still_alive(self):
+        # output something so gocd doesn't consider it stalled
+        self.logger.info('Still alive: {}'.format(datetime.now().time()))
+        self.restart_timer()
 
     def connect(self):
         """This method connects to RabbitMQ, returning the connection handle.
@@ -263,6 +280,7 @@ class PubSubConsumer(object):
         """
         self.logger.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
+        self.restart_timer()
         self._consumer_tag = self._channel.basic_consume(self.on_message,
                                                          self.queue_name, no_ack=True)
 
