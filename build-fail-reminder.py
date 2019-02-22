@@ -19,7 +19,7 @@ from collections import namedtuple
 Charset.add_charset('utf-8', Charset.QP, Charset.QP, 'utf-8')
 
 # FIXME: compute from apiurl
-URL="https://build.opensuse.org/project/status?&project=%s&ignore_pending=true&limit_to_fails=true&include_versions=false&format=json"
+URL="https://build.opensuse.org/project/status/%s?ignore_pending=true&limit_to_fails=true&include_versions=false&format=json"
 # for maintainer search
 FACTORY='openSUSE:Factory'
 
