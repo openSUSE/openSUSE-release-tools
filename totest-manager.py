@@ -1016,7 +1016,7 @@ class ToTest151Images(ToTest150Images):
     def openqa_group(self):
         return 'openSUSE Leap 15.1 Images'
 
-class ToTest151ARMImages(ToTest150Images):
+class ToTest151ARMImages(ToTest151Images):
     # JeOS uses multibuild, but listing all flavors here would be too much
     image_products = [ImageProduct('JeOS', ['armv7l']),
                       ImageProduct('JeOS:JeOS-efi.aarch64', ['aarch64'])]
