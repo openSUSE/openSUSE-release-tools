@@ -220,7 +220,7 @@ class ReviewBot(object):
         for args, who in self.comment_api.command_find(
             comments, self.review_user, 'override', users):
             message = 'overridden by {}'.format(who)
-            override = args[1] or None
+            override = args[1] if len(args) >= 2 else 'accept'
             if override == 'accept':
                 self.review_messages['accepted'] = message
                 return True
