@@ -9,7 +9,7 @@ environments:
     targets:
     #- check-source
     - obs-operator
-    - origin-manager
+    #- origin-manager
     #- repo-checker
 kind: ksonnet.io/app
 name: openSUSE-release-tools
