@@ -15,8 +15,6 @@ class OriginManager(ReviewBot.ReviewBot):
 
         # ReviewBot options.
         self.request_default_return = True
-        # No such thing as override, only changing origin which must be approved
-        # by fallback group. Annotation must be included in review.
         self.override_allow = False
 
     def check_source_submission(self, src_project, src_package, src_rev, tgt_project, tgt_package):
@@ -55,7 +53,15 @@ class OriginManager(ReviewBot.ReviewBot):
 
         self.policy_result_comment_add(project, package, result.comments)
 
-        if not result.wait:
+        if result.wait:
+            # Allow overriding a policy wait by accepting as workaround with the
+            # hope that pending request will be accepted.
+            override = self.request_override_check(self.request, True)
+            if override:
+                self.review_messages['accepted'] = origin_annotation_dump(
+                    origin_info_new, origin_info_old, self.review_messages['accepted'])
+                return override
+        else:
             if result.accept:
                 self.review_messages['accepted'] = origin_annotation_dump(origin_info_new, origin_info_old)
             return result.accept
