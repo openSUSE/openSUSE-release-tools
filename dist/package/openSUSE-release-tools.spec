@@ -594,6 +594,7 @@ exit 0
 
 %files origin-manager
 %{_bindir}/osrt-origin-manager
+%{_datadir}/%{source_dir}/origin-manager.py
 %{_unitdir}/osrt-origin-manager.service
 %{_unitdir}/osrt-origin-manager.timer
 
