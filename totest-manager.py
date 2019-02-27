@@ -402,14 +402,14 @@ class ToTestBase(object):
         if re.match(r'.*-ftp-(ftp|POOL)-', package):
             return None
 
-        # docker container has no size limit
-        if re.match(r'opensuse-.*-image.*', package):
+        # containers have no size limit
+        if re.match(r'(opensuse|kubic)-.*-image.*', package):
             return None
 
         if '-Addon-NonOss-ftp-ftp' in package:
             return None
 
-        if 'JeOS' in package:
+        if 'JeOS' in package or 'Kubic' in package:
             return 4700372992
 
         raise Exception('No maxsize for {}'.format(package))
@@ -781,6 +781,11 @@ class ToTestFactory(ToTestBase):
         ImageProduct('openSUSE-Tumbleweed-JeOS:VMware', ['x86_64']),
         ImageProduct('openSUSE-Tumbleweed-JeOS:XEN', ['x86_64']),
         ImageProduct('openSUSE-Tumbleweed-JeOS:kvm-and-xen', ['x86_64']),
+    ] + [
+        ImageProduct('openSUSE-Tumbleweed-Kubic:' + flavor + '-' + platform, ['x86_64'])
+        for platform in
+        ['MS-HyperV', 'OpenStack-Cloud', 'VMware', 'Vagrant-x86_64', 'XEN', 'hardware-x86_64', 'kvm-and-xen']
+        for flavor in ['MicroOS-podman', 'kubeadm-cri-o']
     ]
 
     def __init__(self, *args, **kwargs):
