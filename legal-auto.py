@@ -128,7 +128,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                     self.message = 'declined'
                     print("unacceptable without user %d" % report.get('id'))
                     return None
-                comment = report.get('result', None)
+                comment = report.get('result', None).encode('utf-8')
                 if comment:
                     self.message = "@{} declined the legal report with the following comment: {}".format(
                         user, comment)
