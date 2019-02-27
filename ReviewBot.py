@@ -210,9 +210,9 @@ class ReviewBot(object):
 
         return users
 
-    def request_override_check(self, request):
+    def request_override_check(self, request, force=False):
         """Check for a comment command requesting review override."""
-        if not self.override_allow:
+        if not force and not self.override_allow:
             return None
 
         comments = self.comment_api.get_comments(request_id=request.reqid)
@@ -220,7 +220,7 @@ class ReviewBot(object):
         for args, who in self.comment_api.command_find(
             comments, self.review_user, 'override', users):
             message = 'overridden by {}'.format(who)
-            override = args[1] or None
+            override = args[1] if len(args) >= 2 else 'accept'
             if override == 'accept':
                 self.review_messages['accepted'] = message
                 return True
