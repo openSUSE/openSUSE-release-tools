@@ -160,7 +160,7 @@ class ToTestBase(object):
         if not base:
             base = self.project_base
         for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
-            result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz)', binary)
+            result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.raw\.xz)', binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s iso version" % project)
@@ -1017,14 +1017,15 @@ class ToTest151Images(ToTest150Images):
         return 'openSUSE Leap 15.1 Images'
 
 class ToTest151ARMImages(ToTest151Images):
-    # JeOS uses multibuild, but listing all flavors here would be too much
-    image_products = [ImageProduct('JeOS', ['armv7l']),
-                      ImageProduct('JeOS:JeOS-efi.aarch64', ['aarch64'])]
+    # JeOS uses multibuild, but listing all flavors here would be too much. Instead, list
+    # the multibuild container itself, which releases all binaries.
+    image_products = [ImageProduct('JeOS:JeOS-efi.aarch64', ['aarch64']),
+                      ImageProduct('JeOS', ['armv7l'])]
 
     container_products = [ImageProduct('opensuse-leap-image:docker', ['aarch64'])]
 
     def openqa_group(self):
-        return 'openSUSE Leap 15.1 ARM Images'
+        return 'openSUSE Leap 15.1 AArch64 Images'
 
     def _release(self, set_release=None):
         ToTestBase._release(self, set_release)
