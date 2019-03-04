@@ -1,7 +1,11 @@
 import osc.core
 from osc.core import get_dependson
 from xml.etree import cElementTree as ET
+from osc import cmdln
 
+@cmdln.option('-p', '--project', metavar='PROJECT', dest='project', default='openSUSE:Factory')
+@cmdln.option('-r', '--repository', metavar='REPOSITORY', dest='repository', default='standard')
+@cmdln.option('-a', '--arch', metavar='ARCH', dest='arch', default='x86_64')
 def do_cycle(self, subcmd, opts, *args):
     """${cmd_name}: Try to visualize build dependencies between the package list specified
 
@@ -19,7 +23,7 @@ def do_cycle(self, subcmd, opts, *args):
     args = [pkg.strip() for pkglist in args for pkg in pkglist.split(',') if pkg.strip()]
     for pkgname in args:
         try:
-            deps = ET.fromstring(get_dependson(apiurl, "openSUSE:Factory", "standard", "x86_64", [pkgname]))
+            deps = ET.fromstring(get_dependson(apiurl, opts.project, opts.repository, opts.arch, [pkgname]))
 
             pkg = deps.find('package')
             print ("\"%s\"" % pkgname)
