@@ -43,6 +43,10 @@ OriginInfo = namedtuple('OriginInfo', ['project', 'pending'])
 PendingRequestInfo = namedtuple('PendingRequestInfo', ['identifier', 'reviews_remaining'])
 PolicyResult = namedtuple('PolicyResult', ['wait', 'accept', 'reviews', 'comments'])
 
+def origin_info_str(self):
+    return self.project + ('+' if self.pending else '')
+OriginInfo.__str__ = origin_info_str
+
 @memoize(session=True)
 def config_load(apiurl, project):
     config = attribute_value_load(apiurl, project, 'OriginConfig')
