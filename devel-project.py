@@ -117,7 +117,6 @@ def notify(args):
                 maintainer_map.setdefault(userid, set())
                 maintainer_map[userid].add(devel_package_identifier)
 
-    Config(apiurl, args.project) # Ensure mail-* options are loaded for mail_send().
     subject = 'Packages you maintain are present in {}'.format(args.project)
     for userid, package_identifiers in maintainer_map.items():
         email = entity_email(apiurl, userid)
@@ -139,7 +138,7 @@ in charge of the following packages:
 - {}""".format(
             args.project, '\n- '.join(sorted(package_identifiers)))
 
-        mail_send(args.project, email, subject, message, dry=args.dry)
+        mail_send(apiurl, args.project, email, subject, message, dry=args.dry)
         print('notified {} of {} packages'.format(userid, len(package_identifiers)))
 
 def requests(args):
