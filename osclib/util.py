@@ -131,6 +131,8 @@ def mail_send(project, to, subject, body, from_key='maintainer', followup_to_key
     msg['Message-ID'] = email.utils.make_msgid()
     msg['Date'] = email.utils.formatdate(localtime=1)
     msg['From'] = config['mail-{}'.format(from_key)]
+    if '@' not in to:
+        to = config['mail-{}'.format(to)]
     msg['To'] = to
     followup_to = config.get('mail-{}'.format(followup_to_key))
     if followup_to:
