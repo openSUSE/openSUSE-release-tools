@@ -309,7 +309,9 @@ def package_list_without_links(apiurl, project):
     url = makeurl(apiurl, ['source', project], query)
     root = ETL.parse(http_GET(url)).getroot()
     return root.xpath(
-        '//sourceinfo[not(./linked[@project="{}"]) and not(contains(@package, ":"))]/@package'.format(project))
+        '//sourceinfo[not(./linked[@project="{}"]) and '
+        'not(contains(@package, ":"))'
+        'and not(starts-with(@package, "00"))]/@package'.format(project))
 
 def attribute_value_load(apiurl, project, name, namespace='OSRT'):
     url = makeurl(apiurl, ['source', project, '_attribute', namespace + ':' + name])
