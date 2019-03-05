@@ -193,6 +193,7 @@ Summary:        Package origin management tools
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osclib = %{version}
+Requires:       osc-plugin-origin = %{version}
 Requires(pre):  shadow
 
 %description origin-manager
@@ -607,6 +608,8 @@ exit 0
 %{_datadir}/%{source_dir}/origin-manager.py
 %{_unitdir}/osrt-origin-manager.service
 %{_unitdir}/osrt-origin-manager.timer
+%{_unitdir}/osrt-origin-manager-report@.service
+%{_unitdir}/osrt-origin-manager-report@.timer
 
 %files repo-checker
 %defattr(-,root,root,-)
