@@ -296,6 +296,15 @@ Requires:       osc >= 0.159.0
 %description -n osc-plugin-cycle
 OSC plugin for cycle visualization, see `osc cycle --help`.
 
+%package -n osc-plugin-origin
+Summary:        OSC plugin for origin management
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       osc >= 0.159.0
+
+%description -n osc-plugin-origin
+OSC plugin for for working with origin information, see `osc origin --help`.
+
 %package -n osc-plugin-staging
 Summary:        OSC plugin for the staging workflow
 Group:          Development/Tools/Other
@@ -497,6 +506,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
+%exclude %{_datadir}/%{source_dir}/osc-origin.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
 %exclude %{_datadir}/%{source_dir}/osc-vdelreq.py
 %exclude %{_datadir}/%{source_dir}/update_crawler.py
@@ -667,6 +677,11 @@ exit 0
 %defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-cycle.py
 %{osc_plugin_dir}/osc-cycle.py
+
+%files -n osc-plugin-origin
+%defattr(-,root,root,-)
+%{_datadir}/%{source_dir}/osc-origin.py
+%{osc_plugin_dir}/osc-origin.py
 
 %files -n osc-plugin-staging
 %defattr(-,root,root,-)
