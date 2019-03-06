@@ -1,4 +1,6 @@
 from osc import conf
+from osclib.conf import Config
+from osclib.core import entity_email
 from osclib.core import project_list_prefix
 from osclib.memoize import memoize
 
@@ -121,16 +123,22 @@ def project_version(project):
 
     return 0
 
-def mail_send(project, to, subject, body, from_key='maintainer', followup_to_key='release-list', dry=False):
+def mail_send(apiurl, project, to, subject, body, from_key='maintainer',
+              followup_to_key='release-list', dry=False):
     from email.mime.text import MIMEText
     import email.utils
     import smtplib
 
-    config = conf.config[project]
+    config = Config.get(apiurl, project)
     msg = MIMEText(body)
     msg['Message-ID'] = email.utils.make_msgid()
     msg['Date'] = email.utils.formatdate(localtime=1)
-    msg['From'] = config['mail-{}'.format(from_key)]
+    if from_key is None:
+        msg['From'] = entity_email(apiurl, conf.get_apiurl_usr(apiurl), include_name=True)
+    else:
+        msg['From'] = config['mail-{}'.format(from_key)]
+    if '@' not in to:
+        to = config['mail-{}'.format(to)]
     msg['To'] = to
     followup_to = config.get('mail-{}'.format(followup_to_key))
     if followup_to:

@@ -43,6 +43,10 @@ OriginInfo = namedtuple('OriginInfo', ['project', 'pending'])
 PendingRequestInfo = namedtuple('PendingRequestInfo', ['identifier', 'reviews_remaining'])
 PolicyResult = namedtuple('PolicyResult', ['wait', 'accept', 'reviews', 'comments'])
 
+def origin_info_str(self):
+    return self.project + ('+' if self.pending else '')
+OriginInfo.__str__ = origin_info_str
+
 @memoize(session=True)
 def config_load(apiurl, project):
     config = attribute_value_load(apiurl, project, 'OriginConfig')
@@ -164,7 +168,7 @@ def config_resolve_create_workarounds(config, values_workaround, origins_skip):
 def config_resolve_create_family(apiurl, project, config, position, origin, values):
     projects = project_list_family_prior_pattern(apiurl, origin, project)
     for origin_expanded in reversed(projects):
-        config['origins'].insert(position, { origin_expanded: values })
+        config['origins'].insert(position, { str(origin_expanded): values })
 
 def config_resolve_apply(config, values_apply, key=None, workaround=False, until=None):
     for origin, values in config_origin_generator(config['origins']):

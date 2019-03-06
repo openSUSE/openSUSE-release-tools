@@ -1,0 +1,9 @@
+[Unit]
+Description=openSUSE Release Tools: origin-manager report for %i
+
+[Timer]
+OnCalendar=weekly
+Unit=osrt-origin-manager-report@%i.service
+
+[Install]
+WantedBy=timers.target
