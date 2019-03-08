@@ -100,6 +100,7 @@ def maintainer(args):
             print('{} missing {}'.format(devel_project, ', '.join(desired - intersection)))
 
 def notify(args):
+    import smtplib
     apiurl = osc.conf.config['apiurl']
 
     # devel_projects_get() only works for Factory as such
@@ -138,8 +139,14 @@ in charge of the following packages:
 - {}""".format(
             args.project, '\n- '.join(sorted(package_identifiers)))
 
-        mail_send(apiurl, args.project, email, subject, message, dry=args.dry)
-        print('notified {} of {} packages'.format(userid, len(package_identifiers)))
+        log = 'notified {} of {} packages'.format(userid, len(package_identifiers))
+        try:
+            mail_send(apiurl, args.project, email, subject, message, dry=args.dry)
+            print(log)
+        except smtplib.SMTPRecipientsRefused as e:
+            print('[FAILED ADDRESS] {} ({})'.format(log, email))
+        except smtplib.SMTPException as e:
+            print('[FAILED SMTP] {} ({})'.format(log, e))
 
 def requests(args):
     apiurl = osc.conf.config['apiurl']
