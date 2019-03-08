@@ -71,6 +71,8 @@ class InstallChecker(object):
         self.cycle_packages = self.config.get('repo_checker-allowed-in-cycles')
         self.calculate_allowed_cycles()
 
+        self.existing_problems = self.binary_list_existing_problem(api.project, api.cmain_repo)
+
     def check_required_by(self, fileinfo, provides, requiredby, built_binaries):
         if requiredby.get('name') in built_binaries:
             return True
@@ -186,7 +188,7 @@ class InstallChecker(object):
                 # not intended to to have all run-time dependencies satisfied.
                 whitelist = self.ring_whitelist
             else:
-                whitelist = self.binary_whitelist(staging_pair, target_pair, arch)
+                whitelist = self.existing_problems
 
             check = self.cycle_check(project, repository, arch)
             if not check.success:
@@ -313,20 +315,6 @@ class InstallChecker(object):
                     binaries.add(match.group('name'))
 
         return binaries
-
-    def binary_whitelist(self, override_pair, overridden_pair, arch):
-        whitelist = self.binary_list_existing_problem(overridden_pair[0], overridden_pair[1])
-
-        staging = Config.get(self.api.apiurl, overridden_pair[0]).get('staging')
-        if staging:
-            additions = self.api.get_prj_pseudometa(
-                override_pair[0]).get('config', {})
-            prefix = 'repo_checker-binary-whitelist'
-            for key in [prefix, '-'.join([prefix, arch])]:
-                whitelist.update(additions.get(key, '').split(' '))
-
-        whitelist = filter(None, whitelist)
-        return whitelist
 
     def install_check(self, target_project_pair, arch, directories,
                       ignore=None, whitelist=[], parse=False, no_filter=False):
