@@ -126,17 +126,35 @@ class InstallChecker(object):
         api = self.api
 
         repository = self.api.cmain_repo
-        repository_pairs = repository_path_expand(api.apiurl, project, repository)
-        staging_pair = [project, repository]
 
         # fetch the build ids at the beginning - mirroring takes a while
         buildids = {}
         architectures = self.target_archs(project, repository)
+        all_done = True
         for arch in architectures:
-            buildids[arch] = self.buildid(project, repository, arch)
-            if not buildids[arch]:
-                self.logger.error('No build ID in {}/{}/{}'.format(project, repository, arch))
+            pra = '{}/{}/{}'.format(project, repository, arch)
+            buildid = self.buildid(project, repository, arch)
+            if not buildid:
+                self.logger.error('No build ID in {}'.format(pra))
                 return False
+            buildids[arch] = buildid
+            url = self.report_url(project, repository, arch, buildid)
+            try:
+                root = ET.parse(osc.core.http_GET(url)).getroot()
+                check = root.find('check[@name="installcheck"]/state')
+                if check is not None and check.text == 'success':
+                    self.logger.info('{} already succeeded, ignoring'.format(pra))
+                else:
+                    all_done = False
+            except HTTPError:
+                self.logger.info('{} has no status report'.format(pra))
+                all_done = False
+
+        if all_done:
+            return True
+
+        repository_pairs = repository_path_expand(api.apiurl, project, repository)
+        staging_pair = [project, repository]
 
         result = True
 
@@ -198,7 +216,8 @@ class InstallChecker(object):
 
     def gocd_url(self):
         if not os.environ.get('GO_SERVER_URL'):
-            return ''
+            # placeholder :)
+            return 'http://stephan.kulow.org/'
         report_url = os.environ.get('GO_SERVER_URL').replace(':8154', '')
         return report_url + '/tab/build/detail/{}/{}/{}/{}/{}#tab-console'.format(os.environ.get('GO_PIPELINE_NAME'),
                             os.environ.get('GO_PIPELINE_COUNTER'),
@@ -214,9 +233,12 @@ class InstallChecker(object):
             return False
         return buildid.text
 
-    def report_pipeline(self, state, project, repository, architecture, buildid, is_last):
-        url = self.api.makeurl(['status_reports', 'built', project,
+    def report_url(self, project, repository, architecture, buildid):
+        return self.api.makeurl(['status_reports', 'built', project,
                                 repository, architecture, 'reports', buildid])
+
+    def report_pipeline(self, state, project, repository, architecture, buildid, is_last):
+        url = self.report_url(project, repository, architecture, buildid)
         name = 'installcheck'
         # this is a little bit ugly, but we don't need 2 failures. So save a success for the
         # other archs to mark them as visited - pending we put in both
@@ -479,6 +501,7 @@ if __name__ == '__main__':
 
     if args.staging:
         staging_report.staging(api.prj_from_short(args.staging))
-    #else:
-    #    for staging in api.get_staging_projects():
-    #        staging_report.report(staging, True, args.force)
+    else:
+        for staging in api.get_staging_projects():
+            if api.is_adi_project(staging):
+                staging_report.staging(staging)
