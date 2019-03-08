@@ -40,7 +40,6 @@ DEFAULT = {
         'devel-project-enforce': 'True',
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
-        'repo-checker': 'repo-checker',
         'repo_checker-no-filter': 'True',
         'repo_checker-package-comment-devel': 'True',
         'pkglistgen-product-family-include': 'openSUSE:Leap:N',
