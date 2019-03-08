@@ -40,6 +40,12 @@ from osclib.memoize import memoize
 from osclib.util import sha1_short
 from osclib.stagingapi import StagingAPI
 
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
+
 import ReviewBot
 
 CACHEDIR = CacheManager.directory('repository-meta')
@@ -65,12 +71,72 @@ class InstallChecker(object):
         self.cycle_packages = self.config.get('repo_checker-allowed-in-cycles')
         self.calculate_allowed_cycles()
 
+    def check_required_by(self, fileinfo, provides, requiredby, built_binaries):
+        if requiredby.get('name') in built_binaries:
+            return True
+        # extract >= and the like
+        provide = provides.get('dep')
+        provide = provide.split(' ')[0]
+        self.logger.info('{} provides {} required by {}'.format(fileinfo.find('name').text, provide, requiredby.get('name')))
+        url = api.makeurl(['build', api.project, api.cmain_repo, 'x86_64', '_repository', requiredby.get('name') + '.rpm'],
+                      {'view': 'fileinfo_ext'})
+        reverse_fileinfo = ET.parse(osc.core.http_GET(url)).getroot()
+        for require in reverse_fileinfo.findall('requires_ext'):
+            # extract >= and the like here too
+            dep = require.get('dep').split(' ')[0]
+            if dep != provide:
+                continue
+            for provided_by in require.findall('providedby'):
+                if provided_by.get('name') in built_binaries:
+                    continue
+                self.logger.info('  also provided by {} -> ignoring'.format(provided_by.get('name')))
+                return True
+        self.logger.warn('missing requires')
+        return False
+
+    def check_delete_request(self, req):
+        package = req['package']
+        built_binaries = set([])
+        file_infos = []
+        for fileinfo in fileinfo_ext_all(self.api.apiurl, self.api.project, self.api.cmain_repo, 'x86_64', package):
+            built_binaries.add(fileinfo.find('name').text)
+            file_infos.append(fileinfo)
+
+        result = True
+        for fileinfo in file_infos:
+            for provides in fileinfo.findall('provides_ext'):
+                for requiredby in provides.findall('requiredby[@name]'):
+                    result = result and self.check_required_by(fileinfo, provides, requiredby, built_binaries)
+
+        what_depends_on = depends_on(api.apiurl, api.project, api.cmain_repo, [package], True)
+
+        # filter out dependency on package itself (happens with eg
+        # java bootstrapping itself with previous build)
+        if package in what_depends_on:
+            what_depends_on.remove(package)
+
+        if len(what_depends_on):
+            self.logger.warn('{} is still a build requirement of:\n\n- {}'.format(
+                package, '\n- '.join(sorted(what_depends_on))))
+            return False
+
+        return result
+
     def staging(self, project):
         api = self.api
 
-        repository = 'standard'
+        repository = self.api.cmain_repo
         repository_pairs = repository_path_expand(api.apiurl, project, repository)
         staging_pair = [project, repository]
+
+        # fetch the build ids at the beginning - mirroring takes a while
+        buildids = {}
+        architectures = self.target_archs(project, repository)
+        for arch in architectures:
+            buildids[arch] = self.buildid(project, repository, arch)
+            if not buildids[arch]:
+                self.logger.error('No build ID in {}/{}/{}'.format(project, repository, arch))
+                return False
 
         result = True
 
@@ -81,56 +147,10 @@ class InstallChecker(object):
 
         meta = api.load_prj_pseudometa(status['description'])
         for req in meta['requests']:
-            comment_lines = []
             if req['type'] == 'delete':
-                package = req['package']
-                built_binaries = set([])
-                file_infos = []
-                for fileinfo in fileinfo_ext_all(api.apiurl, api.project, api.cmain_repo, 'x86_64', package):
-                    built_binaries.add(fileinfo.find('name').text)
-                    file_infos.append(fileinfo)
+                result = result and self.check_delete_request(req)
 
-                for fileinfo in file_infos:
-                    for provides in fileinfo.findall('provides_ext'):
-                        for requiredby in provides.findall('requiredby[@name]'):
-                            if requiredby.get('name') in built_binaries:
-                                continue
-                            # extract >= and the like
-                            provide = provides.get('dep')
-                            provide = provide.split(' ')[0]
-                            self.logger.info('{} provides {} required by {}'.format(fileinfo.find('name').text, provide, requiredby.get('name')))
-                            provide_missing = True
-                            url = api.makeurl(['build', api.project, api.cmain_repo, 'x86_64', '_repository', requiredby.get('name') + '.rpm'],
-                                          {'view': 'fileinfo_ext'})
-                            reverse_fileinfo = ET.parse(osc.core.http_GET(url)).getroot()
-                            for require in reverse_fileinfo.findall('requires_ext'):
-                                # extract >= and the like here too
-                                dep = require.get('dep').split(' ')[0]
-                                if dep != provide:
-                                    continue
-                                for provided_by in require.findall('providedby'):
-                                    if provided_by.get('name') in built_binaries:
-                                        continue
-                                    self.logger.info('  also provided by {} -> ignoring'.format(provided_by.get('name')))
-                                    provide_missing = False
-                            if provide_missing:
-                                self.logger.warn('missing requires')
-                                result = False
-
-                what_depends_on = depends_on(api.apiurl, api.project, api.cmain_repo, [package], True)
-
-                # filter out dependency on package itself (happens with eg
-                # java bootstrapping itself with previous build)
-                if package in what_depends_on:
-                    what_depends_on.remove(package)
-
-                if len(what_depends_on):
-                    self.logger.warn('{} is still a build requirement of:\n\n- {}'.format(
-                        package, '\n- '.join(sorted(what_depends_on))))
-                    result = False
-
-        archs = self.target_archs(project, repository)
-        for arch in archs:
+        for arch in architectures:
             # hit the first repository in the target project (if existant)
             target_pair = None
             directories = []
@@ -163,18 +183,18 @@ class InstallChecker(object):
                 result = False
 
         if result:
-            self.report_state('success', project, repository)
+            self.report_state('success', project, repository, buildids)
         else:
-            self.report_state('failure', project, repository)
+            self.report_state('failure', project, repository, buildids)
             self.logger.warn('Not accepting {}'.format(project))
             return False
 
         return result
 
-    def report_state(self, state, project, repository):
+    def report_state(self, state, project, repository, buildids):
         architectures = self.target_archs(project, repository)
         for arch in architectures:
-            self.report_pipeline(state, project, repository, arch, arch == architectures[-1])
+            self.report_pipeline(state, project, repository, arch, buildids[arch], arch == architectures[-1])
 
     def gocd_url(self):
         if not os.environ.get('GO_SERVER_URL'):
@@ -194,8 +214,7 @@ class InstallChecker(object):
             return False
         return buildid.text
 
-    def report_pipeline(self, state, project, repository, architecture, is_last):
-        buildid = self.buildid(project, repository, architecture)
+    def report_pipeline(self, state, project, repository, architecture, buildid, is_last):
         url = self.api.makeurl(['status_reports', 'built', project,
                                 repository, architecture, 'reports', buildid])
         name = 'installcheck'
@@ -335,11 +354,11 @@ class InstallChecker(object):
 
             header = '### [install check & file conflicts]'
             if target_project_pair:
-               pseudometa_project, pseudometa_package = project_pseudometa_package(
-                  self.api.apiurl, target_project_pair[0])
-               filename = self.project_pseudometa_file_name(target_project_pair[0], target_project_pair[1])
-               path = ['package', 'view_file', pseudometa_project, pseudometa_package, filename]
-               header += '(/{})'.format('/'.join(path))
+                pseudometa_project, pseudometa_package = project_pseudometa_package(
+                    self.api.apiurl, target_project_pair[0])
+                filename = self.project_pseudometa_file_name(target_project_pair[0], target_project_pair[1])
+                path = ['package', 'view_file', pseudometa_project, pseudometa_package, filename]
+                header += '(/{})'.format('/'.join(path))
 
             return CheckResult(False, header + '\n\n' + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
