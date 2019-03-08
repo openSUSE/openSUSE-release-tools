@@ -1234,11 +1234,13 @@ class StagingAPI(object):
 
         return tar_pkg
 
-    def ensure_staging_archs(self, project):
-        url = self.makeurl(['source', project, '_meta'])
-        meta = ET.parse(http_GET(url))
+    def project_meta_url(self, project):
+        return self.makeurl(['source', project, '_meta'])
 
+    def ensure_staging_archs(self, project):
+        meta = ET.parse(http_GET(self.project_meta_url(project)))
         repository = meta.find('repository[@name="{}"]'.format(self.cmain_repo))
+
         changed = False
         for arch in self.cstaging_archs:
             if not repository.xpath('./arch[text()="{}"]'.format(arch)):
@@ -1246,9 +1248,11 @@ class StagingAPI(object):
                 elm.text = arch
                 changed = True
 
-        if changed:
-            meta = ET.tostring(meta)
-            http_PUT(url, data=meta)
+        if not changed:
+            return
+
+        meta = ET.tostring(meta)
+        http_PUT(self.project_meta_url(project), data=meta)
 
     def prj_from_letter(self, letter):
         if ':' in letter:  # not a letter
@@ -1703,7 +1707,23 @@ class StagingAPI(object):
         if use_frozenlinks:
             self.update_adi_frozenlinks(name, src_prj)
 
+        for required_check in self.cstaging_required_checks_adi.split():
+            self.add_required_check(name, required_check)
         return name
+
+    def add_required_check(self, project, check):
+        root = ET.Element('required_checks')
+        name = ET.SubElement(root, 'name')
+        name.text = check
+
+        meta = ET.parse(http_GET(self.project_meta_url(project)))
+        repository = meta.find('repository[@name="{}"]'.format(self.cmain_repo))
+
+        for arch_element in repository.findall('arch'):
+            architecture = arch_element.text
+            url = self.makeurl(['status_reports', 'built_repositories', project,
+                                self.cmain_repo, architecture, 'required_checks'])
+            http_POST(url, data=ET.tostring(root))
 
     def is_user_member_of(self, user, group):
         root = ET.fromstring(get_group(self.apiurl, group))

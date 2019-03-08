@@ -161,6 +161,7 @@ DEFAULT = {
         'staging-group': None,
         'staging-archs': '',
         'staging-dvd-archs': '',
+        'staging-required-checks-adi': '',
         'onlyadi': False,
         'rings': None,
         'nonfree': None,
