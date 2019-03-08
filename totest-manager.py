@@ -911,11 +911,6 @@ class ToTest151ARM(ToTest151):
                     '000product:openSUSE-ftp-ftp-armv7hl',
                     ]
 
-    livecd_products = [ImageProduct('JeOS', ['armv7l'])]
-
-    # JeOS doesn't follow build numbers of main isos
-    need_same_build_number = False
-
     def openqa_group(self):
         return 'openSUSE Leap 15 AArch64'
 
