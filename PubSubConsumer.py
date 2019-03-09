@@ -1,6 +1,7 @@
 import logging
 import pika
 import sys
+import time
 from datetime import datetime
 
 class PubSubConsumer(object):
@@ -30,6 +31,7 @@ class PubSubConsumer(object):
         self._consumer_tag = None
         self._prefix = amqp_prefix
         self._timer_id = None
+        self._run_until = None
         self.logger = logger
 
     def restart_timer(self):
@@ -45,7 +47,10 @@ class PubSubConsumer(object):
     def still_alive(self):
         # output something so gocd doesn't consider it stalled
         self.logger.info('Still alive: {}'.format(datetime.now().time()))
-        self.restart_timer()
+        if self._run_until and time.time() > self._run_until:
+            self.stop()
+        else:
+            self.restart_timer()
 
     def connect(self):
         """This method connects to RabbitMQ, returning the connection handle.
@@ -315,11 +320,13 @@ class PubSubConsumer(object):
         self.logger.debug('Creating a new channel')
         self._connection.channel(on_open_callback=self.on_channel_open)
 
-    def run(self):
+    def run(self, runtime=None):
         """Run the example consumer by connecting to RabbitMQ and then
         starting the IOLoop to block and allow the SelectConnection to operate.
 
         """
+        if runtime:
+            self._run_until = time.time() + runtime
         self._connection = self.connect()
         self._connection.ioloop.start()
 
