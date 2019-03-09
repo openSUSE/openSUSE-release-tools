@@ -55,7 +55,7 @@ class AdiCommand:
             for check in info['missing_checks']:
                 print(query_project + ' ' + Fore.MAGENTA + 'missing: {}'.format(check))
                 return
-            for check in project.get('checks', []):
+            for check in info['checks']:
                 if check['state'] != 'success':
                     print(query_project + '{} {} check: {}'.format(Fore.MAGENTA, check['state'], check['name']))
                     return
