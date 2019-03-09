@@ -131,7 +131,14 @@ class InstallChecker(object):
 
         # fetch the build ids at the beginning - mirroring takes a while
         buildids = {}
-        architectures = self.target_archs(project, repository)
+        try:
+            architectures = self.target_archs(project, repository)
+        except HTTPError as e:
+            if e.code == 404:
+                # adi disappear all the time, so don't worry
+                return False
+            raise e
+
         all_done = True
         for arch in architectures:
             pra = '{}/{}/{}'.format(project, repository, arch)
