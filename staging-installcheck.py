@@ -144,8 +144,8 @@ class InstallChecker(object):
             try:
                 root = ET.parse(osc.core.http_GET(url)).getroot()
                 check = root.find('check[@name="installcheck"]/state')
-                if check is not None and check.text == 'success':
-                    self.logger.info('{} already succeeded, ignoring'.format(pra))
+                if check is not None and check.text != 'pending':
+                    self.logger.info('{} already "{}", ignoring'.format(pra, check.text))
                 else:
                     all_done = False
             except HTTPError:
