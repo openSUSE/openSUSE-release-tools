@@ -494,9 +494,13 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
+    result = True
     if args.staging:
-        staging_report.staging(api.prj_from_short(args.staging))
+        result = staging_report.staging(api.prj_from_short(args.staging))
     else:
         for staging in api.get_staging_projects():
             if api.is_adi_project(staging):
-                staging_report.staging(staging)
+                result = result and staging_report.staging(staging)
+
+    if not result:
+        sys.exit( 1 )
