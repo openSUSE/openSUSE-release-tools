@@ -112,7 +112,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         for scope in opts.scope:
             if scope.startswith('staging:'):
                 letter = re.match('staging:(.*)', scope).group(1)
-                solve_project(api.prj_from_short(letter.upper()), 'staging')
+                solve_project(api.prj_from_short(letter), 'staging')
             elif scope == 'target':
                 solve_project(target_project, scope)
             elif scope == 'rings':
