@@ -36,6 +36,7 @@ from osclib.core import repositories_states
 from osclib.core import repository_arch_state
 from osclib.core import repositories_published
 from osclib.core import target_archs
+from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 from osclib.util import sha1_short
 from osclib.stagingapi import StagingAPI
@@ -61,6 +62,7 @@ class InstallChecker(object):
         self.api = api
         self.config = conf.config[api.project]
         self.logger = logging.getLogger('InstallChecker')
+        self.commentapi = CommentAPI(api.apiurl)
 
         self.arch_whitelist = self.config.get('repo_checker-arch-whitelist')
         if self.arch_whitelist:
@@ -96,8 +98,12 @@ class InstallChecker(object):
         self.logger.warn('missing requires')
         return False
 
-    def check_delete_request(self, req):
+    def check_delete_request(self, req, to_ignore):
         package = req['package']
+        if package in to_ignore:
+            self.logger.info('Delete request for package {} ignored'.format(package))
+            return True
+
         built_binaries = set([])
         file_infos = []
         for fileinfo in fileinfo_ext_all(self.api.apiurl, self.api.project, self.api.cmain_repo, 'x86_64', package):
@@ -124,7 +130,22 @@ class InstallChecker(object):
 
         return result
 
-    def staging(self, project):
+    def packages_to_ignore(self, project):
+        comments = self.commentapi.get_comments(project_name=project)
+        ignore_re = re.compile(r'^installcheck: ignore (?P<args>.*)$', re.MULTILINE)
+
+        # the last wins, for now we don't care who said it
+        args = []
+        for comment in comments.values():
+            match = ignore_re.search(comment['comment'].replace('\r', ''))
+            if not match:
+                continue
+            args = match.group('args').strip()
+            # allow space and comma to seperate
+            args = args.replace(',', ' ').split(' ')
+        return args
+
+    def staging(self, project, force=False):
         api = self.api
 
         repository = self.api.cmain_repo
@@ -159,7 +180,7 @@ class InstallChecker(object):
                 self.logger.info('{} has no status report'.format(pra))
                 all_done = False
 
-        if all_done:
+        if all_done and not force:
             return True
 
         repository_pairs = repository_path_expand(api.apiurl, project, repository)
@@ -172,10 +193,11 @@ class InstallChecker(object):
             self.logger.error('no project status for {}'.format(project))
             return False
 
+        to_ignore = self.packages_to_ignore(project)
         meta = api.load_prj_pseudometa(status['description'])
         for req in meta['requests']:
             if req['type'] == 'delete':
-                result = result and self.check_delete_request(req)
+                result = result and self.check_delete_request(req, to_ignore)
 
         for arch in architectures:
             # hit the first repository in the target project (if existant)
@@ -496,7 +518,7 @@ if __name__ == '__main__':
 
     result = True
     if args.staging:
-        result = staging_report.staging(api.prj_from_short(args.staging))
+        result = staging_report.staging(api.prj_from_short(args.staging), force=True)
     else:
         for staging in api.get_staging_projects():
             if api.is_adi_project(staging):
