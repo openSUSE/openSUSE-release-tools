@@ -450,11 +450,9 @@ def policy_input_evaluate(policy, inputs):
         result = PolicyResult(wait, True, result.reviews, result.comments)
 
         if wait:
-            if policy['pending_submission_allow'] and len(reviews_not_allowed):
-                result.comments.append('Waiting on reviews of {}:\n\n- {}'.format(
-                    inputs['pending_submission'].identifier, '\n- '.join(reviews_not_allowed)))
-            else:
-                result.comments.append('Waiting on {}.'.format(inputs['pending_submission'].identifier))
+            result.comments.append('Waiting on {} of {}.'.format(
+                'reviews' if policy['pending_submission_allow'] else 'acceptance',
+                inputs['pending_submission'].identifier))
 
     if policy['maintainer_review_always']:
         # Placed last to override initial maintainer approval message.
