@@ -768,7 +768,8 @@ class ToTestFactory(ToTestBase):
 
     livecd_products = [ImageProduct('livecd-tumbleweed-kde', ['i586', 'x86_64']),
                        ImageProduct('livecd-tumbleweed-gnome', ['i586', 'x86_64']),
-                       ImageProduct('livecd-tumbleweed-x11', ['i586', 'x86_64'])]
+                       ImageProduct('livecd-tumbleweed-x11', ['i586', 'x86_64']),
+                       ImageProduct('livecd-tumbleweed-xfce', ['i586', 'x86_64'])]
 
     container_products = [ImageProduct('opensuse-tumbleweed-image:docker', ['i586', 'x86_64']),
                           ImageProduct('kubic-kured-image', ['x86_64']),
