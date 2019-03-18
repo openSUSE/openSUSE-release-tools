@@ -522,7 +522,7 @@ if __name__ == '__main__':
     else:
         for staging in api.get_staging_projects():
             if api.is_adi_project(staging):
-                result = result and staging_report.staging(staging)
+                result = staging_report.staging(staging) and result
 
     if not result:
         sys.exit( 1 )
