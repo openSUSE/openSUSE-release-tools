@@ -698,7 +698,7 @@ class StagingAPI(object):
 
     def load_prj_pseudometa(self, description_text):
         try:
-            data = yaml.load(description_text)
+            data = yaml.safe_load(description_text)
             if isinstance(data, str) or data is None:
                 data = {}
         except (TypeError, AttributeError):
