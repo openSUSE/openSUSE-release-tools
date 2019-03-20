@@ -417,7 +417,7 @@ def policy_input_evaluate(policy, inputs):
 
     if inputs['new_package']:
         if policy['maintainer_review_initial']:
-            result.reviews['maintainer'] = 'Need package maintainer approval for inital submission.'
+            result.reviews['maintainer'] = 'Need package maintainer approval for initial submission.'
 
         if not inputs['from_highest_priority']:
             result.reviews['fallback'] = 'Not from the highest priority origin which provides the package.'
