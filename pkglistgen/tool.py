@@ -392,6 +392,8 @@ class PkgListGen(ToolBase.ToolBase):
                 pool = solv.Pool()
                 pool.setarch()
 
+                # we need some progress in the debug output - or gocd gets nervous
+                self.logger.debug('checking {}'.format(oldrepo))
                 oldsysrepo = pool.add_repo(oldrepo)
                 defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
                 f = tempfile.TemporaryFile()
