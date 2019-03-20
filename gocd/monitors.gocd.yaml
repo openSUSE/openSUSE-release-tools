@@ -11,6 +11,7 @@ pipelines:
       git:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         branch: master
+        destination: scripts
     stages:
     - Run:
         approval:
@@ -22,7 +23,8 @@ pipelines:
             - staging-bot
             tasks:
             - script: |-
-                ./gocd/rabbit-openqa.py -A https://api.opensuse.org
+                export PYTHONPATH=$PWD/scripts
+                ./scripts/gocd/rabbit-openqa.py -A https://api.opensuse.org
   SUSE.openQA:
     group: Monitors
     lock_behavior: unlockWhenFinished
@@ -34,6 +36,7 @@ pipelines:
       git:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         branch: master
+        destination: scripts
     stages:
     - Run:
         approval:
@@ -46,7 +49,8 @@ pipelines:
             tasks:
             # endless loop
             - script: |-
-                ./gocd/rabbit-openqa.py -A https://api.suse.de
+                export PYTHONPATH=$PWD/scripts
+                ./scripts/gocd/rabbit-openqa.py -A https://api.suse.de
   SUSE.Repo.Monitor:
     group: Monitors
     lock_behavior: unlockWhenFinished
@@ -75,12 +79,11 @@ pipelines:
             tasks:
             # endless loop
             - script: |-
+                export PYTHONPATH=$PWD/osc:$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
                 git clone git://botmaster.suse.de/suse-repos.git
                 cd suse-repos
-                ls -l
-                export PYTHONPATH=../osc:/usr/share/openSUSE-release-tools
                 python3 ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE-15-SP1:GA
   openSUSE.Repo.Monitor:
     group: Monitors
@@ -110,9 +113,9 @@ pipelines:
             tasks:
             # endless loop
             - script: |-
+                export PYTHONPATH=$PWD/osc:$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
                 git clone git://botmaster.suse.de/opensuse-repos.git
                 cd opensuse-repos
-                export PYTHONPATH=../osc:/usr/share/openSUSE-release-tools
                 python3 ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap
