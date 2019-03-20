@@ -464,6 +464,7 @@ fi
 %{_bindir}/osrt-status
 %{_bindir}/osrt-sync-rebuild
 %{_bindir}/osrt-unmaintained
+%{_bindir}/osrt-staging-installcheck
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
