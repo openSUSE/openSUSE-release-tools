@@ -94,7 +94,7 @@ class ToTestBase(object):
     def load_issues_to_ignore(self):
         text = self.api.attribute_value_load('IgnoredIssues')
         if text:
-            root = yaml.load(text)
+            root = yaml.safe_load(text)
             self.issues_to_ignore = root.get('last_seen')
         else:
             self.issues_to_ignore = dict()
