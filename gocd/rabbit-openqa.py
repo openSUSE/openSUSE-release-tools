@@ -264,6 +264,6 @@ if __name__ == '__main__':
         l.add(Project(entry.get('name')))
 
     try:
-        l.run()
+        l.run(runtime=3600)
     except KeyboardInterrupt:
         l.stop()

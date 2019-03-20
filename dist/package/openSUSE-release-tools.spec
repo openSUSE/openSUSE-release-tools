@@ -326,18 +326,6 @@ Requires:       osc >= 0.159.0
 %description -n osc-plugin-vdelreq
 OSC plugin to check for virtually accepted request, see `osc vdelreq --help`.
 
-%package rabbit-openqa
-Summary:        Sync openQA Status Into OBS
-Group:          Development/Tools/Other
-BuildArch:      noarch
-Requires:       osc >= 0.159.0
-Requires:       python2-openqa_client
-Requires:       python2-pika
-
-%description rabbit-openqa
-Bot listening to AMQP bus and syncs openQA job status into OBS for
-staging projects
-
 %prep
 %setup -q
 
@@ -452,14 +440,6 @@ fi
 %postun pkglistgen
 %systemd_postun
 
-%pre rabbit-openqa
-getent passwd osrt-rabbit-openqa > /dev/null || \
-  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-rabbit-openqa" osrt-rabbit-openqa
-exit 0
-
-%postun rabbit-openqa
-%systemd_postun
-
 %files
 %defattr(-,root,root,-)
 %doc README.md
@@ -511,7 +491,6 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
 %exclude %{_datadir}/%{source_dir}/osc-vdelreq.py
 %exclude %{_datadir}/%{source_dir}/update_crawler.py
-%exclude %{_datadir}/%{source_dir}/rabbit-openqa.py
 %dir %{_sysconfdir}/openSUSE-release-tools
 
 %files devel
@@ -659,12 +638,6 @@ exit 0
 %{_datadir}/%{source_dir}/pkglistgen.py
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
-
-%files rabbit-openqa
-%defattr(-,root,root,-)
-%{_bindir}/osrt-rabbit-openqa
-%{_datadir}/%{source_dir}/rabbit-openqa.py
-%{_unitdir}/osrt-rabbit-openqa.service
 
 %files -n osclib
 %defattr(-,root,root,-)
