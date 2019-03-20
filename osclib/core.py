@@ -526,7 +526,8 @@ def package_source_hash(apiurl, project, package, revision=None):
         url = makeurl(apiurl, ['source', project, package], query)
         root = ETL.parse(http_GET(url)).getroot()
     except HTTPError as e:
-        if e.code == 404:
+        if e.code == 400 or e.code == 404:
+            # 400: revision not found, 404: package not found.
             return None
 
         raise e
