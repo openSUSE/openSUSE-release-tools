@@ -400,7 +400,7 @@ class InstallChecker(object):
             if stderr:
                 parts.append(stderr + '\n')
 
-            header = '### [install check & file conflicts for {}/{}]'.format(target_project_pair[1], arch)
+            header = '### [install check & file conflicts for {}]'.format(arch)
             return CheckResult(False, header + '\n\n' + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
         self.logger.info('install check: passed')
