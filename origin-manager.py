@@ -51,6 +51,11 @@ class OriginManager(ReviewBot.ReviewBot):
         if len(result.reviews):
             self.policy_result_reviews_add(project, package, result.reviews)
 
+        if result.wait:
+            # Since the review will not be accepted with the annotation
+            # containing origin context dump it the comment.
+            result.comments.insert(0, origin_annotation_dump(origin_info_new, origin_info_old))
+
         self.policy_result_comment_add(project, package, result.comments)
 
         if result.wait:
