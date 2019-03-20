@@ -459,7 +459,8 @@ def policy_input_evaluate(policy, inputs):
         result.reviews['maintainer'] = 'Need package maintainer approval.'
 
     for additional_review in policy['additional_reviews']:
-        result.reviews[additional_review] = 'Additional review required based on origin.'
+        if additional_review not in result.reviews:
+            result.reviews[additional_review] = 'Additional review required based on origin.'
 
     return result
 
