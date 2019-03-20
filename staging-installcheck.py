@@ -199,6 +199,8 @@ class InstallChecker(object):
             if req['type'] == 'delete':
                 result = result and self.check_delete_request(req, to_ignore)
 
+        result_comment = []
+
         for arch in architectures:
             # hit the first repository in the target project (if existant)
             target_pair = None
@@ -222,28 +224,36 @@ class InstallChecker(object):
             check = self.cycle_check(project, repository, arch)
             if not check.success:
                 self.logger.warn('Cycle check failed')
-                self.logger.warn(check.comment)
+                result_comment.append(check.comment + '\n')
                 result = False
 
             check = self.install_check(target_pair, arch, directories, None, whitelist)
             if not check.success:
                 self.logger.warn('Install check failed')
-                self.logger.warn(check.comment)
+                result_comment.append(check.comment + '\n')
                 result = False
 
         if result:
-            self.report_state('success', project, repository, buildids)
+            self.report_state('success', self.gocd_url(), project, repository, buildids)
         else:
-            self.report_state('failure', project, repository, buildids)
+            result_comment.insert(0, 'Generated from {}\n\n'.format(self.gocd_url()))
+            self.report_state('failure', self.upload_failure(project, result_comment), project, repository, buildids)
             self.logger.warn('Not accepting {}'.format(project))
             return False
 
         return result
 
-    def report_state(self, state, project, repository, buildids):
+    def upload_failure(self, project, comment):
+        print(project, ''.join(comment))
+        url = self.api.makeurl(['source', 'home:repo-checker', 'reports', project])
+        osc.core.http_PUT(url, data=''.join(comment))
+
+        return 'https://build.opensuse.org/package/view_file/home:repo-checker/reports/{}'.format(project)
+
+    def report_state(self, state, report_url, project, repository, buildids):
         architectures = self.target_archs(project, repository)
         for arch in architectures:
-            self.report_pipeline(state, project, repository, arch, buildids[arch], arch == architectures[-1])
+            self.report_pipeline(state, report_url, project, repository, arch, buildids[arch], arch == architectures[-1])
 
     def gocd_url(self):
         if not os.environ.get('GO_SERVER_URL'):
@@ -268,7 +278,7 @@ class InstallChecker(object):
         return self.api.makeurl(['status_reports', 'built', project,
                                 repository, architecture, 'reports', buildid])
 
-    def report_pipeline(self, state, project, repository, architecture, buildid, is_last):
+    def report_pipeline(self, state, report_url, project, repository, architecture, buildid, is_last):
         url = self.report_url(project, repository, architecture, buildid)
         name = 'installcheck'
         # this is a little bit ugly, but we don't need 2 failures. So save a success for the
@@ -276,9 +286,8 @@ class InstallChecker(object):
         if not is_last:
             if state == 'failure':
                 state = 'success'
-            #name = name + ':' + architecture
 
-        xml = self.check_xml(self.gocd_url(), state, name)
+        xml = self.check_xml(report_url, state, name)
         try:
             osc.core.http_POST(url, data=xml)
         except HTTPError:
@@ -386,19 +395,12 @@ class InstallChecker(object):
 
             stdout = stdout.strip()
             if stdout:
-                parts.append('<pre>\n' + stdout + '\n' + '</pre>\n')
+                parts.append(stdout + '\n')
             stderr = stderr.strip()
             if stderr:
-                parts.append('<pre>\n' + stderr + '\n' + '</pre>\n')
+                parts.append(stderr + '\n')
 
-            header = '### [install check & file conflicts]'
-            if target_project_pair:
-                pseudometa_project, pseudometa_package = project_pseudometa_package(
-                    self.api.apiurl, target_project_pair[0])
-                filename = self.project_pseudometa_file_name(target_project_pair[0], target_project_pair[1])
-                path = ['package', 'view_file', pseudometa_project, pseudometa_package, filename]
-                header += '(/{})'.format('/'.join(path))
-
+            header = '### [install check & file conflicts for {}/{}]'.format(target_project_pair[1], arch)
             return CheckResult(False, header + '\n\n' + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
         self.logger.info('install check: passed')
@@ -473,13 +475,6 @@ class InstallChecker(object):
 
         self.logger.info('cycle check: passed')
         return CheckResult(True, None)
-
-    def result_comment(self, repository, arch, results, comment):
-        """Generate comment from results"""
-        comment.append('## {}/{}\n'.format(repository, arch))
-        for result in results.values():
-            if not result.success:
-                comment.append(result.comment)
 
     def project_pseudometa_file_name(self, project, repository):
         filename = 'repo_checker'
