@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 from urllib.parse import urlparse
+from urllib.parse import parse_qs
 
 # Available in python 3.7.
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -22,21 +23,45 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 class RequestHandler(BaseHTTPRequestHandler):
     COOKIE_NAME = 'openSUSE_session' # Both OBS and IBS.
+    GET_PATHS = [
+        'origin/config',
+        'origin/list',
+        'origin/package',
+        'origin/report',
+    ]
     POST_ACTIONS = ['select']
 
     def do_GET(self):
-        if self.path != '/':
+        url_parts = urlparse(self.path)
+
+        path = url_parts.path.lstrip('/')
+        path_parts = path.split('/')
+        path_prefix = '/'.join(path_parts[:2])
+
+        query = parse_qs(url_parts.query)
+
+        if path_prefix == '':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+
+            self.write_string('namespace: {}\n'.format(common.NAME))
+            self.write_string('name: {}\n'.format('OBS Operator'))
+            self.write_string('version: {}\n'.format(common.VERSION))
+            return
+
+        if len(path_parts) < 3 or path_prefix not in self.GET_PATHS:
             self.send_response(404)
             self.end_headers()
             return
 
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
+        with OSCRequestEnvironment(self) as oscrc_file:
+            func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
+            command = func(path_parts[2:], query)
 
-        self.write_string('namespace: {}\n'.format(common.NAME))
-        self.write_string('name: {}\n'.format('OBS Operator'))
-        self.write_string('version: {}\n'.format(common.VERSION))
+            self.end_headers()
+            if command and not self.execute(oscrc_file, command):
+                self.write_string('failed')
 
     def do_POST(self):
         action = self.path.lstrip('/')
@@ -139,6 +164,32 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def write_string(self, string):
         self.wfile.write(string.encode('utf-8'))
+
+    def handle_origin_config(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'config']
+        if 'origins-only' in query:
+            command.append('--origins-only')
+        return command
+
+    def handle_origin_list(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'list']
+        if 'force-refresh' in query:
+            command.append('--force-refresh')
+        return command
+
+    def handle_origin_package(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'package']
+        if 'debug' in query:
+            command.append('--debug')
+        if len(args) > 1:
+            command.append(args[1])
+        return command
+
+    def handle_origin_report(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'report']
+        if 'force-refresh' in query:
+            command.append('--force-refresh')
+        return command
 
     def staging_command(self, project, subcommand):
         return ['osc', 'staging', '-p', project, subcommand]
