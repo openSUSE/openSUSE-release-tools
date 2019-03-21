@@ -48,14 +48,7 @@ class OriginManager(ReviewBot.ReviewBot):
         return True
 
     def policy_result_handle(self, project, package, origin_info_new, origin_info_old, result):
-        if len(result.reviews):
-            self.policy_result_reviews_add(project, package, result.reviews)
-
-        if result.wait:
-            # Since the review will not be accepted with the annotation
-            # containing origin context dump it the comment.
-            result.comments.insert(0, origin_annotation_dump(origin_info_new, origin_info_old))
-
+        self.policy_result_reviews_add(project, package, result.reviews, origin_info_new, origin_info_old)
         self.policy_result_comment_add(project, package, result.comments)
 
         if result.wait:
@@ -73,12 +66,13 @@ class OriginManager(ReviewBot.ReviewBot):
 
         return None
 
-    def policy_result_reviews_add(self, project, package, reviews):
+    def policy_result_reviews_add(self, project, package, reviews, origin_info_new, origin_info_old):
         for key, comment in reviews.items():
             if key == 'maintainer':
                 self.devel_project_review_ensure(self.request, project, package, comment)
             elif key == 'fallback':
                 fallback_group = config_load(self.apiurl, project).get('fallback-group')
+                comment += '\n\n' + origin_annotation_dump(origin_info_new, origin_info_old)
                 self.add_review(self.request, by_group=fallback_group, msg=comment)
             else:
                 self.add_review(self.request, by_group=key, msg=comment)
