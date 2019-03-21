@@ -77,13 +77,16 @@ def osrt_origin_config(apiurl, opts, *args):
         yaml.Dumper.ignore_aliases = lambda *args : True
         print(yaml.dump(config))
 
-def osrt_origin_lookup_file(previous=False):
-    lookup_name = 'lookup.yaml' if not previous else 'lookup.previous.yaml'
+def osrt_origin_lookup_file(project, previous=False):
+    parts = [project, 'yaml']
+    if previous:
+        parts.insert(1, 'previous')
+    lookup_name = '.'.join(parts)
     cache_dir = CacheManager.directory('origin-manager')
     return os.path.join(cache_dir, lookup_name)
 
 def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False):
-    lookup_path = osrt_origin_lookup_file(previous)
+    lookup_path = osrt_origin_lookup_file(project, previous)
     if not force_refresh and os.path.exists(lookup_path):
         if not previous and time.time() - os.stat(lookup_path).st_mtime > OSRT_ORIGIN_LOOKUP_TTL:
             return osrt_origin_lookup(apiurl, project, True)
@@ -102,7 +105,7 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False):
             lookup[str(package)] = str(origin_find(apiurl, project, package))
 
         if os.path.exists(lookup_path):
-            lookup_path_previous = osrt_origin_lookup_file(True)
+            lookup_path_previous = osrt_origin_lookup_file(project, True)
             copyfile(lookup_path, lookup_path_previous)
 
         with open(lookup_path, 'w+') as lookup_stream:
