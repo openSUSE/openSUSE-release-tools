@@ -1,3 +1,5 @@
+from __future__ import print_function
+from datetime import timedelta
 import logging
 import os
 import os.path
@@ -12,6 +14,7 @@ from osclib.origin import origin_find
 from osclib.origin import config_origin_list
 from osclib.util import mail_send
 from shutil import copyfile
+import sys
 import time
 import yaml
 
@@ -110,6 +113,10 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False):
 
         with open(lookup_path, 'w+') as lookup_stream:
             yaml.dump(lookup, lookup_stream, default_flow_style=False)
+
+    if not previous:
+        dt = timedelta(seconds=time.time() - os.stat(lookup_path).st_mtime)
+        print('# generated {} ago'.format(dt), file=sys.stderr)
 
     return lookup
 
