@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 from urllib.parse import urlparse
+from urllib.parse import parse_qs
 
 # Available in python 3.7.
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -22,21 +23,45 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 class RequestHandler(BaseHTTPRequestHandler):
     COOKIE_NAME = 'openSUSE_session' # Both OBS and IBS.
+    GET_PATHS = [
+        'origin/config',
+        'origin/list',
+        'origin/package',
+        'origin/report',
+    ]
     POST_ACTIONS = ['select']
 
     def do_GET(self):
-        if self.path != '/':
+        url_parts = urlparse(self.path)
+
+        path = url_parts.path.lstrip('/')
+        path_parts = path.split('/')
+        path_prefix = '/'.join(path_parts[:2])
+
+        query = parse_qs(url_parts.query)
+
+        if path_prefix == '':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+
+            self.write_string('namespace: {}\n'.format(common.NAME))
+            self.write_string('name: {}\n'.format('OBS Operator'))
+            self.write_string('version: {}\n'.format(common.VERSION))
+            return
+
+        if len(path_parts) < 3 or path_prefix not in self.GET_PATHS:
             self.send_response(404)
             self.end_headers()
             return
 
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
+        with OSCRequestEnvironment(self) as oscrc_file:
+            func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
+            command = func(path_parts[2:], query)
 
-        self.write_string('namespace: {}\n'.format(common.NAME))
-        self.write_string('name: {}\n'.format('OBS Operator'))
-        self.write_string('version: {}\n'.format(common.VERSION))
+            self.end_headers()
+            if command and not self.execute(oscrc_file, command):
+                self.write_string('failed')
 
     def do_POST(self):
         action = self.path.lstrip('/')
@@ -47,41 +72,23 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         data = self.data_parse()
         user = data.get('user')
-        apiurl = self.apiurl_get()
-        if not data or not user or not apiurl:
+        if not data or not user:
             self.send_response(400)
             self.end_headers()
             return
         if self.debug:
             print('data: {}'.format(data))
-            print('apiurl: {}'.format(apiurl))
 
-        session = self.session_get()
-        if not session:
-            self.send_response(401)
+        with OSCRequestEnvironment(self, user) as oscrc_file:
+            func = getattr(self, 'handle_{}'.format(action))
+            commands = func(data)
             self.end_headers()
-            return
-        if self.debug:
-            print('session: {}'.format(session))
 
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.send_header('Access-Control-Allow-Credentials', 'true')
-        self.send_header('Access-Control-Allow-Origin', self.headers.get('Origin'))
-        self.end_headers()
-
-        with tempfile.NamedTemporaryFile() as cookiejar_file:
-            with tempfile.NamedTemporaryFile() as oscrc_file:
-                self.oscrc_create(oscrc_file, apiurl, cookiejar_file, user)
-                self.cookiejar_create(cookiejar_file, session)
-
-                func = getattr(self, 'handle_{}'.format(action))
-                commands = func(data)
-                for command in commands:
-                    self.write_string('$ {}\n'.format(' '.join(command)))
-                    if not self.execute(oscrc_file, command):
-                        self.write_string('failed')
-                        break
+            for command in commands:
+                self.write_string('$ {}\n'.format(' '.join(command)))
+                if not self.execute(oscrc_file, command):
+                    self.write_string('failed')
+                    break
 
     def data_parse(self):
         data = self.rfile.read(int(self.headers['Content-Length']))
@@ -158,6 +165,32 @@ class RequestHandler(BaseHTTPRequestHandler):
     def write_string(self, string):
         self.wfile.write(string.encode('utf-8'))
 
+    def handle_origin_config(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'config']
+        if 'origins-only' in query:
+            command.append('--origins-only')
+        return command
+
+    def handle_origin_list(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'list']
+        if 'force-refresh' in query:
+            command.append('--force-refresh')
+        return command
+
+    def handle_origin_package(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'package']
+        if 'debug' in query:
+            command.append('--debug')
+        if len(args) > 1:
+            command.append(args[1])
+        return command
+
+    def handle_origin_report(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'report']
+        if 'force-refresh' in query:
+            command.append('--force-refresh')
+        return command
+
     def staging_command(self, project, subcommand):
         return ['osc', 'staging', '-p', project, subcommand]
 
@@ -169,6 +202,47 @@ class RequestHandler(BaseHTTPRequestHandler):
             command.append(staging)
             command.extend(requests)
             yield command
+
+class OSCRequestEnvironment(object):
+    def __init__(self, handler, user=None):
+        self.handler = handler
+        self.user = user
+
+    def __enter__(self):
+        apiurl = self.handler.apiurl_get()
+        if not apiurl:
+            self.handler.send_response(400)
+            self.handler.end_headers()
+            return
+
+        session = self.handler.session_get()
+        if not session:
+            self.handler.send_response(401)
+            self.handler.end_headers()
+            return
+        if self.handler.debug:
+            print('apiurl: {}'.format(apiurl))
+            print('session: {}'.format(session))
+
+        self.handler.send_response(200)
+        self.handler.send_header('Content-type', 'text/plain')
+        self.handler.send_header('Access-Control-Allow-Credentials', 'true')
+        self.handler.send_header('Access-Control-Allow-Origin', self.handler.headers.get('Origin'))
+
+        self.cookiejar_file = tempfile.NamedTemporaryFile()
+        self.oscrc_file = tempfile.NamedTemporaryFile()
+
+        self.cookiejar_file.__enter__()
+        self.oscrc_file.__enter__()
+
+        self.handler.oscrc_create(self.oscrc_file, apiurl, self.cookiejar_file, self.user)
+        self.handler.cookiejar_create(self.cookiejar_file, session)
+
+        return self.oscrc_file
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cookiejar_file.__exit__(exc_type, exc_val, exc_tb)
+        self.oscrc_file.__exit__(exc_type, exc_val, exc_tb)
 
 def main(args):
     RequestHandler.apiurl = args.apiurl

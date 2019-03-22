@@ -214,6 +214,7 @@ Requires(pre):  shadow
 Summary:        Server used to perform staging operations
 Group:          Development/Tools/Other
 BuildArch:      noarch
+Requires:       osc-plugin-origin = %{version}
 Requires:       osc-plugin-staging = %{version}
 Requires(pre):  shadow
 

@@ -2,6 +2,10 @@
 
 The scripts may be installed in one's browser using the Tampermonkey extension to provide additional features using OBS via the web. After installing the extension simply click on the link for the desired script below to install it. Any scripts that provide an interface for making changes depend on the user being logged in to the OBS instance with a user with the appropriate permissions to complete the task.
 
+- [Origin](https://github.com/openSUSE/openSUSE-release-tools/raw/master/userscript/origin.js)
+
+  Supplement OBS interface with origin information. When viewing a package on OBS (`/package/show/$PACKAGE`) the origin information will be added to the links in the top right.
+
 - [Staging Move Drag-n-Drop](https://github.com/openSUSE/openSUSE-release-tools/raw/master/userscript/staging-move-drag-n-drop.user.js)
 
   Provides a drag-n-drop interface for moving requests between stagings using the staging dashboard. The staging dashboard can be found by visiting `/project/staging_projects/$PROJECT` on the relevant OBS instance where `$PROJECT` is the target project for the stagings (ex. `openSUSE:Factory` or `SUSE:SLE-15-SP1:GA`).
