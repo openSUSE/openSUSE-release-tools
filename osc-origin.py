@@ -119,7 +119,7 @@ def osrt_origin_list(apiurl, opts, *args):
     line_format = '{:<' + str(osrt_origin_max_key(lookup, 7)) + '}  {}'
     print(line_format.format('package', 'origin'))
 
-    for package, origin in lookup.items():
+    for package, origin in sorted(lookup.items()):
         print(line_format.format(package, origin))
 
 def osrt_origin_package(apiurl, opts, *packages):
