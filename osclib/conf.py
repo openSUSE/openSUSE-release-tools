@@ -84,7 +84,6 @@ DEFAULT = {
         # check_source.py
         'check-source-single-action-require': 'True',
         # review-team optionally added by leaper.py.
-        'repo-checker': 'repo-checker',
         'repo_checker-arch-whitelist': 'x86_64',
         'repo_checker-no-filter': 'True',
         'repo_checker-package-comment-devel': 'True',
