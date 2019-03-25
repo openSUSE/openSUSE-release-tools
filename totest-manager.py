@@ -698,12 +698,6 @@ class ToTestBase(object):
             self.api.pseudometa_file_ensure('version_%s' % target, version, comment='Update version')
 
 
-class ToTestBaseNew(ToTestBase):
-
-    # whether all medias need to have the same build number
-    need_same_build_number = True
-    take_source_from_product = True
-
 class ToTestFactory(ToTestBase):
     main_products = ['000product:openSUSE-dvd5-dvd-i586',
                      '000product:openSUSE-dvd5-dvd-x86_64',
@@ -832,7 +826,11 @@ class ToTestFactoryARM(ToTestFactory):
         return 2
 
 
-class ToTest151(ToTestBaseNew):
+class ToTest151(ToTestBase):
+
+    # whether all medias need to have the same build number
+    need_same_build_number = True
+    take_source_from_product = True
 
     # whether to set a snapshot number on release
     set_snapshot_number = False
@@ -882,8 +880,7 @@ class ToTest151PowerPC(ToTest151):
     def jobs_num(self):
         return 10
 
-
-class ToTest150Ports(ToTestBaseNew):
+class ToTest150Ports(ToTestBase):
     main_products = [
         '000product:openSUSE-cd-mini-aarch64',
         '000product:openSUSE-dvd5-dvd-aarch64',
@@ -892,6 +889,11 @@ class ToTest150Ports(ToTestBaseNew):
     ftp_products = ['000product:openSUSE-ftp-ftp-aarch64',
                     '000product:openSUSE-ftp-ftp-armv7hl',
                     ]
+
+
+    # whether all medias need to have the same build number
+    need_same_build_number = True
+    take_source_from_product = True
 
     # Leap 15.0 Ports still need to update snapshot
     set_snapshot_number = True
@@ -907,7 +909,7 @@ class ToTest150Ports(ToTestBaseNew):
     def jobs_num(self):
         return 10
 
-class ToTest150Images(ToTestBaseNew):
+class ToTest150Images(ToTestBase):
     image_products = [
         ImageProduct('livecd-leap-gnome', ['x86_64']),
         ImageProduct('livecd-leap-kde', ['x86_64']),
@@ -943,9 +945,6 @@ class ToTest150Images(ToTestBaseNew):
         return self.iso_build_version(self.test_project, self.image_products[0].package,
                                       arch=self.image_products[0].archs[0])
 
-    def _release(self, set_release=None):
-        ToTestBase._release(self, set_release)
-
     def jobs_num(self):
         return 13
 
@@ -979,21 +978,21 @@ class ToTest151ARMImages(ToTest151Images):
     def openqa_group(self):
         return 'openSUSE Leap 15.1 AArch64 Images'
 
-    def _release(self, set_release=None):
-        ToTestBase._release(self, set_release)
-
     def jobs_num(self):
         return 2
 
 
-class ToTestSLE(ToTestBaseNew):
+class ToTestSLE(ToTestBase):
     # whether to set a snapshot number on release
     set_snapshot_number = False
+
+    # whether all medias need to have the same build number
+    need_same_build_number = True
 
     take_source_from_product = True
 
     def __init__(self, *args, **kwargs):
-        ToTestBaseNew.__init__(self, test_subproject='TEST', *args, **kwargs)
+        ToTestBase.__init__(self, test_subproject='TEST', *args, **kwargs)
 
     def openqa_group(self):
         return 'Functional'
