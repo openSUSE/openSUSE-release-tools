@@ -516,6 +516,9 @@ class ToTestBase(object):
                                   target_repository=self.totest_container_repo)
 
     def update_totest(self, snapshot=None):
+        # omit snapshot, we don't want to rename on release
+        if not self.set_snapshot_number:
+            snapshot = None
         release = 'Snapshot%s' % snapshot if snapshot else None
         logger.info('Updating snapshot %s' % snapshot)
         if not (self.dryrun or self.norelease):
@@ -668,9 +671,6 @@ class ToTestBaseNew(ToTestBase):
     # whether all medias need to have the same build number
     need_same_build_number = True
 
-    # whether to set a snapshot number on release
-    set_snapshot_number = False
-
     """Base class for new product builder"""
 
     def _release(self, set_release=None):
@@ -721,11 +721,7 @@ class ToTestBaseNew(ToTestBase):
 
         return ret
 
-    def update_totest(self, snapshot):
-        if not self.set_snapshot_number:
-            snapshot = None
-        # omit snapshot, we don't want to rename on release
-        super(ToTestBaseNew, self).update_totest(snapshot)
+
 
 
 class ToTestFactory(ToTestBase):
@@ -849,6 +845,10 @@ class ToTestFactoryARM(ToTestFactory):
 
 
 class ToTest151(ToTestBaseNew):
+
+    # whether to set a snapshot number on release
+    set_snapshot_number = False
+
     main_products = [
         '000product:openSUSE-cd-mini-x86_64',
         '000product:openSUSE-dvd5-dvd-x86_64',
@@ -998,6 +998,9 @@ class ToTest151ARMImages(ToTest151Images):
 
 
 class ToTestSLE(ToTestBaseNew):
+    # whether to set a snapshot number on release
+    set_snapshot_number = False
+
     def __init__(self, *args, **kwargs):
         ToTestBaseNew.__init__(self, test_subproject='TEST', *args, **kwargs)
 
