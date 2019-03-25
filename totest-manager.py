@@ -136,18 +136,14 @@ class ToTestBase(object):
     def get_current_snapshot(self):
         return self.iso_build_version(self.test_project, self.main_products[0])
 
-    def ftp_build_version(self, project, tree, base=None):
-        if not base:
-            base = self.project_base
+    def ftp_build_version(self, project, tree):
         for binary in self.binaries_of_product(project, tree):
-            result = re.match(r'%s.*Build(.*)-Media1.report' % base, binary)
+            result = re.match(r'.*-Build(.*)-Media1.report', binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s ftp version" % project)
 
-    def iso_build_version(self, project, tree, base=None, repo=None, arch=None):
-        if not base:
-            base = self.project_base
+    def iso_build_version(self, project, tree, repo=None, arch=None):
         for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
             result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.raw\.xz)', binary)
             if result:
@@ -1007,13 +1003,6 @@ class ToTestSLE(ToTestBaseNew):
 
     def openqa_group(self):
         return 'Functional'
-
-    def ftp_build_version(self, project, tree):
-        return super(ToTestSLE, self).ftp_build_version(project, tree, base='SLE')
-
-    def iso_build_version(self, project, tree):
-        return super(ToTestSLE, self).iso_build_version(project, tree, base='SLE')
-
 
 class ToTestSLE12(ToTestSLE):
     main_products = [
