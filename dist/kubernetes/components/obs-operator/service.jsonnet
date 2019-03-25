@@ -2,6 +2,9 @@ local params = std.extVar("__ksonnet/params").components.service;
 local service = import '../service.libsonnet';
 
 [
+  service.parts.cache.base(
+    params.prefix, params.cache),
+
   service.parts.deployment.base(
     params.prefix, "deployment",
     params.cpu, params.memory, params.image,

@@ -1,5 +1,6 @@
 {
   global: {
+    cache: "500Mi",
     cpu: "100m",
     memory: "128Mi",
     image: null,
