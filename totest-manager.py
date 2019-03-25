@@ -108,9 +108,6 @@ class ToTestBase(object):
     def openqa_group(self):
         return self.project
 
-    def iso_prefix(self):
-        return self.project
-
     def jobs_num(self):
         return 70
 
@@ -137,15 +134,7 @@ class ToTestBase(object):
         return ret
 
     def get_current_snapshot(self):
-        """Return the current snapshot in the test project"""
-
-        for binary in self.binaries_of_product(self.test_project, '000product:%s-cd-mini-%s' % (self.project_base, self.arch())):
-            result = re.match(r'%s-%s-NET-.*-Snapshot(.*)-Media.iso' % (self.project_base, self.iso_prefix()),
-                              binary)
-            if result:
-                return result.group(1)
-
-        return None
+        return self.iso_build_version(self.test_project, self.main_products[0])
 
     def ftp_build_version(self, project, tree, base=None):
         if not base:
@@ -795,9 +784,6 @@ class ToTestFactory(ToTestBase):
     def openqa_group(self):
         return 'openSUSE Tumbleweed'
 
-    def iso_prefix(self):
-        return 'Tumbleweed'
-
     def arch(self):
         return 'x86_64'
 
@@ -823,9 +809,6 @@ class ToTestFactoryPowerPC(ToTestBase):
     def arch(self):
         return 'ppc64le'
 
-    def iso_prefix(self):
-        return 'Tumbleweed'
-
     def jobs_num(self):
         return 4
 
@@ -844,9 +827,6 @@ class ToTestFactoryzSystems(ToTestBase):
 
     def arch(self):
         return 's390x'
-
-    def iso_prefix(self):
-        return 'Tumbleweed'
 
     def jobs_num(self):
         return 1
@@ -897,9 +877,6 @@ class ToTest151(ToTestBaseNew):
 
     def openqa_group(self):
         return 'openSUSE Leap 15'
-
-    def get_current_snapshot(self):
-        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
 
 
 class ToTest151ARM(ToTest151):
@@ -959,10 +936,6 @@ class ToTest150Ports(ToTestBaseNew):
     def jobs_num(self):
         return 10
 
-    def get_current_snapshot(self):
-        return self.iso_build_version(self.project + ':ToTest', self.main_products[0])
-
-
 class ToTest150Images(ToTestBaseNew):
     image_products = [
         ImageProduct('livecd-leap-gnome', ['x86_64']),
@@ -995,7 +968,7 @@ class ToTest150Images(ToTestBaseNew):
                                       arch=self.image_products[0].archs[0])
 
     def get_current_snapshot(self):
-        return self.iso_build_version(self.project + ':ToTest', self.image_products[0].package,
+        return self.iso_build_version(self.test_project, self.image_products[0].package,
                                       arch=self.image_products[0].archs[0])
 
     def _release(self, set_release=None):
@@ -1047,9 +1020,6 @@ class ToTestSLE(ToTestBaseNew):
 
     def openqa_group(self):
         return 'Functional'
-
-    def get_current_snapshot(self):
-        return self.iso_build_version(self.project + ':TEST', self.main_products[0])
 
     def ftp_build_version(self, project, tree):
         return super(ToTestSLE, self).ftp_build_version(project, tree, base='SLE')
