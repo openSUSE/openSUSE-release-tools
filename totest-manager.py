@@ -129,6 +129,9 @@ class ToTestBase(object):
             raise Exception('No idea where to take the source version from')
 
         if self.take_source_from_product:
+            if self.is_image_product:
+                return self.iso_build_version(self.project, self.image_products[0].package,
+                                              arch=self.image_products[0].archs[0])
             return self.iso_build_version(self.project, self.main_products[0])
         else:
             return self.release_version()
@@ -153,6 +156,9 @@ class ToTestBase(object):
         return ret
 
     def get_current_snapshot(self):
+        if self.is_image_product:
+            return self.iso_build_version(self.test_project, self.image_products[0].package,
+                                          arch=self.image_products[0].archs[0])
         return self.iso_build_version(self.test_project, self.main_products[0])
 
     def ftp_build_version(self, project, tree):
@@ -170,7 +176,11 @@ class ToTestBase(object):
         raise NotFoundException("can't find %s iso version" % project)
 
     def current_qa_version(self):
-        return self.api.pseudometa_file_load('version_totest')
+        version_file = 'version_totest'
+        if self.is_image_product:
+            version_file = 'version_totest_images'
+
+        return self.api.pseudometa_file_load(version_file)
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -694,9 +704,11 @@ class ToTestBase(object):
         self.update_totest(new_snapshot)
 
     def write_version_to_dashboard(self, target, version):
+        version_file = 'version_%s' % target
+        if self.is_image_product:
+            version_file = version_file + '_images'
         if not (self.dryrun or self.norelease):
-            self.api.pseudometa_file_ensure('version_%s' % target, version, comment='Update version')
-
+            self.api.pseudometa_file_ensure(version_file, version, comment='Update version')
 
 class ToTestFactory(ToTestBase):
     main_products = ['000product:openSUSE-dvd5-dvd-i586',
@@ -928,22 +940,10 @@ class ToTest150Images(ToTestBase):
     set_snapshot_number = True
     take_source_from_product = True
 
+    is_image_product = True
+
     def openqa_group(self):
         return 'openSUSE Leap 15.0 Images'
-
-    def current_qa_version(self):
-        return self.api.pseudometa_file_load('version_totest_images')
-
-    def write_version_to_dashboard(self, target, version):
-        super(ToTest150Images, self).write_version_to_dashboard('{}_images'.format(target), version)
-
-    def current_sources(self):
-        return self.iso_build_version(self.project, self.image_products[0].package,
-                                      arch=self.image_products[0].archs[0])
-
-    def get_current_snapshot(self):
-        return self.iso_build_version(self.test_project, self.image_products[0].package,
-                                      arch=self.image_products[0].archs[0])
 
     def jobs_num(self):
         return 13
