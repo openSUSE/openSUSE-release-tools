@@ -230,8 +230,8 @@ class ToTestBase(object):
             'preparing' if self.status_for_openqa['can_release'] else \
             'testing' if self.status_for_openqa['snapshotable'] else \
             'building'
-        status_msg = "tag:{}:{}:{}".format(self.status_for_openqa['new_snapshot'], status_flag, status_flag)
-        msg = "pinned-description: Ignored issues\r\n\r\n{}\r\n\r\n{}".format(issues, status_msg)
+        status_msg = 'tag:{}:{}:{}'.format(self.status_for_openqa['new_snapshot'], status_flag, status_flag)
+        msg = 'pinned-description: Ignored issues\r\n\r\n{}\r\n\r\n{}'.format(issues, status_msg)
         data = {'text': msg}
 
         url = makeurl(self.openqa_server,
@@ -307,24 +307,24 @@ class ToTestBase(object):
                         # remove flag - unfortunately can't delete comment unless admin
                         data = {'text': text}
                         if self.dryrun:
-                            logger.info("Would label {} with: {}".format(job['id'], text))
+                            logger.info('Would label {} with: {}'.format(job['id'], text))
                         else:
                             self.openqa.openqa_request(
                                 'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
 
-                    logger.info("job %s failed, but was ignored", job['name'])
+                    logger.info('job %s failed, but was ignored', job['name'])
                 else:
                     self.failed_relevant_jobs.append(job['id'])
                     if not labeled and len(refs) > 0:
                         data = {'text': 'label:unknown_failure'}
                         if self.dryrun:
-                            logger.info("Would label {} as unknown".format(job['id']))
+                            logger.info('Would label {} as unknown'.format(job['id']))
                         else:
                             self.openqa.openqa_request(
                                 'POST', 'jobs/%s/comments' % job['id'], data=data)
 
                     joburl = '%s/tests/%s' % (self.openqa_server, job['id'])
-                    logger.info("job %s failed, see %s", job['name'], joburl)
+                    logger.info('job %s failed, see %s', job['name'], joburl)
 
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
                 continue
@@ -416,7 +416,7 @@ class ToTestBase(object):
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         # [@code!='succeeded'] is not supported by ET
-        failed = [status for status in root.findall("result/status") if status.get('code') != 'succeeded']
+        failed = [status for status in root.findall('result/status') if status.get('code') != 'succeeded']
 
         if any(failed):
             logger.info(
@@ -487,7 +487,7 @@ class ToTestBase(object):
                     builds.add(self.iso_build_version(self.project, p.package,
                                                       arch=arch))
             if len(builds) != 1:
-                logger.debug("not all medias have the same build number")
+                logger.debug('not all medias have the same build number')
                 return False
 
         return True
@@ -515,7 +515,7 @@ class ToTestBase(object):
 
         url = self.api.makeurl(baseurl, query=query)
         if self.dryrun or self.norelease:
-            logger.info("release %s/%s (%s)" % (project, package, query))
+            logger.info('release %s/%s (%s)' % (project, package, query))
         else:
             self.api.retried_POST(url)
 
@@ -608,12 +608,12 @@ class ToTestBase(object):
         logger.debug('current_qa_version %s', current_qa_version)
 
         snapshotable = self.is_snapshottable()
-        logger.debug("snapshotable: %s", snapshotable)
+        logger.debug('snapshotable: %s', snapshotable)
         can_release = ((current_snapshot is None or current_result != QA_INPROGRESS) and snapshotable)
 
         # not overwriting
         if new_snapshot == current_qa_version:
-            logger.debug("no change in snapshot version")
+            logger.debug('no change in snapshot version')
             can_release = False
         elif not self.all_repos_done(self.test_project):
             logger.debug("not all repos done, can't release")
@@ -628,7 +628,7 @@ class ToTestBase(object):
         # already published
         totest_is_publishing = self.totest_is_publishing()
         if totest_is_publishing:
-            logger.debug("totest already publishing")
+            logger.debug('totest already publishing')
             can_publish = False
 
         if self.update_pinned_descr:
@@ -644,18 +644,18 @@ class ToTestBase(object):
         if can_publish:
             if current_qa_version == current_snapshot:
                 self.publish_factory_totest()
-                self.write_version_to_dashboard("snapshot", current_snapshot)
+                self.write_version_to_dashboard('snapshot', current_snapshot)
                 can_release = False  # we have to wait
             else:
                 # We reached a very bad status: openQA testing is 'done', but not of the same version
                 # currently in test project. This can happen when 'releasing' the
                 # product failed
-                raise Exception("Publishing stopped: tested version (%s) does not match version in test project (%s)"
+                raise Exception('Publishing stopped: tested version (%s) does not match version in test project (%s)'
                                 % (current_qa_version, current_snapshot))
 
         if can_release:
             self.update_totest(new_snapshot)
-            self.write_version_to_dashboard("totest", new_snapshot)
+            self.write_version_to_dashboard('totest', new_snapshot)
 
     def send_amqp_event(self, current_snapshot, current_result):
         if not self.amqp_url:
@@ -663,7 +663,7 @@ class ToTestBase(object):
             return
 
         logger.debug('Sending AMQP message')
-        inf = re.sub(r"ed$", '', self._result2str(current_result))
+        inf = re.sub(r'ed$', '', self._result2str(current_result))
         msg_topic = '%s.ttm.build.%s' % (self.project_base.lower(), inf)
         msg_body = json.dumps({
             'build': current_snapshot,
@@ -1060,18 +1060,18 @@ class CommandlineInterface(cmdln.Cmdln):
 
     def get_optparser(self):
         parser = cmdln.CmdlnOptionParser(self)
-        parser.add_option("--dry", action="store_true", help="dry run")
-        parser.add_option("--debug", action="store_true", help="debug output")
-        parser.add_option("--release", action="store_true", help="trigger release in build service (default for openSUSE)")
-        parser.add_option("--norelease", action="store_true", help="do not trigger release in build service (default for SLE)")
-        parser.add_option("--verbose", action="store_true", help="verbose")
+        parser.add_option('--dry', action='store_true', help='dry run')
+        parser.add_option('--debug', action='store_true', help='debug output')
+        parser.add_option('--release', action='store_true', help='trigger release in build service (default for openSUSE)')
+        parser.add_option('--norelease', action='store_true', help='do not trigger release in build service (default for SLE)')
+        parser.add_option('--verbose', action='store_true', help='verbose')
         parser.add_option(
-            "--osc-debug", action="store_true", help="osc debug output")
+            '--osc-debug', action='store_true', help='osc debug output')
         parser.add_option(
-            "--openqa-server", help="""Full URL to the openQA server that should be queried, default based on project selection, e.g.
+            '--openqa-server', help="""Full URL to the openQA server that should be queried, default based on project selection, e.g.
             'https://openqa.opensuse.org' for 'openSUSE'""")
         parser.add_option(
-            "--obs-api-url", help="""Full URL to OBS instance to be queried, default based on project selection, e.g.
+            '--obs-api-url', help="""Full URL to OBS instance to be queried, default based on project selection, e.g.
             'https://api.opensuse.org' for 'openSUSE'""")
         return parser
 
@@ -1139,6 +1139,6 @@ class CommandlineInterface(cmdln.Cmdln):
         totest.release()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app = CommandlineInterface()
     sys.exit(app.main())
