@@ -1093,10 +1093,6 @@ class CommandlineInterface(cmdln.Cmdln):
             osc.conf.config['debug'] = True
 
     def _setup_totest(self, project):
-        fallback_project = 'openSUSE:%s' % project
-        if project not in self.totest_class and fallback_project in self.totest_class:
-            project = fallback_project
-
         project_base = project.split(':')[0]
         if not self.options.openqa_server:
             self.options.openqa_server = self.openqa_server[project_base]
