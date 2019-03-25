@@ -111,8 +111,27 @@ class ToTestBase(object):
     def jobs_num(self):
         return 70
 
-    def current_version(self):
-        return self.release_version()
+    def release_version(self):
+        url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
+                                '000release-packages:%s-release' % self.project_base])
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        for binary in root.findall('binary'):
+            binary = binary.get('filename', '')
+            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
+            if result:
+                return result.group(1)
+
+        raise NotFoundException("can't find %s version" % self.project)
+
+    def current_sources(self):
+        if self.take_source_from_product is None:
+            raise Exception('No idea where to take the source version from')
+
+        if self.take_source_from_product:
+            return self.iso_build_version(self.project, self.main_products[0])
+        else:
+            return self.release_version()
 
     def binaries_of_product(self, project, product, repo=None, arch=None):
         if repo is None:
@@ -149,19 +168,6 @@ class ToTestBase(object):
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s iso version" % project)
-
-    def release_version(self):
-        url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
-                                '000release-packages:%s-release' % self.project_base])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for binary in root.findall('binary'):
-            binary = binary.get('filename', '')
-            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
-            if result:
-                return result.group(1)
-
-        raise NotFoundException("can't find %s version" % self.project)
 
     def current_qa_version(self):
         return self.api.pseudometa_file_load('version_totest')
@@ -565,7 +571,7 @@ class ToTestBase(object):
             # nothing in test project (yet)
             logger.warn(e)
             current_snapshot = None
-        new_snapshot = self.current_version()
+        new_snapshot = self.current_sources()
         self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
@@ -658,7 +664,7 @@ class ToTestBase(object):
             logger.error('Could not send out AMQP event for %s tries, aborting.' % tries)
 
     def release(self):
-        new_snapshot = self.current_version()
+        new_snapshot = self.current_sources()
         self.update_totest(new_snapshot)
 
     def write_version_to_dashboard(self, target, version):
@@ -670,6 +676,7 @@ class ToTestBaseNew(ToTestBase):
 
     # whether all medias need to have the same build number
     need_same_build_number = True
+    take_source_from_product = True
 
     """Base class for new product builder"""
 
@@ -695,9 +702,6 @@ class ToTestBaseNew(ToTestBase):
             self._release_package('%s:Live' %
                                   self.project, cd.package, set_release=set_release)
 
-    def current_version(self):
-        return self.iso_build_version(self.project, self.main_products[0])
-
     def is_snapshottable(self):
         ret = super(ToTestBaseNew, self).is_snapshottable()
         if ret and self.need_same_build_number:
@@ -720,9 +724,6 @@ class ToTestBaseNew(ToTestBase):
                 logger.debug("not all medias have the same build number")
 
         return ret
-
-
-
 
 class ToTestFactory(ToTestBase):
     main_products = ['000product:openSUSE-dvd5-dvd-i586',
@@ -757,6 +758,8 @@ class ToTestFactory(ToTestBase):
         for flavor in ['MicroOS-podman', 'kubeadm-cri-o']
     ]
 
+    take_source_from_product = False
+
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
 
@@ -779,6 +782,8 @@ class ToTestFactoryPowerPC(ToTestBase):
                           ImageProduct('kubic-kured-image', ['ppc64le']),
                           ImageProduct('kubic-pause-image', ['ppc64le'])]
 
+    take_source_from_product = False
+
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
 
@@ -797,6 +802,8 @@ class ToTestFactoryzSystems(ToTestBase):
                      '000product:openSUSE-cd-mini-s390x']
 
     ftp_products = ['000product:openSUSE-ftp-ftp-s390x']
+
+    take_source_from_product = False
 
     def __init__(self, *args, **kwargs):
         ToTestBase.__init__(self, *args, **kwargs)
@@ -830,6 +837,8 @@ class ToTestFactoryARM(ToTestFactory):
 
     # JeOS doesn't follow build numbers of main isos
     need_same_build_number = False
+
+    take_source_from_product = False
 
     def __init__(self, *args, **kwargs):
         ToTestFactory.__init__(self, *args, **kwargs)
@@ -936,6 +945,7 @@ class ToTest150Images(ToTestBaseNew):
     # docker image has a different number
     need_same_build_number = False
     set_snapshot_number = True
+    take_source_from_product = True
 
     def openqa_group(self):
         return 'openSUSE Leap 15.0 Images'
@@ -946,7 +956,7 @@ class ToTest150Images(ToTestBaseNew):
     def write_version_to_dashboard(self, target, version):
         super(ToTest150Images, self).write_version_to_dashboard('{}_images'.format(target), version)
 
-    def current_version(self):
+    def current_sources(self):
         return self.iso_build_version(self.project, self.image_products[0].package,
                                       arch=self.image_products[0].archs[0])
 
@@ -1000,6 +1010,8 @@ class ToTest151ARMImages(ToTest151Images):
 class ToTestSLE(ToTestBaseNew):
     # whether to set a snapshot number on release
     set_snapshot_number = False
+
+    take_source_from_product = True
 
     def __init__(self, *args, **kwargs):
         ToTestBaseNew.__init__(self, test_subproject='TEST', *args, **kwargs)
