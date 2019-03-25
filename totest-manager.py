@@ -472,6 +472,24 @@ class ToTestBase(object):
                                            self.product_repo, arch):
                         return False
 
+        if self.need_same_build_number:
+            # make sure all medias have the same build number
+            builds = set()
+            for p in self.ftp_products:
+                if 'Addon-NonOss' in p:
+                    # XXX: don't care about nonoss atm.
+                    continue
+                builds.add(self.ftp_build_version(self.project, p))
+            for p in self.main_products:
+                builds.add(self.iso_build_version(self.project, p))
+            for p in self.livecd_products + self.image_products:
+                for arch in p.archs:
+                    builds.add(self.iso_build_version(self.project, p.package,
+                                                      arch=arch))
+            if len(builds) != 1:
+                logger.debug("not all medias have the same build number")
+                return False
+
         return True
 
     def _release_package(self, project, package, set_release=None, repository=None,
@@ -702,28 +720,7 @@ class ToTestBaseNew(ToTestBase):
             self._release_package('%s:Live' %
                                   self.project, cd.package, set_release=set_release)
 
-    def is_snapshottable(self):
-        ret = super(ToTestBaseNew, self).is_snapshottable()
-        if ret and self.need_same_build_number:
-            # make sure all medias have the same build number
-            builds = set()
-            for p in self.ftp_products:
-                if 'Addon-NonOss' in p:
-                    # XXX: don't care about nonoss atm.
-                    continue
-                builds.add(self.ftp_build_version(self.project, p))
-            for p in self.main_products:
-                builds.add(self.iso_build_version(self.project, p))
-            for p in self.livecd_products + self.image_products:
-                for arch in p.archs:
-                    builds.add(self.iso_build_version(self.project, p.package,
-                                                      arch=arch))
 
-            ret = (len(builds) == 1)
-            if ret is False:
-                logger.debug("not all medias have the same build number")
-
-        return ret
 
 class ToTestFactory(ToTestBase):
     main_products = ['000product:openSUSE-dvd5-dvd-i586',
