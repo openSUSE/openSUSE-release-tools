@@ -98,12 +98,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         if self.apiurl:
             return self.apiurl
 
-        origin = self.headers.get('Origin')
-        if not origin:
+        host = self.headers.get('Host')
+        if not host:
             return None
 
         # Strip port if present.
-        domain = urlparse(origin).netloc.split(':', 2)[0]
+        domain = host.split(':', 2)[0]
         if '.' not in domain:
             return None
 
