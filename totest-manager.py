@@ -699,19 +699,6 @@ class ToTestBaseNew(ToTestBase):
             self._release_package('%s:Live' %
                                   self.project, cd.package, set_release=set_release)
 
-    def release_version(self):
-        url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
-                                '000product:%s-release' % self.project_base])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for binary in root.findall('binary'):
-            binary = binary.get('filename', '')
-            result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
-            if result:
-                return result.group(1)
-
-        raise NotFoundException("can't find %s release version" % self.project)
-
     def current_version(self):
         return self.iso_build_version(self.project, self.main_products[0])
 
