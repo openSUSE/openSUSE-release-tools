@@ -55,13 +55,16 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        with OSCRequestEnvironment(self) as oscrc_file:
-            func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
-            command = func(path_parts[2:], query)
+        try:
+            with OSCRequestEnvironment(self) as oscrc_file:
+                func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
+                command = func(path_parts[2:], query)
 
-            self.end_headers()
-            if command and not self.execute(oscrc_file, command):
-                self.write_string('failed')
+                self.end_headers()
+                if command and not self.execute(oscrc_file, command):
+                    self.write_string('failed')
+        except OSCRequestEnvironmentException as e:
+            self.write_string(str(e))
 
     def do_POST(self):
         action = self.path.lstrip('/')
@@ -79,16 +82,19 @@ class RequestHandler(BaseHTTPRequestHandler):
         if self.debug:
             print('data: {}'.format(data))
 
-        with OSCRequestEnvironment(self, user) as oscrc_file:
-            func = getattr(self, 'handle_{}'.format(action))
-            commands = func(data)
-            self.end_headers()
+        try:
+            with OSCRequestEnvironment(self, user) as oscrc_file:
+                func = getattr(self, 'handle_{}'.format(action))
+                commands = func(data)
+                self.end_headers()
 
-            for command in commands:
-                self.write_string('$ {}\n'.format(' '.join(command)))
-                if not self.execute(oscrc_file, command):
-                    self.write_string('failed')
-                    break
+                for command in commands:
+                    self.write_string('$ {}\n'.format(' '.join(command)))
+                    if not self.execute(oscrc_file, command):
+                        self.write_string('failed')
+                        break
+        except OSCRequestEnvironmentException as e:
+            self.write_string(str(e))
 
     def data_parse(self):
         data = self.rfile.read(int(self.headers['Content-Length']))
@@ -213,13 +219,14 @@ class OSCRequestEnvironment(object):
         if not apiurl:
             self.handler.send_response(400)
             self.handler.end_headers()
-            return
+            raise OSCRequestEnvironmentException('unable to determine apiurl')
 
         session = self.handler.session_get()
         if not session:
             self.handler.send_response(401)
             self.handler.end_headers()
-            return
+            raise OSCRequestEnvironmentException('unable to determine session')
+
         if self.handler.debug:
             print('apiurl: {}'.format(apiurl))
             print('session: {}'.format(session))
@@ -243,6 +250,9 @@ class OSCRequestEnvironment(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.cookiejar_file.__exit__(exc_type, exc_val, exc_tb)
         self.oscrc_file.__exit__(exc_type, exc_val, exc_tb)
+
+class OSCRequestEnvironmentException(Exception):
+    pass
 
 def main(args):
     RequestHandler.apiurl = args.apiurl
