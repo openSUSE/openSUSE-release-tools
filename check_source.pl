@@ -22,7 +22,7 @@ if (-f "$dir/_service") {
     while( my ($name, $s) = each %{$service->{service}} ) {
         my $mode = $s->{mode} || '';
         next if ($mode eq "localonly" || $mode eq "disabled" || $mode eq "buildtime");
-        print "Services are only allowed if they are mode='localonly', 'disabled' or 'buildtime'. Please change the mode of $name and use osc service localrun\n";
+        print "Services are only allowed if they are mode='localonly', 'disabled' or 'buildtime'. Please change the mode of $name and use `osc service localrun`.\n";
         $ret = 1;
     }
     # move it away to have full service from source validator
@@ -31,7 +31,7 @@ if (-f "$dir/_service") {
 
 for my $file (glob("$dir/_service:*")) {
     $file=basename($file);
-    print "Found _service generate file $file in checkout. Please clean this up first.";
+    print "Found _service generated file $file in checkout. Please clean this up first.";
     $ret = 1;
 }
 
@@ -39,12 +39,12 @@ my @specs = map basename($_), glob("$dir/*.spec");
 
 if (@specs) {
     if (!-f "$dir/$bname.changes") {
-        print "A $bname.changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
+        print "$bname.changes is missing. A package submitted as FooBar needs to have a FooBar.changes file with a format created by `osc vc`.\n";
         $ret = 1;
     }
 
     if (!-f "$dir/$bname.spec") {
-        print "A $bname.spec is missing. Packages submitted as FooBar, need to have a FooBar.spec file\n";
+        print "$bname.spec is missing. A package submitted as FooBar needs to have a FooBar.spec file.\n";
         $ret = 1;
     }
     exit($ret) if ($ret);
@@ -76,7 +76,7 @@ for my $spec (@specs) {
     $changes = $spec;
     $changes =~ s/\.spec$/.changes/;
     if (!-f "$dir/$changes") {
-        print "A $changes is missing. Packages submitted as FooBar, need to have a FooBar.changes file with a format created by osc vc\n";
+        print "$changes is missing. A package containing FooBar.spec needs to have a FooBar.changes file with a format created by `osc vc`.\n";
         $ret = 1;
     }
     if (-f "$old/$changes") {
@@ -100,7 +100,7 @@ if ($spec !~ m/\n%changelog\s/ && $spec != m/\n%changelog$/) {
 }
 
 if ($spec !~ m/(#[^\n]*license)/i) {
-    print "$bname.spec does not appear to have a license, the file needs to contain a free software license\n";
+    print "$bname.spec does not appear to have a license. The file needs to contain a free software license\n";
     print "Suggestion: use \"osc service localrun format_spec_file\" to get our default license or\n";
     print "the minimal license:\n\n";
     print "# This file is under MIT license\n";
@@ -203,7 +203,7 @@ if (-d "$old") {
     chdir($odir);
 
     if (%patches) {
-        # parsing changes
+        # parse changes
         for my $changes (@changes) {
             my $diff = "";
             if (! -e "$old/$changes") {
@@ -229,10 +229,10 @@ if (-d "$old") {
         for my $patch (keys %patches) {
             # wording stolen from Raymond's declines :)
             if ($patches{$patch} eq 'current') {
-                print "A patch ($patch) is being added without being properly referenced from the changelog.\n";
+                print "A patch ($patch) is being added without this addition being mentioned in the changelog.\n";
             }
             else {
-                print "A Patch ($patch) is being deleted without this removal being referenced in the changelog.\n";
+                print "A patch ($patch) is being deleted without this removal being mentioned in the changelog.\n";
             }
         }
     }
@@ -242,7 +242,7 @@ my $odir = getcwd;
 my $tmpdir = tempdir("obs-XXXXXXX", TMPDIR => 1, CLEANUP => 1);
 chdir($dir) || die 'tempdir failed';
 if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--enforcelocal", "yes", "--outdir", $tmpdir)) {
-    print "Source URLs are not valid. Try \"osc service localrun download_files\"\n";
+    print "Source URLs are not valid. Try \"osc service localrun download_files\".\n";
     $ret = 2;
 }
 chdir($odir);
@@ -251,7 +251,7 @@ for my $rpmlint (glob("$dir/*rpmlintrc")) {
     open(RPMLINTRC, $rpmlint);
     while (<RPMLINTRC>) {
         if (m/^\s*setBadness/) {
-            print "For Factory submissions, you can not use setBadness. Use filters in $rpmlint\n";
+            print "For Factory submissions, you cannot use setBadness. Use filters in $rpmlint.\n";
             $ret = 1;
         }
     }
