@@ -1179,7 +1179,6 @@ class CommandlineInterface(cmdln.Cmdln):
 
         return self.totest_class[project](project, self.options.dry, not release, self.options.obs_api_url, self.options.openqa_server)
 
-    @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_run(self, subcmd, opts, project='openSUSE:Factory'):
         """${cmd_name}: run the ToTest Manager
 
@@ -1187,39 +1186,8 @@ class CommandlineInterface(cmdln.Cmdln):
         ${cmd_option_list}
         """
 
-        class ExTimeout(Exception):
-
-            """raised on timeout"""
-
-        if opts.interval:
-            def alarm_called(nr, frame):
-                raise ExTimeout()
-            signal.signal(signal.SIGALRM, alarm_called)
-
-        while True:
-            try:
-                totest = self._setup_totest(project)
-                totest.totest()
-            except Exception as e:
-                logger.error(e)
-
-            if opts.interval:
-                if os.isatty(0):
-                    logger.info(
-                        "sleeping %d minutes. Press enter to check now ..." % opts.interval)
-                    signal.alarm(opts.interval * 60)
-                    try:
-                        raw_input()
-                    except ExTimeout:
-                        pass
-                    signal.alarm(0)
-                    logger.info("recheck at %s" %
-                                datetime.datetime.now().isoformat())
-                else:
-                    logger.info("sleeping %d minutes." % opts.interval)
-                    time.sleep(opts.interval * 60)
-                continue
-            break
+        totest = self._setup_totest(project)
+        totest.totest()
 
     def do_release(self, subcmd, opts, project='openSUSE:Factory'):
         """${cmd_name}: manually release all media. Use with caution!
@@ -1229,7 +1197,6 @@ class CommandlineInterface(cmdln.Cmdln):
         """
 
         totest = self._setup_totest(project)
-
         totest.release()
 
 
