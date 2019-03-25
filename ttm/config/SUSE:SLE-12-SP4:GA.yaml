@@ -1,0 +1,19 @@
+jobs_num: 70
+need_same_build_number: true
+openqa_group: Functional
+openqa_server: https://openqa.suse.de
+product_repo: images
+products:
+  ftp:
+  - _product:SLES-ftp-POOL-aarch64
+  - _product:SLES-ftp-POOL-ppc64le
+  - _product:SLES-ftp-POOL-s390x
+  - _product:SLES-ftp-POOL-x86_64
+  main:
+  - _product:SLES-dvd5-DVD-aarch64
+  - _product:SLES-dvd5-DVD-ppc64le
+  - _product:SLES-dvd5-DVD-s390x
+  - _product:SLES-dvd5-DVD-x86_64
+take_source_from_product: true
+test_subproject: TEST
+

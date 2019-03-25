@@ -63,6 +63,10 @@ class ToTestBase(object):
 
     """Base class to store the basic interface"""
 
+    need_same_build_number = False
+    set_snapshot_number = False
+    is_image_product = False
+
     product_repo = 'images'
     product_arch = 'local'
     livecd_repo = 'images'
@@ -82,9 +86,10 @@ class ToTestBase(object):
             api_url = osc.conf.config['apiurl']
         self.api = StagingAPI(api_url, project=project)
         self.openqa_server = openqa_server
+        self.test_subproject = test_subproject
         if not test_subproject:
-            test_subproject = 'ToTest'
-        self.test_project = '%s:%s' % (self.project, test_subproject)
+            self.test_subproject = 'ToTest'
+        self.test_project = '%s:%s' % (self.project, self.test_subproject)
         self.openqa = OpenQA_Client(server=openqa_server)
         self.load_issues_to_ignore()
         self.project_base = project.split(':')[0]
@@ -123,6 +128,9 @@ class ToTestBase(object):
                 return result.group(1)
 
         raise NotFoundException("can't find %s version" % self.project)
+
+    def arch(self):
+        return None
 
     def current_sources(self):
         if self.take_source_from_product is None:
@@ -1114,6 +1122,12 @@ class CommandlineInterface(cmdln.Cmdln):
 
         return self.totest_class[project](project, self.options.dry, not release, self.options.obs_api_url, self.options.openqa_server)
 
+    def convert_image_products(self, arr):
+        ret = []
+        for product in arr:
+            ret.append({product.package: product.archs})
+        return ret
+
     def do_run(self, subcmd, opts, project='openSUSE:Factory'):
         """${cmd_name}: run the ToTest Manager
 
@@ -1122,7 +1136,26 @@ class CommandlineInterface(cmdln.Cmdln):
         """
 
         totest = self._setup_totest(project)
-        totest.totest()
+        products = {'main': totest.main_products}
+        products['ftp'] = totest.ftp_products
+        products['livecds'] = self.convert_image_products(totest.livecd_products)
+        products['images'] = self.convert_image_products(totest.image_products)
+        products['container'] = self.convert_image_products(totest.container_products)
+
+        hash = { 'products': products }
+        hash['openqa_group'] = totest.openqa_group()
+        hash['take_source_from_product'] = totest.take_source_from_product
+        hash['arch'] = totest.arch()
+        hash['jobs_num'] = totest.jobs_num()
+        hash['need_same_build_number'] = totest.need_same_build_number
+        hash['set_snapshot_number'] = totest.set_snapshot_number
+        hash['product_repo'] = totest.product_repo
+        hash['is_image_product'] = totest.is_image_product
+        hash['test_subproject'] = totest.test_subproject
+        hash['openqa_server'] = totest.openqa_server
+
+        print(yaml.dump(hash, default_flow_style=False))
+        #totest.totest()
 
     def do_release(self, subcmd, opts, project='openSUSE:Factory'):
         """${cmd_name}: manually release all media. Use with caution!

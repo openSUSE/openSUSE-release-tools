@@ -1,0 +1,15 @@
+jobs_num: 10
+need_same_build_number: true
+openqa_group: openSUSE Leap 15 AArch64
+openqa_server: https://openqa.opensuse.org
+product_repo: images
+products:
+  ftp:
+  - 000product:openSUSE-ftp-ftp-aarch64
+  - 000product:openSUSE-ftp-ftp-armv7hl
+  main:
+  - 000product:openSUSE-cd-mini-aarch64
+  - 000product:openSUSE-dvd5-dvd-aarch64
+take_source_from_product: true
+test_subproject: ToTest
+

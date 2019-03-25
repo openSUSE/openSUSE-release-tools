@@ -1,0 +1,18 @@
+is_image_product: true
+jobs_num: 2
+openqa_group: openSUSE Leap 15.1 AArch64 Images
+openqa_server: https://openqa.opensuse.org
+product_repo: images
+products:
+  container:
+  - opensuse-leap-image:docker:
+    - aarch64
+  images:
+  - JeOS:JeOS-efi.aarch64:
+    - aarch64
+  - JeOS:
+    - armv7l
+set_snapshot_number: true
+take_source_from_product: true
+test_subproject: ToTest
+

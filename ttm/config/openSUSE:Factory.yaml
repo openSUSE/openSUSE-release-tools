@@ -1,0 +1,81 @@
+arch: x86_64
+jobs_num: 70
+openqa_group: openSUSE Tumbleweed
+openqa_server: https://openqa.opensuse.org
+product_repo: images
+products:
+  container:
+  - opensuse-tumbleweed-image:docker:
+    - i586
+    - x86_64
+  - kubic-kured-image:
+    - x86_64
+  - kubic-pause-image:
+    - i586
+    - x86_64
+  ftp:
+  - 000product:openSUSE-ftp-ftp-i586_x86_64
+  - 000product:openSUSE-Addon-NonOss-ftp-ftp-i586_x86_64
+  images:
+  - opensuse-tumbleweed-image:lxc:
+    - i586
+    - x86_64
+  - openSUSE-Tumbleweed-JeOS:MS-HyperV:
+    - x86_64
+  - openSUSE-Tumbleweed-JeOS:OpenStack-Cloud:
+    - x86_64
+  - openSUSE-Tumbleweed-JeOS:VMware:
+    - x86_64
+  - openSUSE-Tumbleweed-JeOS:XEN:
+    - x86_64
+  - openSUSE-Tumbleweed-JeOS:kvm-and-xen:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:MicroOS-podman-MS-HyperV:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:kubeadm-cri-o-MS-HyperV:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:MicroOS-podman-OpenStack-Cloud:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:kubeadm-cri-o-OpenStack-Cloud:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:MicroOS-podman-VMware:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:kubeadm-cri-o-VMware:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:MicroOS-podman-Vagrant-x86_64:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:kubeadm-cri-o-Vagrant-x86_64:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:MicroOS-podman-XEN:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:kubeadm-cri-o-XEN:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:MicroOS-podman-hardware-x86_64:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:kubeadm-cri-o-hardware-x86_64:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:MicroOS-podman-kvm-and-xen:
+    - x86_64
+  - openSUSE-Tumbleweed-Kubic:kubeadm-cri-o-kvm-and-xen:
+    - x86_64
+  livecds:
+  - livecd-tumbleweed-kde:
+    - i586
+    - x86_64
+  - livecd-tumbleweed-gnome:
+    - i586
+    - x86_64
+  - livecd-tumbleweed-x11:
+    - i586
+    - x86_64
+  - livecd-tumbleweed-xfce:
+    - i586
+    - x86_64
+  main:
+  - 000product:openSUSE-dvd5-dvd-i586
+  - 000product:openSUSE-dvd5-dvd-x86_64
+  - 000product:openSUSE-cd-mini-i586
+  - 000product:openSUSE-cd-mini-x86_64
+  - 000product:openSUSE-Tumbleweed-Kubic-dvd5-dvd-x86_64
+test_subproject: ToTest
+
