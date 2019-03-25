@@ -494,6 +494,10 @@ class ToTestBase(object):
 
     def _release_package(self, project, package, set_release=None, repository=None,
                          target_project=None, target_repository=None):
+        if package.startswith('000product:'):
+            logger.debug('Ignoring to release {}'.format(package))
+            return
+
         query = {'cmd': 'release'}
 
         if set_release:
@@ -516,6 +520,10 @@ class ToTestBase(object):
             self.api.retried_POST(url)
 
     def _release(self, set_release=None):
+        # release 000product as a whole
+        if self.main_products[0].startswith('000product'):
+            self._release_package(self.project, '000product', set_release=set_release)
+
         for product in self.ftp_products:
             self._release_package(self.project, product, repository=self.product_repo)
 
@@ -695,32 +703,6 @@ class ToTestBaseNew(ToTestBase):
     # whether all medias need to have the same build number
     need_same_build_number = True
     take_source_from_product = True
-
-    """Base class for new product builder"""
-
-    def _release(self, set_release=None):
-        query = {'cmd': 'release'}
-
-        package = '000product'
-        project = self.project
-
-        if set_release:
-            query['setrelease'] = set_release
-
-        baseurl = ['source', project, package]
-
-        url = self.api.makeurl(baseurl, query=query)
-        if self.dryrun or self.norelease:
-            logger.info("release %s/%s (%s)" % (project, package, set_release))
-        else:
-            self.api.retried_POST(url)
-
-        # XXX still legacy
-        for cd in self.livecd_products:
-            self._release_package('%s:Live' %
-                                  self.project, cd.package, set_release=set_release)
-
-
 
 class ToTestFactory(ToTestBase):
     main_products = ['000product:openSUSE-dvd5-dvd-i586',
