@@ -19,8 +19,8 @@
     var subdomain = domain_parent.endsWith('suse.de') ? 'tortuga' : 'operator';
     var url = 'https://' + subdomain + '.' + domain_parent + '/origin/package/' + project + '/' + package;
 
-    $.get(url, function(origin) {
+    $.get({url: url, crossDomain: true, xhrFields: {withCredentials: true}, success: function(origin) {
         if (origin.endsWith('failed')) return;
         $('ul.clean_list, ul.list-unstyled').append('<li>Origin: <a href="/package/show/' + origin + '/' + package + '">' + origin + '</a>');
-    })
+    }});
 })();
