@@ -16,4 +16,4 @@ products:
   - 000product:SLES-cd-DVD-x86_64
 take_source_from_product: true
 test_subproject: TEST
-
+do_not_release: true
