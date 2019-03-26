@@ -248,7 +248,8 @@ class InstallChecker(object):
         url = self.api.makeurl(['source', 'home:repo-checker', 'reports', project])
         osc.core.http_PUT(url, data=''.join(comment))
 
-        return 'https://build.opensuse.org/package/view_file/home:repo-checker/reports/{}'.format(project)
+        url = self.api.apiurl.replace('api.', 'build.')
+        return '{}/package/view_file/home:repo-checker/reports/{}'.format(url, project)
 
     def report_state(self, state, report_url, project, repository, buildids):
         architectures = self.target_archs(project, repository)
