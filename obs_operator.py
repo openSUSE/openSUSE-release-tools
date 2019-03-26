@@ -117,6 +117,16 @@ class RequestHandler(BaseHTTPRequestHandler):
         domain_parent = '.'.join(domain.split('.')[1:])
         return 'https://api.{}'.format(domain_parent)
 
+    def origin_domain_get(self):
+        origin = self.headers.get('Origin')
+        if origin is not None:
+            # Strip port if present.
+            domain = urlparse(origin).netloc.split(':', 2)[0]
+            if '.' in domain:
+                return '.'.join(domain.split('.')[1:])
+
+        return None
+
     def session_get(self):
         if self.session:
             return self.session
@@ -216,10 +226,14 @@ class OSCRequestEnvironment(object):
 
     def __enter__(self):
         apiurl = self.handler.apiurl_get()
-        if not apiurl:
+        origin_domain = self.handler.origin_domain_get()
+        if not apiurl or (origin_domain and not apiurl.endswith(origin_domain)):
             self.handler.send_response(400)
             self.handler.end_headers()
-            raise OSCRequestEnvironmentException('unable to determine apiurl')
+            if not apiurl:
+                raise OSCRequestEnvironmentException('unable to determine apiurl')
+            else:
+                raise OSCRequestEnvironmentException('origin does not match host domain')
 
         session = self.handler.session_get()
         if not session:
@@ -233,8 +247,9 @@ class OSCRequestEnvironment(object):
 
         self.handler.send_response(200)
         self.handler.send_header('Content-type', 'text/plain')
-        self.handler.send_header('Access-Control-Allow-Credentials', 'true')
-        self.handler.send_header('Access-Control-Allow-Origin', self.handler.headers.get('Origin'))
+        if origin_domain:
+            self.handler.send_header('Access-Control-Allow-Credentials', 'true')
+            self.handler.send_header('Access-Control-Allow-Origin', self.handler.headers.get('Origin'))
 
         self.cookiejar_file = tempfile.NamedTemporaryFile()
         self.oscrc_file = tempfile.NamedTemporaryFile()
