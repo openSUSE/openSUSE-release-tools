@@ -55,13 +55,16 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        with OSCRequestEnvironment(self) as oscrc_file:
-            func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
-            command = func(path_parts[2:], query)
+        try:
+            with OSCRequestEnvironment(self) as oscrc_file:
+                func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
+                command = func(path_parts[2:], query)
 
-            self.end_headers()
-            if command and not self.execute(oscrc_file, command):
-                self.write_string('failed')
+                self.end_headers()
+                if command and not self.execute(oscrc_file, command):
+                    self.write_string('failed')
+        except OSCRequestEnvironmentException as e:
+            self.write_string(str(e))
 
     def do_POST(self):
         action = self.path.lstrip('/')
@@ -79,16 +82,19 @@ class RequestHandler(BaseHTTPRequestHandler):
         if self.debug:
             print('data: {}'.format(data))
 
-        with OSCRequestEnvironment(self, user) as oscrc_file:
-            func = getattr(self, 'handle_{}'.format(action))
-            commands = func(data)
-            self.end_headers()
+        try:
+            with OSCRequestEnvironment(self, user) as oscrc_file:
+                func = getattr(self, 'handle_{}'.format(action))
+                commands = func(data)
+                self.end_headers()
 
-            for command in commands:
-                self.write_string('$ {}\n'.format(' '.join(command)))
-                if not self.execute(oscrc_file, command):
-                    self.write_string('failed')
-                    break
+                for command in commands:
+                    self.write_string('$ {}\n'.format(' '.join(command)))
+                    if not self.execute(oscrc_file, command):
+                        self.write_string('failed')
+                        break
+        except OSCRequestEnvironmentException as e:
+            self.write_string(str(e))
 
     def data_parse(self):
         data = self.rfile.read(int(self.headers['Content-Length']))
@@ -98,18 +104,28 @@ class RequestHandler(BaseHTTPRequestHandler):
         if self.apiurl:
             return self.apiurl
 
-        origin = self.headers.get('Origin')
-        if not origin:
+        host = self.headers.get('Host')
+        if not host:
             return None
 
         # Strip port if present.
-        domain = urlparse(origin).netloc.split(':', 2)[0]
+        domain = host.split(':', 2)[0]
         if '.' not in domain:
             return None
 
         # Remove first subdomain and replace with api subdomain.
         domain_parent = '.'.join(domain.split('.')[1:])
         return 'https://api.{}'.format(domain_parent)
+
+    def origin_domain_get(self):
+        origin = self.headers.get('Origin')
+        if origin is not None:
+            # Strip port if present.
+            domain = urlparse(origin).netloc.split(':', 2)[0]
+            if '.' in domain:
+                return '.'.join(domain.split('.')[1:])
+
+        return None
 
     def session_get(self):
         if self.session:
@@ -210,24 +226,30 @@ class OSCRequestEnvironment(object):
 
     def __enter__(self):
         apiurl = self.handler.apiurl_get()
-        if not apiurl:
+        origin_domain = self.handler.origin_domain_get()
+        if not apiurl or (origin_domain and not apiurl.endswith(origin_domain)):
             self.handler.send_response(400)
             self.handler.end_headers()
-            return
+            if not apiurl:
+                raise OSCRequestEnvironmentException('unable to determine apiurl')
+            else:
+                raise OSCRequestEnvironmentException('origin does not match host domain')
 
         session = self.handler.session_get()
         if not session:
             self.handler.send_response(401)
             self.handler.end_headers()
-            return
+            raise OSCRequestEnvironmentException('unable to determine session')
+
         if self.handler.debug:
             print('apiurl: {}'.format(apiurl))
             print('session: {}'.format(session))
 
         self.handler.send_response(200)
         self.handler.send_header('Content-type', 'text/plain')
-        self.handler.send_header('Access-Control-Allow-Credentials', 'true')
-        self.handler.send_header('Access-Control-Allow-Origin', self.handler.headers.get('Origin'))
+        if origin_domain:
+            self.handler.send_header('Access-Control-Allow-Credentials', 'true')
+            self.handler.send_header('Access-Control-Allow-Origin', self.handler.headers.get('Origin'))
 
         self.cookiejar_file = tempfile.NamedTemporaryFile()
         self.oscrc_file = tempfile.NamedTemporaryFile()
@@ -243,6 +265,9 @@ class OSCRequestEnvironment(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.cookiejar_file.__exit__(exc_type, exc_val, exc_tb)
         self.oscrc_file.__exit__(exc_type, exc_val, exc_tb)
+
+class OSCRequestEnvironmentException(Exception):
+    pass
 
 def main(args):
     RequestHandler.apiurl = args.apiurl
