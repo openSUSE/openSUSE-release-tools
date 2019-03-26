@@ -48,9 +48,10 @@ class ToTestManager(ToolBase.ToolBase):
     def setup(self, project):
         self.project = ToTest(project)
         apiurl = osc.conf.config['apiurl']
-        self.api = StagingAPI(apiurl, project=project.name)
+        self.api = StagingAPI(apiurl, project=project)
         self.openqa = OpenQA_Client(server=self.project.openqa_server)
         self.update_pinned_descr = False
+        self.load_issues_to_ignore()
 
     def send_amqp_event(self, current_snapshot, current_result):
         amqp_url = osc.conf.config.get('ttm_amqp_url')
@@ -60,7 +61,7 @@ class ToTestManager(ToolBase.ToolBase):
 
         self.logger.debug('Sending AMQP message')
         inf = re.sub(r'ed$', '', self._result2str(current_result))
-        msg_topic = '%s.ttm.build.%s' % (self.project_base.lower(), inf)
+        msg_topic = '%s.ttm.build.%s' % (self.project.base.lower(), inf)
         msg_body = json.dumps({
             'build': current_snapshot,
             'project': self.project,
@@ -111,7 +112,7 @@ class ToTestManager(ToolBase.ToolBase):
         if new_snapshot == current_qa_version:
             self.logger.debug('no change in snapshot version')
             can_release = False
-        elif not self.all_repos_done(self.test_project):
+        elif not self.all_repos_done(self.project.test_project):
             self.logger.debug("not all repos done, can't release")
             # the repos have to be done, otherwise we better not touch them
             # with a new release
@@ -161,7 +162,7 @@ class ToTestManager(ToolBase.ToolBase):
 
     def write_version_to_dashboard(self, target, version):
         version_file = 'version_%s' % target
-        if self.is_image_product:
+        if self.project.is_image_product:
             version_file = version_file + '_images'
         if not (self.dryrun or self.norelease):
             self.api.pseudometa_file_ensure(version_file, version, comment='Update version')
@@ -181,8 +182,8 @@ class ToTestManager(ToolBase.ToolBase):
         self.api.attribute_value_save('IgnoredIssues', text)
 
     def release_version(self):
-        url = self.api.makeurl(['build', self.project, 'standard', self.arch(),
-                                '000release-packages:%s-release' % self.project_base])
+        url = self.api.makeurl(['build', self.project.name, 'standard', self.project.arch,
+                                '000release-packages:%s-release' % self.project.base])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for binary in root.findall('binary'):
@@ -194,22 +195,22 @@ class ToTestManager(ToolBase.ToolBase):
         raise NotFoundException("can't find %s version" % self.project)
 
     def current_sources(self):
-        if self.take_source_from_product is None:
+        if self.project.take_source_from_product is None:
             raise Exception('No idea where to take the source version from')
 
-        if self.take_source_from_product:
-            if self.is_image_product:
-                return self.iso_build_version(self.project, self.image_products[0].package,
-                                              arch=self.image_products[0].archs[0])
-            return self.iso_build_version(self.project, self.main_products[0])
+        if self.project.take_source_from_product:
+            if self.project.is_image_product:
+                return self.iso_build_version(self.project, self.project.image_products[0].package,
+                                              arch=self.project.image_products[0].archs[0])
+            return self.iso_build_version(self.project, self.project.main_products[0])
         else:
             return self.release_version()
 
     def binaries_of_product(self, project, product, repo=None, arch=None):
         if repo is None:
-            repo = self.product_repo
+            repo = self.project.product_repo
         if arch is None:
-            arch = self.product_arch
+            arch = self.project.product_arch
 
         url = self.api.makeurl(['build', project, repo, arch, product])
         try:
@@ -225,10 +226,10 @@ class ToTestManager(ToolBase.ToolBase):
         return ret
 
     def get_current_snapshot(self):
-        if self.is_image_product:
-            return self.iso_build_version(self.test_project, self.image_products[0].package,
-                                          arch=self.image_products[0].archs[0])
-        return self.iso_build_version(self.test_project, self.main_products[0])
+        if self.project.is_image_product:
+            return self.iso_build_version(self.project.test_project, self.project.image_products[0].package,
+                                          arch=self.project.image_products[0].archs[0])
+        return self.iso_build_version(self.project.test_project, self.project.main_products[0])
 
     def ftp_build_version(self, project, tree):
         for binary in self.binaries_of_product(project, tree):
@@ -246,7 +247,7 @@ class ToTestManager(ToolBase.ToolBase):
 
     def current_qa_version(self):
         version_file = 'version_totest'
-        if self.is_image_product:
+        if self.project.is_image_product:
             version_file = 'version_totest_images'
 
         return self.api.pseudometa_file_load(version_file)
@@ -257,8 +258,8 @@ class ToTestManager(ToolBase.ToolBase):
 
         """
 
-        url = makeurl(self.openqa_server,
-                      ['api', 'v1', 'jobs'], {'group': self.openqa_group(), 'build': snapshot, 'latest': 1})
+        url = makeurl(self.project.openqa_server,
+                      ['api', 'v1', 'jobs'], {'group': self.project.openqa_group, 'build': snapshot, 'latest': 1})
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
@@ -277,13 +278,13 @@ class ToTestManager(ToolBase.ToolBase):
             return 'passed'
 
     def update_openqa_status_message(self):
-        url = makeurl(self.openqa_server,
+        url = makeurl(self.project.openqa_server,
                       ['api', 'v1', 'job_groups'])
         f = self.api.retried_GET(url)
         job_groups = json.load(f)
         group_id = 0
         for jg in job_groups:
-            if jg['name'] == self.openqa_group():
+            if jg['name'] == self.project.openqa_group:
                 group_id = jg['id']
                 break
 
@@ -301,7 +302,7 @@ class ToTestManager(ToolBase.ToolBase):
         msg = 'pinned-description: Ignored issues\r\n\r\n{}\r\n\r\n{}'.format(issues, status_msg)
         data = {'text': msg}
 
-        url = makeurl(self.openqa_server,
+        url = makeurl(self.project.openqa_server,
                       ['api', 'v1', 'groups', str(group_id), 'comments'])
         f = self.api.retried_GET(url)
         comments = json.load(f)
@@ -330,7 +331,7 @@ class ToTestManager(ToolBase.ToolBase):
         self.failed_relevant_jobs = []
         self.failed_ignored_jobs = []
 
-        if len(jobs) < self.jobs_num():  # not yet scheduled
+        if len(jobs) < self.project.jobs_num:  # not yet scheduled
             self.logger.warning('we have only %s jobs' % len(jobs))
             return QA_INPROGRESS
 
@@ -339,7 +340,7 @@ class ToTestManager(ToolBase.ToolBase):
             # print json.dumps(job, sort_keys=True, indent=4)
             if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
-                url = makeurl(self.openqa_server,
+                url = makeurl(self.project.openqa_server,
                               ['api', 'v1', 'jobs', str(job['id']), 'comments'])
                 f = self.api.retried_GET(url)
                 comments = json.load(f)
@@ -390,7 +391,7 @@ class ToTestManager(ToolBase.ToolBase):
                             self.openqa.openqa_request(
                                 'POST', 'jobs/%s/comments' % job['id'], data=data)
 
-                    joburl = '%s/tests/%s' % (self.openqa_server, job['id'])
+                    joburl = '%s/tests/%s' % (self.project.openqa_server, job['id'])
                     self.logger.info('job %s failed, see %s', job['name'], joburl)
 
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
@@ -517,41 +518,41 @@ class ToTestManager(ToolBase.ToolBase):
 
         """
 
-        if not self.all_repos_done(self.project):
+        if not self.all_repos_done(self.project.name):
             return False
 
-        for product in self.ftp_products + self.main_products:
-            if not self.package_ok(self.project, product, self.product_repo, self.product_arch):
+        for product in self.project.ftp_products + self.project.main_products:
+            if not self.package_ok(self.project.name, product, self.project.product_repo, self.project.product_arch):
                 return False
 
-        for product in self.image_products + self.container_products:
+        for product in self.project.image_products + self.project.container_products:
             for arch in product.archs:
-                if not self.package_ok(self.project, product.package, self.product_repo, arch):
+                if not self.package_ok(self.project.name, product.package, self.project.product_repo, arch):
                     return False
 
-        if len(self.livecd_products):
-            if not self.all_repos_done('%s:Live' % self.project):
+        if len(self.project.livecd_products):
+            if not self.all_repos_done('%s:Live' % self.project.name):
                 return False
 
-            for product in self.livecd_products:
+            for product in self.project.livecd_products:
                 for arch in product.archs:
-                    if not self.package_ok('%s:Live' % self.project, product.package,
-                                           self.product_repo, arch):
+                    if not self.package_ok('%s:Live' % self.project.name, product.package,
+                                           self.project.product_repo, arch):
                         return False
 
-        if self.need_same_build_number:
+        if self.project.need_same_build_number:
             # make sure all medias have the same build number
             builds = set()
-            for p in self.ftp_products:
+            for p in self.project.ftp_products:
                 if 'Addon-NonOss' in p:
                     # XXX: don't care about nonoss atm.
                     continue
-                builds.add(self.ftp_build_version(self.project, p))
-            for p in self.main_products:
-                builds.add(self.iso_build_version(self.project, p))
-            for p in self.livecd_products + self.image_products:
+                builds.add(self.ftp_build_version(self.project.name, p))
+            for p in self.project.main_products:
+                builds.add(self.iso_build_version(self.project.name, p))
+            for p in self.project.livecd_products + self.project.image_products:
                 for arch in p.archs:
-                    builds.add(self.iso_build_version(self.project, p.package,
+                    builds.add(self.iso_build_version(self.project.name, p.package,
                                                       arch=arch))
             if len(builds) != 1:
                 self.logger.debug('not all medias have the same build number')
@@ -588,41 +589,41 @@ class ToTestManager(ToolBase.ToolBase):
 
     def _release(self, set_release=None):
         # release 000product as a whole
-        if self.main_products[0].startswith('000product'):
+        if self.project.main_products[0].startswith('000product'):
             self._release_package(self.project, '000product', set_release=set_release)
 
-        for product in self.ftp_products:
-            self._release_package(self.project, product, repository=self.product_repo)
+        for product in self.project.ftp_products:
+            self._release_package(self.project, product, repository=self.project.product_repo)
 
-        for cd in self.livecd_products:
+        for cd in self.project.livecd_products:
             self._release_package('%s:Live' %
                                   self.project, cd.package, set_release=set_release,
                                   repository=self.livecd_repo)
 
-        for image in self.image_products:
+        for image in self.project.image_products:
             self._release_package(self.project, image.package, set_release=set_release,
-                                  repository=self.product_repo)
+                                  repository=self.project.product_repo)
 
-        for cd in self.main_products:
+        for cd in self.project.main_products:
             self._release_package(self.project, cd, set_release=set_release,
-                                  repository=self.product_repo)
+                                  repository=self.project.product_repo)
 
-        for container in self.container_products:
+        for container in self.project.container_products:
             # Containers are built in the same repo as other image products,
             # but released into a different repo in :ToTest
-            self._release_package(self.project, container.package, repository=self.product_repo,
-                                  target_project=self.test_project,
-                                  target_repository=self.totest_container_repo)
+            self._release_package(self.project, container.package, repository=self.project.product_repo,
+                                  target_project=self.project.test_project,
+                                  target_repository=self.project.totest_container_repo)
 
     def update_totest(self, snapshot=None):
         # omit snapshot, we don't want to rename on release
-        if not self.set_snapshot_number:
+        if not self.project.set_snapshot_number:
             snapshot = None
         release = 'Snapshot%s' % snapshot if snapshot else None
         self.logger.info('Updating snapshot %s' % snapshot)
         if not (self.dryrun or self.norelease):
-            self.api.switch_flag_in_prj(self.test_project, flag='publish', state='disable',
-                                        repository=self.product_repo)
+            self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
+                                        repository=self.project.product_repo)
 
         self._release(set_release=release)
 
@@ -630,26 +631,26 @@ class ToTestManager(ToolBase.ToolBase):
         self.logger.info('Publish test project content')
         if not (self.dryrun or self.norelease):
             self.api.switch_flag_in_prj(
-                self.test_project, flag='publish', state='enable',
-                repository=self.product_repo)
-        if self.container_products:
+                self.project.test_project, flag='publish', state='enable',
+                repository=self.project.product_repo)
+        if self.project.container_products:
             self.logger.info('Releasing container products from ToTest')
-            for container in self.container_products:
-                self._release_package(self.test_project, container.package,
-                                      repository=self.totest_container_repo)
+            for container in self.project.container_products:
+                self._release_package(self.project.test_project, container.package,
+                                      repository=self.project.totest_container_repo)
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
 
         url = self.api.makeurl(
-            ['source', self.test_project, '_meta'])
+            ['source', self.project.test_project, '_meta'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         if not root.find('publish'):  # default true
             return True
 
         for flag in root.find('publish'):
-            if flag.get('repository', None) not in [None, self.product_repo]:
+            if flag.get('repository', None) not in [None, self.project.product_repo]:
                 continue
             if flag.get('arch', None):
                 continue
