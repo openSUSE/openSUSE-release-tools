@@ -1,4 +1,3 @@
-is_image_product: true
 jobs_num: 13
 openqa_group: openSUSE Leap 15.1 Images
 openqa_server: https://openqa.opensuse.org

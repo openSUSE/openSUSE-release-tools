@@ -28,7 +28,6 @@ class ToTest(object):
         self.do_not_release = False
         self.need_same_build_number = False
         self.set_snapshot_number = False
-        self.is_image_product = False
         self.take_source_from_product = False
         self.arch = 'x86_64'
         self.openqa_server = None
@@ -50,6 +49,7 @@ class ToTest(object):
         self.jobs_num = 42
         self.load_config()
         self.test_project = '%s:%s' % (project, self.test_subproject)
+        self.is_image_product = not len(self.main_products)
 
     def load_config(self):
         config = yaml.load(open('ttm/config/{}.yaml'.format(self.name)))
@@ -70,10 +70,10 @@ class ToTest(object):
 
     def set_products(self, products):
         # plain arrays
-        setattr(self, 'main_products', products['main'])
-        setattr(self, 'ftp_products', products['ftp'])
+        setattr(self, 'main_products', products.get('main', []))
+        setattr(self, 'ftp_products', products.get('ftp', []))
 
         # image products
-        setattr(self, 'livecd_products', self.parse_images(products['livecds']))
-        setattr(self, 'image_products', self.parse_images(products['images']))
-        setattr(self, 'container_products', self.parse_images(products['container']))
+        setattr(self, 'livecd_products', self.parse_images(products.get('livecds', [])))
+        setattr(self, 'image_products', self.parse_images(products.get('images', [])))
+        setattr(self, 'container_products', self.parse_images(products.get('container', [])))

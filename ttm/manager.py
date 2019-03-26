@@ -200,9 +200,9 @@ class ToTestManager(ToolBase.ToolBase):
 
         if self.project.take_source_from_product:
             if self.project.is_image_product:
-                return self.iso_build_version(self.project, self.project.image_products[0].package,
+                return self.iso_build_version(self.project.name, self.project.image_products[0].package,
                                               arch=self.project.image_products[0].archs[0])
-            return self.iso_build_version(self.project, self.project.main_products[0])
+            return self.iso_build_version(self.project.name, self.project.main_products[0])
         else:
             return self.release_version()
 
