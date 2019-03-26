@@ -11,6 +11,7 @@
 
 from __future__ import print_function
 import yaml
+from osclib.core import attribute_value_load
 
 class ImageProduct(object):
     def __init__(self, package, archs):
@@ -21,7 +22,7 @@ class ToTest(object):
 
     """Base class to store the basic interface"""
 
-    def __init__(self, project):
+    def __init__(self, project, apiurl):
         self.name = project
 
         # set the defaults
@@ -47,12 +48,12 @@ class ToTest(object):
         self.base = project.split(':')[0]
 
         self.jobs_num = 42
-        self.load_config()
+        self.load_config(apiurl)
         self.test_project = '%s:%s' % (project, self.test_subproject)
         self.is_image_product = not len(self.main_products)
 
-    def load_config(self):
-        config = yaml.load(open('ttm/config/{}.yaml'.format(self.name)))
+    def load_config(self, apiurl):
+        config = yaml.safe_load(attribute_value_load(apiurl, self.name, 'ToTestManagerConfig'))
         for key, value in config.items():
             if key == 'products':
                 self.set_products(value)

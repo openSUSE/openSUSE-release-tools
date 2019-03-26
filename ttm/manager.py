@@ -46,8 +46,8 @@ class ToTestManager(ToolBase.ToolBase):
         self.logger = logging.getLogger(__name__)
 
     def setup(self, project):
-        self.project = ToTest(project)
         apiurl = osc.conf.config['apiurl']
+        self.project = ToTest(project, apiurl)
         self.api = StagingAPI(apiurl, project=project)
         self.openqa = OpenQA_Client(server=self.project.openqa_server)
         self.update_pinned_descr = False
