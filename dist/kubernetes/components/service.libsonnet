@@ -1,5 +1,23 @@
 {
   parts:: {
+    cache:: {
+      base(prefix, capacity):: {
+        apiVersion: "v1",
+        kind: "PersistentVolumeClaim",
+        metadata: {
+          name: prefix + "-pvc",
+        },
+        spec: {
+          accessModes: ["ReadWriteMany"],
+          resources: {
+            requests: {
+              storage: capacity,
+            }
+          }
+        }
+      }
+    },
+
     deployment:: {
       base(prefix, name, cpu, memory, image, command):: {
         apiVersion: "apps/v1",
@@ -37,6 +55,10 @@
                     mountPath: "/secret",
                     readOnly: true,
                   },
+                  {
+                    name: "cache",
+                    mountPath: "/root/.cache",
+                  },
                 ],
                 resources: {
                   requests: {
@@ -50,6 +72,12 @@
                   name: "oscrc",
                   secret: {
                     secretName: prefix + "-oscrc",
+                  }
+                },
+                {
+                  name: "cache",
+                  persistentVolumeClaim: {
+                    claimName: prefix + "-pvc"
                   }
                 },
               ],
