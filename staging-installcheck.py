@@ -246,7 +246,7 @@ class InstallChecker(object):
     def upload_failure(self, project, comment):
         print(project, '\n'.join(comment))
         url = self.api.makeurl(['source', 'home:repo-checker', 'reports', project])
-        osc.core.http_PUT(url, data=''.join(comment))
+        osc.core.http_PUT(url, data='\n'.join(comment))
 
         url = self.api.apiurl.replace('api.', 'build.')
         return '{}/package/view_file/home:repo-checker/reports/{}'.format(url, project)
