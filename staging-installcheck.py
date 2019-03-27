@@ -75,13 +75,13 @@ class InstallChecker(object):
 
         self.existing_problems = self.binary_list_existing_problem(api.project, api.cmain_repo)
 
-    def check_required_by(self, fileinfo, provides, requiredby, built_binaries):
+    def check_required_by(self, fileinfo, provides, requiredby, built_binaries, comments):
         if requiredby.get('name') in built_binaries:
             return True
         # extract >= and the like
         provide = provides.get('dep')
         provide = provide.split(' ')[0]
-        self.logger.info('{} provides {} required by {}'.format(fileinfo.find('name').text, provide, requiredby.get('name')))
+        comments.append('{} provides {} required by {}'.format(fileinfo.find('name').text, provide, requiredby.get('name')))
         url = api.makeurl(['build', api.project, api.cmain_repo, 'x86_64', '_repository', requiredby.get('name') + '.rpm'],
                       {'view': 'fileinfo_ext'})
         reverse_fileinfo = ET.parse(osc.core.http_GET(url)).getroot()
@@ -93,12 +93,12 @@ class InstallChecker(object):
             for provided_by in require.findall('providedby'):
                 if provided_by.get('name') in built_binaries:
                     continue
-                self.logger.info('  also provided by {} -> ignoring'.format(provided_by.get('name')))
+                comments.append('  also provided by {} -> ignoring'.format(provided_by.get('name')))
                 return True
-        self.logger.warn('missing requires')
+        comments.append('Error: missing alternative provides for {}'.format(provide))
         return False
 
-    def check_delete_request(self, req, to_ignore):
+    def check_delete_request(self, req, to_ignore, comments):
         package = req['package']
         if package in to_ignore:
             self.logger.info('Delete request for package {} ignored'.format(package))
@@ -114,7 +114,7 @@ class InstallChecker(object):
         for fileinfo in file_infos:
             for provides in fileinfo.findall('provides_ext'):
                 for requiredby in provides.findall('requiredby[@name]'):
-                    result = result and self.check_required_by(fileinfo, provides, requiredby, built_binaries)
+                    result = result and self.check_required_by(fileinfo, provides, requiredby, built_binaries, comments)
 
         what_depends_on = depends_on(api.apiurl, api.project, api.cmain_repo, [package], True)
 
@@ -124,7 +124,7 @@ class InstallChecker(object):
             what_depends_on.remove(package)
 
         if len(what_depends_on):
-            self.logger.warn('{} is still a build requirement of:\n\n- {}'.format(
+            comments.append('{} is still a build requirement of:\n\n- {}'.format(
                 package, '\n- '.join(sorted(what_depends_on))))
             return False
 
@@ -193,13 +193,13 @@ class InstallChecker(object):
             self.logger.error('no project status for {}'.format(project))
             return False
 
+        result_comment = []
+
         to_ignore = self.packages_to_ignore(project)
         meta = api.load_prj_pseudometa(status['description'])
         for req in meta['requests']:
             if req['type'] == 'delete':
-                result = result and self.check_delete_request(req, to_ignore)
-
-        result_comment = []
+                result = result and self.check_delete_request(req, to_ignore, result_comment)
 
         for arch in architectures:
             # hit the first repository in the target project (if existant)
