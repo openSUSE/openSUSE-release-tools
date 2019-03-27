@@ -74,6 +74,9 @@ Requires:       perl-XML-Parser
 # Spec related requirements.
 Requires:       osclib = %{version}
 
+# no longer deployed as package
+Obsoletes:      %{name}-totest-manager
+
 # Avoid needlessly building on s390x and such in various repos.
 # Must include noarch for older systems even though it makes no sense due to
 # https://bugzilla.redhat.com/show_bug.cgi?id=1298668.
