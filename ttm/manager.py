@@ -89,12 +89,12 @@ class ToTestManager(ToolBase.ToolBase):
     def totest(self, project):
         self.setup(project)
         try:
-            current_snapshot = self.get_current_snapshot()
+            current_snapshot = self.version_from_totest_project()
         except NotFoundException as e:
             # nothing in test project (yet)
             self.logger.warn(e)
             current_snapshot = None
-        new_snapshot = self.current_sources()
+        new_snapshot = self.version_from_project()
         self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
@@ -157,7 +157,7 @@ class ToTestManager(ToolBase.ToolBase):
 
     def release(self, project):
         self.setup(project)
-        new_snapshot = self.current_sources()
+        new_snapshot = self.version_from_project()
         self.update_totest(new_snapshot)
 
     def write_version_to_dashboard(self, target, version):
@@ -194,17 +194,16 @@ class ToTestManager(ToolBase.ToolBase):
 
         raise NotFoundException("can't find %s version" % self.project)
 
-    def current_sources(self):
-        if self.project.take_source_from_product is None:
-            raise Exception('No idea where to take the source version from')
-
-        if self.project.take_source_from_product:
-            if self.project.is_image_product:
-                return self.iso_build_version(self.project.name, self.project.image_products[0].package,
-                                              arch=self.project.image_products[0].archs[0])
-            return self.iso_build_version(self.project.name, self.project.main_products[0])
-        else:
+    def version_from_project(self):
+        if not self.project.take_source_from_product:
             return self.release_version()
+
+        if len(self.project.main_products):
+            return self.iso_build_version(self.project.name, self.project.main_products[0])
+
+        #assert(self.project.is_image_product)
+        return self.iso_build_version(self.project.name, self.project.image_products[0].package,
+                                      arch=self.project.image_products[0].archs[0])
 
     def binaries_of_product(self, project, product, repo=None, arch=None):
         if repo is None:
@@ -225,11 +224,13 @@ class ToTestManager(ToolBase.ToolBase):
 
         return ret
 
-    def get_current_snapshot(self):
-        if self.project.is_image_product:
-            return self.iso_build_version(self.project.test_project, self.project.image_products[0].package,
-                                          arch=self.project.image_products[0].archs[0])
-        return self.iso_build_version(self.project.test_project, self.project.main_products[0])
+    def version_from_totest_project(self):
+        if len(self.project.main_products):
+            return self.iso_build_version(self.project.test_project, self.project.main_products[0])
+
+        return self.iso_build_version(self.project.test_project, self.project.image_products[0].package,
+                                      arch=self.project.image_products[0].archs[0])
+
 
     def ftp_build_version(self, project, tree):
         for binary in self.binaries_of_product(project, tree):
