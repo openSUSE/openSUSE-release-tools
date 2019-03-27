@@ -160,12 +160,17 @@ class ToTestManager(ToolBase.ToolBase):
         new_snapshot = self.version_from_project()
         self.update_totest(new_snapshot)
 
-    def write_version_to_dashboard(self, target, version):
+    def version_file(self, target):
         version_file = 'version_%s' % target
-        if self.project.is_image_product:
+        if not len(self.project.main_products):
             version_file = version_file + '_images'
-        if not (self.dryrun or self.norelease):
-            self.api.pseudometa_file_ensure(version_file, version, comment='Update version')
+        return version_file
+
+    def write_version_to_dashboard(self, target, version):
+        if self.dryrun or self.norelease:
+            return
+        self.api.pseudometa_file_ensure(self.version_file(target), version,
+                                        comment='Update version')
 
     def load_issues_to_ignore(self):
         text = self.api.attribute_value_load('IgnoredIssues')
@@ -201,7 +206,6 @@ class ToTestManager(ToolBase.ToolBase):
         if len(self.project.main_products):
             return self.iso_build_version(self.project.name, self.project.main_products[0])
 
-        #assert(self.project.is_image_product)
         return self.iso_build_version(self.project.name, self.project.image_products[0].package,
                                       arch=self.project.image_products[0].archs[0])
 
@@ -247,11 +251,7 @@ class ToTestManager(ToolBase.ToolBase):
         raise NotFoundException("can't find %s iso version" % project)
 
     def current_qa_version(self):
-        version_file = 'version_totest'
-        if self.project.is_image_product:
-            version_file = 'version_totest_images'
-
-        return self.api.pseudometa_file_load(version_file)
+        return self.api.pseudometa_file_load(self.version_file('totest'))
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
