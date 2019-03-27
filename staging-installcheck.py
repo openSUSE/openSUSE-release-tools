@@ -224,19 +224,19 @@ class InstallChecker(object):
             check = self.cycle_check(project, repository, arch)
             if not check.success:
                 self.logger.warn('Cycle check failed')
-                result_comment.append(check.comment + '\n')
+                result_comment.append(check.comment)
                 result = False
 
             check = self.install_check(target_pair, arch, directories, None, whitelist)
             if not check.success:
                 self.logger.warn('Install check failed')
-                result_comment.append(check.comment + '\n')
+                result_comment.append(check.comment)
                 result = False
 
         if result:
             self.report_state('success', self.gocd_url(), project, repository, buildids)
         else:
-            result_comment.insert(0, 'Generated from {}\n\n'.format(self.gocd_url()))
+            result_comment.insert(0, 'Generated from {}\n'.format(self.gocd_url()))
             self.report_state('failure', self.upload_failure(project, result_comment), project, repository, buildids)
             self.logger.warn('Not accepting {}'.format(project))
             return False
@@ -244,7 +244,7 @@ class InstallChecker(object):
         return result
 
     def upload_failure(self, project, comment):
-        print(project, ''.join(comment))
+        print(project, '\n'.join(comment))
         url = self.api.makeurl(['source', 'home:repo-checker', 'reports', project])
         osc.core.http_PUT(url, data=''.join(comment))
 
