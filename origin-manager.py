@@ -17,6 +17,15 @@ class OriginManager(ReviewBot.ReviewBot):
         self.request_default_return = True
         self.override_allow = False
 
+    def check_action_delete_package(self, request, action):
+        origin_info_old = origin_find(self.apiurl, action.tgt_project, action.tgt_package)
+
+        reviews = {'fallback': 'Delete requests require fallback review.'}
+        self.policy_result_reviews_add(action.tgt_project, action.tgt_package,
+                                       reviews, origin_info_old, origin_info_old)
+
+        return True
+
     def check_source_submission(self, src_project, src_package, src_rev, tgt_project, tgt_package):
         if not self.config_validate(tgt_project):
             return False
