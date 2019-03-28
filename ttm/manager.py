@@ -64,7 +64,7 @@ class ToTestManager(ToolBase.ToolBase):
         msg_topic = '%s.ttm.build.%s' % (self.project.base.lower(), inf)
         msg_body = json.dumps({
             'build': current_snapshot,
-            'project': self.project,
+            'project': self.project.name,
             'failed_jobs': {
                 'relevant': self.failed_relevant_jobs,
                 'ignored': self.failed_ignored_jobs,
@@ -197,7 +197,7 @@ class ToTestManager(ToolBase.ToolBase):
             if result:
                 return result.group(1)
 
-        raise NotFoundException("can't find %s version" % self.project)
+        raise NotFoundException("can't find %s version" % self.project.name)
 
     def version_from_project(self):
         if not self.project.take_source_from_product:
@@ -592,28 +592,28 @@ class ToTestManager(ToolBase.ToolBase):
         if len(self.project.main_products):
             # release 000product as a whole
             if self.project.main_products[0].startswith('000product'):
-                self._release_package(self.project, '000product', set_release=set_release)
+                self._release_package(self.project.name, '000product', set_release=set_release)
 
             for cd in self.project.main_products:
-                self._release_package(self.project, cd, set_release=set_release,
+                self._release_package(self.project.name, cd, set_release=set_release,
                                       repository=self.project.product_repo)
 
             for product in self.project.ftp_products:
-                self._release_package(self.project, product, repository=self.project.product_repo)
+                self._release_package(self.project.name, product, repository=self.project.product_repo)
 
         for cd in self.project.livecd_products:
             self._release_package('%s:Live' %
-                                  self.project, cd.package, set_release=set_release,
+                                  self.project.name, cd.package, set_release=set_release,
                                   repository=self.livecd_repo)
 
         for image in self.project.image_products:
-            self._release_package(self.project, image.package, set_release=set_release,
+            self._release_package(self.project.name, image.package, set_release=set_release,
                                   repository=self.project.product_repo)
 
         for container in self.project.container_products:
             # Containers are built in the same repo as other image products,
             # but released into a different repo in :ToTest
-            self._release_package(self.project, container.package, repository=self.project.product_repo,
+            self._release_package(self.project.name, container.package, repository=self.project.product_repo,
                                   target_project=self.project.test_project,
                                   target_repository=self.project.totest_container_repo)
 
