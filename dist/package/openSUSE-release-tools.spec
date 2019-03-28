@@ -74,6 +74,9 @@ Requires:       perl-XML-Parser
 # Spec related requirements.
 Requires:       osclib = %{version}
 
+# no longer deployed as package
+Obsoletes:      %{name}-totest-manager
+
 # Avoid needlessly building on s390x and such in various repos.
 # Must include noarch for older systems even though it makes no sense due to
 # https://bugzilla.redhat.com/show_bug.cgi?id=1298668.
@@ -238,18 +241,6 @@ Requires(pre):  shadow
 
 %description staging-bot
 Staging bot services and system user.
-
-%package totest-manager
-Summary:        Manages product ToTest repository
-Group:          Development/Tools/Other
-BuildArch:      noarch
-# TODO Update requirements.
-Requires:       osclib = %{version}
-Requires:       python2-openqa_client
-Requires:       python2-pika
-
-%description totest-manager
-Manages product ToTest repository workflow and openQA interaction
 
 %package pkglistgen
 Summary:        Generates package lists in 000product
@@ -424,20 +415,6 @@ exit 0
 %postun staging-bot
 %systemd_postun
 
-%pre totest-manager
-getent passwd osrt-totest-manager > /dev/null || \
-  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-totest-manager" osrt-totest-manager
-exit 0
-
-%postun totest-manager
-%systemd_postun
-if [ -x /usr/bin/systemctl ] ; then
-  instances=($(systemctl list-units -t service --full | grep -oP osrt-totest-manager@[^.]+ || true))
-  if [ ${#instances[@]} -gt 0 ] ; then
-    systemctl try-restart --no-block ${instances[@]}
-  fi
-fi
-
 %postun pkglistgen
 %systemd_postun
 
@@ -466,6 +443,7 @@ fi
 %{_bindir}/osrt-sync-rebuild
 %{_bindir}/osrt-unmaintained
 %{_bindir}/osrt-staging-installcheck
+%{_bindir}/osrt-totest-manager
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
@@ -485,7 +463,6 @@ fi
 %exclude %{_datadir}/%{source_dir}/repo_checker.pl
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
 %exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
-%exclude %{_datadir}/%{source_dir}/totest-manager.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-check_dups.py
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
@@ -625,13 +602,6 @@ fi
 %{_unitdir}/osrt-staging-bot-supersede@.timer
 %{_unitdir}/osrt-staging-bot-support-rebuild@.service
 %{_unitdir}/osrt-staging-bot-support-rebuild@.timer
-
-%files totest-manager
-%defattr(-,root,root,-)
-%{_bindir}/osrt-totest-manager
-%{_datadir}/%{source_dir}/totest-manager.py
-%{_unitdir}/osrt-totest-manager@.service
-%{_unitdir}/osrt-totest-manager@.timer
 
 %files pkglistgen
 %defattr(-,root,root,-)
