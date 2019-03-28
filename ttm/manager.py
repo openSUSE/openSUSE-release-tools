@@ -161,10 +161,7 @@ class ToTestManager(ToolBase.ToolBase):
         self.update_totest(new_snapshot)
 
     def version_file(self, target):
-        version_file = 'version_%s' % target
-        if not len(self.project.main_products):
-            version_file = version_file + '_images'
-        return version_file
+        return 'version_%s' % target
 
     def write_version_to_dashboard(self, target, version):
         if self.dryrun or self.project.do_not_release:
