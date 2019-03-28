@@ -20,7 +20,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Factory
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Factory
   TTM.Factory_ARM:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -41,7 +41,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Factory:ARM
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Factory:ARM
   TTM.Factory_PowerPC:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -62,7 +62,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Factory:PowerPC
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Factory:PowerPC
   TTM.Factory_zSystems:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -83,7 +83,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Factory:zSystems
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Factory:zSystems
   TTM.Leap_15.0_Images:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -104,7 +104,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Leap:15.0:Images
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:15.0:Images
   TTM.Leap_15.1_Images:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -125,7 +125,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Leap:15.1:Images
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:15.1:Images
   TTM.Leap_15.1_ARM_Images:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -146,7 +146,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Leap:15.1:ARM:Images
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:15.1:ARM:Images
   TTM.Leap_15.1:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -167,7 +167,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Leap:15.1
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:15.1
   TTM.Leap_15.1_ARM:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -188,7 +188,7 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Leap:15.1:ARM
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:15.1:ARM
   TTM.Leap_15.1_PowerPC:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -209,4 +209,4 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run openSUSE:Leap:15.1:PowerPC
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:15.1:PowerPC
