@@ -560,10 +560,6 @@ class ToTestManager(ToolBase.ToolBase):
 
     def _release_package(self, project, package, set_release=None, repository=None,
                          target_project=None, target_repository=None):
-        if package.startswith('000product:'):
-            self.logger.debug('Ignoring to release {}'.format(package))
-            return
-
         query = {'cmd': 'release'}
 
         if set_release:
@@ -594,10 +590,6 @@ class ToTestManager(ToolBase.ToolBase):
                                   target_repository=self.project.totest_container_repo)
 
         if len(self.project.main_products):
-            # release 000product as a whole
-            if self.project.main_products[0].startswith('000product'):
-                self._release_package(self.project.name, '000product', set_release=set_release)
-
             for cd in self.project.main_products:
                 self._release_package(self.project.name, cd, set_release=set_release,
                                       repository=self.project.product_repo)
