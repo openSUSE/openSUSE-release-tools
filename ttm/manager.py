@@ -601,7 +601,7 @@ class ToTestManager(ToolBase.ToolBase):
         for cd in self.project.livecd_products:
             self._release_package('%s:Live' %
                                   self.project.name, cd.package, set_release=set_release,
-                                  repository=self.livecd_repo)
+                                  repository=self.project.livecd_repo)
 
         for image in self.project.image_products:
             self._release_package(self.project.name, image.package, set_release=set_release,
