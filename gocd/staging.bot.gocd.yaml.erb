@@ -27,32 +27,32 @@ pipelines:
             - script: |-
                 cd scripts
                 ./staging-installcheck.py -A https://api.opensuse.org -p openSUSE:<%= project %>
-    SBot.Regular.<%= nickname %>:
-      group: <%= nickname %>.pkglistgen
-      lock_behavior: unlockWhenFinished
-      timer:
-        spec: 0 0 * ? * *
-      environment_variables:
-        OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      materials:
-        git:
-          git: https://github.com/openSUSE/openSUSE-release-tools.git
-      stages:
-      - Run:
-          approval:
-            type: manual
-          jobs:
-            Run:
-              timeout: 0
-              resources:
-              - staging-bot
-              tasks:
-              - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
-              - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
-              - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi --by-develproject
-              - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> select --non-interactive --merge --try-strategies
-              - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
-              - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
+  SBot.Regular.<%= nickname %>:
+    group: <%= nickname %>.pkglistgen
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
+            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
+            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi --by-develproject
+            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> select --non-interactive --merge --try-strategies
+            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
+            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
 <% end -%>
   Project.Only:
     group: openSUSE.Checkers
