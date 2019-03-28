@@ -586,6 +586,13 @@ class ToTestManager(ToolBase.ToolBase):
             self.api.retried_POST(url)
 
     def _release(self, set_release=None):
+        for container in self.project.container_products:
+            # Containers are built in the same repo as other image products,
+            # but released into a different repo in :ToTest
+            self._release_package(self.project.name, container.package, repository=self.project.product_repo,
+                                  target_project=self.project.test_project,
+                                  target_repository=self.project.totest_container_repo)
+
         if len(self.project.main_products):
             # release 000product as a whole
             if self.project.main_products[0].startswith('000product'):
@@ -607,13 +614,6 @@ class ToTestManager(ToolBase.ToolBase):
             self._release_package(self.project.name, image.package, set_release=set_release,
                                   repository=self.project.product_repo)
 
-        for container in self.project.container_products:
-            # Containers are built in the same repo as other image products,
-            # but released into a different repo in :ToTest
-            self._release_package(self.project.name, container.package, repository=self.project.product_repo,
-                                  target_project=self.project.test_project,
-                                  target_repository=self.project.totest_container_repo)
-
     def update_totest(self, snapshot=None):
         # omit snapshot, we don't want to rename on release
         if not self.project.set_snapshot_number:
@@ -628,15 +628,15 @@ class ToTestManager(ToolBase.ToolBase):
 
     def publish_factory_totest(self):
         self.logger.info('Publish test project content')
-        if not (self.dryrun or self.project.do_not_release):
-            self.api.switch_flag_in_prj(
-                self.project.test_project, flag='publish', state='enable',
-                repository=self.project.product_repo)
         if self.project.container_products:
             self.logger.info('Releasing container products from ToTest')
             for container in self.project.container_products:
                 self._release_package(self.project.test_project, container.package,
                                       repository=self.project.totest_container_repo)
+        if not (self.dryrun or self.project.do_not_release):
+            self.api.switch_flag_in_prj(
+                self.project.test_project, flag='publish', state='enable',
+                repository=self.project.product_repo)
 
     def totest_is_publishing(self):
         """Find out if the publishing flag is set in totest's _meta"""
