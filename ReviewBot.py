@@ -179,7 +179,13 @@ class ReviewBot(object):
             if override is not None:
                 good = override
             else:
-                good = self.check_one_request(req)
+                try:
+                    good = self.check_one_request(req)
+                except:
+                    good = None
+
+                    import traceback
+                    traceback.print_exc()
 
             if self.review_mode == 'no':
                 good = None
