@@ -23,5 +23,5 @@ pipelines:
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
-            scripts/totest-manager.py -A https://api.opensuse.org --osc-debug --debug run <%= project %>
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run <%= project %>
 <% end -%>

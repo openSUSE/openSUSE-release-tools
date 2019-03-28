@@ -167,7 +167,7 @@ class ToTestManager(ToolBase.ToolBase):
         return version_file
 
     def write_version_to_dashboard(self, target, version):
-        if self.dryrun or self.norelease:
+        if self.dryrun or self.project.do_not_release:
             return
         self.api.pseudometa_file_ensure(self.version_file(target), version,
                                         comment='Update version')
@@ -583,18 +583,23 @@ class ToTestManager(ToolBase.ToolBase):
         baseurl = ['source', project, package]
 
         url = self.api.makeurl(baseurl, query=query)
-        if self.dryrun or self.norelease:
+        if self.dryrun or self.project.do_not_release:
             self.logger.info('release %s/%s (%s)' % (project, package, query))
         else:
             self.api.retried_POST(url)
 
     def _release(self, set_release=None):
-        # release 000product as a whole
-        if self.project.main_products[0].startswith('000product'):
-            self._release_package(self.project, '000product', set_release=set_release)
+        if len(self.project.main_products):
+            # release 000product as a whole
+            if self.project.main_products[0].startswith('000product'):
+                self._release_package(self.project, '000product', set_release=set_release)
 
-        for product in self.project.ftp_products:
-            self._release_package(self.project, product, repository=self.project.product_repo)
+            for cd in self.project.main_products:
+                self._release_package(self.project, cd, set_release=set_release,
+                                      repository=self.project.product_repo)
+
+            for product in self.project.ftp_products:
+                self._release_package(self.project, product, repository=self.project.product_repo)
 
         for cd in self.project.livecd_products:
             self._release_package('%s:Live' %
@@ -603,10 +608,6 @@ class ToTestManager(ToolBase.ToolBase):
 
         for image in self.project.image_products:
             self._release_package(self.project, image.package, set_release=set_release,
-                                  repository=self.project.product_repo)
-
-        for cd in self.project.main_products:
-            self._release_package(self.project, cd, set_release=set_release,
                                   repository=self.project.product_repo)
 
         for container in self.project.container_products:
@@ -622,7 +623,7 @@ class ToTestManager(ToolBase.ToolBase):
             snapshot = None
         release = 'Snapshot%s' % snapshot if snapshot else None
         self.logger.info('Updating snapshot %s' % snapshot)
-        if not (self.dryrun or self.norelease):
+        if not (self.dryrun or self.project.do_not_release):
             self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
                                         repository=self.project.product_repo)
 
@@ -630,7 +631,7 @@ class ToTestManager(ToolBase.ToolBase):
 
     def publish_factory_totest(self):
         self.logger.info('Publish test project content')
-        if not (self.dryrun or self.norelease):
+        if not (self.dryrun or self.project.do_not_release):
             self.api.switch_flag_in_prj(
                 self.project.test_project, flag='publish', state='enable',
                 repository=self.project.product_repo)
