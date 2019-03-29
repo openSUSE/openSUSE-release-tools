@@ -633,7 +633,7 @@ class StagingAPI(object):
         self.pseudometa_file_ensure('ignored_requests', ignore)
 
     @memoize(session=True, add_invalidate=True)
-    def get_open_requests(self, query_extra=None):
+    def get_open_requests(self, query_extra=None, include_nonfree=True):
         """
         Get all requests with open review for staging project
         that are not yet included in any staging project
@@ -645,7 +645,7 @@ class StagingAPI(object):
         # xpath query, using the -m, -r, -s options
         where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
         projects = [format(self.project)]
-        if self.cnonfree:
+        if include_nonfree and self.cnonfree:
             projects.append(self.cnonfree)
         targets = ["target[@project='{}']".format(p) for p in projects]
 
