@@ -221,6 +221,8 @@ class InstallChecker(object):
             else:
                 whitelist = self.existing_problems
 
+            whitelist |= set(to_ignore)
+
             check = self.cycle_check(project, repository, arch)
             if not check.success:
                 self.logger.warn('Cycle check failed')
