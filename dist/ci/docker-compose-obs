@@ -5,7 +5,7 @@ set -e
 OBS_DIRECTORY=${OBS_DIRECTORY:-.open-build-service}
 
 if [ ! -d "$OBS_DIRECTORY" ] ; then
-  git clone --depth 1 https://github.com/openSUSE/open-build-service.git "$OBS_DIRECTORY"
+  git clone --depth 1 -b check_rake_build https://github.com/coolo/open-build-service.git "$OBS_DIRECTORY"
 
   if [ ! -f ~/.oscrc ] ; then
     # openSUSE/open-build-service#3946: would elevate the need, but rejected.
