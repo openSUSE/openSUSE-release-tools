@@ -24,7 +24,7 @@ fi
 
 cd "$OBS_DIRECTORY"
 
-git pull origin master
+#git pull origin master
 
 # https://github.com/openSUSE/open-build-service/blob/master/CONTRIBUTING.md
 git submodule init
