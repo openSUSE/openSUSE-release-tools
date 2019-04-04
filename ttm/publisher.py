@@ -181,8 +181,6 @@ class ToTestPublisher(ToTestManager):
         self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
-        # releaser should have set this, but to make sure
-        self.update_status('testing', current_qa_version)
 
         self.logger.info('current_snapshot %s: %s' %
                     (current_snapshot, self._result2str(current_result)))

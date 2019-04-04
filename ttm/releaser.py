@@ -57,6 +57,7 @@ class ToTestReleaser(ToTestManager):
                 return
 
         self.update_totest(new_snapshot)
+        self.update_status('testing', new_snapshot)
         self.write_version_to_dashboard('totest', new_snapshot)
         return 1
 
