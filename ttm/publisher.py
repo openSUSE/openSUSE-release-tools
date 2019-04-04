@@ -180,27 +180,20 @@ class ToTestPublisher(ToTestManager):
 
         self.send_amqp_event(current_snapshot, current_result)
 
-        can_publish = (current_result == QA_PASSED)
+        if current_result != QA_PASSED:
+            return
 
         # already published
         totest_is_publishing = self.totest_is_publishing()
         if totest_is_publishing:
             self.logger.debug('totest already publishing')
-            can_publish = False
-
-        if self.update_pinned_descr:
-            status = {
-                'current_snapshot': current_snapshot,
-                'is_publishing': totest_is_publishing,
-            }
-            self.update_openqa_status_message(status)
-
-        if not can_publish:
             return
 
         if current_qa_version == current_snapshot:
             self.publish_factory_totest()
             self.write_version_to_dashboard('snapshot', current_snapshot)
+            if self.update_pinned_descr:
+                self.update_openqa_status_message(current_snapshot)
         else:
             # We reached a very bad status: openQA testing is 'done', but not of the same version
             # currently in test project. This can happen when 'releasing' the
@@ -233,7 +226,7 @@ class ToTestPublisher(ToTestManager):
         else:
             return 'passed'
 
-    def update_openqa_status_message(self, status):
+    def update_openqa_status_message(self, snapshot):
         url = makeurl(self.project.openqa_server,
                       ['api', 'v1', 'job_groups'])
         f = self.api.retried_GET(url)
@@ -250,8 +243,8 @@ class ToTestPublisher(ToTestManager):
 
         pinned_ignored_issue = 0
         issues = ' , '.join(self.issues_to_ignore.keys())
-        status_flag = 'publishing' if status['is_publishing'] else 'building'
-        status_msg = 'tag:{}:{}:{}'.format(status['new_snapshot'], status_flag, status_flag)
+        status_flag = 'published'
+        status_msg = 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag)
         msg = 'pinned-description: Ignored issues\r\n\r\n{}\r\n\r\n{}'.format(issues, status_msg)
         data = {'text': msg}
 
