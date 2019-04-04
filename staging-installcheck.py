@@ -68,7 +68,7 @@ class InstallChecker(object):
         if self.arch_whitelist:
             self.arch_whitelist = set(self.arch_whitelist.split(' '))
 
-        self.ring_whitelist = self.config.get('repo_checker-binary-whitelist-ring', '').split(' ')
+        self.ring_whitelist = set(self.config.get('repo_checker-binary-whitelist-ring', '').split(' '))
 
         self.cycle_packages = self.config.get('repo_checker-allowed-in-cycles')
         self.calculate_allowed_cycles()
