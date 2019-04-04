@@ -188,6 +188,9 @@ class ToTestPublisher(ToTestManager):
 
         self.send_amqp_event(current_snapshot, current_result)
 
+        if current_result == QA_FAILED:
+            self.update_status('failed', current_snapshot)
+
         if current_result != QA_PASSED:
             return
 

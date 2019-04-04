@@ -26,38 +26,37 @@ class ToTestReleaser(ToTestManager):
 
     def release(self, project, force=False):
         self.setup(project)
-        try:
-            current_snapshot = self.version_from_totest_project()
-        except NotFoundException as e:
-            # nothing in test project (yet)
-            self.logger.warn(e)
-            current_snapshot = None
+
+        current_snapshot = self.get_status('testing')
         new_snapshot = self.version_from_project()
-        current_qa_version = self.current_qa_version()
-        publisher_state = 'inprogress'
-
-        self.logger.info('current_snapshot %s: %s' %
-                    (current_snapshot, publisher_state))
-        self.logger.debug('new_snapshot %s', new_snapshot)
-        self.logger.debug('current_qa_version %s', current_qa_version)
-
-        snapshotable = self.is_snapshotable()
-        self.logger.debug('snapshotable: %s', snapshotable)
-        can_release = ((current_snapshot is None or publisher_state != 'inprogress') and snapshotable)
 
         # not overwriting
-        if not force:
-            if new_snapshot == current_qa_version:
-                self.logger.debug('no change in snapshot version')
+        if new_snapshot == current_snapshot:
+            self.logger.debug('no change in snapshot version')
+            return
+
+        if current_snapshot:
+            testing_snapshot = self.get_status('testing')
+            if testing_snapshot != self.get_status('failed') and testing_snapshot != self.get_status('publishing'):
+                self.logger.debug('Snapshot {} is still in progress'.format(testing_snapshot))
                 return
-            elif not self.all_repos_done(self.project.test_project):
-                self.logger.debug("not all repos done, can't release")
-                # the repos have to be done, otherwise we better not touch them
-                # with a new release
-                return
+
+        self.logger.info('current_snapshot %s', current_snapshot)
+        self.logger.debug('new_snapshot %s', new_snapshot)
+
+        if not self.is_snapshotable():
+            self.logger.debug('not snapshotable')
+            return
+
+        if not force and not self.all_repos_done(self.project.test_project):
+            self.logger.debug("not all repos done, can't release")
+            # the repos have to be done, otherwise we better not touch them
+            # with a new release
+            return
 
         self.update_totest(new_snapshot)
         self.update_status('testing', new_snapshot)
+        self.update_status('failed', '')
         self.write_version_to_dashboard('totest', new_snapshot)
         return 1
 
