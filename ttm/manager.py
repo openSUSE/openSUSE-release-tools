@@ -99,7 +99,7 @@ class ToTestManager(ToolBase.ToolBase):
     # snapshots are greatly different
     def update_status(self, status, snapshot):
         status_dict = self.get_status_dict()
-        if status_dict.get(status, '') != snapshot:
+        if not self.dryrun and status_dict.get(status, '') != snapshot:
             status_dict[status] = snapshot
             text = yaml.safe_dump(status_dict)
             self.api.attribute_value_save('ToTestManagerStatus', text)
