@@ -189,6 +189,8 @@ class ToTestPublisher(ToTestManager):
 
         if current_result == QA_FAILED:
             self.update_status('failed', current_snapshot)
+        else:
+            self.update_status('failed', '')
 
         if current_result != QA_PASSED:
             return
