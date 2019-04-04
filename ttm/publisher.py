@@ -170,9 +170,19 @@ class ToTestPublisher(ToTestManager):
             # nothing in test project (yet)
             self.logger.warn(e)
             current_snapshot = None
+
+        group_id = self.openqa_group_id()
+        if not group_id:
+            return
+
+        if self.get_status('publishing') == current_snapshot or self.get_status('published') == current_snapshot:
+            return
+
         self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
+        # releaser should have set this, but to make sure
+        self.update_status('testing', current_qa_version)
 
         self.logger.info('current_snapshot %s: %s' %
                     (current_snapshot, self._result2str(current_result)))
@@ -183,23 +193,25 @@ class ToTestPublisher(ToTestManager):
         if current_result != QA_PASSED:
             return
 
-        # already published
-        totest_is_publishing = self.totest_is_publishing()
-        if totest_is_publishing:
-            self.logger.debug('totest already publishing')
-            return
-
-        if current_qa_version == current_snapshot:
-            self.publish_factory_totest()
-            self.write_version_to_dashboard('snapshot', current_snapshot)
-            if self.update_pinned_descr:
-                self.update_openqa_status_message(current_snapshot)
-        else:
+        if current_qa_version != current_snapshot:
             # We reached a very bad status: openQA testing is 'done', but not of the same version
             # currently in test project. This can happen when 'releasing' the
             # product failed
             raise Exception('Publishing stopped: tested version (%s) does not match version in test project (%s)'
                             % (current_qa_version, current_snapshot))
+
+        self.publish_factory_totest()
+        self.write_version_to_dashboard('snapshot', current_snapshot)
+        self.update_status('publishing', current_snapshot)
+        # for now we don't wait
+        self.update_status('published', current_snapshot)
+        group_id = self.openqa_group_id()
+        if not group_id:
+            return
+
+        self.add_published_tag(group_id, current_snapshot)
+        if self.update_pinned_descr:
+            self.update_openqa_status_message(group_id)
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -226,7 +238,18 @@ class ToTestPublisher(ToTestManager):
         else:
             return 'passed'
 
-    def update_openqa_status_message(self, snapshot):
+    def add_published_tag(self, group_id, snapshot):
+        if self.dryrun:
+            return
+
+        url = makeurl(self.project.openqa_server,
+                      ['api', 'v1', 'groups', str(group_id), 'comments'])
+
+        status_flag = 'published'
+        data = {'text': 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag) }
+        self.openqa.openqa_request('POST', 'groups/%s/comments' % group_id, data=data)
+
+    def openqa_group_id(self):
         url = makeurl(self.project.openqa_server,
                       ['api', 'v1', 'job_groups'])
         f = self.api.retried_GET(url)
@@ -234,18 +257,14 @@ class ToTestPublisher(ToTestManager):
         group_id = 0
         for jg in job_groups:
             if jg['name'] == self.project.openqa_group:
-                group_id = jg['id']
-                break
+                return jg['id']
 
-        if not group_id:
-            self.logger.debug('No openQA group id found for status comment update, ignoring')
-            return
+        self.logger.debug('No openQA group id found for status comment update, ignoring')
 
+    def update_openqa_status_message(self, group_id):
         pinned_ignored_issue = 0
         issues = ' , '.join(self.issues_to_ignore.keys())
-        status_flag = 'published'
-        status_msg = 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag)
-        msg = 'pinned-description: Ignored issues\r\n\r\n{}\r\n\r\n{}'.format(issues, status_msg)
+        msg = 'pinned-description: Ignored issues\r\n\r\n{}'.format(issues)
         data = {'text': msg}
 
         url = makeurl(self.project.openqa_server,
@@ -279,22 +298,3 @@ class ToTestPublisher(ToTestManager):
             return
         text = yaml.dump({'last_seen': self.issues_to_ignore}, default_flow_style=False)
         self.api.attribute_value_save('IgnoredIssues', text)
-
-    def totest_is_publishing(self):
-        """Find out if the publishing flag is set in totest's _meta"""
-
-        url = self.api.makeurl(
-            ['source', self.project.test_project, '_meta'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        if not root.find('publish'):  # default true
-            return True
-
-        for flag in root.find('publish'):
-            if flag.get('repository', None) not in [None, self.project.product_repo]:
-                continue
-            if flag.get('arch', None):
-                continue
-            if flag.tag == 'enable':
-                return True
-        return False

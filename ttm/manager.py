@@ -14,6 +14,7 @@ from __future__ import print_function
 import ToolBase
 import logging
 import re
+import yaml
 from xml.etree import cElementTree as ET
 from osclib.stagingapi import StagingAPI
 try:
@@ -93,3 +94,21 @@ class ToTestManager(ToolBase.ToolBase):
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s ftp version" % project)
+
+    # we don't lock the access to this attribute as the times these
+    # snapshots are greatly different
+    def update_status(self, status, snapshot):
+        status_dict = self.get_status_dict()
+        if status_dict.get(status, '') != snapshot:
+            status_dict[status] = snapshot
+            text = yaml.safe_dump(status_dict)
+            self.api.attribute_value_save('ToTestManagerStatus', text)
+
+    def get_status_dict(self):
+        text = self.api.attribute_value_load('ToTestManagerStatus')
+        if text:
+            return yaml.safe_load(text)
+        return dict()
+
+    def get_status(self, status):
+        return self.get_status_dict().get(status, '')
