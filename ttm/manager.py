@@ -112,3 +112,27 @@ class ToTestManager(ToolBase.ToolBase):
 
     def get_status(self, status):
         return self.get_status_dict().get(status, '')
+
+    def release_package(self, project, package, set_release=None, repository=None,
+                         target_project=None, target_repository=None):
+        query = {'cmd': 'release'}
+
+        if set_release:
+            query['setrelease'] = set_release
+
+        if repository is not None:
+            query['repository'] = repository
+
+        if target_project is not None:
+            # Both need to be set
+            query['target_project'] = target_project
+            query['target_repository'] = target_repository
+
+        baseurl = ['source', project, package]
+
+        url = self.api.makeurl(baseurl, query=query)
+        if self.dryrun or self.project.do_not_release:
+            self.logger.info('release %s/%s (%s)' % (project, package, query))
+        else:
+            self.api.retried_POST(url)
+

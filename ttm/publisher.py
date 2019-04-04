@@ -19,7 +19,6 @@ import osc
 from osc.core import makeurl
 from ttm.manager import ToTestManager, NotFoundException
 from openqa_client.client import OpenQA_Client
-from xml.etree import cElementTree as ET
 
 # QA Results
 QA_INPROGRESS = 1
@@ -255,7 +254,6 @@ class ToTestPublisher(ToTestManager):
                       ['api', 'v1', 'job_groups'])
         f = self.api.retried_GET(url)
         job_groups = json.load(f)
-        group_id = 0
         for jg in job_groups:
             if jg['name'] == self.project.openqa_group:
                 return jg['id']
@@ -299,3 +297,16 @@ class ToTestPublisher(ToTestManager):
             return
         text = yaml.dump({'last_seen': self.issues_to_ignore}, default_flow_style=False)
         self.api.attribute_value_save('IgnoredIssues', text)
+
+    def publish_factory_totest(self):
+        self.logger.info('Publish test project content')
+        if self.project.container_products:
+            self.logger.info('Releasing container products from ToTest')
+            for container in self.project.container_products:
+                self.release_package(self.project.test_project, container.package,
+                                      repository=self.project.totest_container_repo)
+        if not (self.dryrun or self.project.do_not_release):
+            self.api.switch_flag_in_prj(
+                self.project.test_project, flag='publish', state='enable',
+                repository=self.project.product_repo)
+

@@ -231,52 +231,29 @@ class ToTestReleaser(ToTestManager):
 
         return True
 
-    def _release_package(self, project, package, set_release=None, repository=None,
-                         target_project=None, target_repository=None):
-        query = {'cmd': 'release'}
-
-        if set_release:
-            query['setrelease'] = set_release
-
-        if repository is not None:
-            query['repository'] = repository
-
-        if target_project is not None:
-            # Both need to be set
-            query['target_project'] = target_project
-            query['target_repository'] = target_repository
-
-        baseurl = ['source', project, package]
-
-        url = self.api.makeurl(baseurl, query=query)
-        if self.dryrun or self.project.do_not_release:
-            self.logger.info('release %s/%s (%s)' % (project, package, query))
-        else:
-            self.api.retried_POST(url)
-
     def _release(self, set_release=None):
         for container in self.project.container_products:
             # Containers are built in the same repo as other image products,
             # but released into a different repo in :ToTest
-            self._release_package(self.project.name, container.package, repository=self.project.product_repo,
+            self.release_package(self.project.name, container.package, repository=self.project.product_repo,
                                   target_project=self.project.test_project,
                                   target_repository=self.project.totest_container_repo)
 
         if len(self.project.main_products):
             for cd in self.project.main_products:
-                self._release_package(self.project.name, cd, set_release=set_release,
+                self.release_package(self.project.name, cd, set_release=set_release,
                                       repository=self.project.product_repo)
 
             for product in self.project.ftp_products:
-                self._release_package(self.project.name, product, repository=self.project.product_repo)
+                self.release_package(self.project.name, product, repository=self.project.product_repo)
 
         for cd in self.project.livecd_products:
-            self._release_package('%s:Live' %
+            self.release_package('%s:Live' %
                                   self.project.name, cd.package, set_release=set_release,
                                   repository=self.project.livecd_repo)
 
         for image in self.project.image_products:
-            self._release_package(self.project.name, image.package, set_release=set_release,
+            self.release_package(self.project.name, image.package, set_release=set_release,
                                   repository=self.project.product_repo)
 
     def update_totest(self, snapshot=None):
@@ -291,14 +268,3 @@ class ToTestReleaser(ToTestManager):
 
         self._release(set_release=release)
 
-    def publish_factory_totest(self):
-        self.logger.info('Publish test project content')
-        if self.project.container_products:
-            self.logger.info('Releasing container products from ToTest')
-            for container in self.project.container_products:
-                self._release_package(self.project.test_project, container.package,
-                                      repository=self.project.totest_container_repo)
-        if not (self.dryrun or self.project.do_not_release):
-            self.api.switch_flag_in_prj(
-                self.project.test_project, flag='publish', state='enable',
-                repository=self.project.product_repo)
