@@ -171,10 +171,9 @@ class ToTestPublisher(ToTestManager):
             current_snapshot = None
 
         group_id = self.openqa_group_id()
-        if not group_id:
-            return
 
         if self.get_status('publishing') == current_snapshot or self.get_status('published') == current_snapshot:
+            self.logger.info('{} is already published'.format(current_snapshot))
             return
 
         self.update_pinned_descr = False
