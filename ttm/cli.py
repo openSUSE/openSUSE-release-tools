@@ -15,6 +15,7 @@ import logging
 import ToolBase
 import cmdln
 
+from ttm.manager import QAResult
 from ttm.releaser import ToTestReleaser
 from ttm.publisher import ToTestPublisher
 
@@ -25,7 +26,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
 
-    @cmdln.option('--force', action='store_true', help="Just release, don't check")
+    @cmdln.option('--force', action='store_true', help="Just publish, don't check")
     def do_publish(self, subcmd, opts, project):
         """${cmd_name}: check and publish ToTest
 
@@ -34,6 +35,16 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         """
 
         ToTestPublisher(self.tool).publish(project, opts.force)
+
+    @cmdln.option('--force', action='store_true', help="Just update status")
+    def do_wait_for_published(self, subcmd, opts, project):
+        """${cmd_name}: wait for ToTest to contain publishing status and publisher finished
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        ToTestPublisher(self.tool).wait_for_published(project, opts.force)
 
     @cmdln.option('--force', action='store_true', help="Just release, don't check")
     def do_release(self, subcmd, opts, project):
@@ -52,5 +63,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        ToTestPublisher(self.tool).publish(project)
+
+        if ToTestPublisher(self.tool).publish(project) == QAResult.passed:
+            ToTestPublisher(self.tool).wait_for_published(project)
         ToTestReleaser(self.tool).release(project)

@@ -15,6 +15,7 @@ import ToolBase
 import logging
 import re
 import yaml
+from enum import Enum
 from xml.etree import cElementTree as ET
 from osclib.stagingapi import StagingAPI
 try:
@@ -27,6 +28,19 @@ from ttm.totest import ToTest
 
 class NotFoundException(Exception):
     pass
+
+class QAResult(Enum):
+    inprogress = 1
+    failed = 2
+    passed = 3
+
+    def __str__(self):
+        if self.value == QAResult.inprogress:
+            return 'inprogress'
+        elif self.value == QAResult.failed:
+            return 'failed'
+        else:
+            return 'passed'
 
 class ToTestManager(ToolBase.ToolBase):
 
@@ -95,11 +109,16 @@ class ToTestManager(ToolBase.ToolBase):
                 return result.group(1)
         raise NotFoundException("can't find %s ftp version" % project)
 
-    # we don't lock the access to this attribute as the times these
-    # snapshots are greatly different
+    # make sure to update the attribute as atomar as possible - as such
+    # only update the snapshot and don't erase anything else. The snapshots
+    # have very different update times within the pipeline, so there is
+    # normally no chance that releaser and publisher overwrite states
     def update_status(self, status, snapshot):
         status_dict = self.get_status_dict()
-        if not self.dryrun and status_dict.get(status, '') != snapshot:
+        if self.dryrun:
+            self.logger.info('setting {} snapshot to {}'.format(status, snapshot))
+            return
+        if status_dict.get(status, '') != snapshot:
             status_dict[status] = snapshot
             text = yaml.safe_dump(status_dict)
             self.api.attribute_value_save('ToTestManagerStatus', text)
@@ -111,7 +130,7 @@ class ToTestManager(ToolBase.ToolBase):
         return dict()
 
     def get_status(self, status):
-        return self.get_status_dict().get(status, '')
+        return self.get_status_dict().get(status)
 
     def release_package(self, project, package, set_release=None, repository=None,
                          target_project=None, target_repository=None):
@@ -136,3 +155,32 @@ class ToTestManager(ToolBase.ToolBase):
         else:
             self.api.retried_POST(url)
 
+    def all_repos_done(self, project, codes=None):
+        """Check the build result of the project and only return True if all
+        repos of that project are either published or unpublished
+
+        """
+
+        # coolo's experience says that 'finished' won't be
+        # sufficient here, so don't try to add it :-)
+        codes = ['published', 'unpublished'] if not codes else codes
+
+        url = self.api.makeurl(
+            ['build', project, '_result'], {'code': 'failed'})
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        ready = True
+        for repo in root.findall('result'):
+            # ignore ports. 'factory' is used by arm for repos that are not
+            # meant to use the totest manager.
+            if repo.get('repository') in ('ports', 'factory', 'images_staging'):
+                continue
+            if repo.get('dirty', '') == 'true':
+                self.logger.info('%s %s %s -> %s' % (repo.get('project'),
+                                                repo.get('repository'), repo.get('arch'), 'dirty'))
+                ready = False
+            if repo.get('code') not in codes:
+                self.logger.info('%s %s %s -> %s' % (repo.get('project'),
+                                                repo.get('repository'), repo.get('arch'), repo.get('code')))
+                ready = False
+        return ready

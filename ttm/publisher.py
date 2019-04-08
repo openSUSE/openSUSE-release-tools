@@ -10,20 +10,17 @@
 # (C) 2019 coolo@suse.de, SUSE
 # Distribute under GPLv2 or GPLv3
 
+
 import json
 import re
 import yaml
 import pika
+import time
 
 import osc
 from osc.core import makeurl
-from ttm.manager import ToTestManager, NotFoundException
+from ttm.manager import ToTestManager, NotFoundException, QAResult
 from openqa_client.client import OpenQA_Client
-
-# QA Results
-QA_INPROGRESS = 1
-QA_FAILED = 2
-QA_PASSED = 3
 
 class ToTestPublisher(ToTestManager):
 
@@ -40,7 +37,7 @@ class ToTestPublisher(ToTestManager):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
 
         if snapshot is None:
-            return QA_FAILED
+            return QAResult.failed
 
         jobs = self.find_openqa_results(snapshot)
 
@@ -49,7 +46,7 @@ class ToTestPublisher(ToTestManager):
 
         if len(jobs) < self.project.jobs_num:  # not yet scheduled
             self.logger.warning('we have only %s jobs' % len(jobs))
-            return QA_INPROGRESS
+            return QAResult.inprogress
 
         in_progress = False
         for job in jobs:
@@ -121,12 +118,12 @@ class ToTestPublisher(ToTestManager):
         self.save_issues_to_ignore()
 
         if len(self.failed_relevant_jobs) > 0:
-            return QA_FAILED
+            return QAResult.failed
 
         if in_progress:
-            return QA_INPROGRESS
+            return QAResult.inprogress
 
-        return QA_PASSED
+        return QAResult.passed
 
     def send_amqp_event(self, current_snapshot, current_result):
         amqp_url = osc.conf.config.get('ttm_amqp_url')
@@ -135,7 +132,7 @@ class ToTestPublisher(ToTestManager):
             return
 
         self.logger.debug('Sending AMQP message')
-        inf = re.sub(r'ed$', '', self._result2str(current_result))
+        inf = re.sub(r'ed$', '', str(current_result))
         msg_topic = '%s.ttm.build.%s' % (self.project.base.lower(), inf)
         msg_body = json.dumps({
             'build': current_snapshot,
@@ -173,26 +170,26 @@ class ToTestPublisher(ToTestManager):
         group_id = self.openqa_group_id()
 
         if self.get_status('publishing') == current_snapshot or self.get_status('published') == current_snapshot:
-            self.logger.info('{} is already published'.format(current_snapshot))
-            return
+            self.logger.info('{} is already publishing'.format(current_snapshot))
+            return QAResult.inprogress
 
         self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
 
-        self.logger.info('current_snapshot %s: %s' %
-                    (current_snapshot, self._result2str(current_result)))
-        self.logger.debug('current_qa_version %s', current_qa_version)
+        self.logger.info('current_snapshot {}: {}'.format(current_snapshot, str(current_result)))
+        self.logger.debug('current_qa_version {}'.format(current_qa_version))
 
         self.send_amqp_event(current_snapshot, current_result)
 
-        if current_result == QA_FAILED:
+        if current_result == QAResult.failed:
             self.update_status('failed', current_snapshot)
+            return QAResult.failed
         else:
             self.update_status('failed', '')
 
-        if current_result != QA_PASSED:
-            return
+        if current_result != QAResult.passed:
+            return QAResult.inprogress
 
         if current_qa_version != current_snapshot:
             # We reached a very bad status: openQA testing is 'done', but not of the same version
@@ -204,7 +201,22 @@ class ToTestPublisher(ToTestManager):
         self.publish_factory_totest()
         self.write_version_to_dashboard('snapshot', current_snapshot)
         self.update_status('publishing', current_snapshot)
-        # for now we don't wait
+        return QAResult.passed
+
+    def wait_for_published(self, project, force=False):
+        self.setup(project)
+
+        if not force:
+            wait_time = 20
+            while not self.all_repos_done(self.project.test_project):
+                self.logger.info('{} is still not published, waiting {} seconds'.format(self.project.test_project, wait_time))
+                time.sleep(wait_time)
+
+        current_snapshot = self.get_status('publishing')
+        if self.dryrun:
+            self.logger.info('Publisher finished, updating published snpashot to {}'.format(current_snapshot))
+            return
+
         self.update_status('published', current_snapshot)
         group_id = self.openqa_group_id()
         if not group_id:
@@ -230,14 +242,6 @@ class ToTestPublisher(ToTestManager):
             job['name'] = job['name'].replace(snapshot, '')
             jobs.append(job)
         return jobs
-
-    def _result2str(self, result):
-        if result == QA_INPROGRESS:
-            return 'inprogress'
-        elif result == QA_FAILED:
-            return 'failed'
-        else:
-            return 'passed'
 
     def add_published_tag(self, group_id, snapshot):
         if self.dryrun:
@@ -301,13 +305,13 @@ class ToTestPublisher(ToTestManager):
 
     def publish_factory_totest(self):
         self.logger.info('Publish test project content')
+        if self.dryrun or self.project.do_not_release:
+            return
         if self.project.container_products:
             self.logger.info('Releasing container products from ToTest')
             for container in self.project.container_products:
                 self.release_package(self.project.test_project, container.package,
                                       repository=self.project.totest_container_repo)
-        if not (self.dryrun or self.project.do_not_release):
-            self.api.switch_flag_in_prj(
-                self.project.test_project, flag='publish', state='enable',
-                repository=self.project.product_repo)
-
+        self.api.switch_flag_in_prj(
+            self.project.test_project, flag='publish', state='enable',
+            repository=self.project.product_repo)

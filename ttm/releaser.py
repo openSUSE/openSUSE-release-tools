@@ -27,31 +27,23 @@ class ToTestReleaser(ToTestManager):
     def release(self, project, force=False):
         self.setup(project)
 
-        current_snapshot = self.get_status('testing')
+        testing_snapshot = self.get_status('testing')
         new_snapshot = self.version_from_project()
 
         # not overwriting
-        if new_snapshot == current_snapshot:
+        if new_snapshot == testing_snapshot:
             self.logger.debug('no change in snapshot version')
             return
 
-        if current_snapshot:
-            testing_snapshot = self.get_status('testing')
-            if testing_snapshot != self.get_status('failed') and testing_snapshot != self.get_status('publishing'):
-                self.logger.debug('Snapshot {} is still in progress'.format(testing_snapshot))
-                return
+        if testing_snapshot != self.get_status('failed') and testing_snapshot != self.get_status('published'):
+            self.logger.debug('Snapshot {} is still in progress'.format(testing_snapshot))
+            return
 
-        self.logger.info('current_snapshot %s', current_snapshot)
-        self.logger.debug('new_snapshot %s', new_snapshot)
+        self.logger.info('testing snapshot %s', testing_snapshot)
+        self.logger.debug('new snapshot %s', new_snapshot)
 
         if not self.is_snapshotable():
             self.logger.debug('not snapshotable')
-            return
-
-        if not force and not self.all_repos_done(self.project.test_project):
-            self.logger.debug("not all repos done, can't release")
-            # the repos have to be done, otherwise we better not touch them
-            # with a new release
             return
 
         self.update_totest(new_snapshot)
@@ -82,36 +74,6 @@ class ToTestReleaser(ToTestManager):
 
         return self.iso_build_version(self.project.name, self.project.image_products[0].package,
                                       arch=self.project.image_products[0].archs[0])
-
-    def all_repos_done(self, project, codes=None):
-        """Check the build result of the project and only return True if all
-        repos of that project are either published or unpublished
-
-        """
-
-        # coolo's experience says that 'finished' won't be
-        # sufficient here, so don't try to add it :-)
-        codes = ['published', 'unpublished'] if not codes else codes
-
-        url = self.api.makeurl(
-            ['build', project, '_result'], {'code': 'failed'})
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        ready = True
-        for repo in root.findall('result'):
-            # ignore ports. 'factory' is used by arm for repos that are not
-            # meant to use the totest manager.
-            if repo.get('repository') in ('ports', 'factory', 'images_staging'):
-                continue
-            if repo.get('dirty', '') == 'true':
-                self.logger.info('%s %s %s -> %s' % (repo.get('project'),
-                                                repo.get('repository'), repo.get('arch'), 'dirty'))
-                ready = False
-            if repo.get('code') not in codes:
-                self.logger.info('%s %s %s -> %s' % (repo.get('project'),
-                                                repo.get('repository'), repo.get('arch'), repo.get('code')))
-                ready = False
-        return ready
 
     def maxsize_for_package(self, package):
         if re.match(r'.*-mini-.*', package):
@@ -267,4 +229,3 @@ class ToTestReleaser(ToTestManager):
                                         repository=self.project.product_repo)
 
         self._release(set_release=release)
-
