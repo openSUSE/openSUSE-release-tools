@@ -14,7 +14,7 @@ from __future__ import print_function
 import re
 from xml.etree import cElementTree as ET
 
-from ttm.manager import ToTestManager, NotFoundException
+from ttm.manager import ToTestManager, NotFoundException, QAResult
 
 class ToTestReleaser(ToTestManager):
 
@@ -33,24 +33,24 @@ class ToTestReleaser(ToTestManager):
         # not overwriting
         if new_snapshot == testing_snapshot:
             self.logger.debug('no change in snapshot version')
-            return
+            return None
 
         if testing_snapshot != self.get_status('failed') and testing_snapshot != self.get_status('published'):
             self.logger.debug('Snapshot {} is still in progress'.format(testing_snapshot))
-            return
+            return QAResult.inprogress
 
         self.logger.info('testing snapshot %s', testing_snapshot)
         self.logger.debug('new snapshot %s', new_snapshot)
 
         if not self.is_snapshotable():
             self.logger.debug('not snapshotable')
-            return
+            return QAResult.failed
 
         self.update_totest(new_snapshot)
         self.update_status('testing', new_snapshot)
         self.update_status('failed', '')
         self.write_version_to_dashboard('totest', new_snapshot)
-        return 1
+        return QAResult.passed
 
     def release_version(self):
         url = self.api.makeurl(['build', self.project.name, 'standard', self.project.arch,

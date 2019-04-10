@@ -109,7 +109,7 @@ class ToTestManager(ToolBase.ToolBase):
                 return result.group(1)
         raise NotFoundException("can't find %s ftp version" % project)
 
-    # make sure to update the attribute as atomar as possible - as such
+    # make sure to update the attribute as atomic as possible - as such
     # only update the snapshot and don't erase anything else. The snapshots
     # have very different update times within the pipeline, so there is
     # normally no chance that releaser and publisher overwrite states
@@ -118,7 +118,7 @@ class ToTestManager(ToolBase.ToolBase):
         if self.dryrun:
             self.logger.info('setting {} snapshot to {}'.format(status, snapshot))
             return
-        if status_dict.get(status, '') != snapshot:
+        if status_dict.get(status) != snapshot:
             status_dict[status] = snapshot
             text = yaml.safe_dump(status_dict)
             self.api.attribute_value_save('ToTestManagerStatus', text)
@@ -175,7 +175,7 @@ class ToTestManager(ToolBase.ToolBase):
             # meant to use the totest manager.
             if repo.get('repository') in ('ports', 'factory', 'images_staging'):
                 continue
-            if repo.get('dirty', '') == 'true':
+            if repo.get('dirty') == 'true':
                 self.logger.info('%s %s %s -> %s' % (repo.get('project'),
                                                 repo.get('repository'), repo.get('arch'), 'dirty'))
                 ready = False

@@ -171,7 +171,7 @@ class ToTestPublisher(ToTestManager):
 
         if self.get_status('publishing') == current_snapshot or self.get_status('published') == current_snapshot:
             self.logger.info('{} is already publishing'.format(current_snapshot))
-            return QAResult.inprogress
+            return None
 
         self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
@@ -214,7 +214,7 @@ class ToTestPublisher(ToTestManager):
 
         current_snapshot = self.get_status('publishing')
         if self.dryrun:
-            self.logger.info('Publisher finished, updating published snpashot to {}'.format(current_snapshot))
+            self.logger.info('Publisher finished, updating published snapshot to {}'.format(current_snapshot))
             return
 
         self.update_status('published', current_snapshot)

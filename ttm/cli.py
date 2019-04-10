@@ -34,7 +34,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        ToTestPublisher(self.tool).publish(project, opts.force)
+        if ToTestPublisher(self.tool).publish(project, opts.force) == QAResult.failed:
+            return 1
 
     @cmdln.option('--force', action='store_true', help="Just update status")
     def do_wait_for_published(self, subcmd, opts, project):
@@ -54,7 +55,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        ToTestReleaser(self.tool).release(project, opts.force)
+        if ToTestReleaser(self.tool).release(project, opts.force) == QAResult.failed:
+            return 1
 
     def do_run(self, subcmd, opts, project):
         """${cmd_name}: run the ToTest Manager
@@ -62,7 +64,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-
 
         if ToTestPublisher(self.tool).publish(project) == QAResult.passed:
             ToTestPublisher(self.tool).wait_for_published(project)
