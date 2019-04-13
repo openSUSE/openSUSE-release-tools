@@ -5,6 +5,7 @@ import time
 import re
 from xml.etree import cElementTree as ET
 
+MAX_FROZEN_AGE = 6.5
 
 class FreezeCommand(object):
 

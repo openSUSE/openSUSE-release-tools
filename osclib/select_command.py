@@ -6,6 +6,7 @@ from osc import oscerr
 from osc.core import http_GET
 
 from osclib.request_finder import RequestFinder
+from osclib.freeze_command import MAX_FROZEN_AGE
 # from osclib.freeze_command import FreezeCommand
 
 
@@ -122,7 +123,8 @@ class SelectCommand(object):
 
         # If the project is not frozen enough yet freeze it
         if not (no_freeze or self.api.prj_frozen_enough(self.target_project)):
-            print('Freeze the prj first')
+            print('Project needs to be frozen or there was no change for last %d days.' % MAX_FROZEN_AGE)
+            print('Please freeze the project or use an option to ignore the time from the last freee.')
             return False
             # FreezeCommand(self.api).perform(self.target_project)
 

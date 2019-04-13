@@ -56,6 +56,7 @@ from osclib.core import source_file_load
 from osclib.comments import CommentAPI
 from osclib.ignore_command import IgnoreCommand
 from osclib.memoize import memoize
+from osclib.freeze_command import MAX_FROZEN_AGE
 
 
 class StagingAPI(object):
@@ -1392,7 +1393,7 @@ class StagingAPI(object):
             return True  # already has content
 
         # young enough
-        if self.days_since_last_freeze(project) < 6.5:
+        if self.days_since_last_freeze(project) < MAX_FROZEN_AGE:
             return True
 
         return False
