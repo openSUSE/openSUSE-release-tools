@@ -144,25 +144,8 @@ class FreezeCommand(object):
                 time.sleep(1)
             self.build_switch_bootstrap_copy('disable')
 
-        # Update the version information found in the Test-DVD package, to match openSUSE-release
-        if self.api.item_exists(prj, "openSUSE-release"):
-            version = self.api.package_version(prj, 'openSUSE-release')
-            for arch in ['x86_64', 'ppc64le']:
-                self.update_product_version(prj, 'Test-DVD-' + arch, arch, version)
-
         # Set the original build status for the project
         self.api.build_switch_prj(prj, build_status)
-
-    def update_product_version(self, project, product, arch, version):
-        if not self.api.item_exists(project, product):
-            return None
-
-        kiwifile = source_file_load(self.api.apiurl, project, product, 'PRODUCT-'+arch+'.kiwi')
-
-        tmpkiwifile = re.sub(r'<productinfo name="VERSION">.*</productinfo>', '<productinfo name="VERSION">%s</productinfo>' % version, kiwifile)
-        newkiwifile = re.sub(r'<productvar name="VERSION">.*</productvar>', '<productvar name="VERSION">%s</productvar>' % version, tmpkiwifile)
-
-        source_file_save(self.api.apiurl, project, product, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
 
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', {'name': prj})
