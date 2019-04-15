@@ -225,23 +225,6 @@ class FreezeCommand(object):
         if si.find('originproject') != None:
             return None
 
-        # we have to check if its a link within the staging project
-        # in this case we need to keep the link as is, and not freezing
-        # the target. Otherwise putting kernel-source into staging prj
-        # won't get updated kernel-default (and many other cases)
-        for linked in si.findall('linked'):
-            if linked.get('project') in self.projectlinks:
-                # take the unexpanded md5 from Factory / 13.2 link
-                url = self.api.makeurl(['source', self.api.project, package],
-                                       {'view': 'info', 'nofilename': '1'})
-                # print(package, linked.get('package'), linked.get('project'))
-                f = self.api.retried_GET(url)
-                proot = ET.parse(f).getroot()
-                lsrcmd5 = proot.get('lsrcmd5')
-                if lsrcmd5 is None:
-                    raise Exception("{}/{} is not a link but we expected one".format(self.api.project, package))
-                ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
-                return package
         if package in ['rpmlint-mini-AGGR']:
             return package  # we should not freeze aggregates
         ET.SubElement(flink, 'package', {'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
