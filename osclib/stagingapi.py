@@ -820,14 +820,10 @@ class StagingAPI(object):
         if self._supersede:
             self.is_package_disabled(project, package, store=True)
 
-        for sub_prj, sub_pkg in self.get_sub_packages(package, project):
-            sub_prj = project
+        for sub_pkg in self.get_sub_packages(package, project):
             if self._supersede:
-                self.is_package_disabled(sub_prj, sub_pkg, store=True)
-            # Skip inner-project links for letter staging
-            if not self.is_adi_project(project) and sub_prj == project:
-                continue
-            delete_package(self.apiurl, sub_prj, sub_pkg, force=True, msg=msg)
+                self.is_package_disabled(project, sub_pkg, store=True)
+            delete_package(self.apiurl, project, sub_pkg, force=True, msg=msg)
 
         # Delete the main package in the last
         delete_package(self.apiurl, project, package, force=True, msg=msg)
@@ -1085,35 +1081,16 @@ class StagingAPI(object):
         """
         ret = []
 
-        # Started the logic. Note that, return empty tuple in case selecting
-        # non-ring package to a letter staging.
-        if self.is_adi_project(project):
-            if not self.item_exists(project, package):
-                return ret
-            # For adi package, do not trust the layout in the devel project, we
-            # must to guarantee the sub-pacakges are created according to the
-            # specfiles of main package. Therefore, main package must be
-            # created before through get_sub_packages().
-            filelist = self.get_filelist_for_package(pkgname=package, project=project, expand='1', extension='spec')
-            mainspec = "{}{}".format(package, '.spec')
-            if mainspec in filelist:
-                filelist.remove(mainspec)
-            for spec in filelist:
-                ret.append((project, spec[:-5]))
-        elif self.ring_packages.get(package):
-            project = self.ring_packages.get(package)
-
-            url = self.makeurl(['source', project, package],
-                               {'cmd': 'showlinked'})
-
-            # showlinked is a POST for rather bizzare reasons
-            f = http_POST(url)
-            root = ET.parse(f).getroot()
-
-            for pkg in root.findall('package'):
-                # ensure sub-package is valid in rings
-                if pkg.get('project') in self.rings and pkg.get('name') != package:
-                    ret.append((pkg.get('project'), pkg.get('name')))
+        # Do not trust the layout in the devel project, must to
+        # guarantee the sub-pacakges are created according to the
+        # specfiles of main package. Therefore, main package must be
+        # created before through get_sub_packages().
+        filelist = self.get_filelist_for_package(pkgname=package, project=project, expand='1', extension='spec')
+        mainspec = "{}{}".format(package, '.spec')
+        if mainspec in filelist:
+            filelist.remove(mainspec)
+        for spec in filelist:
+            ret.append(spec[:-5])
 
         return ret
 
@@ -1139,13 +1116,12 @@ class StagingAPI(object):
         tar_pkg = act.tgt_package
         self.create_and_wipe_package(project, tar_pkg)
 
-        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
-            sub_prj = project
-            self.create_and_wipe_package(sub_prj, sub_pkg)
+        for sub_pkg in self.get_sub_packages(tar_pkg, project):
+            self.create_and_wipe_package(project, sub_pkg)
 
             # create a link so unselect can find it
             root = ET.Element('link', package=tar_pkg, project=project)
-            url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
+            url = self.makeurl(['source', project, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
         return tar_pkg
@@ -1188,15 +1164,11 @@ class StagingAPI(object):
                 self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
             baselibs = True
 
-        for sub_prj, sub_pkg in self.get_sub_packages(tar_pkg, project):
-            sub_prj = project
-            # Skip inner-project links for letter staging
-            if not self.is_adi_project(project) and sub_prj == project:
-                continue
-            self.create_package_container(sub_prj, sub_pkg)
+        for sub_pkg in self.get_sub_packages(tar_pkg, project):
+            self.create_package_container(project, sub_pkg)
 
             root = ET.Element('link', package=tar_pkg, project=project)
-            url = self.makeurl(['source', sub_prj, sub_pkg, '_link'])
+            url = self.makeurl(['source', project, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
             if baselibs is False and 'baselibs.conf' in str(source_file_load(
