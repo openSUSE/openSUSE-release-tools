@@ -28,6 +28,9 @@ class ToTestReleaser(ToTestManager):
         self.setup(project)
 
         testing_snapshot = self.get_status('testing')
+        if not testing_snapshot:
+            self.logger.debug("No snapshot in testing, waiting for publisher to tell us")
+            return None
         new_snapshot = self.version_from_project()
 
         # not overwriting

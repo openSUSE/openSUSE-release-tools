@@ -160,12 +160,18 @@ class ToTestPublisher(ToTestManager):
 
     def publish(self, project, force=False):
         self.setup(project)
+
         try:
             current_snapshot = self.version_from_totest_project()
         except NotFoundException as e:
             # nothing in test project (yet)
             self.logger.warn(e)
             current_snapshot = None
+
+        if not self.get_status('testing'):
+            # migrating. Normally the releaser maintains that snapshot, but to differentiate
+            # bootstrap of new project and migration we explicitly set 'NONE' if there is Nothing
+            self.update_status('testing', current_snapshot if current_snapshot else 'NONE')
 
         group_id = self.openqa_group_id()
 
