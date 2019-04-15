@@ -13,8 +13,11 @@ from __future__ import print_function
 
 import logging
 import ToolBase
+import cmdln
 
-from ttm.manager import ToTestManager
+from ttm.manager import QAResult
+from ttm.releaser import ToTestReleaser
+from ttm.publisher import ToTestPublisher
 
 logger = logging.getLogger()
 
@@ -23,14 +26,37 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
 
-    def setup_tool(self):
-        tool = ToTestManager()
-        if self.options.debug:
-            logging.basicConfig(level=logging.DEBUG)
-        elif self.options.verbose:
-            logging.basicConfig(level=logging.INFO)
+    @cmdln.option('--force', action='store_true', help="Just publish, don't check")
+    def do_publish(self, subcmd, opts, project):
+        """${cmd_name}: check and publish ToTest
 
-        return tool
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        if ToTestPublisher(self.tool).publish(project, opts.force) == QAResult.failed:
+            return 1
+
+    @cmdln.option('--force', action='store_true', help="Just update status")
+    def do_wait_for_published(self, subcmd, opts, project):
+        """${cmd_name}: wait for ToTest to contain publishing status and publisher finished
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        ToTestPublisher(self.tool).wait_for_published(project, opts.force)
+
+    @cmdln.option('--force', action='store_true', help="Just release, don't check")
+    def do_release(self, subcmd, opts, project):
+        """${cmd_name}: check and release from project to ToTest
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        if ToTestReleaser(self.tool).release(project, opts.force) == QAResult.failed:
+            return 1
 
     def do_run(self, subcmd, opts, project):
         """${cmd_name}: run the ToTest Manager
@@ -39,13 +65,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        self.tool.totest(project)
-
-    def do_release(self, subcmd, opts, project='openSUSE:Factory'):
-        """${cmd_name}: manually release all media. Use with caution!
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-
-        self.tool.release(project)
+        if ToTestPublisher(self.tool).publish(project) == QAResult.passed:
+            ToTestPublisher(self.tool).wait_for_published(project)
+        ToTestReleaser(self.tool).release(project)
