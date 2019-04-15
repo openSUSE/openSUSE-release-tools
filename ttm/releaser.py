@@ -28,26 +28,27 @@ class ToTestReleaser(ToTestManager):
         self.setup(project)
 
         testing_snapshot = self.get_status('testing')
-        if not testing_snapshot:
+        if not testing_snapshot and not force:
             self.logger.debug("No snapshot in testing, waiting for publisher to tell us")
             return None
         new_snapshot = self.version_from_project()
 
-        # not overwriting
-        if new_snapshot == testing_snapshot:
-            self.logger.debug('no change in snapshot version')
-            return None
+        if not force:
+            # not overwriting
+            if new_snapshot == testing_snapshot:
+                self.logger.debug('no change in snapshot version')
+                return None
 
-        if testing_snapshot != self.get_status('failed') and testing_snapshot != self.get_status('published'):
-            self.logger.debug('Snapshot {} is still in progress'.format(testing_snapshot))
-            return QAResult.inprogress
+            if testing_snapshot != self.get_status('failed') and testing_snapshot != self.get_status('published'):
+                self.logger.debug('Snapshot {} is still in progress'.format(testing_snapshot))
+                return QAResult.inprogress
 
-        self.logger.info('testing snapshot %s', testing_snapshot)
-        self.logger.debug('new snapshot %s', new_snapshot)
+            self.logger.info('testing snapshot %s', testing_snapshot)
+            self.logger.debug('new snapshot %s', new_snapshot)
 
-        if not self.is_snapshotable():
-            self.logger.debug('not snapshotable')
-            return QAResult.failed
+            if not self.is_snapshotable():
+                self.logger.debug('not snapshotable')
+                return QAResult.failed
 
         self.update_totest(new_snapshot)
         self.update_status('testing', new_snapshot)
