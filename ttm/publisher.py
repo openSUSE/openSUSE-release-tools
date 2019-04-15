@@ -160,12 +160,19 @@ class ToTestPublisher(ToTestManager):
 
     def publish(self, project, force=False):
         self.setup(project)
-        try:
-            current_snapshot = self.version_from_totest_project()
-        except NotFoundException as e:
-            # nothing in test project (yet)
-            self.logger.warn(e)
-            current_snapshot = None
+
+        if not self.get_status('testing'):
+            # migrating to the attribute status
+
+            try:
+                self.update_status('testing', self.version_from_totest_project())
+            except NotFoundException:
+                self.logger.error('Nothing in totest - release something first')
+                return None
+
+            self.update_status('publishing', self.api.pseudometa_file_load(self.version_file('snapshot')))
+
+        current_snapshot = self.get_status('testing')
 
         group_id = self.openqa_group_id()
 
@@ -173,7 +180,6 @@ class ToTestPublisher(ToTestManager):
             self.logger.info('{} is already publishing'.format(current_snapshot))
             return None
 
-        self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
 

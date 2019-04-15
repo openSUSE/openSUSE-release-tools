@@ -66,6 +66,8 @@ Requires:       python-python-dateutil
 Requires:       python-pyxdg
 Requires:       python-requests
 Requires:       python-urlgrabber
+# ttm/manager.py
+Requires:       python-enum34
 
 # bs_mirrorfull
 Requires:       perl-Net-SSLeay

@@ -15,7 +15,7 @@ import ToolBase
 import logging
 import re
 import yaml
-from enum import Enum
+from enum import IntEnum
 from xml.etree import cElementTree as ET
 from osclib.stagingapi import StagingAPI
 try:
@@ -29,15 +29,15 @@ from ttm.totest import ToTest
 class NotFoundException(Exception):
     pass
 
-class QAResult(Enum):
+class QAResult(IntEnum):
     inprogress = 1
     failed = 2
     passed = 3
 
     def __str__(self):
-        if self.value == QAResult.inprogress:
+        if self == QAResult.inprogress:
             return 'inprogress'
-        elif self.value == QAResult.failed:
+        elif self == QAResult.failed:
             return 'failed'
         else:
             return 'passed'
