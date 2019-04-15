@@ -169,9 +169,13 @@ class ToTestPublisher(ToTestManager):
             current_snapshot = None
 
         if not self.get_status('testing'):
-            # migrating. Normally the releaser maintains that snapshot, but to differentiate
+            # migrating to the attribute status
+
+            # Normally the releaser maintains that snapshot, but to differentiate
             # bootstrap of new project and migration we explicitly set 'NONE' if there is Nothing
             self.update_status('testing', current_snapshot if current_snapshot else 'NONE')
+
+            self.update_status('publishing', self.api.pseudometa_file_load(self.version_file('snapshot')))
 
         group_id = self.openqa_group_id()
 
@@ -179,7 +183,6 @@ class ToTestPublisher(ToTestManager):
             self.logger.info('{} is already publishing'.format(current_snapshot))
             return None
 
-        self.update_pinned_descr = False
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
 
