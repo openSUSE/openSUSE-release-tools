@@ -226,8 +226,11 @@ class ToTestReleaser(ToTestManager):
         # omit snapshot, we don't want to rename on release
         if not self.project.set_snapshot_number:
             snapshot = None
-        release = 'Snapshot%s' % snapshot if snapshot else None
-        self.logger.info('Updating snapshot %s' % snapshot)
+        if snapshot:
+            release = 'Snapshot%s' % snapshot
+            self.logger.info('Updating snapshot %s' % snapshot)
+        else:
+            release = None
         if not (self.dryrun or self.project.do_not_release):
             self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
                                         repository=self.project.product_repo)
