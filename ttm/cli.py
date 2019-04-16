@@ -15,7 +15,7 @@ import logging
 import ToolBase
 import cmdln
 
-from ttm.manager import QAResult
+from ttm.manager import ToTestManager, QAResult
 from ttm.releaser import ToTestReleaser
 from ttm.publisher import ToTestPublisher
 
@@ -68,3 +68,15 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if ToTestPublisher(self.tool).publish(project) == QAResult.passed:
             ToTestPublisher(self.tool).wait_for_published(project)
         ToTestReleaser(self.tool).release(project)
+
+    @cmdln.option('--status', help='The status to fix (e.g. testing,publishing)')
+    @cmdln.option('--snapshot', help='Version to update to')
+    def do_fixup(self, subcmd, opts, project):
+        """${cmd_name}: fixup TTM status - use in case of emergency
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        manager = ToTestManager(self.tool)
+        manager.setup(project)
+        manager.update_status(opts.status, opts.snapshot)
