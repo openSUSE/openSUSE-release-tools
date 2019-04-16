@@ -176,8 +176,12 @@ class ToTestPublisher(ToTestManager):
 
         group_id = self.openqa_group_id()
 
-        if self.get_status('publishing') == current_snapshot or self.get_status('published') == current_snapshot:
+        if self.get_status('publishing') == current_snapshot:
             self.logger.info('{} is already publishing'.format(current_snapshot))
+            # migrating - if there is no published entry, the last publish call
+            # didn't wait for publish - and as such didn't set published state
+            if self.get_status('published') != current_snapshot:
+                return QAResult.passed
             return None
 
         current_result = self.overall_result(current_snapshot)
