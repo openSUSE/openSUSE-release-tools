@@ -1114,9 +1114,11 @@ class StagingAPI(object):
         """
 
         tar_pkg = act.tgt_package
+        # need to get the subpackages before we wipe it
+        sub_packages = self.get_sub_packages(tar_pkg, project)
         self.create_and_wipe_package(project, tar_pkg)
 
-        for sub_pkg in self.get_sub_packages(tar_pkg, project):
+        for sub_pkg in sub_packages:
             self.create_and_wipe_package(project, sub_pkg)
 
             # create a link so unselect can find it
