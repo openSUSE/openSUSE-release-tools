@@ -37,6 +37,8 @@ class ToTest(object):
         self.product_arch = 'local'
         self.livecd_repo = 'images'
         self.totest_container_repo = 'containers'
+        # Repo for image_products. If not set, uses product_repo.
+        self.totest_images_repo = None
 
         self.main_products = []
         self.ftp_products = []
@@ -58,6 +60,10 @@ class ToTest(object):
                 self.set_products(value)
             else:
                 setattr(self, key, value)
+
+        # Set default for totest_images_repo
+        if self.totest_images_repo is None:
+            self.totest_images_repo = self.product_repo
 
     def parse_images(self, products):
         parsed = []

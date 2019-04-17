@@ -220,7 +220,9 @@ class ToTestReleaser(ToTestManager):
 
         for image in self.project.image_products:
             self.release_package(self.project.name, image.package, set_release=set_release,
-                                  repository=self.project.product_repo)
+                                 repository=self.project.product_repo,
+                                 target_project=self.project.test_project,
+                                 target_repository=self.project.totest_images_repo)
 
     def update_totest(self, snapshot=None):
         # omit snapshot, we don't want to rename on release
@@ -234,5 +236,9 @@ class ToTestReleaser(ToTestManager):
         if not (self.dryrun or self.project.do_not_release):
             self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
                                         repository=self.project.product_repo)
+
+            if self.project.totest_images_repo != self.project.product_repo:
+                self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
+                repository=self.project.totest_images_repo)
 
         self._release(set_release=release)
