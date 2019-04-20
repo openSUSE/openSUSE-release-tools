@@ -1,0 +1,34 @@
+version: "3.7"
+
+x-obs: &obs
+  image: registry.opensuse.org/opensuse/tools/images/containers/osrt_miniobs:latest
+  volumes:
+    - ".:/code"
+
+services:
+  db:
+    <<: *obs
+    command: /usr/lib/mysql/mysql-systemd-helper start
+  cache:
+    <<: *obs
+    command: /usr/sbin/memcached -u memcached
+  api:
+    <<: *obs
+    command: chroot --userspec=wwwrun / /bin/bash -c "cd /srv/www/obs/api && /usr/bin/bundle exec rails s -e production"
+    ports:
+      - "3737:3000"
+    depends_on:
+      - db
+      - cache
+      - srcserver
+      - repserver
+      - servicedispatch
+  srcserver:
+    <<: *obs
+    command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_srcserver
+  repserver:
+    <<: *obs
+    command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_repserver
+  servicedispatch:
+    <<: *obs
+    command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_servicedispatch
