@@ -158,6 +158,9 @@ def package_clone_after(apiurl_source, apiurl_target, package):
 
 def person_sanitize(person):
     person.find('email').text = person.find('email').text.split('@')[0] + '@example.com'
+    watchlist = person.find('watchlist')
+    if watchlist:
+        person.remove(watchlist)
 
 def person_clone_after(apiurl_source, apiurl_target, person):
     url = makeurl(apiurl_target, ['person', person.find('login').text], {'cmd': 'change_password'})
