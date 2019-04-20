@@ -26,6 +26,12 @@ from osclib.core import package_list
 from osclib.git import CACHE_DIR
 from osclib.git import sync
 
+try:
+    import __builtin__
+    input = getattr(__builtin__, 'raw_input')
+except (ImportError, AttributeError):
+    pass
+
 # Issue summary can contain unicode characters and therefore a string containing
 # either summary or one in which ISSUE_SUMMARY is then placed must be unicode.
 # For example, translation-update-upstream contains bsc#877707 which has a
@@ -106,7 +112,7 @@ def prompt_continue(change_count):
     else:
         print('No changes for which to create bug, continue? [y/b/s/n/?] (y): ', end='')
 
-    response = raw_input().lower()
+    response = input().lower()
     if response == '?':
         print('b = break; file bug if applicable, record in db, and stop\ns = skip package')
     elif response in allowed:

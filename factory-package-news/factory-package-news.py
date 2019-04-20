@@ -35,13 +35,13 @@ class ChangeLogger(cmdln.Cmdln):
         h = None
         try:
             h = self.ts.hdrFromFdno(fd)
-        except rpm.error, e:
+        except rpm.error as e:
             if str(e) == "public key not available":
-                print str(e)
+                print(str(e))
             if str(e) == "public key not trusted":
-                print str(e)
+                print(str(e))
             if str(e) == "error reading package header":
-                print str(e)
+                print(str(e))
             h = None
         return h
 
@@ -78,7 +78,7 @@ class ChangeLogger(cmdln.Cmdln):
                 ):
                 srpm = '%s-%s-%s.src.rpm'%('kernel-source', m.group('version'), m.group('release'))
                 pkgdata[h['name']]['sourcerpm'] = srpm
-                print "%s -> %s"%(h['sourcerpm'], srpm)
+                print("%s -> %s"%(h['sourcerpm'], srpm))
 
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(h['name'])
@@ -204,7 +204,7 @@ class ChangeLogger(cmdln.Cmdln):
         p1 = set(v1pkgs.keys())
         p2 = set(v2pkgs.keys())
 
-        print "Packages changed:"
+        print('Packages changed:')
         group = self._get_packages_grouped(v2pkgs, p1&p2)
 #        pprint(p1&p2)
 #        pprint(group)
@@ -218,7 +218,7 @@ class ChangeLogger(cmdln.Cmdln):
             try:
                 t1 = v1changelogs[srpm1]['changelogtime'][0]
             except IndexError:
-                print >>sys.stderr, srpm1, "doesn't have a changelog"
+                print("{} doesn't have a changelog".format(srpm1), file=sys.stderr)
                 continue
             m = SRPM_RE.match(srpm)
             if m:
@@ -226,17 +226,17 @@ class ChangeLogger(cmdln.Cmdln):
             else:
                 name = srpm
             if len(v2changelogs[srpm]['changelogtime']) == 0:
-                print "  %s ERROR: no changelog"%name
+                print('  {} ERROR: no changelog'.format(name))
                 continue
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
                 continue # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
             details += "\n==== %s ====\n"%name
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:
-                print "  %s (%s -> %s)"%(name, v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
-                details += "Version update (%s -> %s)\n"%(v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
+                print("  %s (%s -> %s)"%(name, v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version']))
+                details += "Version update (%s -> %s)\n" % (v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
             else:
-                print "  %s"%name
+                print("  %s" % name)
             if len(pkgs) > 1:
                 details += "Subpackages: %s\n"%" ".join([p for p in pkgs if p != name])
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
@@ -245,8 +245,8 @@ class ChangeLogger(cmdln.Cmdln):
                 details += "\n" + v2changelogs[srpm]['changelogtext'][i2]
             details += '\n'
 
-        print "\n=== Details ==="
-        print details
+        print("\n=== Details ===")
+        print(details)
 
     def get_optparser(self):
         parser = cmdln.CmdlnOptionParser(self)
@@ -266,4 +266,3 @@ class ChangeLogger(cmdln.Cmdln):
 if __name__ == "__main__":
     app = ChangeLogger()
     sys.exit( app.main() )
-

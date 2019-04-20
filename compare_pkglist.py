@@ -138,13 +138,13 @@ class CompareList(object):
                     return
 
         # get souce packages from target
-        print 'Gathering the package list from %s' % self.old_prj
+        print('Gathering the package list from %s' % self.old_prj)
         source = self.get_source_packages(self.old_prj)
-        print 'Gathering the package list from %s' % self.new_prj
+        print('Gathering the package list from %s' % self.new_prj)
         target = self.get_source_packages(self.new_prj)
         removed_packages = self.removed_pkglist(self.old_prj)
         if self.existin:
-            print 'Gathering the package list from %s' % self.existin
+            print('Gathering the package list from %s' % self.existin)
             existin_packages = self.get_source_packages(self.existin)
 
         if not self.removedonly:

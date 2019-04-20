@@ -266,13 +266,13 @@ class FccSubmitter(object):
             logging.info('No build succeeded package in %s'%self.from_prj)
             return
 
-        print 'Build succeeded packages:'
-        print '-------------------------------------'
+        print('Build succeeded packages:')
+        print('-------------------------------------')
         for pkg in succeeded_packages:
-            print pkg
+            print(pkg)
 
-        print '-------------------------------------'
-        print "Found {} build succeded packages".format(len(succeeded_packages))
+        print('-------------------------------------')
+        print("Found {} build succeded packages".format(len(succeeded_packages)))
 
     def get_deleted_packages(self, project):
         query = 'states=accepted&types=delete&project={}&view=collection'
@@ -403,9 +403,9 @@ class FccSubmitter(object):
         print("Multi-specfile packages:")
         if ms_packages:
             for pkg in ms_packages:
-                print pkg
+                print(pkg)
         else:
-            print 'None'
+            print('None')
 
 
 
@@ -415,7 +415,7 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     if args.freeze:
-        print "freezing {}".format(FCC)
+        print('freezing {}'.format(FCC))
         freezer = FccFreezer()
         freezer.freeze()
     else:

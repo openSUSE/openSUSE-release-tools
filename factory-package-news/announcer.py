@@ -67,7 +67,7 @@ logging.basicConfig(level=logging.DEBUG if options.debug
                     format='%(asctime)s - %(module)s:%(lineno)d - %(levelname)s - %(message)s')
 
 if options.dump_config:
-    print yaml.dump(config_defaults, default_flow_style=False)
+    print(yaml.dump(config_defaults, default_flow_style=False))
     sys.exit(0)
 
 config = _load_config(options.config)
@@ -145,8 +145,8 @@ msg['Date'] = email.utils.formatdate(localtime=1)
 msg['Message-ID'] = email.utils.make_msgid()
 
 if options.dry:
-    print "sending ..."
-    print msg.as_string()
+    print("sending ...")
+    print(msg.as_string())
 else:
     logger.info("announcing version {}".format(version))
     s = smtplib.SMTP(options.relay)

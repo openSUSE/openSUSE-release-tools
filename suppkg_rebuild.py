@@ -99,7 +99,7 @@ class StagingHelper(object):
         """Main method"""
         rebuild_data = self.api.pseudometa_file_load('support_pkg_rebuild')
         if rebuild_data is None:
-            print "There is no support_pkg_rebuild file!"
+            print("There is no support_pkg_rebuild file!")
             return
 
         logging.info('Gathering support package list from %s' % self.project)

@@ -39,6 +39,12 @@ from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
 from osclib.prio_command import PrioCommand
 
+try:
+    import __builtin__
+    input = getattr(__builtin__, 'raw_input')
+except (ImportError, AttributeError):
+    pass
+
 
 def _print_version(self):
     from osclib.common import VERSION
@@ -632,7 +638,7 @@ def do_staging(self, subcmd, opts, *args):
                 if opts.non_interactive:
                     print('y')
                 else:
-                    response = raw_input().lower()
+                    response = input().lower()
                     if response != '' and response != 'y':
                         print('Quit')
                         return
