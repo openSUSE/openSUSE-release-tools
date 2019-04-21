@@ -1342,6 +1342,9 @@ class StagingAPI(object):
         url = self.makeurl(['source', project, '_meta'])
         root = ET.parse(http_GET(url)).getroot()
         section = root.find(flag)
+        if section is None:
+            # the default for build and publish (is all we care for)
+            return 'enabled'
         for status in section:
             is_repository = status.get('repository', None) == repository
             is_arch = status.get('arch', None) == arch
