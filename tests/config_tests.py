@@ -5,41 +5,38 @@ from osclib.conf import Config
 from osclib.core import attribute_value_save
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
-
-from . import obs
-
+from . import vcrhelpers
 
 class TestConfig(unittest.TestCase):
-    def setUp(self):
-        self.obs = obs.OBS()
-        self.load_config()
-        self.api = StagingAPI(obs.APIURL, obs.PROJECT)
-
-    def load_config(self, project=obs.PROJECT):
-        self.config = Config(obs.APIURL, project)
+    def setup_vcr(self):
+        return vcrhelpers.StagingWorkflow()
 
     def test_basic(self):
-        self.assertEqual('openSUSE', conf.config[obs.PROJECT]['lock-ns'])
+        wf = self.setup_vcr()
+        self.assertEqual('openSUSE', conf.config[wf.project]['lock-ns'])
 
     def test_remote(self):
+        wf = self.setup_vcr()
         # Initial config present in fixtures/oscrc and obs.py attribute default.
         # Local config fixture contains overridden-by-local and should win over
         # the remote config value.
-        self.assertEqual('local', conf.config[obs.PROJECT]['overridden-by-local'])
-        self.assertEqual('remote-indeed', conf.config[obs.PROJECT]['remote-only'])
+        self.assertEqual('local', conf.config[wf.project]['overridden-by-local'])
+        self.assertEqual('remote-indeed', conf.config[wf.project]['remote-only'])
 
         # Change remote value.
-        attribute_value_save(obs.APIURL, obs.PROJECT, 'Config', 'remote-only = new value\n')
-        self.load_config()
+        attribute_value_save(wf.apiurl, wf.project, 'Config', 'remote-only = new value\n')
+        wf.load_config()
 
-        self.assertEqual('local', conf.config[obs.PROJECT]['overridden-by-local'])
-        self.assertEqual('new value', conf.config[obs.PROJECT]['remote-only'])
+        self.assertEqual('local', conf.config[wf.project]['overridden-by-local'])
+        self.assertEqual('new value', conf.config[wf.project]['remote-only'])
 
     def test_remote_none(self):
-        self.load_config('not_real_project')
+        wf = self.setup_vcr()
+        wf.load_config('not_real_project')
         self.assertTrue(True) # Did not crash!
 
     def test_pattern_order(self):
+        wf = self.setup_vcr()
         # Add pattern to defaults in order to identify which was matched.
         for pattern in DEFAULT:
             DEFAULT[pattern]['pattern'] = pattern
@@ -61,16 +58,17 @@ class TestConfig(unittest.TestCase):
         # Ensure each pattern is match instead of catch-all pattern.
         patterns = set()
         for project in projects:
-            config = Config(obs.APIURL, project)
+            config = Config(wf.apiurl, project)
             patterns.add(conf.config[project]['pattern'])
 
         self.assertEqual(len(patterns), len(DEFAULT))
 
     def test_get_memoize_reset(self):
         """Ensure memoize_session_reset() properly forces re-fetch of config."""
-        self.assertEqual('remote-indeed', Config.get(obs.APIURL, obs.PROJECT)['remote-only'])
+        wf = self.setup_vcr()
+        self.assertEqual('remote-indeed', Config.get(wf.apiurl, wf.project)['remote-only'])
 
-        attribute_value_save(obs.APIURL, obs.PROJECT, 'Config', 'remote-only = new value\n')
+        attribute_value_save(wf.apiurl, wf.project, 'Config', 'remote-only = new value\n')
         memoize_session_reset()
 
-        self.assertEqual('new value', Config.get(obs.APIURL, obs.PROJECT)['remote-only'])
+        self.assertEqual('new value', Config.get(wf.apiurl, wf.project)['remote-only'])

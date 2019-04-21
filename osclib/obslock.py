@@ -10,6 +10,11 @@ from osc.core import makeurl
 from osc.core import http_GET
 from osc.core import http_POST
 
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
 
 class OBSLock(object):
     """Implement a distributed lock using a shared OBS resource."""
@@ -51,7 +56,12 @@ class OBSLock(object):
 
     def _read(self):
         url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
-        root = ET.parse(http_GET(url)).getroot()
+        try:
+            root = ET.parse(http_GET(url)).getroot()
+        except HTTPError as e:
+            if e.code == 404:
+                return None
+            raise e
         signature = None
         try:
             signature = root.find('.//value').text

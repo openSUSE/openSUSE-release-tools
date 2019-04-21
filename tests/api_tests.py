@@ -1,86 +1,72 @@
+from __future__ import print_function
+
 import sys
 import unittest
 import httpretty
+import re
 
-from . import obs
+
+import osc.core
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
+from xml.etree import cElementTree as ET
+from mock import MagicMock
+from . import vcrhelpers
 
 class TestApiCalls(unittest.TestCase):
     """
     Tests for various api calls to ensure we return expected content
     """
 
-    def setUp(self):
-        """
-        Initialize the configuration
-        """
-
-        self.obs = obs.OBS()
-        Config(obs.APIURL, 'openSUSE:Factory')
-        self.api = StagingAPI(obs.APIURL, 'openSUSE:Factory')
-
-    def tearDown(self):
-        """Clean internal cache"""
-        if hasattr(self.api, '_invalidate_all'):
-            self.api._invalidate_all()
-
     def test_ring_packages(self):
         """
         Validate the creation of the rings.
         """
-        # our content in the XML files
+
+        wf = vcrhelpers.StagingWorkflow()
+        wf.setup_rings()
+
+        curl = wf.create_package('target', 'curl')
+        curl.create_file('curl.spec')
+        curl.create_file('curl-mini.spec')
+        cmini = wf.create_link(curl, target_project=wf.projects['target'], target_package='curl-mini')
+        cring1 = wf.create_link(curl, target_project=wf.projects['ring1'], target_package='curl')
+        cring0 = wf.create_link(cring1, target_project=wf.projects['ring0'], target_package='curl-mini')
+
         # test content for listonly ie. list command
         ring_packages = {
-            'apparmor': 'openSUSE:Factory:Rings:1-MinimalX',
-            'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
-            'elem-ring-1': 'openSUSE:Factory:Rings:0-Bootstrap',
-            'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'curl': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'curl-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
             'wine': 'openSUSE:Factory:Rings:1-MinimalX',
         }
-        self.assertEqual(ring_packages, self.api.ring_packages_for_links)
+        self.assertEqual(ring_packages, wf.api.ring_packages_for_links)
 
         # test content for real usage
         ring_packages = {
-            'apparmor': 'openSUSE:Factory:Rings:1-MinimalX',
-            'elem-ring-0': 'openSUSE:Factory:Rings:0-Bootstrap',
-            'elem-ring-1': 'openSUSE:Factory:Rings:1-MinimalX',
-            'elem-ring-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
+            'curl': 'openSUSE:Factory:Rings:1-MinimalX',
+            'curl-mini': 'openSUSE:Factory:Rings:0-Bootstrap',
             'wine': 'openSUSE:Factory:Rings:1-MinimalX',
         }
-        self.assertEqual(ring_packages, self.api.ring_packages)
-
-    @unittest.skip("no longer approving non-ring packages")
-    def test_dispatch_open_requests(self):
-        """
-        Test dispatching and closure of non-ring packages
-        """
-
-        # Get rid of open requests
-        self.api.dispatch_open_requests()
-        # Check that we tried to close it
-        self.assertEqual(httpretty.last_request().method, 'POST')
-        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'changereviewstate'])
-        # Try it again
-        self.api.dispatch_open_requests()
-        # This time there should be nothing to close
-        self.assertEqual(httpretty.last_request().method, 'GET')
+        self.assertEqual(ring_packages, wf.api.ring_packages)
 
     def test_pseudometa_get_prj(self):
         """
         Test getting project metadata from YAML in project description
         """
 
+        wf = self.setup_vcr()
+        wf.create_staging('A')
+
         # Try to get data from project that has no metadata
-        data = self.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
+        data = wf.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
         # Should be empty, but contain structure to work with
         self.assertEqual(data, {'requests': []})
         # Add some sample data
         rq = {'id': '123', 'package': 'test-package'}
         data['requests'].append(rq)
         # Save them and read them back
-        self.api.set_prj_pseudometa('openSUSE:Factory:Staging:A', data)
-        test_data = self.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
+        wf.api.set_prj_pseudometa('openSUSE:Factory:Staging:A', data)
+        test_data = wf.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
         # Verify that we got back the same data
         self.assertEqual(data, test_data)
 
@@ -89,186 +75,207 @@ class TestApiCalls(unittest.TestCase):
         List projects and their content
         """
 
+        wf = self.setup_vcr()
+        staging_a = wf.create_staging('A')
+
         # Prepare expected results
-        data = []
-        for prj in self.obs.staging_project:
-            data.append('openSUSE:Factory:Staging:' + prj)
+        data = [staging_a.name, self.staging_b.name]
 
         # Compare the results
-        self.assertEqual(data, self.api.get_staging_projects())
+        self.assertEqual(data, wf.api.get_staging_projects())
 
     def test_open_requests(self):
         """
         Test searching for open requests
         """
-
-        requests = []
+        wf = vcrhelpers.StagingWorkflow()
+        wf.create_submit_request('devel:wine', 'wine')
 
         # get the open requests
-        requests = self.api.get_open_requests()
+        requests = wf.api.get_open_requests()
 
         # Compare the results, we only care now that we got 1 of them not the content
         self.assertEqual(1, len(requests))
-
-    def test_get_package_information(self):
-        """
-        Test if we get proper project, name and revision from the staging informations
-        """
-
-        package_info = {
-            'dir_srcmd5': '751efeae52d6c99de48164088a33d855',
-            'project': 'home:Admin',
-            'rev': '7b98ac01b8071d63a402fa99dc79331c',
-            'srcmd5': '7b98ac01b8071d63a402fa99dc79331c',
-            'package': 'wine'
-        }
-
-        # Compare the results, we only care now that we got 2 of them not the content
-        self.assertEqual(
-            package_info,
-            self.api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
 
     def test_request_id_package_mapping(self):
         """
         Test whether we can get correct id for sr in staging project
         """
 
-        prj = 'openSUSE:Factory:Staging:B'
+        wf = self.setup_vcr()
+        prj = self.staging_b.name
+
         # Get rq
-        num = self.api.get_request_id_for_package(prj, 'wine')
-        self.assertEqual(333, num)
+        num = wf.api.get_request_id_for_package(prj, 'wine')
+        self.assertEqual(str(num), self.winerq.reqid)
         # Get package name
-        self.assertEqual('wine', self.api.get_package_for_request_id(prj, num))
+        self.assertEqual('wine', wf.api.get_package_for_request_id(prj, num))
+
+    def setup_vcr(self):
+        wf = vcrhelpers.StagingWorkflow()
+        wf.setup_rings()
+        self.staging_b = wf.create_staging('B')
+        prj = self.staging_b.name
+
+        self.winerq = wf.create_submit_request('devel:wine', 'wine', text='Hallo World')
+        wf.api.rq_to_prj(self.winerq.reqid, prj)
+
+        # Get rq number
+        num = wf.api.get_request_id_for_package(prj, 'wine')
+        self.assertEqual(str(num), self.winerq.reqid)
+        self.assertIsNotNone(num)
+        self.assertTrue(wf.api.item_exists(prj, 'wine'))
+
+        return wf
 
     def test_rm_from_prj(self):
-        prj = 'openSUSE:Factory:Staging:B'
-        pkg = 'wine'
-
-        full_name = prj + '/' + pkg
-
-        # Verify package is there
-        self.assertTrue(full_name in self.obs.links)
-
-        # Get rq number
-        num = self.api.get_request_id_for_package(prj, pkg)
+        wf = self.setup_vcr()
 
         # Delete the package
-        self.api.rm_from_prj(prj, package='wine')
-
-        # Verify package is not there
-        self.assertTrue(full_name not in self.obs.links)
-
-        # RQ is gone
-        self.assertEqual(None, self.api.get_request_id_for_package(prj, pkg))
-        self.assertEqual(None, self.api.get_package_for_request_id(prj, num))
-
-        # Verify that review is closed
-        self.assertEqual('accepted', self.obs.requests[str(num)]['review'])
-        self.assertEqual('new', self.obs.requests[str(num)]['request'])
+        wf.api.rm_from_prj(self.staging_b.name, package='wine')
+        self.verify_wine_is_gone(wf)
 
     def test_rm_from_prj_2(self):
+        wf = self.setup_vcr()
+
         # Try the same with request number
-        prj = 'openSUSE:Factory:Staging:B'
+        wf.api.rm_from_prj(self.staging_b.name, request_id=self.winerq.reqid)
+        self.verify_wine_is_gone(wf)
+
+    def verify_wine_is_gone(self, wf):
+        prj = self.staging_b.name
         pkg = 'wine'
-
-        full_name = prj + '/' + pkg
-
-        # Get rq number
-        num = self.api.get_request_id_for_package(prj, pkg)
-
-        # Delete the package
-        self.api.rm_from_prj(prj, request_id=num)
+        num = self.winerq.reqid
 
         # Verify package is not there
-        self.assertTrue(full_name not in self.obs.links)
+        self.assertFalse(wf.api.item_exists(prj, pkg))
 
         # RQ is gone
-        self.assertEqual(None, self.api.get_request_id_for_package(prj, pkg))
-        self.assertEqual(None, self.api.get_package_for_request_id(prj, num))
+        self.assertIsNone(wf.api.get_request_id_for_package(prj, pkg))
+        self.assertIsNone(wf.api.get_package_for_request_id(prj, num))
 
         # Verify that review is closed
-        self.assertEqual('accepted', self.obs.requests[str(num)]['review'])
-        self.assertEqual('new', self.obs.requests[str(num)]['request'])
+        rq = self.winerq.xml()
+        self.assertIsNotNone(rq.find('.//state[@name="new"]'))
 
     def test_add_sr(self):
-        prj = 'openSUSE:Factory:Staging:A'
-        rq = '123'
+        wf = self.setup_vcr()
+
+        prj = self.staging_b.name
+        pkg = 'wine'
+        num = self.winerq.reqid
 
         # Running it twice shouldn't change anything
         for i in range(2):
             # Add rq to the project
-            self.api.rq_to_prj(rq, prj)
+            wf.api.rq_to_prj(num, prj)
             # Verify that review is there
-            self.assertEqual('new', self.obs.requests[rq]['review'])
-            self.assertEqual('review', self.obs.requests[rq]['request'])
-            self.assertEqual(self.api.get_prj_pseudometa('openSUSE:Factory:Staging:A'),
-                    {'requests': [{'id': 123, 'package': 'gcc', 'author': 'Admin', 'type': 'submit'}]})
+            reviews = [{'by_group': 'factory-staging', 'state': 'accepted'},
+                       {'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'}]
+            self.assertEqual(self.winerq.reviews(), reviews)
+            self.assertEqual(wf.api.get_prj_pseudometa(prj),
+                    {'requests': [{'id': int(num), 'package': 'wine', 'author': 'Admin', 'type': 'submit'}]})
 
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
 
-        self.api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
-        self.assertEqual(httpretty.last_request().method, 'PUT')
-        self.assertEqual(httpretty.last_request().body, '<package name="wine"><title/><description/></package>')
-        self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
+        wf = vcrhelpers.StagingWorkflow()
+        wf.create_staging('B')
+        wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
 
-        self.api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
-        self.assertEqual(httpretty.last_request().method, 'PUT')
-        self.assertEqual(httpretty.last_request().body, '<package name="wine"><title/><description/><build><disable/></build></package>')
-        self.assertEqual(httpretty.last_request().path, '/source/openSUSE:Factory:Staging:B/wine/_meta')
+        url = wf.api.makeurl(['source', 'openSUSE:Factory:Staging:B', 'wine', '_meta'])
+        self.assertEqual(osc.core.http_GET(url).read(), '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n</package>\n')
+
+        wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
+        m = '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n  <build>\n    <disable/>\n  </build>\n</package>\n'
+        self.assertEqual(osc.core.http_GET(url).read(), m)
 
     def test_review_handling(self):
         """Test whether accepting/creating reviews behaves correctly."""
 
+        wf = self.setup_vcr()
+
+        request = wf.create_submit_request('devel:wine', 'winetools')
+        reviews = [{'state': 'new', 'by_group': 'factory-staging'}]
+        self.assertEqual(request.reviews(), reviews)
+        num = request.reqid
+
         # Add review
-        self.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
-        self.assertEqual(httpretty.last_request().method, 'POST')
-        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
-        # Try to readd, should do anything
-        self.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
-        self.assertEqual(httpretty.last_request().method, 'GET')
+        wf.api.add_review(num, by_project='openSUSE:Factory:Staging:B')
+        reviews.append({'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'})
+        self.assertEqual(request.reviews(), reviews)
+
+        # Try to readd, should not do anything
+        wf.api.add_review(num, by_project='openSUSE:Factory:Staging:B')
+        self.assertEqual(request.reviews(), reviews)
+
         # Accept review
-        self.api.set_review('123', 'openSUSE:Factory:Staging:A')
-        self.assertEqual(httpretty.last_request().method, 'POST')
-        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'changereviewstate'])
+        wf.api.set_review(num, 'openSUSE:Factory:Staging:B')
+        reviews[1]['state'] = 'accepted'
+        self.assertEqual(request.reviews(), reviews)
+
         # Try to accept it again should do anything
-        self.api.set_review('123', 'openSUSE:Factory:Staging:A')
-        self.assertEqual(httpretty.last_request().method, 'GET')
+        wf.api.set_review(num, 'openSUSE:Factory:Staging:B')
+        self.assertEqual(request.reviews(), reviews)
+
         # But we should be able to reopen it
-        self.api.add_review('123', by_project='openSUSE:Factory:Staging:A')
-        self.assertEqual(httpretty.last_request().method, 'POST')
-        self.assertEqual(httpretty.last_request().querystring[u'cmd'], [u'addreview'])
+        wf.api.add_review(num, by_project='openSUSE:Factory:Staging:B')
+        reviews.append({'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'})
+        self.assertEqual(request.reviews(), reviews)
 
     def test_prj_from_letter(self):
 
+        wf = vcrhelpers.StagingWorkflow()
         # Verify it works
-        self.assertEqual(self.api.prj_from_letter('openSUSE:Factory'), 'openSUSE:Factory')
-        self.assertEqual(self.api.prj_from_letter('A'), 'openSUSE:Factory:Staging:A')
+        self.assertEqual(wf.api.prj_from_letter('openSUSE:Factory'), 'openSUSE:Factory')
+        self.assertEqual(wf.api.prj_from_letter('A'), 'openSUSE:Factory:Staging:A')
 
     def test_frozen_mtime(self):
         """Test frozen mtime."""
 
-        # Testing frozen mtime
-        self.assertTrue(self.api.days_since_last_freeze('openSUSE:Factory:Staging:A') > 8)
-        self.assertTrue(self.api.days_since_last_freeze('openSUSE:Factory:Staging:B') < 1)
+        wf = vcrhelpers.StagingWorkflow()
+        wf.create_staging('A')
 
-        # U == unfrozen
-        self.assertTrue(self.api.days_since_last_freeze('openSUSE:Factory:Staging:U') > 1000)
+        # unfrozen
+        self.assertTrue(wf.api.days_since_last_freeze('openSUSE:Factory:Staging:A') > 1000)
+
+        # Testing frozen mtime
+        wf.create_staging('B', freeze=True)
+        self.assertLess(wf.api.days_since_last_freeze('openSUSE:Factory:Staging:B'), 1)
+        self.mock_project_meta(wf)
+        self.assertGreater(wf.api.days_since_last_freeze('openSUSE:Factory:Staging:B'), 8)
 
     def test_frozen_enough(self):
         """Test frozen enough."""
 
-        # Testing frozen mtime
-        self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:B'), True)
-        self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
+        wf = vcrhelpers.StagingWorkflow()
+        wf.create_staging('A')
 
-        # U == unfrozen
-        self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:U'), False)
+        # Unfrozen
+        self.assertEqual(wf.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
+
+        wf.create_staging('B', freeze=True)
+        self.assertEqual(wf.api.prj_frozen_enough('openSUSE:Factory:Staging:B'), True)
+
+        self.mock_project_meta(wf)
+        self.assertEqual(wf.api.prj_frozen_enough('openSUSE:Factory:Staging:B'), False)
+
+    def mock_project_meta(self, wf):
+        body = """<directory name="_project" rev="3" vrev="" srcmd5="9dd1ec5b77a9e953662eb32955e9066a">
+              <entry name="_frozenlinks" md5="64127b7a5dabbca0ec2bf04cd04c9195" size="16" mtime="1555000000"/>
+              <entry name="_meta" md5="cf6fb1eac1a676d6c3707303ae2571ad" size="162" mtime="1555945413"/>
+            </directory>"""
+
+        wf.api._fetch_project_meta = MagicMock(return_value=body)
 
     def test_move(self):
         """Test package movement."""
 
-        init_data = self.api.get_package_information('openSUSE:Factory:Staging:B', 'wine')
-        self.api.move_between_project('openSUSE:Factory:Staging:B', 333, 'openSUSE:Factory:Staging:A')
-        test_data = self.api.get_package_information('openSUSE:Factory:Staging:A', 'wine')
-        self.assertEqual(init_data, test_data)
+        wf = self.setup_vcr()
+        staging_a = wf.create_staging('A')
+
+        self.assertTrue(wf.api.item_exists('openSUSE:Factory:Staging:B', 'wine'))
+        self.assertFalse(wf.api.item_exists('openSUSE:Factory:Staging:A', 'wine'))
+        wf.api.move_between_project('openSUSE:Factory:Staging:B', self.winerq.reqid, 'openSUSE:Factory:Staging:A')
+        self.assertTrue(wf.api.item_exists('openSUSE:Factory:Staging:A', 'wine'))
+        self.assertFalse(wf.api.item_exists('openSUSE:Factory:Staging:B', 'wine'))

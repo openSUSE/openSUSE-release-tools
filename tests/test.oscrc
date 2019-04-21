@@ -1,0 +1,10 @@
+[general]
+apiurl = http://localhost:3737
+
+[http://localhost:3737]
+user=Admin
+pass=opensuse
+
+[openSUSE:Factory]
+overridden-by-local = local
+
