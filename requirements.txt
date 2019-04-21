@@ -12,4 +12,4 @@ influxdb
 # Dependencies for testing
 httpretty<0.9.6
 mock
-
+vcrpy
