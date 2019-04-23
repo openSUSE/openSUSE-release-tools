@@ -1042,14 +1042,19 @@ class StagingAPI(object):
         """Determine if staging project is both active and no longer pending."""
         return status['overall_state'] in ['acceptable', 'review', 'failed']
 
+    # we use a private function to mock it - httpretty and vcr don't mix well
+    def _fetch_project_meta(self, project):
+        url = self.makeurl(['source', project, '_project'], {'meta': '1'})
+        return http_GET(url).read()
+
     def days_since_last_freeze(self, project):
         """
         Checks the last update for the frozen links
         :param project: project to check
         :return age in days(float) of the last update
         """
-        url = self.makeurl(['source', project, '_project'], {'meta': '1'})
-        root = ET.parse(http_GET(url)).getroot()
+        root = ET.fromstring(self._fetch_project_meta(project))
+        print('ET', ET.tostring(root))
         for entry in root.findall('entry'):
             if entry.get('name') == '_frozenlinks':
                 return (time.time() - float(entry.get('mtime')))/3600/24
