@@ -104,26 +104,6 @@ class TestApiCalls(unittest.TestCase):
         # Compare the results, we only care now that we got 1 of them not the content
         self.assertEqual(1, len(requests))
 
-    def test_get_package_information(self):
-        """
-        Test if we get proper project, name and revision from the staging informations
-        """
-
-        wf = self.setup_vcr()
-
-        package_info = {
-            'dir_srcmd5': '751efeae52d6c99de48164088a33d855',
-            'project': 'devel:wine',
-            'rev': '7b98ac01b8071d63a402fa99dc79331c',
-            'srcmd5': '7b98ac01b8071d63a402fa99dc79331c',
-            'package': 'wine'
-        }
-
-        # Compare the results, we only care now that we got 2 of them not the content
-        self.assertEqual(
-            package_info,
-            wf.api.get_package_information('openSUSE:Factory:Staging:B', 'wine'))
-
     @my_vcr.use_cassette
     def test_request_id_package_mapping(self):
         """
@@ -311,7 +291,8 @@ class TestApiCalls(unittest.TestCase):
         wf = self.setup_vcr()
         staging_a = wf.create_staging('A')
 
-        init_data = wf.api.get_package_information('openSUSE:Factory:Staging:B', 'wine')
+        self.assertTrue(wf.api.item_exists('openSUSE:Factory:Staging:B', 'wine'))
+        self.assertFalse(wf.api.item_exists('openSUSE:Factory:Staging:A', 'wine'))
         wf.api.move_between_project('openSUSE:Factory:Staging:B', self.winerq.reqid, 'openSUSE:Factory:Staging:A')
-        test_data = wf.api.get_package_information('openSUSE:Factory:Staging:A', 'wine')
-        self.assertEqual(init_data, test_data)
+        self.assertTrue(wf.api.item_exists('openSUSE:Factory:Staging:A', 'wine'))
+        self.assertFalse(wf.api.item_exists('openSUSE:Factory:Staging:B', 'wine'))

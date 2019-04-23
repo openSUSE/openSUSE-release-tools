@@ -245,36 +245,6 @@ class StagingAPI(object):
 
         return packages_staged
 
-    def get_package_information(self, project, pkgname, rev=None):
-        """
-        Get the revision packagename and source project to copy from
-        based on content provided
-        :param project: the project we are having the package in
-        :param pkgname: name of the package we want to identify
-        :return dict ( project, package, revision, md5sum )
-        """
-
-        package_info = {}
-
-        query = {
-            'rev': rev
-        }
-        if rev:
-            url = self.makeurl(['source', project, pkgname], query=query)
-        else:
-            url = self.makeurl(['source', project, pkgname])
-        content = http_GET(url)
-        root = ET.parse(content).getroot()
-        package_info['dir_srcmd5'] = root.attrib['srcmd5']
-
-        linkinfo = root.find('linkinfo')
-        package_info['srcmd5'] = linkinfo.attrib['srcmd5']
-        package_info['rev'] = linkinfo.attrib.get('rev', None)
-        package_info['project'] = linkinfo.attrib['project']
-        package_info['package'] = linkinfo.attrib['package']
-
-        return package_info
-
     def extract_specfile_short(self, filelist):
         packages = [spec[:-5] for spec in filelist if re.search(r'\.spec$', spec)]
 
