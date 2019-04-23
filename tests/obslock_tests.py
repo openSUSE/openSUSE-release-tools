@@ -3,23 +3,25 @@ import unittest
 from osclib.conf import Config
 from osclib.obslock import OBSLock
 
-from . import obs
+import vcr
+from . import vcrhelpers
+
+my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/obslock')
 
 class TestOBSLock(unittest.TestCase):
-    def setUp(self):
-        self.obs = obs.OBS()
-        Config(obs.APIURL, obs.PROJECT)
 
-    def obs_lock(self, reason='list'):
-        return OBSLock(obs.APIURL, obs.PROJECT, reason=reason)
+    def obs_lock(self, wf, reason='list'):
+        return OBSLock(wf.apiurl, wf.project, reason=reason)
 
     def assertLockFail(self, lock):
         with self.assertRaises(SystemExit):
             with lock:
                 self.assertFalse(lock.locked)
 
+    @my_vcr.use_cassette
     def test_lock(self):
-        lock = self.obs_lock()
+        wf = self.setup_vcr()
+        lock = self.obs_lock(wf)
         self.assertFalse(lock.locked)
 
         with lock:
@@ -33,9 +35,14 @@ class TestOBSLock(unittest.TestCase):
 
         self.assertFalse(lock.locked)
 
-    def test_locked_self(self, hold=False):
-        lock1 = self.obs_lock()
-        lock2 = self.obs_lock()
+    @my_vcr.use_cassette
+    def test_locked_self(self):
+        self.locked_self(hold=False)
+
+    def locked_self(self, hold=False):
+        wf = self.setup_vcr()
+        lock1 = self.obs_lock(wf)
+        lock2 = self.obs_lock(wf)
 
         self.assertFalse(lock1.locked)
         self.assertFalse(lock2.locked)
@@ -49,8 +56,10 @@ class TestOBSLock(unittest.TestCase):
             self.assertFalse(lock1.locked)
         self.assertFalse(lock2.locked)
 
+    @my_vcr.use_cassette
     def test_hold(self):
-        lock = self.obs_lock('lock')
+        wf = self.setup_vcr()
+        lock = self.obs_lock(wf, 'lock')
         self.assertFalse(lock.locked)
 
         with lock:
@@ -60,7 +69,7 @@ class TestOBSLock(unittest.TestCase):
         self.assertTrue(lock.locked)
 
         # Same constraints should apply since same user against hold.
-        self.test_locked_self(hold=True)
+        self.locked_self(hold=True)
 
         # Hold should remain after subcommands are executed.
         user, reason, reason_sub, ts = lock._parse(lock._read())
@@ -70,7 +79,7 @@ class TestOBSLock(unittest.TestCase):
         self.assertIsInstance(ts, datetime)
 
         # Other users should not bypass hold.
-        lock_user2 = self.obs_lock()
+        lock_user2 = self.obs_lock(wf)
         lock_user2.user = 'other'
         self.assertLockFail(lock_user2)
 
@@ -78,9 +87,11 @@ class TestOBSLock(unittest.TestCase):
 
         self.assertFalse(lock.locked)
 
+    @my_vcr.use_cassette
     def test_expire(self):
-        lock1 = self.obs_lock()
-        lock2 = self.obs_lock()
+        wf = self.setup_vcr()
+        lock1 = self.obs_lock(wf)
+        lock2 = self.obs_lock(wf)
         lock2.ttl = 0
         lock2.user = 'user2'
 
@@ -94,9 +105,11 @@ class TestOBSLock(unittest.TestCase):
                 user, _, _, _ = lock2._parse(lock2._read())
                 self.assertEqual(user, lock2.user)
 
+    @my_vcr.use_cassette
     def test_expire_hold(self):
-        lock1 = self.obs_lock('lock')
-        lock2 = self.obs_lock('override')
+        wf = self.setup_vcr()
+        lock1 = self.obs_lock(wf, 'lock')
+        lock2 = self.obs_lock(wf, 'override')
         lock2.ttl = 0
         lock2.user = 'user2'
 
@@ -113,16 +126,29 @@ class TestOBSLock(unittest.TestCase):
                 self.assertEqual(reason, 'override')
                 self.assertEqual(reason_sub, None, 'does not inherit hold')
 
+    def setup_vcr(self):
+        wf = vcrhelpers.StagingWorkflow()
+        wf.create_target()
+        # we should most likely create this as part of create_target, but
+        # it just slows down all other tests
+        wf.create_attribute_type('openSUSE', 'LockedBy')
+        wf.create_project(wf.project + ':Staging')
+        return wf
+
+    @my_vcr.use_cassette
     def test_reserved_characters(self):
-        lock = self.obs_lock('some reason @ #night')
+        wf = self.setup_vcr()
+        lock = self.obs_lock(wf, 'some reason @ #night')
 
         with lock:
             _, reason, _, _ = lock._parse(lock._read())
             self.assertEqual(reason, 'some reason at hashnight')
 
+    @my_vcr.use_cassette
     def test_needed(self):
-        lock1 = self.obs_lock()
-        lock2 = self.obs_lock('unlock')
+        wf = self.setup_vcr()
+        lock1 = self.obs_lock(wf)
+        lock2 = self.obs_lock(wf, 'unlock')
         lock2.user = 'user2'
         lock2.needed = False
 

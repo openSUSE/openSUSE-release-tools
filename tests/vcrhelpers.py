@@ -56,26 +56,24 @@ class StagingWorkflow(object):
             project = self.project
         self.config = Config(APIURL, project)
 
-    def create_attribute_type(self, name):
+    def create_attribute_type(self, namespace, name, values=None):
         meta="""
-        <namespace name='OSRT'>
+        <namespace name='{}'>
             <modifiable_by user='Admin'/>
-        </namespace>"""
-        url = osc.core.makeurl(APIURL, ['attribute', 'OSRT', '_meta'])
+        </namespace>""".format(namespace)
+        url = osc.core.makeurl(APIURL, ['attribute', namespace, '_meta'])
         osc.core.http_PUT(url, data=meta)
 
-        meta="""
-        <definition name='{}' namespace='OSRT'>
-            <description>A timestamp for the planned release date of an incident.</description>
-            <count>1</count>
-            <modifiable_by role='maintainer'/>
-        </definition>""".format(name)
-        url = osc.core.makeurl(APIURL, ['attribute', 'OSRT', name, '_meta'])
+        meta="<definition name='{}' namespace='{}'><description/>".format(name, namespace)
+        if values:
+            meta += "<count>{}</count>".format(values)
+        meta += "<modifiable_by role='maintainer'/></definition>"
+        url = osc.core.makeurl(APIURL, ['attribute', namespace, name, '_meta'])
         osc.core.http_PUT(url, data=meta)
 
     def setup_remote_config(self):
         self.create_target()
-        self.create_attribute_type('Config')
+        self.create_attribute_type('OSRT', 'Config', 1)
         attribute_value_save(APIURL, self.project, 'Config', 'overridden-by-local = remote-nope\n'
                                                         'remote-only = remote-indeed\n')
 
@@ -146,8 +144,10 @@ class StagingWorkflow(object):
             request.revoke()
         for group in self.groups:
             url = osc.core.makeurl(APIURL, ['group', group])
-            osc.core.http_DELETE(url)
-
+            try:
+                osc.core.http_DELETE(url)
+            except HTTPError:
+                pass
         print('done')
         if hasattr(self.api, '_invalidate_all'):
             self.api._invalidate_all()

@@ -1024,7 +1024,6 @@ class StagingAPI(object):
         :return age in days(float) of the last update
         """
         root = ET.fromstring(self._fetch_project_meta(project))
-        print('ET', ET.tostring(root))
         for entry in root.findall('entry'):
             if entry.get('name') == '_frozenlinks':
                 return (time.time() - float(entry.get('mtime')))/3600/24
