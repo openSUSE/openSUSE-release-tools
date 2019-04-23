@@ -49,7 +49,7 @@ class StagingWorkflow(object):
         CacheManager.test = True
         Cache.init()
         Cache.delete_all()
-        Cache.last_updated_load(APIURL)
+        Cache.last_updated_load(APIURL, force=True)
 
     def load_config(self, project=None):
         if project is None:

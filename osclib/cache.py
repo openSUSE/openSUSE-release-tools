@@ -294,8 +294,8 @@ class Cache(object):
         return directory
 
     @staticmethod
-    def last_updated_load(apiurl):
-        if apiurl in Cache.last_updated:
+    def last_updated_load(apiurl, force=False):
+        if apiurl in Cache.last_updated and not force:
             return
 
         url = osc.core.makeurl(apiurl, ['statistics', 'latest_updated'], {'limit': 5000})
