@@ -88,7 +88,7 @@ class DepTool(cmdln.Cmdln):
                         if parser.has_option(name, 'priority'):
                             repo.priority = parser.getint(name, 'priority')
                         logger.debug("add repo %s" % name)
-                except Exception, e:
+                except Exception as e:
                     logger.error(e)
 
     def _add_system_repo(self):

@@ -37,7 +37,7 @@ http_GET = osc.core.http_GET
 def chunks(l, n):
     """ Yield successive n-sized chunks from l.
     """
-    for i in xrange(0, len(l), n):
+    for i in range(0, len(l), n):
         yield l[i:i+n]
 
 class UpdateCrawler(object):
@@ -87,7 +87,7 @@ class UpdateCrawler(object):
             return http_GET(url)
         except HTTPError as e:
             if 500 <= e.code <= 599:
-                print 'Retrying {}'.format(url)
+                print('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -169,7 +169,7 @@ class UpdateCrawler(object):
     def _submitrequest(self, src_project, src_package, rev, dst_project,
                        dst_package, msg):
         res = 0
-        print "creating submit request", src_project, src_package, rev, dst_project, dst_package
+        print("creating submit request", src_project, src_package, rev, dst_project, dst_package)
         if not self.dryrun:
             res = osc.core.create_submit_request(self.apiurl,
                                                  src_project,

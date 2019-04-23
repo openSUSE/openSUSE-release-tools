@@ -58,9 +58,9 @@ class LegalAuto(ReviewBot.ReviewBot):
     def retried_GET(self, url):
         try:
             return http_GET(url)
-        except HTTPError, e:
+        except HTTPError as e:
             if 500 <= e.code <= 599:
-                print 'Retrying {}'.format(url)
+                print('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -109,7 +109,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             url = osc.core.makeurl(self.legaldb, ['package', str(pack)])
             report = REQ.get(url, headers=self.legaldb_headers).json()
             if report.get('priority', 0) != self.request_priority():
-                print "Update priority %d" % self.request_priority()
+                print('Update priority {}'.format(self.request_priority()))
                 url = osc.core.makeurl(
                     self.legaldb, ['package', str(pack)], {'priority': self.request_priority()})
                 REQ.patch(url, headers=self.legaldb_headers)
@@ -249,7 +249,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 if match and match.group(1) == package:
                     lpackage = package
                 if package != lpackage:
-                    print "SKIP", package, "it links to", lpackage
+                    print("SKIP", package, "it links to", lpackage)
                     skip = True
                     break
             if skip:
@@ -291,7 +291,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             return None
         if not 'saved' in obj:
             return None
-        print "PKG", tproject, sproject, package, revision, obj['saved']['id']
+        print("PKG", tproject, sproject, package, revision, obj['saved']['id'])
         self.pkg_cache[hkey] = obj['saved']['id']
         return self.pkg_cache[hkey]
 

@@ -15,24 +15,24 @@ def do_cycle(self, subcmd, opts, *args):
     """
 
     if len(args) == 0:
-        print ("No packages were specified, no chain to draw")
+        print("No packages were specified, no chain to draw")
 
     apiurl = self.get_api_url()
 
-    print ("digraph depgraph {")
+    print("digraph depgraph {")
     args = [pkg.strip() for pkglist in args for pkg in pkglist.split(',') if pkg.strip()]
     for pkgname in args:
         try:
             deps = ET.fromstring(get_dependson(apiurl, opts.project, opts.repository, opts.arch, [pkgname]))
 
             pkg = deps.find('package')
-            print ("\"%s\"" % pkgname)
+            print("\"%s\"" % pkgname)
             for deps in pkg.findall('pkgdep'):
                 if deps.text in args:
-                    print ("\"%s\" -> \"%s\"" % (deps.text, pkgname))
+                    print("\"%s\" -> \"%s\"" % (deps.text, pkgname))
         except:
             # Ignore packages that do not exist
-            print ("[color=red]")
+            print("[color=red]")
             continue
 
-    print ("}")
+    print("}")

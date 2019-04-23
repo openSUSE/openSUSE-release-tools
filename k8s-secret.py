@@ -7,6 +7,12 @@ from osclib.cache_manager import CacheManager
 import subprocess
 import sys
 
+try:
+    import __builtin__
+    input = getattr(__builtin__, 'raw_input')
+except (ImportError, AttributeError):
+    pass
+
 CACHE_DIR = CacheManager.directory('k8s-secret')
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -15,10 +21,10 @@ def secret_create(cache_file):
     environment = {'OSCRC': cache_file}
 
     print('Username: ', end='')
-    environment['OBS_USER'] = raw_input()
+    environment['OBS_USER'] = input()
 
     print('Password: ', end='')
-    environment['OBS_PASS'] = raw_input()
+    environment['OBS_PASS'] = input()
 
     osc_init = os.path.join(SCRIPT_PATH, 'dist/ci/osc-init')
     subprocess.Popen([osc_init], env=environment).wait()
@@ -37,7 +43,7 @@ def main(args):
         print(f.read())
 
     print('Apply secret for {} [y/n] (y): '.format(args.prefix), end='')
-    response = raw_input().lower()
+    response = input().lower()
     if response != '' and response != 'y':
         return
 

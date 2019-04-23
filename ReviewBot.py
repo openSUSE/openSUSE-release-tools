@@ -36,6 +36,12 @@ except ImportError:
     # python 2.x
     from urllib2 import HTTPError, URLError
 
+try:
+    import __builtin__
+    input = getattr(__builtin__, 'raw_input')
+except (ImportError, AttributeError):
+    pass
+
 from itertools import count
 
 class PackageLookup(object):
@@ -867,7 +873,7 @@ class CommandLineInterface(cmdln.Cmdln):
                     self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
                     signal.alarm(interval*60)
                     try:
-                        raw_input()
+                        input()
                     except ExTimeout:
                         pass
                     signal.alarm(0)

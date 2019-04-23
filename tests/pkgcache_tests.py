@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import shutil
 import unittest
@@ -14,7 +16,7 @@ class TestPkgCache(unittest.TestCase):
         self.cache = PkgCache('/tmp/cache', force_clean=True)
         for fn in ('file_a', 'file_b', 'file_c'):
             with open(os.path.join('/tmp', fn), 'w') as f:
-                print >>f, fn
+                print(fn, file=f)
 
     def tearDown(self):
         """Clean the environment."""

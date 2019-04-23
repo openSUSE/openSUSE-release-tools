@@ -7,15 +7,6 @@ from obs import OBS
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
-
-PY3 = sys.version_info[0] == 3
-
-if PY3:
-    string_types = str,
-else:
-    string_types = basestring,
-
-
 class TestApiCalls(unittest.TestCase):
     """
     Tests for various api calls to ensure we return expected content

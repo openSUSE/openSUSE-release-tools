@@ -29,11 +29,17 @@ http_GET = osc.core.http_GET
 http_DELETE = osc.core.http_DELETE
 http_POST = osc.core.http_POST
 
+try:
+    import __builtin__
+    input = getattr(__builtin__, 'raw_input')
+except (ImportError, AttributeError):
+    pass
+
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
 def chunks(l, n):
     """ Yield successive n-sized chunks from l.
     """
-    for i in xrange(0, len(l), n):
+    for i in range(0, len(l), n):
         yield l[i:i+n]
 
 class ToolBase(object):
@@ -190,7 +196,7 @@ class CommandLineInterface(cmdln.Cmdln):
                 logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
                 signal.alarm(interval*60)
                 try:
-                    raw_input()
+                    input()
                 except ExTimeout:
                     pass
                 signal.alarm(0)

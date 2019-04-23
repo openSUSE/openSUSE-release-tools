@@ -19,8 +19,8 @@ class TestComment(unittest.TestCase):
         }
 
     def test_truncate(self):
-        comment = "string of text"
-        for i in xrange(len(comment) + 1):
+        comment = 'string of text'
+        for i in range(len(comment) + 1):
             truncated = self.api.truncate(comment, length=i)
             print(truncated)
             self.assertEqual(len(truncated), i)
@@ -47,7 +47,7 @@ handle
 </pre>
 """.strip()
 
-        for i in xrange(len(comment) + len('...\n</pre>')):
+        for i in range(len(comment) + len('...\n</pre>')):
             truncated = self.api.truncate(comment, length=i)
             print('=' * 80)
             print(truncated)
