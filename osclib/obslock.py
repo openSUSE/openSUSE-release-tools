@@ -33,7 +33,7 @@ class OBSLock(object):
         if self.reason_sub:
             reason += ' ({})'.format(self.reason_sub)
         reason = reason.replace('@', 'at').replace('#', 'hash')
-        return '%s#%s@%s' % (self.user, reason, datetime.isoformat(datetime.utcnow()))
+        return '%s#%s@%s' % (self.user, reason, datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f'))
 
     def _parse(self, signature):
         """Parse a signature into an user and a timestamp."""
