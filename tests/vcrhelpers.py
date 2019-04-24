@@ -5,6 +5,7 @@ from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
 from osclib.core import attribute_value_save
+from osclib.memoize import memoize_session_reset
 import logging
 import os.path
 import osc.conf
@@ -36,20 +37,27 @@ class StagingWorkflow(object):
         vcr_log = logging.getLogger('vcr')
         vcr_log.setLevel(logging.INFO)
 
+        # clear cache from other tests - otherwise the VCR is replayed depending
+        # on test order, which can be harmful
+        memoize_session_reset()
+
         osc.core.conf.get_config(override_conffile=oscrc,
                                  override_no_keyring=True,
                                  override_no_gnome_keyring=True)
+        if os.environ.get('OSC_DEBUG'):
+            osc.core.conf.config['debug'] = 1
         self.project = project
         self.projects = {}
         self.requests = []
         self.groups = []
+        CacheManager.test = True
+        # disable caching, the TTLs break any reproduciblity
+        Cache.CACHE_DIR = None
+        Cache.PATTERNS = {}
+        Cache.init()
         self.setup_remote_config()
         self.load_config()
         self.api = StagingAPI(APIURL, project)
-        CacheManager.test = True
-        Cache.init()
-        Cache.delete_all()
-        Cache.last_updated_load(APIURL, force=True)
 
     def load_config(self, project=None):
         if project is None:
