@@ -3,16 +3,17 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
 
-from . import obs
+import vcr
+from . import vcrhelpers
+
+my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/unselect')
 
 class TestUnselect(unittest.TestCase):
-    def setUp(self):
-        self.obs = obs.OBS()
-        Config(obs.APIURL, obs.PROJECT)
-        self.api = StagingAPI(obs.APIURL, obs.PROJECT)
 
+    @my_vcr.use_cassette
     def test_cleanup_filter(self):
-        UnselectCommand.config_init(self.api)
+        wf = vcrhelpers.StagingWorkflow()
+        UnselectCommand.config_init(wf.api)
         UnselectCommand.cleanup_days = 1
-        obsolete = self.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)
-        self.assertSequenceEqual(['627445', '642126', '646560', '645723', '646823'], obsolete)
+        obsolete = wf.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)
+        self.assertSequenceEqual([], obsolete)
