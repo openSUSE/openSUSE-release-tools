@@ -1,9 +1,14 @@
 import unittest
+import json
 
-from . import obs
 from osclib.conf import Config
 from osclib.check_command import CheckCommand
 from osclib.stagingapi import StagingAPI
+
+from mock import MagicMock
+
+import vcr
+from . import vcrhelpers
 
 FULL_REPORT = """
  -- BUILDING Project openSUSE:Factory:Staging:A still needs attention
@@ -105,25 +110,32 @@ H_REPORT = """
    - failure check: openqa:textmode https://openqa.opensuse.org/tests/790715#step/partitioning/2
 """
 
+my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/check')
 
 class TestCheckCommand(unittest.TestCase):
     """Tests CheckCommand."""
 
-    def setUp(self):
-        """Initialize the configuration."""
+    def setup_vcr(self):
+        wf = vcrhelpers.StagingWorkflow()
+        wf.create_staging('H')
+        self.checkcommand = CheckCommand(wf.api)
+        return wf
 
-        self.obs = obs.OBS()
-        Config(obs.APIURL, 'openSUSE:Factory')
-        self.stagingapi = StagingAPI(obs.APIURL, 'openSUSE:Factory')
-        self.checkcommand = CheckCommand(self.stagingapi)
-
+    @my_vcr.use_cassette
     def test_check_command_all(self):
         """Validate json conversion for all projects."""
+        wf = self.setup_vcr()
+        with open('tests/fixtures/project/staging_projects/openSUSE:Factory.json') as f:
+            wf.api.project_status = MagicMock(return_value=json.load(f))
         report = self.checkcommand._check_project()
         self.maxDiff = 20000
         self.assertMultiLineEqual('\n'.join(report).strip(), FULL_REPORT.strip())
 
+    @my_vcr.use_cassette
     def test_check_command_single(self):
         """Validate json conversion for a single project."""
+        wf = self.setup_vcr()
+        with open('tests/fixtures/project/staging_projects/openSUSE:Factory/H.json') as f:
+            wf.api.project_status = MagicMock(return_value=json.load(f))
         report = self.checkcommand._check_project('H')
         self.assertMultiLineEqual('\n'.join(report).strip(), H_REPORT.strip())
