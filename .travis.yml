@@ -16,7 +16,7 @@ matrix:
   include:
     - env: TEST_SUITE=flake8
       language: python
-      python: 3.7
+      python: 3.6
       install:
         - pip install flake8
       script:
@@ -27,7 +27,7 @@ matrix:
       services:
         - docker
       language: python
-      python: 3.7
+      python: 3.6
       before_install:
         # provides xmllint used by test_bootstrap_copy (tests.freeze_tests.TestFreeze)
         - sudo apt-get install libxml2-utils
