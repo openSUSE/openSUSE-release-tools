@@ -87,7 +87,7 @@ matrix:
       install:
         # urlgrabber needed to install osc from git in requirements.txt
         # m2crypto for osc to be runable as used in docker-compose-obs
-        - pip install pycurl urlgrabber m2crypto pika
+        - pip install pycurl urlgrabber 'm2crypto<0.33' pika
         - sed -i 's|osc|osc@python3|' requirements.txt
         - pip install -r requirements.txt
         - pip install python-coveralls
@@ -114,7 +114,7 @@ matrix:
         - sudo apt-get install libxml2-utils
       install:
         # m2crypto for osc to be runable as used in docker-compose-obs
-        - pip install pycurl m2crypto pika
+        - pip install pycurl 'm2crypto<0.33' pika
         - sed -i 's|osc|osc@python3|' requirements.txt
         - sed -i 's|urlgrabber||' requirements.txt
         - pip install -r requirements.txt
