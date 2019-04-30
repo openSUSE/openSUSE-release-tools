@@ -2,8 +2,6 @@
 
 set -e
 
-cat /etc/passwd
-
 # This script is run from docker-compose within test container
 usermod -u $(stat -c %u /code/LICENSE) tester
 

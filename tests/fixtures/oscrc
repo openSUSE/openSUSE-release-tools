@@ -1,7 +1,7 @@
 [general]
 # URL to access API server, e.g. https://api.opensuse.org
 # you also need a section [https://api.opensuse.org] with the credentials
-apiurl = http://localhost
+apiurl = http://api:3000
 # Downloaded packages are cached here. Must be writable by you.
 #packagecachedir = /var/tmp/osbuild-packagecache
 # Wrapper to call build as root (sudo, su -, ...)
@@ -89,7 +89,7 @@ apiurl = http://localhost
 # Directory with executables to validate sources, esp before committing
 #source_validator_directory = /usr/lib/osc/source_validators
 
-[http://localhost]
+[http://api:3000]
 user=Admin
 pass=opensuse
 # set aliases for this apiurl
