@@ -2,8 +2,7 @@ import sys
 import unittest
 import httpretty
 
-from obs import APIURL
-from obs import OBS
+from . import obs
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
@@ -17,9 +16,9 @@ class TestApiCalls(unittest.TestCase):
         Initialize the configuration
         """
 
-        self.obs = OBS()
-        Config(APIURL, 'openSUSE:Factory')
-        self.api = StagingAPI(APIURL, 'openSUSE:Factory')
+        self.obs = obs.OBS()
+        Config(obs.APIURL, 'openSUSE:Factory')
+        self.api = StagingAPI(obs.APIURL, 'openSUSE:Factory')
 
     def tearDown(self):
         """Clean internal cache"""

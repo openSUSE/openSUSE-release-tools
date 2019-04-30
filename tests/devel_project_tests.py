@@ -1,8 +1,8 @@
-from OBSLocal import OBSLocalTestCase
+from . import OBSLocal
 import unittest
 
 
-class TestDevelProject(OBSLocalTestCase):
+class TestDevelProject(OBSLocal.OBSLocalTestCase):
     script = './devel-project.py'
     script_debug_osc = False
 

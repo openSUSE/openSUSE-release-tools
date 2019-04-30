@@ -1,5 +1,5 @@
 import logging
-from OBSLocal import OBSLocalTestCase
+from . import OBSLocal
 from osclib.comments import CommentAPI
 from ReviewBot import ReviewBot
 import random
@@ -8,7 +8,7 @@ import random
 COMMENT = 'short comment'
 PROJECT = 'openSUSE:Factory:Staging'
 
-class TestReviewBotComment(OBSLocalTestCase):
+class TestReviewBotComment(OBSLocal.OBSLocalTestCase):
     def setUp(self):
         super(TestReviewBotComment, self).setUp()
         self.api = CommentAPI(self.apiurl)

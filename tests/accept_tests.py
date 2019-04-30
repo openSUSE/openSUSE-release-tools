@@ -1,7 +1,6 @@
 import unittest
 
-from obs import APIURL
-from obs import OBS
+from . import obs
 from osclib.accept_command import AcceptCommand
 from osclib.conf import Config
 from osclib.comments import CommentAPI
@@ -14,9 +13,9 @@ class TestAccept(unittest.TestCase):
         """
         Initialize the configuration
         """
-        self.obs = OBS()
-        Config(APIURL, 'openSUSE:Factory')
-        self.api = StagingAPI(APIURL, 'openSUSE:Factory')
+        self.obs = obs.OBS()
+        Config(obs.APIURL, 'openSUSE:Factory')
+        self.api = StagingAPI(obs.APIURL, 'openSUSE:Factory')
 
     def test_accept_comments(self):
         c_api = CommentAPI(self.api.apiurl)
