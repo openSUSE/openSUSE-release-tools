@@ -1,6 +1,5 @@
 from datetime import datetime
 import unittest
-from freezegun import freeze_time
 from osclib.conf import Config
 from osclib.obslock import OBSLock
 from . import vcrhelpers
@@ -15,7 +14,6 @@ class TestOBSLock(unittest.TestCase):
             with lock:
                 self.assertFalse(lock.locked)
 
-    @freeze_time("Jan 14th, 2018")
     def test_lock(self):
         wf = self.setup_vcr()
         lock = self.obs_lock(wf)
@@ -32,7 +30,6 @@ class TestOBSLock(unittest.TestCase):
 
         self.assertFalse(lock.locked)
 
-    @freeze_time("Jan 14th, 2018")
     def test_locked_self(self):
         wf = self.setup_vcr()
         self.locked_self(wf, hold=False)
@@ -54,7 +51,6 @@ class TestOBSLock(unittest.TestCase):
 
         self.assertFalse(lock2.locked)
 
-    @freeze_time("Jan 14th, 2018")
     def test_hold(self):
         wf = self.setup_vcr()
         lock = self.obs_lock(wf, 'lock')
@@ -85,7 +81,6 @@ class TestOBSLock(unittest.TestCase):
 
         self.assertFalse(lock.locked)
 
-    @freeze_time("Jan 14th, 2018")
     def test_expire(self):
         wf = self.setup_vcr()
         lock1 = self.obs_lock(wf)
@@ -103,7 +98,6 @@ class TestOBSLock(unittest.TestCase):
                 user, _, _, _ = lock2._parse(lock2._read())
                 self.assertEqual(user, lock2.user)
 
-    @freeze_time("Jan 14th, 2018")
     def test_expire_hold(self):
         wf = self.setup_vcr()
         lock1 = self.obs_lock(wf, 'lock')
@@ -133,7 +127,6 @@ class TestOBSLock(unittest.TestCase):
         wf.create_project(wf.project + ':Staging')
         return wf
 
-    @freeze_time("Jan 14th, 2018")
     def test_reserved_characters(self):
         wf = self.setup_vcr()
         lock = self.obs_lock(wf, 'some reason @ #night')
@@ -142,7 +135,6 @@ class TestOBSLock(unittest.TestCase):
             _, reason, _, _ = lock._parse(lock._read())
             self.assertEqual(reason, 'some reason at hashnight')
 
-    @freeze_time("Jan 14th, 2018")
     def test_needed(self):
         wf = self.setup_vcr()
         lock1 = self.obs_lock(wf)
