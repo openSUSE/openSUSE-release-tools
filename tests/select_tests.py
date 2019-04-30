@@ -1,9 +1,4 @@
 import unittest
-
-import vcr
-
-from . import vcrhelpers
-
 import os.path
 from osc import oscerr
 import osc.conf
@@ -16,12 +11,10 @@ from osclib.stagingapi import StagingAPI
 import logging
 
 from mock import MagicMock
-
-my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/select')
+from . import vcrhelpers
 
 class TestSelect(unittest.TestCase):
 
-    @my_vcr.use_cassette
     def test_old_frozen(self):
         wf = vcrhelpers.StagingWorkflow()
         wf.api.prj_frozen_enough = MagicMock(return_value=False)
@@ -30,7 +23,6 @@ class TestSelect(unittest.TestCase):
         staging = wf.create_staging('Old')
         self.assertEqual(False, SelectCommand(wf.api, staging.name).perform(['gcc']))
 
-    @my_vcr.use_cassette
     def test_select_comments(self):
         wf = vcrhelpers.StagingWorkflow()
         wf.setup_rings()
@@ -67,7 +59,6 @@ class TestSelect(unittest.TestCase):
         self.assertFalse('request#{} for package gcz submitted by Admin'.format(r2.reqid) in second_select_comment['comment'])
         self.assertTrue('added request#{} for package gcc8 submitted by Admin'.format(r3.reqid) in second_select_comment['comment'])
 
-    @my_vcr.use_cassette
     def test_no_matches(self):
         wf = vcrhelpers.StagingWorkflow()
 
@@ -78,7 +69,6 @@ class TestSelect(unittest.TestCase):
             SelectCommand(wf.api, staging.name).perform(['bash'])
         self.assertEqual(str(cm.exception), "No SR# found for: bash")
 
-    @my_vcr.use_cassette
     def test_selected(self):
         wf = vcrhelpers.StagingWorkflow()
 

@@ -4,15 +4,10 @@ from osclib.stagingapi import StagingAPI
 from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
 from osclib.core import package_list_without_links
-
-import vcr
 from . import vcrhelpers
-
-my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/unselect')
 
 class TestUnselect(unittest.TestCase):
 
-    @my_vcr.use_cassette
     def test_cleanup_filter(self):
         wf = vcrhelpers.StagingWorkflow()
         UnselectCommand.config_init(wf.api)
@@ -20,7 +15,6 @@ class TestUnselect(unittest.TestCase):
         obsolete = wf.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)
         self.assertSequenceEqual([], obsolete)
 
-    @my_vcr.use_cassette
     def test_free_staging(self):
         wf = vcrhelpers.StagingWorkflow()
         wf.setup_rings()

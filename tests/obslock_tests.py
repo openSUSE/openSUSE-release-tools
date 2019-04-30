@@ -3,11 +3,7 @@ import unittest
 from freezegun import freeze_time
 from osclib.conf import Config
 from osclib.obslock import OBSLock
-
-import vcr
 from . import vcrhelpers
-
-my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/obslock')
 
 class TestOBSLock(unittest.TestCase):
 
@@ -20,7 +16,6 @@ class TestOBSLock(unittest.TestCase):
                 self.assertFalse(lock.locked)
 
     @freeze_time("Jan 14th, 2018")
-    @my_vcr.use_cassette
     def test_lock(self):
         wf = self.setup_vcr()
         lock = self.obs_lock(wf)
@@ -37,7 +32,6 @@ class TestOBSLock(unittest.TestCase):
 
         self.assertFalse(lock.locked)
 
-    @my_vcr.use_cassette
     @freeze_time("Jan 14th, 2018")
     def test_locked_self(self):
         wf = self.setup_vcr()
@@ -61,7 +55,6 @@ class TestOBSLock(unittest.TestCase):
         self.assertFalse(lock2.locked)
 
     @freeze_time("Jan 14th, 2018")
-    @my_vcr.use_cassette
     def test_hold(self):
         wf = self.setup_vcr()
         lock = self.obs_lock(wf, 'lock')
@@ -93,7 +86,6 @@ class TestOBSLock(unittest.TestCase):
         self.assertFalse(lock.locked)
 
     @freeze_time("Jan 14th, 2018")
-    @my_vcr.use_cassette
     def test_expire(self):
         wf = self.setup_vcr()
         lock1 = self.obs_lock(wf)
@@ -112,7 +104,6 @@ class TestOBSLock(unittest.TestCase):
                 self.assertEqual(user, lock2.user)
 
     @freeze_time("Jan 14th, 2018")
-    @my_vcr.use_cassette
     def test_expire_hold(self):
         wf = self.setup_vcr()
         lock1 = self.obs_lock(wf, 'lock')
@@ -143,7 +134,6 @@ class TestOBSLock(unittest.TestCase):
         return wf
 
     @freeze_time("Jan 14th, 2018")
-    @my_vcr.use_cassette
     def test_reserved_characters(self):
         wf = self.setup_vcr()
         lock = self.obs_lock(wf, 'some reason @ #night')
@@ -153,7 +143,6 @@ class TestOBSLock(unittest.TestCase):
             self.assertEqual(reason, 'some reason at hashnight')
 
     @freeze_time("Jan 14th, 2018")
-    @my_vcr.use_cassette
     def test_needed(self):
         wf = self.setup_vcr()
         lock1 = self.obs_lock(wf)

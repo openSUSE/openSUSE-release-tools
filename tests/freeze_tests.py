@@ -7,11 +7,7 @@ import tempfile
 from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
-
-import vcr
 from . import vcrhelpers
-
-my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/freeze')
 
 class TestFreeze(unittest.TestCase):
 
@@ -27,7 +23,6 @@ class TestFreeze(unittest.TestCase):
         """
         return os.path.join(os.getcwd(), 'tests/fixtures')
 
-    @my_vcr.use_cassette
     def test_bootstrap_copy(self):
         wf = vcrhelpers.StagingWorkflow()
 

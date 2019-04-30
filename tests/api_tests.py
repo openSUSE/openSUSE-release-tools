@@ -5,23 +5,19 @@ import unittest
 import httpretty
 import re
 
-import vcr
-from . import vcrhelpers
 
 import osc.core
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from xml.etree import cElementTree as ET
 from mock import MagicMock
-
-my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/api')
+from . import vcrhelpers
 
 class TestApiCalls(unittest.TestCase):
     """
     Tests for various api calls to ensure we return expected content
     """
 
-    @my_vcr.use_cassette
     def test_ring_packages(self):
         """
         Validate the creation of the rings.
@@ -53,7 +49,6 @@ class TestApiCalls(unittest.TestCase):
         }
         self.assertEqual(ring_packages, wf.api.ring_packages)
 
-    @my_vcr.use_cassette
     def test_pseudometa_get_prj(self):
         """
         Test getting project metadata from YAML in project description
@@ -75,7 +70,6 @@ class TestApiCalls(unittest.TestCase):
         # Verify that we got back the same data
         self.assertEqual(data, test_data)
 
-    @my_vcr.use_cassette
     def test_list_projects(self):
         """
         List projects and their content
@@ -90,7 +84,6 @@ class TestApiCalls(unittest.TestCase):
         # Compare the results
         self.assertEqual(data, wf.api.get_staging_projects())
 
-    @my_vcr.use_cassette
     def test_open_requests(self):
         """
         Test searching for open requests
@@ -104,7 +97,6 @@ class TestApiCalls(unittest.TestCase):
         # Compare the results, we only care now that we got 1 of them not the content
         self.assertEqual(1, len(requests))
 
-    @my_vcr.use_cassette
     def test_request_id_package_mapping(self):
         """
         Test whether we can get correct id for sr in staging project
@@ -136,7 +128,6 @@ class TestApiCalls(unittest.TestCase):
 
         return wf
 
-    @my_vcr.use_cassette
     def test_rm_from_prj(self):
         wf = self.setup_vcr()
 
@@ -144,7 +135,6 @@ class TestApiCalls(unittest.TestCase):
         wf.api.rm_from_prj(self.staging_b.name, package='wine')
         self.verify_wine_is_gone(wf)
 
-    @my_vcr.use_cassette
     def test_rm_from_prj_2(self):
         wf = self.setup_vcr()
 
@@ -168,7 +158,6 @@ class TestApiCalls(unittest.TestCase):
         rq = self.winerq.xml()
         self.assertIsNotNone(rq.find('.//state[@name="new"]'))
 
-    @my_vcr.use_cassette
     def test_add_sr(self):
         wf = self.setup_vcr()
 
@@ -187,7 +176,6 @@ class TestApiCalls(unittest.TestCase):
             self.assertEqual(wf.api.get_prj_pseudometa(prj),
                     {'requests': [{'id': int(num), 'package': 'wine', 'author': 'Admin', 'type': 'submit'}]})
 
-    @my_vcr.use_cassette
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
 
@@ -202,7 +190,6 @@ class TestApiCalls(unittest.TestCase):
         m = '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n  <build>\n    <disable/>\n  </build>\n</package>\n'
         self.assertEqual(osc.core.http_GET(url).read(), m)
 
-    @my_vcr.use_cassette
     def test_review_handling(self):
         """Test whether accepting/creating reviews behaves correctly."""
 
@@ -236,7 +223,6 @@ class TestApiCalls(unittest.TestCase):
         reviews.append({'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'})
         self.assertEqual(request.reviews(), reviews)
 
-    @my_vcr.use_cassette
     def test_prj_from_letter(self):
 
         wf = vcrhelpers.StagingWorkflow()
@@ -244,7 +230,6 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(wf.api.prj_from_letter('openSUSE:Factory'), 'openSUSE:Factory')
         self.assertEqual(wf.api.prj_from_letter('A'), 'openSUSE:Factory:Staging:A')
 
-    @my_vcr.use_cassette
     def test_frozen_mtime(self):
         """Test frozen mtime."""
 
@@ -260,7 +245,6 @@ class TestApiCalls(unittest.TestCase):
         self.mock_project_meta(wf)
         self.assertGreater(wf.api.days_since_last_freeze('openSUSE:Factory:Staging:B'), 8)
 
-    @my_vcr.use_cassette
     def test_frozen_enough(self):
         """Test frozen enough."""
 
@@ -284,7 +268,6 @@ class TestApiCalls(unittest.TestCase):
 
         wf.api._fetch_project_meta = MagicMock(return_value=body)
 
-    @my_vcr.use_cassette
     def test_move(self):
         """Test package movement."""
 

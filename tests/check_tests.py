@@ -6,8 +6,6 @@ from osclib.check_command import CheckCommand
 from osclib.stagingapi import StagingAPI
 
 from mock import MagicMock
-
-import vcr
 from . import vcrhelpers
 
 FULL_REPORT = """
@@ -110,7 +108,6 @@ H_REPORT = """
    - failure check: openqa:textmode https://openqa.opensuse.org/tests/790715#step/partitioning/2
 """
 
-my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/check')
 
 class TestCheckCommand(unittest.TestCase):
     """Tests CheckCommand."""
@@ -121,7 +118,6 @@ class TestCheckCommand(unittest.TestCase):
         self.checkcommand = CheckCommand(wf.api)
         return wf
 
-    @my_vcr.use_cassette
     def test_check_command_all(self):
         """Validate json conversion for all projects."""
         wf = self.setup_vcr()
@@ -131,7 +127,6 @@ class TestCheckCommand(unittest.TestCase):
         self.maxDiff = 20000
         self.assertMultiLineEqual('\n'.join(report).strip(), FULL_REPORT.strip())
 
-    @my_vcr.use_cassette
     def test_check_command_single(self):
         """Validate json conversion for a single project."""
         wf = self.setup_vcr()

@@ -12,7 +12,6 @@ import osc.conf
 import osc.core
 import random
 import string
-import vcr
 from xml.etree import cElementTree as ET
 
 try:
@@ -34,8 +33,6 @@ class StagingWorkflow(object):
 
         self.apiurl = APIURL
         logging.basicConfig()
-        vcr_log = logging.getLogger('vcr')
-        vcr_log.setLevel(logging.INFO)
 
         # clear cache from other tests - otherwise the VCR is replayed depending
         # on test order, which can be harmful

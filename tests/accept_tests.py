@@ -7,11 +7,7 @@ from osclib.comments import CommentAPI
 from osclib.stagingapi import StagingAPI
 
 from mock import MagicMock
-
-import vcr
 from . import vcrhelpers
-
-my_vcr = vcr.VCR(cassette_library_dir='tests/fixtures/vcr/accept')
 
 class TestAccept(unittest.TestCase):
 
@@ -30,7 +26,6 @@ class TestAccept(unittest.TestCase):
         self.assertGreater(len(self.comments), 0)
         return wf
 
-    @my_vcr.use_cassette
     def test_accept_comments(self):
         wf = self.setup_vcr()
 
@@ -40,7 +35,6 @@ class TestAccept(unittest.TestCase):
         accepted_comments = self.c_api.get_comments(project_name=self.prj)
         self.assertEqual(len(accepted_comments), 0)
 
-    @my_vcr.use_cassette
     def test_accept_final_comment(self):
         wf = self.setup_vcr()
 
