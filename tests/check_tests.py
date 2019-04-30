@@ -1,7 +1,6 @@
 import unittest
 
-from obs import APIURL
-from obs import OBS
+from . import obs
 from osclib.conf import Config
 from osclib.check_command import CheckCommand
 from osclib.stagingapi import StagingAPI
@@ -113,9 +112,9 @@ class TestCheckCommand(unittest.TestCase):
     def setUp(self):
         """Initialize the configuration."""
 
-        self.obs = OBS()
-        Config(APIURL, 'openSUSE:Factory')
-        self.stagingapi = StagingAPI(APIURL, 'openSUSE:Factory')
+        self.obs = obs.OBS()
+        Config(obs.APIURL, 'openSUSE:Factory')
+        self.stagingapi = StagingAPI(obs.APIURL, 'openSUSE:Factory')
         self.checkcommand = CheckCommand(self.stagingapi)
 
     def test_check_command_all(self):

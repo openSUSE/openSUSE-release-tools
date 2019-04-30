@@ -1,4 +1,4 @@
-from OBSLocal import OBSLocalTestCase
+from . import OBSLocal
 from osclib.comments import CommentAPI
 import random
 import re
@@ -90,7 +90,7 @@ handle
         self.assertEqual(info, COMMENT_INFO)
 
 
-class TestCommentOBS(OBSLocalTestCase):
+class TestCommentOBS(OBSLocal.OBSLocalTestCase):
     def setUp(self):
         super(TestCommentOBS, self).setUp()
         self.api = CommentAPI(self.apiurl)

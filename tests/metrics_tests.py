@@ -1,8 +1,8 @@
-from OBSLocal import OBSLocalTestCase
+from . import OBSLocal
 import unittest
 
 
-class TestMetrics(OBSLocalTestCase):
+class TestMetrics(OBSLocal.OBSLocalTestCase):
     script = './metrics.py'
     script_debug_osc = False
 
