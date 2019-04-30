@@ -1,0 +1,21 @@
+--- /usr/lib/obs/server/BSConfig.pm.back       2019-04-30 06:21:39.000000000 +0000
++++ /usr/lib/obs/server/BSConfig.pm    2019-04-30 06:32:04.000000000 +0000
+@@ -34,3 +34,3 @@
+ # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
+-our $ipaccess = {
++our $removed_ipaccess  = {
+    '^::1$' => 'rw',    # only the localhost can write to the backend
+@@ -48,5 +48,5 @@
+ # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
+-our $srcserver = "http://$hostname:5352";
+-our $reposerver = "http://$hostname:5252";
+-our $serviceserver = "http://$hostname:5152";
++our $srcserver = "http://srcserver:5352";
++our $reposerver = "http://repserver:5252";
++our $serviceserver = "http://serviceserver:5152";
+ our $clouduploadserver = "http://$hostname:5452"; 
+@@ -226,3 +226,3 @@
+ # enable service dispatcher
+-our $servicedispatch = 1;
++our $servicedispatch = 0;
+ # max of 4 parallel running services (default)
