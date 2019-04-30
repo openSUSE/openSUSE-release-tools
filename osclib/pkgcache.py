@@ -9,10 +9,10 @@ except:
 import shelve
 import shutil
 import time
-from UserDict import DictMixin
 
+from collections import MutableMapping
 
-class PkgCache(DictMixin):
+class PkgCache(MutableMapping):
     def __init__(self, basecachedir, force_clean=False):
         self.cachedir = os.path.join(basecachedir, 'pkgcache')
         self.index_fn = os.path.join(self.cachedir, 'index.db')
