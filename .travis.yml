@@ -14,33 +14,6 @@ env:
 
 matrix:
   include:
-    - env: TEST_SUITE=distribution TARGET_REPO=openSUSE_Factory
-      sudo: required
-      services:
-        - docker
-      language: bash
-      before_install:
-        - docker build -f dist/ci/Dockerfile -t spec .
-      script:
-        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
-    - env: TEST_SUITE=distribution TARGET_REPO=openSUSE_15.0
-      sudo: required
-      services:
-        - docker
-      language: bash
-      before_install:
-        - docker build -f dist/ci/Dockerfile -t spec .
-      script:
-        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
-    - env: TEST_SUITE=distribution TARGET_REPO=SLE_15
-      sudo: required
-      services:
-        - docker
-      language: bash
-      before_install:
-        - docker build -f dist/ci/Dockerfile -t spec .
-      script:
-        - ./dist/ci/docker-run obs-build-target "$TARGET_REPO"
     - env: TEST_SUITE=flake8
       language: python
       python: 3.7
