@@ -32,7 +32,6 @@ except ImportError:
 
 import rpm
 from collections import namedtuple
-from osclib.pkgcache import PkgCache
 from osclib.comments import CommentAPI
 
 from abichecker_common import CACHEDIR
@@ -68,11 +67,7 @@ ARCH_WHITELIST = {
         }
 
 # Directory where download binary packages.
-# TODO: move to CACHEDIR, just here for consistency with repochecker
-BINCACHE = os.path.expanduser('~/co')
-DOWNLOADS = os.path.join(BINCACHE, 'downloads')
-
-# Where the cache files are stored
+DOWNLOADS = os.path.join(CACHEDIR, 'downloads')
 UNPACKDIR = os.path.join(CACHEDIR, 'unpacked')
 
 so_re = re.compile(r'^(?:/usr)?/lib(?:64)?/lib([^/]+)\.so(?:\.[^/]+)?')
@@ -180,8 +175,6 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.ts = rpm.TransactionSet()
         self.ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
-
-        self.pkgcache = PkgCache(BINCACHE)
 
         # reports of source submission
         self.reports = []
@@ -711,6 +704,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     if r != 0:
                         raise FetchError("failed to extract %s!"%fn)
                     tmpfd.close()
+                    os.unlink(downloaded[fn])
                     cpio = CpioRead(tmpfile)
                     cpio.read()
                     for ch in cpio:
@@ -752,22 +746,12 @@ class ABIChecker(ReviewBot.ReviewBot):
             downloaded[fn] = t
         return downloaded
 
-    # XXX: from repochecker
     def _get_binary_file(self, project, repository, arch, package, filename, target, mtime):
         """Get a binary file from OBS."""
-        # Check if the file is already there.
-        key = (project, repository, arch, package, filename, mtime)
-        if key in self.pkgcache:
-            try:
-                os.unlink(target)
-            except:
-                pass
-            self.pkgcache.linkto(key, target)
-        else:
-            osc.core.get_binary_file(self.apiurl, project, repository, arch,
-                            filename, package=package,
-                            target_filename=target)
-            self.pkgcache[key] = target
+        # Used to cache, but dropped as part of python3 migration.
+        osc.core.get_binary_file(self.apiurl, project, repository, arch,
+                                 filename, package=package,
+                                 target_filename=target)
 
     def readRpmHeaderFD(self, fd):
         h = None
