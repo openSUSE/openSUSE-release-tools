@@ -142,6 +142,43 @@ class TestFactorySourceAccept(unittest.TestCase):
                     </collection>
                     """)
                 ])
+        httpretty.register_uri(httpretty.GET,
+            rr("/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+submit%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27+or+submit%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27timezone%27+or+submit%2Ftarget%2F%40package%3D%27timezone%27+or+action%2Fsource%2F%40package%3D%27timezone%27+or+submit%2Fsource%2F%40package%3D%27timezone%27%29+and+action%2F%40type%3D%27submit%27"),
+            match_querystring = True,
+            responses = [
+                httpretty.Response( body = """
+                    <collection matches="1">
+                      <request id="254684" creator="chameleon">
+                        <action type="submit">
+                          <source project="Base:System" package="timezone" rev="481ecbe0dfc63ece3a1f1b5598f7d96c"/>
+                          <target project="openSUSE:Factory" package="timezone"/>
+                        </action>
+                        <state name="review" who="factory-auto" when="2014-10-08T11:55:56">
+                          <comment>...</comment>
+                        </state>
+                        <review state="new" by_group="opensuse-review-team">
+                          <comment/>
+                        </review>
+                        <description> ... </description>
+                      </request>
+                    </collection>
+                    """),
+                httpretty.Response( body = """
+                    <collection matches="1">
+                      <request id="254684" creator="chameleon">
+                        <action type="submit">
+                          <source project="Base:System" package="timezone" rev="481ecbe0dfc63ece3a1f1b5598f7d96c"/>
+                          <target project="openSUSE:Factory" package="timezone"/>
+                        </action>
+                        <state name="new" who="factory-auto" when="2014-10-08T11:55:56">
+                          <comment>...</comment>
+                        </state>
+                        <description> ... </description>
+                      </request>
+                    </collection>
+                    """)
+                ])
+
 
         result = { 'status' : None }
 
@@ -266,6 +303,15 @@ class TestFactorySourceAccept(unittest.TestCase):
                 <collection matches="0">
                 </collection>
             """)
+
+        httpretty.register_uri(httpretty.GET,
+            rr("/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+submit%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27+or+submit%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27plan%27+or+submit%2Ftarget%2F%40package%3D%27plan%27+or+action%2Fsource%2F%40package%3D%27plan%27+or+submit%2Fsource%2F%40package%3D%27plan%27%29+and+action%2F%40type%3D%27submit%27"),
+            match_querystring = True,
+            body = """
+                <collection matches="0">
+                </collection>
+            """)
+
 
         result = { 'factory_source_declined' : None }
 
