@@ -44,7 +44,7 @@ def project_list_family(apiurl, project, include_update=False):
             else:
                 projects[i] += project_suffix
 
-    return projects
+    return list(projects)
 
 def project_list_family_prior(apiurl, project, include_self=False, last=None, include_update=False):
     """
