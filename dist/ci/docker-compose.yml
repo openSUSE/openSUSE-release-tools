@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3.4"
 
 x-obs: &obs
   image: registry.opensuse.org/opensuse/tools/images/containers/osrt_miniobs:latest
