@@ -521,3 +521,24 @@ def origin_potentials(apiurl, target_project, package):
             potentials[origin] = version
 
     return potentials
+
+def origin_history(apiurl, target_project, package, user):
+    history = []
+
+    requests = get_request_list(apiurl, target_project, package, None, ['all'], 'submit')
+    for request in sorted(requests, key=lambda r: r.reqid, reverse=True):
+        review = review_find_last(request, user)
+        if not review:
+            continue
+
+        annotation = origin_annotation_load(review.comment)
+        if not annotation:
+            continue
+
+        history.append({
+            'origin': annotation.get('origin', 'None'),
+            'request': request.reqid,
+            'state': request.state.name,
+        })
+
+    return history
