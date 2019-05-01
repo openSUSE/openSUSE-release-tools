@@ -111,6 +111,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.write_string(str(e))
 
     def data_parse(self):
+        if int(self.headers['Content-Length']) == 0:
+            return {}
         data = self.rfile.read(int(self.headers['Content-Length']))
         return json.loads(data.decode('utf-8'))
 
