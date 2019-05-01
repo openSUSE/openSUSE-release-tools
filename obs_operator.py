@@ -25,6 +25,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     COOKIE_NAME = 'openSUSE_session' # Both OBS and IBS.
     GET_PATHS = [
         'origin/config',
+        'origin/history',
         'origin/list',
         'origin/package',
         'origin/report',
@@ -213,6 +214,13 @@ class RequestHandler(BaseHTTPRequestHandler):
         command = ['osc', 'origin', '-p', args[0], 'config']
         if 'origins-only' in query:
             command.append('--origins-only')
+        return command
+
+    def handle_origin_history(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'history']
+        self.command_format_add(command, query)
+        if len(args) > 1:
+            command.append(args[1])
         return command
 
     def handle_origin_list(self, args, query):
