@@ -594,6 +594,15 @@ def package_version(apiurl, project, package):
 
     return root.xpath('(//version)[last()]/text()')[0]
 
+def project_attribute_list(apiurl, attribute, value=None):
+    xpath = 'attribute/@name="{}"'.format(attribute)
+    if value is not None:
+        xpath += '="{}"'.format(value)
+
+    root = search(apiurl, project=xpath)['project']
+    for project in root.findall('project'):
+        yield project.get('name')
+
 @memoize(session=True)
 def project_remote_list(apiurl):
     remotes = {}
