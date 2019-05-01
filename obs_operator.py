@@ -293,7 +293,7 @@ class OSCRequestEnvironment(object):
     def __enter__(self):
         apiurl = self.handler.apiurl_get()
         origin_domain = self.handler.origin_domain_get()
-        if not apiurl or (origin_domain and not apiurl.endswith(origin_domain)):
+        if not apiurl or (not self.handler.apiurl and origin_domain and not apiurl.endswith(origin_domain)):
             self.handler.send_response(400)
             self.handler.end_headers()
             if not apiurl:
