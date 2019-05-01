@@ -34,6 +34,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         'package/diff',
     ]
     POST_PATHS = [
+        'request/submit',
         'staging/select',
     ]
 
@@ -261,6 +262,16 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def handle_package_diff(self, args, query):
         return ['osc', 'rdiff', args[0], args[1], args[2]]
+
+    def handle_request_submit(self, args, query, data):
+        command = ['osc', 'sr', args[0], args[1], args[2]]
+        command.append('-m')
+        if 'message' in query and query['message'][0]:
+            command.append(query['message'][0])
+        else:
+            command.append('created via operator')
+        command.append('--yes')
+        return [command]
 
     def staging_command(self, project, subcommand):
         return ['osc', 'staging', '-p', project, subcommand]
