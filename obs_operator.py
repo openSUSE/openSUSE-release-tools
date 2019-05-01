@@ -31,6 +31,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         'origin/potentials',
         'origin/projects',
         'origin/report',
+        'package/diff',
     ]
     POST_PATHS = [
         'staging/select',
@@ -257,6 +258,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         if 'force-refresh' in query:
             command.append('--force-refresh')
         return command
+
+    def handle_package_diff(self, args, query):
+        return ['osc', 'rdiff', args[0], args[1], args[2]]
 
     def staging_command(self, project, subcommand):
         return ['osc', 'staging', '-p', project, subcommand]
