@@ -33,6 +33,15 @@ class RequestHandler(BaseHTTPRequestHandler):
         'staging/select',
     ]
 
+    def do_OPTIONS(self):
+        try:
+            with OSCRequestEnvironment(self) as oscrc_file:
+                self.send_header('Access-Control-Allow-Methods', 'GET, POST')
+                self.send_header('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
+        except OSCRequestEnvironmentException as e:
+            self.send_header('Allow', 'OPTIONS, GET, POST')
+        self.end_headers()
+
     def do_GET(self):
         url_parts = urlparse(self.path)
 
