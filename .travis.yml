@@ -14,6 +14,12 @@ env:
 
 matrix:
   include:
+    - services:
+        - docker
+      language: bash
+      script:
+        - docker build -t testing .
+        - docker-compose -f dist/ci/docker-compose.yml run test
     - env: TEST_SUITE=distribution TARGET_REPO=openSUSE_Factory
       sudo: required
       services:

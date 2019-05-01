@@ -35,4 +35,6 @@ services:
     volumes:
       - "../..:/code"
     command: /code/dist/ci/docker-compose-test.sh
+    cap_add:
+      - SYS_PTRACE
 
