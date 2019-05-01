@@ -29,7 +29,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         'origin/package',
         'origin/report',
     ]
-    POST_ACTIONS = ['select']
+    POST_PATHS = [
+        'staging/select',
+    ]
 
     def do_GET(self):
         url_parts = urlparse(self.path)
@@ -67,25 +69,28 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.write_string(str(e))
 
     def do_POST(self):
-        action = self.path.lstrip('/')
-        if action not in self.POST_ACTIONS:
+        url_parts = urlparse(self.path)
+
+        path = url_parts.path.lstrip('/')
+        path_parts = path.split('/')
+        path_prefix = '/'.join(path_parts[:2])
+
+        query = parse_qs(url_parts.query)
+
+        if len(path_parts) < 2 or path_prefix not in self.POST_PATHS:
             self.send_response(404)
             self.end_headers()
             return
 
         data = self.data_parse()
         user = data.get('user')
-        if not data or not user:
-            self.send_response(400)
-            self.end_headers()
-            return
         if self.debug:
             print('data: {}'.format(data))
 
         try:
             with OSCRequestEnvironment(self, user) as oscrc_file:
-                func = getattr(self, 'handle_{}'.format(action))
-                commands = func(data)
+                func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
+                commands = func(path_parts[2:], query, data)
                 self.end_headers()
 
                 for command in commands:
@@ -210,7 +215,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     def staging_command(self, project, subcommand):
         return ['osc', 'staging', '-p', project, subcommand]
 
-    def handle_select(self, data):
+    def handle_staging_select(self, args, query, data):
         for staging, requests in data['selection'].items():
             command = self.staging_command(data['project'], 'select')
             if 'move' in data and data['move']:
