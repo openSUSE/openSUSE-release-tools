@@ -1,11 +1,13 @@
 from __future__ import print_function
 from datetime import timedelta
+import json
 import logging
 import os
 import os.path
 from osc import cmdln
 from osc import core
 from osc import oscerr
+from osc.core import get_request_list
 from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
 from osclib.core import package_list_without_links
@@ -25,6 +27,7 @@ OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
 @cmdln.option('--diff', action='store_true', help='diff against previous report')
 @cmdln.option('--dry', action='store_true', help='perform a dry-run where applicable')
 @cmdln.option('--force-refresh', action='store_true', help='force refresh of data')
+@cmdln.option('--format', default='plain', help='output format')
 @cmdln.option('--mail', action='store_true', help='mail report to <confg:mail-release-list>')
 @cmdln.option('--origins-only', action='store_true', help='list origins instead of expanded config')
 @cmdln.option('-p', '--project', help='project on which to operate (default is openSUSE:Factory)')
@@ -40,7 +43,7 @@ def do_origin(self, subcmd, opts, *args):
 
     Usage:
         osc origin config [--origins-only]
-        osc origin list [--force-refresh]
+        osc origin list [--force-refresh] [--format json|yaml]
         osc origin package [--debug] PACKAGE
         osc origin report [--diff] [--force-refresh] [--mail]
     """
@@ -81,6 +84,17 @@ def osrt_origin_config(apiurl, opts, *args):
         yaml.Dumper.ignore_aliases = lambda *args : True
         print(yaml.dump(config))
 
+def osrt_origin_dump(format, data):
+    if format == 'json':
+        print(json.dumps(data))
+    elif format == 'yaml':
+        print(yaml.dump(data))
+    else:
+        if format != 'plain':
+            print('unknown format: {}'.format(format), file=sys.stderr)
+        return False
+    return True
+
 def osrt_origin_lookup_file(project, previous=False):
     parts = [project, 'yaml']
     if previous:
@@ -89,7 +103,7 @@ def osrt_origin_lookup_file(project, previous=False):
     cache_dir = CacheManager.directory('origin-manager')
     return os.path.join(cache_dir, lookup_name)
 
-def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False):
+def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, quiet=False):
     lookup_path = osrt_origin_lookup_file(project, previous)
     if not force_refresh and os.path.exists(lookup_path):
         if not previous and time.time() - os.stat(lookup_path).st_mtime > OSRT_ORIGIN_LOOKUP_TTL:
@@ -124,7 +138,7 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False):
         with open(lookup_path, 'w+') as lookup_stream:
             yaml.dump(lookup, lookup_stream, default_flow_style=False)
 
-    if not previous:
+    if not previous and not quiet:
         dt = timedelta(seconds=time.time() - os.stat(lookup_path).st_mtime)
         print('# generated {} ago'.format(dt), file=sys.stderr)
 
@@ -134,7 +148,30 @@ def osrt_origin_max_key(dictionary, minimum):
     return max(len(max(dictionary.keys(), key=len)), minimum)
 
 def osrt_origin_list(apiurl, opts, *args):
-    lookup = osrt_origin_lookup(apiurl, opts.project, opts.force_refresh)
+    lookup = osrt_origin_lookup(apiurl, opts.project, opts.force_refresh, quiet=opts.format != 'plain')
+
+    if opts.format != 'plain':
+        # Suppliment data with request information.
+        requests = get_request_list(apiurl, opts.project, None, None, ['new', 'review'], 'submit')
+        requests.extend(get_request_list(apiurl, opts.project, None, None, ['new', 'review'], 'delete'))
+
+        requests_map = {}
+        for request in requests:
+            for action in request.actions:
+                requests_map[action.tgt_package] = request.reqid
+
+        # Convert data from lookup to list.
+        out = []
+        for package, details in sorted(lookup.items()):
+            out.append({
+                'package': package,
+                'origin': details['origin'],
+                'revisions': details.get('revisions', []),
+                'request': requests_map.get(package),
+            })
+
+        osrt_origin_dump(opts.format, out)
+        return
 
     line_format = '{:<' + str(osrt_origin_max_key(lookup, 7)) + '}  {}'
     print(line_format.format('package', 'origin'))
