@@ -11,6 +11,7 @@ from osc.core import get_request_list
 from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
 from osclib.core import package_list_without_links
+from osclib.core import project_attribute_list
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
 from osclib.origin import origin_find
@@ -45,13 +46,14 @@ def do_origin(self, subcmd, opts, *args):
         osc origin config [--origins-only]
         osc origin list [--force-refresh] [--format json|yaml]
         osc origin package [--debug] PACKAGE
+        osc origin projects [--format json|yaml]
         osc origin report [--diff] [--force-refresh] [--mail]
     """
 
     if len(args) == 0:
         raise oscerr.WrongArgs('A command must be indicated.')
     command = args[0]
-    if command not in ['config', 'list', 'package', 'report']:
+    if command not in ['config', 'list', 'package', 'projects', 'report']:
         raise oscerr.WrongArgs('Unknown command: {}'.format(command))
     if command == 'package' and len(args) < 2:
         raise oscerr.WrongArgs('A package must be indicated.')
@@ -68,9 +70,10 @@ def do_origin(self, subcmd, opts, *args):
 
     Cache.init()
     apiurl = self.get_api_url()
-    config = config_load(apiurl, opts.project)
-    if not config:
-        raise oscerr.WrongArgs('OSRT:OriginConfig attribute missing from {}'.format(opts.project))
+    if command != 'projects':
+        config = config_load(apiurl, opts.project)
+        if not config:
+            raise oscerr.WrongArgs('OSRT:OriginConfig attribute missing from {}'.format(opts.project))
 
     function = 'osrt_origin_{}'.format(command)
     globals()[function](apiurl, opts, *args[1:])
@@ -182,6 +185,15 @@ def osrt_origin_list(apiurl, opts, *args):
 def osrt_origin_package(apiurl, opts, *packages):
     origin_info = origin_find(apiurl, opts.project, packages[0])
     print(origin_info)
+
+def osrt_origin_projects(apiurl, opts, *args):
+    projects = list(project_attribute_list(apiurl, 'OSRT:OriginConfig'))
+
+    if osrt_origin_dump(opts.format, projects):
+        return
+
+    for project in sorted(projects):
+        print(project)
 
 def osrt_origin_report_count(lookup):
     origin_count = {}
