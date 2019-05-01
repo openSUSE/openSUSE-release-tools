@@ -12,6 +12,7 @@ from osclib.core import package_list_without_links
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
 from osclib.origin import origin_find
+from osclib.origin import origin_revision_state
 from osclib.util import mail_send
 from shutil import copyfile
 import sys
@@ -96,6 +97,11 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False):
 
         with open(lookup_path, 'r') as lookup_stream:
             lookup = yaml.safe_load(lookup_stream)
+
+            if not isinstance(lookup.itervalues().next(), dict):
+                # Convert flat format to dictionary.
+                for package, origin in lookup.items():
+                    lookup[package] = {'origin': origin}
     else:
         if previous:
             return None
@@ -105,7 +111,11 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False):
 
         lookup = {}
         for package in packages:
-            lookup[str(package)] = str(origin_find(apiurl, project, package))
+            origin_info = origin_find(apiurl, project, package)
+            lookup[str(package)] = {
+                'origin': str(origin_info),
+                'revisions': origin_revision_state(apiurl, project, package, origin_info),
+            }
 
         if os.path.exists(lookup_path):
             lookup_path_previous = osrt_origin_lookup_file(project, True)
@@ -129,8 +139,8 @@ def osrt_origin_list(apiurl, opts, *args):
     line_format = '{:<' + str(osrt_origin_max_key(lookup, 7)) + '}  {}'
     print(line_format.format('package', 'origin'))
 
-    for package, origin in sorted(lookup.items()):
-        print(line_format.format(package, origin))
+    for package, details in sorted(lookup.items()):
+        print(line_format.format(package, details['origin']))
 
 def osrt_origin_package(apiurl, opts, *packages):
     origin_info = origin_find(apiurl, opts.project, packages[0])
@@ -138,9 +148,9 @@ def osrt_origin_package(apiurl, opts, *packages):
 
 def osrt_origin_report_count(lookup):
     origin_count = {}
-    for package, origin in lookup.items():
-        origin_count.setdefault(origin, 0)
-        origin_count[origin] += 1
+    for package, details in lookup.items():
+        origin_count.setdefault(details['origin'], 0)
+        origin_count[details['origin']] += 1
 
     return origin_count
 
@@ -155,10 +165,10 @@ def osrt_origin_report_count_diff(origin_count, origin_count_previous):
 
 def osrt_origin_report_diff(lookup, lookup_previous):
     diff = {}
-    for package, origin in lookup.items():
-        origin_previous = lookup_previous.get(package)
-        if origin != origin_previous:
-            diff[package] = (origin, origin_previous)
+    for package, details in lookup.items():
+        origin_previous = lookup_previous.get(package, {}).get('origin')
+        if details['origin'] != origin_previous:
+            diff[package] = (details['origin'], origin_previous)
 
     return diff
 
