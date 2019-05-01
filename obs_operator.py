@@ -28,6 +28,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         'origin/history',
         'origin/list',
         'origin/package',
+        'origin/potentials',
         'origin/report',
     ]
     POST_PATHS = [
@@ -234,6 +235,13 @@ class RequestHandler(BaseHTTPRequestHandler):
         command = ['osc', 'origin', '-p', args[0], 'package']
         if 'debug' in query:
             command.append('--debug')
+        if len(args) > 1:
+            command.append(args[1])
+        return command
+
+    def handle_origin_potentials(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'potentials']
+        self.command_format_add(command, query)
         if len(args) > 1:
             command.append(args[1])
         return command
