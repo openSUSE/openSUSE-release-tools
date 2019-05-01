@@ -10,8 +10,8 @@ from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
 from osclib.core import package_list_without_links
 from osclib.origin import config_load
-from osclib.origin import origin_find
 from osclib.origin import config_origin_list
+from osclib.origin import origin_find
 from osclib.util import mail_send
 from shutil import copyfile
 import sys
