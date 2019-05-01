@@ -15,6 +15,7 @@ from osclib.core import project_attribute_list
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
 from osclib.origin import origin_find
+from osclib.origin import origin_history
 from osclib.origin import origin_potentials
 from osclib.origin import origin_revision_state
 from osclib.util import mail_send
@@ -45,6 +46,7 @@ def do_origin(self, subcmd, opts, *args):
 
     Usage:
         osc origin config [--origins-only]
+        osc origin history [--format json|yaml] PACKAGE
         osc origin list [--force-refresh] [--format json|yaml]
         osc origin package [--debug] PACKAGE
         osc origin potentials [--format json|yaml] PACKAGE
@@ -55,7 +57,7 @@ def do_origin(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('A command must be indicated.')
     command = args[0]
-    if command not in ['config', 'list', 'package', 'potentials', 'projects', 'report']:
+    if command not in ['config', 'history', 'list', 'package', 'potentials', 'projects', 'report']:
         raise oscerr.WrongArgs('Unknown command: {}'.format(command))
     if command == 'package' and len(args) < 2:
         raise oscerr.WrongArgs('A package must be indicated.')
@@ -99,6 +101,19 @@ def osrt_origin_dump(format, data):
             print('unknown format: {}'.format(format), file=sys.stderr)
         return False
     return True
+
+def osrt_origin_history(apiurl, opts, *packages):
+    config = config_load(apiurl, opts.project)
+    history = origin_history(apiurl, opts.project, packages[0], config['review-user'])
+
+    if osrt_origin_dump(opts.format, history):
+        return
+
+    line_format = '{:<50}  {:<10}  {:>7}'
+    print(line_format.format('origin', 'state', 'request'))
+
+    for record in history:
+        print(line_format.format(record['origin'], record['state'], record['request']))
 
 def osrt_origin_lookup_file(project, previous=False):
     parts = [project, 'yaml']
