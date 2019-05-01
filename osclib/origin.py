@@ -8,6 +8,7 @@ from osclib.core import devel_project_get
 from osclib.core import entity_exists
 from osclib.core import package_source_hash
 from osclib.core import package_source_hash_history
+from osclib.core import package_version
 from osclib.core import project_remote_apiurl
 from osclib.core import review_find_last
 from osclib.core import reviews_remaining
@@ -508,3 +509,15 @@ def origin_revision_state(apiurl, target_project, package, origin_info=None, lim
 
     # To simplify usage which is left-right (oldest-newest) place oldest first.
     return list(reversed(revisions))
+
+def origin_potentials(apiurl, target_project, package):
+    potentials = {}
+
+    config = config_load(apiurl, target_project)
+    for origin, _ in config_origin_generator(config['origins'], apiurl, target_project, package, True):
+        version = package_version(apiurl, origin, package)
+        if version is not False:
+            # Package exists in origin, but may still have unknown version.
+            potentials[origin] = version
+
+    return potentials
