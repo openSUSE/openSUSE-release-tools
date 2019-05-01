@@ -624,9 +624,9 @@ def project_remote_apiurl(apiurl, project):
 
     return apiurl, project
 
-def review_find_last(request, who):
+def review_find_last(request, user):
     for review in reversed(request.reviews):
-        if review.who == who:
+        if review.by_user == user:
             return review
 
     return None
