@@ -29,6 +29,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         'origin/list',
         'origin/package',
         'origin/potentials',
+        'origin/projects',
         'origin/report',
     ]
     POST_PATHS = [
@@ -244,6 +245,11 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.command_format_add(command, query)
         if len(args) > 1:
             command.append(args[1])
+        return command
+
+    def handle_origin_projects(self, args, query):
+        command = ['osc', 'origin', 'projects']
+        self.command_format_add(command, query)
         return command
 
     def handle_origin_report(self, args, query):
