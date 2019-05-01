@@ -15,6 +15,7 @@ from osclib.core import project_attribute_list
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
 from osclib.origin import origin_find
+from osclib.origin import origin_potentials
 from osclib.origin import origin_revision_state
 from osclib.util import mail_send
 from shutil import copyfile
@@ -46,6 +47,7 @@ def do_origin(self, subcmd, opts, *args):
         osc origin config [--origins-only]
         osc origin list [--force-refresh] [--format json|yaml]
         osc origin package [--debug] PACKAGE
+        osc origin potentials [--format json|yaml] PACKAGE
         osc origin projects [--format json|yaml]
         osc origin report [--diff] [--force-refresh] [--mail]
     """
@@ -53,7 +55,7 @@ def do_origin(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('A command must be indicated.')
     command = args[0]
-    if command not in ['config', 'list', 'package', 'projects', 'report']:
+    if command not in ['config', 'list', 'package', 'potentials', 'projects', 'report']:
         raise oscerr.WrongArgs('Unknown command: {}'.format(command))
     if command == 'package' and len(args) < 2:
         raise oscerr.WrongArgs('A package must be indicated.')
@@ -185,6 +187,23 @@ def osrt_origin_list(apiurl, opts, *args):
 def osrt_origin_package(apiurl, opts, *packages):
     origin_info = origin_find(apiurl, opts.project, packages[0])
     print(origin_info)
+
+def osrt_origin_potentials(apiurl, opts, *packages):
+    potentials = origin_potentials(apiurl, opts.project, packages[0])
+
+    if opts.format != 'plain':
+        out = []
+        for origin, version in potentials.items():
+            out.append({'origin': origin, 'version': version})
+
+        osrt_origin_dump(opts.format, out)
+        return
+
+    line_format = '{:<50}  {}'
+    print(line_format.format('origin', 'version'))
+
+    for origin, version in potentials.items():
+        print(line_format.format(origin, version))
 
 def osrt_origin_projects(apiurl, opts, *args):
     projects = list(project_attribute_list(apiurl, 'OSRT:OriginConfig'))
