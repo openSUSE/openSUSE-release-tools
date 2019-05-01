@@ -582,6 +582,18 @@ def package_source_hash_history(apiurl, project, package, limit=5, include_proje
                 if limit_remaining == 0:
                     break
 
+def package_version(apiurl, project, package):
+    try:
+        url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return False
+
+        raise e
+
+    return root.xpath('(//version)[last()]/text()')[0]
+
 @memoize(session=True)
 def project_remote_list(apiurl):
     remotes = {}
