@@ -33,7 +33,7 @@ OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
 @cmdln.option('--format', default='plain', help='output format')
 @cmdln.option('--mail', action='store_true', help='mail report to <confg:mail-release-list>')
 @cmdln.option('--origins-only', action='store_true', help='list origins instead of expanded config')
-@cmdln.option('-p', '--project', help='project on which to operate (default is openSUSE:Factory)')
+@cmdln.option('-p', '--project', help='project on which to operate')
 def do_origin(self, subcmd, opts, *args):
     """${cmd_name}: tools for working with origin information
 
@@ -66,15 +66,14 @@ def do_origin(self, subcmd, opts, *args):
     logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
 
     # Allow for determining project from osc store.
-    if not opts.project:
-        if core.is_project_dir('.'):
-            opts.project = core.store_read_project('.')
-        else:
-            opts.project = 'openSUSE:Factory'
+    if not opts.project and core.is_project_dir('.'):
+        opts.project = core.store_read_project('.')
 
     Cache.init()
     apiurl = self.get_api_url()
     if command != 'projects':
+        if not opts.project:
+            raise oscerr.WrongArgs('A project must be indicated.')
         config = config_load(apiurl, opts.project)
         if not config:
             raise oscerr.WrongArgs('OSRT:OriginConfig attribute missing from {}'.format(opts.project))

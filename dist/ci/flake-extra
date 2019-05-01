@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # Should never contain references to products.
-! grep -iP 'leap|factory|sle' origin-manager.py osclib/origin.py
+! grep -iP 'leap|factory|sle' origin-manager.py osc-origin.py osclib/origin.py
