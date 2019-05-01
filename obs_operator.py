@@ -197,6 +197,18 @@ class RequestHandler(BaseHTTPRequestHandler):
     def write_string(self, string):
         self.wfile.write(string.encode('utf-8'))
 
+    def command_format_add(self, command, query):
+        format = None
+        if self.headers.get('Accept'):
+            format = self.headers.get('Accept').split('/', 2)[1]
+            if format != 'json' and format != 'yaml':
+                format = None
+        if not format and 'format' in query:
+            format = query['format'][0]
+        if format:
+            command.append('--format')
+            command.append(format)
+
     def handle_origin_config(self, args, query):
         command = ['osc', 'origin', '-p', args[0], 'config']
         if 'origins-only' in query:
@@ -207,6 +219,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         command = ['osc', 'origin', '-p', args[0], 'list']
         if 'force-refresh' in query:
             command.append('--force-refresh')
+        self.command_format_add(command, query)
         return command
 
     def handle_origin_package(self, args, query):
