@@ -67,10 +67,9 @@ class PubSubConsumer(object):
             account = 'suse'
             server = 'rabbit.suse.de'
         credentials = pika.PlainCredentials(account, account)
-        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, ssl=True, socket_timeout=10)
+        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, socket_timeout=10)
         return pika.SelectConnection(parameters,
-                                     self.on_connection_open,
-                                     stop_ioloop_on_close=False)
+                                     on_open_callback=self.on_connection_open)
 
     def close_connection(self):
         """This method closes the connection to RabbitMQ."""
@@ -178,9 +177,9 @@ class PubSubConsumer(object):
 
         """
         self.logger.debug('Declaring exchange %s', exchange_name)
-        self._channel.exchange_declare(self.on_exchange_declareok,
-                                       exchange=exchange_name,
+        self._channel.exchange_declare(exchange_name,
                                        exchange_type='topic',
+                                       callback=self.on_exchange_declareok,
                                        passive=True, durable=True)
 
     def on_exchange_declareok(self, unused_frame):
@@ -191,7 +190,7 @@ class PubSubConsumer(object):
 
         """
         self.logger.debug('Exchange declared')
-        self._channel.queue_declare(self.on_queue_declareok, exclusive=True)
+        self._channel.queue_declare('', callback=self.on_queue_declareok, exclusive=True)
 
     def on_queue_declareok(self, method_frame):
         """Method invoked by pika when the Queue.Declare RPC call made in
@@ -212,7 +211,7 @@ class PubSubConsumer(object):
 
     def bind_queue_to_routing_key(self, key):
         self.logger.info('Binding %s to %s', key, self.queue_name)
-        self._channel.queue_bind(self.on_bindok, self.queue_name, 'pubsub', key)
+        self._channel.queue_bind(self.queue_name, 'pubsub', key=key, callback=self.on_bindok)
 
     def add_on_cancel_callback(self):
         """Add a callback that will be invoked if RabbitMQ cancels the consumer
@@ -271,7 +270,7 @@ class PubSubConsumer(object):
         """
         if self._channel:
             self.logger.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
-            self._channel.basic_cancel(self.on_cancelok, self._consumer_tag)
+            self._channel.basic_cancel(self._consumer_tag, callback=self.on_cancelok)
 
     def start_consuming(self):
         """This method sets up the consumer by first calling
@@ -286,8 +285,9 @@ class PubSubConsumer(object):
         self.logger.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self.restart_timer()
-        self._consumer_tag = self._channel.basic_consume(self.on_message,
-                                                         self.queue_name, no_ack=True)
+        self._consumer_tag = self._channel.basic_consume(self.queue_name,
+                                                         self.on_message,
+                                                         auto_ack=False)
 
     def on_bindok(self, unused_frame):
         """Invoked by pika when the Queue.Bind method has completed. At this
