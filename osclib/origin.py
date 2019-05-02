@@ -482,8 +482,8 @@ def policy_input_evaluate_reviews_not_allowed(policy, inputs):
 
     return reviews_not_allowed
 
-def origin_revision_state(apiurl, target_project, package, origin_info=None, limit=10):
-    if not origin_info:
+def origin_revision_state(apiurl, target_project, package, origin_info=False, limit=10):
+    if origin_info is False:
         origin_info = origin_find(apiurl, target_project, package)
 
     revisions = []
