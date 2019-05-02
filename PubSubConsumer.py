@@ -255,17 +255,26 @@ class PubSubConsumer(object):
         self.logger.info('Received message # %s: %s %s',
                          basic_deliver.delivery_tag, basic_deliver.routing_key, body)
 
-    def on_cancelok(self, unused_frame):
+    def on_cancelok(self, _unused_frame, userdata):
         """This method is invoked by pika when RabbitMQ acknowledges the
         cancellation of a consumer. At this point we will close the channel.
         This will invoke the on_channel_closed method once the channel has been
         closed, which will in-turn close the connection.
-
-        :param pika.frame.Method unused_frame: The Basic.CancelOk frame
-
+        :param pika.frame.Method _unused_frame: The Basic.CancelOk frame
+        :param str|unicode userdata: Extra user data (consumer tag)
         """
-        self.logger.debug('RabbitMQ acknowledged the cancellation of the consumer')
+        self._consuming = False
+        self.logger.debug(
+            'RabbitMQ acknowledged the cancellation of the consumer: %s',
+            userdata)
         self.close_channel()
+
+    def close_channel(self):
+        """Call to close the channel with RabbitMQ cleanly by issuing the
+        Channel.Close RPC command.
+        """
+        self.logger.debug('Closing the channel')
+        self._channel.close()
 
     def stop_consuming(self):
         """Tell RabbitMQ that you would like to stop consuming by sending the
@@ -307,14 +316,6 @@ class PubSubConsumer(object):
             self.bind_queue_to_routing_key(self.routing_keys_to_bind.pop())
         else:
             self.start_consuming()
-
-    def close_channel(self):
-        """Call to close the channel with RabbitMQ cleanly by issuing the
-        Channel.Close RPC command.
-
-        """
-        self.logger.debug('Closing the channel')
-        self._channel.close()
 
     def open_channel(self):
         """Open a new channel with RabbitMQ by issuing the Channel.Open RPC
