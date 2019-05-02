@@ -90,7 +90,7 @@ handle
         self.assertEqual(info, COMMENT_INFO)
 
 
-class TestCommentOBS(OBSLocal.OBSLocalTestCase):
+class TestCommentOBS(OBSLocal.TestCase):
     def setUp(self):
         super(TestCommentOBS, self).setUp()
         self.api = CommentAPI(self.apiurl)

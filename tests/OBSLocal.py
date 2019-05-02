@@ -11,7 +11,7 @@ OSCRC = '/tmp/.oscrc-test'
 OSCCOOKIEJAR = '/tmp/.osc_cookiejar-test'
 APIURL = 'local-test'
 
-class OBSLocalTestCase(unittest.TestCase):
+class TestCase(unittest.TestCase):
     script = None
     script_apiurl = True
     script_debug = True

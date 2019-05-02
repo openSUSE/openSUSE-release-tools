@@ -2,7 +2,7 @@ from . import OBSLocal
 import unittest
 
 
-class TestDevelProject(OBSLocal.OBSLocalTestCase):
+class TestDevelProject(OBSLocal.TestCase):
     script = './devel-project.py'
     script_debug_osc = False
 

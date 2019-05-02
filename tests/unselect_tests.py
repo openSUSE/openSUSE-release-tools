@@ -5,8 +5,9 @@ from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
 from osclib.core import package_list_without_links
 from . import vcrhelpers
+from . import OBSLocal
 
-class TestUnselect(unittest.TestCase):
+class TestUnselect(OBSLocal.TestCase):
 
     def test_cleanup_filter(self):
         wf = vcrhelpers.StagingWorkflow()

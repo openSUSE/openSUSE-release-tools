@@ -8,7 +8,7 @@ import random
 COMMENT = 'short comment'
 PROJECT = 'openSUSE:Factory:Staging'
 
-class TestReviewBotComment(OBSLocal.OBSLocalTestCase):
+class TestReviewBotComment(OBSLocal.TestCase):
     def setUp(self):
         super(TestReviewBotComment, self).setUp()
         self.api = CommentAPI(self.apiurl)
