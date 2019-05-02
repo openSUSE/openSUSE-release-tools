@@ -8,6 +8,7 @@ from osclib.core import devel_project_get
 from osclib.core import entity_exists
 from osclib.core import package_source_hash
 from osclib.core import package_source_hash_history
+from osclib.core import package_version
 from osclib.core import project_remote_apiurl
 from osclib.core import review_find_last
 from osclib.core import reviews_remaining
@@ -480,3 +481,64 @@ def policy_input_evaluate_reviews_not_allowed(policy, inputs):
             reviews_not_allowed.append(review_remaining)
 
     return reviews_not_allowed
+
+def origin_revision_state(apiurl, target_project, package, origin_info=None, limit=10):
+    if not origin_info:
+        origin_info = origin_find(apiurl, target_project, package)
+
+    revisions = []
+
+    # Allow for origin project to contain revisions not present in target by
+    # considering double the limit of revisions. The goal is to know how many
+    # revisions behind the package in target project is and if it deviated from
+    # origin, not that it ended up with every revision found in origin project.
+    origin_project = origin_info.project.rstrip('~')
+    origin_hashes = list(package_source_hash_history(apiurl, origin_project, package, limit * 2, True))
+    target_hashes = list(package_source_hash_history(apiurl, target_project, package, limit))
+    for source_hash in origin_hashes:
+        if source_hash not in target_hashes:
+            revisions.append(-1)
+        else:
+            break
+
+    for source_hash in target_hashes:
+        if len(revisions) == limit:
+            break
+
+        revisions.append(int(source_hash in origin_hashes))
+
+    # To simplify usage which is left-right (oldest-newest) place oldest first.
+    return list(reversed(revisions))
+
+def origin_potentials(apiurl, target_project, package):
+    potentials = {}
+
+    config = config_load(apiurl, target_project)
+    for origin, _ in config_origin_generator(config['origins'], apiurl, target_project, package, True):
+        version = package_version(apiurl, origin, package)
+        if version is not False:
+            # Package exists in origin, but may still have unknown version.
+            potentials[origin] = version
+
+    return potentials
+
+def origin_history(apiurl, target_project, package, user):
+    history = []
+
+    requests = get_request_list(apiurl, target_project, package, None, ['all'], 'submit')
+    for request in sorted(requests, key=lambda r: r.reqid, reverse=True):
+        review = review_find_last(request, user)
+        if not review:
+            continue
+
+        annotation = origin_annotation_load(review.comment)
+        if not annotation:
+            continue
+
+        history.append({
+            'origin': annotation.get('origin', 'None'),
+            'request': request.reqid,
+            'state': request.state.name,
+        })
+
+    return history

@@ -25,11 +25,27 @@ class RequestHandler(BaseHTTPRequestHandler):
     COOKIE_NAME = 'openSUSE_session' # Both OBS and IBS.
     GET_PATHS = [
         'origin/config',
+        'origin/history',
         'origin/list',
         'origin/package',
+        'origin/potentials',
+        'origin/projects',
         'origin/report',
+        'package/diff',
     ]
-    POST_ACTIONS = ['select']
+    POST_PATHS = [
+        'request/submit',
+        'staging/select',
+    ]
+
+    def do_OPTIONS(self):
+        try:
+            with OSCRequestEnvironment(self) as oscrc_file:
+                self.send_header('Access-Control-Allow-Methods', 'GET, POST')
+                self.send_header('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
+        except OSCRequestEnvironmentException as e:
+            self.send_header('Allow', 'OPTIONS, GET, POST')
+        self.end_headers()
 
     def do_GET(self):
         url_parts = urlparse(self.path)
@@ -67,25 +83,28 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.write_string(str(e))
 
     def do_POST(self):
-        action = self.path.lstrip('/')
-        if action not in self.POST_ACTIONS:
+        url_parts = urlparse(self.path)
+
+        path = url_parts.path.lstrip('/')
+        path_parts = path.split('/')
+        path_prefix = '/'.join(path_parts[:2])
+
+        query = parse_qs(url_parts.query)
+
+        if len(path_parts) < 2 or path_prefix not in self.POST_PATHS:
             self.send_response(404)
             self.end_headers()
             return
 
         data = self.data_parse()
         user = data.get('user')
-        if not data or not user:
-            self.send_response(400)
-            self.end_headers()
-            return
         if self.debug:
             print('data: {}'.format(data))
 
         try:
             with OSCRequestEnvironment(self, user) as oscrc_file:
-                func = getattr(self, 'handle_{}'.format(action))
-                commands = func(data)
+                func = getattr(self, 'handle_{}'.format(path_prefix.replace('/', '_')))
+                commands = func(path_parts[2:], query, data)
                 self.end_headers()
 
                 for command in commands:
@@ -97,6 +116,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.write_string(str(e))
 
     def data_parse(self):
+        if int(self.headers['Content-Length']) == 0:
+            return {}
         data = self.rfile.read(int(self.headers['Content-Length']))
         return json.loads(data.decode('utf-8'))
 
@@ -181,16 +202,36 @@ class RequestHandler(BaseHTTPRequestHandler):
     def write_string(self, string):
         self.wfile.write(string.encode('utf-8'))
 
+    def command_format_add(self, command, query):
+        format = None
+        if self.headers.get('Accept'):
+            format = self.headers.get('Accept').split('/', 2)[1]
+            if format != 'json' and format != 'yaml':
+                format = None
+        if not format and 'format' in query:
+            format = query['format'][0]
+        if format:
+            command.append('--format')
+            command.append(format)
+
     def handle_origin_config(self, args, query):
         command = ['osc', 'origin', '-p', args[0], 'config']
         if 'origins-only' in query:
             command.append('--origins-only')
         return command
 
+    def handle_origin_history(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'history']
+        self.command_format_add(command, query)
+        if len(args) > 1:
+            command.append(args[1])
+        return command
+
     def handle_origin_list(self, args, query):
         command = ['osc', 'origin', '-p', args[0], 'list']
         if 'force-refresh' in query:
             command.append('--force-refresh')
+        self.command_format_add(command, query)
         return command
 
     def handle_origin_package(self, args, query):
@@ -201,16 +242,41 @@ class RequestHandler(BaseHTTPRequestHandler):
             command.append(args[1])
         return command
 
+    def handle_origin_potentials(self, args, query):
+        command = ['osc', 'origin', '-p', args[0], 'potentials']
+        self.command_format_add(command, query)
+        if len(args) > 1:
+            command.append(args[1])
+        return command
+
+    def handle_origin_projects(self, args, query):
+        command = ['osc', 'origin', 'projects']
+        self.command_format_add(command, query)
+        return command
+
     def handle_origin_report(self, args, query):
         command = ['osc', 'origin', '-p', args[0], 'report']
         if 'force-refresh' in query:
             command.append('--force-refresh')
         return command
 
+    def handle_package_diff(self, args, query):
+        return ['osc', 'rdiff', args[0], args[1], args[2]]
+
+    def handle_request_submit(self, args, query, data):
+        command = ['osc', 'sr', args[0], args[1], args[2]]
+        command.append('-m')
+        if 'message' in query and query['message'][0]:
+            command.append(query['message'][0])
+        else:
+            command.append('created via operator')
+        command.append('--yes')
+        return [command]
+
     def staging_command(self, project, subcommand):
         return ['osc', 'staging', '-p', project, subcommand]
 
-    def handle_select(self, data):
+    def handle_staging_select(self, args, query, data):
         for staging, requests in data['selection'].items():
             command = self.staging_command(data['project'], 'select')
             if 'move' in data and data['move']:
@@ -227,7 +293,7 @@ class OSCRequestEnvironment(object):
     def __enter__(self):
         apiurl = self.handler.apiurl_get()
         origin_domain = self.handler.origin_domain_get()
-        if not apiurl or (origin_domain and not apiurl.endswith(origin_domain)):
+        if not apiurl or (not self.handler.apiurl and origin_domain and not apiurl.endswith(origin_domain)):
             self.handler.send_response(400)
             self.handler.end_headers()
             if not apiurl:

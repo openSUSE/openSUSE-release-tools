@@ -582,6 +582,27 @@ def package_source_hash_history(apiurl, project, package, limit=5, include_proje
                 if limit_remaining == 0:
                     break
 
+def package_version(apiurl, project, package):
+    try:
+        url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return False
+
+        raise e
+
+    return root.xpath('(//version)[last()]/text()')[0]
+
+def project_attribute_list(apiurl, attribute, value=None):
+    xpath = 'attribute/@name="{}"'.format(attribute)
+    if value is not None:
+        xpath += '="{}"'.format(value)
+
+    root = search(apiurl, project=xpath)['project']
+    for project in root.findall('project'):
+        yield project.get('name')
+
 @memoize(session=True)
 def project_remote_list(apiurl):
     remotes = {}
@@ -603,9 +624,9 @@ def project_remote_apiurl(apiurl, project):
 
     return apiurl, project
 
-def review_find_last(request, who):
+def review_find_last(request, user):
     for review in reversed(request.reviews):
-        if review.who == who:
+        if review.by_user == user:
             return review
 
     return None
