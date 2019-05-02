@@ -1,5 +1,6 @@
 import logging
 import pika
+import ssl
 import sys
 import time
 from datetime import datetime
@@ -67,7 +68,9 @@ class PubSubConsumer(object):
             account = 'suse'
             server = 'rabbit.suse.de'
         credentials = pika.PlainCredentials(account, account)
-        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, socket_timeout=10)
+        context = ssl.create_default_context()
+        ssl_options = pika.SSLOptions(context, server)
+        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, ssl_options=ssl_options, socket_timeout=10)
         return pika.SelectConnection(parameters,
                                      on_open_callback=self.on_connection_open)
 
@@ -84,7 +87,7 @@ class PubSubConsumer(object):
         self.logger.debug('Adding connection close callback')
         self._connection.add_on_close_callback(self.on_connection_closed)
 
-    def on_connection_closed(self, connection, reply_code, reply_text):
+    def on_connection_closed(self, connection, reason):
         """This method is invoked by pika when the connection to RabbitMQ is
         closed unexpectedly. Since it is unexpected, we will reconnect to
         RabbitMQ if it disconnects.
@@ -98,8 +101,8 @@ class PubSubConsumer(object):
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            self.logger.warning('Connection closed, reopening in 5 seconds: (%s) %s',
-                                reply_code, reply_text)
+            self.logger.warning('Connection closed, reopening in 5 seconds: %s',
+                                reason)
             self._connection.add_timeout(5, self.reconnect)
 
     def on_connection_open(self, unused_connection):
@@ -138,7 +141,7 @@ class PubSubConsumer(object):
         self.logger.debug('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
 
-    def on_channel_closed(self, channel, reply_code, reply_text):
+    def on_channel_closed(self, channel, reason):
         """Invoked by pika when RabbitMQ unexpectedly closes the channel.
         Channels are usually closed if you attempt to do something that
         violates the protocol, such as re-declare an exchange or queue with
@@ -150,8 +153,8 @@ class PubSubConsumer(object):
         :param str reply_text: The text reason the channel was closed
 
         """
-        self.logger.info('Channel %i was closed: (%s) %s',
-                            channel, reply_code, reply_text)
+        self.logger.info('Channel %i was closed: %s',
+                            channel, reason)
         self._connection.close()
 
     def on_channel_open(self, channel):
