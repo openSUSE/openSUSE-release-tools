@@ -17,12 +17,6 @@ class OBSLocalTestCase(unittest.TestCase):
     script_debug = True
     script_debug_osc = True
 
-    @classmethod
-    def setUpClass(cls):
-        # TODO #1214: Workaround for tests/obs.py's lack of cleanup.
-        import httpretty
-        httpretty.disable()
-
     def setUp(self):
         if os.path.exists(OSCCOOKIEJAR):
             # Avoid stale cookiejar since local OBS may be completely reset.
