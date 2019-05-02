@@ -26,6 +26,10 @@ FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 
 class TestTagChecker(unittest.TestCase):
 
+    def tearDown(self):
+        httpretty.reset()
+        httpretty.disable()
+
     def setUp(self):
         """
         Initialize the configuration
@@ -209,9 +213,9 @@ Pico text editor while also offering a few enhancements.</description>
 
         def change_request(result, method, uri, headers):
             u = urlparse(uri)
-            if u.query == 'newstate=accepted&cmd=changereviewstate&by_user=maintbot':
+            if u.query == 'cmd=changereviewstate&newstate=accepted&by_user=maintbot':
                 result['state_accepted'] = True
-            elif u.query == 'newstate=declined&cmd=changereviewstate&by_user=maintbot':
+            elif u.query == 'cmd=changereviewstate&newstate=declined&by_user=maintbot':
                 result['state_accepted'] = False
             return (200, headers, '<status code="ok"/>')
 

@@ -170,9 +170,9 @@ class StagingWorkflow(object):
     def create_staging(self, suffix, freeze=False, rings=None):
         project_links = []
         if rings == 0:
-           project_links.append(self.project + ":Rings:0-Bootstrap")
+            project_links.append(self.project + ":Rings:0-Bootstrap")
         if rings == 1 or rings == 0:
-           project_links.append(self.project + ":Rings:1-MinimalX")
+            project_links.append(self.project + ":Rings:1-MinimalX")
         staging = Project(self.project + ':Staging:' + suffix, project_links=project_links)
         if freeze:
             FreezeCommand(self.api).perform(staging.name)
@@ -181,12 +181,12 @@ class StagingWorkflow(object):
 
     def __del__(self):
         try:
-          self.remove()
+            self.remove()
         except:
-	  # normally exceptions in destructors are ignored but a info
-          # message is displayed. Make this a little more useful by
-          # printing it into the capture log
-          traceback.print_exc(None, sys.stdout)
+            # normally exceptions in destructors are ignored but a info
+            # message is displayed. Make this a little more useful by
+            # printing it into the capture log
+            traceback.print_exc(None, sys.stdout)
 
     def remove(self):
         print('deleting staging workflow')
@@ -299,7 +299,7 @@ class Package(object):
     def create_commit(self, text=None):
         url = osc.core.makeurl(APIURL, ['source', self.project.name, self.name, 'README'])
         if not text:
-            text = ''.join([random.choice(string.letters) for i in range(40)])
+            text = ''.join([random.choice(string.ascii_letters) for i in range(40)])
         osc.core.http_PUT(url, data=text)
 
 class Request(object):

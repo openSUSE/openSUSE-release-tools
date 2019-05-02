@@ -24,6 +24,10 @@ def rr(s):
 
 class TestFactorySourceAccept(unittest.TestCase):
 
+    def tearDown(self):
+        httpretty.disable()
+        httpretty.reset()
+
     def setUp(self):
         """
         Initialize the configuration
@@ -71,7 +75,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/source/Base:System/timezone?rev=481ecbe0dfc63ece3a1f1b5598f7d96c&view=info"),
+            rr("/source/Base:System/timezone?view=info&rev=481ecbe0dfc63ece3a1f1b5598f7d96c"),
             match_querystring = True,
             body = """
                 <sourceinfo package="timezone"
@@ -106,6 +110,7 @@ class TestFactorySourceAccept(unittest.TestCase):
                   <filename>timezone.spec</filename>
                 </sourceinfo>
             """)
+
         httpretty.register_uri(httpretty.GET,
             rr("/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27timezone%27+or+action%2Fsource%2F%40package%3D%27timezone%27%29+and+action%2F%40type%3D%27submit%27"),
             match_querystring = True,
@@ -172,7 +177,7 @@ class TestFactorySourceAccept(unittest.TestCase):
     def test_source_not_in_factory(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?withfullhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D"),
+            rr("/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D&withfullhistory=1"),
             match_querystring = True,
             body = """
                 <collection matches="1">
@@ -271,7 +276,7 @@ class TestFactorySourceAccept(unittest.TestCase):
 
         def change_request(result, method, uri, headers):
             u = urlparse(uri)
-            if u.query == 'newstate=declined&cmd=changereviewstate&by_user=factory-source':
+            if u.query == 'cmd=changereviewstate&newstate=declined&by_user=factory-source':
                 result['factory_source_declined'] = True
             return (200, headers, '<status code="ok"/>')
 

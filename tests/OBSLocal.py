@@ -95,7 +95,7 @@ class TestCase(unittest.TestCase):
         print(self.output) # For debugging assertion failures.
 
     def assertOutput(self, string):
-        self.assertTrue(string in self.output, '[MISSING] ' + string)
+        self.assertTrue(bytes(string, 'utf-8') in self.output, '[MISSING] ' + string)
 
     def assertReview(self, rid, **kwargs):
         request = get_request(self.apiurl, rid)

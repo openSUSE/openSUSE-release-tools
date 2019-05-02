@@ -121,7 +121,7 @@ class TestCheckCommand(unittest.TestCase):
     def test_check_command_all(self):
         """Validate json conversion for all projects."""
         wf = self.setup_vcr()
-        with open('tests/fixtures/project/staging_projects/openSUSE:Factory.json') as f:
+        with open('tests/fixtures/project/staging_projects/openSUSE:Factory.json', encoding='utf-8') as f:
             wf.api.project_status = MagicMock(return_value=json.load(f))
         report = self.checkcommand._check_project()
         self.maxDiff = 20000
@@ -130,7 +130,7 @@ class TestCheckCommand(unittest.TestCase):
     def test_check_command_single(self):
         """Validate json conversion for a single project."""
         wf = self.setup_vcr()
-        with open('tests/fixtures/project/staging_projects/openSUSE:Factory/H.json') as f:
+        with open('tests/fixtures/project/staging_projects/openSUSE:Factory/H.json', encoding='utf-8') as f:
             wf.api.project_status = MagicMock(return_value=json.load(f))
         report = self.checkcommand._check_project('H')
         self.assertMultiLineEqual('\n'.join(report).strip(), H_REPORT.strip())

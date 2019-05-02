@@ -1,7 +1,13 @@
 from dateutil.parser import parse as date_parse
 from metrics import timestamp
 import requests
-from urlparse import urljoin
+
+try:
+    from urllib.parse import urljoin
+except ImportError:
+    # python 2.x
+    from urlparse import urljoin
+
 import yaml
 
 BASEURL = 'http://review.tumbleweed.boombatower.com/data/'

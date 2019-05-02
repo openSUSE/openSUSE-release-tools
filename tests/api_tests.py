@@ -5,8 +5,8 @@ import unittest
 import httpretty
 import re
 
-
 import osc.core
+
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from xml.etree import cElementTree as ET
@@ -185,11 +185,11 @@ class TestApiCalls(OBSLocal.TestCase):
         wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
 
         url = wf.api.makeurl(['source', 'openSUSE:Factory:Staging:B', 'wine', '_meta'])
-        self.assertEqual(osc.core.http_GET(url).read(), '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n</package>\n')
+        self.assertEqual(osc.core.http_GET(url).read().decode('utf-8'), '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n</package>\n')
 
         wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
         m = '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n  <build>\n    <disable/>\n  </build>\n</package>\n'
-        self.assertEqual(osc.core.http_GET(url).read(), m)
+        self.assertEqual(osc.core.http_GET(url).read().decode('utf-8'), m)
 
     def test_review_handling(self):
         """Test whether accepting/creating reviews behaves correctly."""

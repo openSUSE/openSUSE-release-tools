@@ -140,7 +140,7 @@ def dump_solv(name, baseurl):
     pool = solv.Pool()
     pool.setarch()
 
-    repo = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+    repo = pool.add_repo(''.join(random.choice(string.ascii_letters) for _ in range(5)))
     if not parse_repomd(repo, baseurl) and not parse_susetags(repo, baseurl):
         raise Exception('neither repomd nor susetags exists in ' + baseurl)
 
@@ -226,7 +226,7 @@ def update_project(apiurl, project):
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
                 repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
 
-        repo1 = pool.add_repo(''.join(random.choice(string.letters) for _ in range(5)))
+        repo1 = pool.add_repo(''.join(random.choice(string.ascii_letters) for _ in range(5)))
         repo1.add_solv(solv_file)
 
         print_repo_delta(pool, repo1, open(packages_file, 'w'))

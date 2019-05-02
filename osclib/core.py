@@ -467,7 +467,7 @@ def project_meta_revision(apiurl, project):
 
 def entity_exists(apiurl, project, package=None):
     try:
-        http_GET(makeurl(apiurl, filter(None, ['source', project, package]) + ['_meta']))
+        http_GET(makeurl(apiurl, list(filter(None, ['source', project, package])) + ['_meta']))
     except HTTPError as e:
         if e.code == 404:
             return False

@@ -51,7 +51,7 @@ class TestMaintenance(unittest.TestCase):
         """
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?withfullhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D"),
+            rr('/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D&withfullhistory=1'),
             match_querystring = True,
             body = """
                 <collection matches="1">
@@ -128,7 +128,7 @@ class TestMaintenance(unittest.TestCase):
 
         def change_request(result, method, uri, headers):
             u = urlparse(uri)
-            if u.query == 'by_package=mysql-workbench&cmd=addreview&by_project=server%3Adatabase':
+            if u.query == 'cmd=addreview&by_project=server%3Adatabase&by_package=mysql-workbench':
                 result['devel_review_added'] = True
             return (200, headers, '<status code="ok"/>')
 
@@ -164,7 +164,7 @@ class TestMaintenance(unittest.TestCase):
     def test_non_maintainer_double_review(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?withfullhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D"),
+            rr('/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D&withfullhistory=1'),
             match_querystring = True,
             body = """
                 <collection matches="1">
@@ -285,7 +285,7 @@ class TestMaintenance(unittest.TestCase):
     def test_backports_submit(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?withfullhistory=1&match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D"),
+            rr('/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D&withfullhistory=1'),
             match_querystring = True,
             body = """
                 <collection matches="1">
