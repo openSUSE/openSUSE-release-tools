@@ -1,3 +1,4 @@
+import functools
 import logging
 import pika
 import ssl
@@ -38,12 +39,12 @@ class PubSubConsumer(object):
     def restart_timer(self):
         interval = 300
         if self._timer_id:
-            self._connection.remove_timeout(self._timer_id)
+            self._connection.ioloop.remove_timeout(self._timer_id)
         else:
             # check the initial state on first timer hit
             # so be quick about it
             interval = 0
-        self._timer_id = self._connection.add_timeout(interval, self.still_alive)
+        self._timer_id = self._connection.ioloop.call_later(interval, self.still_alive)
 
     def still_alive(self):
         # output something so gocd doesn't consider it stalled
@@ -103,7 +104,7 @@ class PubSubConsumer(object):
         else:
             self.logger.warning('Connection closed, reopening in 5 seconds: %s',
                                 reason)
-            self._connection.add_timeout(5, self.reconnect)
+            self._connection.ioloop.call_later(5, self.reconnect)
 
     def on_connection_open(self, unused_connection):
         """This method is called by pika once the connection to RabbitMQ has
@@ -214,7 +215,7 @@ class PubSubConsumer(object):
 
     def bind_queue_to_routing_key(self, key):
         self.logger.info('Binding %s to %s', key, self.queue_name)
-        self._channel.queue_bind(self.queue_name, 'pubsub', key=key, callback=self.on_bindok)
+        self._channel.queue_bind(self.queue_name, 'pubsub', routing_key=key, callback=self.on_bindok)
 
     def add_on_cancel_callback(self):
         """Add a callback that will be invoked if RabbitMQ cancels the consumer
@@ -273,7 +274,8 @@ class PubSubConsumer(object):
         """
         if self._channel:
             self.logger.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
-            self._channel.basic_cancel(self._consumer_tag, callback=self.on_cancelok)
+            cb = functools.partial(self.on_cancelok, userdata=self._consumer_tag)
+            self._channel.basic_cancel(self._consumer_tag, cb)
 
     def start_consuming(self):
         """This method sets up the consumer by first calling
