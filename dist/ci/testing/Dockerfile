@@ -8,3 +8,5 @@ RUN zypper in -y osc python2-nose python2-httpretty python2-pyxdg python2-PyYAML
    vim vim-data strace git
 
 RUN zypper in -y libxml2-tools curl
+
+COPY run_as_tester /usr/bin

@@ -1,0 +1,8 @@
+#! /bin/sh
+
+set -e 
+set -x
+
+# This script is run from docker-compose within test container
+/usr/sbin/usermod -u $(stat -c %u /code/LICENSE) tester
+/usr/bin/su - tester -c "$@"

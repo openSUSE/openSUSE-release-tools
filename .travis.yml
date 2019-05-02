@@ -19,7 +19,7 @@ matrix:
       language: bash
       script:
         - docker-compose version
-        - docker build -t testing .
+        - docker build -t testing dist/ci/testing
         - docker-compose -f dist/ci/docker-compose.yml run test
 
 deploy:
