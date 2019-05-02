@@ -117,7 +117,7 @@ class TestApiCalls(unittest.TestCase):
         self.staging_b = wf.create_staging('B')
         prj = self.staging_b.name
 
-        self.winerq = wf.create_submit_request('devel:wine', 'wine', text='Hallo World')
+        self.winerq = wf.create_submit_request('devel:wine', 'wine')
         wf.api.rq_to_prj(self.winerq.reqid, prj)
 
         # Get rq number
@@ -234,13 +234,14 @@ class TestApiCalls(unittest.TestCase):
         """Test frozen mtime."""
 
         wf = vcrhelpers.StagingWorkflow()
+        wf.setup_rings()
         wf.create_staging('A')
 
         # unfrozen
         self.assertTrue(wf.api.days_since_last_freeze('openSUSE:Factory:Staging:A') > 1000)
 
         # Testing frozen mtime
-        wf.create_staging('B', freeze=True)
+        wf.create_staging('B', freeze=True, rings=1)
         self.assertLess(wf.api.days_since_last_freeze('openSUSE:Factory:Staging:B'), 1)
         self.mock_project_meta(wf)
         self.assertGreater(wf.api.days_since_last_freeze('openSUSE:Factory:Staging:B'), 8)
@@ -249,12 +250,13 @@ class TestApiCalls(unittest.TestCase):
         """Test frozen enough."""
 
         wf = vcrhelpers.StagingWorkflow()
+        wf.setup_rings()
         wf.create_staging('A')
 
         # Unfrozen
         self.assertEqual(wf.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
 
-        wf.create_staging('B', freeze=True)
+        wf.create_staging('B', freeze=True, rings=1)
         self.assertEqual(wf.api.prj_frozen_enough('openSUSE:Factory:Staging:B'), True)
 
         self.mock_project_meta(wf)
