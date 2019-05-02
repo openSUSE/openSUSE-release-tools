@@ -50,6 +50,7 @@ class StagingWorkflow(object):
         self.projects = {}
         self.requests = []
         self.groups = []
+        self.users = []
         CacheManager.test = True
         # disable caching, the TTLs break any reproduciblity
         Cache.CACHE_DIR = None
@@ -95,6 +96,21 @@ class StagingWorkflow(object):
         self.groups.append(name)
         url = osc.core.makeurl(APIURL, ['group', name])
         osc.core.http_PUT(url, data=meta)
+
+    def create_user(self, name):
+        if name in self.users: return
+        meta = """
+        <person>
+          <login>{}</login>
+          <email>{}@example.com</email>
+          <state>confirmed</state>
+        </person>
+        """.format(name, name)
+        self.users.append(name)
+        url = osc.core.makeurl(APIURL, ['person', name])
+        osc.core.http_PUT(url, data=meta)
+        url = osc.core.makeurl(APIURL, ['person', name], {'cmd': 'change_password'})
+        osc.core.http_POST(url, data='opensuse')
 
     def create_target(self):
         if self.projects.get('target'): return
@@ -167,6 +183,12 @@ class StagingWorkflow(object):
             request.revoke()
         for group in self.groups:
             url = osc.core.makeurl(APIURL, ['group', group])
+            try:
+                osc.core.http_DELETE(url)
+            except HTTPError:
+                pass
+        for login in self.users:
+            url = osc.core.makeurl(APIURL, ['person', login])
             try:
                 osc.core.http_DELETE(url)
             except HTTPError:

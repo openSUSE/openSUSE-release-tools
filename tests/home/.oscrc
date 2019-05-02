@@ -1,0 +1,2 @@
+[global]
+apiurl = http://api:3000
