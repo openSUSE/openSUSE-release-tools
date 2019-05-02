@@ -15,6 +15,4 @@ until curl http://api:3000/about 2>/dev/null ; do
   sleep 1
 done
 
-export HOME=/tmp
-chroot --userspec=tester / /bin/bash -c "cd /code && nosetests-2.7"
-
+su - tester -c nosetests-2.7
