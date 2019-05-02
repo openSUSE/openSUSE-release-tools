@@ -215,7 +215,7 @@ class CommentAPI(object):
             if comment['parent']:
                 parents.append(comment['parent'])
 
-        for comment in comments.values():
+        for comment in list(comments.values()):
             if comment['id'] not in parents:
                 # Parent comments that have been removed are still returned
                 # when children exist and are authored by _nobody_. Such

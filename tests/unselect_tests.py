@@ -3,16 +3,13 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
 
-from obs import APIURL
-from obs import PROJECT
-from obs import OBS
-
+from . import obs
 
 class TestUnselect(unittest.TestCase):
     def setUp(self):
-        self.obs = OBS()
-        Config(APIURL, PROJECT)
-        self.api = StagingAPI(APIURL, PROJECT)
+        self.obs = obs.OBS()
+        Config(obs.APIURL, obs.PROJECT)
+        self.api = StagingAPI(obs.APIURL, obs.PROJECT)
 
     def test_cleanup_filter(self):
         UnselectCommand.config_init(self.api)

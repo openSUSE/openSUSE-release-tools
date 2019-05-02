@@ -1,7 +1,6 @@
 import unittest
 
-from obs import APIURL
-from obs import OBS
+from . import obs
 from osc import oscerr
 from osclib.comments import CommentAPI
 from osclib.conf import Config
@@ -15,9 +14,9 @@ class TestSelect(unittest.TestCase):
         """
         Initialize the configuration
         """
-        self.obs = OBS()
-        Config(APIURL, 'openSUSE:Factory')
-        self.api = StagingAPI(APIURL, 'openSUSE:Factory')
+        self.obs = obs.OBS()
+        Config(obs.APIURL, 'openSUSE:Factory')
+        self.api = StagingAPI(obs.APIURL, 'openSUSE:Factory')
 
     def test_old_frozen(self):
         self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)

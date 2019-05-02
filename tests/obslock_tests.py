@@ -3,18 +3,15 @@ import unittest
 from osclib.conf import Config
 from osclib.obslock import OBSLock
 
-from obs import APIURL
-from obs import PROJECT
-from obs import OBS
-
+from . import obs
 
 class TestOBSLock(unittest.TestCase):
     def setUp(self):
-        self.obs = OBS()
-        Config(APIURL, PROJECT)
+        self.obs = obs.OBS()
+        Config(obs.APIURL, obs.PROJECT)
 
     def obs_lock(self, reason='list'):
-        return OBSLock(APIURL, PROJECT, reason=reason)
+        return OBSLock(obs.APIURL, obs.PROJECT, reason=reason)
 
     def assertLockFail(self, lock):
         with self.assertRaises(SystemExit):
