@@ -1,5 +1,7 @@
+import functools
 import logging
 import pika
+import ssl
 import sys
 import time
 from datetime import datetime
@@ -37,12 +39,12 @@ class PubSubConsumer(object):
     def restart_timer(self):
         interval = 300
         if self._timer_id:
-            self._connection.remove_timeout(self._timer_id)
+            self._connection.ioloop.remove_timeout(self._timer_id)
         else:
             # check the initial state on first timer hit
             # so be quick about it
             interval = 0
-        self._timer_id = self._connection.add_timeout(interval, self.still_alive)
+        self._timer_id = self._connection.ioloop.call_later(interval, self.still_alive)
 
     def still_alive(self):
         # output something so gocd doesn't consider it stalled
@@ -67,10 +69,11 @@ class PubSubConsumer(object):
             account = 'suse'
             server = 'rabbit.suse.de'
         credentials = pika.PlainCredentials(account, account)
-        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, ssl=True, socket_timeout=10)
+        context = ssl.create_default_context()
+        ssl_options = pika.SSLOptions(context, server)
+        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, ssl_options=ssl_options, socket_timeout=10)
         return pika.SelectConnection(parameters,
-                                     self.on_connection_open,
-                                     stop_ioloop_on_close=False)
+                                     on_open_callback=self.on_connection_open)
 
     def close_connection(self):
         """This method closes the connection to RabbitMQ."""
@@ -85,7 +88,7 @@ class PubSubConsumer(object):
         self.logger.debug('Adding connection close callback')
         self._connection.add_on_close_callback(self.on_connection_closed)
 
-    def on_connection_closed(self, connection, reply_code, reply_text):
+    def on_connection_closed(self, connection, reason):
         """This method is invoked by pika when the connection to RabbitMQ is
         closed unexpectedly. Since it is unexpected, we will reconnect to
         RabbitMQ if it disconnects.
@@ -99,9 +102,9 @@ class PubSubConsumer(object):
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            self.logger.warning('Connection closed, reopening in 5 seconds: (%s) %s',
-                                reply_code, reply_text)
-            self._connection.add_timeout(5, self.reconnect)
+            self.logger.warning('Connection closed, reopening in 5 seconds: %s',
+                                reason)
+            self._connection.ioloop.call_later(5, self.reconnect)
 
     def on_connection_open(self, unused_connection):
         """This method is called by pika once the connection to RabbitMQ has
@@ -139,7 +142,7 @@ class PubSubConsumer(object):
         self.logger.debug('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
 
-    def on_channel_closed(self, channel, reply_code, reply_text):
+    def on_channel_closed(self, channel, reason):
         """Invoked by pika when RabbitMQ unexpectedly closes the channel.
         Channels are usually closed if you attempt to do something that
         violates the protocol, such as re-declare an exchange or queue with
@@ -151,8 +154,8 @@ class PubSubConsumer(object):
         :param str reply_text: The text reason the channel was closed
 
         """
-        self.logger.info('Channel %i was closed: (%s) %s',
-                            channel, reply_code, reply_text)
+        self.logger.info('Channel %i was closed: %s',
+                            channel, reason)
         self._connection.close()
 
     def on_channel_open(self, channel):
@@ -178,9 +181,9 @@ class PubSubConsumer(object):
 
         """
         self.logger.debug('Declaring exchange %s', exchange_name)
-        self._channel.exchange_declare(self.on_exchange_declareok,
-                                       exchange=exchange_name,
+        self._channel.exchange_declare(exchange_name,
                                        exchange_type='topic',
+                                       callback=self.on_exchange_declareok,
                                        passive=True, durable=True)
 
     def on_exchange_declareok(self, unused_frame):
@@ -191,7 +194,7 @@ class PubSubConsumer(object):
 
         """
         self.logger.debug('Exchange declared')
-        self._channel.queue_declare(self.on_queue_declareok, exclusive=True)
+        self._channel.queue_declare('', callback=self.on_queue_declareok, exclusive=True)
 
     def on_queue_declareok(self, method_frame):
         """Method invoked by pika when the Queue.Declare RPC call made in
@@ -212,7 +215,7 @@ class PubSubConsumer(object):
 
     def bind_queue_to_routing_key(self, key):
         self.logger.info('Binding %s to %s', key, self.queue_name)
-        self._channel.queue_bind(self.on_bindok, self.queue_name, 'pubsub', key)
+        self._channel.queue_bind(self.queue_name, 'pubsub', routing_key=key, callback=self.on_bindok)
 
     def add_on_cancel_callback(self):
         """Add a callback that will be invoked if RabbitMQ cancels the consumer
@@ -252,17 +255,26 @@ class PubSubConsumer(object):
         self.logger.info('Received message # %s: %s %s',
                          basic_deliver.delivery_tag, basic_deliver.routing_key, body)
 
-    def on_cancelok(self, unused_frame):
+    def on_cancelok(self, _unused_frame, userdata):
         """This method is invoked by pika when RabbitMQ acknowledges the
         cancellation of a consumer. At this point we will close the channel.
         This will invoke the on_channel_closed method once the channel has been
         closed, which will in-turn close the connection.
-
-        :param pika.frame.Method unused_frame: The Basic.CancelOk frame
-
+        :param pika.frame.Method _unused_frame: The Basic.CancelOk frame
+        :param str|unicode userdata: Extra user data (consumer tag)
         """
-        self.logger.debug('RabbitMQ acknowledged the cancellation of the consumer')
+        self._consuming = False
+        self.logger.debug(
+            'RabbitMQ acknowledged the cancellation of the consumer: %s',
+            userdata)
         self.close_channel()
+
+    def close_channel(self):
+        """Call to close the channel with RabbitMQ cleanly by issuing the
+        Channel.Close RPC command.
+        """
+        self.logger.debug('Closing the channel')
+        self._channel.close()
 
     def stop_consuming(self):
         """Tell RabbitMQ that you would like to stop consuming by sending the
@@ -271,7 +283,8 @@ class PubSubConsumer(object):
         """
         if self._channel:
             self.logger.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
-            self._channel.basic_cancel(self.on_cancelok, self._consumer_tag)
+            cb = functools.partial(self.on_cancelok, userdata=self._consumer_tag)
+            self._channel.basic_cancel(self._consumer_tag, cb)
 
     def start_consuming(self):
         """This method sets up the consumer by first calling
@@ -286,8 +299,9 @@ class PubSubConsumer(object):
         self.logger.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self.restart_timer()
-        self._consumer_tag = self._channel.basic_consume(self.on_message,
-                                                         self.queue_name, no_ack=True)
+        self._consumer_tag = self._channel.basic_consume(self.queue_name,
+                                                         self.on_message,
+                                                         auto_ack=False)
 
     def on_bindok(self, unused_frame):
         """Invoked by pika when the Queue.Bind method has completed. At this
@@ -302,14 +316,6 @@ class PubSubConsumer(object):
             self.bind_queue_to_routing_key(self.routing_keys_to_bind.pop())
         else:
             self.start_consuming()
-
-    def close_channel(self):
-        """Call to close the channel with RabbitMQ cleanly by issuing the
-        Channel.Close RPC command.
-
-        """
-        self.logger.debug('Closing the channel')
-        self._channel.close()
 
     def open_channel(self):
         """Open a new channel with RabbitMQ by issuing the Channel.Open RPC
