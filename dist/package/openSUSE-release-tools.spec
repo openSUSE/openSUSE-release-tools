@@ -158,12 +158,16 @@ BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
 Requires(pre):  shadow
-# TODO Requires: python-influxdb, but package does not exist in Factory, but
-# present in Cloud:OpenStack:Master/python-influxdb.
-Recommends:     python-influxdb
 Suggests:       grafana
+%if 0%{?suse_version} > 1500
+Requires:       influxdb
+Requires:       python-influxdb
+Requires:       telegraf
+%else
 Suggests:       influxdb
+Suggests:       python-influxdb
 Suggests:       telegraf
+%endif
 
 %description metrics
 Ingest relevant OBS and annotation data to generate insightful metrics.
