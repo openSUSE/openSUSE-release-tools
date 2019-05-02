@@ -86,14 +86,23 @@ class StagingWorkflow(object):
         attribute_value_save(APIURL, self.project, 'Config', 'overridden-by-local = remote-nope\n'
                                                         'remote-only = remote-indeed\n')
 
-    def create_group(self, name):
-        if name in self.groups: return
+    def create_group(self, name, users=[]):
+
         meta = """
         <group>
           <title>{}</title>
         </group>
         """.format(name)
-        self.groups.append(name)
+
+        if len(users):
+            root = ET.fromstring(meta)
+            persons = ET.SubElement(root, 'person')
+            for user in users:
+                ET.SubElement(persons, 'person', { 'userid': user } )
+            meta = ET.tostring(root)
+
+        if not name in self.groups:
+            self.groups.append(name)
         url = osc.core.makeurl(APIURL, ['group', name])
         osc.core.http_PUT(url, data=meta)
 
@@ -111,6 +120,8 @@ class StagingWorkflow(object):
         osc.core.http_PUT(url, data=meta)
         url = osc.core.makeurl(APIURL, ['person', name], {'cmd': 'change_password'})
         osc.core.http_POST(url, data='opensuse')
+        home_project = 'home:' + name
+        self.projects[home_project] = Project(home_project, create=False)
 
     def create_target(self):
         if self.projects.get('target'): return
@@ -138,12 +149,14 @@ class StagingWorkflow(object):
                                                                                source_package.name))
         return target_package
 
-    def create_project(self, name):
+    def create_project(self, name,  reviewer={}, maintainer={}, project_links=[]):
         if isinstance(name, Project):
             return name
         if name in self.projects:
             return self.projects[name]
-        self.projects[name] = Project(name)
+        self.projects[name] = Project(name, reviewer=reviewer,
+                                      maintainer=maintainer,
+                                      project_links=project_links)
         return self.projects[name]
 
     def create_submit_request(self, project, package, text=None):
@@ -187,20 +200,17 @@ class StagingWorkflow(object):
                 osc.core.http_DELETE(url)
             except HTTPError:
                 pass
-        for login in self.users:
-            url = osc.core.makeurl(APIURL, ['person', login])
-            try:
-                osc.core.http_DELETE(url)
-            except HTTPError:
-                pass
         print('done')
         if hasattr(self.api, '_invalidate_all'):
             self.api._invalidate_all()
 
 class Project(object):
-    def __init__(self, name, reviewer={}, project_links=[]):
+    def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True):
         self.name = name
         self.packages = []
+
+        if not create:
+            return
 
         meta = """
             <project name="{0}">
@@ -213,7 +223,13 @@ class Project(object):
             ET.SubElement(root, 'group', { 'groupid': group, 'role': 'reviewer'} )
         for group in reviewer.get('users', []):
             ET.SubElement(root, 'person', { 'userid': group, 'role': 'reviewer'} )
-	for link in project_links:
+        # TODO: avoid this duplication
+        for group in maintainer.get('groups', []):
+            ET.SubElement(root, 'group', { 'groupid': group, 'role': 'maintainer'} )
+        for group in maintainer.get('users', []):
+            ET.SubElement(root, 'person', { 'userid': group, 'role': 'maintainer'} )
+
+        for link in project_links:
             ET.SubElement(root, 'link', { 'project': link })
 
         url = osc.core.make_meta_url('prj', self.name, APIURL)

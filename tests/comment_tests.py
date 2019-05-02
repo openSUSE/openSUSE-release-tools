@@ -1,4 +1,5 @@
 from . import OBSLocal
+from . import vcrhelpers
 from osclib.comments import CommentAPI
 import random
 import re
@@ -93,9 +94,19 @@ handle
 class TestCommentOBS(OBSLocal.TestCase):
     def setUp(self):
         super(TestCommentOBS, self).setUp()
+        self.wf = vcrhelpers.StagingWorkflow()
+        self.wf.create_user('factory-auto')
+        self.wf.create_user('repo-checker')
+        self.wf.create_user('staging-bot')
+        self.wf.create_group('factory-staging', ['staging-bot'])
+        self.wf.create_project(PROJECT, maintainer={'groups': ['factory-staging']})
         self.api = CommentAPI(self.apiurl)
         # Ensure different test runs operate in unique namespace.
         self.bot = '::'.join([type(self).__name__, str(random.getrandbits(8))])
+
+    def tearDown(self):
+        self.osc_user('Admin')
+        del self.wf
 
     def test_basic(self):
         self.osc_user('staging-bot')
@@ -142,6 +153,7 @@ class TestCommentOBS(OBSLocal.TestCase):
         users = ['factory-auto', 'repo-checker', 'staging-bot']
         for user in users:
             self.osc_user(user)
+            print('logged in as ', user)
             from osc import conf
             bot = '::'.join([self.bot, user])
             comment = self.api.add_marker(COMMENT, bot)
