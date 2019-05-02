@@ -38,13 +38,6 @@ BuildRequires:  python-pycurl
 BuildRequires:  python-python-dateutil
 BuildRequires:  python-pyxdg
 BuildRequires:  python-urlgrabber
-%if 0%{?is_opensuse}
-# Testing only requirements installed for `make check`.
-BuildRequires:  libxml2-tools
-BuildRequires:  python-httpretty
-BuildRequires:  python-mock
-BuildRequires:  python-nose
-%endif
 
 # Spec related requirements.
 %if 0%{?is_opensuse}
@@ -325,12 +318,6 @@ OSC plugin to check for virtually accepted request, see `osc vdelreq --help`.
 
 %build
 make %{?_smp_mflags}
-
-%check
-%if 0%{?is_opensuse}
-# TODO openSUSE/openSUSE-release-tools#1221: decide how to handle integration tests
-# make check
-%endif
 
 %install
 %make_install \
