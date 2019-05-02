@@ -7,4 +7,4 @@ RUN zypper in -y osc python2-nose python2-httpretty python2-pyxdg python2-PyYAML
    python2-influxdb python2-coverage \
    vim vim-data strace git
 
-RUN zypper in -y libxml2-tools
+RUN zypper in -y libxml2-tools curl
