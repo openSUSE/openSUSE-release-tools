@@ -492,8 +492,11 @@ def origin_revision_state(apiurl, target_project, package, origin_info=False, li
     # considering double the limit of revisions. The goal is to know how many
     # revisions behind the package in target project is and if it deviated from
     # origin, not that it ended up with every revision found in origin project.
-    origin_project = origin_info.project.rstrip('~')
-    origin_hashes = list(package_source_hash_history(apiurl, origin_project, package, limit * 2, True))
+    if origin_info is None:
+        origin_hashes = []
+    else:
+        origin_project = origin_info.project.rstrip('~')
+        origin_hashes = list(package_source_hash_history(apiurl, origin_project, package, limit * 2, True))
     target_hashes = list(package_source_hash_history(apiurl, target_project, package, limit))
     for source_hash in origin_hashes:
         if source_hash not in target_hashes:
