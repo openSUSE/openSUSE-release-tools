@@ -278,6 +278,7 @@ Summary:        OSC plugin to check for duplicate requests
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osc >= 0.159.0
+Requires:       osclib = %{version}
 
 %description -n osc-plugin-check_dups
 OSC plugin to check for duplicate requests, see `osc check_dups --help`.
@@ -287,6 +288,7 @@ Summary:        OSC plugin for cycle visualization
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osc >= 0.159.0
+Requires:       osclib = %{version}
 
 %description -n osc-plugin-cycle
 OSC plugin for cycle visualization, see `osc cycle --help`.
@@ -296,6 +298,7 @@ Summary:        OSC plugin for origin management
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osc >= 0.159.0
+Requires:       osclib = %{version}
 
 %description -n osc-plugin-origin
 OSC plugin for for working with origin information, see `osc origin --help`.
@@ -316,6 +319,7 @@ Summary:        OSC plugin to check for virtually accepted request
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       osc >= 0.159.0
+Requires:       osclib = %{version}
 
 %description -n osc-plugin-vdelreq
 OSC plugin to check for virtually accepted request, see `osc vdelreq --help`.
