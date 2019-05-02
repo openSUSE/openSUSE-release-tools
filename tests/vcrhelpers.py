@@ -12,6 +12,8 @@ import osc.conf
 import osc.core
 import random
 import string
+import sys
+import traceback
 from xml.etree import cElementTree as ET
 
 try:
@@ -135,14 +137,28 @@ class StagingWorkflow(object):
         self.requests.append(request)
         return request
 
-    def create_staging(self, suffix, freeze=False):
-        staging = Project(self.project + ':Staging:' + suffix)
+    def create_staging(self, suffix, freeze=False, rings=None):
+        project_links = []
+        if rings == 0:
+           project_links.append(self.project + ":Rings:0-Bootstrap")
+        if rings == 1 or rings == 0:
+           project_links.append(self.project + ":Rings:1-MinimalX")
+        staging = Project(self.project + ':Staging:' + suffix, project_links=project_links)
         if freeze:
             FreezeCommand(self.api).perform(staging.name)
         self.projects['staging:{}'.format(suffix)] = staging
         return staging
 
     def __del__(self):
+        try:
+          self.remove()
+        except:
+	  # normally exceptions in destructors are ignored but a info
+          # message is displayed. Make this a little more useful by
+          # printing it into the capture log
+          traceback.print_exc(None, sys.stdout)
+
+    def remove(self):
         print('deleting staging workflow')
         for project in self.projects.values():
             project.remove()
@@ -159,8 +175,9 @@ class StagingWorkflow(object):
             self.api._invalidate_all()
 
 class Project(object):
-    def __init__(self, name, reviewer={}):
+    def __init__(self, name, reviewer={}, project_links=[]):
         self.name = name
+        self.packages = []
 
         meta = """
             <project name="{0}">
@@ -173,11 +190,11 @@ class Project(object):
             ET.SubElement(root, 'group', { 'groupid': group, 'role': 'reviewer'} )
         for group in reviewer.get('users', []):
             ET.SubElement(root, 'person', { 'userid': group, 'role': 'reviewer'} )
+	for link in project_links:
+            ET.SubElement(root, 'link', { 'project': link })
 
         url = osc.core.make_meta_url('prj', self.name, APIURL)
         osc.core.http_PUT(url, data=ET.tostring(root))
-
-        self.packages = []
 
     def add_package(self, package):
         self.packages.append(package)
