@@ -219,6 +219,9 @@ class ToTestPublisher(ToTestManager):
         if not force:
             wait_time = 20
             while not self.all_repos_done(self.project.test_project):
+                if self.dryrun:
+                    self.logger.info('{} is still not published, do not wait as dryrun.'.format(self.project.test_project))
+                    return
                 self.logger.info('{} is still not published, waiting {} seconds'.format(self.project.test_project, wait_time))
                 time.sleep(wait_time)
 
