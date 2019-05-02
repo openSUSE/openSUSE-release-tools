@@ -2,7 +2,7 @@ from . import OBSLocal
 import unittest
 
 
-class TestMetrics(OBSLocal.OBSLocalTestCase):
+class TestMetrics(OBSLocal.TestCase):
     script = './metrics.py'
     script_debug_osc = False
 

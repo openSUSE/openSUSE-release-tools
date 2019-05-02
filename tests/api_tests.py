@@ -12,8 +12,9 @@ from osclib.stagingapi import StagingAPI
 from xml.etree import cElementTree as ET
 from mock import MagicMock
 from . import vcrhelpers
+from . import OBSLocal
 
-class TestApiCalls(unittest.TestCase):
+class TestApiCalls(OBSLocal.TestCase):
     """
     Tests for various api calls to ensure we return expected content
     """
