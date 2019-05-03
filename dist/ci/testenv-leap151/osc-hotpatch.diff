@@ -1,0 +1,11 @@
+--- /usr/lib/python3.6/site-packages/osc/core.py.bak    2019-05-02 18:14:01.088380882 +0000
++++ /usr/lib/python3.6/site-packages/osc/core.py        2019-05-02 18:14:19.204341426 +0000
+@@ -6318,7 +6318,7 @@
+         try:
+             comment = node.find('comment').text.encode(locale.getpreferredencoding(), 'replace')
+         except:
+-            comment = b'<no message>'
++            comment = '<no message>'
+         try:
+             requestid = node.find('requestid').text.encode(locale.getpreferredencoding(), 'replace')
+         except:
