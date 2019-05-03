@@ -1,9 +1,7 @@
-version: "3.7"
+version: "3.4"
 
 x-obs: &obs
   image: registry.opensuse.org/opensuse/tools/images/containers/osrt_miniobs:latest
-  volumes:
-    - ".:/code"
 
 services:
   db:
@@ -15,8 +13,6 @@ services:
   api:
     <<: *obs
     command: chroot --userspec=wwwrun / /bin/bash -c "cd /srv/www/obs/api && /usr/bin/bundle exec rails s -e production"
-    ports:
-      - "3737:3000"
     depends_on:
       - db
       - cache
@@ -32,3 +28,13 @@ services:
   servicedispatch:
     <<: *obs
     command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_servicedispatch
+  test:
+    image: registry.opensuse.org/opensuse/tools/images/containers_tumbleweed/osrt_testenv_tumbleweed:latest
+    depends_on:
+      - api
+    volumes:
+      - "../..:/code"
+    command: /code/dist/ci/docker-compose-test.sh
+    cap_add:
+      - SYS_PTRACE
+

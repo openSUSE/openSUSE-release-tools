@@ -1,7 +1,8 @@
 [general]
-apiurl = http://localhost:3737
+apiurl = http://api:3000
+cookiejar = /tmp/.osc_cookiejar-vcrhelpers
 
-[http://localhost:3737]
+[http://api:3000]
 user=Admin
 pass=opensuse
 

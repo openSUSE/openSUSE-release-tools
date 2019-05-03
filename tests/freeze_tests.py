@@ -9,7 +9,7 @@ from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
 from . import vcrhelpers
 
-class TestFreeze(unittest.TestCase):
+class TestFreeze(OBSLocalTestCase):
 
     def _get_fixture_path(self, filename):
         """

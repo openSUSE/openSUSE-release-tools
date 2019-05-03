@@ -7,8 +7,8 @@ from osc.core import makeurl
 import subprocess
 import unittest
 
-OSCRC = os.path.expanduser('~/.oscrc-test')
-OSCCOOKIEJAR = os.path.expanduser('~/.osc_cookiejar-test')
+OSCRC = '/tmp/.oscrc-test'
+OSCCOOKIEJAR = '/tmp/.osc_cookiejar-test'
 APIURL = 'local-test'
 
 class OBSLocalTestCase(unittest.TestCase):
@@ -16,12 +16,6 @@ class OBSLocalTestCase(unittest.TestCase):
     script_apiurl = True
     script_debug = True
     script_debug_osc = True
-
-    @classmethod
-    def setUpClass(cls):
-        # TODO #1214: Workaround for tests/obs.py's lack of cleanup.
-        import httpretty
-        httpretty.disable()
 
     def setUp(self):
         if os.path.exists(OSCCOOKIEJAR):
@@ -42,9 +36,9 @@ class OBSLocalTestCase(unittest.TestCase):
         with open(OSCRC, 'w+') as f:
             f.write('\n'.join([
                 '[general]',
-                'apiurl = http://0.0.0.0:3000',
+                'apiurl = http://api:3000',
                 'cookiejar = {}'.format(OSCCOOKIEJAR),
-                '[http://0.0.0.0:3000]',
+                '[http://api:3000]',
                 'user = {}'.format(userid),
                 'pass = opensuse',
                 'email = {}@example.com'.format(userid),

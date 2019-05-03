@@ -20,7 +20,8 @@ except ImportError:
     #python 2.x
     from urllib2 import HTTPError, URLError
 
-APIURL = 'http://localhost:3737'
+# pointing to other docker container
+APIURL = 'http://api:3000'
 PROJECT = 'openSUSE:Factory'
 
 class StagingWorkflow(object):
