@@ -16,6 +16,17 @@
 #
 
 
+%if 0%{?suse_version} > 1500 || 0%{?sle_version} >= 150100
+%bcond_without python3
+%else
+%bcond_with    python3
+%endif
+%if %{with python3}
+%define use_python python3
+%else
+%define use_python python
+%endif
+
 %global __provides_exclude ^perl.*
 %define source_dir openSUSE-release-tools
 %define announcer_filename factory-package-news
@@ -30,21 +41,14 @@ Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
 # Requires sr#512849 which provides osc_plugin_dir.
 BuildRequires:  osc >= 0.159.0
-BuildRequires:  python-PyYAML
-BuildRequires:  python-cmdln
-BuildRequires:  python-colorama
-BuildRequires:  python-lxml
-BuildRequires:  python-pycurl
-BuildRequires:  python-python-dateutil
-BuildRequires:  python-pyxdg
-BuildRequires:  python-urlgrabber
-%if 0%{?is_opensuse}
-# Testing only requirements installed for `make check`.
-BuildRequires:  libxml2-tools
-BuildRequires:  python-httpretty
-BuildRequires:  python-mock
-BuildRequires:  python-nose
-%endif
+BuildRequires:  %{use_python}-PyYAML
+BuildRequires:  %{use_python}-cmdln
+BuildRequires:  %{use_python}-colorama
+BuildRequires:  %{use_python}-lxml
+BuildRequires:  %{use_python}-pycurl
+BuildRequires:  %{use_python}-python-dateutil
+BuildRequires:  %{use_python}-pyxdg
+BuildRequires:  %{use_python}-urlgrabber
 
 # Spec related requirements.
 %if 0%{?is_opensuse}
@@ -56,18 +60,20 @@ BuildRequires:  apache2-devel
 BuildRequires:  rsyslog
 BuildRequires:  systemd-rpm-macros
 
-Requires:       python-PyYAML
-Requires:       python-cmdln
-Requires:       python-colorama
-Requires:       python-lxml
+Requires:       %{use_python}-PyYAML
+Requires:       %{use_python}-cmdln
+Requires:       %{use_python}-colorama
+Requires:       %{use_python}-lxml
 # issue-diff.py, legal-auto.py, and openqa-maintenance.py
-Requires:       python-pycurl
-Requires:       python-python-dateutil
-Requires:       python-pyxdg
-Requires:       python-requests
-Requires:       python-urlgrabber
+Requires:       %{use_python}-pycurl
+Requires:       %{use_python}-python-dateutil
+Requires:       %{use_python}-pyxdg
+Requires:       %{use_python}-requests
+Requires:       %{use_python}-urlgrabber
 # ttm/manager.py
+%if %{without python3}
 Requires:       python-enum34
+%endif
 
 # bs_mirrorfull
 Requires:       perl-Net-SSLeay
@@ -95,9 +101,9 @@ Summary:        Development requirements for openSUSE-release-tools
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       libxml2-tools
-Requires:       python-httpretty
-Requires:       python-mock
-Requires:       python-nose
+Requires:       %{use_python}-httpretty
+Requires:       %{use_python}-mock
+Requires:       %{use_python}-nose
 
 %description devel
 Development requirements for openSUSE-release-tools to be used in conjunction
@@ -165,12 +171,16 @@ BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
 Requires(pre):  shadow
-# TODO Requires: python-influxdb, but package does not exist in Factory, but
-# present in Cloud:OpenStack:Master/python-influxdb.
-Recommends:     python-influxdb
 Suggests:       grafana
+%if 0%{?suse_version} > 1500
+Requires:       influxdb
+Requires:       python-influxdb
+Requires:       telegraf
+%else
 Suggests:       influxdb
+Suggests:       python-influxdb
 Suggests:       telegraf
+%endif
 
 %description metrics
 Ingest relevant OBS and annotation data to generate insightful metrics.
@@ -250,8 +260,8 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       obs-service-product_converter
 Requires:       osclib = %{version}
-Requires:       python-requests
-Requires:       python-solv
+Requires:       %{use_python}-requests
+Requires:       %{use_python}-solv
 # for compressing the .packages files in 000update-repos
 Requires:       /usr/bin/xz
 # we use the same user as repo-checker
@@ -329,12 +339,6 @@ OSC plugin to check for virtually accepted request, see `osc vdelreq --help`.
 
 %build
 make %{?_smp_mflags}
-
-%check
-%if 0%{?is_opensuse}
-# TODO openSUSE/openSUSE-release-tools#1221: decide how to handle integration tests
-# make check
-%endif
 
 %install
 %make_install \
