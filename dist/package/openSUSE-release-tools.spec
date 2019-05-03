@@ -48,7 +48,7 @@ BuildRequires:  %{use_python}-lxml
 BuildRequires:  %{use_python}-pycurl
 BuildRequires:  %{use_python}-python-dateutil
 BuildRequires:  %{use_python}-pyxdg
-BuildRequires:  %{use_python}-urlgrabber
+BuildRequires:  %{wrong_python}-urlgrabber
 
 # Spec related requirements.
 %if 0%{?is_opensuse}
