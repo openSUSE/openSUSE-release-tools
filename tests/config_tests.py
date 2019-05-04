@@ -5,11 +5,11 @@ from osclib.conf import Config
 from osclib.core import attribute_value_save
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
-from . import vcrhelpers
+from . import OBSLocal
 
 class TestConfig(unittest.TestCase):
     def setup_vcr(self):
-        return vcrhelpers.StagingWorkflow()
+        return OBSLocal.StagingWorkflow()
 
     def test_basic(self):
         wf = self.setup_vcr()

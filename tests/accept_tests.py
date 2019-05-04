@@ -7,12 +7,12 @@ from osclib.comments import CommentAPI
 from osclib.stagingapi import StagingAPI
 
 from mock import MagicMock
-from . import vcrhelpers
+from . import OBSLocal
 
 class TestAccept(unittest.TestCase):
 
     def setup_vcr(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
 
         self.c_api = CommentAPI(wf.api.apiurl)

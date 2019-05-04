@@ -1,5 +1,4 @@
 from . import OBSLocal
-from . import vcrhelpers
 import unittest
 
 class TestDevelProject(OBSLocal.TestCase):
@@ -7,12 +6,12 @@ class TestDevelProject(OBSLocal.TestCase):
     script_debug_osc = False
 
     def setUp(self):
-        self.wf = vcrhelpers.StagingWorkflow()
+        self.wf = OBSLocal.StagingWorkflow()
         spa = self.wf.create_project('server:php:applications')
-        vcrhelpers.Package('drush', project=spa)
-        vcrhelpers.Package('drush', self.wf.projects['target'], devel_project='server:php:applications')
+        OBSLocal.Package('drush', project=spa)
+        OBSLocal.Package('drush', self.wf.projects['target'], devel_project='server:php:applications')
         staging = self.wf.create_project('openSUSE:Factory:Staging', maintainer={'users': ['staging-bot']})
-        vcrhelpers.Package('dashboard', project=staging)
+        OBSLocal.Package('dashboard', project=staging)
         self.wf.api.pseudometa_file_ensure('devel_projects', 'server:php:applications')
 
     def tearDown(self):

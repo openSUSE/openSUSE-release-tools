@@ -11,7 +11,6 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from xml.etree import cElementTree as ET
 from mock import MagicMock
-from . import vcrhelpers
 from . import OBSLocal
 
 class TestApiCalls(OBSLocal.TestCase):
@@ -24,7 +23,7 @@ class TestApiCalls(OBSLocal.TestCase):
         Validate the creation of the rings.
         """
 
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
 
         curl = wf.create_package('target', 'curl')
@@ -89,7 +88,7 @@ class TestApiCalls(OBSLocal.TestCase):
         """
         Test searching for open requests
         """
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.create_submit_request('devel:wine', 'wine')
 
         # get the open requests
@@ -113,7 +112,7 @@ class TestApiCalls(OBSLocal.TestCase):
         self.assertEqual('wine', wf.api.get_package_for_request_id(prj, num))
 
     def setup_vcr(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
         self.staging_b = wf.create_staging('B')
         prj = self.staging_b.name
@@ -180,7 +179,7 @@ class TestApiCalls(OBSLocal.TestCase):
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
 
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.create_staging('B')
         wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
 
@@ -226,7 +225,7 @@ class TestApiCalls(OBSLocal.TestCase):
 
     def test_prj_from_letter(self):
 
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         # Verify it works
         self.assertEqual(wf.api.prj_from_letter('openSUSE:Factory'), 'openSUSE:Factory')
         self.assertEqual(wf.api.prj_from_letter('A'), 'openSUSE:Factory:Staging:A')
@@ -234,7 +233,7 @@ class TestApiCalls(OBSLocal.TestCase):
     def test_frozen_mtime(self):
         """Test frozen mtime."""
 
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
         wf.create_staging('A')
 
@@ -250,7 +249,7 @@ class TestApiCalls(OBSLocal.TestCase):
     def test_frozen_enough(self):
         """Test frozen enough."""
 
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
         wf.create_staging('A')
 

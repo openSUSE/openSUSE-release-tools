@@ -2,7 +2,7 @@ from datetime import datetime
 import unittest
 from osclib.conf import Config
 from osclib.obslock import OBSLock
-from . import vcrhelpers
+from . import OBSLocal
 
 class TestOBSLock(unittest.TestCase):
 
@@ -119,7 +119,7 @@ class TestOBSLock(unittest.TestCase):
                 self.assertEqual(reason_sub, None, 'does not inherit hold')
 
     def setup_vcr(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.create_target()
         # we should most likely create this as part of create_target, but
         # it just slows down all other tests

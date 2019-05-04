@@ -1,5 +1,4 @@
 from . import OBSLocal
-from . import vcrhelpers
 from osclib.comments import CommentAPI
 import random
 import re
@@ -94,7 +93,7 @@ handle
 class TestCommentOBS(OBSLocal.TestCase):
     def setUp(self):
         super(TestCommentOBS, self).setUp()
-        self.wf = vcrhelpers.StagingWorkflow()
+        self.wf = OBSLocal.StagingWorkflow()
         self.wf.create_user('factory-auto')
         self.wf.create_user('repo-checker')
         self.wf.create_user('staging-bot')

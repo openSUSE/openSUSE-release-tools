@@ -4,20 +4,19 @@ from osclib.stagingapi import StagingAPI
 from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
 from osclib.core import package_list_without_links
-from . import vcrhelpers
 from . import OBSLocal
 
 class TestUnselect(OBSLocal.TestCase):
 
     def test_cleanup_filter(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         UnselectCommand.config_init(wf.api)
         UnselectCommand.cleanup_days = 1
         obsolete = wf.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)
         self.assertSequenceEqual([], obsolete)
 
     def test_free_staging(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
 
         staging_a = wf.create_staging('A', freeze=True)

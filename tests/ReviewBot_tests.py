@@ -1,6 +1,5 @@
 import logging
 from . import OBSLocal
-from . import vcrhelpers
 from osclib.comments import CommentAPI
 from ReviewBot import ReviewBot
 import random
@@ -12,7 +11,7 @@ class TestReviewBotComment(OBSLocal.TestCase):
     def setUp(self):
         super(TestReviewBotComment, self).setUp()
         self.api = CommentAPI(self.apiurl)
-        self.wf = vcrhelpers.StagingWorkflow()
+        self.wf = OBSLocal.StagingWorkflow()
         self.wf.create_user('factory-auto')
         self.project = self.wf.create_project(PROJECT)
 

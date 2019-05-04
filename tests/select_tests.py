@@ -11,12 +11,12 @@ from osclib.stagingapi import StagingAPI
 import logging
 
 from mock import MagicMock
-from . import vcrhelpers
+from . import OBSLocal
 
 class TestSelect(unittest.TestCase):
 
     def test_old_frozen(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.api.prj_frozen_enough = MagicMock(return_value=False)
 
         # check it won't allow selecting
@@ -24,7 +24,7 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(False, SelectCommand(wf.api, staging.name).perform(['gcc']))
 
     def test_select_comments(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
 
         staging_b = wf.create_staging('B', freeze=True)
@@ -60,7 +60,7 @@ class TestSelect(unittest.TestCase):
         self.assertTrue('added request#{} for package gcc8 submitted by Admin'.format(r3.reqid) in second_select_comment['comment'])
 
     def test_no_matches(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
 
         staging = wf.create_staging('N', freeze=True)
 
@@ -70,7 +70,7 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(str(cm.exception), "No SR# found for: bash")
 
     def test_selected(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
 
         wf.setup_rings()
         staging = wf.create_staging('S', freeze=True)

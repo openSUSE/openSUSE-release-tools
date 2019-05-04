@@ -6,7 +6,7 @@ from osclib.check_command import CheckCommand
 from osclib.stagingapi import StagingAPI
 
 from mock import MagicMock
-from . import vcrhelpers
+from . import OBSLocal
 
 FULL_REPORT = """
  -- BUILDING Project openSUSE:Factory:Staging:A still needs attention
@@ -113,7 +113,7 @@ class TestCheckCommand(unittest.TestCase):
     """Tests CheckCommand."""
 
     def setup_vcr(self):
-        wf = vcrhelpers.StagingWorkflow()
+        wf = OBSLocal.StagingWorkflow()
         wf.create_staging('H')
         self.checkcommand = CheckCommand(wf.api)
         return wf
