@@ -7,20 +7,15 @@ import re
 from osclib.cache import Cache
 
 try:
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse, parse_qs
 except ImportError:
     # python 2.x
-    from urlparse import urlparse
+    from urlparse import urlparse, parse_qs
 
 from check_source_in_factory import FactorySourceChecker
 
-APIURL = 'https://testhost.example.com'
+APIURL = 'http://testhost.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
-
-
-def rr(s):
-    return re.compile(re.escape(APIURL + s))
-
 
 class TestFactorySourceAccept(unittest.TestCase):
 
@@ -55,7 +50,7 @@ class TestFactorySourceAccept(unittest.TestCase):
     def test_accept_request(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/source/openSUSE:Factory/00Meta/lookup.yml"),
+            APIURL + '/source/openSUSE:Factory/00Meta/lookup.yml',
             status = 404)
 
         httpretty.register_uri(httpretty.GET,
@@ -75,7 +70,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/source/Base:System/timezone?view=info&rev=481ecbe0dfc63ece3a1f1b5598f7d96c"),
+            APIURL + "/source/Base:System/timezone?view=info&rev=481ecbe0dfc63ece3a1f1b5598f7d96c",
             match_querystring = True,
             body = """
                 <sourceinfo package="timezone"
@@ -86,7 +81,7 @@ class TestFactorySourceAccept(unittest.TestCase):
                 </sourceinfo>
             """)
         httpretty.register_uri(httpretty.GET,
-            rr("/source/openSUSE:Factory/timezone?view=info"),
+            APIURL + "/source/openSUSE:Factory/timezone?view=info",
             match_querystring = True,
             body = """
                 <sourceinfo package="timezone"
@@ -99,7 +94,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/source/openSUSE:Factory/timezone/_history?limit=5"),
+            APIURL + "/source/openSUSE:Factory/timezone/_history?limit=5",
             match_querystring = True,
             body = """
                 <sourceinfo package="timezone"
@@ -112,8 +107,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27timezone%27+or+action%2Fsource%2F%40package%3D%27timezone%27%29+and+action%2F%40type%3D%27submit%27"),
-            match_querystring = True,
+            APIURL + '/search/request',
             responses = [
                 httpretty.Response( body = """
                     <collection matches="1">
@@ -151,8 +145,8 @@ class TestFactorySourceAccept(unittest.TestCase):
         result = { 'status' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse(uri)
-            if u.query == 'newstate=accepted&cmd=changereviewstate&by_user=factory-source':
+            query = parse_qs(urlparse(uri).query)
+            if query == {'by_user': ['factory-source'], 'cmd': ['changereviewstate'], 'newstate': ['accepted']}:
                 result['status'] = True
             else:
                 result['status'] = 'ERROR'
@@ -177,7 +171,7 @@ class TestFactorySourceAccept(unittest.TestCase):
     def test_source_not_in_factory(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D&withfullhistory=1"),
+            APIURL + '/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D&withfullhistory=1',
             match_querystring = True,
             body = """
                 <collection matches="1">
@@ -251,8 +245,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/source/openSUSE:Factory/plan?view=info"),
-            match_querystring = True,
+            APIURL + "/source/openSUSE:Factory/plan",
             status = 404,
             body = """
                 <status code="unknown_package">
@@ -261,11 +254,11 @@ class TestFactorySourceAccept(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/source/openSUSE:Factory/00Meta/lookup.yml"),
+            APIURL + '/source/openSUSE:Factory/00Meta/lookup.yml',
             status = 404)
 
         httpretty.register_uri(httpretty.GET,
-            rr("/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27plan%27+or+action%2Fsource%2F%40package%3D%27plan%27%29+and+action%2F%40type%3D%27submit%27"),
+            APIURL + '/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27plan%27+or+action%2Fsource%2F%40package%3D%27plan%27%29+and+action%2F%40type%3D%27submit%27',
             match_querystring = True,
             body = """
                 <collection matches="0">
@@ -275,8 +268,8 @@ class TestFactorySourceAccept(unittest.TestCase):
         result = { 'factory_source_declined' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse(uri)
-            if u.query == 'cmd=changereviewstate&newstate=declined&by_user=factory-source':
+            query = parse_qs(urlparse(uri).query)
+            if query == {'by_user': ['factory-source'], 'cmd': ['changereviewstate'], 'newstate': ['declined']}:
                 result['factory_source_declined'] = True
             return (200, headers, '<status code="ok"/>')
 

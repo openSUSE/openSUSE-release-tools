@@ -6,19 +6,15 @@ import osc
 import re
 
 try:
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse, parse_qs
 except ImportError:
     # python 2.x
-    from urlparse import urlparse
+    from urlparse import urlparse, parse_qs
 
 from check_maintenance_incidents import MaintenanceChecker
 
-APIURL = 'https://maintenancetest.example.com'
+APIURL = 'http://maintenancetest.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
-
-
-def rr(s):
-    return re.compile(re.escape(APIURL + s))
 
 
 class TestMaintenance(unittest.TestCase):
@@ -51,8 +47,7 @@ class TestMaintenance(unittest.TestCase):
         """
 
         httpretty.register_uri(httpretty.GET,
-            rr('/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D&withfullhistory=1'),
-            match_querystring = True,
+            APIURL + '/search/request',
             body = """
                 <collection matches="1">
                   <request id="261355" creator="brassh">
@@ -127,8 +122,8 @@ class TestMaintenance(unittest.TestCase):
         result = { 'devel_review_added' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse(uri)
-            if u.query == 'cmd=addreview&by_project=server%3Adatabase&by_package=mysql-workbench':
+            query = parse_qs(urlparse(uri).query)
+            if query == {'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['accepted']}:
                 result['devel_review_added'] = True
             return (200, headers, '<status code="ok"/>')
 
@@ -164,8 +159,7 @@ class TestMaintenance(unittest.TestCase):
     def test_non_maintainer_double_review(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr('/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D&withfullhistory=1'),
-            match_querystring = True,
+            APIURL + '/search/request',
             body = """
                 <collection matches="1">
                   <request id="261355" creator="brassh">
@@ -285,8 +279,7 @@ class TestMaintenance(unittest.TestCase):
     def test_backports_submit(self):
 
         httpretty.register_uri(httpretty.GET,
-            rr('/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27maintbot%27+and+%40state%3D%27new%27%5D&withfullhistory=1'),
-            match_querystring = True,
+            APIURL + '/search/request',
             body = """
                 <collection matches="1">
                     <request id="261411" creator="lnussel">
@@ -339,15 +332,7 @@ class TestMaintenance(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/search/owner?project=openSUSE:Backports:SLE-12&binary=plan",
-            match_querystring = True,
-            body = """
-                <collection/>
-            """)
-
-        httpretty.register_uri(httpretty.GET,
-            APIURL + "/search/owner?binary=plan",
-            match_querystring = True,
+            APIURL + '/search/owner',
             body = """
                 <collection/>
             """)
@@ -355,8 +340,8 @@ class TestMaintenance(unittest.TestCase):
         result = { 'factory_review_added' : None }
 
         def change_request(result, method, uri, headers):
-            u = urlparse(uri)
-            if u.query == 'cmd=addreview&by_user=factory-source':
+            query = parse_qs(urlparse(uri).query)
+            if query == { 'cmd': ['addreview'], 'by_user': ['factory-source'] }:
                 result['factory_review_added'] = True
             return (200, headers, '<status code="ok"/>')
 
