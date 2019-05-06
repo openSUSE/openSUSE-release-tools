@@ -1,0 +1,11 @@
+[general]
+apiurl = http://api:3000
+cookiejar = /tmp/.osc_cookiejar-OBSLocal
+
+[http://api:3000]
+user=Admin
+pass=opensuse
+
+[openSUSE:Factory]
+overridden-by-local = local
+

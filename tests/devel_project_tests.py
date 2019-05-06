@@ -1,10 +1,22 @@
 from . import OBSLocal
 import unittest
 
-
-class TestDevelProject(OBSLocal.OBSLocalTestCase):
+class TestDevelProject(OBSLocal.TestCase):
     script = './devel-project.py'
     script_debug_osc = False
+
+    def setUp(self):
+        self.wf = OBSLocal.StagingWorkflow()
+        spa = self.wf.create_project('server:php:applications')
+        OBSLocal.Package('drush', project=spa)
+        OBSLocal.Package('drush', self.wf.projects['target'], devel_project='server:php:applications')
+        staging = self.wf.create_project('openSUSE:Factory:Staging', maintainer={'users': ['staging-bot']})
+        OBSLocal.Package('dashboard', project=staging)
+        self.wf.api.pseudometa_file_ensure('devel_projects', 'server:php:applications')
+
+    def tearDown(self):
+        self.osc_user('Admin')
+        del self.wf
 
     def test_list(self):
         self.osc_user('staging-bot')

@@ -8,10 +8,10 @@ import httpretty
 import osc
 
 try:
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse, parse_qs
 except ImportError:
     # python 2.x
-    from urlparse import urlparse
+    from urlparse import urlparse, parse_qs
 
 import sys
 import re
@@ -20,11 +20,15 @@ from check_tags_in_requests import TagChecker
 
 sys.path.append(".")
 
-APIURL = 'https://maintenancetest.example.com'
+APIURL = 'http://maintenancetest.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 
 
 class TestTagChecker(unittest.TestCase):
+
+    def tearDown(self):
+        httpretty.reset()
+        httpretty.disable()
 
     def setUp(self):
         """
@@ -152,18 +156,8 @@ Pico text editor while also offering a few enhancements.</description>
 
     def _run_with_data(self, accept, exists_in_factory, issues_data):
         # exists_in_factory: whether the package is exists in factory
-        httpretty.register_uri(httpretty.POST,
-                               osc.core.makeurl(APIURL, ['source', "editors", "nano"], {         'cmd': 'diff',
-                                                                                                 'onlyissues': '1',
-                                                                                                 'view': 'xml',
-                                                                                                 'opackage': 'nano',
-                                                                                                 'oproject': 'openSUSE:Factory',
-                                                                                                 'rev': '25'}),
-                               match_querystring=True,
-                               body=issues_data)
-        httpretty.register_uri(httpretty.GET,
-                               osc.core.makeurl(APIURL, ['source', "editors", "nano"], {'rev': '25', 'view': 'info'}),
-                               match_querystring=True,
+        httpretty.register_uri(httpretty.POST, APIURL + '/source/editors/nano', body=issues_data)
+        httpretty.register_uri(httpretty.GET, APIURL + '/source/editors/nano',
                                body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b"><filename>nano.spec</filename><linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
 
         if exists_in_factory is True:
@@ -188,8 +182,7 @@ Pico text editor while also offering a few enhancements.</description>
                                    body="")
 
         httpretty.register_uri(httpretty.GET,
-                               APIURL + "/request/293129",
-                               match_querystring=True,
+                               APIURL + '/request/293129',
                                body=self._request_data)
         httpretty.register_uri(httpretty.GET,
                                APIURL + "/request/293129?withhistory=1",
@@ -197,8 +190,7 @@ Pico text editor while also offering a few enhancements.</description>
                                body=self._request_withhistory)
 
         httpretty.register_uri(httpretty.GET,
-                               re.compile(re.escape(APIURL + "/search/request?")),
-                               match_querystring=True,
+                               APIURL + '/search/request',
                                body='<collection matches="0"></collection>')
 
         httpretty.register_uri(httpretty.GET,
@@ -208,10 +200,11 @@ Pico text editor while also offering a few enhancements.</description>
         result = {'state_accepted': None}
 
         def change_request(result, method, uri, headers):
-            u = urlparse(uri)
-            if u.query == 'newstate=accepted&cmd=changereviewstate&by_user=maintbot':
+            query = parse_qs(urlparse(uri).query)
+
+            if query == { 'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['accepted']}:
                 result['state_accepted'] = True
-            elif u.query == 'newstate=declined&cmd=changereviewstate&by_user=maintbot':
+            elif query == { 'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['declined']}:
                 result['state_accepted'] = False
             return (200, headers, '<status code="ok"/>')
 

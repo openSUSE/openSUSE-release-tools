@@ -5,3 +5,4 @@
 .coveralls.yml
 .docker-tmp/
 .open-build-service/
+.bash_history

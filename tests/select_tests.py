@@ -1,63 +1,81 @@
 import unittest
-
-from . import obs
+import os.path
 from osc import oscerr
+import osc.conf
+from osclib.cache import Cache
+from osclib.cache_manager import CacheManager
 from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.select_command import SelectCommand
 from osclib.stagingapi import StagingAPI
+import logging
 
+from mock import MagicMock
+from . import OBSLocal
 
 class TestSelect(unittest.TestCase):
 
-    def setUp(self):
-        """
-        Initialize the configuration
-        """
-        self.obs = obs.OBS()
-        Config(obs.APIURL, 'openSUSE:Factory')
-        self.api = StagingAPI(obs.APIURL, 'openSUSE:Factory')
-
     def test_old_frozen(self):
-        self.assertEqual(self.api.prj_frozen_enough('openSUSE:Factory:Staging:A'), False)
+        wf = OBSLocal.StagingWorkflow()
+        wf.api.prj_frozen_enough = MagicMock(return_value=False)
+
         # check it won't allow selecting
-        self.assertEqual(False, SelectCommand(self.api, 'openSUSE:Factory:Staging:A').perform(['gcc']))
+        staging = wf.create_staging('Old')
+        self.assertEqual(False, SelectCommand(wf.api, staging.name).perform(['gcc']))
 
     def test_select_comments(self):
-        c_api = CommentAPI(self.api.apiurl)
-        staging_b = 'openSUSE:Factory:Staging:B'
-        comments = c_api.get_comments(project_name=staging_b)
+        wf = OBSLocal.StagingWorkflow()
+        wf.setup_rings()
+
+        staging_b = wf.create_staging('B', freeze=True)
+
+        c_api = CommentAPI(wf.api.apiurl)
+        comments = c_api.get_comments(project_name=staging_b.name)
+
+        r1 = wf.create_submit_request('devel:wine', 'wine')
+        r2 = wf.create_submit_request('devel:gcc', 'gcc')
 
         # First select
-        self.assertEqual(True, SelectCommand(self.api, staging_b).perform(['gcc', 'wine']))
-        first_select_comments = c_api.get_comments(project_name=staging_b)
+        self.assertEqual(True, SelectCommand(wf.api, staging_b.name).perform(['gcc', 'wine']))
+        first_select_comments = c_api.get_comments(project_name=staging_b.name)
         last_id = sorted(first_select_comments.keys())[-1]
         first_select_comment = first_select_comments[last_id]
         # Only one comment is added
         self.assertEqual(len(first_select_comments), len(comments) + 1)
         # With the right content
-        self.assertTrue('request#123 for package gcc submitted by Admin' in first_select_comment['comment'])
+        expected = 'request#{} for package gcc submitted by Admin'.format(r2.reqid)
+        self.assertTrue(expected in first_select_comment['comment'])
 
         # Second select
-        self.assertEqual(True, SelectCommand(self.api, staging_b).perform(['puppet']))
-        second_select_comments = c_api.get_comments(project_name=staging_b)
+        r3 = wf.create_submit_request('devel:gcc', 'gcc8')
+        self.assertEqual(True, SelectCommand(wf.api, staging_b.name).perform(['gcc8']))
+        second_select_comments = c_api.get_comments(project_name=staging_b.name)
         last_id = sorted(second_select_comments.keys())[-1]
         second_select_comment = second_select_comments[last_id]
         # The number of comments increased by one
         self.assertEqual(len(second_select_comments) - 1, len(first_select_comments))
         self.assertNotEqual(second_select_comment['comment'], first_select_comment['comment'])
         # The new comments contains new, but not old
-        self.assertFalse('request#123 for package gcc submitted by Admin' in second_select_comment['comment'])
-        self.assertTrue('added request#321 for package puppet submitted by Admin' in second_select_comment['comment'])
+        self.assertFalse('request#{} for package gcz submitted by Admin'.format(r2.reqid) in second_select_comment['comment'])
+        self.assertTrue('added request#{} for package gcc8 submitted by Admin'.format(r3.reqid) in second_select_comment['comment'])
 
     def test_no_matches(self):
+        wf = OBSLocal.StagingWorkflow()
+
+        staging = wf.create_staging('N', freeze=True)
+
         # search for requests
         with self.assertRaises(oscerr.WrongArgs) as cm:
-            SelectCommand(self.api, 'openSUSE:Factory:Staging:B').perform(['bash'])
+            SelectCommand(wf.api, staging.name).perform(['bash'])
         self.assertEqual(str(cm.exception), "No SR# found for: bash")
 
     def test_selected(self):
-        # make sure the project is frozen recently for other tests
+        wf = OBSLocal.StagingWorkflow()
 
-        ret = SelectCommand(self.api, 'openSUSE:Factory:Staging:B').perform(['wine'])
+        wf.setup_rings()
+        staging = wf.create_staging('S', freeze=True)
+
+        request = wf.create_submit_request('devel:wine', 'wine')
+
+        ret = SelectCommand(wf.api, staging.name).perform(['wine'])
         self.assertEqual(True, ret)

@@ -10,6 +10,11 @@ from osc.core import makeurl
 from osc.core import http_GET
 from osc.core import http_POST
 
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    # python 2.x
+    from urllib2 import HTTPError
 
 class OBSLock(object):
     """Implement a distributed lock using a shared OBS resource."""
@@ -33,7 +38,7 @@ class OBSLock(object):
         if self.reason_sub:
             reason += ' ({})'.format(self.reason_sub)
         reason = reason.replace('@', 'at').replace('#', 'hash')
-        return '%s#%s@%s' % (self.user, reason, datetime.isoformat(datetime.utcnow()))
+        return '%s#%s@%s' % (self.user, reason, datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f'))
 
     def _parse(self, signature):
         """Parse a signature into an user and a timestamp."""
@@ -51,7 +56,12 @@ class OBSLock(object):
 
     def _read(self):
         url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
-        root = ET.parse(http_GET(url)).getroot()
+        try:
+            root = ET.parse(http_GET(url)).getroot()
+        except HTTPError as e:
+            if e.code == 404:
+                return None
+            raise e
         signature = None
         try:
             signature = root.find('.//value').text

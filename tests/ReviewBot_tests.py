@@ -4,14 +4,16 @@ from osclib.comments import CommentAPI
 from ReviewBot import ReviewBot
 import random
 
-
 COMMENT = 'short comment'
 PROJECT = 'openSUSE:Factory:Staging'
 
-class TestReviewBotComment(OBSLocal.OBSLocalTestCase):
+class TestReviewBotComment(OBSLocal.TestCase):
     def setUp(self):
         super(TestReviewBotComment, self).setUp()
         self.api = CommentAPI(self.apiurl)
+        self.wf = OBSLocal.StagingWorkflow()
+        self.wf.create_user('factory-auto')
+        self.project = self.wf.create_project(PROJECT)
 
         # Ensure different test runs operate in unique namespace.
         self.bot = '::'.join([type(self).__name__, str(random.getrandbits(8))])
@@ -23,6 +25,8 @@ class TestReviewBotComment(OBSLocal.OBSLocalTestCase):
     def tearDown(self):
         self.api.delete_from(project_name=PROJECT)
         self.assertFalse(len(self.api.get_comments(project_name=PROJECT)))
+        self.osc_user('Admin')
+        del self.wf
 
     def test_basic_logger(self):
         comment_count = len(self.api.get_comments(project_name=PROJECT))
@@ -159,4 +163,3 @@ class TestReviewBotComment(OBSLocal.OBSLocalTestCase):
     def comments_filtered(self, bot):
         comments = self.api.get_comments(project_name=PROJECT)
         return self.api.comment_find(comments, bot)
-

@@ -4,21 +4,12 @@ import difflib
 import subprocess
 import tempfile
 
-from . import obs
-
 from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
+from . import OBSLocal
 
-
-class TestFreeze(unittest.TestCase):
-    def setUp(self):
-        """
-        Initialize the configuration
-        """
-        self.obs = obs.OBS()
-        Config(obs.APIURL, 'openSUSE:Factory')
-        self.api = StagingAPI(obs.APIURL, 'openSUSE:Factory')
+class TestFreeze(OBSLocal.TestCase):
 
     def _get_fixture_path(self, filename):
         """
@@ -33,17 +24,18 @@ class TestFreeze(unittest.TestCase):
         return os.path.join(os.getcwd(), 'tests/fixtures')
 
     def test_bootstrap_copy(self):
+        wf = OBSLocal.StagingWorkflow()
 
-        fc = FreezeCommand(self.api)
+        fc = FreezeCommand(wf.api)
 
         fp = self._get_fixture_path('staging-meta-for-bootstrap-copy.xml')
-        fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True)
+        fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True).decode('utf-8')
 
         f = tempfile.NamedTemporaryFile(delete=False)
         f.write(fc.prj_meta_for_bootstrap_copy('openSUSE:Factory:Staging:A'))
         f.close()
 
-        output = subprocess.check_output('/usr/bin/xmllint --format %s' % f.name, shell=True)
+        output = subprocess.check_output('/usr/bin/xmllint --format %s' % f.name, shell=True).decode('utf-8')
 
         for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
             print(line)
