@@ -80,7 +80,6 @@ def maintainers_get(apiurl, project, package=None):
 
     return maintainers
 
-@memoize(session=True)
 def package_list(apiurl, project):
     url = makeurl(apiurl, ['source', project], { 'expand': 1 })
     root = ET.parse(http_GET(url)).getroot()
