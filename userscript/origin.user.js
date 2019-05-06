@@ -19,8 +19,16 @@
     var subdomain = domain_parent.endsWith('suse.de') ? 'tortuga' : 'operator';
     var url = 'https://' + subdomain + '.' + domain_parent + '/origin/package/' + project + '/' + package;
 
+    $('ul.clean_list, ul.list-unstyled').append('<li id="osrt-origin"><i class="fas fa-spinner fa-spin text-info"></i> loading origin...</li>');
     $.get({url: url, crossDomain: true, xhrFields: {withCredentials: true}, success: function(origin) {
-        if (origin.endsWith('failed')) return;
-        $('ul.clean_list, ul.list-unstyled').append('<li>Origin: <a href="/package/show/' + origin + '/' + package + '">' + origin + '</a>');
+        if (origin.endsWith('failed')) {
+            $('#osrt-origin').html('<i class="fas fa-bug text-warning"></i> failed to get origin info');
+        } else {
+            project = origin.trim();
+            if (project.endsWith('~')) {
+                project = project.slice(0, -1);
+            }
+            $('#osrt-origin').html('<i class="fas fa-external-link-alt text-info"></i> <a href="/package/show/' + project + '/' + package + '">' + origin + '</a>');
+        }
     }});
 })();
