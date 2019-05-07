@@ -14,19 +14,12 @@ env:
 
 matrix:
   include:
-    - env: TEST_SUITE=flake8
-      language: python
-      python: 3.6
-      install:
-        - pip install flake8
-      script:
-        - flake8
-        - ./dist/ci/flake-extra
     - env: TEST_SUITE=nosetests
       language: bash
       services:
         - docker
       script:
+        - docker-compose -f dist/ci/docker-compose.yml run flaker
         - for var in TRAVIS_BRANCH TRAVIS_JOB_ID TRAVIS_PULL_REQUEST; do echo "$var=${!var}"; done > travis.settings
         - docker-compose -f dist/ci/docker-compose.yml run test
       after_success:
