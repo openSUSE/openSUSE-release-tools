@@ -267,13 +267,16 @@ class StagingWorkflow(object):
                                       project_links=project_links)
         return self.projects[name]
 
-    def create_submit_request(self, project, package, text=None):
-        project = self.create_project(project)
-        package = Package(name=package, project=project)
-        package.create_commit(text)
+    def submit_package(self, package=None):
         request = Request(source_package=package, target_project=self.project)
         self.requests.append(request)
         return request
+
+    def create_submit_request(self, project, package, text=None):
+        project = self.create_project(project)
+        package = Package(name=package, project=project)
+        package.create_commit(text=text)
+        return self.submit_package(package)
 
     def create_staging(self, suffix, freeze=False, rings=None):
         project_links = []
@@ -404,8 +407,8 @@ class Package(object):
             pass
         self.project = None
 
-    def create_commit(self, text=None):
-        url = osc.core.makeurl(APIURL, ['source', self.project.name, self.name, 'README'])
+    def create_commit(self, text=None, filename='README'):
+        url = osc.core.makeurl(APIURL, ['source', self.project.name, self.name, filename])
         if not text:
             text = ''.join([random.choice(string.ascii_letters) for i in range(40)])
         osc.core.http_PUT(url, data=text)

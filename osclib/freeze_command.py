@@ -144,25 +144,8 @@ class FreezeCommand(object):
                 time.sleep(1)
             self.build_switch_bootstrap_copy('disable')
 
-        # Update the version information found in the Test-DVD package, to match openSUSE-release
-        if self.api.item_exists(prj, "openSUSE-release"):
-            version = self.api.package_version(prj, 'openSUSE-release')
-            for arch in ['x86_64', 'ppc64le']:
-                self.update_product_version(prj, 'Test-DVD-' + arch, arch, version)
-
         # Set the original build status for the project
         self.api.build_switch_prj(prj, build_status)
-
-    def update_product_version(self, project, product, arch, version):
-        if not self.api.item_exists(project, product):
-            return None
-
-        kiwifile = source_file_load(self.api.apiurl, project, product, 'PRODUCT-'+arch+'.kiwi')
-
-        tmpkiwifile = re.sub(r'<productinfo name="VERSION">.*</productinfo>', '<productinfo name="VERSION">%s</productinfo>' % version, kiwifile)
-        newkiwifile = re.sub(r'<productvar name="VERSION">.*</productvar>', '<productvar name="VERSION">%s</productvar>' % version, tmpkiwifile)
-
-        source_file_save(self.api.apiurl, project, product, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
 
     def prj_meta_for_bootstrap_copy(self, prj):
         root = ET.Element('project', {'name': prj})
@@ -242,23 +225,6 @@ class FreezeCommand(object):
         if si.find('originproject') != None:
             return None
 
-        # we have to check if its a link within the staging project
-        # in this case we need to keep the link as is, and not freezing
-        # the target. Otherwise putting kernel-source into staging prj
-        # won't get updated kernel-default (and many other cases)
-        for linked in si.findall('linked'):
-            if linked.get('project') in self.projectlinks:
-                # take the unexpanded md5 from Factory / 13.2 link
-                url = self.api.makeurl(['source', self.api.project, package],
-                                       {'view': 'info', 'nofilename': '1'})
-                # print(package, linked.get('package'), linked.get('project'))
-                f = self.api.retried_GET(url)
-                proot = ET.parse(f).getroot()
-                lsrcmd5 = proot.get('lsrcmd5')
-                if lsrcmd5 is None:
-                    raise Exception("{}/{} is not a link but we expected one".format(self.api.project, package))
-                ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
-                return package
         if package in ['rpmlint-mini-AGGR']:
             return package  # we should not freeze aggregates
         ET.SubElement(flink, 'package', {'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
