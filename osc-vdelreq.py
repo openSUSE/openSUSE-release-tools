@@ -8,6 +8,11 @@ import sys
 
 from xml.etree import cElementTree as ET
 
+try:
+    from urllib.error import HTTPError
+except ImportError:
+    from urllib2 import HTTPError
+
 import osc.core
 import osc.conf
 
@@ -23,7 +28,7 @@ def _has_binary(self, project, package):
 
 
 def list_virtually_accepted_request(self, project, opts):
-    state_cond = "state/@name='review'+or+state/@name='revoked'+or+state/@name='revoked'"
+    state_cond = "state/@name='review'+or+state/@name='revoked'"
     if opts.all:
         state_cond += "+or+state/@name='accepted'"
     query = "match=({})+and+(action/target/@project='{}'+and+action/@type='delete')+and+"\
@@ -37,6 +42,13 @@ def list_virtually_accepted_request(self, project, opts):
         id = rq.attrib['id']
         rq_state = rq.find('state').get('name')
         pkg = rq.find('action/target').get('package')
+        try:
+            osc.core.show_package_meta(self.apiurl, project, pkg)
+        except HTTPError as err:
+            if err.code == 404:
+                continue
+            raise err
+
         if rq_state != 'accepted':
             has_binary = self._has_binary(project, pkg)
         for review in rq.findall('review'):
