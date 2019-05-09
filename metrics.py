@@ -60,7 +60,8 @@ def search_capture(apiurl, queries=None, **kwargs):
 # that paginates in sets of 1000 and yields each request.
 def search_paginated_generator(apiurl, queries=None, **kwargs):
     if "action/target/@project='openSUSE:Factory'" in kwargs['request']:
-        kwargs['request'] = osc.core.xpath_join(kwargs['request'], '@id>250000', op='and')
+        # Idealy this would be 250000, but poo#48437 and lack of OBS sort.
+        kwargs['request'] = osc.core.xpath_join(kwargs['request'], '@id>450000', op='and')
 
     request_count = 0
     queries['request']['limit'] = 1000
