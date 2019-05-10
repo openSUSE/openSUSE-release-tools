@@ -30,7 +30,7 @@ deploy:
   script: ./dist/ci/docker-run obs-deploy
   on:
     branch: master
-    condition: $TEST_SUITE = distribution && $TARGET_REPO = openSUSE_Factory
+    condition: $TEST_SUITE = nosetests
 
 cache:
   directories:
