@@ -135,7 +135,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             return None
 
         # Remove first subdomain and replace with api subdomain.
-        domain_parent = '.'.join(domain.split('.')[1:])
+        domain_parent = '.'.join(domain.split('.')[-2:])
         return 'https://api.{}'.format(domain_parent)
 
     def origin_domain_get(self):
