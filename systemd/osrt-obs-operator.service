@@ -3,7 +3,7 @@ Description=openSUSE Release Tools: OBS Operator
 
 [Service]
 User=osrt-obs-operator
-ExecStart=/usr/bin/osrt-obs_operator --debug
+ExecStart=/usr/bin/osrt-obs_operator
 Restart=on-failure
 
 [Install]
