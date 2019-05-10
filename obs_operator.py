@@ -144,7 +144,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             # Strip port if present.
             domain = urlparse(origin).netloc.split(':', 2)[0]
             if '.' in domain:
-                return '.'.join(domain.split('.')[1:])
+                return '.'.join(domain.split('.')[-2:])
 
         return None
 
