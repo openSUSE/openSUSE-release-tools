@@ -154,7 +154,7 @@ class ToTestPublisher(ToTestManager):
                 notify_connection.close()
                 break
             except pika.exceptions.ConnectionClosed as e:
-                self.logger.warn('Sending AMQP event did not work: %s. Retrying try %s out of %s' % (e, t, tries))
+                self.logger.warning('Sending AMQP event did not work: %s. Retrying try %s out of %s' % (e, t, tries))
         else:
             self.logger.error('Could not send out AMQP event for %s tries, aborting.' % tries)
 

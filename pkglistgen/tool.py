@@ -188,10 +188,10 @@ class PkgListGen(ToolBase.ToolBase):
                         all_grouped.update(g.solved_packages[arch])
 
         for p in tocheck - all_grouped:
-            self.logger.warn('package %s has supplements but is not grouped', p)
+            self.logger.warning('package %s has supplements but is not grouped', p)
 
         for p in tocheck_locales - all_grouped:
-            self.logger.warn('package %s provides supported locale but is not grouped', p)
+            self.logger.warning('package %s provides supported locale but is not grouped', p)
 
     def _prepare_pool(self, arch):
         pool = solv.Pool()

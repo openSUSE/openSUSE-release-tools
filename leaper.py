@@ -179,7 +179,7 @@ class Leaper(ReviewBot.ReviewBot):
         if src_srcinfo is None:
             # source package does not exist?
             # handle here to avoid crashing on the next line
-            self.logger.warn("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
+            self.logger.warning("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
             return False
 
         if self.ibs and target_project.startswith('SUSE:SLE'):
@@ -545,7 +545,7 @@ class Leaper(ReviewBot.ReviewBot):
         elif self.source_in_factory:
             self.logger.info("perfect. the submitted sources are in or accepted for Factory")
         elif self.source_in_factory == False:
-            self.logger.warn("the submitted sources are NOT in Factory")
+            self.logger.warning("the submitted sources are NOT in Factory")
 
         if request_ok == False:
             self.logger.info("NOTE: if you think the automated review was wrong here, please talk to the release team before reopening the request")

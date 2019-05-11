@@ -126,7 +126,7 @@ class Manager42(object):
             return http_GET(url)
         except HTTPError as e:
             if 500 <= e.code <= 599:
-                logger.warn('Retrying {}'.format(url))
+                logger.warning('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -292,7 +292,7 @@ class Manager42(object):
         if not linked is None and linked.get('package') != package:
             lstring = 'subpackage of {}'.format(linked.get('package'))
             if lstring != lproject:
-                logger.warn("{} links to {} (was {})".format(package, linked.get('package'), lproject))
+                logger.warning("{} links to {} (was {})".format(package, linked.get('package'), lproject))
                 self.lookup[package] = lstring
                 self.lookup_changes += 1
             else:
@@ -306,7 +306,7 @@ class Manager42(object):
             develpkg = None
             if devel is None:
                 (dummy, develprj, develpkg) = lproject.split(';')
-                logger.warn('{} lacks devel project setting {}/{}'.format(package, develprj, develpkg))
+                logger.warning('{} lacks devel project setting {}/{}'.format(package, develprj, develpkg))
             else:
                 develprj = devel.get('project')
                 develpkg = devel.get('package')

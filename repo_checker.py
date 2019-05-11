@@ -156,7 +156,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         filename = self.project_pseudometa_file_name(project, repository)
         content = project_pseudometa_file_load(self.apiurl, project, filename)
         if not content:
-            self.logger.warn('no project_only run from which to extract existing problems')
+            self.logger.warning('no project_only run from which to extract existing problems')
             return binaries
 
         sections = self.install_check_parse(content)
@@ -210,7 +210,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if p.returncode:
             self.logger.info('install check: failed')
             if p.returncode == 126:
-                self.logger.warn('mirror cache reset due to corruption')
+                self.logger.warning('mirror cache reset due to corruption')
                 self._invalidate_all()
             elif parse:
                 # Parse output for later consumption for posting comments.
@@ -589,11 +589,11 @@ class RepoChecker(ReviewBot.ReviewBot):
             what_depends_on.remove(action.tgt_package)
 
         if len(what_depends_on):
-            self.logger.warn('{} is still a build requirement of:\n\n- {}'.format(
+            self.logger.warning('{} is still a build requirement of:\n\n- {}'.format(
                 action.tgt_package, '\n- '.join(sorted(what_depends_on))))
 
         if len(runtime_deps):
-            self.logger.warn('{} provides runtime dependencies to:\n\n- {}'.format(
+            self.logger.warning('{} provides runtime dependencies to:\n\n- {}'.format(
                 action.tgt_package, '\n- '.join(runtime_deps)))
 
         if len(self.comment_handler.lines):
