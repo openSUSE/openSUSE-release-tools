@@ -1,9 +1,9 @@
 #!/bin/bash
 
-osc-init
+set -ex
 
-osc checkout "$OBS_PACKAGE"
-cd "$OBS_PACKAGE"
+osc checkout "$OBS_PROJECT" "$OBS_PACKAGE"
+cd "$OBS_PROJECT/$OBS_PACKAGE"
 
 rm *.obscpio
 osc service disabledrun
@@ -22,9 +22,17 @@ else
   osc revert .
 fi
 
+if test -z "$OBS_TARGET_PROJECT"; then
+  OBS_TARGET_PROJECT="$(osc info | grep -oP "Link info:.*?project \K[^\s,]+")"
+fi
+if test -z "$OBS_TARGET_PACKAGE"; then
+  OBS_TARGET_PACKAGE="$(osc info | grep -oP "Link info:.*?, package \K[^\s,]+")"
+  if test -z "$OBS_TARGET_PACKAGE"; then
+    OBS_TARGET_PACKAGE=$OBS_PACKAGE
+  fi
+fi
+
 # Create submit request if none currently exists.
-OBS_TARGET_PROJECT="$(osc info | grep -oP "Link info:.*?project \K[^\s,]+")"
-OBS_TARGET_PACKAGE="$(osc info | grep -oP "Link info:.*?, package \K[^\s,]+")"
 echo "checking for existing requests to $OBS_TARGET_PROJECT/$OBS_TARGET_PACKAGE..."
 # `osc request list` is wholly inadequate for the task. :(
 if osc api "/search/request?match=(state/@name='declined'+or+state/@name='new'+or+state/@name='review')+and+action/target/@project='$OBS_TARGET_PROJECT'+and+action/target/@package='$OBS_TARGET_PACKAGE'" |
@@ -32,11 +40,11 @@ if osc api "/search/request?match=(state/@name='declined'+or+state/@name='new'+o
   osc service wait
   # Only bother making a request if there is a diff (always 6 lines since
   # binary source tarball dates changed after local run).
-  if [ "$(osc sr --diff | tee temp.diff | wc -l)" -gt 6 ] ; then
+  if [ "$(osc sr --diff $OBS_TARGET_PROJECT $OBS_TARGET_PACKAGE | tee temp.diff | wc -l)" -gt 6 ] ; then
     echo "-> creating request"
     cat temp.diff
     rm temp.diff
-    osc sr --yes -m "automatic update"
+    osc sr --yes -m "automatic update" $OBS_TARGET_PROJECT $OBS_TARGET_PACKAGE
   else
     echo "-> no difference (likely cron job)"
   fi
