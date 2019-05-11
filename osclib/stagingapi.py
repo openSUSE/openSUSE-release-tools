@@ -1008,7 +1008,7 @@ class StagingAPI(object):
         """Determine if staging project is both active and no longer pending."""
         return status['overall_state'] in ['acceptable', 'review', 'failed']
 
-    # we use a private function to mock it - httpretty and vcr don't mix well
+    # we use a private function to mock it - httpretty is all or nothing
     def _fetch_project_meta(self, project):
         url = self.makeurl(['source', project, '_project'], {'meta': '1'})
         return http_GET(url).read()
