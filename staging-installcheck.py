@@ -396,7 +396,7 @@ class InstallChecker(object):
             # Format output as markdown comment.
             parts = []
 
-            stdout = stdout.strip()
+            stdout = stdout.decode('utf-8').strip()
             if stdout:
                 parts.append(stdout + '\n')
             stderr = stderr.strip()
