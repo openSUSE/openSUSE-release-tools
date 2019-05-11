@@ -1,49 +1,11 @@
-addons:
-  apt:
-    packages:
-      # Used by dist/ci/docker-run.
-      - realpath
+language: bash
+services:
+  - docker
 
-env:
-  global:
-    - OBS_PACKAGE="openSUSE:Tools/openSUSE-release-tools"
-    - OBS_USER="jberry"
-    # OBS_PASS
-    - secure: "0MI2ZbJ+C1FoOa+rBYq3+NQBoQzE528B1mNacZx5xaH6IipFklW9TlCUSO91Pgf2l72HzNL5GhBbYGtAO9og0tyJO9Vm+7F+AUNQHQjfD46r1MyxBlACi6FGwuR+E32OIFilekJCnNKp55Cl5O2wGWUcRRVlM6/+k24dt3lkIoY="
-    - OBS_EMAIL="opensuse-releaseteam@opensuse.org"
-
-matrix:
-  include:
-    - env: TEST_SUITE=nosetests
-      language: bash
-      services:
-        - docker
-      script:
-        - docker-compose -f dist/ci/docker-compose.yml run flaker
-        - for var in TRAVIS_BRANCH TRAVIS_JOB_ID TRAVIS_PULL_REQUEST; do echo "$var=${!var}"; done > travis.settings
-        - docker-compose -f dist/ci/docker-compose.yml run test
-      after_success:
-        - coveralls
-
-deploy:
-  provider: script
-  script: ./dist/ci/docker-run obs-deploy
-  on:
-    branch: master
-    condition: $TEST_SUITE = nosetests
-
-cache:
-  directories:
-    # obs_clone.py
-    - ~/.cache/openSUSE-release-tools/request/clone
-    # distribution jobs `osc build`
-    - .docker-tmp
-  pip: true
-  # 7 days
-  timeout: 604800
-before_cache:
-  - sudo rm -rf .docker-tmp/build-root
-  - sudo chmod -R o+rw .docker-tmp
+script:
+  - docker-compose -f dist/ci/docker-compose.yml run flaker
+  - for var in TRAVIS_BRANCH TRAVIS_JOB_ID TRAVIS_PULL_REQUEST; do echo "$var=${!var}"; done > travis.settings
+  - docker-compose -f dist/ci/docker-compose.yml run test
 
 notifications:
   email:

@@ -1,0 +1,19 @@
+format_version: 3
+pipelines:
+  Update.Package.OSRT:
+    group: Admin
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+      OBS_PROJECT: openSUSE:Tools
+      OBS_PACKAGE: openSUSE-release-tools
+      OBS_TARGET_PROJECT: openSUSE:Factory
+      OBS_TARGET_PACKAGE: openSUSE-release-tools
+    materials:
+      git:
+        git: https://github.com/openSUSE/opensuse-release-tools.git
+    stages:
+    - obs-deploy:
+        resources:
+        - leaper
+        tasks:
+        - script: ./dist/ci/obs-deploy
