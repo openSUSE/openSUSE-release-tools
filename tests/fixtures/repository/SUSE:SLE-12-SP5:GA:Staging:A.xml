@@ -1,0 +1,10 @@
+<project name="SUSE:SLE-12-SP5:GA:Staging:A">
+  <title/>
+  <description/>
+  <link project="SUSE:SLE-12-SP5:GA"/>
+  <repository name="standard" linkedbuild="all">
+    <path project="SUSE:SLE-12-SP5:GA" repository="ports"/>
+    <path project="SUSE:SLE-12-SP4:Update" repository="snapshot-SP5"/>
+    <arch>x86_64</arch>
+  </repository>
+</project>

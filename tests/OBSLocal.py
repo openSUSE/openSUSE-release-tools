@@ -342,12 +342,14 @@ class Project(object):
 
         for link in project_links:
             ET.SubElement(root, 'link', { 'project': link })
-
-        url = osc.core.make_meta_url('prj', self.name, APIURL)
-        osc.core.http_PUT(url, data=ET.tostring(root))
+        self.custom_meta(ET.tostring(root))
 
     def add_package(self, package):
         self.packages.append(package)
+
+    def custom_meta(self, meta):
+        url = osc.core.make_meta_url('prj', self.name, APIURL)
+        osc.core.http_PUT(url, data=meta)
 
     def remove(self):
         if not self.name:
@@ -356,7 +358,7 @@ class Project(object):
         for package in self.packages:
             package.remove()
 
-        url = osc.core.makeurl(APIURL, ['source', self.name])
+        url = osc.core.makeurl(APIURL, ['source', self.name], {'force': 1})
         try:
             osc.core.http_DELETE(url)
         except HTTPError:

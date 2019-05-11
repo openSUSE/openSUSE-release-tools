@@ -1,0 +1,12 @@
+<project name="SUSE:SLE-12-SP3:GA">
+  <title/>
+  <description/>
+  <link project="SUSE:SLE-12-SP2:Update" vrevmode="unextend"/>
+  <repository name="standard">
+    <path project="SUSE:SLE-12-SP2:Update" repository="snapshot-SP3"/>
+    <arch>x86_64</arch>
+  </repository>
+  <repository name="ports">
+    <arch>armv7l</arch>
+  </repository>
+</project>
