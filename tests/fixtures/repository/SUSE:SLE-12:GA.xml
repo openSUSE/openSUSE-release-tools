@@ -1,0 +1,11 @@
+<project name="SUSE:SLE-12:GA">
+  <title>Code 12 SP0 GA platform</title>
+  <description>The SLE-12 GA Sources.</description>
+  <repository name="standard">
+    <arch>x86_64</arch>
+  </repository>
+  <repository name="ports">
+    <arch>armv7l</arch>
+  </repository>
+</project>
+

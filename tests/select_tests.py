@@ -19,6 +19,7 @@ from . import OBSLocal
 class TestSelect(unittest.TestCase):
 
     def setUp(self):
+        super(TestSelect, self).setUp()
         self.wf = OBSLocal.StagingWorkflow()
 
     def tearDown(self):

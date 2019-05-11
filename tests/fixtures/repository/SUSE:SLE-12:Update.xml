@@ -1,0 +1,30 @@
+<project name="SUSE:SLE-12:Update" kind="maintenance_release">
+  <title>SLE 12 SP0 Updates</title>
+  <description/>
+  <link project="SUSE:SLE-12:GA" vrevmode="extend"/>
+  <repository name="standard">
+    <path project="SUSE:SLE-12:GA" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+  <repository name="snapshot-SP5">
+    <path project="SUSE:SLE-12:GA" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+  <repository name="snapshot-SP4">
+    <path project="SUSE:SLE-12:GA" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+  <repository name="snapshot-SP3">
+    <path project="SUSE:SLE-12:GA" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+  <repository name="snapshot-SP2">
+    <path project="SUSE:SLE-12:GA" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+  <repository name="snapshot-SP1">
+    <path project="SUSE:SLE-12:GA" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+</project>
+

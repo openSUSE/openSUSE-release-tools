@@ -1,4 +1,5 @@
 from collections import namedtuple
+from collections import OrderedDict
 from datetime import datetime
 from dateutil.parser import parse as date_parse
 import re
@@ -351,26 +352,29 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
     http_POST(url, data=ET.tostring(root))
 
 @memoize(session=True)
-def repository_path_expand(apiurl, project, repo, repos=None):
+def _repository_path_expand(apiurl, project, repo, repos):
     """Recursively list underlying projects."""
 
-    if repos is None:
-        # Avoids screwy behavior where list as default shares reference for all
-        # calls which effectively means the list grows even when new project.
-        repos = []
+    # only the last repo for a project is remembered by OBS
+    if project in repos:
+        del repos[project]
 
-    if [project, repo] in repos:
-        # For some reason devel projects such as graphics include the same path
-        # twice for openSUSE:Factory/snapshot. Does not hurt anything, but
-        # cleaner not to include it twice.
-        return repos
-
-    repos.append([project, repo])
+    repos[project] = repo
 
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
     for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
-        repository_path_expand(apiurl, path.get('project', project), path.get('repository'), repos)
+        _repository_path_expand(apiurl, path.get('project', project), path.get('repository'), repos)
 
+    return repos
+
+@memoize(session=True)
+def repository_path_expand(apiurl, project, repo):
+    """Recursively list underlying projects."""
+    repodict = OrderedDict()
+    _repository_path_expand(apiurl, project, repo, repodict)
+    repos = []
+    for project, repo in repodict.items():
+        repos.append([project, repo])
     return repos
 
 @memoize(session=True)
