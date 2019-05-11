@@ -76,15 +76,15 @@ class BiArchTool(ToolBase.ToolBase):
         if 'baselibs.conf' in files:
             logger.debug('%s has baselibs', package)
             if is_multibuild:
-                logger.warn('%s is multibuild and has baselibs. canot handle that!', package)
+                logger.warning('%s is multibuild and has baselibs. canot handle that!', package)
             else:
                 ret = True
         elif '_link' in files:
             files = self.get_filelist(self.project, srcpkgname, expand = True)
             if 'baselibs.conf' in files:
-                logger.warn('%s is linked to a baselibs package', package)
+                logger.warning('%s is linked to a baselibs package', package)
         elif is_multibuild:
-            logger.warn('%s is multibuild', package)
+            logger.warning('%s is multibuild', package)
         self._has_baselibs[package] = ret
         return ret
 
@@ -138,7 +138,7 @@ class BiArchTool(ToolBase.ToolBase):
             for depnode in pnode.findall('pkgdep'):
                 depname = depnode.text
                 if depname == name:
-                    logger.warn('%s requires itself for build', name)
+                    logger.warning('%s requires itself for build', name)
                     continue
                 self.rdeps.setdefault(name, set()).add(depname)
 

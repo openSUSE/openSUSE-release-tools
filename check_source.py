@@ -117,7 +117,7 @@ class CheckSource(ReviewBot.ReviewBot):
         # Checkout and see if renaming package screws up version parsing.
         dir = os.path.expanduser('~/co/%s' % self.request.reqid)
         if os.path.exists(dir):
-            self.logger.warn('directory %s already exists' % dir)
+            self.logger.warning('directory %s already exists' % dir)
             shutil.rmtree(dir)
         os.makedirs(dir)
         os.chdir(dir)

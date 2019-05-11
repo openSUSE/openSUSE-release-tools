@@ -481,7 +481,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                                 # sometimes a previously released maintenance
                                 # update didn't cover all architectures. We can
                                 # only ignore that then.
-                                self.logger.warn("couldn't find repo %s/%s in %s/%s"%(mr.dstrepo, mr.arch, originproject, originpackage))
+                                self.logger.warning("couldn't find repo %s/%s in %s/%s"%(mr.dstrepo, mr.arch, originproject, originpackage))
                                 continue
                             matchrepos.add(MR(mr.srcrepo, mapped[(mr.dstrepo, mr.arch)].srcrepo, mr.arch))
 
@@ -879,16 +879,16 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         for mr in matchrepos:
             if not (mr.srcrepo, mr.arch) in rmap:
-                self.logger.warn("%s/%s had no build success"%(mr.srcrepo, mr.arch))
+                self.logger.warning("%s/%s had no build success"%(mr.srcrepo, mr.arch))
                 raise NotReadyYet(src_project, src_srcinfo.package, "no result")
             if rmap[(mr.srcrepo, mr.arch)]['dirty']:
-                self.logger.warn("%s/%s dirty"%(mr.srcrepo, mr.arch))
+                self.logger.warning("%s/%s dirty"%(mr.srcrepo, mr.arch))
                 raise NotReadyYet(src_project, src_srcinfo.package, "dirty")
             code = rmap[(mr.srcrepo, mr.arch)]['code']
             if code == 'broken':
                 raise SourceBroken(src_project, src_srcinfo.package)
             if code != 'succeeded' and code != 'locked' and code != 'excluded':
-                self.logger.warn("%s/%s not succeeded (%s)"%(mr.srcrepo, mr.arch, code))
+                self.logger.warning("%s/%s not succeeded (%s)"%(mr.srcrepo, mr.arch, code))
                 raise NotReadyYet(src_project, src_srcinfo.package, code)
 
     def findrepos(self, src_project, src_srcinfo, dst_project, dst_srcinfo):

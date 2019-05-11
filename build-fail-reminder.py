@@ -185,9 +185,9 @@ def main(args):
                             pass
 
             elif Reminded[package].remindCount == 3:
-                logger.warn( "Package '%s' has been failing for three weeks - let's create a bug report" % package)
+                logger.warning( "Package '%s' has been failing for three weeks - let's create a bug report" % package)
             else:
-                logger.warn( "Package '%s' is no longer maintained - send a mail to factory maintainers..." % package)
+                logger.warning( "Package '%s' is no longer maintained - send a mail to factory maintainers..." % package)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='boilerplate python commmand line program')

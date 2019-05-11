@@ -225,13 +225,13 @@ class InstallChecker(object):
 
             check = self.cycle_check(project, repository, arch)
             if not check.success:
-                self.logger.warn('Cycle check failed')
+                self.logger.warning('Cycle check failed')
                 result_comment.append(check.comment)
                 result = False
 
             check = self.install_check(target_pair, arch, directories, None, whitelist)
             if not check.success:
-                self.logger.warn('Install check failed')
+                self.logger.warning('Install check failed')
                 result_comment.append(check.comment)
                 result = False
 
@@ -240,7 +240,7 @@ class InstallChecker(object):
         else:
             result_comment.insert(0, 'Generated from {}\n'.format(self.gocd_url()))
             self.report_state('failure', self.upload_failure(project, result_comment), project, repository, buildids)
-            self.logger.warn('Not accepting {}'.format(project))
+            self.logger.warning('Not accepting {}'.format(project))
             return False
 
         return result
@@ -345,7 +345,7 @@ class InstallChecker(object):
         filename = self.project_pseudometa_file_name(project, repository)
         content = project_pseudometa_file_load(self.api.apiurl, project, filename)
         if not content:
-            self.logger.warn('no project_only run from which to extract existing problems')
+            self.logger.warning('no project_only run from which to extract existing problems')
             return binaries
 
         sections = self.install_check_parse(content)
@@ -385,7 +385,7 @@ class InstallChecker(object):
         if p.returncode:
             self.logger.info('install check: failed')
             if p.returncode == 126:
-                self.logger.warn('mirror cache reset due to corruption')
+                self.logger.warning('mirror cache reset due to corruption')
                 self._invalidate_all()
             elif parse:
                 # Parse output for later consumption for posting comments.

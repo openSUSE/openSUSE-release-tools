@@ -162,7 +162,7 @@ class Group(object):
                 for s in self.silents:
                     sel = pool.select(str(s), solv.Selection.SELECTION_NAME | solv.Selection.SELECTION_FLAT)
                     if sel.isempty():
-                        self.logger.warn('{}.{}: silent package {} not found'.format(self.name, arch, s))
+                        self.logger.warning('{}.{}: silent package {} not found'.format(self.name, arch, s))
                     else:
                         jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
