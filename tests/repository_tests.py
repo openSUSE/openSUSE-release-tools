@@ -62,3 +62,13 @@ class TestRepository(unittest.TestCase):
                           ['SUSE:SLE-12-SP1:GA', 'standard'],
                           ['SUSE:SLE-12:Update', 'snapshot-SP5'],
                           ['SUSE:SLE-12:GA', 'standard']], repos)
+
+    def test_factory_staging(self):
+        self.add_project('openSUSE:Factory')
+        self.add_project('openSUSE:Factory:Staging')
+        self.add_project('openSUSE:Factory:Staging:H')
+        repos = repository_path_expand(self.wf.api.apiurl, 'openSUSE:Factory:Staging:H', 'standard')
+        self.assertEqual([['openSUSE:Factory:Staging:H', 'standard'],
+                          ['openSUSE:Factory:Staging:H', 'bootstrap_copy'],
+                          ['openSUSE:Factory:Staging', 'standard'],
+                          ['openSUSE:Factory', 'ports']], repos)

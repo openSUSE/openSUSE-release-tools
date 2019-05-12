@@ -352,27 +352,28 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
     http_POST(url, data=ET.tostring(root))
 
 @memoize(session=True)
-def _repository_path_expand(apiurl, project, repo, repos):
+def _repository_path_expand(apiurl, project, repo):
     """Recursively list underlying projects."""
 
-    # only the last repo for a project is remembered by OBS
-    if project in repos:
-        del repos[project]
-
-    repos[project] = repo
+    repos = OrderedDict()
 
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
     for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
-        _repository_path_expand(apiurl, path.get('project', project), path.get('repository'), repos)
+        rp = repository_path_expand(apiurl, path.get('project', project), path.get('repository'))
+        for project, repo in rp:
+            # only the last repo for a project is remembered by OBS
+            if project in repos:
+                del repos[project]
+            repos[project] = repo
 
     return repos
 
 @memoize(session=True)
 def repository_path_expand(apiurl, project, repo):
     """Recursively list underlying projects."""
-    repodict = OrderedDict()
-    _repository_path_expand(apiurl, project, repo, repodict)
+    repodict = _repository_path_expand(apiurl, project, repo)
     repos = []
+    repos.append([project, repo])
     for project, repo in repodict.items():
         repos.append([project, repo])
     return repos
