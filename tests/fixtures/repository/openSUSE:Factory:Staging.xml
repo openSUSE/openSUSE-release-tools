@@ -1,0 +1,7 @@
+<project name="openSUSE:Factory:Staging">
+  <title>openSUSE Factory Staging</title>
+  <description>This is just a namespace for various staging projects</description>
+  <repository name="standard">
+    <path project="openSUSE:Factory" repository="ports"/>
+  </repository>
+</project>

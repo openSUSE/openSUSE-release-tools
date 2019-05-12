@@ -1,0 +1,18 @@
+<project name="openSUSE:Factory">
+  <title/>
+  <description/>
+  <repository name="standard" rebuild="local">
+    <arch>x86_64</arch>
+    <arch>i586</arch>
+  </repository>
+  <repository name="snapshot">
+    <arch>x86_64</arch>
+    <arch>i586</arch>
+  </repository>
+  <repository name="ports">
+    <arch>ppc64</arch>
+    <arch>ppc</arch>
+    <arch>armv6l</arch>
+    <arch>aarch64</arch>
+  </repository>
+</project>
