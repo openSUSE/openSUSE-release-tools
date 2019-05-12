@@ -28,7 +28,7 @@ pipelines:
             resources:
             - repo-checker3
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %> <%= options %>
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %> <%= options %>
 <% end -%>
   Update.Repos.Factory:
     group: Factory.pkglistgen
@@ -51,5 +51,5 @@ pipelines:
             resources:
             - repo-checker3
             tasks:
-             - script: python3 /usr/bin/osrt-pkglistgen --apiurl https://api.opensuse.org handle_update_repos <%= project %>
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>

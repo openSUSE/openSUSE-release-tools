@@ -21,7 +21,7 @@ pipelines:
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:<%= letter %>
                    --only-release-packages --force
 <% end -%>
@@ -77,7 +77,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -108,7 +108,7 @@ pipelines:
             resources:
               - repo-checker3
             tasks:
-              - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:<%= letter %>
                  --only-release-packages --force
 <% end %>
@@ -164,5 +164,5 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 <% end %>
