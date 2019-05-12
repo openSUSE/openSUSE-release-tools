@@ -1,0 +1,168 @@
+format_version: 3
+pipelines:
+  Factory.Stagings.RelPkgs:
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: Factory.pkglistgen
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Generate.Release.Package:
+        approval: manual
+        jobs:
+<% factory_stagings = %w(A B C D E F G H I J K L M N O Gcc7) -%>
+<% factory_stagings.each do |letter| -%>
+            "Staging.<%= letter %>":
+              resources:
+                - repo-checker3
+              tasks:
+                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                   --staging openSUSE:Factory:Staging:<%= letter %>
+                   --only-release-packages --force
+<% end -%>
+<% factory_stagings.each do |letter| %>
+  "Factory.Staging.<%= letter %>":
+    environment_variables:
+      STAGING_PROJECT: openSUSE:Factory:Staging:<%= letter %>
+      STAGING_API: https://api.opensuse.org
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+      PYTHONPATH: /usr/share/openSUSE-release-tools
+    group: Factory.pkglistgen
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/opensuse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - openSUSE:Factory:Staging:<%= letter %>_-_standard.yaml
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        auto_update: true
+        destination: scripts
+        whitelist:
+          - DO_NOT_TRIGGER
+      citest:
+        git: https://github.com/coolo/citest.git
+        auto_update: true
+        destination: citest
+        whitelist:
+          - DO_NOT_TRIGGER
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  python ./citest/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker3
+            tasks:
+              - script: |-
+                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker3
+        tasks:
+          - script: |-
+              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+<% end %>
+
+  Leap.Stagings.RelPkgs:
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: Leap.15.1.pkglistgen
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Generate.Release.Package:
+        approval: manual
+        jobs:
+<% leap_stagings = %w(A B C D E) -%>
+<% leap_stagings.each do |letter| -%>
+          "Staging.<%= letter %>":
+            resources:
+              - repo-checker3
+            tasks:
+              - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                 --staging openSUSE:Leap:15.1:Staging:<%= letter %>
+                 --only-release-packages --force
+<% end %>
+<% leap_stagings.each do |letter| -%>
+  "Leap.Staging.<%= letter %>":
+    environment_variables:
+      STAGING_PROJECT: openSUSE:Leap:15.1:Staging:<%= letter %>
+      STAGING_API: https://api.opensuse.org
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+      PYTHONPATH: /usr/share/openSUSE-release-tools
+    group: Leap.15.1.pkglistgen
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/opensuse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - openSUSE:Leap:15.1:Staging:<%= letter %>_-_standard.yaml
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        auto_update: true
+        destination: scripts
+        whitelist:
+          - DO_NOT_TRIGGER
+      citest:
+        git: https://github.com/coolo/citest.git
+        auto_update: true
+        destination: citest
+        whitelist:
+          - DO_NOT_TRIGGER
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  python ./citest/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker3
+            tasks:
+              - script: |-
+                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker3
+        tasks:
+          - script: |-
+              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+<% end %>
