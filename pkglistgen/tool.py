@@ -125,7 +125,7 @@ class PkgListGen(ToolBase.ToolBase):
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 for arch in archs:
                     x = group.toxml(arch, self.ignore_broken, None)
-                    x = ET.tostring(x, pretty_print=True)
+                    x = ET.tostring(x, pretty_print=True, encoding='unicode')
                     fh.write(x)
 
     def write_all_groups(self):
@@ -144,7 +144,7 @@ class PkgListGen(ToolBase.ToolBase):
                     x = group.toxml(arch, self.ignore_broken, comment)
                     # only comment first time
                     comment = None
-                    x = ET.tostring(x, pretty_print=True)
+                    x = ET.tostring(x, pretty_print=True, encoding='unicode')
                     x = re.sub(r'\s*<!-- reason:', ' <!-- reason:', x)
                     fh.write(x)
         return summary
@@ -557,7 +557,7 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             # No proper API function to perform the same operation.
             print(subprocess.check_output(
-                ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True))
+                ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True, encoding='utf-8'))
             package = Package(path)
             package.commit(msg='Automatic update', skip_local_service_run=True)
 
@@ -672,7 +672,7 @@ class PkgListGen(ToolBase.ToolBase):
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
             self.replace_product_version(product_file, product_version)
             print(subprocess.check_output(
-                [PRODUCT_SERVICE, product_file, product_dir, project]))
+                [PRODUCT_SERVICE, product_file, product_dir, project], encoding='utf-8'))
 
         for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(scope), '').split(' '):
             delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))

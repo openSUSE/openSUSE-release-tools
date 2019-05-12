@@ -20,27 +20,27 @@ pipelines:
             resources:
             - repo-checker3
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target
           openSUSE_Factory_rings:
             resources:
             - repo-checker3
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings
           openSUSE_Factory_ARM:
             resources:
             - repo-checker3
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM 
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM 
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker3
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC 
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC 
           openSUSE_Factory_zSystems:
             resources:
             - repo-checker3
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems 
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems 
   Update.Repos.Factory:
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -61,14 +61,14 @@ pipelines:
             resources:
             - repo-checker3
             tasks:
-             - script: python3 /usr/bin/osrt-pkglistgen --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory
           openSUSE_Factory_ARM:
             resources:
             - repo-checker3
             tasks:
-             - script: python3 /usr/bin/osrt-pkglistgen --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:ARM
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:ARM
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker3
             tasks:
-             - script: python3 /usr/bin/osrt-pkglistgen --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC

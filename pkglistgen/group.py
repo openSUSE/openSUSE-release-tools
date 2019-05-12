@@ -64,7 +64,7 @@ class Group(object):
             if not isinstance(package, dict):
                 self._add_to_packages(package)
                 continue
-            name = package.keys()[0]
+            name = list(package)[0]
             for rel in package[name]:
                 arch = None
                 if rel == 'locked':
@@ -325,7 +325,7 @@ class Group(object):
         if arch == '*':
             missing = self.not_found
         unresolvable = self.unresolvable.get(arch, dict())
-        for name in sorted(packages.keys() + missing.keys() + unresolvable.keys()):
+        for name in sorted(list(packages) + list(missing) + list(unresolvable)):
             if name in self.silents:
                 continue
             if name in missing:

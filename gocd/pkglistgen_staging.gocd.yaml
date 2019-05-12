@@ -19,112 +19,112 @@ pipelines:
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:A
                    --only-release-packages --force
             "Staging.B":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:B
                    --only-release-packages --force
             "Staging.C":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:C
                    --only-release-packages --force
             "Staging.D":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:D
                    --only-release-packages --force
             "Staging.E":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:E
                    --only-release-packages --force
             "Staging.F":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:F
                    --only-release-packages --force
             "Staging.G":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:G
                    --only-release-packages --force
             "Staging.H":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:H
                    --only-release-packages --force
             "Staging.I":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:I
                    --only-release-packages --force
             "Staging.J":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:J
                    --only-release-packages --force
             "Staging.K":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:K
                    --only-release-packages --force
             "Staging.L":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:L
                    --only-release-packages --force
             "Staging.M":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:M
                    --only-release-packages --force
             "Staging.N":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:N
                    --only-release-packages --force
             "Staging.O":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:O
                    --only-release-packages --force
             "Staging.Gcc7":
               resources:
                 - repo-checker3
               tasks:
-                - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:Gcc7
                    --only-release-packages --force
 
@@ -179,7 +179,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -239,7 +239,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -299,7 +299,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -359,7 +359,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -419,7 +419,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -479,7 +479,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -539,7 +539,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -599,7 +599,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -659,7 +659,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -719,7 +719,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -779,7 +779,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -839,7 +839,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -899,7 +899,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -959,7 +959,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -1019,7 +1019,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -1079,7 +1079,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -1108,35 +1108,35 @@ pipelines:
             resources:
               - repo-checker3
             tasks:
-              - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:A
                  --only-release-packages --force
           "Staging.B":
             resources:
               - repo-checker3
             tasks:
-              - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:B
                  --only-release-packages --force
           "Staging.C":
             resources:
               - repo-checker3
             tasks:
-              - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:C
                  --only-release-packages --force
           "Staging.D":
             resources:
               - repo-checker3
             tasks:
-              - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:D
                  --only-release-packages --force
           "Staging.E":
             resources:
               - repo-checker3
             tasks:
-              - script: python3 /usr/bin/osrt-pkglistgen -A https://api.opensuse.org update_and_solve
+              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:E
                  --only-release-packages --force
 
@@ -1191,7 +1191,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.B":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:B
@@ -1243,7 +1243,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.C":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:C
@@ -1295,7 +1295,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.D":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:D
@@ -1347,7 +1347,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.E":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:E
@@ -1399,5 +1399,5 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 

@@ -20,22 +20,22 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s target
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s target
           openSUSE_Leap_15.1_Ring:
             resources:
             - repo-checker
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s rings
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s rings
           openSUSE_Leap_15.1_ARM:
             resources:
             - repo-checker
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:ARM
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:ARM
           openSUSE_Leap_15.1_PowerPC:
             resources:
             - repo-checker
             tasks:
-            - script: python3 /usr/bin/osrt-pkglistgen -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:PowerPC
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:PowerPC
   Update.Repos.Leap:
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -54,10 +54,10 @@ pipelines:
         jobs:
           Leap:
             tasks:
-             - script: python3 /usr/bin/osrt-pkglistgen --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1
           Leap_ARM:
             tasks:
-             - script: python3 /usr/bin/osrt-pkglistgen --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:ARM
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:ARM
           Leap_PowerPC:
             tasks:
-             - script: python3 /usr/bin/osrt-pkglistgen --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:PowerPC
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:PowerPC
