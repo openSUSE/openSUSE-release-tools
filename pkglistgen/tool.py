@@ -365,7 +365,7 @@ class PkgListGen(ToolBase.ToolBase):
                 fh = open(solv_file, 'w')
                 p = subprocess.Popen(
                     ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
-                p.communicate('\0'.join(files))
+                p.communicate(bytes('\0'.join(files), 'utf-8'))
                 p.wait()
                 fh.close()
 
@@ -497,7 +497,7 @@ class PkgListGen(ToolBase.ToolBase):
         # the yml parser makes an array out of everything, so
         # we loop a bit more than what we support
         for group in self.output:
-            groupname = group.keys()[0]
+            groupname = list(group)[0]
             settings = group[groupname]
             if not settings:  # e.g. unsorted
                 settings = {}

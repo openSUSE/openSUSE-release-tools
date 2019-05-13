@@ -98,8 +98,8 @@ class Group(object):
     # do not repeat packages
     def ignore(self, without):
         for arch in ['*'] + self.pkglist.filtered_architectures:
-            s = set(without.solved_packages[arch].keys())
-            s |= set(without.solved_packages['*'].keys())
+            s = set(without.solved_packages[arch])
+            s |= set(without.solved_packages['*'])
             for p in s:
                 self.solved_packages[arch].pop(p, None)
         for p in without.not_found.keys():
@@ -215,7 +215,7 @@ class Group(object):
                 if not sel.isempty():
                     jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
-            for n in solved[arch].keys() + suggested.keys():
+            for n in list(solved[arch]) + list(suggested):
                 if n in locked: continue
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
@@ -232,9 +232,9 @@ class Group(object):
         # compute common packages across all architectures
         for arch in self.pkglist.filtered_architectures:
             if common is None:
-                common = set(solved[arch].keys())
+                common = set(solved[arch])
                 continue
-            common &= set(solved[arch].keys())
+            common &= set(solved[arch])
 
         if common is None:
             common = set()
@@ -266,7 +266,7 @@ class Group(object):
             if len(packages & mp):
                 overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name + '\n'
                 for p in sorted(packages & mp):
-                    for arch in m.solved_packages.keys():
+                    for arch in list(m.solved_packages):
                         if m.solved_packages[arch].get(p, None):
                             overlap.comment += '  # ' + m.name + '.' + arch + ': ' + m.solved_packages[arch][p] + '\n'
                         if self.solved_packages[arch].get(p, None):
@@ -287,12 +287,12 @@ class Group(object):
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
 
-                    if src in self.srcpkgs.keys():
+                    if src in list(self.srcpkgs):
                         self.develpkgs[s.name] = self.srcpkgs[src]
 
     def _filter_already_selected(self, modules, pkgdict):
         # erase our own - so we don't filter our own
-        for p in pkgdict.keys():
+        for p in list(pkgdict):
             already_present = False
             for m in modules:
                 for arch in ['*'] + self.pkglist.filtered_architectures:
@@ -359,5 +359,5 @@ class Group(object):
     def summary(self):
         ret = set()
         for arch in ['*'] + self.pkglist.filtered_architectures:
-            ret |= set(self.solved_packages[arch].keys())
+            ret |= set(self.solved_packages[arch])
         return ret
