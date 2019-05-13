@@ -99,9 +99,11 @@ function table_selection_set(table, value) {
         if (table.getSelectedRows()[0].getIndex() != value) {
             table.getSelectedRows()[0].deselect();
             table.selectRow(value);
+            setTimeout(function(){ table.scrollToRow(value, 'middle', false) }, 500);
         }
     } else {
         table.selectRow(value);
+        setTimeout(function(){ table.scrollToRow(value, 'middle', false) }, 500);
     }
 }
 
