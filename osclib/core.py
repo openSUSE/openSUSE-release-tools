@@ -300,18 +300,27 @@ def project_pseudometa_file_ensure(apiurl, project, filename, content, comment=N
         project_pseudometa_file_save(apiurl, project, filename, content, comment)
 
 # Should be an API call that says give me "real" packages that does not include
-# multibuild entries nor linked packages.
-def package_list_without_links(apiurl, project):
+# multibuild entries, nor linked packages, nor maintenance update packages, but
+# does included inherited packages from project layering. Unfortunately, no such
+# call provides either server-side filtering nor enough information to filter
+# client-side. As such extra calls must be made for each package to handle the
+# various different cases that can exist between products. For a more detailed
+# write-up see the opensuse-buildservice mailing list thread:
+# https://lists.opensuse.org/opensuse-buildservice/2019-05/msg00020.html.
+def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
     query = {
         'view': 'info',
         'nofilename': '1',
     }
     url = makeurl(apiurl, ['source', project], query)
     root = ETL.parse(http_GET(url)).getroot()
-    return root.xpath(
-        '//sourceinfo[not(./linked[@project="{}"]) and '
-        'not(contains(@package, ":"))'
-        'and not(starts-with(@package, "00"))]/@package'.format(project))
+
+    for package in root.xpath('sourceinfo/@package'):
+        kind = package_kind(apiurl, project, package)
+        if kind not in kinds_allowed:
+            continue
+
+        yield package
 
 def attribute_value_load(apiurl, project, name, namespace='OSRT'):
     url = makeurl(apiurl, ['source', project, '_attribute', namespace + ':' + name])

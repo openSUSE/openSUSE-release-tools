@@ -10,7 +10,7 @@ from osc import oscerr
 from osc.core import get_request_list
 from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
-from osclib.core import package_list_without_links
+from osclib.core import package_list_kind_filtered
 from osclib.core import project_attribute_list
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
@@ -139,8 +139,7 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, qui
         if previous:
             return None
 
-        packages = package_list_without_links(apiurl, project)
-        logging.debug('{} packages found in {}'.format(len(packages), project))
+        packages = package_list_kind_filtered(apiurl, project)
 
         lookup = {}
         for package in packages:

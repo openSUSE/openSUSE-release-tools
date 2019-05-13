@@ -16,7 +16,7 @@ from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.core import devel_project_fallback
 from osclib.core import entity_email
-from osclib.core import package_list_without_links
+from osclib.core import package_list_kind_filtered
 from osclib.core import request_age
 from osclib.stagingapi import StagingAPI
 from osclib.util import mail_send
@@ -107,7 +107,7 @@ def notify(args):
     # devel_project_fallback() must be used on a per package basis.
     packages = args.packages
     if not packages:
-        packages = package_list_without_links(apiurl, args.project)
+        packages = package_list_kind_filtered(apiurl, args.project)
     maintainer_map = {}
     for package in packages:
         devel_project, devel_package = devel_project_fallback(apiurl, args.project, package)
