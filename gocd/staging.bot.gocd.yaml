@@ -20,11 +20,10 @@ pipelines:
         jobs:
           Run:
             resources:
-            - repo-checker
+            - repo-checker3
             tasks:
             - script: |-
-                cd scripts
-                ./staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Factory
+                python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Factory
   SBot.Regular.Factory:
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -71,11 +70,10 @@ pipelines:
         jobs:
           Run:
             resources:
-            - repo-checker
+            - repo-checker3
             tasks:
             - script: |-
-                cd scripts
-                ./staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Leap:15.1
+                python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Leap:15.1
   SBot.Regular.Leap.15.1:
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished

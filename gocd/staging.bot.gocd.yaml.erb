@@ -22,11 +22,10 @@ pipelines:
         jobs:
           Run:
             resources:
-            - repo-checker
+            - repo-checker3
             tasks:
             - script: |-
-                cd scripts
-                ./staging-installcheck.py -A https://api.opensuse.org -p openSUSE:<%= project %>
+                python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:<%= project %>
   SBot.Regular.<%= nickname %>:
     group: <%= nickname %>.pkglistgen
     lock_behavior: unlockWhenFinished

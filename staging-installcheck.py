@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from __future__ import print_function
 
@@ -15,6 +15,7 @@ import tempfile
 import osc.core
 import argparse
 import logging
+from urllib.error import HTTPError
 
 from osclib.cache_manager import CacheManager
 from osc import conf
@@ -40,12 +41,6 @@ from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 from osclib.util import sha1_short
 from osclib.stagingapi import StagingAPI
-
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
 
 import ReviewBot
 
