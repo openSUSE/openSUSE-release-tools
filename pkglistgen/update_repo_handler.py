@@ -41,8 +41,9 @@ def dump_solv_build(baseurl):
     factoryre = re.compile(r'openSUSE-(\d*)-i586-x86_64-Build.*')
     url = urljoin(baseurl, 'media.1/media')
     with requests.get(url) as media:
+        media.encoding = 'utf-8'
         if media.status_code == requests.codes.ok:
-            for i, line in enumerate(media.iter_lines()):
+            for i, line in enumerate(media.iter_lines(decode_unicode=True)):
                 if i != 1:
                     continue
                 build = factoryre.match(line)
@@ -86,7 +87,7 @@ def parse_repomd(repo, baseurl):
     f.write(repomd.content)
     f.flush()
     os.lseek(f.fileno(), 0, os.SEEK_SET)
-    repo.add_repomdxml(f, 0)
+    repo.add_repomdxml(solv.xfopen_fd(None, f.fileno()), 0)
     url = urljoin(baseurl, location)
     with requests.get(url, stream=True) as primary:
         if primary.status_code != requests.codes.ok:
@@ -100,7 +101,7 @@ def parse_repomd(repo, baseurl):
         f.write(content.read())
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        repo.add_rpmmd(f, None, 0)
+        repo.add_rpmmd(solv.xfopen_fd(None, f.fileno()), None, 0)
         return True
 
     return False
@@ -146,7 +147,7 @@ def dump_solv(name, baseurl):
 
     repo.create_stubs()
 
-    ofh = open(name, 'w')
+    ofh = solv.xfopen(name, 'w')
     repo.write(ofh)
     ofh.flush()
 
@@ -192,7 +193,7 @@ def update_project(apiurl, project):
 
     root = yaml.safe_load(open(os.path.join(repo_dir, 'config.yml')))
     for item in root:
-        key = item.keys()[0]
+        key = list(item)[0]
         opts = item[key]
         # cast 15.1 to string :)
         key = str(key)
@@ -234,6 +235,6 @@ def update_project(apiurl, project):
         os.unlink(solv_file)
 
         url = osc.core.makeurl(apiurl, ['source', project, '000update-repos', path + '.xz'])
-        osc.core.http_PUT(url, data=open(packages_file + '.xz').read())
+        osc.core.http_PUT(url, data=open(packages_file + '.xz', 'rb').read())
 
         del pool

@@ -179,7 +179,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -239,7 +239,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -299,7 +299,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -359,7 +359,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -419,7 +419,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -479,7 +479,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -539,7 +539,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -599,7 +599,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -659,7 +659,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -719,7 +719,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -779,7 +779,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -839,7 +839,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -899,7 +899,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -959,7 +959,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -1019,7 +1019,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -1079,7 +1079,7 @@ pipelines:
           - repo-checker3
         tasks:
           - script: |-
-              python3 ./pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
