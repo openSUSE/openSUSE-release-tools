@@ -22,7 +22,11 @@
     $('ul.clean_list, ul.list-unstyled').append('<li id="osrt-origin"><i class="fas fa-spinner fa-spin text-info"></i> loading origin...</li>');
     $.get({url: url, crossDomain: true, xhrFields: {withCredentials: true}, success: function(origin) {
         if (origin.endsWith('failed')) {
-            $('#osrt-origin').html('<i class="fas fa-bug text-warning"></i> failed to get origin info');
+            if (origin.startsWith('OSRT:OriginConfig attribute missing')) {
+                $('#osrt-origin').html('');
+            } else {
+                $('#osrt-origin').html('<i class="fas fa-bug text-warning"></i> failed to get origin info');
+            }
         } else {
             project = origin.trim();
             if (project.endsWith('~')) {
