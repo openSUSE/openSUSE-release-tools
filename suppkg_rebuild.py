@@ -18,6 +18,7 @@ import osc.conf
 import osc.core
 
 from osc import oscerr
+from osc.util.helper import decode_list
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
@@ -36,7 +37,7 @@ class StagingHelper(object):
         self.api = StagingAPI(self.apiurl, self.project)
 
     def get_support_package_list(self, project, repository):
-        f = osc.core.get_buildconfig(self.apiurl, project, repository).splitlines()
+        f = decode_list(osc.core.get_buildconfig(self.apiurl, project, repository).splitlines())
         pkg_list = []
         for line in f:
             if re.match('Preinstall', line) or re.match('VM[Ii]nstall', line) or re.match('Support', line):
@@ -154,10 +155,10 @@ class StagingHelper(object):
                 osc.core.rebuild(self.apiurl, stgname, None, None, None)
                 stg.find('rebuild').text = 'unneeded'
 
-        logging.info('Updating support pkg list...')
         rebuild_data_updated = ET.tostring(root)
         logging.debug(rebuild_data_updated)
         if rebuild_data_updated != rebuild_data:
+            logging.info('Updating support pkg list...')
             self.api.pseudometa_file_save(
                 'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
 
