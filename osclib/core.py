@@ -480,6 +480,42 @@ def entity_exists(apiurl, project, package=None):
 
     return True
 
+def package_kind(apiurl, project, package):
+    if package.startswith('00'):
+        return 'meta'
+
+    if ':' in package:
+        return 'multibuild_subpackage'
+
+    if package.startswith('patchinfo.'):
+        return 'patchinfo'
+
+    try:
+        url = makeurl(apiurl, ['source', project, package, '_meta'])
+        root = ETL.parse(http_GET(url)).getroot()
+    except HTTPError as e:
+        if e.code == 404:
+            return None
+
+        raise e
+
+    if root.find('releasename') is not None:
+        return 'maintenance_update'
+
+    if root.find('bcntsynctag') is not None:
+        return 'multispec_subpackage'
+
+    # Some multispec subpackages do not have bcntsynctag, so check link.
+    link = entity_source_link(apiurl, project, package)
+    if link is not None and link.get('cicount') == 'copy':
+        kind_target = package_kind(apiurl, project, link.get('package'))
+        if kind_target != 'maintenance_update':
+            # If a multispec subpackage was updated via a maintenance update the
+            # proper link information is lost and it will be considered source.
+            return 'multispec_subpackage'
+
+    return 'source'
+
 def entity_source_link(apiurl, project, package=None):
     try:
         if package:
