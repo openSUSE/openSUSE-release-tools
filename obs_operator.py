@@ -40,7 +40,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         try:
-            with OSCRequestEnvironment(self) as oscrc_file:
+            with OSCRequestEnvironment(self, require_session=False) as oscrc_file:
                 self.send_header('Access-Control-Allow-Methods', 'GET, POST')
                 self.send_header('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
         except OSCRequestEnvironmentException as e:
@@ -286,9 +286,10 @@ class RequestHandler(BaseHTTPRequestHandler):
             yield command
 
 class OSCRequestEnvironment(object):
-    def __init__(self, handler, user=None):
+    def __init__(self, handler, user=None, require_session=True):
         self.handler = handler
         self.user = user
+        self.require_session = require_session
 
     def __enter__(self):
         apiurl = self.handler.apiurl_get()
@@ -302,7 +303,7 @@ class OSCRequestEnvironment(object):
                 raise OSCRequestEnvironmentException('origin does not match host domain')
 
         session = self.handler.session_get()
-        if not session:
+        if self.require_session and not session:
             self.handler.send_response(401)
             self.handler.end_headers()
             raise OSCRequestEnvironmentException('unable to determine session')
