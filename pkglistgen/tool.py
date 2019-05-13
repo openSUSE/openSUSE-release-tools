@@ -265,7 +265,7 @@ class PkgListGen(ToolBase.ToolBase):
                 if unsorted and g == unsorted:
                     continue
                 for a in ('*', arch):
-                    filtered -= set(g.solved_packages[a].keys())
+                    filtered -= set(g.solved_packages[a])
             for package in filtered:
                 packages.setdefault(package, []).append(arch)
 
@@ -273,8 +273,8 @@ class PkgListGen(ToolBase.ToolBase):
                 archpacks = set(archpacks)
                 unsorted.solved_packages[arch] = dict()
                 for g in modules:
-                    archpacks -= set(g.solved_packages[arch].keys())
-                    archpacks -= set(g.solved_packages['*'].keys())
+                    archpacks -= set(g.solved_packages[arch])
+                    archpacks -= set(g.solved_packages['*'])
                 unsorted.solved_packages[arch] = dict()
                 for p in archpacks:
                     unsorted.solved_packages[arch][p] = None
@@ -283,9 +283,9 @@ class PkgListGen(ToolBase.ToolBase):
             common = None
             for arch in self.filtered_architectures:
                 if common is None:
-                    common = set(unsorted.solved_packages[arch].keys())
+                    common = set(unsorted.solved_packages[arch])
                     continue
-                common &= set(unsorted.solved_packages[arch].keys())
+                common &= set(unsorted.solved_packages[arch])
             for p in common:
                 unsorted.solved_packages['*'][p] = None
                 for arch in self.filtered_architectures:
@@ -293,7 +293,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         with open(os.path.join(self.output_dir, 'unsorted.yml'), 'w') as fh:
             fh.write('unsorted:\n')
-            for p in sorted(packages.keys()):
+            for p in sorted(packages):
                 fh.write('  - ')
                 fh.write(p)
                 if len(packages[p]) != len(self.filtered_architectures):
@@ -381,7 +381,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         root = yaml.safe_load(open(os.path.join(directory, 'config.yml')))
         for item in root:
-            key = item.keys()[0]
+            key = list(item)[0]
             opts = item[key]
             # cast 15.1 to string :)
             key = str(key)
@@ -451,10 +451,10 @@ class PkgListGen(ToolBase.ToolBase):
 
                 del pool
 
-        for repo in sorted(dropped_repos.keys()):
+        for repo in sorted(dropped_repos):
             repo_output = False
             exclusives = dict()
-            for name in sorted(drops.keys()):
+            for name in sorted(drops):
                 if drops[name]['repo'] != repo:
                     continue
                 if len(drops[name]['archs']) == len(self.all_architectures):
@@ -466,7 +466,7 @@ class PkgListGen(ToolBase.ToolBase):
                     jarch = ' '.join(sorted(drops[name]['archs']))
                     exclusives.setdefault(jarch, []).append(name)
 
-            for arch in sorted(exclusives.keys()):
+            for arch in sorted(exclusives):
                 if not repo_output:
                     print('#', repo, file=output)
                     repo_output = True
@@ -709,7 +709,7 @@ class PkgListGen(ToolBase.ToolBase):
             summary_file = os.path.join(product_dir, 'summary.yml')
             with open(summary_file, 'w') as f:
                 f.write('# Summary of packages in groups')
-                for group in sorted(summary.keys()):
+                for group in sorted(summary):
                     # the unsorted group should appear filtered by
                     # unneeded.yml - so we need the content of unsorted.yml
                     # not unsorted.group (this grew a little unnaturally)
