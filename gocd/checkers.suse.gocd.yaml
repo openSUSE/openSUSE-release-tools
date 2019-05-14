@@ -1,0 +1,263 @@
+format_version: 3
+pipelines:
+  Run.Changelog.Checker:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-sle-changelog-checker
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot3
+            tasks:
+            - script: python3 ./check_tags_in_requests.py -A https://api.suse.de --verbose --user=sle-changelog-checker --review=accept-onpass --factory=openSUSE.org:openSUSE:Factory review
+  SLE.Project.Only:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-repo-checker
+    stages:
+    - Run:
+        approval: manual
+        jobs:
+          SLE_15_SP1:
+            timeout: 0
+            resources:
+            - repo-checker
+            tasks:
+            - script: /usr/bin/osrt-repo_checker -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-15-SP1:GA
+          SLE_12_SP5:
+            timeout: 0
+            resources:
+            - repo-checker
+            tasks:
+            - script: /usr/bin/osrt-repo_checker -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-12-SP5:GA
+  SLE-SP1.Manager42:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */30 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-leaper
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - leaper
+            tasks:
+            - script: python3 /usr/bin/osrt-manager_42 -A https://api.suse.de -c /etc/openSUSE-release-tools/manager_42/SUSE:SLE-15-SP1:GA.yml
+  SLE.Repochecker:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-repo-checker
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - repo-checker
+            tasks:
+            - script: /usr/bin/osrt-repo_checker -A https://api.suse.de --debug review
+  SLE.Leaper:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-leaper
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - leaper
+            tasks:
+            - script: python3 /usr/bin/osrt-leaper -A https://api.suse.de --group=leaper --user=leaper --verbose --manual-version-updates --manual-maintenance-updates review
+  SLE.Staging.Bot.Regular:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA rebuild
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA list --supersede
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA adi --by-develproject
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA select --non-interactive --merge --try-strategies
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA unselect --cleanup
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA repair --cleanup
+  SLE.Staging.Bot.Report:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */3 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: /usr/bin/osrt-staging-report --debug -A https://api.suse.de -p SUSE:SLE-15-SP1:GA
+  SLE.Check.Dups:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */10 * ? * *
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: /usr/bin/osc -A https://api.suse.de check_dups SUSE:SLE-15-SP1:GA
+  SLE.Source.Check:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-auto
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: /usr/bin/osrt-check_source -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto review
+  SLE12.SP5.InstallCheck:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */20 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-repo-checker
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run.A:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s A
+          Run.B:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s B
+          Run.C:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s C
+          Run.D:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s D
+          Run.H:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s H
+          Run.S:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s S
+          Run.V:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s V
+          Run.Y:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s Y
+
