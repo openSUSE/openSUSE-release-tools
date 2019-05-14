@@ -95,20 +95,8 @@ class ToTestReleaser(ToTestManager):
         if re.match(r'.*-(dvd9-dvd|cd-DVD)-.*', package):
             return 8539996159
 
-        if re.match(r'.*-ftp-(ftp|POOL)-', package):
-            return None
-
-        # containers have no size limit
-        if re.match(r'(opensuse|kubic)-.*-image.*', package):
-            return None
-
-        if '-Addon-NonOss-ftp-ftp' in package:
-            return None
-
-        if 'JeOS' in package or 'Kubic' in package:
-            return 4700372992
-
-        raise Exception('No maxsize for {}'.format(package))
+        # Other types don't have a fixed size limit
+        return None
 
     def package_ok(self, project, package, repository, arch):
         """Checks one package in a project and returns True if it's succeeded
