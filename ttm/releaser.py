@@ -1,4 +1,3 @@
-#! /usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # (C) 2014 mhrusecky@suse.cz, openSUSE.org
@@ -8,8 +7,6 @@
 # (C) 2017 okurz@suse.de, openSUSE.org
 # (C) 2018 dheidler@suse.de, openSUSE.org
 # Distribute under GPLv2 or GPLv3
-
-from __future__ import print_function
 
 import re
 from xml.etree import cElementTree as ET
