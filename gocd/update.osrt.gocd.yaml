@@ -3,7 +3,7 @@ pipelines:
   Update.Package.OSRT:
     group: Admin
     environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+      OSC_CONFIG: /home/go/config/oscrc-opensuse-tools-updater
       OBS_PROJECT: openSUSE:Tools
       OBS_PACKAGE: openSUSE-release-tools
       OBS_TARGET_PROJECT: openSUSE:Factory
