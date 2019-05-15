@@ -20,7 +20,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             - script: |-
                 export PYTHONPATH=$PWD/scripts
@@ -45,7 +45,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             # endless loop
             - script: |-
@@ -63,10 +63,6 @@ pipelines:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         branch: master
         destination: scripts
-      osc:
-        git: https://github.com/openSUSE/osc.git
-        branch: python3
-        destination: osc
     stages:
     - Run:
         approval:
@@ -75,16 +71,16 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             # endless loop
             - script: |-
-                export PYTHONPATH=$PWD/osc:$PWD/scripts
+                export PYTHONPATH=$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
                 git clone git://botmaster.suse.de/suse-repos.git
                 cd suse-repos
-                python3 ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE-15-SP1:GA
+                ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE-15-SP1:GA
   openSUSE.Repo.Monitor:
     group: Monitors
     lock_behavior: unlockWhenFinished
@@ -97,10 +93,6 @@ pipelines:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         branch: master
         destination: scripts
-      osc:
-        git: https://github.com/openSUSE/osc.git
-        branch: python3
-        destination: osc
     stages:
     - Run:
         approval:
@@ -109,13 +101,13 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             # endless loop
             - script: |-
-                export PYTHONPATH=$PWD/osc:$PWD/scripts
+                export PYTHONPATH=$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
                 git clone git://botmaster.suse.de/opensuse-repos.git
                 cd opensuse-repos
-                python3 ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap
+                ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap

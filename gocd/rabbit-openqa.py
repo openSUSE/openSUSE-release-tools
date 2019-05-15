@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import argparse
 import logging
@@ -15,17 +15,11 @@ from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
 from openqa_client.exceptions import ConnectionError
-try:
-    from urllib.error import HTTPError, URLError
-    from urllib.parse import quote_plus
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError, URLError
-    from urllib import quote_plus
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote_plus
 
 import requests
 from PubSubConsumer import PubSubConsumer
-
 
 class Project(object):
     def __init__(self, name):
