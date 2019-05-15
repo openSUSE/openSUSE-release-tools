@@ -418,6 +418,7 @@ exit 0
 %{_bindir}/osrt-issue-diff
 %{_bindir}/osrt-k8s-secret
 %{_bindir}/osrt-legal-auto
+%{_bindir}/osrt-nonftp2publishfilter
 %{_bindir}/osrt-obs_clone
 %{_bindir}/osrt-openqa-maintenance
 %{_bindir}/osrt-requestfinder
