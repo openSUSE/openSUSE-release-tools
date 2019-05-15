@@ -84,7 +84,7 @@ by OBS on which this bot relies.
             self.logger.debug("reject: diff contains no tags")
             return False
         if deleted > 0:
-            self.review_messages['accepted'] = 'Warning: {} issues reference(s) deleted'.format(deleted)
+            self.review_messages['accepted'] = 'Warning: {} issue reference(s) deleted'.format(deleted)
             return True
         return True
 
