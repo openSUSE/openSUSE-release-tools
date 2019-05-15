@@ -84,8 +84,8 @@ by OBS on which this bot relies.
             self.logger.debug("reject: diff contains no tags")
             return False
         if deleted > 0:
-            self.review_messages['accepted'] = 'Warning: {} issue reference(s) deleted'.format(deleted)
-            return True
+            self.review_messages['declined'] = '{} issue reference(s) deleted'.format(deleted)
+            return False
         return True
 
     def checkTagNotRequired(self, req, a):
