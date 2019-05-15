@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/python3
 
 from __future__ import print_function
 
@@ -16,12 +16,7 @@ from osc.core import http_GET, makeurl
 from osclib.core import target_archs
 from lxml import etree as ET
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
-
+from urllib.error import HTTPError
 from PubSubConsumer import PubSubConsumer
 
 class Listener(PubSubConsumer):
