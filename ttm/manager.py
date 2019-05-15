@@ -1,4 +1,3 @@
-#! /usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # (C) 2014 mhrusecky@suse.cz, openSUSE.org
@@ -9,8 +8,6 @@
 # (C) 2018 dheidler@suse.de, openSUSE.org
 # Distribute under GPLv2 or GPLv3
 
-from __future__ import print_function
-
 import ToolBase
 import logging
 import re
@@ -18,12 +15,7 @@ import yaml
 from enum import IntEnum
 from xml.etree import cElementTree as ET
 from osclib.stagingapi import StagingAPI
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
-
+from urllib.error import HTTPError
 from ttm.totest import ToTest
 
 class NotFoundException(Exception):

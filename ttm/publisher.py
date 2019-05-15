@@ -1,4 +1,3 @@
-#! /usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # (C) 2014 mhrusecky@suse.cz, openSUSE.org
