@@ -26,6 +26,7 @@ from osc.core import search
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osc.core import show_results_meta
+from osc.util.helper import decode_it
 from osclib.conf import Config
 from osclib.memoize import memoize
 
@@ -261,7 +262,7 @@ def source_file_load(apiurl, project, package, filename, revision=None):
         query['rev'] = revision
     url = makeurl(apiurl, ['source', project, package, filename], query)
     try:
-        return http_GET(url).read()
+        return decode_it(http_GET(url).read())
     except HTTPError:
         return None
 
@@ -288,7 +289,7 @@ def project_pseudometa_file_load(apiurl, project, filename, revision=None):
     project, package = project_pseudometa_package(apiurl, project)
     source_file = source_file_load(apiurl, project, package, filename, revision)
     if source_file is not None:
-        source_file = source_file.decode('utf-8').rstrip()
+        source_file = source_file.rstrip()
     return source_file
 
 def project_pseudometa_file_save(apiurl, project, filename, content, comment=None):

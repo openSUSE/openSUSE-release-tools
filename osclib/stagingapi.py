@@ -1162,8 +1162,8 @@ class StagingAPI(object):
         # If adi project, check for baselibs.conf in all specs to catch both
         # dynamically generated and static baselibs.conf.
         baselibs = False if self.is_adi_project(project) else None
-        if baselibs is False and 'baselibs.conf' in str(source_file_load(
-                self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)):
+        if baselibs is False and 'baselibs.conf' in source_file_load(
+                self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev):
             baselibs = True
 
         for sub_pkg in self.get_sub_packages(tar_pkg, project):
@@ -1173,8 +1173,8 @@ class StagingAPI(object):
             url = self.makeurl(['source', project, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
-            if baselibs is False and 'baselibs.conf' in str(source_file_load(
-                    self.apiurl, src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)):
+            if baselibs is False and 'baselibs.conf' in source_file_load(
+                    self.apiurl, src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev):
                 baselibs = True
 
         if baselibs:
