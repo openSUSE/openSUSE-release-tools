@@ -79,13 +79,13 @@ by OBS on which this bot relies.
 
         xml = ET.parse(f)
         issues = len(xml.findall('./issues/issue'))
-        removed = len(xml.findall('./issues/issue[@state="removed"]'))
+        deleted = len(xml.findall('./issues/issue[@state="deleted"]'))
         if issues == 0:
             self.logger.debug("reject: diff contains no tags")
             return False
-        if removed > 0:
-            self.review_messages['accepted'] = 'Warning: {} issues reference(s) removed'.format(removed)
-            return True
+        if deleted > 0:
+            self.review_messages['declined'] = '{} issue reference(s) deleted'.format(deleted)
+            return False
         return True
 
     def checkTagNotRequired(self, req, a):
