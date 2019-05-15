@@ -358,7 +358,7 @@ class PkgListGen(ToolBase.ToolBase):
                 args.append(d)
                 p = subprocess.Popen(args, stdout=subprocess.PIPE)
                 for line in p.stdout:
-                    self.logger.info(line.rstrip())
+                    self.logger.info(line.decode('utf-8').rstrip())
 
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
