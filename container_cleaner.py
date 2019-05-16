@@ -1,8 +1,6 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # (c) 2019 fvogt@suse.de
 # GPLv3-only
-
-from __future__ import print_function
 
 import osc.conf
 import osc.core
