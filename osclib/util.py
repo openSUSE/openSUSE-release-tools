@@ -159,4 +159,7 @@ def sha1_short(data):
     if isinstance(data, list):
         data = '::'.join(data)
 
-    return hashlib.sha1(data.encode('utf-8')).hexdigest()[:7]
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+
+    return hashlib.sha1(data).hexdigest()[:7]
