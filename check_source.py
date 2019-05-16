@@ -13,6 +13,7 @@ except ImportError:
 
 import osc.conf
 import osc.core
+from osc.util.helper import decode_list
 from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
@@ -149,9 +150,9 @@ class CheckSource(ReviewBot.ReviewBot):
         civs += 'LC_ALL=C perl %s _old %s 2>&1' % (source_checker, target_package)
         p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
         ret = os.waitpid(p.pid, 0)[1]
-        checked = p.stdout.readlines()
+        checked = decode_list(p.stdout.readlines())
 
-        output = '  '.join(checked).translate(None, '\033')
+        output = '  '.join(checked).replace('\033', '')
         os.chdir('/tmp')
 
         # ret = 0 : Good
@@ -202,7 +203,7 @@ class CheckSource(ReviewBot.ReviewBot):
     @staticmethod
     def checkout_package(*args, **kwargs):
         _stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'wb')
+        sys.stdout = open(os.devnull, 'w')
         try:
             result = osc.core.checkout_package(*args, **kwargs)
         finally:
