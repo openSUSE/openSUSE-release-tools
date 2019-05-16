@@ -86,7 +86,7 @@ def config_resolve(apiurl, project, config):
     origins = config['origins']
     i = 0
     while i < len(origins):
-        origin = origins[i].keys()[0]
+        origin = next(iter(origins[i]))
         values = origins[i][origin]
 
         if origin == '*':
@@ -354,9 +354,9 @@ def policy_get(apiurl, project, package, origin):
 def policy_get_preprocess(apiurl, origin, policy):
     project = origin.rstrip('~')
     config_project = Config.get(apiurl, project)
-    policy['pending_submission_allowed_reviews'] = filter(None, [
+    policy['pending_submission_allowed_reviews'] = list(filter(None, [
         config_resolve_variable(v, config_project, 'config_source')
-        for v in policy['pending_submission_allowed_reviews']])
+        for v in policy['pending_submission_allowed_reviews']]))
 
     return policy
 

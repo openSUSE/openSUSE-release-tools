@@ -131,7 +131,7 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, qui
         with open(lookup_path, 'r') as lookup_stream:
             lookup = yaml.safe_load(lookup_stream)
 
-            if not isinstance(lookup.itervalues().next(), dict):
+            if not isinstance(next(iter(lookup.values())), dict):
                 # Convert flat format to dictionary.
                 for package, origin in lookup.items():
                     lookup[package] = {'origin': origin}

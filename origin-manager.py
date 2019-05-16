@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from osclib.core import package_source_hash
 from osclib.origin import origin_annotation_dump
