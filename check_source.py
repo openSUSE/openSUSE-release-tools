@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import re
@@ -17,11 +17,7 @@ from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 import ReviewBot
 from osclib.conf import str2bool

@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-from __future__ import print_function
+#!/usr/bin/python3
 
 from xml.etree import cElementTree as ET
 import cmdln
@@ -11,13 +9,9 @@ import signal
 import sys
 import time
 
-try:
-    from urllib.error import HTTPError
-    from urllib.parse import quote_plus
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
-    from urllib import quote_plus
+from urllib.error import HTTPError
+from urllib.parse import quote_plus
+
 import osc.conf
 import osc.core
 
@@ -28,12 +22,6 @@ logger = logging.getLogger()
 http_GET = osc.core.http_GET
 http_DELETE = osc.core.http_DELETE
 http_POST = osc.core.http_POST
-
-try:
-    import __builtin__
-    input = getattr(__builtin__, 'raw_input')
-except (ImportError, AttributeError):
-    pass
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
 def chunks(l, n):

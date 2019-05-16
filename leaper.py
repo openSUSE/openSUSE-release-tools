@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from pprint import pprint
 import os
@@ -17,11 +17,7 @@ import osc.core
 from osclib.conf import Config
 from osclib.core import devel_project_get
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 import yaml
 import ReviewBot

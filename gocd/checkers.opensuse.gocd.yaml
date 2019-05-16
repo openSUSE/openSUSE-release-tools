@@ -1,0 +1,44 @@
+format_version: 3
+pipelines:
+  openSUSE.Source.Check:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-auto
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot3
+            tasks:
+            - script: ./check_source.py -A https://api.opensuse.org --verbose --skip-add-reviews --group factory-auto review
+  openSUSE.Repochecker:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-repo-checker
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - repo-checker3
+            tasks:
+            - script: ./repo_checker.py -A https://api.opensuse.org --debug review

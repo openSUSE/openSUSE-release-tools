@@ -1,17 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import print_function
 import argparse
 import os
 from osclib.cache_manager import CacheManager
 import subprocess
 import sys
-
-try:
-    import __builtin__
-    input = getattr(__builtin__, 'raw_input')
-except (ImportError, AttributeError):
-    pass
 
 CACHE_DIR = CacheManager.directory('k8s-secret')
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))

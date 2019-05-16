@@ -20,7 +20,7 @@ pipelines:
             resources:
             - staging-bot3
             tasks:
-            - script: python3 ./check_tags_in_requests.py -A https://api.suse.de --verbose --user=sle-changelog-checker --review=accept-onpass --factory=openSUSE.org:openSUSE:Factory review
+            - script: ./check_tags_in_requests.py -A https://api.suse.de --verbose --user=sle-changelog-checker --review=accept-onpass --factory=openSUSE.org:openSUSE:Factory review
   SLE.Project.Only:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -39,15 +39,15 @@ pipelines:
           SLE_15_SP1:
             timeout: 0
             resources:
-            - repo-checker
+            - repo-checker3
             tasks:
-            - script: /usr/bin/osrt-repo_checker -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-15-SP1:GA
+            - script: ./repo_checker.py -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-15-SP1:GA
           SLE_12_SP5:
             timeout: 0
             resources:
-            - repo-checker
+            - repo-checker3
             tasks:
-            - script: /usr/bin/osrt-repo_checker -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-12-SP5:GA
+            - script: ./repo_checker.py -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-12-SP5:GA
   SLE-SP1.Manager42:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -85,9 +85,9 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - repo-checker
+            - repo-checker3
             tasks:
-            - script: /usr/bin/osrt-repo_checker -A https://api.suse.de --debug review
+            - script: ./repo_checker.py -A https://api.suse.de --debug review
   SLE.Leaper:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -107,7 +107,7 @@ pipelines:
             resources:
             - leaper
             tasks:
-            - script: python3 /usr/bin/osrt-leaper -A https://api.suse.de --group=leaper --user=leaper --verbose --manual-version-updates --manual-maintenance-updates review
+            - script: ./leaper.py -A https://api.suse.de --group=leaper --user=leaper --verbose --manual-version-updates --manual-maintenance-updates review
   SLE.Staging.Bot.Regular:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -152,9 +152,9 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
-            - script: /usr/bin/osrt-staging-report --debug -A https://api.suse.de -p SUSE:SLE-15-SP1:GA
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP1:GA
   SLE.Check.Dups:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -173,7 +173,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             - script: /usr/bin/osc -A https://api.suse.de check_dups SUSE:SLE-15-SP1:GA
   SLE.Source.Check:
@@ -194,9 +194,9 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
-            - script: /usr/bin/osrt-check_source -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto review
+            - script: ./check_source.py -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto review
   SLE12.SP5.InstallCheck:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -218,5 +218,5 @@ pipelines:
             resources:
             - repo-checker3
             tasks:
-            - script: python3 ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s <%= letter %>
+            - script: ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s <%= letter %>
 <% end %>

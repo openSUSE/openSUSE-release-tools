@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import re
@@ -11,17 +11,7 @@ try:
 except ImportError:
     import cElementTree as ET
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
-
-try:
-    from urllib.error import URLError
-except ImportError:
-    # python 2.x
-    from urllib2 import URLError
+from urllib.error import HTTPError, URLError
 
 import ReviewBot
 
