@@ -86,7 +86,7 @@ def config_resolve(apiurl, project, config):
     origins = config['origins']
     i = 0
     while i < len(origins):
-        origin = origins[i].keys()[0]
+        origin = next(iter(origins[i]))
         values = origins[i][origin]
 
         if origin == '*':
