@@ -219,10 +219,10 @@ class RepoChecker(ReviewBot.ReviewBot):
             # Format output as markdown comment.
             parts = []
 
-            stdout = stdout.strip()
+            stdout = stdout.strip().decode('utf-8')
             if stdout:
                 parts.append('<pre>\n' + stdout + '\n' + '</pre>\n')
-            stderr = stderr.strip()
+            stderr = stderr.strip().decode('utf-8')
             if stderr:
                 parts.append('<pre>\n' + stderr + '\n' + '</pre>\n')
 
