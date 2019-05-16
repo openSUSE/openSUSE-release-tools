@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import logging
 import re
 import time
@@ -287,7 +285,7 @@ class Group(object):
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
 
-                    if src in list(self.srcpkgs):
+                    if src in self.srcpkgs:
                         self.develpkgs[s.name] = self.srcpkgs[src]
 
     def _filter_already_selected(self, modules, pkgdict):
