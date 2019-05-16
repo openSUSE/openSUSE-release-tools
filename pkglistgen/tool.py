@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import ToolBase
 import glob
 import logging
@@ -28,11 +26,7 @@ from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.cache_manager import CacheManager
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    # python 2.x
-    from urlparse import urlparse
+from urllib.parse import urlparse
 
 from pkglistgen import file_utils
 from pkglistgen.group import Group
@@ -69,7 +63,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.all_architectures = None
 
     def filter_architectures(self, architectures):
-        self.filtered_architectures = list(set(architectures) & set(self.all_architectures))
+        self.filtered_architectures = sorted(list(set(architectures) & set(self.all_architectures)))
 
     def _load_supportstatus(self):
         # XXX
