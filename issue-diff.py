@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-from __future__ import print_function
+#!/usr/bin/python3
 
 import argparse
 import bugzilla
@@ -25,12 +23,6 @@ from osclib.core import entity_email
 from osclib.core import package_list
 from osclib.git import CACHE_DIR
 from osclib.git import sync
-
-try:
-    import __builtin__
-    input = getattr(__builtin__, 'raw_input')
-except (ImportError, AttributeError):
-    pass
 
 # Issue summary can contain unicode characters and therefore a string containing
 # either summary or one in which ISSUE_SUMMARY is then placed must be unicode.

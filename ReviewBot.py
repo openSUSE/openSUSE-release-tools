@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-from __future__ import print_function
+#!/usr/bin/python3
 
 from pprint import pprint
 import os, sys, re
@@ -30,17 +28,7 @@ except ImportError:
 
 from osc import conf
 import osc.core
-try:
-    from urllib.error import HTTPError, URLError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError, URLError
-
-try:
-    import __builtin__
-    input = getattr(__builtin__, 'raw_input')
-except (ImportError, AttributeError):
-    pass
+from urllib.error import HTTPError, URLError
 
 from itertools import count
 
