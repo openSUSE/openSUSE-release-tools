@@ -1,0 +1,74 @@
+---
+<% stagings = %w(A B C D E F G H S V Y) -%>
+format_version: 3
+pipelines:
+  SLE15.SP1.Stagings.RelPkgs:
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLE15.SP1.Stagings
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Generate.Release.Package:
+        approval: manual
+        jobs:
+<% stagings.each do |letter| -%>
+          SLE.15.SP1.Staging.<%= letter %>:
+            resources:
+              - repo-checker
+            tasks:
+              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+                 --staging SUSE:SLE-15-SP1:GA:Staging:<%= letter %>
+                 --only-release-packages --force
+<% end -%>
+<% stagings.each do |letter| %>
+  SLE15.SP1.Staging.<%= letter %>:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:<%= letter %>
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+      PYTHONPATH: /usr/share/openSUSE-release-tools
+    group: SLE15.SP1.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLE-15-SP1:GA:Staging:<%= letter %>_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Check.Build.Succeeds:
+        resources:
+          - staging-bot3
+        tasks:
+          - script: |-
+              cd scripts/gocd
+              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
+              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              cd scripts/gocd
+
+              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
+              else
+                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
+                exit 1
+              fi
+  <% end -%>

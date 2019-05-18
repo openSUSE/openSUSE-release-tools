@@ -1,7 +1,7 @@
 #!BuildTag: osrt_miniobs
-FROM opensuse-leap-15.0:current
+FROM opensuse/leap:15.1
 
-RUN zypper ar http://download.opensuse.org/repositories/OBS:/Server:/Unstable/openSUSE_15.0/ 'O:S:U'; \
+RUN zypper ar http://download.opensuse.org/repositories/OBS:/Server:/Unstable/openSUSE_15.1/ 'O:S:U'; \
     zypper --gpg-auto-import-keys refresh
 
 RUN zypper install -y obs-api obs-worker obs-server \
