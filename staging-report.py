@@ -61,7 +61,7 @@ class StagingReport(object):
 
         failing_lines = [
             '* Build failed %s (%s)' % (key, ', '.join(self._package_url(p) for p in value))
-            for key, value in groups.iteritems()
+            for key, value in groups.items()
         ]
 
         report = '\n'.join(failing_lines[:MAX_LINES])
