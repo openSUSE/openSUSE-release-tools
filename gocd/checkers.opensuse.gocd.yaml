@@ -42,3 +42,45 @@ pipelines:
             - repo-checker3
             tasks:
             - script: ./repo_checker.py -A https://api.opensuse.org --debug review
+  Factory.Staging.Report:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+     spec: 0 */3 * ? * *
+    environment_variables:
+     OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+     git:
+       git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+       approval:
+         type: manual
+       jobs:
+         Run:
+           timeout: 0
+           resources:
+           - staging-bot3
+           tasks:
+           - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Factory
+  Leap.Staging.Report:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+     spec: 0 */3 * ? * *
+    environment_variables:
+     OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+     git:
+       git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+       approval:
+         type: manual
+       jobs:
+         Run:
+           timeout: 0
+           resources:
+           - staging-bot3
+           tasks:
+           - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Leap:15.1
