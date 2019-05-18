@@ -47,7 +47,7 @@ pipelines:
         auto_update: true
         whitelist:
           - SUSE:SLE-15-SP1:GA_-_images.yaml
-        destionation: repos
+        destination: repos
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
