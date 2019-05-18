@@ -47,21 +47,15 @@ pipelines:
         destination: scripts
         whitelist:
           - DO_NOT_TRIGGER
-      citest:
-        git: https://github.com/coolo/citest.git
-        auto_update: true
-        destination: citest
-        whitelist:
-          - DO_NOT_TRIGGER
     stages:
     - Checks:
         jobs:
           Check.Build.Succeeds:
             resources:
-              - staging-bot
+              - staging-bot3
             tasks:
               - script: |-
-                  python ./citest/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -81,7 +75,7 @@ pipelines:
 
     - Enable.images.repo:
        resources:
-         - staging-bot
+         - staging-bot3
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
@@ -134,21 +128,15 @@ pipelines:
         destination: scripts
         whitelist:
           - DO_NOT_TRIGGER
-      citest:
-        git: https://github.com/coolo/citest.git
-        auto_update: true
-        destination: citest
-        whitelist:
-          - DO_NOT_TRIGGER
     stages:
     - Checks:
         jobs:
           Check.Build.Succeeds:
             resources:
-              - staging-bot
+              - staging-bot3
             tasks:
               - script: |-
-                  python ./citest/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
