@@ -8,12 +8,15 @@ pipelines:
       OBS_PACKAGE: openSUSE-release-tools
       OBS_TARGET_PROJECT: openSUSE:Factory
       OBS_TARGET_PACKAGE: openSUSE-release-tools
+    timer:
+      spec: 0 0 9 ? * *
+      only_on_changes: false
     materials:
       git:
         git: https://github.com/openSUSE/opensuse-release-tools.git
     stages:
     - obs-deploy:
         resources:
-        - leaper
+        - staging-bot3
         tasks:
         - script: ./dist/ci/obs-deploy
