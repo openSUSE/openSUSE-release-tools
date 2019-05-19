@@ -100,7 +100,7 @@ class Listener(PubSubConsumer):
         else:
             self.logger.warning(
                 'unknown rabbitmq message {}'.format(method.routing_key))
-
+        self.acknowledge_message(method.delivery_tag)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

@@ -262,6 +262,17 @@ class PubSubConsumer(object):
         """
         self.logger.info('Received message # %s: %s %s',
                          basic_deliver.delivery_tag, basic_deliver.routing_key, body)
+        self.acknowledge_message(basic_deliver.delivery_tag)
+
+    def acknowledge_message(self, delivery_tag):
+        """Acknowledge the message delivery from RabbitMQ by sending a
+        Basic.Ack RPC method for the delivery tag.
+
+        :param int delivery_tag: The delivery tag from the Basic.Deliver frame
+
+        """
+        self.logger.info('Acknowledging message %s', delivery_tag)
+        self._channel.basic_ack(delivery_tag)
 
     def on_cancelok(self, _unused_frame, userdata):
         """This method is invoked by pika when RabbitMQ acknowledges the

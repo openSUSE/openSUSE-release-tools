@@ -219,7 +219,7 @@ class Listener(PubSubConsumer):
             self.on_openqa_job(json.loads(body).get('ISO'))
         else:
             self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))
-
+        self.acknowledge_message(method.delivery_tag)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
