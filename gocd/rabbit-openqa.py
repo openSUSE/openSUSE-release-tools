@@ -213,13 +213,13 @@ class Listener(PubSubConsumer):
             p.openqa_job_change(iso)
 
     def on_message(self, unused_channel, method, properties, body):
+        self.acknowledge_message(method.delivery_tag)
         if method.routing_key == '{}.obs.repo.published'.format(amqp_prefix):
             self.on_published_repo(json.loads(body))
         elif re.search(r'.openqa.', method.routing_key):
             self.on_openqa_job(json.loads(body).get('ISO'))
         else:
             self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))
-        self.acknowledge_message(method.delivery_tag)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

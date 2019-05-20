@@ -86,6 +86,7 @@ class Listener(PubSubConsumer):
                 f.write('{}: {}\n'.format(arch, ids[arch]))
 
     def on_message(self, unused_channel, method, properties, body):
+        self.acknowledge_message(method.delivery_tag)
         try:
             body = json.loads(body)
         except ValueError:
@@ -100,7 +101,6 @@ class Listener(PubSubConsumer):
         else:
             self.logger.warning(
                 'unknown rabbitmq message {}'.format(method.routing_key))
-        self.acknowledge_message(method.delivery_tag)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

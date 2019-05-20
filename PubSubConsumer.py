@@ -271,7 +271,7 @@ class PubSubConsumer(object):
         :param int delivery_tag: The delivery tag from the Basic.Deliver frame
 
         """
-        self.logger.info('Acknowledging message %s', delivery_tag)
+        self.logger.debug('Acknowledging message %s', delivery_tag)
         self._channel.basic_ack(delivery_tag)
 
     def on_cancelok(self, _unused_frame, userdata):
