@@ -16,17 +16,6 @@
 #
 
 
-%if 0%{?suse_version} > 1500 || 0%{?sle_version} >= 150100
-%bcond_without python3
-%else
-%bcond_with    python3
-%endif
-%if %{with python3}
-%define use_python python3
-%else
-%define use_python python
-%endif
-
 %global __provides_exclude ^perl.*
 %define source_dir openSUSE-release-tools
 %define announcer_filename factory-package-news
@@ -41,13 +30,14 @@ Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
 # Requires sr#704176
 BuildRequires:  osc >= 0.165.1
-BuildRequires:  %{use_python}-PyYAML
-BuildRequires:  %{use_python}-cmdln
-BuildRequires:  %{use_python}-colorama
-BuildRequires:  %{use_python}-lxml
-BuildRequires:  %{use_python}-pycurl
-BuildRequires:  %{use_python}-python-dateutil
-BuildRequires:  %{use_python}-pyxdg
+BuildRequires:  python3-osc
+BuildRequires:  python3-PyYAML
+BuildRequires:  python3-cmdln
+BuildRequires:  python3-colorama
+BuildRequires:  python3-lxml
+BuildRequires:  python3-pycurl
+BuildRequires:  python3-python-dateutil
+BuildRequires:  python3-pyxdg
 
 # Spec related requirements.
 %if 0%{?is_opensuse}
@@ -59,15 +49,15 @@ BuildRequires:  apache2-devel
 BuildRequires:  rsyslog
 BuildRequires:  systemd-rpm-macros
 
-Requires:       %{use_python}-PyYAML
-Requires:       %{use_python}-cmdln
-Requires:       %{use_python}-colorama
-Requires:       %{use_python}-lxml
+Requires:       python3-PyYAML
+Requires:       python3-cmdln
+Requires:       python3-colorama
+Requires:       python3-lxml
 # issue-diff.py, legal-auto.py, and openqa-maintenance.py
-Requires:       %{use_python}-pycurl
-Requires:       %{use_python}-python-dateutil
-Requires:       %{use_python}-pyxdg
-Requires:       %{use_python}-requests
+Requires:       python3-pycurl
+Requires:       python3-python-dateutil
+Requires:       python3-pyxdg
+Requires:       python3-requests
 # ttm/manager.py
 %if %{without python3}
 Requires:       python-enum34
@@ -99,9 +89,9 @@ Summary:        Development requirements for openSUSE-release-tools
 Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       libxml2-tools
-Requires:       %{use_python}-httpretty
-Requires:       %{use_python}-mock
-Requires:       %{use_python}-nose
+Requires:       python3-httpretty
+Requires:       python3-mock
+Requires:       python3-nose
 
 %description devel
 Development requirements for openSUSE-release-tools to be used in conjunction
@@ -258,8 +248,8 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 Requires:       obs-service-product_converter
 Requires:       osclib = %{version}
-Requires:       %{use_python}-requests
-Requires:       %{use_python}-solv
+Requires:       python3-requests
+Requires:       python3-solv
 # for compressing the .packages files in 000update-repos
 Requires:       /usr/bin/xz
 # we use the same user as repo-checker
@@ -277,6 +267,7 @@ BuildArch:      noarch
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
 Requires:       osc >= 0.165.1
+Requires:       python3-osc
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
