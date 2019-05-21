@@ -50,7 +50,7 @@ class ToTestPublisher(ToTestManager):
         in_progress = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
-            if job['result'] in ('failed', 'incomplete', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
+            if job['result'] in ('failed', 'incomplete', 'timeout_exceeded', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
                 url = makeurl(self.project.openqa_server,
                               ['api', 'v1', 'jobs', str(job['id']), 'comments'])
