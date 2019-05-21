@@ -39,8 +39,8 @@ Group:          Development/Tools/Other
 Url:            https://github.com/openSUSE/openSUSE-release-tools
 Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
-# Requires sr#512849 which provides osc_plugin_dir.
-BuildRequires:  osc >= 0.159.0
+# Requires sr#704176
+BuildRequires:  osc >= 0.165.1
 BuildRequires:  %{use_python}-PyYAML
 BuildRequires:  %{use_python}-cmdln
 BuildRequires:  %{use_python}-colorama
@@ -276,7 +276,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
-Requires:       osc >= 0.159.0
+Requires:       osc >= 0.165.1
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
@@ -285,7 +285,7 @@ Supplemental osc libraries utilized by release tools.
 Summary:        OSC plugin to check for duplicate requests
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc >= 0.159.0
+Requires:       osc >= 0.165.1
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-check_dups
@@ -295,7 +295,7 @@ OSC plugin to check for duplicate requests, see `osc check_dups --help`.
 Summary:        OSC plugin for cycle visualization
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc >= 0.159.0
+Requires:       osc >= 0.165.1
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-cycle
@@ -305,7 +305,7 @@ OSC plugin for cycle visualization, see `osc cycle --help`.
 Summary:        OSC plugin for origin management
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc >= 0.159.0
+Requires:       osc >= 0.165.1
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-origin
@@ -326,7 +326,7 @@ OSC plugin for the staging workflow, see `osc staging --help`.
 Summary:        OSC plugin to check for virtually accepted request
 Group:          Development/Tools/Other
 BuildArch:      noarch
-Requires:       osc >= 0.159.0
+Requires:       osc >= 0.165.1
 Requires:       osclib = %{version}
 
 %description -n osc-plugin-vdelreq
