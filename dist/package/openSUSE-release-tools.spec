@@ -48,7 +48,6 @@ BuildRequires:  %{use_python}-lxml
 BuildRequires:  %{use_python}-pycurl
 BuildRequires:  %{use_python}-python-dateutil
 BuildRequires:  %{use_python}-pyxdg
-BuildRequires:  %{use_python}-urlgrabber
 
 # Spec related requirements.
 %if 0%{?is_opensuse}
@@ -69,7 +68,6 @@ Requires:       %{use_python}-pycurl
 Requires:       %{use_python}-python-dateutil
 Requires:       %{use_python}-pyxdg
 Requires:       %{use_python}-requests
-Requires:       %{use_python}-urlgrabber
 # ttm/manager.py
 %if %{without python3}
 Requires:       python-enum34
