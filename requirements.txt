@@ -3,12 +3,11 @@ lxml
 PyYAML
 pycurl
 python-dateutil
-urlgrabber
 pyxdg
 cmdln
 git+https://github.com/openSUSE/osc
 influxdb
 
 # Dependencies for testing
-httpretty<0.9.6
+httpretty
 mock
