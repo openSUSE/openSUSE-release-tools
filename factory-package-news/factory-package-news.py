@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from pprint import pprint
 import os, sys, io
@@ -9,7 +9,8 @@ import pickle
 import cmdln
 import re
 
-SRPM_RE = re.compile(r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
+SRPM_RE = re.compile(
+    r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
 
 data_version = 3
 
@@ -51,12 +52,13 @@ class ChangeLogger(cmdln.Cmdln):
         changelogs = dict()
 
         def _getdata(h):
-            srpm = h['sourcerpm']
+            srpm = str(h['sourcerpm'], 'utf-8')
+            binrpm = str(h['name'], 'utf-8')
 
             evr = dict()
             for tag in ['name', 'version', 'release', 'sourcerpm']:
-                evr[tag] = h[tag]
-            pkgdata[h['name']] = evr
+                evr[tag] = str(h[tag], 'utf-8')
+            pkgdata[binrpm] = evr
 
             # dirty hack to reduce kernel spam
             m = SRPM_RE.match(srpm)
@@ -77,15 +79,17 @@ class ChangeLogger(cmdln.Cmdln):
                 'kernel-xen',
                 ):
                 srpm = '%s-%s-%s.src.rpm'%('kernel-source', m.group('version'), m.group('release'))
-                pkgdata[h['name']]['sourcerpm'] = srpm
-                print("%s -> %s"%(h['sourcerpm'], srpm))
+                pkgdata[binrpm]['sourcerpm'] = srpm
+                print("%s -> %s"%(str(h['sourcerpm'], 'utf-8'), srpm))
 
             if srpm in changelogs:
-                changelogs[srpm]['packages'].append(h['name'])
+                changelogs[srpm]['packages'].append(binrpm)
             else:
-                data = { 'packages': [ h['name'] ] }
-                for tag in ['changelogtime', 'changelogtext']:
-                    data[tag] = h[tag]
+                data = { 'packages': [ binrpm ] }
+                data['changelogtime'] = h['changelogtime']
+                data['changelogtext'] = h['changelogtext']
+                for (t, txt) in enumerate(data['changelogtext']):
+                    data['changelogtext'][t] = str(txt, 'utf-8')
                 changelogs[srpm] = data
 
         for arg in args:
@@ -165,7 +169,8 @@ class ChangeLogger(cmdln.Cmdln):
         ${cmd_option_list}
         """
         f = open(filename, 'rb')
-        (v, (pkgs, changelogs)) = pickle.load(f)
+        (v, (pkgs, changelogs)) = pickle.load(
+            f, encoding='utf-8', errors='backslashreplace')
         pprint(pkgs[package])
         pprint(changelogs[pkgs[package]['sourcerpm']])
 
@@ -193,11 +198,13 @@ class ChangeLogger(cmdln.Cmdln):
             raise Exception("%s must be a directory"%opts.dir)
 
         f = open(os.path.join(opts.dir, version1), 'rb')
-        (v, (v1pkgs, v1changelogs)) = pickle.load(f)
+        (v, (v1pkgs, v1changelogs)) = pickle.load(f,
+            encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s"%(v, version1))
         f = open(os.path.join(opts.dir, version2), 'rb')
-        (v, (v2pkgs, v2changelogs)) = pickle.load(f)
+        (v, (v2pkgs, v2changelogs)) = pickle.load(f,
+            encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s"%(v, version2))
 
@@ -233,8 +240,10 @@ class ChangeLogger(cmdln.Cmdln):
             pkgs = sorted(group[srpm])
             details += "\n==== %s ====\n"%name
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:
-                print("  %s (%s -> %s)"%(name, v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version']))
-                details += "Version update (%s -> %s)\n" % (v1pkgs[pkgs[0]]['version'], v2pkgs[pkgs[0]]['version'])
+                print("  %s (%s -> %s)" % (name, v1pkgs[pkgs[0]]['version'],
+                                           v2pkgs[pkgs[0]]['version']))
+                details += "Version update (%s -> %s)\n" % (v1pkgs[pkgs[0]]['version'],
+                                                            v2pkgs[pkgs[0]]['version'])
             else:
                 print("  %s" % name)
             if len(pkgs) > 1:
