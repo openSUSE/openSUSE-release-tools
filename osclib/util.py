@@ -35,7 +35,7 @@ def project_list_family(apiurl, project, include_update=False):
 
     prefix = ':'.join(project.split(':')[:-1])
     projects = project_list_prefix(apiurl, prefix)
-    projects = filter(family_filter, projects)
+    projects = list(filter(family_filter, projects))
 
     if project_suffix:
         for i, project in enumerate(projects):
@@ -44,7 +44,7 @@ def project_list_family(apiurl, project, include_update=False):
             else:
                 projects[i] += project_suffix
 
-    return list(projects)
+    return projects
 
 def project_list_family_prior(apiurl, project, include_self=False, last=None, include_update=False):
     """
