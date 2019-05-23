@@ -271,7 +271,7 @@ var initMoveInterface = function() {
         var project = pathParts[pathParts.length - 1];
 
         var data = JSON.stringify({'user': user, 'project': project, 'move': true, 'selection': summary});
-        var domain_parent = window.location.hostname.split('.').splice(1).join('.');
+        var domain_parent = window.location.hostname.split('.').splice(-2).join('.');
         var subdomain = domain_parent.endsWith('suse.de') ? 'tortuga' : 'operator';
         var url = 'https://' + subdomain + '.' + domain_parent + '/staging/select';
         $.post({url: url, data: data, crossDomain: true, xhrFields: {withCredentials: true},
