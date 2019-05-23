@@ -13,6 +13,7 @@ local envParams = params + {
     "obs-operator.origin_manager_report"+: {
       projects: [
         "openSUSE:Leap:15.1",
+        "openSUSE:Leap:15.1:NonFree",
       ],
     },
     "repo-checker.project_only"+: {
