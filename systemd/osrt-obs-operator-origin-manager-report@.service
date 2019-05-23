@@ -5,7 +5,7 @@ Description=openSUSE Release Tools: OBS Operator origin-manager report for %i
 User=osrt-obs-operator
 SyslogIdentifier=osrt-obs-operator-origin-manager
 ExecStart=/usr/bin/osc origin -p "%i" report --force-refresh
-RuntimeMaxSec=12 hour
+RuntimeMaxSec=24 hour
 
 [Install]
 WantedBy=multi-user.target
