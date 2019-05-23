@@ -642,7 +642,7 @@ def package_version(apiurl, project, package):
 
         raise e
 
-    return root.xpath('(//version)[last()]/text()')[0]
+    return str(root.xpath('(//version)[last()]/text()')[0])
 
 def project_attribute_list(apiurl, attribute, value=None):
     xpath = 'attribute/@name="{}"'.format(attribute)
