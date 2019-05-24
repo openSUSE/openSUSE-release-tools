@@ -5,7 +5,7 @@ Description=openSUSE Release Tools: origin-manager report for %i
 User=osrt-origin-manager
 SyslogIdentifier=osrt-origin-manager
 ExecStart=/usr/bin/osc origin -p "%i" report --diff --force-refresh --mail
-RuntimeMaxSec=12 hour
+RuntimeMaxSec=24 hour
 
 [Install]
 WantedBy=multi-user.target
