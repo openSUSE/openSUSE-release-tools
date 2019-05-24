@@ -306,6 +306,7 @@ class AcceptCommand(object):
 
             if product_spec != new_product:
                 update_version_attr = True
+                url = self.api.makeurl(['source', project, product_pkg,  product_name])
                 http_PUT(url + '?comment=Update+version', data=new_product)
 
         if update_version_attr:
