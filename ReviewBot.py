@@ -165,6 +165,8 @@ class ReviewBot(object):
 
         # give implementations a chance to do something before single requests
         self.prepare_review()
+        return_value = 0
+
         for req in self.requests:
             self.logger.info("checking %s"%req.reqid)
             self.request = req
@@ -180,6 +182,7 @@ class ReviewBot(object):
 
                     import traceback
                     traceback.print_exc()
+                    return_value = 1
 
             if self.review_mode == 'no':
                 good = None
@@ -192,6 +195,8 @@ class ReviewBot(object):
                 self._set_review(req, 'accepted')
             elif self.review_mode != 'accept-onpass':
                 self._set_review(req, 'declined')
+
+        return return_value
 
     @memoize(session=True)
     def request_override_check_users(self, project):
@@ -806,7 +811,7 @@ class CommandLineInterface(cmdln.Cmdln):
         ${cmd_option_list}
         """
         self.checker.set_request_ids(args)
-        self.checker.check_requests()
+        return self.checker.check_requests()
 
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_review(self, subcmd, opts, *args):
@@ -820,9 +825,9 @@ class CommandLineInterface(cmdln.Cmdln):
 
         def work():
             self.checker.set_request_ids_search_review()
-            self.checker.check_requests()
+            return self.checker.check_requests()
 
-        self.runner(work, opts.interval)
+        return self.runner(work, opts.interval)
 
     @cmdln.option('-n', '--interval', metavar="minutes", type="int", help="periodic interval in minutes")
     def do_project(self, subcmd, opts, project, typename):
@@ -834,9 +839,9 @@ class CommandLineInterface(cmdln.Cmdln):
 
         def work():
             self.checker.set_request_ids_project(project, typename)
-            self.checker.check_requests()
+            return self.checker.check_requests()
 
-        self.runner(work, opts.interval)
+        return self.runner(work, opts.interval)
 
     def runner(self, workfunc, interval):
         """ runs the specified callback every <interval> minutes or
@@ -846,7 +851,10 @@ class CommandLineInterface(cmdln.Cmdln):
             """raised on timeout"""
 
         if not interval:
-            return workfunc()
+            print('WORK')
+            r = workfunc()
+            print('WORK', r)
+            return r
 
         def alarm_called(nr, frame):
             raise ExTimeout()
