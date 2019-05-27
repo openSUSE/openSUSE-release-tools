@@ -177,8 +177,7 @@ class RepoChecker(ReviewBot.ReviewBot):
             for key in [prefix, '-'.join([prefix, arch])]:
                 whitelist.update(additions.get(key, '').split(' '))
 
-        whitelist = filter(None, whitelist)
-        return whitelist
+        return set(filter(None, whitelist))
 
     def install_check(self, target_project_pair, arch, directories,
                       ignore=None, whitelist=[], parse=False, no_filter=False):
@@ -555,7 +554,7 @@ class RepoChecker(ReviewBot.ReviewBot):
                 # For "leaky" ring packages in letter stagings, where the
                 # repository setup does not include the target project, that are
                 # not intended to to have all run-time dependencies satisfied.
-                whitelist = config.get('repo_checker-binary-whitelist-ring', '').split(' ')
+                whitelist = set(config.get('repo_checker-binary-whitelist-ring', '').split(' '))
 
         state_hash = self.repository_state(repository_pairs, True)
         if not self.repository_check(repository_pairs, state_hash, True,
