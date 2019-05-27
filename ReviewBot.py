@@ -845,10 +845,12 @@ class CommandLineInterface(cmdln.Cmdln):
         class ExTimeout(Exception):
             """raised on timeout"""
 
-        if interval:
-            def alarm_called(nr, frame):
-                raise ExTimeout()
-            signal.signal(signal.SIGALRM, alarm_called)
+        if not interval:
+            return workfunc()
+
+        def alarm_called(nr, frame):
+            raise ExTimeout()
+        signal.signal(signal.SIGALRM, alarm_called)
 
         while True:
             try:
@@ -856,31 +858,27 @@ class CommandLineInterface(cmdln.Cmdln):
             except Exception as e:
                 self.logger.exception(e)
 
-            if interval:
-                if os.isatty(0):
-                    self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
-                    signal.alarm(interval*60)
-                    try:
-                        input()
-                    except ExTimeout:
-                        pass
-                    signal.alarm(0)
-                    self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
-                else:
-                    self.logger.info("sleeping %d minutes." % interval)
-                    time.sleep(interval * 60)
+            if os.isatty(0):
+                self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
+                signal.alarm(interval*60)
+                try:
+                    input()
+                except ExTimeout:
+                    pass
+                signal.alarm(0)
+                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+            else:
+                self.logger.info("sleeping %d minutes." % interval)
+                time.sleep(interval * 60)
 
-                # Reset all memoize session caches which are designed for single
-                # tool run and not extended usage.
-                memoize_session_reset()
+            # Reset all memoize session caches which are designed for single
+            # tool run and not extended usage.
+            memoize_session_reset()
 
-                # Reload checker to flush instance variables and thus any config
-                # or caches they may contain.
-                self.postoptparse()
+            # Reload checker to flush instance variables and thus any config
+            # or caches they may contain.
+            self.postoptparse()
 
-                continue
-
-            break
 
 if __name__ == "__main__":
     app = CommandLineInterface()
