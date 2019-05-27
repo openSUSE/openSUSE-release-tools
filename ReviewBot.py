@@ -851,10 +851,7 @@ class CommandLineInterface(cmdln.Cmdln):
             """raised on timeout"""
 
         if not interval:
-            print('WORK')
-            r = workfunc()
-            print('WORK', r)
-            return r
+            return workfunc()
 
         def alarm_called(nr, frame):
             raise ExTimeout()
