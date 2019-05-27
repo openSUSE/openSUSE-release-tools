@@ -121,22 +121,22 @@ pipelines:
             resources:
             - repo-checker3
             tasks:
-            - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Factory
+            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Factory
           openSUSE.Leap.15.0.Update:
             timeout: 0
             resources:
             - repo-checker3
             tasks:
-            - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.0:Update
+            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.0:Update
           openSUSE.Leap.42.3.Update:
             timeout: 0
             resources:
             - repo-checker3
             tasks:
-            - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:42.3:Update
+            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:42.3:Update
           openSUSE.Leap.15.1.Update:
             timeout: 0
             resources:
             - repo-checker3
             tasks:
-            - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.1:Update
+            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.1:Update
