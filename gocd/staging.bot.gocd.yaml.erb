@@ -73,7 +73,7 @@ pipelines:
           <%= project.gsub(':', '.') %>:
             timeout: 0
             resources:
-            - repo-checker
+            - repo-checker3
             tasks:
-            - script: /usr/bin/osrt-repo_checker -A https://api.opensuse.org --debug project_only --post-comments <%= project %>
+            - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments <%= project %>
 <% end -%>
