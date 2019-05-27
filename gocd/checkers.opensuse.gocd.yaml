@@ -63,6 +63,27 @@ pipelines:
             - staging-bot3
             tasks:
             - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb http://legaldb.suse.de review
+  openSUSE.Legal.Import:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 12 ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-legal-auto
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - legal-auto
+            tasks:
+            - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb http://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-opensuse)
   Factory.Staging.Report:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
