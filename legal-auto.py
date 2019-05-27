@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # SPDX-License-Identifier: MIT
 
@@ -13,11 +13,7 @@ import requests as REQ
 import json
 import time
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 try:
     from xml.etree import cElementTree as ET
@@ -307,8 +303,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         parser.add_option("--legaldb", dest='legaldb', metavar='URL',
                           default='http://legaldb.suse.de', help="Use different legaldb deployment")
-        parser.add_option("--token", dest='token', metavar='STRING',
-                          default=False, help="Use token to authenticate")
         return parser
 
     def do_project(self, subcmd, opts, *projects):
@@ -322,8 +316,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             self.options.group = 'legal-auto'
         bot = ReviewBot.CommandLineInterface.setup_checker(self)
         bot.legaldb = self.options.legaldb
-        if self.options.token:
-            bot.legaldb_headers['Authorization'] = 'Token ' + self.options.token
+        bot.legaldb_headers['Authorization'] = 'Token ' + osc.conf.config['legaldb_token']
         return bot
 
 
