@@ -134,9 +134,9 @@ pipelines:
             - repo-checker3
             tasks:
             - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:42.3:Update
-          openSUSE.Leap.15.1:
+          openSUSE.Leap.15.1.Update:
             timeout: 0
             resources:
             - repo-checker3
             tasks:
-            - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.1
+            - script: ./repo_checker -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.1:Update
