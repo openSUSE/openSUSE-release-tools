@@ -197,26 +197,30 @@ pipelines:
             - staging-bot3
             tasks:
             - script: ./check_source.py -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto review
-  SLE12.SP5.InstallCheck:
+<% %w(A B C D H S V Y).each do |letter| -%>
+  SLE12.SP5.InstallCheck.<%= letter %>:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 */20 * ? * *
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-repo-checker
     materials:
-      git:
+      scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
+        destination: scripts
+        whitelist:
+          - DO_NOT_TRIGGER
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        destination: repos
+        whitelist:
+          - SUSE:SLE-12-SP5:GA:Staging:<%= letter %>_-_standard.yaml
     stages:
     - Run:
-        approval:
-          type: manual
-        jobs:
-<% %w(A B C D H S V Y).each do |letter| -%>
-          Run.<%= letter %>:
-            timeout: 0
-            resources:
-            - repo-checker3
-            tasks:
-            - script: ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s <%= letter %>
+        timeout: 0
+        resources:
+        - repo-checker3
+        tasks:
+        - script: |-
+           cd scripts
+           ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s <%= letter %>
 <% end %>
