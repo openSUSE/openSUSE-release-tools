@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import json
 import time
@@ -7,16 +7,12 @@ import osc.core
 import osc.conf
 import xml.etree.ElementTree as ET
 import smtplib
-from email import Charset
 from email.mime.text import MIMEText
 import email.utils
 import logging
 import argparse
 import sys
 from collections import namedtuple
-
-#http://wordeology.com/computer/how-to-send-good-unicode-email-with-python.html
-Charset.add_charset('utf-8', Charset.QP, Charset.QP, 'utf-8')
 
 # FIXME: compute from apiurl
 URL="https://build.opensuse.org/project/status/%s?ignore_pending=true&limit_to_fails=true&include_versions=false&format=json"
@@ -99,8 +95,12 @@ def main(args):
     data = json.load(json_data)
     json_data.close()
 
+    reminded_json = args.json
+    if not reminded_json:
+        reminded_json = '{}.reminded.json'.format(project)
+
     try:
-        with open('{}.reminded.json'.format(project)) as json_data:
+        with open(reminded_json) as json_data:
             RemindedLoaded = json.load(json_data)
         json_data.close()
     except:
@@ -135,7 +135,7 @@ def main(args):
             Reminded[package["name"]] = RemindedPackage(package["firstfail"], reminded, remindCount, bug)
 
     if not args.dry:
-        with open('%s.reminded.json'%project, 'w') as json_result:
+        with open(reminded_json, 'w') as json_result:
             json.dump(Reminded, json_result, default=jdefault)
 
     for package in Reminded:
@@ -199,6 +199,7 @@ if __name__ == '__main__':
     parser.add_argument("--project", metavar="PROJECT", help="which project to check", default="openSUSE:Factory")
     parser.add_argument("--relay", metavar="RELAY", help="relay server", required=True)
     parser.add_argument("--osc-debug", action="store_true", help="osc debug output")
+    parser.add_argument("--json", metavar="JSON", help="filename to store reminds")
 
     args = parser.parse_args()
 
