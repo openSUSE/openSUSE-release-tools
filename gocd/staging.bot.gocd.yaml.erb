@@ -44,7 +44,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
             - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
