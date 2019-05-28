@@ -4,6 +4,7 @@
 
 from pprint import pprint
 import os
+import os.path
 import sys
 import re
 import logging
@@ -191,7 +192,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.delete_from_db(req.reqid)
 
     def _pkl_path(self):
-        return CacheManager.directory('legal-auto')
+        return os.path.join(CacheManager.directory('legal-auto'), 'packages.dump')
 
     def update_project(self, project):
         try:
