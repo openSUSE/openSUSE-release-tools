@@ -17,4 +17,4 @@ pipelines:
         - autosubmit
         tasks:
         - script: |-
-            ./obs-autosubmit -v --debug --cache-dir /home/go/.cache/openSUSE-release-tools/autosubmit/
+            ./obs-autosubmit -v --cache-dir /home/go/.cache/openSUSE-release-tools/autosubmit/
