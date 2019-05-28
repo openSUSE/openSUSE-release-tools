@@ -2,7 +2,6 @@
 
 # SPDX-License-Identifier: MIT
 
-from pprint import pprint
 import os
 import os.path
 import sys
@@ -57,7 +56,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             return http_GET(url)
         except HTTPError as e:
             if 500 <= e.code <= 599:
-                print('Retrying {}'.format(url))
+                self.logger.debug('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -97,7 +96,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                                                 src_package, src_rev, target_project, target_package))
         to_review = self.open_reviews.get(self.request_nick(), None)
         if to_review:
-            self.logger.info("Found " + json.dumps(to_review))
+            self.logger.info("Found {}".format(json.dumps(to_review)))
         to_review = to_review or self.create_db_entry(
             src_project, src_package, src_rev)
         if not to_review:
@@ -106,7 +105,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             url = osc.core.makeurl(self.legaldb, ['package', str(pack)])
             report = REQ.get(url, headers=self.legaldb_headers).json()
             if report.get('priority', 0) != self.request_priority():
-                print('Update priority {}'.format(self.request_priority()))
+                self.logger.debug('Update priority {}'.format(self.request_priority()))
                 url = osc.core.makeurl(
                     self.legaldb, ['package', str(pack)], {'priority': self.request_priority()})
                 REQ.patch(url, headers=self.legaldb_headers)
@@ -123,7 +122,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 user = report.get('reviewing_user', None)
                 if not user:
                     self.message = 'declined'
-                    print("unacceptable without user %d" % report.get('id'))
+                    self.logger.warning("unacceptable without user %d" % report.get('id'))
                     return None
                 comment = report.get('result', None).encode('utf-8')
                 if comment:
@@ -141,7 +140,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.message = None
         result = super(LegalAuto, self).check_one_request(req)
         if result is None and self.message is not None:
-            print(self.message, req.reqid)
+            self.logger.debug("Result of {}: {}".format(req.reqid, self.message))
         return result
 
     def check_action__default(self, req, a):
@@ -246,7 +245,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 if match and match.group(1) == package:
                     lpackage = package
                 if package != lpackage:
-                    print("SKIP", package, "it links to", lpackage)
+                    self.logger.info("SKIP {}, it links to {}".format(package, lpackage))
                     skip = True
                     break
             if skip:
@@ -288,7 +287,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             return None
         if not 'saved' in obj:
             return None
-        print("PKG", tproject, sproject, package, revision, obj['saved']['id'])
+        self.logger.debug("PKG {}/{}[{}]->{} is {}".format(sproject, package, revision, tproject, obj['saved']['id']))
         self.pkg_cache[hkey] = obj['saved']['id']
         return self.pkg_cache[hkey]
 
