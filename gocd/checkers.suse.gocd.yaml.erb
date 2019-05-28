@@ -126,7 +126,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA rebuild
             - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA list --supersede

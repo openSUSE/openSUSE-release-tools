@@ -42,7 +42,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
@@ -92,7 +92,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - staging-bot3
             tasks:
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 rebuild
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 list --supersede
