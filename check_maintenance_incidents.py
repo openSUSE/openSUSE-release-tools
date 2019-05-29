@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from pprint import pprint
 import os, sys, re
@@ -13,11 +13,7 @@ except ImportError:
 
 import osc.conf
 import osc.core
-try:
-    from urllib.error import HTTPError, URLError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError, URLError
+from urllib.error import HTTPError, URLError
 import yaml
 
 from osclib.memoize import memoize
