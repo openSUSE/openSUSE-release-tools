@@ -1,0 +1,22 @@
+format_version: 3
+pipelines:
+  openSUSE.Devel.Reminder:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 15 ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        timeout: 0
+        resources:
+        - staging-bot3
+        tasks:
+        - script: ./devel-project.py reviews --min-age 3 --remind
+        - script: ./devel-project.py requests --min-age 3 --remind
