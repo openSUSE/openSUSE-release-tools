@@ -15,6 +15,7 @@ import tempfile
 import osc.core
 import argparse
 import logging
+import yaml
 from urllib.error import HTTPError
 
 from osclib.cache_manager import CacheManager
@@ -23,6 +24,7 @@ from osclib.conf import Config
 from osclib.conf import str2bool
 from osclib.core import BINARY_REGEX
 from osclib.core import builddepinfo
+from osclib.core import duplicated_binaries_in_repo
 from osclib.core import depends_on
 from osclib.core import devel_project_fallback
 from osclib.core import fileinfo_ext_all
@@ -229,6 +231,12 @@ class InstallChecker(object):
                 self.logger.warning('Install check failed')
                 result_comment.append(check.comment)
                 result = False
+
+        duplicates = duplicated_binaries_in_repo(self.api.apiurl, project, repository)
+        if len(duplicates):
+            self.logger.warning('Found duplicated binaries')
+            result_comment.append(yaml.dump(duplicates, default_flow_style=False))
+            result = False
 
         if result:
             self.report_state('success', self.gocd_url(), project, repository, buildids)
