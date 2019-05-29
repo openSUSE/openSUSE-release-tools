@@ -160,6 +160,7 @@ DEFAULT = {
         'staging-archs': '',
         'staging-dvd-archs': '',
         'staging-required-checks-adi': '',
+        'installcheck-ignore-duplicated-binaries': '',
         'onlyadi': '',
         'rings': '',
         'nonfree': '',
