@@ -1,13 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import argparse
 import logging
 import sys
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 import re
 import yaml
