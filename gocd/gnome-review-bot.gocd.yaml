@@ -14,6 +14,6 @@ pipelines:
     stages:
     - Run:
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: ./check_source.py --verbose --skip-add-reviews review

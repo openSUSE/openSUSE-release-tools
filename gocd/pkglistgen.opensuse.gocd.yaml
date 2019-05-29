@@ -18,27 +18,27 @@ pipelines:
         jobs:
           openSUSE_Factory_target:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target
           openSUSE_Factory_rings:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings
           openSUSE_Factory_ARM:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM
           openSUSE_Factory_PowerPC:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC
           openSUSE_Factory_zSystems:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems
   Update.Repos.Factory:
@@ -59,17 +59,17 @@ pipelines:
         jobs:
           openSUSE_Factory:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory
           openSUSE_Factory_ARM:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:ARM
           openSUSE_Factory_PowerPC:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
   Pkglistgen.openSUSE_Leap:
@@ -90,22 +90,22 @@ pipelines:
         jobs:
           openSUSE_Leap_15.1_target:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s target
           openSUSE_Leap_15.1_rings:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s rings
           openSUSE_Leap_15.1_ARM:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:ARM
           openSUSE_Leap_15.1_PowerPC:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:PowerPC
   Update.Repos.Leap:
@@ -126,16 +126,16 @@ pipelines:
         jobs:
           openSUSE_Leap_15.1:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1
           openSUSE_Leap_15.1_ARM:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:ARM
           openSUSE_Leap_15.1_PowerPC:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:PowerPC

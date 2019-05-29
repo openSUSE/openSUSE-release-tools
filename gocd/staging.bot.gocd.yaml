@@ -20,7 +20,7 @@ pipelines:
         jobs:
           Run:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: |-
                 python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Factory
@@ -42,7 +42,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
@@ -70,7 +70,7 @@ pipelines:
         jobs:
           Run:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: |-
                 python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Leap:15.1
@@ -92,7 +92,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 rebuild
             - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 list --supersede
@@ -119,24 +119,24 @@ pipelines:
           openSUSE.Factory:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Factory
           openSUSE.Leap.15.0.Update:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.0:Update
           openSUSE.Leap.42.3.Update:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:42.3:Update
           openSUSE.Leap.15.1.Update:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.1:Update
