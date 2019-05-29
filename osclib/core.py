@@ -730,3 +730,32 @@ def request_remote_identifier(apiurl, apiurl_remote, request_id):
         return issue_tracker_label_apply(tracker, request_id)
 
     return request_id
+
+def duplicated_binaries_in_repo(apiurl, project, repository):
+    duplicates = {}
+    for arch in sorted(target_archs(apiurl, project, repository), reverse=True):
+        package_binaries, _ = package_binary_list(
+            apiurl, project, repository, arch,
+            strip_multibuild=False, exclude_src_debug=True)
+        binaries = {}
+        for pb in package_binaries:
+            if pb.arch != 'noarch' and pb.arch != arch:
+                continue
+
+            binaries.setdefault(arch, {})
+
+            if pb.name in binaries[arch]:
+                duplicates.setdefault(str(arch), {})
+                duplicates[arch].setdefault(pb.name, set())
+                duplicates[arch][pb.name].add(pb.package)
+                duplicates[arch][pb.name].add(binaries[arch][pb.name])
+                continue
+
+            binaries[arch][pb.name] = pb.package
+
+    # convert sets to lists for readable yaml
+    for arch in duplicates.keys():
+        for name in duplicates[arch].keys():
+            duplicates[arch][name] = list(duplicates[arch][name])
+
+    return duplicates
