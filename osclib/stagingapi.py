@@ -1,21 +1,10 @@
-from __future__ import print_function
-
-try:
-    # python2
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
+from io import StringIO
 from datetime import datetime
 import dateutil.parser
 import json
 import logging
 import textwrap
-try:
-    from urllib.error import HTTPError, URLError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError, URLError
+from urllib.error import HTTPError, URLError
 
 import time
 import re
@@ -44,6 +33,7 @@ from osc.core import search
 from osc.core import show_project_meta
 from osc.core import show_project_sourceinfo
 from osc.core import streamfile
+from osc.util.helper import decode_it
 
 from osclib.cache import Cache
 from osclib.core import devel_project_get
@@ -925,8 +915,7 @@ class StagingAPI(object):
     # Modified from osc.core.print_buildlog()
     def buildlog_get(self, prj, package, repository, arch, offset=0, strip_time=False, last=False):
         # to protect us against control characters
-        import string
-        all_bytes = string.maketrans('', '')
+        all_bytes = bytes.maketrans(b'', b'')
         remove_bytes = all_bytes[:8] + all_bytes[14:32]  # accept tabs and newlines
 
         query = {'nostream': '1', 'start': '%s' % offset}
@@ -941,7 +930,7 @@ class StagingAPI(object):
                 offset += len(data)
                 if strip_time:
                     data = buildlog_strip_time(data)
-                log.write(data.translate(all_bytes, remove_bytes))
+                log.write(decode_it(data.translate(all_bytes, remove_bytes)))
             if start_offset == offset:
                 break
 
