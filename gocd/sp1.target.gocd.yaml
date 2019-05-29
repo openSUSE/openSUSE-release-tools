@@ -59,7 +59,7 @@ pipelines:
     stages:
     - Expect.Images.To.Finish:
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: |
             export PYTHONPATH=scripts
@@ -72,7 +72,7 @@ pipelines:
         environment_variables:
           OSC_CONFIG: /home/go/config/oscrc-totest-manager
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: |-
             for product in kiwi-templates-SLES15-JeOS \

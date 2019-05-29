@@ -15,7 +15,7 @@ pipelines:
     - Run:
         approval: manual
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: |-
           ./build-fail-reminder.py --sender="DimStar / Dominique Leuenberger <dimstar@opensuse.org>" --project=openSUSE:Factory --relay=relay.suse.de --json=/home/go/config/openSUSE:Factory.reminded.json --debug

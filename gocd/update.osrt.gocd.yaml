@@ -17,6 +17,6 @@ pipelines:
     stages:
     - obs-deploy:
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: ./dist/ci/obs-deploy

@@ -17,7 +17,7 @@ pipelines:
     - Run:
         approval: manual
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: |-
             scripts/container_cleaner.py --verbose run openSUSE:Containers:Tumbleweed

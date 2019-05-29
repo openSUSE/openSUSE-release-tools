@@ -16,7 +16,7 @@ pipelines:
           type: manual
         timeout: 0
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: ./devel-project.py reviews --min-age 3 --remind
         - script: ./devel-project.py requests --min-age 3 --remind

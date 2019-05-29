@@ -26,7 +26,7 @@ pipelines:
   -%>
           <%= name %>:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
@@ -49,7 +49,7 @@ pipelines:
 <% %w(openSUSE:Factory openSUSE:Factory:ARM openSUSE:Factory:PowerPC).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>
@@ -78,7 +78,7 @@ pipelines:
     end -%>
         <%= name %>:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
   <% end -%>
@@ -101,7 +101,7 @@ Update.Repos.Leap:
 <% %w(openSUSE:Leap:15.1 openSUSE:Leap:15.1:ARM openSUSE:Leap:15.1:PowerPC).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>

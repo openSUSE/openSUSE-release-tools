@@ -19,7 +19,7 @@ pipelines:
     - Run:
         approval: manual
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf

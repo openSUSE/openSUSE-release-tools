@@ -18,7 +18,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: ./check_source.py -A https://api.opensuse.org --verbose --skip-add-reviews --group factory-auto review
   openSUSE.Repochecker:
@@ -39,7 +39,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.opensuse.org --debug review
   openSUSE.Legal.Check:
@@ -60,7 +60,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb http://legaldb.suse.de review
   openSUSE.Legal.Import:
@@ -102,7 +102,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: ./check_maintenance_incidents.py --verbose review
   Factory.Staging.Report:
@@ -123,7 +123,7 @@ pipelines:
          Run:
            timeout: 0
            resources:
-           - staging-bot3
+           - staging-bot
            tasks:
            - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Factory
   Leap.Staging.Report:
@@ -144,7 +144,7 @@ pipelines:
          Run:
            timeout: 0
            resources:
-           - staging-bot3
+           - staging-bot
            tasks:
            - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Leap:15.1
   Source.In.Factory:
@@ -165,6 +165,6 @@ pipelines:
          Run:
            timeout: 0
            resources:
-           - staging-bot3
+           - staging-bot
            tasks:
            - script: ./check_source_in_factory.py --factory openSUSE:Factory --factory openSUSE:Leap:15.0:Update --factory openSUSE:Leap:15.0 --factory openSUSE:Leap:15.0:Update --factory openSUSE:Leap:15.0 --review-mode=fallback-onfail --fallback-group=backports-reviewers --verbose review

@@ -18,7 +18,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: ./check_tags_in_requests.py -A https://api.suse.de --verbose --user=sle-changelog-checker --review=accept-onpass --factory=openSUSE.org:openSUSE:Factory review
   SLE.Project.Only:
@@ -39,13 +39,13 @@ pipelines:
           SLE_15_SP1:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-15-SP1:GA
           SLE_12_SP5:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-12-SP5:GA
   SLE-SP1.Manager42:
@@ -85,7 +85,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - repo-checker3
+            - repo-checker
             tasks:
             - script: ./repo_checker.py -A https://api.suse.de --debug review
   SLE.Leaper:
@@ -126,7 +126,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA rebuild
             - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA list --supersede
@@ -152,7 +152,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP1:GA
   SLE.Check.Dups:
@@ -173,7 +173,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: /usr/bin/osc -A https://api.suse.de check_dups SUSE:SLE-15-SP1:GA
   SLE.Source.Check:
@@ -194,7 +194,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: ./check_source.py -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto review
   SLE.Legal.Check:
@@ -215,7 +215,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot3
+            - staging-bot
             tasks:
             - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de review
   SLE.Legal.Import:
@@ -260,7 +260,7 @@ pipelines:
     - Run:
         timeout: 0
         resources:
-        - repo-checker3
+        - repo-checker
         tasks:
         - script: |-
            cd scripts
