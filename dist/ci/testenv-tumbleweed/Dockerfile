@@ -2,7 +2,7 @@
 FROM opensuse/tumbleweed
 
 # make sure we see osc regressions earlier than it hitting tumbleweed
-RUN zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/openSUSE_Factory/ openSUSE:Tools
+RUN zypper -n ar http://download.opensuse.org/repositories/openSUSE:/Tools/openSUSE_Factory/ openSUSE:Tools
 RUN zypper --gpg-auto-import-keys ref
 
 RUN useradd tester -d /code/tests/home
