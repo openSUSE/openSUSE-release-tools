@@ -12,6 +12,7 @@ import cmdln
 import requests as REQ
 import json
 import time
+import yaml
 
 from urllib.error import HTTPError
 
@@ -19,11 +20,6 @@ try:
     from xml.etree import cElementTree as ET
 except ImportError:
     import cElementTree as ET
-
-try:
-    import cPickle as pickle
-except:
-    import pickle
 
 import osc.conf
 import osc.core
@@ -190,35 +186,26 @@ class LegalAuto(ReviewBot.ReviewBot):
                                      by_user=self.review_user, message=self.message)
         self.delete_from_db(req.reqid)
 
-    def _pkl_path(self):
-        return os.path.join(CacheManager.directory('legal-auto'), 'packages.dump')
-
     def update_project(self, project):
+        yaml_path = os.path.join(CacheManager.directory('legal-auto'), '{}.yaml'.format(project))
         try:
-            with open(self._pkl_path(), 'rb') as pkl_file:
-                self.pkg_cache = pickle.load(pkl_file)
+            with open(yaml_path, 'r') as file:
+                self.pkg_cache = yaml.load(file, Loader=yaml.SafeLoader)
         except (IOError, EOFError):
             self.pkg_cache = {}
 
         self.packages = []
-        # we can't create packages for requests - we need a nonewpackages=1 first
-        # self._query_requests(project)
         self._query_sources(project)
-        self._save_pkl()
+        with open(yaml_path, 'w') as file:
+            yaml.dump(self.pkg_cache, file)
         url = osc.core.makeurl(self.legaldb, ['products', project])
         request = REQ.patch(url, headers=self.legaldb_headers, data={'id': self.packages}).json()
-
-    def _save_pkl(self):
-        pkl_file = open(self._pkl_path(), 'wb')
-        pickle.dump(self.pkg_cache, pkl_file)
-        pkl_file.close()
 
     def _query_sources(self, project):
         url = osc.core.makeurl(
             self.apiurl, ['source', project], {'view': 'info'})
         f = self.retried_GET(url)
         root = ET.parse(f).getroot()
-        #root = ET.fromstring(open('prj.info').read())
         for si in root.findall('sourceinfo'):
             if si.findall('error'):
                 continue
@@ -252,44 +239,27 @@ class LegalAuto(ReviewBot.ReviewBot):
                 continue
             self.packages.append(self._add_source(project, project, package, si.get('rev')))
 
-    def _query_requests(self, project):
-        match = "(state/@name='new' or state/@name='review') and (action/target/@project='{}')"
-        match = match.format(project)
-        url = osc.core.makeurl(
-            self.apiurl, ['search', 'request'], {'match': match})
-        f = osc.core.http_GET(url)
-        root = ET.parse(f).getroot()
-        for rq in root.findall('request'):
-            for a in rq.findall('action'):
-                if not a.attrib['type'] in ('submit', 'maintenance_incident'):
-                    continue
-                source = a.find('source')
-                revision = source.attrib.get('rev')
-                src_project = source.attrib['project']
-                package = source.attrib['package']
-                self._add_source(project, src_project, package, revision)
-
     def _add_source(self, tproject, sproject, package, revision):
         params = {'api': self.apiurl, 'project': sproject, 'package': package,
                   'external_link': tproject}
         if revision:
             params['rev'] = revision
-        hkey = hash(json.dumps(params, sort_keys=True))
-        if hkey in self.pkg_cache:
-            return self.pkg_cache[hkey]
+        old_id = self.pkg_cache.get(package, { None: None }).get(revision, None)
+        if old_id:
+            return old_id
 
         params['priority'] = 1
         url = osc.core.makeurl(self.legaldb, ['packages'], params)
 
         try:
             obj = REQ.post(url, headers=self.legaldb_headers).json()
-        except:
+        except HTTPError:
             return None
         if not 'saved' in obj:
             return None
         self.logger.debug("PKG {}/{}[{}]->{} is {}".format(sproject, package, revision, tproject, obj['saved']['id']))
-        self.pkg_cache[hkey] = obj['saved']['id']
-        return self.pkg_cache[hkey]
+        self.pkg_cache[package] = { revision: obj['saved']['id'] }
+        return obj['saved']['id']
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
@@ -324,6 +294,8 @@ if __name__ == "__main__":
     requests_log = logging.getLogger("requests.packages.urllib3")
     requests_log.setLevel(logging.WARNING)
     requests_log.propagate = False
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").propagate = False
 
     app = CommandLineInterface()
     sys.exit(app.main())
