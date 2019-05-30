@@ -215,6 +215,10 @@ def project_list_prefix(apiurl, prefix):
     root = ETL.parse(http_GET(url)).getroot()
     return root.xpath('project/@name')
 
+def project_locked(apiurl, project):
+    meta = ET.fromstringlist(show_project_meta(apiurl, project))
+    return meta.find('lock/enable') is not None
+
 #
 # Depdendency helpers
 #
