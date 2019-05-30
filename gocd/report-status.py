@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # Copyright (c) 2018 SUSE Linux GmbH
 #
@@ -28,11 +28,7 @@ from xml.etree import cElementTree as ET
 import osc.core
 from osclib.core import target_archs
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET

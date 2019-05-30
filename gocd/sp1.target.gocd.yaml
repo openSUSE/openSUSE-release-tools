@@ -17,7 +17,7 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP1:GA -s target --only-release-packages --force
+        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP1:GA -s target --only-release-packages --force
 
   SLE15.SP1.Package.Lists:
     group: SLE15.SP1.Target
@@ -35,8 +35,7 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: |-
-            /usr/bin/python /usr/bin/osrt-pkglistgen --apiurl https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP1:GA -s target --force || true
+        - script: ./pkglistgen.py --apiurl https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP1:GA -s target --force || true
 
   SLE15.SP1.Images:
     group: SLE15.SP1.Target
@@ -63,7 +62,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            python3 ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP1:GA -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP1:GA -r images
 
     - Release.Images.To.Test:
         approval: manual

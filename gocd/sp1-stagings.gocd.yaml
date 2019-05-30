@@ -20,77 +20,77 @@ pipelines:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:A
                  --only-release-packages --force
           SLE.15.SP1.Staging.B:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:B
                  --only-release-packages --force
           SLE.15.SP1.Staging.C:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:C
                  --only-release-packages --force
           SLE.15.SP1.Staging.D:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:D
                  --only-release-packages --force
           SLE.15.SP1.Staging.E:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:E
                  --only-release-packages --force
           SLE.15.SP1.Staging.F:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:F
                  --only-release-packages --force
           SLE.15.SP1.Staging.G:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:G
                  --only-release-packages --force
           SLE.15.SP1.Staging.H:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:H
                  --only-release-packages --force
           SLE.15.SP1.Staging.S:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:S
                  --only-release-packages --force
           SLE.15.SP1.Staging.V:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:V
                  --only-release-packages --force
           SLE.15.SP1.Staging.Y:
             resources:
               - repo-checker
             tasks:
-              - script: /usr/bin/osrt-pkglistgen -A https://api.suse.de update_and_solve
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                  --staging SUSE:SLE-15-SP1:GA:Staging:Y
                  --only-release-packages --force
 
@@ -99,7 +99,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:A
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -121,6 +120,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -130,9 +130,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -144,7 +145,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:B
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -166,6 +166,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -175,9 +176,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -189,7 +191,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:C
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -211,6 +212,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -220,9 +222,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -234,7 +237,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:D
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -256,6 +258,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -265,9 +268,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -279,7 +283,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:E
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -301,6 +304,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -310,9 +314,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -324,7 +329,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:F
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -346,6 +350,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -355,9 +360,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -369,7 +375,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:G
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -391,6 +396,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -400,9 +406,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -414,7 +421,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:H
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -436,6 +442,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -445,9 +452,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -459,7 +467,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:S
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -481,6 +488,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -490,9 +498,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -504,7 +513,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:V
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -526,6 +534,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -535,9 +544,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
@@ -549,7 +559,6 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:Y
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: SLE15.SP1.Stagings
     lock_behavior: unlockWhenFinished
     materials:
@@ -571,6 +580,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
               python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
@@ -580,9 +590,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if /usr/bin/osrt-pkglistgen --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
               else
                 python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure

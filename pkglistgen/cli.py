@@ -1,7 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # TODO: solve all devel packages to include
-from __future__ import print_function
 
 import cmdln
 import os
