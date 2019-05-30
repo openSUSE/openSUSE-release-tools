@@ -10,12 +10,6 @@ local envParams = params + {
       ],
       externalPort: 31452,
     },
-    "obs-operator.origin_manager_report"+: {
-      projects: [
-        "openSUSE:Leap:15.1",
-        "openSUSE:Leap:15.1:NonFree",
-      ],
-    },
     "repo-checker.project_only"+: {
       projects: [
         "openSUSE:Factory",

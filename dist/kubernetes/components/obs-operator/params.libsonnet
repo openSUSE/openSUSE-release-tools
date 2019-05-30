@@ -11,9 +11,6 @@
       externalIPs: null,
       externalPort: null,
     },
-    origin_manager_report: {
-      projects: [],
-    },
     origin_manager_cron: {
     },
   },
