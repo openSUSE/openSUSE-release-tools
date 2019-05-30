@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 import glob
 import gzip
@@ -26,11 +25,7 @@ import solv
 
 import yaml
 
-try:
-    from urllib.parse import urljoin, urlparse
-except ImportError:
-    # python 2.x
-    from urlparse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse
 
 logger = logging.getLogger()
 
