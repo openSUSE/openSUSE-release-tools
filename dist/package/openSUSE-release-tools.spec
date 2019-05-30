@@ -549,6 +549,8 @@ exit 0
 %files obs-operator
 %{_bindir}/osrt-obs_operator
 %{_unitdir}/osrt-obs-operator.service
+%{_unitdir}/osrt-obs-operator-origin-manager-cron.service
+%{_unitdir}/osrt-obs-operator-origin-manager-cron.timer
 %{_unitdir}/osrt-obs-operator-origin-manager-report@.service
 %{_unitdir}/osrt-obs-operator-origin-manager-report@.timer
 
