@@ -40,8 +40,11 @@ def do_origin(self, subcmd, opts, *args):
     ${cmd_option_list}
 
     config: print expanded OSRT:OriginConfig
+    history: list requests containing an origin annotation
     list: print all packages and their origin
     package: print the origin of package
+    potentials: list potential origins of a package
+    projects: list all projects with an OSRT:OriginConfig attribute
     report: print origin summary report
 
     Usage:
