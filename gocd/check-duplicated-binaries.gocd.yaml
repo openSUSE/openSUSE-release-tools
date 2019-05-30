@@ -15,6 +15,6 @@ pipelines:
     - Run:
         approval: manual
         resources:
-        - staging-bot3
+        - staging-bot
         tasks:
         - script: osc staging -p openSUSE:Factory check_duplicate_binaries --save
