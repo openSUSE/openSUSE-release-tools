@@ -1150,10 +1150,13 @@ class StagingAPI(object):
 
         # If adi project, check for baselibs.conf in all specs to catch both
         # dynamically generated and static baselibs.conf.
-        baselibs = False if self.is_adi_project(project) else None
-        if baselibs is False and 'baselibs.conf' in source_file_load(
-                self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev):
-            baselibs = True
+        if self.is_adi_project(project):
+            baselibs = False
+            specfile = source_file_load(self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)
+            if specfile and 'baselibs.conf' in specfile:
+                baselibs = True
+        else:
+            baselibs = None
 
         for sub_pkg in self.get_sub_packages(tar_pkg, project):
             self.create_package_container(project, sub_pkg)
@@ -1162,9 +1165,10 @@ class StagingAPI(object):
             url = self.makeurl(['source', project, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
-            if baselibs is False and 'baselibs.conf' in source_file_load(
-                    self.apiurl, src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev):
-                baselibs = True
+            if baselibs is False:
+                specfile = source_file_load(self.apiurl, src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)
+                if specfile and 'baselibs.conf' in specfile:
+                    baselibs = True
 
         if baselibs:
             # Adi package has baselibs.conf, ensure all staging archs are enabled.
