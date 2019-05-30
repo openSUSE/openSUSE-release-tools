@@ -155,27 +155,6 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP1:GA
-  SLE.Check.Dups:
-    group: SLE.Checkers
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 */10 * ? * *
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    stages:
-    - Run:
-        approval:
-          type: manual
-        jobs:
-          Run:
-            timeout: 0
-            resources:
-            - staging-bot
-            tasks:
-            - script: /usr/bin/osc -A https://api.suse.de check_dups SUSE:SLE-15-SP1:GA
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished

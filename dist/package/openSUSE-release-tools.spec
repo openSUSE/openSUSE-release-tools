@@ -72,6 +72,8 @@ Requires:       osclib = %{version}
 
 # no longer deployed as package
 Obsoletes:      %{name}-totest-manager
+# no longer supported
+Obsoletes:      osc-plugin-check_dups
 
 # Avoid needlessly building on s390x and such in various repos.
 # Must include noarch for older systems even though it makes no sense due to
@@ -235,8 +237,6 @@ BuildArch:      noarch
 # devel-project.py
 Requires:       %{name} = %{version}
 Requires:       osc-plugin-staging = %{version}
-# For supersede service.
-Requires:       osc-plugin-check_dups = %{version}
 Requires(pre):  shadow
 
 %description staging-bot
@@ -271,16 +271,6 @@ Requires:       python3-osc
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
-
-%package -n osc-plugin-check_dups
-Summary:        OSC plugin to check for duplicate requests
-Group:          Development/Tools/Other
-BuildArch:      noarch
-Requires:       osc >= 0.165.1
-Requires:       osclib = %{version}
-
-%description -n osc-plugin-check_dups
-OSC plugin to check for duplicate requests, see `osc check_dups --help`.
 
 %package -n osc-plugin-cycle
 Summary:        OSC plugin for cycle visualization
@@ -464,7 +454,6 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/repo_checker.py
 %exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
 %exclude %{_datadir}/%{source_dir}/osclib
-%exclude %{_datadir}/%{source_dir}/osc-check_dups.py
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-origin.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
@@ -600,8 +589,6 @@ exit 0
 %{_unitdir}/osrt-staging-bot-regular@.timer
 %{_unitdir}/osrt-staging-bot-reminder.service
 %{_unitdir}/osrt-staging-bot-reminder.timer
-%{_unitdir}/osrt-staging-bot-supersede@.service
-%{_unitdir}/osrt-staging-bot-supersede@.timer
 %{_unitdir}/osrt-staging-bot-support-rebuild@.service
 %{_unitdir}/osrt-staging-bot-support-rebuild@.timer
 
@@ -617,11 +604,6 @@ exit 0
 %defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osclib
 %{osc_plugin_dir}/osclib
-
-%files -n osc-plugin-check_dups
-%defattr(-,root,root,-)
-%{_datadir}/%{source_dir}/osc-check_dups.py
-%{osc_plugin_dir}/osc-check_dups.py
 
 %files -n osc-plugin-cycle
 %defattr(-,root,root,-)
