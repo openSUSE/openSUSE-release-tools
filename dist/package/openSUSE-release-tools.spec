@@ -551,8 +551,6 @@ exit 0
 %{_unitdir}/osrt-obs-operator.service
 %{_unitdir}/osrt-obs-operator-origin-manager-cron.service
 %{_unitdir}/osrt-obs-operator-origin-manager-cron.timer
-%{_unitdir}/osrt-obs-operator-origin-manager-report@.service
-%{_unitdir}/osrt-obs-operator-origin-manager-report@.timer
 
 %files origin-manager
 %{_bindir}/osrt-origin-manager

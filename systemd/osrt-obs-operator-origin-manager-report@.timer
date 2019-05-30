@@ -1,9 +1,0 @@
-[Unit]
-Description=openSUSE Release Tools: OBS Operator origin-manager report for %i
-
-[Timer]
-OnCalendar=Sun,Tue,Thu *-*-* 04:00:00
-Unit=osrt-obs-operator-origin-manager-report@%i.service
-
-[Install]
-WantedBy=timers.target
