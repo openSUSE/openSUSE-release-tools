@@ -17,4 +17,10 @@ pipelines:
         resources:
         - staging-bot
         tasks:
-        - script: osc staging -p openSUSE:Factory check_duplicate_binaries --save
+        - script: |-
+            tempdir=$(mktemp -d)
+            mkdir -p $tempdir/.osc-plugins
+            ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+            ln -s $PWD/osclib $tempdir/.osc-plugins
+            HOME=$tempdir osc staging -p openSUSE:Factory check_duplicate_binaries --save
+            rm -rf $tempdir

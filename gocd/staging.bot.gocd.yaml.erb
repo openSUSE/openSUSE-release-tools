@@ -25,7 +25,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: |-
-                python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:<%= project %>
+                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:<%= project %>
   SBot.Regular.<%= nickname %>:
     group: <%= nickname %>.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -46,12 +46,22 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi --by-develproject
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> select --non-interactive --merge --try-strategies
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
+            - script: |-
+               set -e
+               tempdir=$(mktemp -d)
+               mkdir -p $tempdir/.osc-plugins
+               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+               ln -s $PWD/osclib $tempdir/.osc-plugins
+               export HOME=$tempdir
+
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> select --non-interactive --merge --try-strategies
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
+               rm -rf $tempdir
+
 <% end -%>
   Project.Only:
     group: openSUSE.Checkers

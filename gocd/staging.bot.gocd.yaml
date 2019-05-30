@@ -23,7 +23,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: |-
-                python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Factory
+                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Factory
   SBot.Regular.Factory:
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -44,12 +44,22 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory adi --by-develproject
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory select --non-interactive --merge --try-strategies
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
+            - script: |-
+               set -e
+               tempdir=$(mktemp -d)
+               mkdir -p $tempdir/.osc-plugins
+               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+               ln -s $PWD/osclib $tempdir/.osc-plugins
+               export HOME=$tempdir
+
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory select --non-interactive --merge --try-strategies
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
+               rm -rf $tempdir
+
   AdiChecker.Leap.15.1:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -73,7 +83,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: |-
-                python3 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Leap:15.1
+                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Leap:15.1
   SBot.Regular.Leap.15.1:
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -94,12 +104,22 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 rebuild
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 list --supersede
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 adi --by-develproject
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 select --non-interactive --merge --try-strategies
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 unselect --cleanup
-            - script: osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 repair --cleanup
+            - script: |-
+               set -e
+               tempdir=$(mktemp -d)
+               mkdir -p $tempdir/.osc-plugins
+               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+               ln -s $PWD/osclib $tempdir/.osc-plugins
+               export HOME=$tempdir
+
+               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 rebuild
+               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 list --supersede
+               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 select --non-interactive --merge --try-strategies
+               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 unselect --cleanup
+               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.1 repair --cleanup
+               rm -rf $tempdir
+
   Project.Only:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
