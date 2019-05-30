@@ -12,6 +12,7 @@ from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
 from osclib.core import package_list_kind_filtered
 from osclib.core import project_attribute_list
+from osclib.core import project_locked
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
 from osclib.origin import origin_find
@@ -126,10 +127,16 @@ def osrt_origin_lookup_file(project, previous=False):
     return os.path.join(cache_dir, lookup_name)
 
 def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, quiet=False):
+    locked = project_locked(apiurl, project)
+    if locked:
+        force_refresh = False
+
     lookup_path = osrt_origin_lookup_file(project, previous)
     if not force_refresh and os.path.exists(lookup_path):
-        if not previous and time.time() - os.stat(lookup_path).st_mtime > OSRT_ORIGIN_LOOKUP_TTL:
-            return osrt_origin_lookup(apiurl, project, True)
+        if not locked and not previous:
+            # Force refresh of lookup information if expried.
+            if time.time() - os.stat(lookup_path).st_mtime > OSRT_ORIGIN_LOOKUP_TTL:
+                return osrt_origin_lookup(apiurl, project, True)
 
         with open(lookup_path, 'r') as lookup_stream:
             lookup = yaml.safe_load(lookup_stream)
