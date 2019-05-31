@@ -1,0 +1,9 @@
+[Unit]
+Description=openSUSE Release Tools: OBS Operator origin-manager cron
+
+[Timer]
+OnCalendar=Sun,Tue,Thu *-*-* 04:00:00
+Unit=osrt-obs-operator-origin-manager-cron.service
+
+[Install]
+WantedBy=timers.target

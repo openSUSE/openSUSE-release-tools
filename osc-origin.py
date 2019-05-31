@@ -12,6 +12,7 @@ from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
 from osclib.core import package_list_kind_filtered
 from osclib.core import project_attribute_list
+from osclib.core import project_locked
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
 from osclib.origin import origin_find
@@ -40,6 +41,7 @@ def do_origin(self, subcmd, opts, *args):
     ${cmd_option_list}
 
     config: print expanded OSRT:OriginConfig
+    cron: update the lookup for all projects with an OSRT:OriginConfig attribute
     history: list requests containing an origin annotation
     list: print all packages and their origin
     package: print the origin of package
@@ -49,6 +51,7 @@ def do_origin(self, subcmd, opts, *args):
 
     Usage:
         osc origin config [--origins-only]
+        osc origin cron
         osc origin history [--format json|yaml] PACKAGE
         osc origin list [--force-refresh] [--format json|yaml]
         osc origin package [--debug] PACKAGE
@@ -60,7 +63,7 @@ def do_origin(self, subcmd, opts, *args):
     if len(args) == 0:
         raise oscerr.WrongArgs('A command must be indicated.')
     command = args[0]
-    if command not in ['config', 'history', 'list', 'package', 'potentials', 'projects', 'report']:
+    if command not in ['config', 'cron', 'history', 'list', 'package', 'potentials', 'projects', 'report']:
         raise oscerr.WrongArgs('Unknown command: {}'.format(command))
     if command == 'package' and len(args) < 2:
         raise oscerr.WrongArgs('A package must be indicated.')
@@ -74,7 +77,7 @@ def do_origin(self, subcmd, opts, *args):
 
     Cache.init()
     apiurl = self.get_api_url()
-    if command != 'projects':
+    if command not in ['cron', 'projects']:
         if not opts.project:
             raise oscerr.WrongArgs('A project must be indicated.')
         config = config_load(apiurl, opts.project)
@@ -92,6 +95,22 @@ def osrt_origin_config(apiurl, opts, *args):
     else:
         yaml.Dumper.ignore_aliases = lambda *args : True
         print(yaml.dump(config))
+
+def osrt_origin_cron(apiurl, opts, *args):
+    projects = project_attribute_list(apiurl, 'OSRT:OriginConfig')
+    for project in projects:
+        # Preserve cache for locked projects, but create if missing.
+        if project_locked(apiurl, project):
+            lookup_path = osrt_origin_lookup_file(project)
+            if os.path.exists(lookup_path):
+                # Update the last accessed time to avoid cache manager culling.
+                os.utime(lookup_path, (time.time(), os.stat(lookup_path).st_mtime))
+                print('{}<locked> lookup preserved'.format(project))
+                continue
+
+        # Force update lookup information.
+        lookup = osrt_origin_lookup(apiurl, project, force_refresh=True, quiet=True)
+        print('{} lookup updated for {} package(s)'.format(project, len(lookup)))
 
 def osrt_origin_dump(format, data):
     if format == 'json':
@@ -126,10 +145,16 @@ def osrt_origin_lookup_file(project, previous=False):
     return os.path.join(cache_dir, lookup_name)
 
 def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, quiet=False):
+    locked = project_locked(apiurl, project)
+    if locked:
+        force_refresh = False
+
     lookup_path = osrt_origin_lookup_file(project, previous)
     if not force_refresh and os.path.exists(lookup_path):
-        if not previous and time.time() - os.stat(lookup_path).st_mtime > OSRT_ORIGIN_LOOKUP_TTL:
-            return osrt_origin_lookup(apiurl, project, True)
+        if not locked and not previous:
+            # Force refresh of lookup information if expried.
+            if time.time() - os.stat(lookup_path).st_mtime > OSRT_ORIGIN_LOOKUP_TTL:
+                return osrt_origin_lookup(apiurl, project, True)
 
         with open(lookup_path, 'r') as lookup_stream:
             lookup = yaml.safe_load(lookup_stream)
