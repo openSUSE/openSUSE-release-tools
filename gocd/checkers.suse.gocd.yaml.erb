@@ -65,9 +65,9 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - leaper
+            - staging-bot
             tasks:
-            - script: python3 /usr/bin/osrt-manager_42 -A https://api.suse.de -c /etc/openSUSE-release-tools/manager_42/SUSE:SLE-15-SP1:GA.yml
+            - script: ./manager_42.py -A https://api.suse.de -c config/manager_42/SUSE:SLE-15-SP1:GA.yml
   SLE.Repochecker:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
