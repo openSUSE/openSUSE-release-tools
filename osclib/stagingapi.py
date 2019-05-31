@@ -156,13 +156,16 @@ class StagingAPI(object):
             except HTTPError as e:
                 if 500 <= e.code <= 599:
                     print('Error {}, retrying {} in {}s'.format(e.code, url, retry_sleep_seconds))
-                    time.sleep(retry_sleep_seconds)
-                    # increase sleep time up to one minute to avoid hammering
-                    # the server in case of real problems
-                    if (retry_sleep_seconds % 60):
-                        retry_sleep_seconds += 1
+                elif e.code == 400 and e.reason == 'service in progress':
+                    print('Service in progress, retrying {} in {}s'.format(url, retry_sleep_seconds))
                 else:
                     raise e
+                time.sleep(retry_sleep_seconds)
+                # increase sleep time up to one minute to avoid hammering
+                # the server in case of real problems
+                if (retry_sleep_seconds % 60):
+                    retry_sleep_seconds += 1
+
 
     def retried_GET(self, url):
         return self._retried_request(url, http_GET)
@@ -249,25 +252,26 @@ class StagingAPI(object):
         """
 
         filelist = []
-        query = {
-            'extension': extension
-        }
+        query = {}
+        if extension:
+            query['extension'] = extension
         if expand:
             query['expand'] = expand
 
-        if extension:
+        if len(query):
             url = self.makeurl(['source', project, pkgname], query=query)
         else:
             url = self.makeurl(['source', project, pkgname])
         try:
-            content = http_GET(url)
-            for entry in ET.parse(content).getroot().findall('entry'):
+            content = self.retried_GET(url).read()
+            for entry in ET.fromstring(content).findall('entry'):
                 filelist.append(entry.attrib['name'])
         except HTTPError as err:
             if err.code == 404:
                 # The package we were supposed to query does not exist
                 # we can pass this up and return the empty filelist
-                pass
+                return []
+            raise err
 
         return filelist
 
