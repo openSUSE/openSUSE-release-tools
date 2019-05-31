@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  Announcer.Factory:
+  Trigger.Rebuilds:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -31,8 +31,8 @@ pipelines:
               ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64le
 
               echo "openSUSE Leap 15.1"
-              ./rebuildpacs.pl openSUSE:Leap:15.1 standard i586
-              ./rebuildpacs.pl openSUSE:Leap:15.1 standard x86_64
+              #./rebuildpacs.pl openSUSE:Leap:15.1 standard i586
+              #./rebuildpacs.pl openSUSE:Leap:15.1 standard x86_64
 
               # GNOME devel projects - they use rebuild=local too
               echo "GNOME devel projects"
