@@ -13,6 +13,7 @@ pipelines:
       only_on_changes: false
     stages:
     - Run:
+        approval: manual
         resources:
           - staging-bot
         tasks:
@@ -30,6 +31,7 @@ pipelines:
       only_on_changes: false
     stages:
     - Run:
+        approval: manual
         resources:
           - staging-bot
         tasks:
