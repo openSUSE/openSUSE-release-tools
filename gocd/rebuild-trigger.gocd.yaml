@@ -20,20 +20,20 @@ pipelines:
           - script: |-
               ln -sf /home/go/config/rebuild.problems problems
               ln -sf /home/go/config/rebuild.buildinfos buildinfos
-
+          - script: |-
               echo "openSUSE:Factory"
               ./rebuildpacs.pl openSUSE:Factory standard i586
               ./rebuildpacs.pl openSUSE:Factory standard x86_64
-
+          - script: |-
               echo "openSUSE:Factory:PowerPC"
               ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc
               ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64
               ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64le
-
+          - script: |-
               echo "openSUSE Leap 15.1"
               #./rebuildpacs.pl openSUSE:Leap:15.1 standard i586
               #./rebuildpacs.pl openSUSE:Leap:15.1 standard x86_64
-
+          - script: |-
               # GNOME devel projects - they use rebuild=local too
               echo "GNOME devel projects"
               ./rebuildpacs.pl GNOME:Factory openSUSE_Factory i586
