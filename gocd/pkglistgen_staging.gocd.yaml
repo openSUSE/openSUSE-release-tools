@@ -19,112 +19,112 @@ pipelines:
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:A
                    --only-release-packages --force
             "Staging.B":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:B
                    --only-release-packages --force
             "Staging.C":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:C
                    --only-release-packages --force
             "Staging.D":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:D
                    --only-release-packages --force
             "Staging.E":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:E
                    --only-release-packages --force
             "Staging.F":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:F
                    --only-release-packages --force
             "Staging.G":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:G
                    --only-release-packages --force
             "Staging.H":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:H
                    --only-release-packages --force
             "Staging.I":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:I
                    --only-release-packages --force
             "Staging.J":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:J
                    --only-release-packages --force
             "Staging.K":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:K
                    --only-release-packages --force
             "Staging.L":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:L
                    --only-release-packages --force
             "Staging.M":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:M
                    --only-release-packages --force
             "Staging.N":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:N
                    --only-release-packages --force
             "Staging.O":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:O
                    --only-release-packages --force
             "Staging.Gcc7":
               resources:
                 - repo-checker
               tasks:
-                - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                    --staging openSUSE:Factory:Staging:Gcc7
                    --only-release-packages --force
 
@@ -133,7 +133,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:A
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -157,7 +156,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -166,14 +166,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -187,7 +187,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:B
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -211,7 +210,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -220,14 +220,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -241,7 +241,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:C
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -265,7 +264,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -274,14 +274,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -295,7 +295,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:D
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -319,7 +318,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -328,14 +328,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -349,7 +349,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:E
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -373,7 +372,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -382,14 +382,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -403,7 +403,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:F
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -427,7 +426,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -436,14 +436,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -457,7 +457,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:G
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -481,7 +480,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -490,14 +490,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -511,7 +511,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:H
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -535,7 +534,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -544,14 +544,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -565,7 +565,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:I
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -589,7 +588,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -598,14 +598,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -619,7 +619,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:J
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -643,7 +642,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -652,14 +652,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -673,7 +673,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:K
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -697,7 +696,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -706,14 +706,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -727,7 +727,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:L
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -751,7 +750,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -760,14 +760,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -781,7 +781,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:M
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -805,7 +804,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -814,14 +814,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -835,7 +835,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:N
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -859,7 +858,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -868,14 +868,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -889,7 +889,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:O
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -913,7 +912,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -922,14 +922,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -943,7 +943,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:Gcc7
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -967,7 +966,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -976,14 +976,14 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 
     - Enable.images.repo:
        resources:
@@ -1012,35 +1012,35 @@ pipelines:
             resources:
               - repo-checker
             tasks:
-              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+              - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:A
                  --only-release-packages --force
           "Staging.B":
             resources:
               - repo-checker
             tasks:
-              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+              - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:B
                  --only-release-packages --force
           "Staging.C":
             resources:
               - repo-checker
             tasks:
-              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+              - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:C
                  --only-release-packages --force
           "Staging.D":
             resources:
               - repo-checker
             tasks:
-              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+              - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:D
                  --only-release-packages --force
           "Staging.E":
             resources:
               - repo-checker
             tasks:
-              - script: python3 ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+              - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                  --staging openSUSE:Leap:15.1:Staging:E
                  --only-release-packages --force
 
@@ -1049,7 +1049,6 @@ pipelines:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:A
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -1073,7 +1072,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -1082,20 +1082,19 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.B":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:B
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -1119,7 +1118,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -1128,20 +1128,19 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.C":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:C
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -1165,7 +1164,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -1174,20 +1174,19 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.D":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:D
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -1211,7 +1210,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -1220,20 +1220,19 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.E":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.1:Staging:E
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-      PYTHONPATH: /usr/share/openSUSE-release-tools
     group: Leap.15.1.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
@@ -1257,7 +1256,8 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  python3 ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
           Repo.Checker:
             environment_variables:
@@ -1266,12 +1266,12 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  python3 ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
           - repo-checker
         tasks:
           - script: |-
-              python3 ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+              ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
 

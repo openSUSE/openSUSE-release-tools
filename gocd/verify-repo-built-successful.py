@@ -33,7 +33,7 @@ if __name__ == '__main__':
         if root.get('code') == 'finished':
             continue
         logger.error('Repository {}/{}/{} is not yet finished'.format(args.project, args.repository, arch))
-        logger.debug(ET.tostring(root))
+        logger.debug(ET.tostring(root).decode('utf-8'))
         sys.exit(1)
 
     # now check if all packages built fine
