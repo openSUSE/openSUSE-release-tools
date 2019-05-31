@@ -27,3 +27,4 @@ to: rbrown@opensuse.org
 name: openSUSE:Kubic
 subject: New Kubic snapshot {version} released!
 sender: Richard Brown <rbrown@suse.de>
+url: http://download.opensuse.org/tumbleweed/iso/
