@@ -1,0 +1,44 @@
+format_version: 3
+pipelines:
+  Announcer.Factory:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-repochecker
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              ln -sf /home/go/config/rebuild.problems problems
+              ln -sf /home/go/config/rebuild.buildinfos buildinfos
+
+              echo "openSUSE:Factory"
+              ./rebuildpacs.pl openSUSE:Factory standard i586
+              ./rebuildpacs.pl openSUSE:Factory standard x86_64
+
+              echo "openSUSE:Factory:PowerPC"
+              ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc
+              ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64
+              ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64le
+
+              echo "openSUSE Leap 15.1"
+              ./rebuildpacs.pl openSUSE:Leap:15.1 standard i586
+              ./rebuildpacs.pl openSUSE:Leap:15.1 standard x86_64
+
+              # GNOME devel projects - they use rebuild=local too
+              echo "GNOME devel projects"
+              ./rebuildpacs.pl GNOME:Factory openSUSE_Factory i586
+              ./rebuildpacs.pl GNOME:Factory openSUSE_Factory x86_64
+              ./rebuildpacs.pl GNOME:Factory openSUSE_PPC     ppc64le
+              ./rebuildpacs.pl GNOME:Next    openSUSE_Factory i586
+              ./rebuildpacs.pl GNOME:Next    openSUSE_Factory x86_64
+              ./rebuildpacs.pl GNOME:Next    openSUSE_PPC     ppc64le
