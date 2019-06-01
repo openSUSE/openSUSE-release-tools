@@ -81,7 +81,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - legal-auto
+            - staging-bot
             tasks:
             - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb http://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-opensuse)
   openSUSE.Maintenance:

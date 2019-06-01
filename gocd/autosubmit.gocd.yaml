@@ -15,6 +15,6 @@ pipelines:
     - Run:
         approval: manual
         resources:
-        - autosubmit
+        - staging-bot
         tasks:
         - script: ./obs-autosubmit -v --cache-dir /home/go/.cache/openSUSE-release-tools/autosubmit/
