@@ -80,7 +80,7 @@ pipelines:
                 git config --global user.name "GoCD Repo Monitor"
                 git clone git://botmaster.suse.de/suse-repos.git
                 cd suse-repos
-                ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE-15-SP1:GA
+                ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE
   openSUSE.Repo.Monitor:
     group: Monitors
     lock_behavior: unlockWhenFinished
