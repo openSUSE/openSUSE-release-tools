@@ -1165,7 +1165,7 @@ class StagingAPI(object):
         for sub_pkg in self.get_sub_packages(tar_pkg, project):
             self.create_package_container(project, sub_pkg)
 
-            root = ET.Element('link', package=tar_pkg, project=project)
+            root = ET.Element('link', package=tar_pkg, cicount='copy')
             url = self.makeurl(['source', project, sub_pkg, '_link'])
             http_PUT(url, data=ET.tostring(root))
 
