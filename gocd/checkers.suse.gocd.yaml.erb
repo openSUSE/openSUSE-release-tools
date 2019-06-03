@@ -196,7 +196,8 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de review
+            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de --group=legal-auto review
+            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de --user=licensedigger review
   SLE.Legal.Import:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
