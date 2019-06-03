@@ -20,7 +20,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./check_source.py -A https://api.opensuse.org --verbose --skip-add-reviews --group factory-auto review
+            - script: ./check_source.py -A https://api.opensuse.org --verbose --skip-add-reviews --user factory-auto review
   openSUSE.Repochecker:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
