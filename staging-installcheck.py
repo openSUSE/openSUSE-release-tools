@@ -72,6 +72,7 @@ class InstallChecker(object):
 
         self.existing_problems = self.binary_list_existing_problem(api.project, api.cmain_repo)
         self.ignore_duplicated = set(self.config.get('installcheck-ignore-duplicated-binaries', '').split(' '))
+        self.ignore_conflicts = set(self.config.get('installcheck-ignore-conflicts', '').split(' '))
 
     def check_required_by(self, fileinfo, provides, requiredby, built_binaries, comments):
         if requiredby.get('name') in built_binaries:
@@ -141,7 +142,7 @@ class InstallChecker(object):
             args = match.group('args').strip()
             # allow space and comma to seperate
             args = args.replace(',', ' ').split(' ')
-        return args
+        return set(args)
 
     def staging(self, project, force=False):
         api = self.api
@@ -219,7 +220,8 @@ class InstallChecker(object):
             else:
                 whitelist = self.existing_problems
 
-            whitelist |= set(to_ignore)
+            whitelist |= to_ignore
+            ignore_conflicts = self.ignore_conflicts | to_ignore
 
             check = self.cycle_check(project, repository, arch)
             if not check.success:
@@ -227,7 +229,7 @@ class InstallChecker(object):
                 result_comment.append(check.comment)
                 result = False
 
-            check = self.install_check(target_pair, arch, directories, None, whitelist)
+            check = self.install_check(directories, arch, whitelist, ignore_conflicts)
             if not check.success:
                 self.logger.warning('Install check failed')
                 result_comment.append(check.comment)
@@ -332,6 +334,8 @@ class InstallChecker(object):
     def mirror(self, project, repository, arch):
         """Call bs_mirrorfull script to mirror packages."""
         directory = os.path.join(CACHEDIR, project, repository, arch)
+        #return directory
+
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -367,71 +371,16 @@ class InstallChecker(object):
 
         return binaries
 
-    def install_check(self, target_project_pair, arch, directories,
-                      ignore=None, whitelist=[], parse=False, no_filter=False):
-        self.logger.info('install check: start (ignore:{}, whitelist:{}, parse:{}, no_filter:{})'.format(
-            bool(ignore), len(whitelist), parse, no_filter))
-
-        with tempfile.NamedTemporaryFile() as ignore_file:
-            # Print ignored rpms on separate lines in ignore file.
-            if ignore:
-                for item in ignore:
-                    ignore_file.write(item + '\n')
-                ignore_file.flush()
-
-            # Invoke repo_checker.pl to perform an install check.
-            script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
-            parts = ['LC_ALL=C', 'perl', script, arch, ','.join(directories),
-                     '-f', ignore_file.name, '-w', ','.join(whitelist)]
-            if no_filter:
-                parts.append('--no-filter')
-
-            parts = [pipes.quote(part) for part in parts]
-            p = subprocess.Popen(' '.join(parts), shell=True,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, close_fds=True)
-            stdout, stderr = p.communicate()
-
-        if p.returncode:
-            self.logger.info('install check: failed')
-            if p.returncode == 126:
-                self.logger.warning('mirror cache reset due to corruption')
-                self._invalidate_all()
-            elif parse:
-                # Parse output for later consumption for posting comments.
-                sections = self.install_check_parse(stdout)
-                self.install_check_sections_group(
-                    target_project_pair[0], target_project_pair[1], arch, sections)
-
-            # Format output as markdown comment.
-            parts = []
-
-            stdout = stdout.decode('utf-8').strip()
-            if stdout:
-                parts.append(stdout + '\n')
-            stderr = stderr.strip()
-            if stderr:
-                parts.append(stderr + '\n')
-
+    def install_check(self, directories, arch, whitelist, ignored_conflicts):
+        self.logger.info('install check: start (whitelist:{})'.format(','.join(whitelist)))
+        import osclib.repochecks
+        parts = osclib.repochecks.installcheck(directories, arch, whitelist, ignored_conflicts)
+        if len(parts):
             header = '### [install check & file conflicts for {}]'.format(arch)
             return CheckResult(False, header + '\n\n' + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
         self.logger.info('install check: passed')
         return CheckResult(True, None)
-
-    def install_check_sections_group(self, project, repository, arch, sections):
-        _, binary_map = package_binary_list(self.api.apiurl, project, repository, arch)
-
-        for section in sections:
-            # If switch to creating bugs likely makes sense to join packages to
-            # form grouping key and create shared bugs for conflicts.
-            # Added check for b in binary_map after encountering:
-            # https://lists.opensuse.org/opensuse-buildservice/2017-08/msg00035.html
-            # Under normal circumstances this should never occur.
-            packages = set([binary_map[b] for b in section.binaries if b in binary_map])
-            for package in packages:
-                self.package_results.setdefault(package, [])
-                self.package_results[package].append(section)
 
     def install_check_parse(self, output):
         section = None

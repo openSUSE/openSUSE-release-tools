@@ -63,7 +63,7 @@ sub beautify_mode {
   return "$rts$ft".sprintf("%03o", $fm)." $m[2]";
 }
 
-print "scanning file list\n";
+print STDERR "scanning file list\n";
 if ($ARGV[0] =~ /\.gz$/) {
   open(FL, "-|", 'gunzip', '-dc', $ARGV[0]) || die("open $ARGV[0]: $!\n");
 } else {
@@ -166,10 +166,10 @@ while(<FL>) {
 }
 close(FL) || die("close failed\n");
 
-print "currently have ".@dirs." dirs and ".@modes." modes\n";
+print STDERR "currently have ".@dirs." dirs and ".@modes." modes\n";
 
 # connect dirs and add all dirs as files
-print "connecting ".@dirs." directories\n";
+print STDERR "connecting ".@dirs." directories\n";
 my @implicit_conflicts;
 for (@dirs) {
   next unless /^(.*\/)(.*?)\/$/;
@@ -193,7 +193,7 @@ for (@dirs) {
   next if $have_dir;
   push @implicit_conflicts, $f;
 }
-print "now ".@dirs." directories\n";
+print STDERR "now ".@dirs." directories\n";
 
 # the old and fast way
 #
@@ -203,7 +203,7 @@ print "now ".@dirs." directories\n";
 #}
 
 if (@implicit_conflicts) {
-  print "have implicit conflicts, calculating dir owners\n";
+  print STDERR "have implicit conflicts, calculating dir owners\n";
   my @pdirs;	# parent dirs
   for (@dirs) {
     next unless /^(.*\/)(.*?)\/$/;
@@ -247,7 +247,7 @@ if (@implicit_conflicts) {
 %files = ();	# free mem
 
 # reduce all-dir conflicts and trivial multiarch conflicts
-print "reducing trivial conflicts\n";
+print STDERR "reducing trivial conflicts\n";
 for my $f (sort keys %filesc) {
   my $allm;
   my $allc = 1;
@@ -273,7 +273,7 @@ for my $f (sort keys %filesc) {
   }
 }
 
-print "checking conflicts\n";
+print STDERR "checking conflicts\n";
 my %pkgneeded;
 my %tocheck;
 my %tocheck_files;
@@ -323,8 +323,8 @@ for my $pkg (sort keys %pkgneeded) {
   }
 }
 
-print "found ".(keys %tocheck)." conflict candidates\n";
-print "checking...\n";
+print STDERR "found ".(keys %tocheck)." conflict candidates\n";
+print STDERR "checking...\n";
 # now check each package combination for all candidates
 for my $tc (sort keys %tocheck) {
   my @p = @{$tocheck{$tc}};
@@ -360,9 +360,11 @@ for my $tc (sort keys %tocheck) {
       next unless @con;
       my @sp1 = split(' ', $p1);
       my @sp2 = split(' ', $p2);
-      print "found conflict of $sp1[0]-$sp1[1]-$sp1[2].$sp1[3] with $sp2[0]-$sp2[1]-$sp2[2].$sp2[3]:\n";
-      print "  - $_\n" for @con;
+      print "- between:\n";
+      print "  - [$sp1[0], $sp1[1], $sp1[2], $sp1[3]]\n";
+      print "  - [$sp2[0], $sp2[1], $sp2[2], $sp2[3]]\n";
+      print "  conflicts: |-\n";
+      print "    $_\n" for (@con);
     }
   }
 }
-
