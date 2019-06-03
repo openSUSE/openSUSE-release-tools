@@ -1502,16 +1502,6 @@ class StagingAPI(object):
                 project, self.project, ', '.join(packages))
         CommentAPI(self.apiurl).add_comment(project_name=project, comment=comment)
 
-    def mark_additional_packages(self, project, packages):
-        """
-        Adds packages that the repo checker needs to download from staging prj
-        """
-        meta = self.get_prj_pseudometa(project)
-        additionals = set(meta.get('add_to_repo', []))
-        additionals.update(packages)
-        meta['add_to_repo'] = sorted(additionals)
-        self.set_prj_pseudometa(project, meta)
-
     def get_prj_results(self, prj, arch):
         url = self.makeurl(['build', prj, 'standard', arch, "_jobhistory?code=lastfailures"])
         results = []

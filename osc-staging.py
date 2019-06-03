@@ -98,8 +98,6 @@ def clean_args(args):
               help='filter request list to only those from a specific staging')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT',
               help='indicate the project on which to operate, default is openSUSE:Factory')
-@cmdln.option('--add', dest='add', metavar='PACKAGE',
-              help='mark additional packages to be checked by repo checker')
 @cmdln.option('--force', action='store_true',
               help='force action, overruling internal checks (CAUTION)')
 @cmdln.option('-o', '--old', action='store_true',
@@ -350,7 +348,6 @@ def do_staging(self, subcmd, opts, *args):
         osc staging list [--supersede]
         osc staging lock [-m MESSAGE]
         osc staging select [--no-freeze] [--move [--filter-from STAGING]]
-            [--add PACKAGE]
             STAGING REQUEST...
         osc staging select [--no-freeze] [--interactive|--non-interactive]
             [--filter-by...] [--group-by...]
@@ -659,13 +656,10 @@ def do_staging(self, subcmd, opts, *args):
                         .perform(request_ids, no_freeze=opts.no_freeze)
             else:
                 target_project = api.prj_from_short(stagings[0])
-                if opts.add:
-                    api.mark_additional_packages(target_project, [opts.add])
-                else:
-                    filter_from = api.prj_from_short(opts.filter_from) if opts.filter_from else None
-                    SelectCommand(api, target_project) \
-                        .perform(requests, opts.move,
-                                 filter_from, opts.no_freeze)
+                filter_from = api.prj_from_short(opts.filter_from) if opts.filter_from else None
+                SelectCommand(api, target_project) \
+                    .perform(requests, opts.move,
+                             filter_from, opts.no_freeze)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'ignore':
