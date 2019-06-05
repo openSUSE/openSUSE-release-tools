@@ -29,7 +29,6 @@ class ToTestPublisher(ToTestManager):
     def setup(self, project):
         super(ToTestPublisher, self).setup(project)
         self.openqa = OpenQA_Client(server=self.project.openqa_server)
-        self.update_pinned_descr = False
         self.load_issues_to_ignore()
 
     def overall_result(self, snapshot):
@@ -73,7 +72,6 @@ class ToTestPublisher(ToTestManager):
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
                             self.issues_to_ignore[ref] = build_nr
-                            self.update_pinned_descr = True
                         else:
                             ignored = False
                     else:
@@ -235,8 +233,6 @@ class ToTestPublisher(ToTestManager):
             return
 
         self.add_published_tag(group_id, current_snapshot)
-        if self.update_pinned_descr:
-            self.update_openqa_status_message(group_id)
 
     def find_openqa_results(self, snapshot):
         """Return the openqa jobs of a given snapshot and filter out the
@@ -276,30 +272,6 @@ class ToTestPublisher(ToTestManager):
                 return jg['id']
 
         self.logger.debug('No openQA group id found for status comment update, ignoring')
-
-    def update_openqa_status_message(self, group_id):
-        pinned_ignored_issue = 0
-        issues = ' , '.join(self.issues_to_ignore.keys())
-        msg = 'pinned-description: Ignored issues\r\n\r\n{}'.format(issues)
-        data = {'text': msg}
-
-        url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'groups', str(group_id), 'comments'])
-        f = self.api.retried_GET(url)
-        comments = json.load(f)
-        for comment in comments:
-            if comment['userName'] == 'ttm' and \
-                    comment['text'].startswith('pinned-description: Ignored issues'):
-                pinned_ignored_issue = comment['id']
-
-        self.logger.debug('Writing openQA status message: {}'.format(data))
-        if not self.dryrun:
-            if pinned_ignored_issue:
-                self.openqa.openqa_request(
-                    'PUT', 'groups/%s/comments/%d' % (group_id, pinned_ignored_issue), data=data)
-            else:
-                self.openqa.openqa_request(
-                    'POST', 'groups/%s/comments' % group_id, data=data)
 
     def load_issues_to_ignore(self):
         text = self.api.attribute_value_load('IgnoredIssues')
