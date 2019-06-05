@@ -55,7 +55,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         # RepoChecker options.
         self.force = False
 
-    def project_only(self, project, post_comments=False):
+    def project_only(self, project):
         repository = self.project_repository(project)
         if not repository:
             self.logger.error(ERROR_REPO_SPECIFIED.format(project))
@@ -67,45 +67,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         state_hash = self.repository_state(repository_pairs, False)
         self.repository_check(repository_pairs, state_hash, False, bool(post_comments), arch_whitelist=arch_whitelist)
-
-    def package_comments(self, project, repository):
-        self.logger.info('{} package comments'.format(len(self.package_results)))
-
-        for package, sections in self.package_results.items():
-            if str2bool(Config.get(self.apiurl, project).get('repo_checker-package-comment-devel', 'False')):
-                bot_name_suffix = project
-                comment_project, comment_package = devel_project_fallback(self.apiurl, project, package)
-                if comment_project is None or comment_package is None:
-                    self.logger.warning('unable to find devel project for {}'.format(package))
-                    continue
-
-                message = 'The version of this package in [`{project}`](/package/show/{project}/{package}) ' \
-                    'has installation issues and may not be installable:'.format(
-                        project=project, package=package)
-            else:
-                bot_name_suffix = repository
-                comment_project = project
-                comment_package = package
-                message = 'This package has installation issues and may not be installable from the `{}` ' \
-                    'repository:'.format(repository)
-
-            # Sort sections by text to group binaries together.
-            sections = sorted(sections, key=lambda s: s.text)
-            message += '\n\n<pre>\n{}\n</pre>'.format(
-                '\n'.join([section.text for section in sections]).strip())
-
-            # Generate a hash based on the binaries involved and the number of
-            # sections. This eliminates version or release changes from causing
-            # an update to the comment while still updating on relevant changes.
-            binaries = set()
-            for section in sections:
-                binaries.update(section.binaries)
-            info = ';'.join(['::'.join(sorted(binaries)), str(len(sections))])
-            reference = hashlib.sha1(info).hexdigest()[:7]
-
-            # Post comment on package in order to notifiy maintainers.
-            self.comment_write(state='seen', result=reference, bot_name_suffix=bot_name_suffix,
-                               project=comment_project, package=comment_package, message=message)
 
     def target_archs(self, project, repository, arch_whitelist=None):
         archs = target_archs(self.apiurl, project, repository)
@@ -274,36 +235,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         if section:
             yield InstallSection(section, text)
 
-    def cycle_check(self, project, repository, arch, cycle_packages):
-        self.logger.info('cycle check: start %s/%s/%s' % (project, repository, arch))
-        comment = []
-
-        allowed_cycles = []
-        if cycle_packages:
-            for comma_list in cycle_packages.split(';'):
-                allowed_cycles.append(comma_list.split(','))
-
-        depinfo = builddepinfo(self.apiurl, project, repository, arch, order = False)
-        for cycle in depinfo.findall('cycle'):
-            for package in cycle.findall('package'):
-                package = package.text
-                allowed = False
-                for acycle in allowed_cycles:
-                    if package in acycle:
-                        allowed = True
-                        break
-                if not allowed:
-                    cycled = [p.text for p in cycle.findall('package')]
-                    comment.append('Package {} appears in cycle {}'.format(package, '/'.join(cycled)))
-
-        if len(comment):
-            # New cycles, post comment.
-            self.logger.info('cycle check: failed')
-            return CheckResult(False, '\n'.join(comment) + '\n')
-
-        self.logger.info('cycle check: passed')
-        return CheckResult(True, None)
-
     def result_comment(self, repository, arch, results, comment):
         """Generate comment from results"""
         comment.append('## {}/{}\n'.format(repository, arch))
@@ -346,7 +277,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         return None
 
     @memoize(session=True)
-    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, arch_whitelist=None, post_comments=False, cycle_packages=None):
+    def repository_check(self, repository_pairs, state_hash, simulate_merge, whitelist=None, arch_whitelist=None):
         comment = []
         project, repository = repository_pairs[0]
         self.logger.info('checking {}/{}@{}[{}]'.format(
@@ -370,7 +301,6 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not self.force:
             if state_hash == self.repository_state_last(project, repository, simulate_merge):
                 self.logger.info('{} build unchanged'.format(project))
-                # TODO keep track of skipped count for cycle summary
                 return None
 
             # For submit style requests, want to process if top layer is done,
@@ -409,7 +339,6 @@ class RepoChecker(ReviewBot.ReviewBot):
                     whitelist = self.binary_whitelist(repository_pairs[0], repository_pairs[1], arch)
 
                 results = {
-                    'cycle': self.cycle_check(repository_pairs[0][0], repository_pairs[0][1], arch, cycle_packages),
                     'install': self.install_check(
                         repository_pairs[1], arch, directories, ignore, whitelist),
                 }
@@ -418,7 +347,6 @@ class RepoChecker(ReviewBot.ReviewBot):
                 # projects working on cleaning up a product.
                 no_filter = str2bool(Config.get(self.apiurl, project).get('repo_checker-no-filter'))
                 results = {
-                    'cycle': CheckResult(True, None),
                     'install': self.install_check(repository_pairs[0], arch, directories,
                                                   parse=post_comments, no_filter=no_filter),
                 }
@@ -453,9 +381,6 @@ class RepoChecker(ReviewBot.ReviewBot):
             else:
                 print(text)
 
-            if post_comments:
-                self.package_comments(project, repository)
-
         if result and not published:
             # Wait for the complete stack to build before positive result.
             self.logger.debug('demoting result from accept to ignore due to non-published layer')
@@ -481,21 +406,6 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         return repository
 
-    def staging_build_failure_check(self, api, staging):
-        # This check is only utilize to avoid the case of staging changes after
-        # a review succeeds and thus does not re-review after the changes needed
-        # to resolve the build failure are performed. This is one of a variety
-        # of cases in which this can occur, but rather than fix real issue
-        # re-instating this to workaround a common case. (see #1712)
-
-        status = api.project_status(staging, True)
-        # Corrupted requests may reference non-existent projects and will
-        # thus return a None status which should be considered not ready.
-        if not status or (str(status['overall_state']) == 'failed' and len(status['broken_packages']) > 0):
-            return False
-
-        return True
-
     @memoize(ttl=60, session=True)
     def request_repository_pairs(self, request, action):
         if str2bool(Config.get(self.apiurl, action.tgt_project).get('repo_checker-project-skip', 'False')):
@@ -520,10 +430,6 @@ class RepoChecker(ReviewBot.ReviewBot):
                 self.logger.info('{} not staged'.format(request.reqid))
                 return None
 
-            if not self.force and not self.staging_build_failure_check(api, stage_info['prj']):
-                self.logger.info('{} not ready due to staging build failure(s)'.format(request.reqid))
-                return None
-
             repository_pairs.extend(repository_path_expand(self.apiurl, stage_info['prj'], repository))
         else:
             # Find a repository which links to target project "main" repository.
@@ -537,77 +443,6 @@ class RepoChecker(ReviewBot.ReviewBot):
 
         return repository_pairs
 
-    def check_action_submit(self, request, action):
-        repository_pairs = self.request_repository_pairs(request, action)
-        if not isinstance(repository_pairs, list):
-            return repository_pairs
-
-        # use project_only results by default as reference
-        whitelist = None
-        config = Config.get(self.apiurl, action.tgt_project)
-        staging = config.get('staging')
-        arch_whitelist = config.get('repo_checker-arch-whitelist')
-        cycle_packages = config.get('repo_checker-allowed-in-cycles')
-        if staging:
-            api = self.staging_api(staging)
-            if not api.is_adi_project(repository_pairs[0][0]):
-                # For "leaky" ring packages in letter stagings, where the
-                # repository setup does not include the target project, that are
-                # not intended to to have all run-time dependencies satisfied.
-                whitelist = set(config.get('repo_checker-binary-whitelist-ring', '').split(' '))
-
-        state_hash = self.repository_state(repository_pairs, True)
-        if not self.repository_check(repository_pairs, state_hash, True,
-                                     arch_whitelist=arch_whitelist,
-                                     whitelist=whitelist,
-                                     cycle_packages=cycle_packages):
-            return None
-
-        self.review_messages['accepted'] = 'cycle and install check passed'
-        return True
-
-    def check_action_delete_package(self, request, action):
-        # TODO Ignore tgt_project packages that depend on this that are part of
-        # ignore list as and instead look at output from staging for those.
-
-        built_binaries = set([])
-        revdeps = set([])
-        for fileinfo in fileinfo_ext_all(self.apiurl, action.tgt_project, 'standard', 'x86_64', action.tgt_package):
-            built_binaries.add(fileinfo.find('name').text)
-            for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
-                revdeps.add(requiredby.get('name'))
-        runtime_deps = sorted(revdeps - built_binaries)
-
-        what_depends_on = depends_on(self.apiurl, action.tgt_project, 'standard', [action.tgt_package], True)
-
-        # filter out dependency on package itself (happens with eg
-        # java bootstrapping itself with previous build)
-        if action.tgt_package in what_depends_on:
-            what_depends_on.remove(action.tgt_package)
-
-        if len(what_depends_on):
-            self.logger.warning('{} is still a build requirement of:\n\n- {}'.format(
-                action.tgt_package, '\n- '.join(sorted(what_depends_on))))
-
-        if len(runtime_deps):
-            self.logger.warning('{} provides runtime dependencies to:\n\n- {}'.format(
-                action.tgt_package, '\n- '.join(runtime_deps)))
-
-        if len(self.comment_handler.lines):
-            self.comment_write(state='seen', result='failed')
-            return None
-
-        repository_pairs = self.request_repository_pairs(request, action)
-        if not isinstance(repository_pairs, list):
-            return repository_pairs
-
-        state_hash = self.repository_state(repository_pairs, True)
-        if not self.repository_check(repository_pairs, state_hash, True):
-            return None
-
-        self.review_messages['accepted'] = 'cycle and install check passed'
-        return True
-
     def check_action_maintenance_release(self, request, action):
         # No reason to special case patchinfo since same source and target
         # projects which is all that repo_checker cares about.
@@ -620,7 +455,7 @@ class RepoChecker(ReviewBot.ReviewBot):
         if not self.repository_check(repository_pairs, state_hash, True):
             return None
 
-        self.review_messages['accepted'] = 'cycle and install check passed'
+        self.review_messages['accepted'] = 'install check passed'
         return True
 
 
@@ -644,10 +479,9 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         return bot
 
-    @cmdln.option('--post-comments', action='store_true', help='post comments to packages with issues')
     def do_project_only(self, subcmd, opts, project):
         self.checker.check_requests() # Needed to properly init ReviewBot.
-        self.checker.project_only(project, opts.post_comments)
+        self.checker.project_only(project)
 
 if __name__ == '__main__':
     app = CommandLineInterface()
