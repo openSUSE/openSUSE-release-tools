@@ -1,57 +1,28 @@
 #!/usr/bin/python3
 
-from __future__ import print_function
-
-import cmdln
-from collections import namedtuple
-import hashlib
-from lxml import etree as ET
-import os
-import pipes
-import re
-import subprocess
-import sys
-import tempfile
-import osc.core
 import argparse
 import logging
-import yaml
+import os
+import re
+import sys
+from collections import namedtuple
 from urllib.error import HTTPError
 
+import osc.core
+import yaml
+from lxml import etree as ET
 from osc import conf
-from osclib.conf import Config
-from osclib.conf import str2bool
-from osclib.core import BINARY_REGEX
-from osclib.core import builddepinfo
-from osclib.core import duplicated_binaries_in_repo
-from osclib.core import depends_on
-from osclib.core import devel_project_fallback
-from osclib.core import fileinfo_ext_all
-from osclib.core import package_binary_list
-from osclib.core import project_meta_revision
-from osclib.core import project_pseudometa_file_ensure
-from osclib.core import project_pseudometa_file_load
-from osclib.core import project_pseudometa_package
-from osclib.core import repository_path_search
-from osclib.core import repository_path_expand
-from osclib.core import repositories_states
-from osclib.core import repository_arch_state
-from osclib.core import repositories_published
-from osclib.core import target_archs
-from osclib.comments import CommentAPI
-from osclib.memoize import memoize
-from osclib.util import sha1_short
-from osclib.repochecks import mirror, installcheck
-from osclib.stagingapi import StagingAPI
 
-import ReviewBot
+from osclib.comments import CommentAPI
+from osclib.conf import Config
+from osclib.core import (builddepinfo, depends_on, duplicated_binaries_in_repo,
+                         fileinfo_ext_all, repository_arch_state,
+                         repository_path_expand, target_archs)
+from osclib.repochecks import installcheck, mirror
+from osclib.stagingapi import StagingAPI
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CheckResult = namedtuple('CheckResult', ('success', 'comment'))
-INSTALL_REGEX = r"^(?:can't install (.*?)|found conflict of (.*?) with (.*?)):$"
-InstallSection = namedtuple('InstallSection', ('binaries', 'text'))
-
-ERROR_REPO_SPECIFIED = 'a repository must be specified via OSRT:Config main-repo for {}'
 
 class InstallChecker(object):
     def __init__(self, api, config):
@@ -78,9 +49,10 @@ class InstallChecker(object):
         # extract >= and the like
         provide = provides.get('dep')
         provide = provide.split(' ')[0]
-        comments.append('{} provides {} required by {}'.format(fileinfo.find('name').text, provide, requiredby.get('name')))
+        comments.append('{} provides {} required by {}'.format(
+            fileinfo.find('name').text, provide, requiredby.get('name')))
         url = api.makeurl(['build', api.project, api.cmain_repo, 'x86_64', '_repository', requiredby.get('name') + '.rpm'],
-                      {'view': 'fileinfo_ext'})
+                          {'view': 'fileinfo_ext'})
         reverse_fileinfo = ET.parse(osc.core.http_GET(url)).getroot()
         for require in reverse_fileinfo.findall('requires_ext'):
             # extract >= and the like here too
@@ -181,9 +153,6 @@ class InstallChecker(object):
             return True
 
         repository_pairs = repository_path_expand(api.apiurl, project, repository)
-        staging_pair = [project, repository]
-
-        result = True
 
         status = api.project_status(project)
         if not status:
@@ -192,6 +161,7 @@ class InstallChecker(object):
 
         result_comment = []
 
+        result = True
         to_ignore = self.packages_to_ignore(project)
         meta = api.load_prj_pseudometa(status['description'])
         for req in meta['requests']:
@@ -266,7 +236,8 @@ class InstallChecker(object):
     def report_state(self, state, report_url, project, repository, buildids):
         architectures = self.target_archs(project, repository)
         for arch in architectures:
-            self.report_pipeline(state, report_url, project, repository, arch, buildids[arch], arch == architectures[-1])
+            self.report_pipeline(state, report_url, project, repository, arch,
+                                 buildids[arch], arch == architectures[-1])
 
     def gocd_url(self):
         if not os.environ.get('GO_SERVER_URL'):
@@ -274,10 +245,10 @@ class InstallChecker(object):
             return 'http://stephan.kulow.org/'
         report_url = os.environ.get('GO_SERVER_URL').replace(':8154', '')
         return report_url + '/tab/build/detail/{}/{}/{}/{}/{}#tab-console'.format(os.environ.get('GO_PIPELINE_NAME'),
-                            os.environ.get('GO_PIPELINE_COUNTER'),
-                            os.environ.get('GO_STAGE_NAME'),
-                            os.environ.get('GO_STAGE_COUNTER'),
-                            os.environ.get('GO_JOB_NAME'))
+                                                                                  os.environ.get('GO_PIPELINE_COUNTER'),
+                                                                                  os.environ.get('GO_STAGE_NAME'),
+                                                                                  os.environ.get('GO_STAGE_COUNTER'),
+                                                                                  os.environ.get('GO_JOB_NAME'))
 
     def buildid(self, project, repository, architecture):
         url = self.api.makeurl(['build', project, repository, architecture], {'view': 'status'})
@@ -289,7 +260,7 @@ class InstallChecker(object):
 
     def report_url(self, project, repository, architecture, buildid):
         return self.api.makeurl(['status_reports', 'built', project,
-                                repository, architecture, 'reports', buildid])
+                                 repository, architecture, 'reports', buildid])
 
     def report_pipeline(self, state, report_url, project, repository, architecture, buildid, is_last):
         url = self.report_url(project, repository, architecture, buildid)
@@ -348,7 +319,7 @@ class InstallChecker(object):
         self.logger.info('cycle check: start %s/%s/%s' % (project, repository, arch))
         comment = []
 
-        depinfo = builddepinfo(self.api.apiurl, project, repository, arch, order = False)
+        depinfo = builddepinfo(self.api.apiurl, project, repository, arch, order=False)
         for cycle in depinfo.findall('cycle'):
             for package in cycle.findall('package'):
                 package = package.text
@@ -377,6 +348,7 @@ class InstallChecker(object):
             filename += '.' + repository
 
         return filename
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -413,4 +385,4 @@ if __name__ == '__main__':
                 result = staging_report.staging(staging) and result
 
     if not result:
-        sys.exit( 1 )
+        sys.exit(1)
