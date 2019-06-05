@@ -21,13 +21,13 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./check_source.py -A https://api.opensuse.org --verbose --skip-add-reviews --user factory-auto review
-  openSUSE.Repochecker:
+  openSUSE.MaintInstCheck:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
     environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-repo-checker
+      OSC_CONFIG: /home/go/config/oscrc-maintenance-installcheck
     materials:
       git:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -41,7 +41,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.opensuse.org --debug review
+            - script: ./maintenance-installcheck.py -A https://api.opensuse.org --user=maintenance-installcheck --debug review
   openSUSE.Legal.Check:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

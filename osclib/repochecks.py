@@ -5,10 +5,12 @@ import re
 import yaml
 import subprocess
 from fnmatch import fnmatch
+from osclib.cache_manager import CacheManager
 
 logger = logging.getLogger('InstallChecker')
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+CACHEDIR = CacheManager.directory('repository-meta')
 
 class CorruptRepos(Exception):
     pass
@@ -71,6 +73,9 @@ def _fileconflicts(pfile, target_packages, whitelist):
             return output
 
 def _installcheck(pfile, arch, target_packages, whitelist):
+    if not len(target_packages):
+        return None
+
     p = subprocess.run(['/usr/bin/installcheck', arch, pfile], stdout=subprocess.PIPE, text=True)
     if p.returncode:
         output = ''
@@ -89,7 +94,6 @@ def _installcheck(pfile, arch, target_packages, whitelist):
 def installcheck(directories, arch, whitelist, ignore_conflicts):
 
     with tempfile.TemporaryDirectory(prefix='repochecker') as dir:
-        #dir = '.'
         pfile = os.path.join(dir, 'packages')
 
         script = os.path.join(SCRIPT_PATH, '..', 'write_repo_susetags_file.pl')
@@ -104,7 +108,7 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
         target_packages = []
         with open(os.path.join(dir, 'catalog.yml')) as file:
             catalog = yaml.safe_load(file)
-            target_packages = catalog[directories[0]]
+            target_packages = catalog.get(directories[0], [])
 
         parts = []
         output = _fileconflicts(pfile, target_packages, ignore_conflicts)
@@ -116,3 +120,22 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
             parts.append(output)
 
         return parts
+
+def mirror(apiurl, project, repository, arch):
+    """Call bs_mirrorfull script to mirror packages."""
+    directory = os.path.join(CACHEDIR, project, repository, arch)
+    #return directory
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    script = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
+    path = '/'.join((project, repository, arch))
+    logger.info('mirroring {}'.format(path))
+    url = '{}/public/build/{}'.format(apiurl, path)
+    p = subprocess.run(['perl', script, '--nodebug', url, directory])
+
+    if p.returncode:
+        raise Exception('failed to mirror {}'.format(path))
+
+    return directory

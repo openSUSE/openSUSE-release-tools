@@ -18,7 +18,6 @@ import logging
 import yaml
 from urllib.error import HTTPError
 
-from osclib.cache_manager import CacheManager
 from osc import conf
 from osclib.conf import Config
 from osclib.conf import str2bool
@@ -42,11 +41,11 @@ from osclib.core import target_archs
 from osclib.comments import CommentAPI
 from osclib.memoize import memoize
 from osclib.util import sha1_short
+from osclib.repochecks import mirror, installcheck
 from osclib.stagingapi import StagingAPI
 
 import ReviewBot
 
-CACHEDIR = CacheManager.directory('repository-meta')
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CheckResult = namedtuple('CheckResult', ('success', 'comment'))
 INSTALL_REGEX = r"^(?:can't install (.*?)|found conflict of (.*?) with (.*?)):$"
@@ -210,7 +209,7 @@ class InstallChecker(object):
                     if not target_pair and pair_project == api.project:
                         target_pair = [pair_project, pair_repository]
 
-                    directories.append(self.mirror(pair_project, pair_repository, arch))
+                    directories.append(mirror(self.api.apiurl, pair_project, pair_repository, arch))
 
             if not api.is_adi_project(project):
                 # For "leaky" ring packages in letter stagings, where the
@@ -330,27 +329,6 @@ class InstallChecker(object):
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
 
-    @memoize(ttl=60, session=True, add_invalidate=True)
-    def mirror(self, project, repository, arch):
-        """Call bs_mirrorfull script to mirror packages."""
-        directory = os.path.join(CACHEDIR, project, repository, arch)
-        #return directory
-
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        script = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
-        path = '/'.join((project, repository, arch))
-        url = '{}/public/build/{}'.format(self.api.apiurl, path)
-        parts = ['LC_ALL=C', 'perl', script, '--nodebug', url, directory]
-        parts = [pipes.quote(part) for part in parts]
-
-        self.logger.info('mirroring {}'.format(path))
-        if os.system(' '.join(parts)):
-            raise Exception('failed to mirror {}'.format(path))
-
-        return directory
-
     @memoize(session=True)
     def binary_list_existing_problem(self, project, repository):
         """Determine which binaries are mentioned in repo_checker output."""
@@ -373,8 +351,7 @@ class InstallChecker(object):
 
     def install_check(self, directories, arch, whitelist, ignored_conflicts):
         self.logger.info('install check: start (whitelist:{})'.format(','.join(whitelist)))
-        import osclib.repochecks
-        parts = osclib.repochecks.installcheck(directories, arch, whitelist, ignored_conflicts)
+        parts = installcheck(directories, arch, whitelist, ignored_conflicts)
         if len(parts):
             header = '### [install check & file conflicts for {}]'.format(arch)
             return CheckResult(False, header + '\n\n' + ('\n' + ('-' * 80) + '\n\n').join(parts))
