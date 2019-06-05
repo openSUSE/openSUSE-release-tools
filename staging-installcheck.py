@@ -69,7 +69,6 @@ class InstallChecker(object):
         self.cycle_packages = self.config.get('repo_checker-allowed-in-cycles')
         self.calculate_allowed_cycles()
 
-        self.existing_problems = self.binary_list_existing_problem(api.project, api.cmain_repo)
         self.ignore_duplicated = set(self.config.get('installcheck-ignore-duplicated-binaries', '').split(' '))
         self.ignore_conflicts = set(self.config.get('installcheck-ignore-conflicts', '').split(' '))
 
@@ -217,7 +216,7 @@ class InstallChecker(object):
                 # not intended to to have all run-time dependencies satisfied.
                 whitelist = self.ring_whitelist
             else:
-                whitelist = self.existing_problems
+                whitelist = set()
 
             whitelist |= to_ignore
             ignore_conflicts = self.ignore_conflicts | to_ignore
@@ -329,26 +328,6 @@ class InstallChecker(object):
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
 
-    @memoize(session=True)
-    def binary_list_existing_problem(self, project, repository):
-        """Determine which binaries are mentioned in repo_checker output."""
-        binaries = set()
-
-        filename = self.project_pseudometa_file_name(project, repository)
-        content = project_pseudometa_file_load(self.api.apiurl, project, filename)
-        if not content:
-            self.logger.warning('no project_only run from which to extract existing problems')
-            return binaries
-
-        sections = self.install_check_parse(content)
-        for section in sections:
-            for binary in section.binaries:
-                match = re.match(BINARY_REGEX, binary)
-                if match:
-                    binaries.add(match.group('name'))
-
-        return binaries
-
     def install_check(self, directories, arch, whitelist, ignored_conflicts):
         self.logger.info('install check: start (whitelist:{})'.format(','.join(whitelist)))
         parts = installcheck(directories, arch, whitelist, ignored_conflicts)
@@ -358,31 +337,6 @@ class InstallChecker(object):
 
         self.logger.info('install check: passed')
         return CheckResult(True, None)
-
-    def install_check_parse(self, output):
-        section = None
-        text = None
-
-        # Loop over lines and parse into chunks assigned to binaries.
-        for line in output.splitlines(True):
-            if line.startswith(' '):
-                if section:
-                    text += line
-            else:
-                if section:
-                    yield InstallSection(section, text)
-
-                match = re.match(INSTALL_REGEX, line)
-                if match:
-                    # Remove empty groups since regex matches different patterns.
-                    binaries = [b for b in match.groups() if b is not None]
-                    section = binaries
-                    text = line
-                else:
-                    section = None
-
-        if section:
-            yield InstallSection(section, text)
 
     def calculate_allowed_cycles(self):
         self.allowed_cycles = []
