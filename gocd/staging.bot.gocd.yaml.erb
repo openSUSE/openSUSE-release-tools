@@ -85,5 +85,5 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments <%= project %>
+            - script: ./project-installcheck.py -A https://api.opensuse.org --debug project_only <%= project %>
 <% end -%>

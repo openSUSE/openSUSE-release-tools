@@ -1,9 +1,0 @@
-[Unit]
-Description=openSUSE Release Tools: repo-checker project_only for %i
-
-[Timer]
-OnCalendar=hourly
-Unit=osrt-repo-checker-project_only@%i.service
-
-[Install]
-WantedBy=timers.target

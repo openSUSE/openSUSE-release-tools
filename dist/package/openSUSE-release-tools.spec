@@ -210,7 +210,7 @@ Group:          Development/Tools/Other
 BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
-# repo_checker.pl
+# write_repo_susetags_file.pl
 Requires:       build
 Requires:       perl-XML-Simple
 Requires(pre):  shadow
@@ -421,7 +421,6 @@ exit 0
 %{_bindir}/osrt-container_cleaner
 %{_bindir}/osrt-deptool
 %{_bindir}/osrt-fcc_submitter
-%{_bindir}/osrt-findfileconflicts
 %{_bindir}/osrt-issue-diff
 %{_bindir}/osrt-k8s-secret
 %{_bindir}/osrt-legal-auto
@@ -432,7 +431,6 @@ exit 0
 %{_bindir}/osrt-status
 %{_bindir}/osrt-sync-rebuild
 %{_bindir}/osrt-unmaintained
-%{_bindir}/osrt-staging-installcheck
 %{_bindir}/osrt-totest-manager
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
@@ -450,8 +448,8 @@ exit 0
 %exclude %{_bindir}/osrt-staging-report
 %exclude %{_datadir}/%{source_dir}/pkglistgen
 %exclude %{_datadir}/%{source_dir}/pkglistgen.py
-%exclude %{_datadir}/%{source_dir}/repo_checker.pl
-%exclude %{_datadir}/%{source_dir}/repo_checker.py
+%exclude %{_datadir}/%{source_dir}/maintenance-installcheck.py
+%exclude %{_datadir}/%{source_dir}/project-installcheck.py
 %exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
@@ -459,6 +457,8 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
 %exclude %{_datadir}/%{source_dir}/osc-vdelreq.py
 %exclude %{_datadir}/%{source_dir}/update_crawler.py
+%exclude %{_datadir}/%{source_dir}/findfileconflicts
+%exclude %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
 %dir %{_sysconfdir}/openSUSE-release-tools
 
 %files devel
@@ -562,13 +562,14 @@ exit 0
 
 %files repo-checker
 %defattr(-,root,root,-)
-%{_bindir}/osrt-repo_checker
-%{_datadir}/%{source_dir}/repo_checker.pl
-%{_datadir}/%{source_dir}/repo_checker.py
-%{_unitdir}/osrt-repo-checker.service
-%{_unitdir}/osrt-repo-checker.timer
-%{_unitdir}/osrt-repo-checker-project_only@.service
-%{_unitdir}/osrt-repo-checker-project_only@.timer
+%{_bindir}/osrt-project-installcheck
+%{_bindir}/osrt-staging-installcheck
+%{_bindir}/osrt-maintenance-installcheck
+%{_bindir}/osrt-findfileconflicts
+%{_bindir}/osrt-maintenance-installcheck
+%{_bindir}/osrt-write_repo_susetags_file
+%{_datadir}/%{source_dir}/findfileconflicts
+%{_datadir}/%{source_dir}/write_repo_susetags_file.pl
 
 %files staging-bot
 %defattr(-,root,root,-)
