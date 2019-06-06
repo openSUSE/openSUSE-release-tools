@@ -141,22 +141,22 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Factory
+            - script: ./project-installcheck.py -A https://api.opensuse.org --debug project_only openSUSE:Factory
           openSUSE.Leap.15.0.Update:
             timeout: 0
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.0:Update
+            - script: ./project-installcheck.py -A https://api.opensuse.org --debug project_only openSUSE:Leap:15.0:Update
           openSUSE.Leap.42.3.Update:
             timeout: 0
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:42.3:Update
+            - script: ./project-installcheck.py -A https://api.opensuse.org --debug project_only openSUSE:Leap:42.3:Update
           openSUSE.Leap.15.1.Update:
             timeout: 0
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.opensuse.org --debug project_only --post-comments openSUSE:Leap:15.1:Update
+            - script: ./project-installcheck.py -A https://api.opensuse.org --debug project_only openSUSE:Leap:15.1:Update

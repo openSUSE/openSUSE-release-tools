@@ -41,13 +41,13 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-15-SP1:GA
+            - script: ./project-installcheck.py -A https://api.suse.de --debug project_only SUSE:SLE-15-SP1:GA
           SLE_12_SP5:
             timeout: 0
             resources:
             - repo-checker
             tasks:
-            - script: ./repo_checker.py -A https://api.suse.de --debug project_only --post-comments SUSE:SLE-12-SP5:GA
+            - script: ./project-installcheck.py -A https://api.suse.de --debug project_only SUSE:SLE-12-SP5:GA
   SLE-SP1.Manager42:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -65,29 +65,9 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - leaper
+            - staging-bot
             tasks:
-            - script: python3 /usr/bin/osrt-manager_42 -A https://api.suse.de -c /etc/openSUSE-release-tools/manager_42/SUSE:SLE-15-SP1:GA.yml
-  SLE.Repochecker:
-    group: SLE.Checkers
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 */5 * ? * *
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-repo-checker
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Run:
-        approval: manual
-        jobs:
-          Run:
-            timeout: 0
-            resources:
-            - repo-checker
-            tasks:
-            - script: ./repo_checker.py -A https://api.suse.de --debug review
+            - script: ./manager_42.py -A https://api.suse.de -c config/manager_42/SUSE:SLE-15-SP1:GA.yml
   SLE.Leaper:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished

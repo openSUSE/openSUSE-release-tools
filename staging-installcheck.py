@@ -1,58 +1,28 @@
 #!/usr/bin/python3
 
-from __future__ import print_function
-
-import cmdln
-from collections import namedtuple
-import hashlib
-from lxml import etree as ET
-import os
-import pipes
-import re
-import subprocess
-import sys
-import tempfile
-import osc.core
 import argparse
 import logging
-import yaml
+import os
+import re
+import sys
+from collections import namedtuple
 from urllib.error import HTTPError
 
-from osclib.cache_manager import CacheManager
+import osc.core
+import yaml
+from lxml import etree as ET
 from osc import conf
-from osclib.conf import Config
-from osclib.conf import str2bool
-from osclib.core import BINARY_REGEX
-from osclib.core import builddepinfo
-from osclib.core import duplicated_binaries_in_repo
-from osclib.core import depends_on
-from osclib.core import devel_project_fallback
-from osclib.core import fileinfo_ext_all
-from osclib.core import package_binary_list
-from osclib.core import project_meta_revision
-from osclib.core import project_pseudometa_file_ensure
-from osclib.core import project_pseudometa_file_load
-from osclib.core import project_pseudometa_package
-from osclib.core import repository_path_search
-from osclib.core import repository_path_expand
-from osclib.core import repositories_states
-from osclib.core import repository_arch_state
-from osclib.core import repositories_published
-from osclib.core import target_archs
+
 from osclib.comments import CommentAPI
-from osclib.memoize import memoize
-from osclib.util import sha1_short
+from osclib.conf import Config
+from osclib.core import (builddepinfo, depends_on, duplicated_binaries_in_repo,
+                         fileinfo_ext_all, repository_arch_state,
+                         repository_path_expand, target_archs)
+from osclib.repochecks import installcheck, mirror
 from osclib.stagingapi import StagingAPI
 
-import ReviewBot
-
-CACHEDIR = CacheManager.directory('repository-meta')
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CheckResult = namedtuple('CheckResult', ('success', 'comment'))
-INSTALL_REGEX = r"^(?:can't install (.*?)|found conflict of (.*?) with (.*?)):$"
-InstallSection = namedtuple('InstallSection', ('binaries', 'text'))
-
-ERROR_REPO_SPECIFIED = 'a repository must be specified via OSRT:Config main-repo for {}'
 
 class InstallChecker(object):
     def __init__(self, api, config):
@@ -70,8 +40,8 @@ class InstallChecker(object):
         self.cycle_packages = self.config.get('repo_checker-allowed-in-cycles')
         self.calculate_allowed_cycles()
 
-        self.existing_problems = self.binary_list_existing_problem(api.project, api.cmain_repo)
         self.ignore_duplicated = set(self.config.get('installcheck-ignore-duplicated-binaries', '').split(' '))
+        self.ignore_conflicts = set(self.config.get('installcheck-ignore-conflicts', '').split(' '))
 
     def check_required_by(self, fileinfo, provides, requiredby, built_binaries, comments):
         if requiredby.get('name') in built_binaries:
@@ -79,9 +49,10 @@ class InstallChecker(object):
         # extract >= and the like
         provide = provides.get('dep')
         provide = provide.split(' ')[0]
-        comments.append('{} provides {} required by {}'.format(fileinfo.find('name').text, provide, requiredby.get('name')))
+        comments.append('{} provides {} required by {}'.format(
+            fileinfo.find('name').text, provide, requiredby.get('name')))
         url = api.makeurl(['build', api.project, api.cmain_repo, 'x86_64', '_repository', requiredby.get('name') + '.rpm'],
-                      {'view': 'fileinfo_ext'})
+                          {'view': 'fileinfo_ext'})
         reverse_fileinfo = ET.parse(osc.core.http_GET(url)).getroot()
         for require in reverse_fileinfo.findall('requires_ext'):
             # extract >= and the like here too
@@ -141,7 +112,7 @@ class InstallChecker(object):
             args = match.group('args').strip()
             # allow space and comma to seperate
             args = args.replace(',', ' ').split(' ')
-        return args
+        return set(args)
 
     def staging(self, project, force=False):
         api = self.api
@@ -182,9 +153,6 @@ class InstallChecker(object):
             return True
 
         repository_pairs = repository_path_expand(api.apiurl, project, repository)
-        staging_pair = [project, repository]
-
-        result = True
 
         status = api.project_status(project)
         if not status:
@@ -193,6 +161,7 @@ class InstallChecker(object):
 
         result_comment = []
 
+        result = True
         to_ignore = self.packages_to_ignore(project)
         meta = api.load_prj_pseudometa(status['description'])
         for req in meta['requests']:
@@ -209,7 +178,7 @@ class InstallChecker(object):
                     if not target_pair and pair_project == api.project:
                         target_pair = [pair_project, pair_repository]
 
-                    directories.append(self.mirror(pair_project, pair_repository, arch))
+                    directories.append(mirror(self.api.apiurl, pair_project, pair_repository, arch))
 
             if not api.is_adi_project(project):
                 # For "leaky" ring packages in letter stagings, where the
@@ -217,9 +186,10 @@ class InstallChecker(object):
                 # not intended to to have all run-time dependencies satisfied.
                 whitelist = self.ring_whitelist
             else:
-                whitelist = self.existing_problems
+                whitelist = set()
 
-            whitelist |= set(to_ignore)
+            whitelist |= to_ignore
+            ignore_conflicts = self.ignore_conflicts | to_ignore
 
             check = self.cycle_check(project, repository, arch)
             if not check.success:
@@ -227,7 +197,7 @@ class InstallChecker(object):
                 result_comment.append(check.comment)
                 result = False
 
-            check = self.install_check(target_pair, arch, directories, None, whitelist)
+            check = self.install_check(directories, arch, whitelist, ignore_conflicts)
             if not check.success:
                 self.logger.warning('Install check failed')
                 result_comment.append(check.comment)
@@ -266,7 +236,8 @@ class InstallChecker(object):
     def report_state(self, state, report_url, project, repository, buildids):
         architectures = self.target_archs(project, repository)
         for arch in architectures:
-            self.report_pipeline(state, report_url, project, repository, arch, buildids[arch], arch == architectures[-1])
+            self.report_pipeline(state, report_url, project, repository, arch,
+                                 buildids[arch], arch == architectures[-1])
 
     def gocd_url(self):
         if not os.environ.get('GO_SERVER_URL'):
@@ -274,10 +245,10 @@ class InstallChecker(object):
             return 'http://stephan.kulow.org/'
         report_url = os.environ.get('GO_SERVER_URL').replace(':8154', '')
         return report_url + '/tab/build/detail/{}/{}/{}/{}/{}#tab-console'.format(os.environ.get('GO_PIPELINE_NAME'),
-                            os.environ.get('GO_PIPELINE_COUNTER'),
-                            os.environ.get('GO_STAGE_NAME'),
-                            os.environ.get('GO_STAGE_COUNTER'),
-                            os.environ.get('GO_JOB_NAME'))
+                                                                                  os.environ.get('GO_PIPELINE_COUNTER'),
+                                                                                  os.environ.get('GO_STAGE_NAME'),
+                                                                                  os.environ.get('GO_STAGE_COUNTER'),
+                                                                                  os.environ.get('GO_JOB_NAME'))
 
     def buildid(self, project, repository, architecture):
         url = self.api.makeurl(['build', project, repository, architecture], {'view': 'status'})
@@ -289,7 +260,7 @@ class InstallChecker(object):
 
     def report_url(self, project, repository, architecture, buildid):
         return self.api.makeurl(['status_reports', 'built', project,
-                                repository, architecture, 'reports', buildid])
+                                 repository, architecture, 'reports', buildid])
 
     def report_pipeline(self, state, report_url, project, repository, architecture, buildid, is_last):
         url = self.report_url(project, repository, architecture, buildid)
@@ -328,135 +299,15 @@ class InstallChecker(object):
         # Trick to prioritize x86_64.
         return sorted(archs, reverse=True)
 
-    @memoize(ttl=60, session=True, add_invalidate=True)
-    def mirror(self, project, repository, arch):
-        """Call bs_mirrorfull script to mirror packages."""
-        directory = os.path.join(CACHEDIR, project, repository, arch)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        script = os.path.join(SCRIPT_PATH, 'bs_mirrorfull')
-        path = '/'.join((project, repository, arch))
-        url = '{}/public/build/{}'.format(self.api.apiurl, path)
-        parts = ['LC_ALL=C', 'perl', script, '--nodebug', url, directory]
-        parts = [pipes.quote(part) for part in parts]
-
-        self.logger.info('mirroring {}'.format(path))
-        if os.system(' '.join(parts)):
-            raise Exception('failed to mirror {}'.format(path))
-
-        return directory
-
-    @memoize(session=True)
-    def binary_list_existing_problem(self, project, repository):
-        """Determine which binaries are mentioned in repo_checker output."""
-        binaries = set()
-
-        filename = self.project_pseudometa_file_name(project, repository)
-        content = project_pseudometa_file_load(self.api.apiurl, project, filename)
-        if not content:
-            self.logger.warning('no project_only run from which to extract existing problems')
-            return binaries
-
-        sections = self.install_check_parse(content)
-        for section in sections:
-            for binary in section.binaries:
-                match = re.match(BINARY_REGEX, binary)
-                if match:
-                    binaries.add(match.group('name'))
-
-        return binaries
-
-    def install_check(self, target_project_pair, arch, directories,
-                      ignore=None, whitelist=[], parse=False, no_filter=False):
-        self.logger.info('install check: start (ignore:{}, whitelist:{}, parse:{}, no_filter:{})'.format(
-            bool(ignore), len(whitelist), parse, no_filter))
-
-        with tempfile.NamedTemporaryFile() as ignore_file:
-            # Print ignored rpms on separate lines in ignore file.
-            if ignore:
-                for item in ignore:
-                    ignore_file.write(item + '\n')
-                ignore_file.flush()
-
-            # Invoke repo_checker.pl to perform an install check.
-            script = os.path.join(SCRIPT_PATH, 'repo_checker.pl')
-            parts = ['LC_ALL=C', 'perl', script, arch, ','.join(directories),
-                     '-f', ignore_file.name, '-w', ','.join(whitelist)]
-            if no_filter:
-                parts.append('--no-filter')
-
-            parts = [pipes.quote(part) for part in parts]
-            p = subprocess.Popen(' '.join(parts), shell=True,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, close_fds=True)
-            stdout, stderr = p.communicate()
-
-        if p.returncode:
-            self.logger.info('install check: failed')
-            if p.returncode == 126:
-                self.logger.warning('mirror cache reset due to corruption')
-                self._invalidate_all()
-            elif parse:
-                # Parse output for later consumption for posting comments.
-                sections = self.install_check_parse(stdout)
-                self.install_check_sections_group(
-                    target_project_pair[0], target_project_pair[1], arch, sections)
-
-            # Format output as markdown comment.
-            parts = []
-
-            stdout = stdout.decode('utf-8').strip()
-            if stdout:
-                parts.append(stdout + '\n')
-            stderr = stderr.strip()
-            if stderr:
-                parts.append(stderr + '\n')
-
+    def install_check(self, directories, arch, whitelist, ignored_conflicts):
+        self.logger.info('install check: start (whitelist:{})'.format(','.join(whitelist)))
+        parts = installcheck(directories, arch, whitelist, ignored_conflicts)
+        if len(parts):
             header = '### [install check & file conflicts for {}]'.format(arch)
             return CheckResult(False, header + '\n\n' + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
         self.logger.info('install check: passed')
         return CheckResult(True, None)
-
-    def install_check_sections_group(self, project, repository, arch, sections):
-        _, binary_map = package_binary_list(self.api.apiurl, project, repository, arch)
-
-        for section in sections:
-            # If switch to creating bugs likely makes sense to join packages to
-            # form grouping key and create shared bugs for conflicts.
-            # Added check for b in binary_map after encountering:
-            # https://lists.opensuse.org/opensuse-buildservice/2017-08/msg00035.html
-            # Under normal circumstances this should never occur.
-            packages = set([binary_map[b] for b in section.binaries if b in binary_map])
-            for package in packages:
-                self.package_results.setdefault(package, [])
-                self.package_results[package].append(section)
-
-    def install_check_parse(self, output):
-        section = None
-        text = None
-
-        # Loop over lines and parse into chunks assigned to binaries.
-        for line in output.splitlines(True):
-            if line.startswith(' '):
-                if section:
-                    text += line
-            else:
-                if section:
-                    yield InstallSection(section, text)
-
-                match = re.match(INSTALL_REGEX, line)
-                if match:
-                    # Remove empty groups since regex matches different patterns.
-                    binaries = [b for b in match.groups() if b is not None]
-                    section = binaries
-                    text = line
-                else:
-                    section = None
-
-        if section:
-            yield InstallSection(section, text)
 
     def calculate_allowed_cycles(self):
         self.allowed_cycles = []
@@ -468,7 +319,7 @@ class InstallChecker(object):
         self.logger.info('cycle check: start %s/%s/%s' % (project, repository, arch))
         comment = []
 
-        depinfo = builddepinfo(self.api.apiurl, project, repository, arch, order = False)
+        depinfo = builddepinfo(self.api.apiurl, project, repository, arch, order=False)
         for cycle in depinfo.findall('cycle'):
             for package in cycle.findall('package'):
                 package = package.text
@@ -497,6 +348,7 @@ class InstallChecker(object):
             filename += '.' + repository
 
         return filename
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -533,4 +385,4 @@ if __name__ == '__main__':
                 result = staging_report.staging(staging) and result
 
     if not result:
-        sys.exit( 1 )
+        sys.exit(1)
