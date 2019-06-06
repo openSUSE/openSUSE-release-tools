@@ -1,22 +1,33 @@
 #!/usr/bin/python3
 
+import datetime
+import difflib
+import hashlib
 import logging
 import os
+import os.path
+import re
+import subprocess
 import sys
-from collections import namedtuple
+import tempfile
+from urllib.parse import urlencode
 
+import yaml
+from lxml import etree as ET
 from osc import conf
 
 import ToolBase
-from osclib.cache_manager import CacheManager
 from osclib.conf import Config
-from osclib.core import (repository_path_expand, repository_path_search,
-                         target_archs, project_pseudometa_file_ensure)
-from osclib.repochecks import mirror, installcheck
+from osclib.core import (http_GET, http_POST, makeurl,
+                         project_pseudometa_file_ensure,
+                         repository_path_expand, repository_path_search,
+                         target_archs, source_file_load, source_file_ensure)
+from osclib.repochecks import installcheck, mirror, parsed_installcheck, CorruptRepos
+
 
 class RepoChecker():
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger('RepoChecker')
 
     def project_only(self, project):
         repository = self.project_repository(project)
@@ -80,6 +91,23 @@ class RepoChecker():
 
         return result
 
+    def _split_and_filter(self, output):
+        output = output.split("\n")
+        rebuild_counter_re = re.compile(r'(needed by [^ ]*\-[^-]*)\-[^-]*\.\w+$')
+        for lnr, line in enumerate(output):
+            if line.startswith('FOLLOWUP'):
+                # there can be multiple lines with missing providers
+                while lnr >= 0 and output[lnr - 1].endswith('none of the providers can be installed'):
+                    output.pop()
+                    lnr = lnr - 1
+        for lnr in reversed(range(len(output))):
+            # those lines are hardly interesting for us
+            if output[lnr].find('(we have') >= 0:
+                del output[lnr]
+            else:
+                output[lnr] = rebuild_counter_re.sub(r'\1', output[lnr])
+        return output
+
     def project_repository(self, project):
         repository = Config.get(self.apiurl, project).get('main-repo')
         if not repository:
@@ -97,6 +125,169 @@ class RepoChecker():
 
         return repository
 
+    def rebuild(self, project, repository, arch):
+        Config.get(self.apiurl, project)
+
+        oldstate = None
+        try:
+            with open('state.yaml') as file:
+                oldstate = yaml.safe_load(file)
+        except OSError:
+            pass
+
+        oldstate = oldstate or {}
+        oldstate.setdefault('check', {})
+        oldstate.setdefault('leafs', {})
+
+        repository_pairs = repository_path_expand(self.apiurl, project, repository)
+        directories = []
+        for pair_project, pair_repository in repository_pairs:
+            directories.append(mirror(self.apiurl, pair_project, pair_repository, arch))
+
+        parsed = dict()
+        with tempfile.TemporaryDirectory(prefix='repochecker') as dir:
+            pfile = os.path.join(dir, 'packages')
+
+            SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+            script = os.path.join(SCRIPT_PATH, 'write_repo_susetags_file.pl')
+            parts = ['perl', script, dir] + directories
+
+            p = subprocess.run(parts)
+            if p.returncode:
+                # technically only 126, but there is no other value atm -
+                # so if some other perl error happens, we don't continue
+                raise CorruptRepos
+
+            target_packages = []
+            with open(os.path.join(dir, 'catalog.yml')) as file:
+                catalog = yaml.safe_load(file)
+                target_packages = catalog.get(directories[0], [])
+
+            parsed = parsed_installcheck(pfile, arch, target_packages, [])
+            for package in parsed:
+                parsed[package]['output'] = "\n".join(parsed[package]['output'])
+
+            # let's risk a N*N algorithm in the hope that we have a limited N
+            for package1 in parsed:
+                output = parsed[package1]['output']
+                for package2 in parsed:
+                    if package1 == package2:
+                        continue
+                    output = output.replace(parsed[package2]['output'], 'FOLLOWUP(' + package2 + ')')
+                parsed[package1]['output'] = output
+
+            for package in parsed:
+                parsed[package]['output'] = self._split_and_filter(parsed[package]['output'])
+
+        url = makeurl(self.apiurl, ['build', project, '_result'], {
+                      'repository': repository, 'arch': arch, 'code': 'succeeded'})
+        root = ET.parse(http_GET(url)).getroot()
+        succeeding = list(map(lambda x: x.get('package'), root.findall('.//status')))
+
+        per_source = dict()
+
+        for package, entry in parsed.items():
+            source = "{}/{}/{}/{}".format(project, repository, arch, entry['source'])
+            per_source.setdefault(source, {'output': [], 'builds': entry['source'] in succeeding})
+            per_source[source]['output'].extend(entry['output'])
+
+        rebuilds = set()
+
+        for source in sorted(per_source):
+            if not len(per_source[source]['output']):
+                continue
+            self.logger.debug("{} builds: {}".format(source, per_source[source]['builds']))
+            self.logger.debug("  " + "\n  ".join(per_source[source]['output']))
+            if not per_source[source]['builds']:  # nothing we can do
+                continue
+            old_output = oldstate['check'].get(source, {}).get('problem', [])
+            if old_output == per_source[source]['output']:
+                self.logger.debug("unchanged problem")
+                continue
+            self.logger.info("rebuild %s", source)
+            rebuilds.add(os.path.basename(source))
+            for line in difflib.unified_diff(old_output, per_source[source]['output'], 'before', 'now'):
+                self.logger.debug(line.strip())
+            oldstate['check'][source] = {'problem': per_source[source]['output'],
+                                         'rebuild':  str(datetime.datetime.now())}
+
+        for source in list(oldstate['check']):
+            if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):
+                continue
+            if not os.path.basename(source) in succeeding:
+                continue
+            if source not in per_source:
+                self.logger.info("No known problem, erasing %s", source)
+                del oldstate['check'][source]
+
+        packages = ['branding-openSUSE', 'PackageKit-branding-openSUSE', 'xfce4-branding-openSUSE',
+                    'xfce4-branding-openSUSE', 'installation-images:openSUSE', 'installation-images:Kubic',
+                    'installation-images-extras', 'rpmlint', 'rpmlint-mini']
+
+        # first round: collect all infos from obs
+        infos = dict()
+        for package in packages:
+            subpacks, build_deps = self.check_leaf_package(project, repository, arch, package)
+            infos[package] = {'subpacks': subpacks, 'deps': build_deps}
+
+        # calculate rebuild triggers
+        rebuild_triggers = dict()
+        for package1 in packages:
+            for package2 in packages:
+                if package1 == package2:
+                    continue
+                for subpack in infos[package1]['subpacks']:
+                    if subpack in infos[package2]['deps']:
+                        rebuild_triggers.setdefault(package1, set())
+                        rebuild_triggers[package1].add(package2)
+                        # ignore this depencency. we already trigger both of them
+                        del infos[package2]['deps'][subpack]
+
+        # calculate build info hashes
+        for package in packages:
+            if not package in succeeding:
+                self.logger.debug("Ignore %s for the moment, not succeeding", package)
+                continue
+            m = hashlib.sha256()
+            for bdep in sorted(infos[package]['deps']):
+                m.update(bytes(bdep + '-' + infos[package]['deps'][bdep], 'utf-8'))
+            state_key = '{}/{}/{}/{}'.format(project, repository, arch, package)
+            olddigest = oldstate['leafs'].get(state_key, {}).get('buildinfo')
+            if olddigest == m.hexdigest():
+                continue
+            self.logger.info("rebuild leaf package %s (%s vs %s)", package, olddigest, m.hexdigest())
+            rebuilds.add(package)
+            oldstate['leafs'][state_key] = {'buildinfo': m.hexdigest(),
+                                            'rebuild': str(datetime.datetime.now())}
+
+        if not len(rebuilds):
+            self.logger.debug("Nothing to rebuild")
+            return
+
+        if self.dryrun:
+            self.logger.info("To rebuild: %s", ' '.join(rebuilds))
+            return
+
+        query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
+        url = makeurl(self.apiurl, ['build', project], urlencode(query, doseq=True))
+        http_POST(url)
+
+        with open('state.yaml', 'w') as file:
+            yaml.dump(oldstate, file, default_flow_style=False)
+
+    def check_leaf_package(self, project, repository, arch, package):
+        url = makeurl(self.apiurl, ['build', project, repository, arch, package, '_buildinfo'])
+        root = ET.parse(http_GET(url)).getroot()
+        subpacks = set()
+        for sp in root.findall('subpack'):
+            subpacks.add(sp.text)
+        build_deps = dict()
+        for bd in root.findall('bdep'):
+            if bd.get('notmeta') == '1':
+                continue
+            build_deps[bd.get('name')] = bd.get('version') + '-' + bd.get('release')
+        return subpacks, build_deps
+
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
@@ -104,15 +295,23 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
 
     def setup_tool(self):
-        tool = RepoChecker()
-        if self.options.debug:
-            logging.basicConfig(level=logging.DEBUG)
-        elif self.options.verbose:
-            logging.basicConfig(level=logging.INFO)
+        return RepoChecker()
 
-        return tool
+    def do_rebuild(self, subcmd, opts, project, repository, arch):
+        """${cmd_name}: Rebuild packages in rebuild=local projects
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        self.tool.apiurl = conf.config['apiurl']
+        self.tool.rebuild(project, repository, arch)
 
     def do_project_only(self, subcmd, opts, project):
+        """${cmd_name}: Update repository repo of a project
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
         self.tool.apiurl = conf.config['apiurl']
         self.tool.project_only(project)
 
