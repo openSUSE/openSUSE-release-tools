@@ -86,7 +86,14 @@ def _installcheck(pfile, arch, target_packages, whitelist):
                 in_problem = False
             match = install_re.match(line)
             if match:
-                in_problem = match.group(1) in target_packages
+                package = match.group(1)
+                in_problem = False
+                if not package in target_packages:
+                    continue
+                if package in whitelist:
+                    logger.debug("{} fails installcheck but is white listed".format(package))
+                    continue
+                in_problem = True
             if in_problem:
                 output += line + "\n"
         return output
