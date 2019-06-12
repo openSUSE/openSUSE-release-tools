@@ -23,7 +23,7 @@ bodytemplate: '
   '
 iso: openSUSE-Kubic-DVD-x86_64-Current.iso
 changesfile: "Changes.Kubic.{version}.txt"
-to: rbrown@opensuse.org
+to: opensuse-kubic@opensuse.org
 name: openSUSE:Kubic
 subject: New Kubic snapshot {version} released!
 sender: Richard Brown <rbrown@suse.de>
