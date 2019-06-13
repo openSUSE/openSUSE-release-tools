@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-<% ['Factory', 'Kubic'].each do |project| -%>
+<% ['Factory', 'Kubic', 'MicroOS'].each_with_index do |project, index| -%>
   Announcer.<%= project %>:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -10,7 +10,7 @@ pipelines:
       script:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
     timer:
-      spec: 0 0 * ? * *
+      spec: 0 <%= index %> * ? * *
       only_on_changes: false
     stages:
     - Run:
