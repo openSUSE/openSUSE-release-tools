@@ -27,7 +27,7 @@ pipelines:
       script:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
     timer:
-      spec: 0 0 * ? * *
+      spec: 0 1 * ? * *
       only_on_changes: false
     stages:
     - Run:
@@ -45,7 +45,7 @@ pipelines:
       script:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
     timer:
-      spec: 0 0 * ? * *
+      spec: 0 2 * ? * *
       only_on_changes: false
     stages:
     - Run:
