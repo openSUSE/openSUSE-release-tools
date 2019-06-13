@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-<% ['Factory', 'Kubic'].each do |project| -%>
+<% ['Factory', 'Kubic', 'MicroOS'].each do |project| -%>
   Announcer.<%= project %>:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
