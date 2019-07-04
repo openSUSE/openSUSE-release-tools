@@ -127,6 +127,27 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./leaper.py -A https://api.opensuse.org --verbose project openSUSE:Maintenance maintenance_incident
+  PackageHub15SP1.Manager42:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */30 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-leaper
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: ./manager_42.py -A https://api.opensuse.org -c config/manager_42/openSUSE:Backports:SLE-15-SP1.yml
+
   Factory.Staging.Report:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
