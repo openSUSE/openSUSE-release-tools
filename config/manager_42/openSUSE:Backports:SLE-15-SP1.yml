@@ -1,0 +1,4 @@
+---
+from_prj: openSUSE:Backports:SLE-15-SP1
+project_preference_order:
+    - openSUSE:Leap:15.1
