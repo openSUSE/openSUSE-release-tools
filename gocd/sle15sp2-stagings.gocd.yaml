@@ -1,10 +1,10 @@
 ---
 format_version: 3
 pipelines:
-  SLE15.SP1.Stagings.RelPkgs:
+  SLE15.SP2.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 */10 * ? * *
@@ -16,90 +16,90 @@ pipelines:
     - Generate.Release.Package:
         approval: manual
         jobs:
-          SLE.15.SP1.Staging.A:
+          SLE.15.SP2.Staging.A:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:A
+                 --staging SUSE:SLE-15-SP2:GA:Staging:A
                  --only-release-packages --force
-          SLE.15.SP1.Staging.B:
+          SLE.15.SP2.Staging.B:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:B
+                 --staging SUSE:SLE-15-SP2:GA:Staging:B
                  --only-release-packages --force
-          SLE.15.SP1.Staging.C:
+          SLE.15.SP2.Staging.C:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:C
+                 --staging SUSE:SLE-15-SP2:GA:Staging:C
                  --only-release-packages --force
-          SLE.15.SP1.Staging.D:
+          SLE.15.SP2.Staging.D:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:D
+                 --staging SUSE:SLE-15-SP2:GA:Staging:D
                  --only-release-packages --force
-          SLE.15.SP1.Staging.E:
+          SLE.15.SP2.Staging.E:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:E
+                 --staging SUSE:SLE-15-SP2:GA:Staging:E
                  --only-release-packages --force
-          SLE.15.SP1.Staging.F:
+          SLE.15.SP2.Staging.F:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:F
+                 --staging SUSE:SLE-15-SP2:GA:Staging:F
                  --only-release-packages --force
-          SLE.15.SP1.Staging.G:
+          SLE.15.SP2.Staging.G:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:G
+                 --staging SUSE:SLE-15-SP2:GA:Staging:G
                  --only-release-packages --force
-          SLE.15.SP1.Staging.H:
+          SLE.15.SP2.Staging.H:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:H
+                 --staging SUSE:SLE-15-SP2:GA:Staging:H
                  --only-release-packages --force
-          SLE.15.SP1.Staging.S:
+          SLE.15.SP2.Staging.S:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:S
+                 --staging SUSE:SLE-15-SP2:GA:Staging:S
                  --only-release-packages --force
-          SLE.15.SP1.Staging.V:
+          SLE.15.SP2.Staging.V:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:V
+                 --staging SUSE:SLE-15-SP2:GA:Staging:V
                  --only-release-packages --force
-          SLE.15.SP1.Staging.Y:
+          SLE.15.SP2.Staging.Y:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP1:GA:Staging:Y
+                 --staging SUSE:SLE-15-SP2:GA:Staging:Y
                  --only-release-packages --force
 
-  SLE15.SP1.Staging.A:
+  SLE15.SP2.Staging.A:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:A
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:A
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -107,7 +107,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:A_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:A_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -140,12 +140,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.B:
+  SLE15.SP2.Staging.B:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:B
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:B
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -153,7 +153,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:B_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:B_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -186,12 +186,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.C:
+  SLE15.SP2.Staging.C:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:C
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:C
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -199,7 +199,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:C_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:C_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -232,12 +232,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.D:
+  SLE15.SP2.Staging.D:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:D
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:D
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -245,7 +245,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:D_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:D_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -278,12 +278,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.E:
+  SLE15.SP2.Staging.E:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:E
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:E
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -291,7 +291,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:E_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:E_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -324,12 +324,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.F:
+  SLE15.SP2.Staging.F:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:F
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:F
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -337,7 +337,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:F_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:F_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -370,12 +370,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.G:
+  SLE15.SP2.Staging.G:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:G
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:G
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -383,7 +383,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:G_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:G_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -416,12 +416,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.H:
+  SLE15.SP2.Staging.H:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:H
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:H
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -429,7 +429,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:H_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:H_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -462,12 +462,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.S:
+  SLE15.SP2.Staging.S:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:S
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:S
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -475,7 +475,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:S_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:S_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -508,12 +508,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.V:
+  SLE15.SP2.Staging.V:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:V
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:V
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -521,7 +521,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:V_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:V_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -554,12 +554,12 @@ pipelines:
                 exit 1
               fi
   
-  SLE15.SP1.Staging.Y:
+  SLE15.SP2.Staging.Y:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP1:GA:Staging:Y
+      STAGING_PROJECT: SUSE:SLE-15-SP2:GA:Staging:Y
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP1.Stagings
+    group: SLE15.SP2.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -567,7 +567,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP1:GA:Staging:Y_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA:Staging:Y_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
