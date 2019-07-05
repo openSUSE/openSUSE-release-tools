@@ -55,7 +55,7 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s pending
+              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
               python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
@@ -67,9 +67,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s success
+                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -r standard -s failure
+                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   <% end -%>
