@@ -1,7 +1,7 @@
 format_version: 3
 pipelines:
-  SLE15.SP1.RelPkgs:
-    group: SLE15.SP1.Target
+  SLE15.SP2.RelPkgs:
+    group: SLE15.SP2.Target
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 10 * ? * *
@@ -17,17 +17,17 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP1:GA -s target --only-release-packages --force
+        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP2:GA -s target --only-release-packages --force
 
-  SLE15.SP1.Package.Lists:
-    group: SLE15.SP1.Target
+  SLE15.SP2.Package.Lists:
+    group: SLE15.SP2.Target
     lock_behavior: unlockWhenFinished
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:SLE-15-SP1:GA_-_standard.yaml
+          - SUSE:SLE-15-SP2:GA_-_standard.yaml
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     stages:
@@ -35,17 +35,17 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: ./pkglistgen.py --apiurl https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP1:GA -s target --force || true
+        - script: ./pkglistgen.py --apiurl https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP2:GA -s target --force || true
 
-  SLE15.SP1.Images:
-    group: SLE15.SP1.Target
+  SLE15.SP2.Images:
+    group: SLE15.SP2.Target
     lock_behavior: unlockWhenFinished
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:SLE-15-SP1:GA_-_images.yaml
+          - SUSE:SLE-15-SP2:GA_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -62,7 +62,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP1:GA -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP2:GA -r images
 
     - Release.Images.To.Test:
         approval: manual
@@ -75,14 +75,14 @@ pipelines:
         tasks:
         - script: |-
             for product in kiwi-templates-SLES15-JeOS \
-                SLES15-SP1-Azure SLES15-SP1-Azure-BYOS \
-                SLES15-SP1-Azure-Priority SLES15-SP1-Azure-Standard \
-                SLES15-SP1-EC2-ECS-HVM SLES15-SP1-EC2-HVM \
-                SLES15-SP1-EC2-HVM-BYOS SLES15-SP1-GCE SLES15-SP1-GCE-BYOS \
-                SLES15-SP1-SAP-Azure SLES15-SP1-SAP-Azure-BYOS \
-                SLES15-SP1-SAP-Azure-LI-BYOS \
-                SLES15-SP1-SAP-EC2-HVM SLES15-SP1-SAP-EC2-HVM-BYOS \
-                SLES15-SP1-OCI-BYOS SLES15-SP1-SAP-OCI-BYOS \
-                SLES15-SP1-SAP-GCE SLES15-SP1-SAP-GCE-BYOS 000product; do
-              osc -A https://api.suse.de release SUSE:SLE-15-SP1:GA $product
+                SLES15-SP2-Azure SLES15-SP2-Azure-BYOS \
+                SLES15-SP2-Azure-Priority SLES15-SP2-Azure-Standard \
+                SLES15-SP2-EC2-ECS-HVM SLES15-SP2-EC2-HVM \
+                SLES15-SP2-EC2-HVM-BYOS SLES15-SP2-GCE SLES15-SP2-GCE-BYOS \
+                SLES15-SP2-SAP-Azure SLES15-SP2-SAP-Azure-BYOS \
+                SLES15-SP2-SAP-Azure-LI-BYOS \
+                SLES15-SP2-SAP-EC2-HVM SLES15-SP2-SAP-EC2-HVM-BYOS \
+                SLES15-SP2-OCI-BYOS SLES15-SP2-SAP-OCI-BYOS \
+                SLES15-SP2-SAP-GCE SLES15-SP2-SAP-GCE-BYOS 000product; do
+              osc -A https://api.suse.de release SUSE:SLE-15-SP2:GA $product
             done
