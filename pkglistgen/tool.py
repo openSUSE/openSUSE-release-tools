@@ -697,7 +697,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
 
-        error_output = ''
+        error_output = b''
         reference_summary = os.path.join(group_dir, 'reference-summary.yml')
         if os.path.isfile(reference_summary):
             summary_file = os.path.join(product_dir, 'summary.yml')
@@ -725,5 +725,5 @@ class PkgListGen(ToolBase.ToolBase):
                 error_output += e.output
 
         if len(error_output) > 0:
-            self.logger.error('Difference in yml:\n' + error_output)
+            self.logger.error('Difference in yml:\n' + error_output.decode('utf-8'))
             return True
