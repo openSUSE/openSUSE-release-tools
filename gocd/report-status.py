@@ -44,7 +44,7 @@ def report_pipeline(args, architecture, is_last):
     buildid = buildid.text
     url = makeurl(args.apiurl, ['status_reports', 'built', args.project,
                                 args.repository, architecture, 'reports', buildid])
-    name = 'gitlab-pipeline'
+    name = args.name
     state = args.state
     # this is a little bit ugly, but we don't need 2 failures. So save a success for the
     # other archs to mark them as visited - pending we put in both
@@ -80,6 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--project', metavar='PROJECT', help='Project', required=True)
     parser.add_argument('-r', '--repository', metavar='REPOSITORY', help='Repository', required=True)
     parser.add_argument('-s', '--state', metavar='STATE', help='Status to report', required=True)
+    parser.add_argument('-n', '--name', metavar='NAME', help='Name of status check', required=True)
 
     args = parser.parse_args()
     # Configure OSC
