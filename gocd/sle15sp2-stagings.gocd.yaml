@@ -122,8 +122,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -134,9 +134,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -168,8 +168,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -180,9 +180,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -214,8 +214,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -226,9 +226,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -260,8 +260,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -272,9 +272,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -306,8 +306,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -318,9 +318,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -352,8 +352,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -364,9 +364,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -398,8 +398,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -410,9 +410,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -444,8 +444,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -456,9 +456,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -490,8 +490,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -502,9 +502,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -536,8 +536,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -548,9 +548,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
@@ -582,8 +582,8 @@ pipelines:
           - script: |-
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
-              python3 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              python3 ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Update.000product:
         resources:
@@ -594,9 +594,9 @@ pipelines:
               cd scripts/gocd
 
               if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                python ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
   
