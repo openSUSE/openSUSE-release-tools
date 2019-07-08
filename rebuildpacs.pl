@@ -304,6 +304,7 @@ while (<INSTALLCHECK>) {
         patterns-openSUSE
         patterns-yast
         petsc:serial
+        petsc:openmpi
         python-numpy:gnu-hpc
         scalapack:gnu-mvapich2-hpc
         scalapack:gnu-openmpi-hpc
