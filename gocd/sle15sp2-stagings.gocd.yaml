@@ -115,16 +115,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -161,16 +171,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -207,16 +227,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -253,16 +283,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -299,16 +339,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -345,16 +395,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -391,16 +451,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -437,16 +507,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -483,16 +563,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -529,16 +619,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
@@ -575,16 +675,26 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     stages:
-    - Check.Build.Succeeds:
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
-              ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
-              ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
-
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:GA -s $STAGING_PROJECT
+  
     - Update.000product:
         resources:
           - repo-checker
