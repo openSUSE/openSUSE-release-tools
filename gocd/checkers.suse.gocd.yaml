@@ -36,19 +36,19 @@ pipelines:
     - Run:
         approval: manual
         jobs:
-          SLE_15_SP1:
+          SLE_15_SP2:
             timeout: 0
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug project_only SUSE:SLE-15-SP1:GA
+            - script: ./project-installcheck.py -A https://api.suse.de --debug project_only SUSE:SLE-15-SP2:GA
           SLE_12_SP5:
             timeout: 0
             resources:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug project_only SUSE:SLE-12-SP5:GA
-  SLE-SP1.Manager42:
+  SLE-SP2.Manager42:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -67,7 +67,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./manager_42.py -A https://api.suse.de -c config/manager_42/SUSE:SLE-15-SP1:GA.yml
+            - script: ./manager_42.py -A https://api.suse.de -c config/manager_42/SUSE:SLE-15-SP2:GA.yml
   SLE.Leaper:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -88,7 +88,7 @@ pipelines:
             - leaper
             tasks:
             - script: ./leaper.py -A https://api.suse.de --group=leaper --user=leaper --verbose --manual-version-updates --manual-maintenance-updates review
-  SLE.Staging.Bot.Regular:
+  S15.SP2.Staging.Bot.Regular:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -108,13 +108,13 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA rebuild
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA list --supersede
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA adi --by-develproject
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA select --non-interactive --merge --try-strategies
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA unselect --cleanup
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP1:GA repair --cleanup
-  SLE.Staging.Bot.Report:
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA rebuild
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA list --supersede
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA adi --by-develproject
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA select --non-interactive --merge --try-strategies
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA unselect --cleanup
+            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA repair --cleanup
+  S15.SP2.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -134,7 +134,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP1:GA
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP2:GA
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
