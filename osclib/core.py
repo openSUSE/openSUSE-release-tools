@@ -775,3 +775,32 @@ def search(apiurl, path, xpath, query={}):
 def action_is_patchinfo(action):
     return (action.type == 'maintenance_incident' and (
         action.src_package == 'patchinfo' or action.src_package.startswith('patchinfo.')))
+
+def request_action_key(action):
+    identifier = []
+
+    if action.type in ['add_role', 'change_devel', 'maintenance_release', 'submit']:
+        identifier.append(action.tgt_project)
+        identifier.append(action.tgt_package)
+
+        if action.type in ['add_role', 'set_bugowner']:
+            if action.person_name is not None:
+                identifier.append(action.person_name)
+                if action.type == 'add_role':
+                    identifier.append(action.person_role)
+            else:
+                identifier.append(action.group_name)
+                if action.type == 'add_role':
+                    identifier.append(action.group_role)
+    elif action.type == 'delete':
+        identifier.append(action.tgt_project)
+        if action.tgt_package is not None:
+            identifier.append(action.tgt_package)
+        elif action.tgt_repository is not None:
+            identifier.append(action.tgt_repository)
+    elif action.type == 'maintenance_incident':
+        if not action_is_patchinfo(action):
+            identifier.append(action.tgt_releaseproject)
+        identifier.append(action.src_package)
+
+    return '::'.join(['/'.join(identifier), action.type])
