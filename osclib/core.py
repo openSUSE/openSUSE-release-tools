@@ -337,9 +337,12 @@ def attribute_value_load(apiurl, project, name, namespace='OSRT'):
 
         raise e
 
-    value = root.xpath(
-        './attribute[@namespace="{}" and @name="{}"]/value/text()'.format(namespace, name))
+    xpath_base = './attribute[@namespace="{}" and @name="{}"]'.format(namespace, name)
+    value = root.xpath('{}/value/text()'.format(xpath_base))
     if not len(value):
+        if root.xpath(xpath_base):
+            # Handle boolean attributes that are present, but have no value.
+            return True
         return None
 
     return str(value[0])
