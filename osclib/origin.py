@@ -12,9 +12,9 @@ from osclib.core import package_version
 from osclib.core import project_remote_apiurl
 from osclib.core import request_action_key
 from osclib.core import request_action_list_source
+from osclib.core import request_remote_identifier
 from osclib.core import review_find_last
 from osclib.core import reviews_remaining
-from osclib.core import request_remote_identifier
 from osclib.memoize import memoize
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior_pattern
