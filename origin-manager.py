@@ -66,11 +66,12 @@ class OriginManager(ReviewBot.ReviewBot):
             override = self.request_override_check(self.request, True)
             if override:
                 self.review_messages['accepted'] = origin_annotation_dump(
-                    origin_info_new, origin_info_old, self.review_messages['accepted'])
+                    origin_info_new, origin_info_old, self.review_messages['accepted'], raw=True)
                 return override
         else:
             if result.accept:
-                self.review_messages['accepted'] = origin_annotation_dump(origin_info_new, origin_info_old)
+                self.review_messages['accepted'] = origin_annotation_dump(
+                    origin_info_new, origin_info_old, raw=True)
             return result.accept
 
         return None

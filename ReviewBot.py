@@ -14,6 +14,7 @@ from osclib.core import action_is_patchinfo
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
 from osclib.core import maintainers_get
+from osclib.core import request_action_key
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
@@ -304,6 +305,10 @@ class ReviewBot(object):
             self.logger.info('POST %s' % u)
             return
 
+        if self.multiple_actions:
+            key = request_action_key(self.action)
+            msg = yaml.dump({key: msg}, default_flow_style=False)
+
         r = osc.core.http_POST(u, data=msg)
         code = ET.parse(r).getroot().attrib['code']
         if code != 'ok':
@@ -356,18 +361,29 @@ class ReviewBot(object):
         return None if nothing to do, True to accept, False to reject
         """
 
-        # Copy original values to revert changes made to them.
-        self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
+        if len(req.actions) > 1:
+            if self.only_one_action:
+                self.review_messages['declined'] = 'Only one action per request supported'
+                return False
 
-        if self.only_one_action and len(req.actions) != 1:
-            self.review_messages['declined'] = 'Only one action per request supported'
-            return False
+            # Will cause added reviews and overall review message to include
+            # each actions message prefixed by an action key.
+            self.multiple_actions = True
+            review_messages_multi = {}
+        else:
+            self.multiple_actions = False
+
+            # Copy original values to revert changes made to them.
+            self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
 
         if self.comment_handler is not False:
             self.comment_handler_add()
 
         overall = True
         for a in req.actions:
+            if self.multiple_actions:
+                self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
+
             # Store in-case sub-classes need direct access to original values.
             self.action = a
 
@@ -380,6 +396,19 @@ class ReviewBot(object):
                 if ((overall is True and ret is not True) or
                     (overall is None and ret is False)):
                     overall = ret
+
+            if self.multiple_actions and ret is not None:
+                key = request_action_key(a)
+                message_key = self.review_message_key(ret)
+                review_messages_multi[key] = self.review_messages[message_key]
+
+        message_key = self.review_message_key(overall)
+        if self.multiple_actions:
+            message_combined = yaml.dump(review_messages_multi, default_flow_style=False)
+            self.review_messages[message_key] = message_combined
+        elif type(self.review_messages[message_key]) is dict:
+            self.review_messages[message_key] = yaml.dump(
+                self.review_messages[message_key], default_flow_style=False)
 
         return overall
 
@@ -406,6 +435,9 @@ class ReviewBot(object):
 
         method_type = '_default'
         return '_'.join([method_prefix, method_type])
+
+    def review_message_key(self, result):
+        return 'accepted' if result else 'declined'
 
     def check_action_maintenance_incident(self, req, a):
         if action_is_patchinfo(a):
