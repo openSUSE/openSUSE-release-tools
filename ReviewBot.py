@@ -10,6 +10,7 @@ from collections import OrderedDict
 from osclib.cache import Cache
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.core import action_is_patchinfo
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
 from osclib.core import maintainers_get
@@ -406,12 +407,8 @@ class ReviewBot(object):
         method_type = '_default'
         return '_'.join([method_prefix, method_type])
 
-    @staticmethod
-    def _is_patchinfo(pkgname):
-        return pkgname == 'patchinfo' or pkgname.startswith('patchinfo.')
-
     def check_action_maintenance_incident(self, req, a):
-        if self._is_patchinfo(a.src_package):
+        if action_is_patchinfo(a):
             self.logger.debug('ignoring patchinfo action')
             return True
 
@@ -434,7 +431,7 @@ class ReviewBot(object):
 
     def check_action_maintenance_release(self, req, a):
         pkgname = a.src_package
-        if self._is_patchinfo(pkgname):
+        if action_is_patchinfo(a):
             self.logger.debug('ignoring patchinfo action')
             return True
 

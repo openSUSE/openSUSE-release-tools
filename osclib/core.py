@@ -768,3 +768,7 @@ def search(apiurl, path, xpath, query={}):
     query['match'] = xpath
     url = makeurl(apiurl, ['search', path], query)
     return ETL.parse(http_GET(url)).getroot()
+
+def action_is_patchinfo(action):
+    return (action.type == 'maintenance_incident' and (
+        action.src_package == 'patchinfo' or action.src_package.startswith('patchinfo.')))

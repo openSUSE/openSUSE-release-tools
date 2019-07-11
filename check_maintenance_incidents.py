@@ -17,6 +17,7 @@ from urllib.error import HTTPError, URLError
 import yaml
 
 from osclib.memoize import memoize
+from osclib.core import action_is_patchinfo
 from osclib.core import owner_fallback
 from osclib.core import maintainers_get
 
@@ -33,7 +34,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
     def add_devel_project_review(self, req, package):
         """ add devel project/package as reviewer """
         a = req.actions[0]
-        if self._is_patchinfo(a.src_package):
+        if action_is_patchinfo(a):
             a = req.actions[1]
         project = a.tgt_releaseproject if a.type == 'maintenance_incident' else req.actions[0].tgt_project
         root = owner_fallback(self.apiurl, project, package)
@@ -71,7 +72,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
             if linkpkg is not None:
                 pkgname = linkpkg
-            if self._is_patchinfo(a.src_package):
+            if action_is_patchinfo(a):
                 return None
 
             project = a.tgt_releaseproject
