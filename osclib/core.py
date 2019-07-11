@@ -16,6 +16,7 @@ except ImportError:
 from osc.core import get_binarylist
 from osc.core import get_commitlog
 from osc.core import get_dependson
+from osc.core import get_request_list
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
@@ -25,6 +26,7 @@ from osc.core import Request
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osc.core import show_results_meta
+from osc.core import xpath_join
 from osc.util.helper import decode_it
 from osclib.conf import Config
 from osclib.memoize import memoize
@@ -804,3 +806,117 @@ def request_action_key(action):
         identifier.append(action.src_package)
 
     return '::'.join(['/'.join(identifier), action.type])
+
+def request_action_list_maintenance_incident(apiurl, project, package, states=['new', 'review']):
+    # The maintenance workflow seems to be designed to be as difficult to find
+    # requests as possible. As such, in order to find incidents for a given
+    # target project one must search for the requests in two states: before and
+    # after being assigned to an incident project. Additionally, one must search
+    # the "maintenance projects" denoted by an attribute instead of the actual
+    # target project. To make matters worse the actual target project of the
+    # request is not accessible via search (ie. action/target/releaseproject)
+    # so it must be checked client side. Lastly, since multiple actions are also
+    # designed completely wrong one must loop over the actions and recheck the
+    # search parameters to figure out which action caused the request to be
+    # included in the search results. Overall, another prime example of design
+    # done completely and utterly wrong.
+
+    package_repository = '{}.{}'.format(package, project.replace(':', '_'))
+
+    # Loop over all maintenance projects and create selectors for the two
+    # request states for the given project.
+    xpath = ''
+    for maintenance_project in project_attribute_list(apiurl, 'OBS:MaintenanceProject'):
+        xpath_project = ''
+
+        # Before being assigned to an incident.
+        xpath_project = xpath_join(xpath_project, 'action/target/@project="{}"'.format(
+            maintenance_project))
+        xpath_project = xpath_join(xpath_project, 'action/source/@package="{}"'.format(package), op='and', inner=True)
+
+        xpath = xpath_join(xpath, xpath_project, op='or', nexpr_parentheses=True)
+        xpath_project = ''
+
+        # After being assigned to an incident.
+        xpath_project = xpath_join(xpath_project, 'starts-with(action/target/@project,"{}:")'.format(
+            maintenance_project))
+        xpath_project = xpath_join(xpath_project, 'action/target/@package="{}"'.format(
+            package_repository), op='and', inner=True)
+
+        xpath = xpath_join(xpath, xpath_project, op='or', nexpr_parentheses=True)
+
+    xpath = '({})'.format(xpath)
+
+    if not 'all' in states:
+        xpath_states = ''
+        for state in states:
+            xpath_states = xpath_join(xpath_states, 'state/@name="{}"'.format(state), inner=True)
+        xpath = xpath_join(xpath, xpath_states, op='and', nexpr_parentheses=True)
+
+    xpath = xpath_join(xpath, 'action/@type="maintenance_incident"', op='and')
+
+    root = search(apiurl, 'request', xpath)
+    for request_element in root.findall('request'):
+        request = Request()
+        request.read(request_element)
+
+        for action in request.actions:
+            if action.type == 'maintenance_incident' and action.tgt_releaseproject == project and (
+                (action.tgt_package is None and action.src_package == package) or
+                (action.tgt_package == package_repository)):
+                yield request, action
+                break
+
+def request_action_list_maintenance_release(apiurl, project, package, states=['new', 'review']):
+    package_repository = '{}.{}'.format(package, project.replace(':', '_'))
+
+    xpath = 'action/target/@project="{}"'.format(project)
+    xpath = xpath_join(xpath, 'action/source/@package="{}"'.format(package_repository), op='and', inner=True)
+    xpath = '({})'.format(xpath)
+
+    if not 'all' in states:
+        xpath_states = ''
+        for state in states:
+            xpath_states = xpath_join(xpath_states, 'state/@name="{}"'.format(state), inner=True)
+        xpath = xpath_join(xpath, xpath_states, op='and', nexpr_parentheses=True)
+
+    xpath = xpath_join(xpath, 'action/@type="maintenance_release"', op='and')
+
+    root = search(apiurl, 'request', xpath)
+    for request_element in root.findall('request'):
+        request = Request()
+        request.read(request_element)
+
+        for action in request.actions:
+            if (action.type == 'maintenance_release' and
+                action.tgt_project == project and action.src_package == package_repository):
+                yield request, action
+                break
+
+def request_action_single_list(apiurl, project, package, states, request_type):
+    # TODO To be consistent this should not include request source from project.
+    for request in get_request_list(apiurl, project, package, None, states, request_type):
+        if len(request.actions) > 1:
+            raise Exception('request {} has more than one action'.format(request.reqid))
+
+        yield request, request.actions[0]
+
+def request_action_list(apiurl, project, package, states=['new', 'review'], types=['submit']):
+    for request_type in types:
+        if request_type == 'maintenance_incident':
+            yield from request_action_list_maintenance_incident(apiurl, project, package, states)
+        if request_type == 'maintenance_release':
+            yield from request_action_list_maintenance_release(apiurl, project, package, states)
+        else:
+            yield from request_action_single_list(apiurl, project, package, states, request_type)
+
+def request_action_list_source(apiurl, project, package, states=['new', 'review'], include_release=False):
+    types = []
+    if attribute_value_load(apiurl, project, 'Maintained', 'OBS'):
+        types.append('maintenance_incident')
+        if include_release:
+            types.append('maintenance_release')
+    else:
+        types.append('submit')
+
+    yield from request_action_list(apiurl, project, package, states, types)
