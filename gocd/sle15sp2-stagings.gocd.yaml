@@ -128,7 +128,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -184,7 +184,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -240,7 +240,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -296,7 +296,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -352,7 +352,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -408,7 +408,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -464,7 +464,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -520,7 +520,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -576,7 +576,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -632,7 +632,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:
@@ -688,7 +688,7 @@ pipelines:
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
-              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
             resources:
               - repo-checker
             tasks:

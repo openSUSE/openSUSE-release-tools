@@ -126,12 +126,21 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA rebuild
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA list --supersede
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA adi --by-develproject
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA select --non-interactive --merge --try-strategies
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA unselect --cleanup
-            - script: osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:GA repair --cleanup
+            - script: |-
+               set -e
+               tempdir=$(mktemp -d)
+               mkdir -p $tempdir/.osc-plugins
+               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+               ln -s $PWD/osclib $tempdir/.osc-plugins
+               export HOME=$tempdir
+
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory select --non-interactive --merge --try-strategies
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
+               rm -rf $tempdir
   S15.SP2.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
