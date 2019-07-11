@@ -18,6 +18,10 @@ class OriginManager(ReviewBot.ReviewBot):
         self.override_allow = False
 
     def check_action_delete_package(self, request, action):
+        advance, result = self.config_validate(action.tgt_project)
+        if not advance:
+            return result
+
         origin_info_old = origin_find(self.apiurl, action.tgt_project, action.tgt_package)
 
         reviews = {'fallback': 'Delete requests require fallback review.'}
@@ -27,8 +31,9 @@ class OriginManager(ReviewBot.ReviewBot):
         return True
 
     def check_source_submission(self, src_project, src_package, src_rev, tgt_project, tgt_package):
-        if not self.config_validate(tgt_project):
-            return False
+        advance, result = self.config_validate(tgt_project)
+        if not advance:
+            return result
 
         source_hash_new = package_source_hash(self.apiurl, src_project, src_package, src_rev)
         origin_info_new = origin_find(self.apiurl, tgt_project, tgt_package, source_hash_new)
@@ -44,17 +49,22 @@ class OriginManager(ReviewBot.ReviewBot):
     def config_validate(self, target_project):
         config = config_load(self.apiurl, target_project)
         if not config:
+            if self.multiple_actions:
+                # Completely ignore actions for projects without a config.
+                self.review_messages['accepted'] = 'skipping since no config'
+                return False, True
+
             self.review_messages['declined'] = 'OSRT:OriginConfig attribute missing'
-            return False
+            return False, False
         if not config.get('fallback-group'):
             self.review_messages['declined'] = 'OSRT:OriginConfig.fallback-group missing'
-            return False
+            return False, False
         if not self.dryrun and config['review-user'] != self.review_user:
             self.logger.warning(
                 'OSRT:OriginConfig.review-user ({}) does not match ReviewBot.review_user ({})'.format(
                     config['review-user'], self.review_user))
 
-        return True
+        return True, True
 
     def policy_result_handle(self, project, package, origin_info_new, origin_info_old, result):
         self.policy_result_reviews_add(project, package, result.reviews, origin_info_new, origin_info_old)
