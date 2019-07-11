@@ -247,17 +247,17 @@ def project_source_contain(apiurl, project, package, source_hash):
 
 def project_source_pending(apiurl, project, package, source_hash):
     apiurl_remote, project_remote = project_remote_apiurl(apiurl, project)
-    requests = get_request_list(apiurl_remote, project_remote, package, None, ['new', 'review'], 'submit')
-    for request in requests:
-        for action in request.actions:
-            source_hash_consider = package_source_hash(
-                apiurl_remote, action.src_project, action.src_package, action.src_rev)
+    request_actions = request_action_list_source(apiurl_remote, project_remote, package,
+                                                 states=['new', 'review'], include_release=True)
+    for request, action in request_actions:
+        source_hash_consider = package_source_hash(
+            apiurl_remote, action.src_project, action.src_package, action.src_rev)
 
-            project_source_log('pending', project, source_hash_consider, source_hash)
-            if source_hash_consider == source_hash:
-                return PendingRequestInfo(
-                    request_remote_identifier(apiurl, apiurl_remote, request.reqid),
-                    reviews_remaining(request))
+        project_source_log('pending', project, source_hash_consider, source_hash)
+        if source_hash_consider == source_hash:
+            return PendingRequestInfo(
+                request_remote_identifier(apiurl, apiurl_remote, request.reqid),
+                reviews_remaining(request))
 
     return False
 
