@@ -296,7 +296,7 @@ def origin_find_fallback(apiurl, target_project, package, source_hash, user):
 
     return None
 
-def origin_annotation_dump(origin_info_new, origin_info_old, override=False):
+def origin_annotation_dump(origin_info_new, origin_info_old, override=False, raw=False):
     data = {'origin': str(origin_info_new.project)}
     if origin_info_old and origin_info_new.project != origin_info_old.project:
         data['origin_old'] = str(origin_info_old.project)
@@ -304,6 +304,9 @@ def origin_annotation_dump(origin_info_new, origin_info_old, override=False):
     if override:
         data['origin'] = origin_workaround_ensure(data['origin'])
         data['comment'] = override
+
+    if raw:
+        return data
 
     return yaml.dump(data, default_flow_style=False)
 
