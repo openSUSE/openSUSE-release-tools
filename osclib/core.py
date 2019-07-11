@@ -22,7 +22,6 @@ from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import Request
-from osc.core import search
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osc.core import show_results_meta
@@ -653,7 +652,7 @@ def project_attribute_list(apiurl, attribute, value=None):
     if value is not None:
         xpath += '="{}"'.format(value)
 
-    root = search(apiurl, project=xpath)['project']
+    root = search(apiurl, 'project', xpath)
     for project in root.findall('project'):
         yield project.get('name')
 
@@ -661,7 +660,7 @@ def project_attribute_list(apiurl, attribute, value=None):
 def project_remote_list(apiurl):
     remotes = {}
 
-    root = search(apiurl, project='starts-with(remoteurl, "http")')['project']
+    root = search(apiurl, 'project', 'starts-with(remoteurl, "http")')
     for project in root.findall('project'):
         # Strip ending /public as the only use-cases for manually checking
         # remote projects is to query them directly to use an API that does not
@@ -763,3 +762,9 @@ def duplicated_binaries_in_repo(apiurl, project, repository):
             duplicates[arch][name] = list(duplicates[arch][name])
 
     return duplicates
+
+# osc.core.search() is over-complicated and does not return lxml element.
+def search(apiurl, path, xpath, query={}):
+    query['match'] = xpath
+    url = makeurl(apiurl, ['search', path], query)
+    return ETL.parse(http_GET(url)).getroot()
