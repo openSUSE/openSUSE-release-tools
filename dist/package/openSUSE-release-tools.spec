@@ -526,7 +526,7 @@ exit 0
 %{_datadir}/%{source_dir}/metrics.py
 %{_datadir}/%{source_dir}/metrics_release.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
-%dir %attr(0750, root grafana) %{_sysconfdir}/grafana
+%dir %{_sysconfdir}/grafana
 %dir %{_sysconfdir}/grafana/provisioning
 %dir %{_sysconfdir}/grafana/provisioning/dashboards
 %dir %{_sysconfdir}/grafana/provisioning/datasources
