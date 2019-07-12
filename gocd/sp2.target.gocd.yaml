@@ -26,8 +26,15 @@ pipelines:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
+        destination: repos
         whitelist:
           - SUSE:SLE-15-SP2:GA_-_standard.yaml
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        auto_update: true
+        destination: scripts
+        whitelist:
+          - DO_NOT_TRIGGER
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     stages:
@@ -35,7 +42,7 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: ./pkglistgen.py --apiurl https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP2:GA -s target --force || true
+        - script: ./scripts/pkglistgen.py -A https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP2:GA -s target --force
 
   SLE15.SP2.Images:
     group: SLE15.SP2.Target
