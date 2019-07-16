@@ -10,9 +10,11 @@ from osclib.core import package_source_hash
 from osclib.core import package_source_hash_history
 from osclib.core import package_version
 from osclib.core import project_remote_apiurl
+from osclib.core import request_action_key
+from osclib.core import request_action_list_source
+from osclib.core import request_remote_identifier
 from osclib.core import review_find_last
 from osclib.core import reviews_remaining
-from osclib.core import request_remote_identifier
 from osclib.memoize import memoize
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior_pattern
@@ -245,17 +247,17 @@ def project_source_contain(apiurl, project, package, source_hash):
 
 def project_source_pending(apiurl, project, package, source_hash):
     apiurl_remote, project_remote = project_remote_apiurl(apiurl, project)
-    requests = get_request_list(apiurl_remote, project_remote, package, None, ['new', 'review'], 'submit')
-    for request in requests:
-        for action in request.actions:
-            source_hash_consider = package_source_hash(
-                apiurl_remote, action.src_project, action.src_package, action.src_rev)
+    request_actions = request_action_list_source(apiurl_remote, project_remote, package,
+                                                 states=['new', 'review'], include_release=True)
+    for request, action in request_actions:
+        source_hash_consider = package_source_hash(
+            apiurl_remote, action.src_project, action.src_package, action.src_rev)
 
-            project_source_log('pending', project, source_hash_consider, source_hash)
-            if source_hash_consider == source_hash:
-                return PendingRequestInfo(
-                    request_remote_identifier(apiurl, apiurl_remote, request.reqid),
-                    reviews_remaining(request))
+        project_source_log('pending', project, source_hash_consider, source_hash)
+        if source_hash_consider == source_hash:
+            return PendingRequestInfo(
+                request_remote_identifier(apiurl, apiurl_remote, request.reqid),
+                reviews_remaining(request))
 
     return False
 
@@ -267,13 +269,12 @@ def project_source_log(key, project, source_hash_consider, source_hash):
 def origin_find_fallback(apiurl, target_project, package, source_hash, user):
     # Search accepted requests (newest to oldest), find the last review made by
     # the specified user, load comment as annotation, and extract origin.
-    requests = get_request_list(apiurl, target_project, package, None, ['accepted'], 'submit')
-    for request in sorted(requests, key=lambda r: r.reqid, reverse=True):
-        review = review_find_last(request, user)
-        if not review:
+    request_actions = request_action_list_source(apiurl, target_project, package, states=['accepted'])
+    for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
+        annotation = origin_annotation_load(request, action, user)
+        if not annotation:
             continue
 
-        annotation = origin_annotation_load(review.comment)
         return OriginInfo(annotation.get('origin'), False)
 
     # Fallback to searching workaround project.
@@ -296,7 +297,7 @@ def origin_find_fallback(apiurl, target_project, package, source_hash, user):
 
     return None
 
-def origin_annotation_dump(origin_info_new, origin_info_old, override=False):
+def origin_annotation_dump(origin_info_new, origin_info_old, override=False, raw=False):
     data = {'origin': str(origin_info_new.project)}
     if origin_info_old and origin_info_new.project != origin_info_old.project:
         data['origin_old'] = str(origin_info_old.project)
@@ -305,12 +306,36 @@ def origin_annotation_dump(origin_info_new, origin_info_old, override=False):
         data['origin'] = origin_workaround_ensure(data['origin'])
         data['comment'] = override
 
+    if raw:
+        return data
+
     return yaml.dump(data, default_flow_style=False)
 
-def origin_annotation_load(annotation):
-    # For some reason OBS insists on indenting every subsequent line which
-    # screws up yaml parsing since indentation has meaning.
-    return yaml.safe_load(re.sub(r'^\s+', '', annotation, flags=re.MULTILINE))
+def origin_annotation_load(request, action, user):
+    review = review_find_last(request, user)
+    if not review:
+        return False
+
+    try:
+        annotation = yaml.safe_load(review.comment)
+    except yaml.scanner.ScannerError as e:
+        # OBS used to prefix subsequent review lines with two spaces. At some
+        # point it was changed to no longer indent, but still need to be able
+        # to load older annotations.
+        comment_stripped = re.sub(r'^  ', '', review.comment, flags=re.MULTILINE)
+        annotation = yaml.safe_load(comment_stripped)
+
+    if not annotation:
+        return None
+
+    if len(request.actions) > 1:
+        action_key = request_action_key(action)
+        if action_key not in annotation:
+            return False
+
+        return annotation[action_key]
+
+    return annotation
 
 def origin_find_highest(apiurl, project, package):
     config = config_load(apiurl, project)
@@ -528,13 +553,9 @@ def origin_potentials(apiurl, target_project, package):
 def origin_history(apiurl, target_project, package, user):
     history = []
 
-    requests = get_request_list(apiurl, target_project, package, None, ['all'], 'submit')
-    for request in sorted(requests, key=lambda r: r.reqid, reverse=True):
-        review = review_find_last(request, user)
-        if not review:
-            continue
-
-        annotation = origin_annotation_load(review.comment)
+    request_actions = request_action_list_source(apiurl, target_project, package, states=['all'])
+    for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
+        annotation = origin_annotation_load(request, action, user)
         if not annotation:
             continue
 
