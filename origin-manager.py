@@ -49,13 +49,13 @@ class OriginManager(ReviewBot.ReviewBot):
     def config_validate(self, target_project):
         config = config_load(self.apiurl, target_project)
         if not config:
-            if self.multiple_actions:
-                # Completely ignore actions for projects without a config.
-                self.review_messages['accepted'] = 'skipping since no config'
-                return False, True
-
-            self.review_messages['declined'] = 'OSRT:OriginConfig attribute missing'
-            return False, False
+            # No perfect solution for lack of a config. For normal projects a
+            # decline seems best, but in the event of failure to return proper
+            # config no good behavior. For maintenance the situation is further
+            # complicated since multiple actions some of which are not intended
+            # to be reviewed, but not always guaranteed to see multiple actions.
+            self.review_messages['accepted'] = 'skipping since no OSRT:OriginConfig'
+            return False, True
         if not config.get('fallback-group'):
             self.review_messages['declined'] = 'OSRT:OriginConfig.fallback-group missing'
             return False, False
