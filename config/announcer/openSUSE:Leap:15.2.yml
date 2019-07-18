@@ -9,9 +9,9 @@ bodytemplate: '
 
   Please check the known defects of this snapshot before upgrading:
 
-  https://openqa.opensuse.org/tests/overview?distri=opensuse&version=15.1&build={version}&groupid=50
+  https://openqa.opensuse.org/tests/overview?distri=opensuse&version=15.2&build={version}&groupid=50
 
-  https://bugzilla.opensuse.org/buglist.cgi?product=openSUSE%20Distribution&query_format=advanced&resolution=---&version=Leap%2015.1
+  https://bugzilla.opensuse.org/buglist.cgi?product=openSUSE%20Distribution&query_format=advanced&resolution=---&version=Leap%2015.2
 
 
   When you reply to discuss some issues, make sure to change the subject.
@@ -26,8 +26,8 @@ bodytemplate: '
   {text}
 
   '
-iso: openSUSE-Leap-15.1-DVD-x86_64-Current.iso
-name: openSUSE:Leap:15.1
-subject: Leap 15.1 Build {version} released!
-url: http://download.opensuse.org/distribution/leap/15.1/iso/
+iso: openSUSE-Leap-15.2-DVD-x86_64-Current.iso
+name: openSUSE:Leap:15.2
+subject: Leap 15.2 Build {version} released!
+url: http://download.opensuse.org/distribution/leap/15.2/iso/
 sender: Ludwig Nussel <ludwig.nussel@suse.de>
