@@ -73,7 +73,7 @@ pipelines:
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
   Pkglistgen.openSUSE_Leap:
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -88,28 +88,28 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.1_target:
+          openSUSE_Leap_15.2_target:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s target
-          openSUSE_Leap_15.1_rings:
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2 -s target
+          openSUSE_Leap_15.2_rings:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1 -s rings
-          openSUSE_Leap_15.1_ARM:
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2 -s rings
+          openSUSE_Leap_15.2_ARM:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:ARM
-          openSUSE_Leap_15.1_PowerPC:
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:ARM
+          openSUSE_Leap_15.2_PowerPC:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.1:PowerPC
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:PowerPC
   Update.Repos.Leap:
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -124,18 +124,18 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.1:
+          openSUSE_Leap_15.2:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1
-          openSUSE_Leap_15.1_ARM:
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.2
+          openSUSE_Leap_15.2_ARM:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:ARM
-          openSUSE_Leap_15.1_PowerPC:
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.2:ARM
+          openSUSE_Leap_15.2_PowerPC:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.1:PowerPC
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.2:PowerPC

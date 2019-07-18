@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-<% %w(Factory Leap:15.1).each do |project| -%>
+<% %w(Factory Leap:15.2).each do |project| -%>
 <% nickname =  project.gsub(':', '.') -%>
   AdiChecker.<%= nickname %>:
     group: openSUSE.Checkers
@@ -79,7 +79,7 @@ pipelines:
         environment_variables:
           OSC_CONFIG: /home/go/config/oscrc-repo-checker
         jobs:
-<% %w(openSUSE:Factory openSUSE:Leap:15.0:Update openSUSE:Leap:42.3:Update openSUSE:Leap:15.1:Update).each do |project| -%>
+<% %w(openSUSE:Factory openSUSE:Leap:15.0:Update openSUSE:Leap:42.3:Update openSUSE:Leap:15.2:Update).each do |project| -%>
           <%= project.gsub(':', '.') %>:
             timeout: 0
             resources:
