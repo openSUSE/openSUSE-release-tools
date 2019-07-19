@@ -206,6 +206,10 @@ class Listener(PubSubConsumer):
     def on_published_repo(self, payload):
         for p in self.projects:
             p.check_published_repo(str(payload['project']), str(payload['repo']), str(payload['buildid']))
+        # notify openQA to sync the projects - the plugin will check itself it
+        # the project is to be synced. For now we notify about every 'images' repo
+        if payload['repo'] == 'images':
+            self.openqa.openqa_request('PUT', 'obs_rsync', str(payload['project']), 'runs')
 
     def on_openqa_job(self, iso):
         self.logger.debug('openqa_job_change %s', iso)
