@@ -14,7 +14,7 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from openqa_client.exceptions import ConnectionError
+from openqa_client.exceptions import ConnectionError, RequestError
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 
@@ -209,7 +209,10 @@ class Listener(PubSubConsumer):
         # notify openQA to sync the projects - the plugin will check itself it
         # the project is to be synced. For now we notify about every 'images' repo
         if payload['repo'] == 'images':
-            self.openqa.openqa_request('PUT', 'obs_rsync', str(payload['project']), 'runs')
+            try:
+                self.openqa.openqa_request('PUT', 'obs_rsync/{}/runs'.format(payload['project']), retries=0)
+            except RequestError as e:
+                self.logger.info("Got exception on syncing repository: {}".format(e))
 
     def on_openqa_job(self, iso):
         self.logger.debug('openqa_job_change %s', iso)
