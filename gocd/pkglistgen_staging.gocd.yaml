@@ -996,7 +996,7 @@ pipelines:
   Leap.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 */10 * ? * *
@@ -1013,43 +1013,43 @@ pipelines:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                 --staging openSUSE:Leap:15.1:Staging:A
+                 --staging openSUSE:Leap:15.2:Staging:A
                  --only-release-packages --force
           "Staging.B":
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                 --staging openSUSE:Leap:15.1:Staging:B
+                 --staging openSUSE:Leap:15.2:Staging:B
                  --only-release-packages --force
           "Staging.C":
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                 --staging openSUSE:Leap:15.1:Staging:C
+                 --staging openSUSE:Leap:15.2:Staging:C
                  --only-release-packages --force
           "Staging.D":
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                 --staging openSUSE:Leap:15.1:Staging:D
+                 --staging openSUSE:Leap:15.2:Staging:D
                  --only-release-packages --force
           "Staging.E":
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                 --staging openSUSE:Leap:15.1:Staging:E
+                 --staging openSUSE:Leap:15.2:Staging:E
                  --only-release-packages --force
 
   "Leap.Staging.A":
     environment_variables:
-      STAGING_PROJECT: openSUSE:Leap:15.1:Staging:A
+      STAGING_PROJECT: openSUSE:Leap:15.2:Staging:A
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1057,7 +1057,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - openSUSE:Leap:15.1:Staging:A_-_standard.yaml
+          - openSUSE:Leap:15.2:Staging:A_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
@@ -1082,7 +1082,7 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.2 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
@@ -1092,10 +1092,10 @@ pipelines:
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.B":
     environment_variables:
-      STAGING_PROJECT: openSUSE:Leap:15.1:Staging:B
+      STAGING_PROJECT: openSUSE:Leap:15.2:Staging:B
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1103,7 +1103,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - openSUSE:Leap:15.1:Staging:B_-_standard.yaml
+          - openSUSE:Leap:15.2:Staging:B_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
@@ -1128,7 +1128,7 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.2 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
@@ -1138,10 +1138,10 @@ pipelines:
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.C":
     environment_variables:
-      STAGING_PROJECT: openSUSE:Leap:15.1:Staging:C
+      STAGING_PROJECT: openSUSE:Leap:15.2:Staging:C
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1149,7 +1149,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - openSUSE:Leap:15.1:Staging:C_-_standard.yaml
+          - openSUSE:Leap:15.2:Staging:C_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
@@ -1174,7 +1174,7 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.2 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
@@ -1184,10 +1184,10 @@ pipelines:
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.D":
     environment_variables:
-      STAGING_PROJECT: openSUSE:Leap:15.1:Staging:D
+      STAGING_PROJECT: openSUSE:Leap:15.2:Staging:D
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1195,7 +1195,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - openSUSE:Leap:15.1:Staging:D_-_standard.yaml
+          - openSUSE:Leap:15.2:Staging:D_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
@@ -1220,7 +1220,7 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.2 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:
@@ -1230,10 +1230,10 @@ pipelines:
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
   "Leap.Staging.E":
     environment_variables:
-      STAGING_PROJECT: openSUSE:Leap:15.1:Staging:E
+      STAGING_PROJECT: openSUSE:Leap:15.2:Staging:E
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1241,7 +1241,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - openSUSE:Leap:15.1:Staging:E_-_standard.yaml
+          - openSUSE:Leap:15.2:Staging:E_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
@@ -1266,7 +1266,7 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.1 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:15.2 -s $STAGING_PROJECT
 
     - Update.000product:
         resources:

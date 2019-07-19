@@ -54,7 +54,7 @@ pipelines:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>
   Pkglistgen.openSUSE_Leap:
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -69,7 +69,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-  <% ['openSUSE:Leap:15.1/target', 'openSUSE:Leap:15.1/rings', 'openSUSE:Leap:15.1:ARM', 'openSUSE:Leap:15.1:PowerPC'].each do |project|
+  <% ['openSUSE:Leap:15.2/target', 'openSUSE:Leap:15.2/rings', 'openSUSE:Leap:15.2:ARM', 'openSUSE:Leap:15.2:PowerPC'].each do |project|
     project=project.split('/')
     name=project[0].gsub(':', '_')
     if project.size > 1
@@ -83,7 +83,7 @@ pipelines:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
   <% end -%>
 Update.Repos.Leap:
-    group: Leap.15.1.pkglistgen
+    group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -98,7 +98,7 @@ Update.Repos.Leap:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:15.1 openSUSE:Leap:15.1:ARM openSUSE:Leap:15.1:PowerPC).each do |project| -%>
+<% %w(openSUSE:Leap:15.2 openSUSE:Leap:15.2:ARM openSUSE:Leap:15.2:PowerPC).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker

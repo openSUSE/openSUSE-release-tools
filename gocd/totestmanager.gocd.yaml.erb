@@ -1,8 +1,8 @@
 format_version: 3
 pipelines:
 <% for project in %w(openSUSE:Factory openSUSE:Factory:ARM openSUSE:Factory:PowerPC 
-                       openSUSE:Factory:zSystems openSUSE:Leap:15.0:Images openSUSE:Leap:15.1:Images
-                       openSUSE:Leap:15.1:ARM:Images openSUSE:Leap:15.1 openSUSE:Leap:15.1:ARM openSUSE:Leap:15.1:PowerPC) -%>
+                       openSUSE:Factory:zSystems openSUSE:Leap:15.0:Images openSUSE:Leap:15.2:Images
+                       openSUSE:Leap:15.2:ARM:Images openSUSE:Leap:15.2 openSUSE:Leap:15.2:ARM openSUSE:Leap:15.2:PowerPC) -%>
   TTM.<%= project.gsub('openSUSE:', '').gsub(':', '_') %>:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

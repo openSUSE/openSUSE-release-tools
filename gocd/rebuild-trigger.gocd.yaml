@@ -30,9 +30,9 @@ pipelines:
               ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64
               ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64le
           - script: |-
-              echo "openSUSE Leap 15.1"
-              echo ./rebuildpacs.pl openSUSE:Leap:15.1 standard i586
-              echo ./rebuildpacs.pl openSUSE:Leap:15.1 standard x86_64
+              echo "openSUSE Leap 15.2"
+              echo ./rebuildpacs.pl openSUSE:Leap:15.2 standard i586
+              echo ./rebuildpacs.pl openSUSE:Leap:15.2 standard x86_64
           - script: |-
               echo "GNOME devel projects"
               ./rebuildpacs.pl GNOME:Factory openSUSE_Factory i586

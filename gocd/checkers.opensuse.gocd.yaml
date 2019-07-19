@@ -189,7 +189,7 @@ pipelines:
            resources:
            - staging-bot
            tasks:
-           - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Leap:15.1
+           - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Leap:15.2
   Source.In.Factory:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
