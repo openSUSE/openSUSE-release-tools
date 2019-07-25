@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import cmdln
 from urllib.parse import urlencode
 
 import yaml
@@ -24,10 +25,15 @@ from osclib.core import (http_GET, http_POST, makeurl,
                          target_archs, source_file_load, source_file_ensure)
 from osclib.repochecks import installcheck, mirror, parsed_installcheck, CorruptRepos
 
-
 class RepoChecker():
     def __init__(self):
         self.logger = logging.getLogger('RepoChecker')
+        self.store_project = None
+        self.store_package = None
+
+    def parse_store(self, project_package):
+        if project_package:
+            self.store_project, self.store_package = project_package.split('/')
 
     def project_only(self, project):
         repository = self.project_repository(project)
@@ -125,15 +131,20 @@ class RepoChecker():
 
         return repository
 
+    def store_yaml(self, state):
+        state_yaml = yaml.dump(state, default_flow_style=False)
+        source_file_ensure(self.apiurl, self.store_project, self.store_package,
+                           self.store_filename, state_yaml, comment='Updated rebuild infos')
+
     def rebuild(self, project, repository, arch):
-        Config.get(self.apiurl, project)
+        config = Config.get(self.apiurl, project)
 
         oldstate = None
-        try:
-            with open('state.yaml') as file:
-                oldstate = yaml.safe_load(file)
-        except OSError:
-            pass
+        self.store_filename = 'rebuildpacs.{}-{}.yaml'.format(project, repository)
+        state_yaml = source_file_load(self.apiurl, self.store_project, self.store_package,
+                                      self.store_filename)
+        if state_yaml:
+            oldstate = yaml.safe_load(state_yaml)
 
         oldstate = oldstate or {}
         oldstate.setdefault('check', {})
@@ -220,9 +231,7 @@ class RepoChecker():
                 self.logger.info("No known problem, erasing %s", source)
                 del oldstate['check'][source]
 
-        packages = ['branding-openSUSE', 'PackageKit-branding-openSUSE', 'xfce4-branding-openSUSE',
-                    'xfce4-branding-openSUSE', 'installation-images:openSUSE', 'installation-images:Kubic',
-                    'installation-images-extras', 'rpmlint', 'rpmlint-mini']
+        packages = config.get('rebuildpacs-leafs', '').split()
 
         # first round: collect all infos from obs
         infos = dict()
@@ -260,20 +269,21 @@ class RepoChecker():
             oldstate['leafs'][state_key] = {'buildinfo': m.hexdigest(),
                                             'rebuild': str(datetime.datetime.now())}
 
-        if not len(rebuilds):
-            self.logger.debug("Nothing to rebuild")
-            return
-
         if self.dryrun:
             self.logger.info("To rebuild: %s", ' '.join(rebuilds))
+            return
+
+        if not len(rebuilds):
+            self.logger.debug("Nothing to rebuild")
+            # in case we do rebuild, wait for it to succeed before saving
+            self.store_yaml(oldstate)
             return
 
         query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
         url = makeurl(self.apiurl, ['build', project], urlencode(query, doseq=True))
         http_POST(url)
 
-        with open('state.yaml', 'w') as file:
-            yaml.dump(oldstate, file, default_flow_style=False)
+        self.store_yaml(oldstate)
 
     def check_leaf_package(self, project, repository, arch, package):
         url = makeurl(self.apiurl, ['build', project, repository, arch, package, '_buildinfo'])
@@ -297,12 +307,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def setup_tool(self):
         return RepoChecker()
 
+    @cmdln.option('--store', help='Project/Package to store the rebuild infos in')
     def do_rebuild(self, subcmd, opts, project, repository, arch):
         """${cmd_name}: Rebuild packages in rebuild=local projects
 
         ${cmd_usage}
         ${cmd_option_list}
         """
+        self.tool.parse_store(opts.store)
         self.tool.apiurl = conf.config['apiurl']
         self.tool.rebuild(project, repository, arch)
 
