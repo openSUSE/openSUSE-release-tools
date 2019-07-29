@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  Trigger.Rebuilds:
+  Trigger.Rebuild.Factory:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -19,22 +19,67 @@ pipelines:
         tasks:
           - script: |-
               echo "openSUSE:Factory"
-              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory standard i586
-              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory standard x86_64
+              ./project-installcheck.py --debug check --store openSUSE:Factory:Staging/dashboard openSUSE:Factory
+  Trigger.Rebuild.Factory.Power:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
           - script: |-
               echo "openSUSE:Factory:PowerPC"
-              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC standard ppc
-              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC standard ppc64
-              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC standard ppc64le
+              ./project-installcheck.py --debug check --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC
+  Trigger.Rebuild.Leap.152:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
           - script: |-
               echo "openSUSE Leap 15.2"
-              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Leap:15.2:Staging/dashboard openSUSE:Leap:15.2 standard i586
-              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Leap:15.2:Staging/dashboard openSUSE:Leap:15.2 standard x86_64
+              ./project-installcheck.py --debug check --store openSUSE:Leap:15.2:Staging/dashboard openSUSE:Leap:15.2
+  Trigger.Rebuild.GNOME:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
           - script: |-
               echo "GNOME devel projects"
-              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Factory openSUSE_Factory i586
-              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Factory openSUSE_Factory x86_64
-              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Factory openSUSE_PPC     ppc64le
-              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Next    openSUSE_Factory i586
-              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Next    openSUSE_Factory x86_64
-              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Next    openSUSE_PPC     ppc64le
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_Factory GNOME:Factory
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_PPC GNOME:Factory
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_Factory GNOME:Next
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_PPC GNOME:Next

@@ -30,32 +30,29 @@ class RepoChecker():
         self.logger = logging.getLogger('RepoChecker')
         self.store_project = None
         self.store_package = None
+        self.rebuild = None
 
     def parse_store(self, project_package):
         if project_package:
             self.store_project, self.store_package = project_package.split('/')
 
-    def project_only(self, project):
-        repository = self.project_repository(project)
+    def check(self, project, repository):
+        print('repository', repository)
+        if not repository:
+            repository = self.project_repository(project)
         if not repository:
             self.logger.error('a repository must be specified via OSRT:Config main-repo for {}'.format(project))
             return
 
         config = Config.get(self.apiurl, project)
-        arch_whitelist = config.get('repo_checker-arch-whitelist')
 
-        repository_pairs = repository_path_expand(self.apiurl, project, repository)
-        self.repository_check(repository_pairs, arch_whitelist=arch_whitelist)
-
-    def target_archs(self, project, repository, arch_whitelist=None):
         archs = target_archs(self.apiurl, project, repository)
+        if not len(archs):
+            self.logger.debug('{} has no relevant architectures'.format(project))
+            return None
 
-        # Check for arch whitelist and use intersection.
-        if arch_whitelist:
-            archs = list(set(arch_whitelist.split(' ')).intersection(set(archs)))
-
-        # Trick to prioritize x86_64.
-        return sorted(archs, reverse=True)
+        for arch in archs:
+            self.check_pra(project, repository, arch)
 
     def project_pseudometa_file_name(self, project, repository):
         filename = 'repo_checker'
@@ -65,37 +62,6 @@ class RepoChecker():
             filename += '.' + repository
 
         return filename
-
-    def repository_check(self, repository_pairs, arch_whitelist=None):
-        project, repository = repository_pairs[0]
-        self.logger.info('checking {}/{}@[{}]'.format(
-            project, repository, len(repository_pairs)))
-
-        archs = self.target_archs(project, repository, arch_whitelist)
-        if not len(archs):
-            self.logger.debug('{} has no relevant architectures'.format(project))
-            return None
-
-        result = True
-        comment = []
-        for arch in archs:
-            directories = []
-            for pair_project, pair_repository in repository_pairs:
-                directories.append(mirror(self.apiurl, pair_project, pair_repository, arch))
-
-            parts = installcheck(directories, arch, [], [])
-            if len(parts):
-                comment.append('## {}/{}\n'.format(repository_pairs[0][1], arch))
-                comment.extend(parts)
-
-        text = '\n'.join(comment).strip()
-        if not self.dryrun:
-            filename = self.project_pseudometa_file_name(project, repository)
-            project_pseudometa_file_ensure(self.apiurl, project, filename, text + '\n', 'repo_checker project_only run')
-        else:
-            print(text)
-
-        return result
 
     def _split_and_filter(self, output):
         output = output.split("\n")
@@ -136,7 +102,7 @@ class RepoChecker():
         source_file_ensure(self.apiurl, self.store_project, self.store_package,
                            self.store_filename, state_yaml, comment='Updated rebuild infos')
 
-    def rebuild(self, project, repository, arch):
+    def check_pra(self, project, repository, arch):
         config = Config.get(self.apiurl, project)
 
         oldstate = None
@@ -269,11 +235,11 @@ class RepoChecker():
             oldstate['leafs'][state_key] = {'buildinfo': m.hexdigest(),
                                             'rebuild': str(datetime.datetime.now())}
 
-        if self.dryrun:
+        if self.dryrun and self.rebuild:
             self.logger.info("To rebuild: %s", ' '.join(rebuilds))
             return
 
-        if not len(rebuilds):
+        if self.rebuild and not len(rebuilds):
             self.logger.debug("Nothing to rebuild")
             # in case we do rebuild, wait for it to succeed before saving
             self.store_yaml(oldstate)
@@ -308,25 +274,18 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         return RepoChecker()
 
     @cmdln.option('--store', help='Project/Package to store the rebuild infos in')
-    def do_rebuild(self, subcmd, opts, project, repository, arch):
+    @cmdln.option('-r', '--repo', dest='repo', help='Repository to check')
+    @cmdln.option('--no-rebuild', dest='rebuild', action='store_false', help='Only track issues, do not rebuild')
+    def do_check(self, subcmd, opts, project):
         """${cmd_name}: Rebuild packages in rebuild=local projects
 
         ${cmd_usage}
         ${cmd_option_list}
         """
+        self.tool.rebuild = opts.rebuild
         self.tool.parse_store(opts.store)
         self.tool.apiurl = conf.config['apiurl']
-        self.tool.rebuild(project, repository, arch)
-
-    def do_project_only(self, subcmd, opts, project):
-        """${cmd_name}: Update repository repo of a project
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-        self.tool.apiurl = conf.config['apiurl']
-        self.tool.project_only(project)
-
+        self.tool.check(project, opts.repo)
 
 if __name__ == '__main__':
     app = CommandLineInterface()
