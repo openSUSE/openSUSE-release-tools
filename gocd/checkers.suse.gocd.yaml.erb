@@ -41,13 +41,13 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug project_only SUSE:SLE-15-SP2:GA
+            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP2:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP2:GA
           SLE_12_SP5:
             timeout: 0
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug project_only SUSE:SLE-12-SP5:GA
+            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-12-SP5:GA:Staging/dashboard --no-rebuild SUSE:SLE-12-SP5:GA
   SLE-SP2.Manager42:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
