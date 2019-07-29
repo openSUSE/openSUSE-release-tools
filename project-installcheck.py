@@ -37,7 +37,6 @@ class RepoChecker():
             self.store_project, self.store_package = project_package.split('/')
 
     def check(self, project, repository):
-        print('repository', repository)
         if not repository:
             repository = self.project_repository(project)
         if not repository:
@@ -65,7 +64,6 @@ class RepoChecker():
 
     def _split_and_filter(self, output):
         output = output.split("\n")
-        rebuild_counter_re = re.compile(r'(needed by [^ ]*\-[^-]*)\-[^-]*\.\w+$')
         for lnr, line in enumerate(output):
             if line.startswith('FOLLOWUP'):
                 # there can be multiple lines with missing providers
@@ -77,7 +75,7 @@ class RepoChecker():
             if output[lnr].find('(we have') >= 0:
                 del output[lnr]
             else:
-                output[lnr] = rebuild_counter_re.sub(r'\1', output[lnr])
+                output[lnr] = output[lnr]
         return output
 
     def project_repository(self, project):
@@ -199,6 +197,8 @@ class RepoChecker():
                 del oldstate['check'][source]
 
         packages = config.get('rebuildpacs-leafs', '').split()
+        if not self.rebuild: # ignore in this case
+            packages = []
 
         # first round: collect all infos from obs
         infos = dict()
@@ -236,11 +236,12 @@ class RepoChecker():
             oldstate['leafs'][state_key] = {'buildinfo': m.hexdigest(),
                                             'rebuild': str(datetime.datetime.now())}
 
-        if self.dryrun and self.rebuild:
-            self.logger.info("To rebuild: %s", ' '.join(rebuilds))
+        if self.dryrun:
+            if self.rebuild:
+                self.logger.info("To rebuild: %s", ' '.join(rebuilds))
             return
 
-        if self.rebuild and not len(rebuilds):
+        if not self.rebuild or not len(rebuilds):
             self.logger.debug("Nothing to rebuild")
             # in case we do rebuild, wait for it to succeed before saving
             self.store_yaml(oldstate, project, repository, arch)
