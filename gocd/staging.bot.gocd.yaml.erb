@@ -63,27 +63,3 @@ pipelines:
                rm -rf $tempdir
 
 <% end -%>
-  Project.Only:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 0 * ? * *
-      only_on_changes: false
-    materials:
-      scripts:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Run:
-        approval:
-          type: manual
-        environment_variables:
-          OSC_CONFIG: /home/go/config/oscrc-repo-checker
-        jobs:
-<% %w(openSUSE:Factory openSUSE:Leap:15.0:Update openSUSE:Leap:42.3:Update openSUSE:Leap:15.2:Update).each do |project| -%>
-          <%= project.gsub(':', '.') %>:
-            timeout: 0
-            resources:
-            - repo-checker
-            tasks:
-            - script: ./project-installcheck.py -A https://api.opensuse.org --debug project_only <%= project %>
-<% end -%>
