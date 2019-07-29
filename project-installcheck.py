@@ -97,10 +97,11 @@ class RepoChecker():
 
         return repository
 
-    def store_yaml(self, state):
+    def store_yaml(self, state, project, repository, arch):
         state_yaml = yaml.dump(state, default_flow_style=False)
+        comment = 'Updated rebuild infos for {}/{}/{}'.format(project, repository, arch)
         source_file_ensure(self.apiurl, self.store_project, self.store_package,
-                           self.store_filename, state_yaml, comment='Updated rebuild infos')
+                           self.store_filename, state_yaml, comment=comment)
 
     def check_pra(self, project, repository, arch):
         config = Config.get(self.apiurl, project)
@@ -242,14 +243,14 @@ class RepoChecker():
         if self.rebuild and not len(rebuilds):
             self.logger.debug("Nothing to rebuild")
             # in case we do rebuild, wait for it to succeed before saving
-            self.store_yaml(oldstate)
+            self.store_yaml(oldstate, project, repository, arch)
             return
 
         query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
         url = makeurl(self.apiurl, ['build', project], urlencode(query, doseq=True))
         http_POST(url)
 
-        self.store_yaml(oldstate)
+        self.store_yaml(oldstate, project, repository, arch)
 
     def check_leaf_package(self, project, repository, arch, package):
         url = makeurl(self.apiurl, ['build', project, repository, arch, package, '_buildinfo'])
