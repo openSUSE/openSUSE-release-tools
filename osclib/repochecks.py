@@ -116,7 +116,7 @@ def parsed_installcheck(pfile, arch, target_packages, whitelist):
             if in_problem:
                 reported_problems[package]['output'].append(filter_release(line[2:]))
 
-        return reported_problems
+    return reported_problems
 
 
 def installcheck(directories, arch, whitelist, ignore_conflicts):
