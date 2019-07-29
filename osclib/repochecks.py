@@ -1,10 +1,12 @@
 import logging
-import tempfile
 import os
 import re
-import yaml
 import subprocess
+import tempfile
 from fnmatch import fnmatch
+
+import yaml
+
 from osclib.cache_manager import CacheManager
 
 logger = logging.getLogger('InstallChecker')
@@ -12,12 +14,16 @@ logger = logging.getLogger('InstallChecker')
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CACHEDIR = CacheManager.directory('repository-meta')
 
+
 class CorruptRepos(Exception):
     pass
 
 # the content of sp is name, version, release, arch
+
+
 def _format_pkg(sp):
     return "{}-{}-{}.{}".format(sp[0], sp[1], sp[2], sp[3])
+
 
 def _check_exists_in_whitelist(sp, whitelist):
     if sp[0] in whitelist:
@@ -33,10 +39,12 @@ def _check_exists_in_whitelist(sp, whitelist):
             logger.debug("Found %s matching whitelist entry %s, ignoring", sp[0], entry)
             return True
 
+
 def _check_colon_format(sp1, sp2, whitelist):
     if "{}:{}".format(sp1, sp2) in whitelist:
         logger.debug("Found %s:%s in whitelist, ignoring", sp1, sp2)
         return True
+
 
 def _check_conflicts_whitelist(sp1, sp2, whitelist):
     if _check_exists_in_whitelist(sp1, whitelist):
@@ -47,6 +55,7 @@ def _check_conflicts_whitelist(sp1, sp2, whitelist):
         return True
     if _check_colon_format(sp2[0], sp1[0], whitelist):
         return True
+
 
 def _fileconflicts(pfile, target_packages, whitelist):
     script = os.path.join(SCRIPT_PATH, '..', 'findfileconflicts')
@@ -72,15 +81,18 @@ def _fileconflicts(pfile, target_packages, whitelist):
         if len(output):
             return output
 
-def _installcheck(pfile, arch, target_packages, whitelist):
+
+def parsed_installcheck(pfile, arch, target_packages, whitelist):
+    reported_problems = dict()
+
     if not len(target_packages):
-        return None
+        return reported_problems
 
     p = subprocess.run(['/usr/bin/installcheck', arch, pfile], stdout=subprocess.PIPE, text=True)
     if p.returncode:
-        output = ''
         in_problem = False
-        install_re = re.compile(r"^can't install (.*)-[^-]+-[^-]+:$")
+        package = None
+        install_re = re.compile(r"^can't install (.*)(-[^-]+-[^-]+):$")
         for line in p.stdout.split('\n'):
             if not line.startswith(' '):
                 in_problem = False
@@ -93,10 +105,14 @@ def _installcheck(pfile, arch, target_packages, whitelist):
                 if package in whitelist:
                     logger.debug("{} fails installcheck but is white listed".format(package))
                     continue
+                reported_problems[package] = {'problem': match.group(1) + match.group(2), 'output': [], 'source': target_packages[package]}
                 in_problem = True
+                continue
             if in_problem:
-                output += line + "\n"
-        return output
+                reported_problems[package]['output'].append(line[2:])
+
+        return reported_problems
+
 
 def installcheck(directories, arch, whitelist, ignore_conflicts):
 
@@ -122,16 +138,22 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
         if output:
             parts.append(output)
 
-        output = _installcheck(pfile, arch, target_packages, whitelist)
-        if output:
+        parsed = parsed_installcheck(pfile, arch, target_packages, whitelist)
+        if len(parsed):
+            output = ''
+            for package in sorted(parsed):
+                output += "can't install " + parsed[package]['problem'] + ":\n"
+                output += "\n".join(parsed[package]['output'])
+                output += "\n\n"
             parts.append(output)
 
         return parts
 
+
 def mirror(apiurl, project, repository, arch):
     """Call bs_mirrorfull script to mirror packages."""
     directory = os.path.join(CACHEDIR, project, repository, arch)
-    #return directory
+    # return directory
 
     if not os.path.exists(directory):
         os.makedirs(directory)

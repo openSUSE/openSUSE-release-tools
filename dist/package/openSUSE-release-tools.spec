@@ -426,7 +426,6 @@ exit 0
 %{_bindir}/osrt-legal-auto
 %{_bindir}/osrt-obs_clone
 %{_bindir}/osrt-openqa-maintenance
-%{_bindir}/osrt-rebuildpacs
 %{_bindir}/osrt-requestfinder
 %{_bindir}/osrt-scan_baselibs
 %{_bindir}/osrt-status

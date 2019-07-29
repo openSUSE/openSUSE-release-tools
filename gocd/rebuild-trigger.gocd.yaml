@@ -18,26 +18,23 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
-              ln -sf /home/go/config/rebuild.problems problems
-              ln -sf /home/go/config/rebuild.buildinfos buildinfos
-          - script: |-
               echo "openSUSE:Factory"
-              ./rebuildpacs.pl openSUSE:Factory standard i586
-              ./rebuildpacs.pl openSUSE:Factory standard x86_64
+              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory standard i586
+              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory standard x86_64
           - script: |-
               echo "openSUSE:Factory:PowerPC"
-              ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc
-              ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64
-              ./rebuildpacs.pl openSUSE:Factory:PowerPC standard ppc64le
+              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC standard ppc
+              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC standard ppc64
+              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC standard ppc64le
           - script: |-
               echo "openSUSE Leap 15.2"
-              echo ./rebuildpacs.pl openSUSE:Leap:15.2 standard i586
-              echo ./rebuildpacs.pl openSUSE:Leap:15.2 standard x86_64
+              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Leap:15.2:Staging/dashboard openSUSE:Leap:15.2 standard i586
+              ./project-installcheck.py --osc-debug --debug rebuild --store openSUSE:Leap:15.2:Staging/dashboard openSUSE:Leap:15.2 standard x86_64
           - script: |-
               echo "GNOME devel projects"
-              ./rebuildpacs.pl GNOME:Factory openSUSE_Factory i586
-              ./rebuildpacs.pl GNOME:Factory openSUSE_Factory x86_64
-              ./rebuildpacs.pl GNOME:Factory openSUSE_PPC     ppc64le
-              ./rebuildpacs.pl GNOME:Next    openSUSE_Factory i586
-              ./rebuildpacs.pl GNOME:Next    openSUSE_Factory x86_64
-              ./rebuildpacs.pl GNOME:Next    openSUSE_PPC     ppc64le
+              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Factory openSUSE_Factory i586
+              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Factory openSUSE_Factory x86_64
+              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Factory openSUSE_PPC     ppc64le
+              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Next    openSUSE_Factory i586
+              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Next    openSUSE_Factory x86_64
+              ./project-installcheck.py --osc-debug --debug rebuild --store home:repo-checker/rebuilds GNOME:Next    openSUSE_PPC     ppc64le
