@@ -39,7 +39,7 @@ pipelines:
         tasks:
           - script: |-
               echo "openSUSE:Factory:PowerPC"
-              ./project-installcheck.py --debug check --store openSUSE:Factory:Staging/dashboard openSUSE:Factory:PowerPC
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds openSUSE:Factory:PowerPC
   Trigger.Rebuild.Leap.152:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

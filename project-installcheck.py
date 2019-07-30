@@ -277,14 +277,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('--store', help='Project/Package to store the rebuild infos in')
     @cmdln.option('-r', '--repo', dest='repo', help='Repository to check')
-    @cmdln.option('--no-rebuild', dest='rebuild', action='store_false', help='Only track issues, do not rebuild')
+    @cmdln.option('--no-rebuild', dest='norebuild', action='store_true', help='Only track issues, do not rebuild')
     def do_check(self, subcmd, opts, project):
         """${cmd_name}: Rebuild packages in rebuild=local projects
 
         ${cmd_usage}
         ${cmd_option_list}
         """
-        self.tool.rebuild = opts.rebuild
+        self.tool.rebuild = not opts.norebuild
         self.tool.parse_store(opts.store)
         self.tool.apiurl = conf.config['apiurl']
         self.tool.check(project, opts.repo)
