@@ -238,7 +238,8 @@ def origin_find(apiurl, target_project, package, source_hash=None, current=False
     return None
 
 def project_source_contain(apiurl, project, package, source_hash):
-    for source_hash_consider in package_source_hash_history(apiurl, project, package):
+    for source_hash_consider in package_source_hash_history(
+        apiurl, project, package, include_project_link=True):
         project_source_log('contain', project, source_hash_consider, source_hash)
         if source_hash_consider == source_hash:
             return True
@@ -285,7 +286,8 @@ def origin_find_fallback(apiurl, target_project, package, source_hash, user):
 
     # Attempt to find a revision of target package that matches an origin.
     first = True
-    for source_hash_consider in package_source_hash_history(apiurl, target_project, package):
+    for source_hash_consider in package_source_hash_history(
+        apiurl, target_project, package, include_project_link=True):
         if first:
             first = False
             continue
@@ -522,7 +524,7 @@ def origin_revision_state(apiurl, target_project, package, origin_info=False, li
     else:
         origin_project = origin_info.project.rstrip('~')
         origin_hashes = list(package_source_hash_history(apiurl, origin_project, package, limit * 2, True))
-    target_hashes = list(package_source_hash_history(apiurl, target_project, package, limit))
+    target_hashes = list(package_source_hash_history(apiurl, target_project, package, limit, True))
     for source_hash in origin_hashes:
         if source_hash not in target_hashes:
             revisions.append(-1)
