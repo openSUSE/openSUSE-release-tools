@@ -272,10 +272,7 @@ def source_file_load(apiurl, project, package, filename, revision=None):
         return None
 
 def source_file_save(apiurl, project, package, filename, content, comment=None):
-    if not comment:
-        comment = 'update by OSRT tools'
-    comment += ' (host {})'.format(socket.gethostname())
-
+    comment = message_suffix('updated', comment)
     url = makeurl(apiurl, ['source', project, package, filename], {'comment': comment})
     http_PUT(url, data=content)
 
@@ -920,3 +917,10 @@ def request_action_list_source(apiurl, project, package, states=['new', 'review'
         types.append('submit')
 
     yield from request_action_list(apiurl, project, package, states, types)
+
+def message_suffix(action, message=None):
+    if not message:
+        message = '{} by OSRT tools'.format(action)
+
+    message += ' (host {})'.format(socket.gethostname())
+    return message
