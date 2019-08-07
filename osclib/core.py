@@ -13,6 +13,7 @@ except ImportError:
     #python 2.x
     from urllib2 import HTTPError
 
+from osc.core import create_submit_request
 from osc.core import get_binarylist
 from osc.core import get_commitlog
 from osc.core import get_dependson
@@ -34,6 +35,7 @@ from osclib.memoize import memoize
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
 RPM_REGEX = BINARY_REGEX + r'\.rpm'
 BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
+REQUEST_STATES_MINUS_ACCEPTED = ['new', 'review', 'declined', 'revoked', 'superseded']
 
 @memoize(session=True)
 def group_members(apiurl, group, maintainers=False):
@@ -917,6 +919,46 @@ def request_action_list_source(apiurl, project, package, states=['new', 'review'
         types.append('submit')
 
     yield from request_action_list(apiurl, project, package, states, types)
+
+def request_create_submit(apiurl, source_project, source_package,
+                          target_project, target_package=None, message=None, revision=None):
+    if not target_package:
+        target_package = source_package
+
+    source_hash = package_source_hash(apiurl, target_project, target_package)
+    source_hash_consider = package_source_hash(apiurl, source_project, source_package, revision)
+    if source_hash_consider == source_hash:
+        # No sense submitting identical sources.
+        return False
+
+    for request, action in request_action_single_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, 'submit'):
+        source_hash_pending = package_source_hash(
+            apiurl, action.src_project, action.src_package, action.src_rev)
+        if source_hash_pending == source_hash_consider:
+            # Pending request with identical sources.
+            return False
+
+    message = message_suffix('created', message)
+
+    def create_function():
+        return create_submit_request(apiurl, source_project, source_package,
+                                     target_project, target_package,
+                                     message=message, orev=revision)
+
+    return RequestFuture('submit {}/{} -> {}/{}'.format(
+        source_project, source_package, target_project, target_package), create_function)
+
+class RequestFuture:
+    def __init__(self, description, create_function):
+        self.description = description
+        self.create_function = create_function
+
+    def create(self):
+        return self.create_function()
+
+    def __str__(self):
+        return self.description
 
 def message_suffix(action, message=None):
     if not message:
