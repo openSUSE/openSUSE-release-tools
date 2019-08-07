@@ -31,6 +31,7 @@ from osc.core import xpath_join
 from osc.util.helper import decode_it
 from osclib.conf import Config
 from osclib.memoize import memoize
+import subprocess
 
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
 RPM_REGEX = BINARY_REGEX + r'\.rpm'
@@ -948,6 +949,23 @@ def request_create_submit(apiurl, source_project, source_package,
 
     return RequestFuture('submit {}/{} -> {}/{}'.format(
         source_project, source_package, target_project, target_package), create_function)
+
+def request_create_delete(apiurl, target_project, target_package, message=None):
+    for request, action in request_action_single_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, 'delete'):
+        return False
+
+    # No proper API function to perform the same operation.
+    message = message_suffix('created', message)
+
+    def create_function():
+        subprocess.check_call(
+            ' '.join(['osc', 'dr', '-m', message, target_project, target_package]), shell=True)
+
+        # Would be nicer to return newly create request ID, but not worth rewriting.
+        return True
+
+    return RequestFuture('delete {}/{}'.format(target_project, target_package), create_function)
 
 class RequestFuture:
     def __init__(self, description, create_function):
