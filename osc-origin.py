@@ -19,10 +19,13 @@ from osclib.origin import origin_find
 from osclib.origin import origin_history
 from osclib.origin import origin_potentials
 from osclib.origin import origin_revision_state
+from osclib.origin import origin_update
 from osclib.util import mail_send
 from shutil import copyfile
 import sys
 import time
+import traceback
+from urllib.error import HTTPError
 import yaml
 
 OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
@@ -48,6 +51,7 @@ def do_origin(self, subcmd, opts, *args):
     potentials: list potential origins of a package
     projects: list all projects with an OSRT:OriginConfig attribute
     report: print origin summary report
+    update: handle package source changes as either delete or submit requests
 
     Usage:
         osc origin config [--origins-only]
@@ -58,12 +62,14 @@ def do_origin(self, subcmd, opts, *args):
         osc origin potentials [--format json|yaml] PACKAGE
         osc origin projects [--format json|yaml]
         osc origin report [--diff] [--force-refresh] [--mail]
+        osc origin update [PACKAGE...]
     """
 
     if len(args) == 0:
         raise oscerr.WrongArgs('A command must be indicated.')
     command = args[0]
-    if command not in ['config', 'cron', 'history', 'list', 'package', 'potentials', 'projects', 'report']:
+    if command not in ['config', 'cron', 'history', 'list', 'package', 'potentials',
+                       'projects', 'report', 'update']:
         raise oscerr.WrongArgs('Unknown command: {}'.format(command))
     if command == 'package' and len(args) < 2:
         raise oscerr.WrongArgs('A package must be indicated.')
@@ -330,3 +336,28 @@ def osrt_origin_report(apiurl, opts, *args):
     if opts.mail:
         mail_send(apiurl, opts.project, 'release-list', '{} origin report'.format(opts.project),
                   body, None, dry=opts.dry)
+
+def osrt_origin_update(apiurl, opts, *packages):
+    if len(packages) == 0:
+        packages = package_list_kind_filtered(apiurl, opts.project)
+
+    return_value = 0
+    for package in packages:
+        request_future = origin_update(apiurl, opts.project, package)
+        if not request_future:
+            continue
+
+        print(request_future)
+        if opts.dry:
+            continue
+
+        try:
+            request_id = request_future.create()
+            if request_id:
+                print('-> created request {}'.format(request_id))
+        except HTTPError:
+            return_value = 1
+            traceback.print_exc()
+
+    if return_value != 0:
+        sys.exit(return_value)
