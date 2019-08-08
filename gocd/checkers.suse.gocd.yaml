@@ -48,26 +48,6 @@ pipelines:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-12-SP5:GA:Staging/dashboard --no-rebuild SUSE:SLE-12-SP5:GA
-  SLE-SP2.Manager42:
-    group: SLE.Checkers
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 */30 * ? * *
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-leaper
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Run:
-        approval: manual
-        jobs:
-          Run:
-            timeout: 0
-            resources:
-            - staging-bot
-            tasks:
-            - script: ./manager_42.py -A https://api.suse.de -c config/manager_42/SUSE:SLE-15-SP2:GA.yml
   SLE.Leaper:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
