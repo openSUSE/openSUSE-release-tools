@@ -12,6 +12,8 @@ from osclib.core import package_version
 from osclib.core import project_remote_apiurl
 from osclib.core import request_action_key
 from osclib.core import request_action_list_source
+from osclib.core import request_create_delete
+from osclib.core import request_create_submit
 from osclib.core import request_remote_identifier
 from osclib.core import review_find_last
 from osclib.core import reviews_remaining
@@ -540,6 +542,16 @@ def origin_revision_state(apiurl, target_project, package, origin_info=False, li
     # To simplify usage which is left-right (oldest-newest) place oldest first.
     return list(reversed(revisions))
 
+def origin_potential(apiurl, target_project, package):
+    config = config_load(apiurl, target_project)
+    for origin, _ in config_origin_generator(config['origins'], apiurl, target_project, package, True):
+        version = package_version(apiurl, origin, package)
+        if version is not False:
+            # Package exists in origin, but may still have unknown version.
+            return origin, version
+
+    return None, None
+
 def origin_potentials(apiurl, target_project, package):
     potentials = {}
 
@@ -568,3 +580,49 @@ def origin_history(apiurl, target_project, package, user):
         })
 
     return history
+
+def origin_update(apiurl, target_project, package):
+    origin_info = origin_find(apiurl, target_project, package)
+    if not origin_info:
+        origin, version = origin_potential(apiurl, target_project, package)
+        if origin is None:
+            # Package is not found in any origin so request deletion.
+            message = 'Package not available from any potential origin.'
+            return request_create_delete(apiurl, target_project, package, message)
+
+        message = 'Submitting package from highest potential origin.'
+        return request_create_submit(apiurl, origin, package, target_project, message=message)
+
+    if origin_workaround_check(origin_info.project):
+        # Do not attempt to update workarounds as the expected flow is to either
+        # to explicitely switched back to non-workaround or source to match at
+        # some point and implicitily switch.
+        return False
+
+    if origin_info.pending:
+        # Already accepted source ahead of origin so nothing to do.
+        return False
+
+    policy = policy_get(apiurl, target_project, package, origin_info.project)
+    if not policy['automatic_updates']:
+        return False
+
+    if policy['pending_submission_allow']:
+        request_id = origin_update_pending(apiurl, origin_info.project, package, target_project)
+        if request_id:
+            return request_id
+
+    message = 'Newer source available from package origin.'
+    return request_create_submit(apiurl, origin_info.project, package, target_project, message=message)
+
+def origin_update_pending(apiurl, origin_project, package, target_project):
+    apiurl_remote, project_remote = project_remote_apiurl(apiurl, origin_project)
+    request_actions = request_action_list_source(
+        apiurl_remote, project_remote, package, include_release=True)
+    for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
+        identifier = request_remote_identifier(apiurl, apiurl_remote, request.reqid)
+        message = 'Newer pending source available from package origin. See {}.'.format(identifier)
+        return request_create_submit(apiurl, action.src_project, action.src_package,
+                                     target_project, package, message=message, revision=action.src_rev)
+
+    return False
