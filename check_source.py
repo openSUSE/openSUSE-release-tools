@@ -18,6 +18,8 @@ from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
+from osclib.core import source_file_load
+from osclib.core import target_archs
 from urllib.error import HTTPError
 
 import ReviewBot
@@ -26,6 +28,8 @@ from osclib.conf import str2bool
 class CheckSource(ReviewBot.ReviewBot):
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+    AUDIT_BUG_URL = "https://en.opensuse.org/openSUSE:Package_security_guidelines#audit_bugs"
+    AUDIT_BUG_MESSAGE = "The package is submitted to an official product and it has warnings that indicate that it need to go through a security review. Those warnings can only be ignored in devel projects. For more information please read: {}.".format(AUDIT_BUG_URL)
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
@@ -48,6 +52,8 @@ class CheckSource(ReviewBot.ReviewBot):
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
         self.skip_add_reviews = False
+        self.security_review_team = config.get('security-review-team', 'security-team')
+        self.bad_rpmlint_entries = config.get('bad-rpmlint-entries', '').split()
 
         if self.action.type == 'maintenance_incident':
             # The workflow effectively enforces the names to match and the
@@ -187,7 +193,50 @@ class CheckSource(ReviewBot.ReviewBot):
             elif self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
+        if self.bad_rpmlint_entries:
+            if self.has_whitelist_warnings(source_project, source_package, target_project, target_package):
+                # if there are any add a review for the security team
+                # maybe add the found warnings to the message for the review
+                self.add_review(self.request, by_group=self.security_review_team, msg=CheckSource.AUDIT_BUG_MESSAGE)
+            if self.suppresses_whitelist_warnings( source_project, source_package ):
+                self.add_review(self.request, by_group=self.security_review_team, msg=CheckSource.AUDIT_BUG_MESSAGE)
+
         return True
+
+    def suppresses_whitelist_warnings( self, source_project, source_package):
+        # checks if there's a rpmlintrc that suppresses warnings that we check
+        found_entries = set()
+        contents = source_file_load(self.apiurl, source_project, source_package, source_package+'-rpmlintrc')
+        if contents:
+            matches = re.findall(r'addFilter\(["\']([^"\']+)["\']\)', contents)
+            for entry in self.bad_rpmlint_entries:
+                for match in matches:
+                    if match.startswith(entry):
+                        self.logger.info(f'found suppressed whitelist warning: {entry}')
+                        found_entries.add(entry)
+        return found_entries
+
+    def has_whitelist_warnings( self, source_project, source_package, target_project, target_package ):
+        # this checks if this is a submit to an product project and it has warnings for non-whitelisted permissions/files
+        found_entries = set()
+        url = osc.core.makeurl(self.apiurl, ['build', target_project])
+        xml = ET.parse(osc.core.http_GET(url)).getroot()
+        for f in xml.findall('entry'):
+            # we check all repos in the source project for errors that exist in the target project
+            repo = f.attrib['name']
+            query = { 'last' : 1, }
+            for arch in target_archs(self.apiurl, source_project, repo):
+                url = osc.core.makeurl(self.apiurl, ['build', source_project, repo, arch, source_package, '_log'], query = query)
+                try:
+                    result = osc.core.http_GET(url)
+                    contents = str(result.read())
+                    for entry in self.bad_rpmlint_entries:
+                        if (': W: '+entry in contents) and not (entry in found_entries):
+                            self.logger.info(f'found missing whitelist for warning: {entry}')
+                            found_entries.add(entry)
+                except HTTPError as e:
+                    self.logger.error('ERROR in URL %s [%s]' % (url, e))
+        return found_entries
 
     def is_devel_project(self, source_project, target_project):
         if source_project in self.devel_whitelist:
