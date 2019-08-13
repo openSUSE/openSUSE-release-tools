@@ -489,12 +489,7 @@ class StrategyQuick(StrategyNone):
         # groups are only those configured as reviewers on the target project.
         meta = ET.fromstringlist(show_project_meta(splitter.api.apiurl, splitter.api.project))
         allowed_groups = meta.xpath('group[@role="reviewer"]/@groupid')
-        allowed_users = []
-        if 'repo-checker' in splitter.config:
-            allowed_users.append(splitter.config['repo-checker'])
-
         self.filter_review_whitelist(splitter, 'by_group', allowed_groups)
-        self.filter_review_whitelist(splitter, 'by_user', allowed_users)
 
     def filter_review_whitelist(self, splitter, attribute, allowed):
         # Rather than generate a bunch of @attribute="allowed[0]" pairs
