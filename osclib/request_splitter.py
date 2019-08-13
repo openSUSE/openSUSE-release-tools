@@ -476,8 +476,8 @@ class StrategyQuick(StrategyNone):
     def apply(self, splitter):
         super(StrategyQuick, self).apply(splitter)
 
-        # Leaper accepted which means any extra reviews have been added.
-        splitter.filter_add('./review[@by_user="leaper" and @state="accepted"]')
+        # Origin manager accepted which means any extra reviews have been added.
+        splitter.filter_add('./review[@by_user="origin-manager" and @state="accepted"]')
 
         # No @by_project reviews that are not accepted. If not first round stage
         # this should also ignore previous staging project reviews or already
