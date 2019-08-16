@@ -7,8 +7,10 @@ def sentry_init(obs_apiurl=None, tags=None):
     except ImportError:
         return sentry_sdk_dummy()
 
-    instance = sentry_sdk.init(conf.config.get('sentry_sdk.dsn'), release=VERSION)
-    sentry_dsn.value = instance._client.dsn
+    sentry_init.client = sentry_sdk.init(
+        conf.config.get('sentry_sdk.dsn'),
+        environment=conf.config.get('sentry_sdk.environment'),
+        release=VERSION)
 
     with sentry_sdk.configure_scope() as scope:
         if obs_apiurl:
@@ -21,8 +23,8 @@ def sentry_init(obs_apiurl=None, tags=None):
 
     return sentry_sdk
 
-def sentry_dsn():
-    return sentry_dsn.value
+def sentry_client():
+    return sentry_init.client
 
 class sentry_sdk_dummy:
     def configure_scope(*args, **kw):
