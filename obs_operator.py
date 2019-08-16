@@ -10,7 +10,10 @@ from socketserver import ThreadingMixIn
 import json
 import tempfile
 import os
+from osc import conf
 from osclib import common
+from osclib.sentry import sentry_init
+from osclib.sentry import sentry_dsn
 import subprocess
 import sys
 import time
@@ -163,6 +166,8 @@ class RequestHandler(BaseHTTPRequestHandler):
     def oscrc_create(self, oscrc_file, apiurl, cookiejar_file, user):
         oscrc_file.write('\n'.join([
             '[general]',
+            # Passthru sentry_sdk.dsn to allow for reporting on subcommands.
+            'sentry_sdk.dsn = {}'.format(sentry_dsn()) if sentry_dsn() else '',
             'apiurl = {}'.format(apiurl),
             'cookiejar = {}'.format(cookiejar_file.name),
             'staging.color = 0',
@@ -337,6 +342,9 @@ class OSCRequestEnvironmentException(Exception):
     pass
 
 def main(args):
+    conf.get_config() # Allow sentry DSN to be available.
+    sentry_init()
+
     RequestHandler.apiurl = args.apiurl
     RequestHandler.session = args.session
     RequestHandler.debug = args.debug
