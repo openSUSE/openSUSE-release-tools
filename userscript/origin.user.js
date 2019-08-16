@@ -87,6 +87,7 @@ function origin_load(element, project, package) {
         if (origin.endsWith('failed')) {
             if (origin.startsWith('OSRT:OriginConfig attribute missing')) {
                 item.innerHTML = '';
+                $(element).hide();
             } else {
                 item.innerHTML = '<i class="fas fa-bug text-warning"></i> Origin: failed to load';
             }
