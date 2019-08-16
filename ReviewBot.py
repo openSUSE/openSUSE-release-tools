@@ -17,6 +17,7 @@ from osclib.core import maintainers_get
 from osclib.core import request_action_key
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
+from osclib.sentry import sentry_init
 from osclib.stagingapi import StagingAPI
 import signal
 import datetime
@@ -33,6 +34,9 @@ import osc.core
 from urllib.error import HTTPError, URLError
 
 from itertools import count
+
+# In-case not properly initialized via the CommandLineInterface.
+sentry_sdk = sentry_init()
 
 class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
@@ -179,12 +183,14 @@ class ReviewBot(object):
             else:
                 try:
                     good = self.check_one_request(req)
-                except:
+                except Exception as e:
                     good = None
 
                     import traceback
                     traceback.print_exc()
                     return_value = 1
+
+                    sentry_sdk.capture_exception(e)
 
             if self.review_mode == 'no':
                 good = None
@@ -423,6 +429,12 @@ class ReviewBot(object):
                 method_suffix = 'package'
             elif action.tgt_repository is not None:
                 method_suffix = 'repository'
+
+            with sentry_sdk.configure_scope() as scope:
+                scope.set_extra('request_type', '_'.join([method_type, method_suffix]))
+        else:
+            with sentry_sdk.configure_scope() as scope:
+                scope.set_extra('request_type', method_type)
 
         if method_suffix:
             method = '_'.join([method_prefix, method_type, method_suffix])
@@ -816,6 +828,11 @@ class CommandLineInterface(cmdln.Cmdln):
         if self.options.fallback_group:
             self.checker.fallback_group = self.options.fallback_group
 
+        globals()['sentry_sdk'] = sentry_init(conf.config['apiurl'], {
+            'review_bot': self.clazz.__name__,
+            'review_user': self.checker.review_user,
+        })
+
     def setup_checker(self):
         """ reimplement this """
         apiurl = conf.config['apiurl']
@@ -904,6 +921,8 @@ class CommandLineInterface(cmdln.Cmdln):
             else:
                 self.logger.info("sleeping %d minutes." % interval)
                 time.sleep(interval * 60)
+
+            sentry_sdk.flush()
 
             # Reset all memoize session caches which are designed for single
             # tool run and not extended usage.
