@@ -20,6 +20,7 @@ from osclib.origin import origin_history
 from osclib.origin import origin_potentials
 from osclib.origin import origin_revision_state
 from osclib.origin import origin_update
+from osclib.sentry import sentry_init
 from osclib.util import mail_send
 from shutil import copyfile
 import sys
@@ -89,6 +90,8 @@ def do_origin(self, subcmd, opts, *args):
         config = config_load(apiurl, opts.project)
         if not config:
             raise oscerr.WrongArgs('OSRT:OriginConfig attribute missing from {}'.format(opts.project))
+
+    sentry_init(apiurl, {'osc_plugin': subcmd})
 
     function = 'osrt_origin_{}'.format(command)
     globals()[function](apiurl, opts, *args[1:])
