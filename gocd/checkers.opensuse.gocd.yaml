@@ -270,4 +270,5 @@ pipelines:
               ln -s $PWD/osc-origin.py $tempdir/.osc-plugins
               ln -s $PWD/osclib $tempdir/.osc-plugins
               HOME=$tempdir osc -A https://api.opensuse.org origin -p openSUSE:Leap:15.2 update
+              HOME=$tempdir osc -A https://api.opensuse.org origin -p openSUSE:Leap:15.2:NonFree update
               rm -rf $tempdir
