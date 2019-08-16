@@ -38,30 +38,27 @@ function request_actions_handle() {
 
         // Select the side column containing build results.
         var column = document.evaluate(
-            '//div[@class="row"][2]/div[@class="col-md-4"]',
+            'div[@class="row"][2]//div[@class="card" and div[@data-buildresult-url]]',
             action, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
         // Select the text represtation of action. All other sources are
         // inconsistent and do not always have the right values depending on
-        // request type or state.
+        // request type or state. Still suffers from shortening with ellipses.
         var summary = document.evaluate(
             'div[1]/div[1]',
             action, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         var parts = $(summary).text().trim().split(' ');
 
-        // Maintenance incidents are so special.
-        var release_project = document.evaluate(
-            'i[1]',
-            action, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        var project, package;
-        if (release_project) {
-            parts = parts.splice(4, 3);
-            project = $(release_project).text().trim().split(' ').splice(-1)[0];
-        } else {
-            parts = parts.splice(-3);
-            project = parts[0];
+        var request_type = parts[0].toLowerCase();
+
+        parts = parts.splice(-3);
+        var project = parts[0];
+        var package = parts[2];
+
+        if (request_type == 'release') {
+            // Maintenance release requests special (strip target package incident suffix).
+            package = package.split('.').slice(0, -1).join('.');
         }
-        package = parts[2];
 
         var card = document.createElement('div');
         card.classList.add('card');
@@ -87,6 +84,7 @@ function origin_load(element, project, package) {
         if (origin.endsWith('failed')) {
             if (origin.startsWith('OSRT:OriginConfig attribute missing')) {
                 item.innerHTML = '';
+                $(element).hide();
             } else {
                 item.innerHTML = '<i class="fas fa-bug text-warning"></i> Origin: failed to load';
             }
