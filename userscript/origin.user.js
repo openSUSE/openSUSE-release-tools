@@ -38,7 +38,7 @@ function request_actions_handle() {
 
         // Select the side column containing build results.
         var column = document.evaluate(
-            '//div[@class="row"][2]/div[@class="col-md-4"]',
+            'div[@class="row"][2]//div[@class="card" and div[@data-buildresult-url]]',
             action, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
         // Select the text represtation of action. All other sources are
