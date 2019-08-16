@@ -36,6 +36,7 @@ from osclib.unselect_command import UnselectCommand
 from osclib.repair_command import RepairCommand
 from osclib.rebuild_command import RebuildCommand
 from osclib.request_splitter import RequestSplitter
+from osclib.sentry import sentry_init
 from osclib.supersede_command import SupersedeCommand
 from osclib.prio_command import PrioCommand
 
@@ -429,6 +430,8 @@ def do_staging(self, subcmd, opts, *args):
             value = conf.config.get('staging.color.' + name.lower())
             if value:
                 setattr(Fore, name, ansi.code_to_chars(value))
+
+    sentry_init(opts.apiurl, {'osc_plugin': subcmd})
 
     if opts.wipe_cache:
         Cache.delete_all()
