@@ -192,6 +192,7 @@ class DepTool(cmdln.Cmdln):
             for s in trans.newsolvables():
                 print(','.join(packages), s.name)
                 if opts.explain and s.name in opts.explain:
+                if opts.explain and (s.name in opts.explain or '*' in opts.explain):
                     reason, rule = solver.describe_decision(s)
                     ruleinfo = None
                     if rule:
