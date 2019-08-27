@@ -176,6 +176,8 @@ class ReviewBot(object):
         for req in self.requests:
             self.logger.info("checking %s"%req.reqid)
             self.request = req
+            with sentry_sdk.configure_scope() as scope:
+                scope.set_extra('request.id', self.request.reqid)
 
             override = self.request_override_check(req)
             if override is not None:
@@ -392,6 +394,9 @@ class ReviewBot(object):
 
             # Store in-case sub-classes need direct access to original values.
             self.action = a
+            key = request_action_key(a)
+            with sentry_sdk.configure_scope() as scope:
+                scope.set_extra('action.key', key)
 
             func = getattr(self, self.action_method(a))
             ret = func(req, a)
@@ -404,7 +409,6 @@ class ReviewBot(object):
                     overall = ret
 
             if self.multiple_actions and ret is not None:
-                key = request_action_key(a)
                 message_key = self.review_message_key(ret)
                 review_messages_multi[key] = self.review_messages[message_key]
 
