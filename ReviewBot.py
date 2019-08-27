@@ -829,7 +829,7 @@ class CommandLineInterface(cmdln.Cmdln):
         if self.options.fallback_group:
             self.checker.fallback_group = self.options.fallback_group
 
-        globals()['sentry_sdk'] = sentry_init(conf.config['apiurl'], {
+        sentry_sdk = sentry_init(conf.config['apiurl'], {
             'review_bot': self.clazz.__name__,
             'review_user': self.checker.review_user,
         })
