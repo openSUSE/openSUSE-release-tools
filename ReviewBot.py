@@ -434,9 +434,6 @@ class ReviewBot(object):
             elif action.tgt_repository is not None:
                 method_suffix = 'repository'
 
-        with sentry_sdk.configure_scope() as scope:
-            scope.set_extra('request.type', '_'.join(filter(None, [method_type, method_suffix])))
-
         if method_suffix:
             method = '_'.join([method_prefix, method_type, method_suffix])
             if hasattr(self, method):
