@@ -501,7 +501,7 @@ class ReviewBot(object):
         self.comment_handler_remove()
 
         message = 'unhandled request type {}'.format(a.type)
-        self.logger.error(message)
+        self.logger.info(message)
         self.review_messages['accepted'] += ': ' + message
         return self.request_default_return
 
