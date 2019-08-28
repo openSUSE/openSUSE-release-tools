@@ -33,7 +33,7 @@ def dump_solv_build(baseurl):
     """Determine repo format and build string from remote repository."""
 
     buildre = re.compile(r'.*-Build(.*)')
-    factoryre = re.compile(r'openSUSE-(\d*)-i586-x86_64-Build.*')
+    factoryre = re.compile(r'openSUSE-(\d*)-.*-Build.*')
     url = urljoin(baseurl, 'media.1/media')
     with requests.get(url) as media:
         media.encoding = 'utf-8'
