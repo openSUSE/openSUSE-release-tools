@@ -91,10 +91,14 @@ def do_origin(self, subcmd, opts, *args):
         if not config:
             raise oscerr.WrongArgs('OSRT:OriginConfig attribute missing from {}'.format(opts.project))
 
-    sentry_init(apiurl, {'osc_plugin': subcmd})
-
-    function = 'osrt_origin_{}'.format(command)
-    globals()[function](apiurl, opts, *args[1:])
+    sentry_sdk = sentry_init(apiurl, {'osc_plugin': subcmd})
+    try:
+        function = 'osrt_origin_{}'.format(command)
+        globals()[function](apiurl, opts, *args[1:])
+    except Exception as e:
+        # Capture exception as osc.babysitter will consume any plugin exception.
+        sentry_sdk.capture_exception(e)
+        raise e
 
 def osrt_origin_config(apiurl, opts, *args):
     config = config_load(apiurl, opts.project)
