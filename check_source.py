@@ -132,8 +132,11 @@ class CheckSource(ReviewBot.ReviewBot):
             shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
             old_info = self.package_source_parse(target_project, target_package)
-        except HTTPError:
-            self.logger.error('failed to checkout %s/%s' % (target_project, target_package))
+        except HTTPError as e:
+            if e.code == 404:
+                self.logger.info('target package does not exist %s/%s' % (target_project, target_package))
+            else:
+                raise e
 
         CheckSource.checkout_package(self.apiurl, source_project, source_package, revision=source_revision,
                         pathname=dir, server_service_files=True, expand_link=True)

@@ -1,10 +1,21 @@
 import os
 from os import path
-from osclib.cache_manager import CacheManager
 import subprocess
 
-# Git will not be happy if pruned, but not used enough to be worth excluding.
-CACHE_DIR = CacheManager.directory('git')
+def describe(directory=None):
+    if directory:
+        cwd = os.getcwd()
+        os.chdir(directory)
+
+    ret = subprocess.run(
+        ['git', 'show', '--no-patch', '--date=short', '--format=%cd.%h'],
+        capture_output=True, text=True)
+
+    if directory:
+        os.chdir(cwd)
+
+    ret.check_returncode()
+    return ret.stdout.strip().replace('-', '')
 
 def clone(url, directory):
     return_code = subprocess.call(['git', 'clone', url, directory])

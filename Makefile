@@ -18,7 +18,7 @@ install:
 	for i in osc-*.py osclib; do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(oscplugindir)/$$i; done
 	for i in $(SUBDIRS); do $(MAKE) -C $$i install; done
 	install -m 644 systemd/* $(DESTDIR)$(unitdir)
-	sed -i "s/VERSION = '.*'/VERSION = '$(VERSION)'/" \
+	sed -i "s/VERSION = .*/VERSION = '$(VERSION)'/" \
 	  $(DESTDIR)$(pkgdatadir)/osclib/common.py
 	for i in $(pkgdata_BINS); do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(bindir)/osrt-$${i%.*}; done
 	install -m 755 script/* $(DESTDIR)$(bindir)
