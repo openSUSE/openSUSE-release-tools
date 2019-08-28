@@ -422,6 +422,14 @@ function hash_parts() {
 }
 
 function hash_set(parts) {
+    // Shorten the parts array to before the first null.
+    for (var i = 0; i < parts.length; i++) {
+        if (parts[i] == null) {
+            parts.length = i;
+            break
+        }
+    }
+
     window.location.hash = parts.join('/');
 }
 
