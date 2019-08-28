@@ -278,6 +278,7 @@ function project_set(project) {
         return;
     }
     project_table.project = project;
+    project_table.clearData();
     project_table.setData(operator_url() + '/origin/list/' + project, {}, FETCH_JSON_CONFIG);
     project_table.setHeaderFilterFocus('package');
 }
@@ -297,10 +298,12 @@ function package_set(project, package) {
 
     if (package == null) return;
 
+    potential_table.clearData();
     potential_table.package = package;
     potential_table.setData(
         operator_url() + '/origin/potentials/' + project + '/' + package, {}, FETCH_JSON_CONFIG);
 
+    history_table.clearData();
     history_table.package = package;
     history_table.setData(
         operator_url() + '/origin/history/' + project + '/' + package, {}, FETCH_JSON_CONFIG);
