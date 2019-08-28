@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # check if all packages in a repo are newer than all other repos
 
 from __future__ import print_function
