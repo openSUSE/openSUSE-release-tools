@@ -270,7 +270,14 @@ class RequestHandler(BaseHTTPRequestHandler):
         return command
 
     def handle_package_diff(self, args, query):
-        return ['osc', 'rdiff', args[0], args[1], args[2]]
+        # source_project source_package target_project [target_package] [source_revision] [target_revision]
+        command = ['osc', 'rdiff', args[0], args[1], args[2]] # len(args) == 3
+        if len(args) >= 4:
+            command.append(args[3]) # target_package
+        if len(args) >= 5:
+            command.append('--revision')
+            command.append(':'.join(args[4:6]))
+        return command
 
     def handle_request_submit(self, args, query, data):
         command = ['osc', 'sr', args[0], args[1], args[2]]
