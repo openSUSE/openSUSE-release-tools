@@ -235,9 +235,13 @@ function history_table_init(selector) {
                 width: 100,
             },
         ],
+        dataLoaded: history_select_set,
+        index: 'request',
         initialSort: [
             { column: 'request', dir: 'desc' },
         ],
+        rowClick: history_select_hash,
+        selectable: 1,
         tooltips: true,
     });
 }
@@ -329,24 +333,49 @@ function package_select_hash() {
 }
 
 function potential_get() {
-    return $('#details').data('origin');
+    return hash_get(2);
 }
 
-function potential_set(project, package, origin) {
+function potential_set(project, package, origin, request) {
     if (project == $('#details').data('project') &&
         package == $('#details').data('package') &&
-        origin == potential_get()) return;
+        origin == $('#details').data('origin') &&
+        request == $('#details').data('request')) return;
+
+    var path;
+    if (request != null) {
+        // Unlike a diff between origin and target project a diff between
+        // a request and an origin requires the request source project and
+        // package which are provided along with the history data. As such the
+        // history table must be loaded before the diff can be requested.
+        if (!history_table.getSelectedRows().length) return;
+
+        var request_data = history_table.getSelectedRows()[0].getData();
+        path = [
+            origin,
+            package,
+            request_data['source_project'],
+            request_data['source_package'],
+            'latest',
+            request_data['source_revision'],
+        ].join('/');
+    } else {
+        path = [project, package, origin].join('/');
+    }
 
     $('#details').toggle(origin != null);
     $('#details').data('project', project);
     $('#details').data('package', package);
     $('#details').data('origin', origin);
+    $('#details').data('request', request);
 
+    // At minimum an origin is required, but be sure to toggle element and set
+    // data attributes to handle the next call properly.
     if (origin == null) return;
 
     $('#details').html('<p>Loading...</p>');
-    var url = operator_url() + '/package/diff/' + project + '/' + package + '/' + origin;
-    fetch(url, FETCH_CONFIG)
+
+    fetch(operator_url() + '/package/diff/' + path, FETCH_CONFIG)
         .then(response => response.text())
         .then(text => {
             if (text == '') {
@@ -371,7 +400,8 @@ function potential_select_set() {
 }
 
 function potential_select_hash() {
-    hash_set([project_get(), package_get(), table_selection_get(potential_table)]);
+    hash_set([project_get(), package_get(), table_selection_get(potential_table),
+             table_selection_get(history_table)]);
 }
 
 function potential_external(e, cell) {
@@ -414,6 +444,25 @@ function potential_submit(project, package, origin, message) {
         });
 }
 
+function history_get() {
+    return hash_get(3);
+}
+
+function history_select_set() {
+    var request = history_get();
+    if (request) {
+        table_selection_set(history_table, request);
+
+        // Trigger appropriate potential_set() call since waiting for history
+        // data to be available for request diff.
+        hash_changed();
+    }
+}
+
+function history_select_hash() {
+    potential_select_hash();
+}
+
 var title_suffix;
 function hash_init() {
     title_suffix = document.title;
@@ -423,6 +472,14 @@ function hash_init() {
 
 function hash_parts() {
     return window.location.hash.substr(1).replace(/\/+$/, '').split('/');
+}
+
+function hash_get(index) {
+    var parts = hash_parts();
+    if (parts.length > index) {
+        return parts[index];
+    }
+    return null;
 }
 
 function hash_set(parts) {
@@ -438,10 +495,14 @@ function hash_set(parts) {
 }
 
 function hash_changed() {
+    // Wait until all tables have been initialized before proceeding.
+    if (typeof history_table === 'undefined') return;
+
     var parts = hash_parts();
     var project = null;
     var package = null;
     var origin = null;
+    var request = null;
 
     // route: /*
     if (parts[0] == '') {
@@ -463,11 +524,17 @@ function hash_changed() {
     if (parts.length >= 3) {
         origin = parts[2];
     }
-    potential_set(project, package, origin);
-    title_update(project, package, origin);
+
+    // route: /:project/:package/:origin/:request
+    if (parts.length >= 4) {
+        request = parts[3];
+    }
+    potential_set(project, package, origin, request);
+
+    title_update(project, package, origin, request);
 }
 
-function title_update(project, package, origin) {
+function title_update(project, package, origin, request) {
     var parts = hash_parts();
     var title = '';
     if (project) {
@@ -475,6 +542,9 @@ function title_update(project, package, origin) {
     }
     if (package) {
         title += '/' + package;
+    }
+    if (request) {
+        title += ' request ' + request;
     }
     if (origin) {
         title += ' diff against ' + origin;
