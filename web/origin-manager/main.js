@@ -296,15 +296,16 @@ function package_set(project, package) {
     }
     $('aside').toggle(package != null);
 
+    potential_table.package = package;
+    history_table.package = package;
+
     if (package == null) return;
 
     potential_table.clearData();
-    potential_table.package = package;
     potential_table.setData(
         operator_url() + '/origin/potentials/' + project + '/' + package, {}, FETCH_JSON_CONFIG);
 
     history_table.clearData();
-    history_table.package = package;
     history_table.setData(
         operator_url() + '/origin/history/' + project + '/' + package, {}, FETCH_JSON_CONFIG);
 
@@ -319,8 +320,12 @@ function package_select_set() {
 }
 
 function package_select_hash() {
-    hash_set([project_get(), table_selection_get(project_table),
-             origin_project(project_table.getSelectedRows()[0].getData()['origin'])]);
+    if (table_selection_get(project_table)) {
+        hash_set([project_get(), table_selection_get(project_table),
+                 origin_project(project_table.getSelectedRows()[0].getData()['origin'])]);
+    } else {
+        hash_set([project_get()]);
+    }
 }
 
 function potential_get() {
