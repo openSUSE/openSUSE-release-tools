@@ -95,6 +95,8 @@ function table_selection_get(table) {
 }
 
 function table_selection_set(table, value) {
+    if (typeof table === 'undefined') return;
+
     if (table.getSelectedRows().length > 0) {
         if (table.getSelectedRows()[0].getIndex() != value) {
             table.getSelectedRows()[0].deselect();
