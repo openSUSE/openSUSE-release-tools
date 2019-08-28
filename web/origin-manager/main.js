@@ -352,6 +352,10 @@ function potential_set(project, package, origin) {
             if (text == '') {
                 $('#details').html('<p>No difference</p>');
                 return;
+            } else if (text.startsWith('# diff failed')) {
+                $('#details').html('<p>Failed to generate diff</p><pre></pre>');
+                $('#details pre').text(text);
+                return;
             }
             $('#details').html(Diff2Html.getPrettyHtml(text));
         });
