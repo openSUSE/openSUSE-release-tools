@@ -24,7 +24,7 @@ def sentry_init(obs_apiurl=None, tags=None):
     return sentry_sdk
 
 def sentry_client():
-    return sentry_init.client
+    return sentry_init.client._client
 
 class sentry_sdk_dummy:
     def configure_scope(*args, **kw):
