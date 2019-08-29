@@ -3,6 +3,7 @@
 # kubernetes logs.
 
 import argparse
+import http
 from http.cookies import SimpleCookie
 from http.cookiejar import Cookie, LWPCookieJar
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -19,6 +20,12 @@ import sys
 import time
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
+
+# A cookie with an invalid key is intermittently generated on opensuse.org
+# domain which causes the operator to crash when parsing the cookie. The desired
+# cookie is valid, but cannot be utilize due to the exception. As suggested in
+# https://stackoverflow.com/a/47012250, workaround by making EVERYTHING LEGAL!
+http.cookies._is_legal_key = lambda _: True
 
 # Available in python 3.7.
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
