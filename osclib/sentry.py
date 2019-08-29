@@ -5,6 +5,7 @@ def sentry_init(obs_apiurl=None, tags=None):
     try:
         import sentry_sdk
     except ImportError:
+        sentry_init.client = sentry_client_dummy()
         return sentry_sdk_dummy()
 
     sentry_init.client = sentry_sdk.init(
@@ -42,6 +43,9 @@ class nop_class:
 
     def __getattr__(self, _):
         return nop_func
+
+class sentry_client_dummy(nop_class):
+    options = {}
 
 def nop_func(*args, **kw):
     pass
