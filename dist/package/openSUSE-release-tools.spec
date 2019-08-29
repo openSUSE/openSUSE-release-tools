@@ -268,6 +268,8 @@ BuildArch:      noarch
 Requires:       %{name} = %{version}
 Requires:       osc >= 0.165.1
 Requires:       python3-osc
+# internal API change related to accessing DSN in osclib/sentry.py
+Suggests:       python3-sentry-sdk >= 0.11.0
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
