@@ -577,6 +577,9 @@ def origin_history(apiurl, target_project, package, user):
             'origin': annotation.get('origin', 'None'),
             'request': request.reqid,
             'state': request.state.name,
+            'source_project': action.src_project,
+            'source_package': action.src_package,
+            'source_revision': action.src_rev,
         })
 
     return history

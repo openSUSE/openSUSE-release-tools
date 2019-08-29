@@ -30,6 +30,6 @@ aside {
   overflow: auto;
 }
 
-#details p {
+#details p, #details pre {
   margin: 20px;
 }
