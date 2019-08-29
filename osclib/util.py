@@ -1,9 +1,12 @@
+import logging
+
 from osc import conf
 from osclib.conf import Config
 from osclib.core import entity_email
 from osclib.core import project_list_prefix
 from osclib.memoize import memoize
 
+logger = logging.getLogger()
 
 @memoize(session=True)
 def project_list_family(apiurl, project, include_update=False):
@@ -123,35 +126,46 @@ def project_version(project):
 
     return 0
 
-def mail_send(apiurl, project, to, subject, body, from_key='maintainer',
-              followup_to_key='release-list', dry=False):
+def mail_send_with_details(relay, sender, subject, to, text, xmailer=None, followup_to=None, dry=True):
+    import smtplib
     from email.mime.text import MIMEText
     import email.utils
-    import smtplib
-
-    config = Config.get(apiurl, project)
-    msg = MIMEText(body)
+    msg = MIMEText(text, _charset='UTF-8')
+    msg['Subject'] = subject
     msg['Message-ID'] = email.utils.make_msgid()
     msg['Date'] = email.utils.formatdate(localtime=1)
-    if from_key is None:
-        msg['From'] = entity_email(apiurl, conf.get_apiurl_usr(apiurl), include_name=True)
-    else:
-        msg['From'] = config['mail-{}'.format(from_key)]
-    if '@' not in to:
-        to = config['mail-{}'.format(to)]
+    msg['From'] = sender
     msg['To'] = to
-    followup_to = config.get('mail-{}'.format(followup_to_key))
     if followup_to:
         msg['Mail-Followup-To'] = followup_to
-    msg['Subject'] = subject
-
+    if xmailer:
+        msg.add_header('X-Mailer', xmailer)
+    msg.add_header('Precedence', 'bulk')
     if dry:
-        print(msg.as_string())
+        logger.debug(msg.as_string())
         return
-
-    s = smtplib.SMTP(config.get('mail-relay', 'relay.suse.de'))
-    s.sendmail(msg['From'], [msg['To']], msg.as_string())
+    logger.info("%s: %s", msg['To'], msg['Subject'])
+    s = smtplib.SMTP(relay)
+    s.sendmail(msg['From'], {msg['To'], sender }, msg.as_string())
     s.quit()
+
+def mail_send(apiurl, project, to, subject, body, from_key='maintainer',
+              followup_to_key='release-list', dry=False):
+
+    config = Config.get(apiurl, project)
+    if from_key is None:
+        sender = entity_email(apiurl, conf.get_apiurl_usr(apiurl), include_name=True)
+    else:
+        sender = config['mail-{}'.format(from_key)]
+
+    if '@' not in to:
+        to = config['mail-{}'.format(to)]
+
+    followup_to = config.get('mail-{}'.format(followup_to_key))
+    relay = config.get('mail-relay', 'relay.suse.de')
+
+    mail_send_with_details(text=body, subject=subject, relay=relay, sender=sender,
+                           followup_to=followup_to, to=to, dry=dry)
 
 def sha1_short(data):
     import hashlib

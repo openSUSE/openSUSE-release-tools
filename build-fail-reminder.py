@@ -6,14 +6,13 @@ import osc
 import osc.core
 import osc.conf
 import xml.etree.ElementTree as ET
-import smtplib
-from email.mime.text import MIMEText
 import cgi
-import email.utils
 import logging
 import argparse
 import sys
 from collections import namedtuple
+from osclib.util import mail_send_with_details
+import email.utils
 
 # FIXME: compute from apiurl
 URL="https://build.opensuse.org/project/status/%s?ignore_pending=true&limit_to_fails=true&include_versions=false&format=json"
@@ -98,25 +97,15 @@ Kind regards,
 
 
 def SendMail(logger, project, sender, to, fullname, subject, text):
-    msg = MIMEText(text, _charset='UTF-8')
-    msg['Subject'] = subject
-    msg['To'] = email.utils.formataddr((to, fullname))
-    msg['From'] = sender
-    msg['Date'] = email.utils.formatdate()
-    msg['Message-ID'] = email.utils.make_msgid()
-    msg.add_header('Precedence', 'bulk')
-    msg.add_header('X-Mailer', '%s - Failure Notification' % project)
-    logger.info("%s: %s", msg['To'], msg['Subject'])
-    if args.dry:
-        logger.debug(msg.as_string())
-    else:
-        try:
-            s = smtplib.SMTP(args.relay)
-            s.sendmail(msg['From'], {msg['To'], sender }, msg.as_string())
-            s.quit()
-        except:
-            logger.error("Failed to send an email to %s (%s)" % (fullname, to))
-            pass
+    try:
+        xmailer = '{} - Failure Notification'.format(project)
+        to = email.utils.formataddr((to, fullname))
+        mail_send_with_details(sender=sender, to=to,
+                        subject=subject, text=text, xmailer=xmailer,
+                        relay=args.relay, dry=args.dry)
+    except Exception as e:
+        print(e)
+        logger.error("Failed to send an email to %s (%s)" % (fullname, to))
 
 def main(args):
 
