@@ -350,6 +350,8 @@ def osrt_origin_update(apiurl, opts, *packages):
 
     return_value = 0
     for package in packages:
+        print('checking for updates to {}...'.format(package))
+
         request_future = origin_update(apiurl, opts.project, package)
         if not request_future:
             continue
