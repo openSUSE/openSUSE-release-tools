@@ -1,4 +1,5 @@
 from osc import conf
+from osc import core
 from osclib.common import VERSION
 
 def sentry_init(obs_apiurl=None, tags=None):
@@ -14,6 +15,8 @@ def sentry_init(obs_apiurl=None, tags=None):
         release=VERSION)
 
     with sentry_sdk.configure_scope() as scope:
+        scope.set_tag('osc', core.__version__)
+
         if obs_apiurl:
             scope.set_tag('obs_apiurl', obs_apiurl)
             scope.user = {'username': conf.get_apiurl_usr(obs_apiurl)}
