@@ -27,9 +27,13 @@ from urllib.parse import parse_qs
 # https://stackoverflow.com/a/47012250, workaround by making EVERYTHING LEGAL!
 http.cookies._is_legal_key = lambda _: True
 
+sentry_sdk = sentry_init()
+
 # Available in python 3.7.
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-    pass
+    def handle_error(self, request, client_address):
+        super().handle_error(request, client_address)
+        sentry_sdk.capture_exception()
 
 class RequestHandler(BaseHTTPRequestHandler):
     COOKIE_NAME = 'openSUSE_session' # Both OBS and IBS.
@@ -361,7 +365,7 @@ class OSCRequestEnvironmentException(Exception):
 
 def main(args):
     conf.get_config() # Allow sentry DSN to be available.
-    sentry_init()
+    sentry_sdk = sentry_init()
 
     RequestHandler.apiurl = args.apiurl
     RequestHandler.session = args.session
