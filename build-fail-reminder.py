@@ -74,27 +74,7 @@ maintainer if the package has no explicit maintainer assigned)
 
 Kind regards,
 %(sender)s
-""",
-u"""Dear Package maintainers and hackers.
-
-Below package(s) in %(project)s have been failing to build for at
-least 4 weeks. We tried to send out notifications to the
-configured bugowner/maintainers of the package(s), but so far no
-fix has been submitted. This probably means that the
-maintainer/bugowner did not yet find the time to look into the
-matter and he/she would certainly appreciate help to get this
-sorted.
-
-""",
-u"""
-Unless somebody is stepping up and submitting fixes, the listed
-package(s) are going to be removed from %(project)s.
-
-Kind regards,
-%(sender)s
-"""
-)
-
+""")
 
 def SendMail(logger, project, sender, to, fullname, subject, text):
     try:
@@ -207,20 +187,33 @@ def main(args):
                 r.description = cgi.escape("[botdel] Package has failed to build for >= 6 weeks")
                 r.create(apiurl)
 
-    if (len(ProjectComplainList)):
+    if len(ProjectComplainList):
         # At least to report to the project for not building - send a mail to openSUSE-Factory
         ProjectComplainList.sort()
         to = 'openSUSE-Factory@opensuse.org'
         fullname = "openSUSE Factory - Mailing List"
         subject = "%(project)s - Build fail notification" % {'project': project}
-        text = MAIL_TEMPLATES[2] % {
-            'project': project,
-            'packagelist': ProjectComplainList,
-            'sender': sender,
-            }
+
+        text = u"""Dear Package maintainers and hackers.
+
+        Below package(s) in %(project)s have been failing to build for at
+        least 4 weeks. We tried to send out notifications to the
+        configured bugowner/maintainers of the package(s), but so far no
+        fix has been submitted. This probably means that the
+        maintainer/bugowner did not yet find the time to look into the
+        matter and he/she would certainly appreciate help to get this
+        sorted.
+
+        """ % { 'project': project }
         for pkg in ProjectComplainList:
             text += "- %s\n" % pkg
-        text += MAIL_TEMPLATE[3]
+        text += u"""
+        Unless somebody is stepping up and submitting fixes, the listed
+        package(s) are going to be removed from %(project)s.
+
+        Kind regards,
+        %(sender)s
+        """ % { 'project': project, 'sender': sender }
         SendMail(logger, project, sender, to, fullname, subject, text)
 
 if __name__ == '__main__':
