@@ -33,10 +33,14 @@ services:
   servicedispatch:
     <<: *obs
     command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_servicedispatch
+  smtp:
+    <<: *testenv
+    command: python3 /code/dist/ci/smtp/eml-server.py
   test:
     <<: *testenv
     depends_on:
       - api
+      - smtp
     command: /code/dist/ci/docker-compose-test.sh
     cap_add:
       - SYS_PTRACE
