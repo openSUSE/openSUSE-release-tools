@@ -329,7 +329,8 @@ class RequestSplitter(object):
             'devel',
         )
 
-        map(self.strategy_try, strategies)
+        for strategy in strategies:
+            self.strategy_try(strategy)
 
     def strategy_try(self, name):
         self.strategy_set(name)
@@ -414,10 +415,12 @@ class StrategyCustom(StrategyNone):
         if 'filters' not in self.kwargs:
             super(StrategyCustom, self).apply(splitter)
         else:
-            map(splitter.filter_add, self.kwargs['filters'])
+            for xpath in self.kwargs['filters']:
+                splitter.filter_add(xpath)
 
         if 'groups' in self.kwargs:
-            map(splitter.group_by, self.kwargs['groups'])
+            for group in self.kwargs['groups']:
+                splitter.group_by(group)
 
 class StrategyDevel(StrategyNone):
     GROUP_MIN = 7
