@@ -14,8 +14,6 @@ from collections import namedtuple
 from osclib.util import mail_send_with_details
 import email.utils
 
-# FIXME: compute from apiurl
-URL="https://build.opensuse.org/project/status/%s?ignore_pending=true&limit_to_fails=true&include_versions=false&format=json"
 # for maintainer search
 FACTORY='openSUSE:Factory'
 
@@ -101,7 +99,13 @@ def main(args):
     project = args.project
 
     logger.debug('loading build fails for %s'%project)
-    json_data = osc.core.http_GET(URL%project)
+    url = osc.core.makeurl(apiurl, ['project', 'status', project],
+        { 'ignore_pending': True,
+           'limit_to_fails': True,
+           'include_versions': False,
+           'format': 'json'
+        })
+    json_data = osc.core.http_GET(url)
     data = json.load(json_data)
     json_data.close()
 
