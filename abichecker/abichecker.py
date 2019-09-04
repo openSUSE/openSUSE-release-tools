@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from optparse import OptionParser
 from pprint import pformat, pprint
@@ -15,20 +15,13 @@ import time
 import abichecker_dbmodel as DB
 import sqlalchemy.orm.exc
 
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+from xml.etree import cElementTree as ET
 
 import osc.conf
 import osc.core
 from osc.util.cpio import CpioRead
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 import rpm
 from collections import namedtuple
