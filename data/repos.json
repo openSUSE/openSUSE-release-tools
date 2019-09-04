@@ -1,19 +1,5 @@
 {
    "https://openqa.opensuse.org" : {
-      "openSUSE:Leap:42.3:Update" : {
-         "settings" : {
-            "OS_TEST_ISSUES" : "",
-            "FLAVOR" : "DVD-Updates",
-            "DISTRI" : "opensuse",
-            "VERSION" : "42.3",
-            "ARCH" : "x86_64"
-         },
-         "test" : "kde",
-         "repos" : [
-            "http://download.opensuse.org/update/leap/42.3/oss/",
-            "http://download.opensuse.org/update/leap/42.3/non-oss/"
-         ]
-      },
       "openSUSE:Leap:15.0:Update" : {
          "settings" : {
             "OS_TEST_ISSUES" : "",
@@ -40,6 +26,20 @@
          "repos" : [
             "http://download.opensuse.org/update/leap/15.1/oss/",
             "http://download.opensuse.org/update/leap/15.1/non-oss/"
+         ]
+      },
+      "openSUSE:Leap:15.2:Update" : {
+         "settings" : {
+            "OS_TEST_ISSUES" : "",
+            "FLAVOR" : "DVD-Updates",
+            "DISTRI" : "opensuse",
+            "VERSION" : "15.2",
+            "ARCH" : "x86_64"
+         },
+         "test" : "kde",
+         "repos" : [
+            "http://download.opensuse.org/update/leap/15.2/oss/",
+            "http://download.opensuse.org/update/leap/15.2/non-oss/"
          ]
       }
    },

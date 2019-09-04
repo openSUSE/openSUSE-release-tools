@@ -129,11 +129,6 @@
         "x86_64"
     ]
     },
-  "openSUSE:Leap:42.3:Update" : {
-    "version": "42.3",
-    "flavor": "DVD-Incidents",
-    "distri": "opensuse"
-  },
   "openSUSE:Leap:15.0:Update" : {
     "version": "15.0",
     "flavor": "DVD-Incidents",
@@ -141,6 +136,11 @@
   },
   "openSUSE:Leap:15.1:Update" : {
     "version": "15.1",
+    "flavor": "DVD-Incidents",
+    "distri": "opensuse"
+  },
+  "openSUSE:Leap:15.2:Update" : {
+    "version": "15.2",
     "flavor": "DVD-Incidents",
     "distri": "opensuse"
   }
