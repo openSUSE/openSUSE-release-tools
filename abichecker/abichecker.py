@@ -752,11 +752,11 @@ class ABIChecker(ReviewBot.ReviewBot):
             h = self.ts.hdrFromFdno(fd)
         except rpm.error as e:
             if str(e) == "public key not available":
-                print str(e)
+                print(str(e))
             if str(e) == "public key not trusted":
-                print str(e)
+                print(str(e))
             if str(e) == "error reading package header":
-                print str(e)
+                print(str(e))
             h = None
         return h
 
@@ -785,7 +785,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 h = self.readRpmHeaderFD(fh)
                 if h is None:
                     raise FetchError("failed to read rpm header for %s"%ch.filename)
-                m = rpm_re.match(ch.filename)
+                m = rpm_re.match(ch.filename.decode('utf-8'))
                 if m:
                     yield m.group(1), h
         os.unlink(tmpfile.name)
@@ -940,7 +940,7 @@ class ABIChecker(ReviewBot.ReviewBot):
     # common with repochecker
     def _md5_disturl(self, disturl):
         """Get the md5 from the DISTURL from a RPM file."""
-        return os.path.basename(disturl).split('-')[0]
+        return os.path.basename(disturl.decode('utf-8')).split('-')[0]
 
     def disturl_matches_md5(self, disturl, md5):
         if self._md5_disturl(disturl) != md5:
@@ -975,7 +975,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             if h['sourcepackage']:
                 continue
             pkgname = h['name']
-            if pkgname.endswith('-32bit') or pkgname.endswith('-64bit'):
+            if pkgname.endswith(b'-32bit') or pkgname.endswith(b'-64bit'):
                 # -32bit and -64bit packages are just repackaged, so
                 # we skip them and only check the original one.
                 continue
@@ -983,10 +983,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             if not self.disturl_matches(h['disturl'], prj, srcinfo):
                 raise DistUrlMismatch(h['disturl'], srcinfo)
             pkgs[pkgname] = (rpmfn, h)
-            if debugpkg_re.match(pkgname):
+            if debugpkg_re.match(pkgname.decode('utf-8')):
                 continue
             for fn, mode, lnk in zip(h['filenames'], h['filemodes'], h['filelinktos']):
-                if so_re.match(fn):
+                if so_re.match(fn.decode('utf-8')):
                     if S_ISREG(mode):
                         self.logger.debug('found lib: %s'%fn)
                         lib_packages.setdefault(pkgname, set()).add(fn)
@@ -1000,6 +1000,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         liblist = dict()
         # check whether debug info exists for each lib
         for pkgname in sorted(lib_packages.keys()):
+            pkgname = pkgname.decode('utf-8')
             dpkgname = pkgname+'-debuginfo'
             if not dpkgname in pkgs:
                 missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
@@ -1064,7 +1065,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     @cmdln.option('-r', '--revision', metavar="number", type="int", help="revision number")
     def do_diff(self, subcmd, opts, src_project, src_package, dst_project, dst_package):
         src_rev = opts.revision
-        print self.checker.check_source_submission(src_project, src_package, src_rev, dst_project, dst_package)
+        print(self.checker.check_source_submission(src_project, src_package, src_rev, dst_project, dst_package))
 
 if __name__ == "__main__":
     app = CommandLineInterface()
