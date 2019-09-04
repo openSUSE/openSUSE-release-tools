@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from update import Update
 import re
 from collections import namedtuple
 import osc.core
+from oqamaint.update import Update
 
 try:
     from xml.etree import cElementTree as ET
