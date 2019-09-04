@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import hashlib
 from datetime import date
-import md5
 from pprint import pformat
-from urllib2 import HTTPError
-from urllib import quote_plus
+from urllib.error import HTTPError
+from urllib.parse import quote_plus
 from osclib.comments import CommentAPI
 
 import requests
@@ -12,7 +12,7 @@ import osc.core
 
 import ReviewBot
 
-from suse import SUSEUpdate
+from oqamaint.suse import SUSEUpdate
 
 try:
     from xml.etree import cElementTree as ET
@@ -91,7 +91,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     # check a set of repos for their primary checksums
     @staticmethod
     def calculate_repo_hash(repos, incidents):
-        m = md5.new()
+        m = hashlib.md5()
         # if you want to force it, increase this number
         m.update('b')
         for url in repos:

@@ -11,10 +11,10 @@ from openqa_client.client import OpenQA_Client
 
 # from package itself
 import osc
-from openqabot import OpenQABot
-from opensuse import openSUSEUpdate
+from oqamaint.openqabot import OpenQABot
+from oqamaint.opensuse import openSUSEUpdate
 import ReviewBot
-from suse import SUSEUpdate
+from oqamaint.suse import SUSEUpdate
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
