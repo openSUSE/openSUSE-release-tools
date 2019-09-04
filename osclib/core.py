@@ -781,7 +781,7 @@ def action_is_patchinfo(action):
 def request_action_key(action):
     identifier = []
 
-    if action.type in ['add_role', 'change_devel', 'maintenance_release', 'submit']:
+    if action.type in ['add_role', 'change_devel', 'maintenance_release', 'set_bugowner', 'submit']:
         identifier.append(action.tgt_project)
         identifier.append(action.tgt_package)
 
