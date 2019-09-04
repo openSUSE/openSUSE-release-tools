@@ -9,7 +9,7 @@ def describe(directory=None):
 
     ret = subprocess.run(
         ['git', 'show', '--no-patch', '--date=short', '--format=%cd.%h'],
-        capture_output=True, text=True)
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
 
     if directory:
         os.chdir(cwd)
