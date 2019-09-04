@@ -781,9 +781,10 @@ def action_is_patchinfo(action):
 def request_action_key(action):
     identifier = []
 
-    if action.type in ['add_role', 'change_devel', 'maintenance_release', 'submit']:
+    if action.type in ['add_role', 'change_devel', 'maintenance_release', 'set_bugowner', 'submit']:
         identifier.append(action.tgt_project)
-        identifier.append(action.tgt_package)
+        if action.tgt_package is not None:
+            identifier.append(action.tgt_package)
 
         if action.type in ['add_role', 'set_bugowner']:
             if action.person_name is not None:
