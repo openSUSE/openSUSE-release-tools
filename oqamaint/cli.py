@@ -3,7 +3,7 @@
 # standard library
 import logging
 import os.path as opa
-import simplejson as json
+import json
 import sys
 
 # external dependency
