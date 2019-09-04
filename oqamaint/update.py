@@ -4,23 +4,8 @@ import re
 import requests
 
 
-# python 3 has gzip decompress function
-try:
-    from gzip import decompress
-except ImportError:
-    from gzip import GzipFile
-    import io
-
-    def decompress(data):
-        with GzipFile(fileobj=io.BytesIO(data)) as f:
-            return f.read()
-
-# use cElementTree by default, fallback to pure python
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    from xml.etree import ElementTree as ET
-
+from gzip import decompress
+from xml.etree import cElementTree as ET
 import osc.core
 
 from osclib.memoize import memoize
@@ -31,7 +16,6 @@ class Update(object):
 
     def __init__(self, settings):
         self._settings = settings
-        self._settings['_NOOBSOLETEBUILD'] = '1'
         self.opensuse = True
 
     def get_max_revision(self, job):

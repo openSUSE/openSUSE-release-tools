@@ -85,7 +85,7 @@ class OpenQABot(ReviewBot.ReviewBot):
     def calculate_repo_hash(repos, incidents):
         m = hashlib.md5()
         # if you want to force it, increase this number
-        m.update('b')
+        m.update(b'b')
         for url in repos:
             url += '/repodata/repomd.xml'
             try:
@@ -94,9 +94,9 @@ class OpenQABot(ReviewBot.ReviewBot):
                 raise
             cs = root.find(
                 './/{http://linux.duke.edu/metadata/repo}data[@type="primary"]/{http://linux.duke.edu/metadata/repo}checksum')
-            m.update(cs.text)
+            m.update(cs.text.encode('utf-8'))
         # now add the open incidents
-        m.update(json.dumps(incidents, sort_keys=True))
+        m.update(json.dumps(incidents, sort_keys=True).encode('utf-8'))
         digest = m.hexdigest()
         open_incidents = sorted(incidents.keys())
         if open_incidents:
@@ -211,6 +211,7 @@ class OpenQABot(ReviewBot.ReviewBot):
                 s[x] = y
         s['BUILD'] = buildnr
         s['REPOHASH'] = repohash
+        s['_OBSOLETE'] = '1'
         self.logger.debug("Prepared: {}".format(pformat(s)))
         if not self.dryrun:
             try:
