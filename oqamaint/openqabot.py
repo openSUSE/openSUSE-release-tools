@@ -14,16 +14,8 @@ import ReviewBot
 
 from oqamaint.suse import SUSEUpdate
 
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    from xml.etree import ElementTree as ET
-
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from xml.etree import cElementTree as ET
+import json
 
 QA_UNKNOWN = 0
 QA_INPROGRESS = 1
