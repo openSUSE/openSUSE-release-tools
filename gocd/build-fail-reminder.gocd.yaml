@@ -4,7 +4,7 @@ pipelines:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-totest-manager
+      OSC_CONFIG: /home/go/config/oscrc-repo-checker
     materials:
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -17,5 +17,22 @@ pipelines:
         resources:
         - staging-bot
         tasks:
-        - script: |-
-          ./build-fail-reminder.py --sender="DimStar / Dominique Leuenberger <dimstar@opensuse.org>" --project=openSUSE:Factory --relay=relay.suse.de --json=/home/go/config/openSUSE:Factory.reminded.json --debug
+        - script: ./build-fail-reminder.py --sender="DimStar / Dominique Leuenberger <dimstar@opensuse.org>" --project=openSUSE:Factory --relay=relay.suse.de --json=/home/go/config/openSUSE:Factory.reminded.json --debug
+  BuildFailReminder.Leap152:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-repo-checker
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 0 ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+        - staging-bot
+        tasks:
+        - script: ./build-fail-reminder.py --sender="Ludwig Nussel <lnussel@opensuse.org>" --project=openSUSE:Leap:15.2 --relay=relay.suse.de --json=/home/go/config/openSUSE:Leap:15.2.reminded.json --debug
