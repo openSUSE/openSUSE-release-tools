@@ -54,7 +54,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: ./factory-package-news/announcer.py --config config/announcer/openSUSE:MicroOS.yml --verbose --state-file /home/go/config/announcer.yaml
-  Announcer.Leap:
+  Announcer.Leap:15.2:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
