@@ -110,6 +110,10 @@ class DepTool(cmdln.Cmdln):
                   help="debug solver")
     @cmdln.option("--ignore-recommended", action="store_true",
                   help="ignore recommended")
+    @cmdln.option("-L", "--locale", dest="locale", action="append",
+                  help="locale")
+    @cmdln.option("-F", "--filesytem", dest="filesystem", action="append",
+                  help="filesystem to use")
     def do_install(self, subcmd, opts, *args):
         """${cmd_name}: generate pot file for patterns
 
@@ -128,6 +132,14 @@ class DepTool(cmdln.Cmdln):
         self.prepare_pool(opts.repo)
         if opts.solver_debug:
             self.pool.set_debuglevel(3)
+
+        if opts.locale:
+            for l in opts.locale:
+                self.pool.set_namespaceproviders(solv.NAMESPACE_LANGUAGE, self.pool.Dep(l), True)
+
+        if opts.filesystem:
+            for fs in opts.filesystem:
+                self.pool.set_namespaceproviders(solv.NAMESPACE_FILESYSTEM, self.pool.Dep(fs), True)
 
         def solveit(packages):
             jobs = []
