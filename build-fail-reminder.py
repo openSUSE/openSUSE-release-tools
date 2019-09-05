@@ -6,16 +6,14 @@ import osc
 import osc.core
 import osc.conf
 import xml.etree.ElementTree as ET
-import smtplib
-from email.mime.text import MIMEText
-import email.utils
+import cgi
 import logging
 import argparse
 import sys
 from collections import namedtuple
+from osclib.util import mail_send_with_details
+import email.utils
 
-# FIXME: compute from apiurl
-URL="https://build.opensuse.org/project/status/%s?ignore_pending=true&limit_to_fails=true&include_versions=false&format=json"
 # for maintainer search
 FACTORY='openSUSE:Factory'
 
@@ -74,8 +72,18 @@ maintainer if the package has no explicit maintainer assigned)
 
 Kind regards,
 %(sender)s
-"""
-)
+""")
+
+def SendMail(logger, project, sender, to, fullname, subject, text):
+    try:
+        xmailer = '{} - Failure Notification'.format(project)
+        to = email.utils.formataddr((to, fullname))
+        mail_send_with_details(sender=sender, to=to,
+                        subject=subject, text=text, xmailer=xmailer,
+                        relay=args.relay, dry=args.dry)
+    except Exception as e:
+        print(e)
+        logger.error("Failed to send an email to %s (%s)" % (fullname, to))
 
 def main(args):
 
@@ -91,7 +99,13 @@ def main(args):
     project = args.project
 
     logger.debug('loading build fails for %s'%project)
-    json_data = osc.core.http_GET(URL%project)
+    url = osc.core.makeurl(apiurl, ['project', 'status', project],
+        { 'ignore_pending': True,
+           'limit_to_fails': True,
+           'include_versions': False,
+           'format': 'json'
+        })
+    json_data = osc.core.http_GET(url)
     data = json.load(json_data)
     json_data.close()
 
@@ -112,6 +126,7 @@ def main(args):
 
     Reminded = {}
     Person = {}
+    ProjectComplainList = []
 
     # Go through all the failed packages and update the reminder
     for package in data:
@@ -157,6 +172,7 @@ def main(args):
                 for userid in maintainers:
                     to = Person[userid][1]
                     fullname = Person[userid][2]
+                    subject = '%s - %s - Build fail notification' % (project, package)
                     text = MAIL_TEMPLATES[Reminded[package].remindCount-1] % {
                                 'recepient': to,
                                 'sender': sender,
@@ -164,30 +180,45 @@ def main(args):
                                 'package' : package,
                                 'date': time.ctime(Reminded[package].firstfail),
                                 }
-                    msg = MIMEText(text, _charset='UTF-8')
-                    msg['Subject'] = '%s - %s - Build fail notification' % (project, package)
-                    msg['To'] = email.utils.formataddr((to, fullname))
-                    msg['From'] = sender
-                    msg['Date'] = email.utils.formatdate()
-                    msg['Message-ID'] = email.utils.make_msgid()
-                    msg.add_header('Precedence', 'bulk')
-                    msg.add_header('X-Mailer', '%s - Failure Notification' % project)
-                    logger.info("%s: %s", msg['To'], msg['Subject'])
-                    if args.dry:
-                        logger.debug(msg.as_string())
-                    else:
-                        try:
-                            s = smtplib.SMTP(args.relay)
-                            s.sendmail(msg['From'], {msg['To'], sender }, msg.as_string())
-                            s.quit()
-                        except:
-                            logger.error("Failed to send an email to %s (%s)" % (fullname, to))
-                            pass
+                    SendMail(logger, project, sender, to, fullname, subject, text)
+            elif Reminded[package].remindCount == 4:
+                # Package has failed for 4 weeks - Collect packages to send a mail to openSUSE-factory@ (one mail per day max)
+                ProjectComplainList.append(package)
+            elif Reminded[package].remindCount == 6:
+                # Package failed to build for 6 weeks - file a delete request
+                r = osc.core.Request()
+                r.add_action('delete', tgt_project=project, tgt_package=package)
+                r.description = cgi.escape("[botdel] Package has failed to build for >= 6 weeks")
+                r.create(apiurl)
 
-            elif Reminded[package].remindCount == 3:
-                logger.warning( "Package '%s' has been failing for three weeks - let's create a bug report" % package)
-            else:
-                logger.warning( "Package '%s' is no longer maintained - send a mail to factory maintainers..." % package)
+    if len(ProjectComplainList):
+        # At least to report to the project for not building - send a mail to openSUSE-Factory
+        ProjectComplainList.sort()
+        to = 'openSUSE-Factory@opensuse.org'
+        fullname = "openSUSE Factory - Mailing List"
+        subject = "%(project)s - Build fail notification" % {'project': project}
+
+        text = u"""Dear Package maintainers and hackers.
+
+        Below package(s) in %(project)s have been failing to build for at
+        least 4 weeks. We tried to send out notifications to the
+        configured bugowner/maintainers of the package(s), but so far no
+        fix has been submitted. This probably means that the
+        maintainer/bugowner did not yet find the time to look into the
+        matter and he/she would certainly appreciate help to get this
+        sorted.
+
+        """ % { 'project': project }
+        for pkg in ProjectComplainList:
+            text += "- %s\n" % pkg
+        text += u"""
+        Unless somebody is stepping up and submitting fixes, the listed
+        package(s) are going to be removed from %(project)s.
+
+        Kind regards,
+        %(sender)s
+        """ % { 'project': project, 'sender': sender }
+        SendMail(logger, project, sender, to, fullname, subject, text)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='boilerplate python commmand line program')
@@ -213,4 +244,3 @@ if __name__ == '__main__':
     logging.basicConfig(level = level)
 
     sys.exit(main(args))
-
