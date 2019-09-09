@@ -359,10 +359,8 @@ class CheckSource(ReviewBot.ReviewBot):
         self.target_project_config(action.tgt_project)
 
         if self.mail_release_list:
-            self.review_messages['declined'] = 'The repositories in the openSUSE:* namespace ' \
-                'are managed by the Release Managers. For suggesting changes, send a mail ' \
-                'to opensuse-releaseteam@opensuse.org with an explanation of why the change ' \
-                'makes sense.'
+            self.review_messages['declined'] = 'Deleting repositories is not allowed. ' \
+                'Contact {} to discuss further.'.format(self.mail_release_list)
             return False
 
         self.review_messages['accepted'] = 'unhandled: removing repository'
