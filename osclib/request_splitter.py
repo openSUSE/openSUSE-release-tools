@@ -1,11 +1,11 @@
 from datetime import datetime
 import dateutil.parser
-import hashlib
 from lxml import etree as ET
 from osc import conf
 from osc.core import show_project_meta
 from osclib.core import devel_project_fallback
 from osclib.core import request_age
+from osclib.util import sha1_short
 import re
 
 class RequestSplitter(object):
@@ -386,7 +386,7 @@ class Strategy(object):
         self.name = self.__class__.__name__[8:].lower()
         self.key = self.name
         if kwargs:
-            self.key += '_' + hashlib.sha1(str(kwargs)).hexdigest()[:7]
+            self.key += '_' + sha1_short(str(kwargs))
 
     def info(self):
         info = {'name': self.name}
