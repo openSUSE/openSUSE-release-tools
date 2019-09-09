@@ -48,6 +48,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.in_air_rename_allow = str2bool(config.get('check-source-in-air-rename-allow', 'False'))
         self.add_review_team = str2bool(config.get('check-source-add-review-team', 'True'))
         self.review_team = config.get('review-team')
+        self.mail_release_list = config.get('mail-release-list')
         self.staging_group = config.get('staging-group')
         self.repo_checker = config.get('repo-checker')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
@@ -355,7 +356,9 @@ class CheckSource(ReviewBot.ReviewBot):
         return False
 
     def check_action_delete_repository(self, request, action):
-        if action.tgt_project.startswith('openSUSE:'):
+        self.target_project_config(action.tgt_project)
+
+        if self.mail_release_list:
             self.review_messages['declined'] = 'The repositories in the openSUSE:* namespace ' \
                 'are managed by the Release Managers. For suggesting changes, send a mail ' \
                 'to opensuse-releaseteam@opensuse.org with an explanation of why the change ' \
