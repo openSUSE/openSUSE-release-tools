@@ -207,17 +207,27 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return True
 
-    def suppresses_whitelist_warnings( self, source_project, source_package):
+    def suppresses_whitelist_warnings( self, source_project, source_package ):
         # checks if there's a rpmlintrc that suppresses warnings that we check
         found_entries = set()
         contents = source_file_load(self.apiurl, source_project, source_package, source_package+'-rpmlintrc')
         if contents:
+            contents = re.sub(r'(?m)^ *#.*\n?', '', contents)
             matches = re.findall(r'addFilter\(["\']([^"\']+)["\']\)', contents)
+            # this is a bit tricky. Since users can specify arbitrary regular expresions it's not easy
+            # to match bad_rpmlint_entries against what we found
             for entry in self.bad_rpmlint_entries:
                 for match in matches:
-                    if match.startswith(entry):
-                        self.logger.info(f'found suppressed whitelist warning: {entry}')
-                        found_entries.add(entry)
+                    # First we try to see if our entries appear verbatim in the rpmlint entries
+                    if entry in match:
+                        self.logger.info(f'found suppressed whitelist warning: {match}')
+                        found_entries.add(match)
+                    # if that's not the case then we check if one of the entries in the rpmlint file would match one
+                    # of our entries (e.g. addFilter(".*")
+                    elif re.search(match, entry) and match not in found_entries:
+                        self.logger.info(f'found rpmlint entry that suppresses an important warning: {match}')
+                        found_entries.add(match)
+
         return found_entries
 
     def has_whitelist_warnings( self, source_project, source_package, target_project, target_package ):
