@@ -5,6 +5,7 @@ from osc.core import get_request_list
 from osclib.conf import Config
 from osclib.core import attribute_value_load
 from osclib.core import devel_project_get
+from osclib.core import devel_projects
 from osclib.core import entity_exists
 from osclib.core import package_source_hash
 from osclib.core import package_source_hash_history
@@ -655,3 +656,22 @@ def origin_updatable(apiurl):
             projects.remove(project)
 
     return projects
+
+@memoize(session=True)
+def origin_updatable_map(apiurl, pending=None):
+    origins = {}
+    for project in origin_updatable(apiurl):
+        config = config_load(apiurl, project)
+        for origin, values in config_origin_generator(config['origins'], skip_workarounds=True):
+            if pending is not None and values['pending_submission_allow'] != pending:
+                continue
+
+            if origin == '<devel>':
+                for devel in devel_projects(apiurl, project):
+                    origins.setdefault(devel, set())
+                    origins[devel].add(project)
+            else:
+                origins.setdefault(origin, set())
+                origins[origin].add(project)
+
+    return origins
