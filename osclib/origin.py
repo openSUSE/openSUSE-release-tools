@@ -9,6 +9,7 @@ from osclib.core import entity_exists
 from osclib.core import package_source_hash
 from osclib.core import package_source_hash_history
 from osclib.core import package_version
+from osclib.core import project_attributes_list
 from osclib.core import project_remote_apiurl
 from osclib.core import request_action_key
 from osclib.core import request_action_list_source
@@ -629,3 +630,28 @@ def origin_update_pending(apiurl, origin_project, package, target_project):
                                      target_project, package, message=message, revision=action.src_rev)
 
     return False
+
+@memoize(session=True)
+def origin_updatable(apiurl):
+    """ List of origin managed projects that can be updated. """
+    projects = project_attributes_list(apiurl, [
+        'OSRT:OriginConfig',
+    ], [
+        'OBS:Maintained', # Submitting maintenance updates not currently supported.
+        'OSRT:OriginUpdateSkip',
+    ], locked=False)
+
+    for project in projects:
+        updatable = False
+
+        # Look for at least one origin that allows automatic updates.
+        config = config_load(apiurl, project)
+        for origin, values in config_origin_generator(config['origins'], skip_workarounds=True):
+            if values['automatic_updates']:
+                updatable = True
+                break
+
+        if not updatable:
+            projects.remove(project)
+
+    return projects
