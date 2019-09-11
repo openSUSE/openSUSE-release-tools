@@ -19,6 +19,7 @@ from osclib.origin import origin_find
 from osclib.origin import origin_history
 from osclib.origin import origin_potentials
 from osclib.origin import origin_revision_state
+from osclib.origin import origin_updatable
 from osclib.origin import origin_update
 from osclib.sentry import sentry_init
 from osclib.util import mail_send
@@ -82,7 +83,7 @@ def do_origin(self, subcmd, opts, *args):
 
     Cache.init()
     apiurl = self.get_api_url()
-    if command not in ['cron', 'projects']:
+    if command not in ['cron', 'projects', 'update']:
         if not opts.project:
             raise oscerr.WrongArgs('A project must be indicated.')
         config = config_load(apiurl, opts.project)
@@ -343,17 +344,19 @@ def osrt_origin_report(apiurl, opts, *args):
                   body, None, dry=opts.dry)
 
 def osrt_origin_update(apiurl, opts, *packages):
+    if not opts.project:
+        for project in origin_updatable(apiurl):
+            opts.project = project
+            osrt_origin_update(apiurl, opts, *packages)
+
+        return
+
     if len(packages) == 0:
         packages = package_list_kind_filtered(apiurl, opts.project)
 
-    return_value = 0
     for package in packages:
-        print('checking for updates to {}...'.format(package))
+        print('checking for updates to {}/{}...'.format(opts.project, package))
 
         request_future = origin_update(apiurl, opts.project, package)
         if request_future:
-            if request_future.print_and_create(opts.dry) is False:
-                return_value = 1
-
-    if return_value != 0:
-        sys.exit(return_value)
+            request_future.print_and_create(opts.dry)
