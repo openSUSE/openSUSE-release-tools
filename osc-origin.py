@@ -25,8 +25,6 @@ from osclib.util import mail_send
 from shutil import copyfile
 import sys
 import time
-import traceback
-from urllib.error import HTTPError
 import yaml
 
 OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
@@ -353,20 +351,9 @@ def osrt_origin_update(apiurl, opts, *packages):
         print('checking for updates to {}...'.format(package))
 
         request_future = origin_update(apiurl, opts.project, package)
-        if not request_future:
-            continue
-
-        print(request_future)
-        if opts.dry:
-            continue
-
-        try:
-            request_id = request_future.create()
-            if request_id:
-                print('-> created request {}'.format(request_id))
-        except HTTPError:
-            return_value = 1
-            traceback.print_exc()
+        if request_future:
+            if request_future.print_and_create(opts.dry) is False:
+                return_value = 1
 
     if return_value != 0:
         sys.exit(return_value)
