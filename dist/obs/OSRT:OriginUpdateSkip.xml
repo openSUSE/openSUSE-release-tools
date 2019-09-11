@@ -1,0 +1,5 @@
+<definition name="OriginUpdateSkip" namespace="OSRT">
+  <description>OriginManager skip updates</description>
+  <count>0</count>
+  <modifiable_by role="maintainer"/>
+</definition>
