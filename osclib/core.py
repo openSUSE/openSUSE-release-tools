@@ -673,6 +673,19 @@ def project_attribute_list(apiurl, attribute, locked=None):
 
         yield project
 
+# OBS xpath engine does not support multiple attribute queries nor negation. As
+# such both must be done client-side.
+def project_attributes_list(apiurl, attributes, attributes_not=None, locked=None):
+    projects = set()
+
+    for attribute in attributes:
+        projects.update(project_attribute_list(apiurl, attribute, locked))
+
+    for attribute in attributes_not:
+        projects.difference_update(project_attribute_list(apiurl, attribute, locked))
+
+    return list(projects)
+
 @memoize(session=True)
 def project_remote_list(apiurl):
     remotes = {}
