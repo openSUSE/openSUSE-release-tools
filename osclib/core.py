@@ -32,6 +32,7 @@ from osc.util.helper import decode_it
 from osclib.conf import Config
 from osclib.memoize import memoize
 import subprocess
+import traceback
 
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
 RPM_REGEX = BINARY_REGEX + r'\.rpm'
@@ -1000,6 +1001,14 @@ class RequestFuture:
 
     def create(self):
         return self.create_function()
+
+    def create_tolerant(self):
+        try:
+            return self.create()
+        except HTTPError:
+            traceback.print_exc()
+
+        return False
 
     def __str__(self):
         return self.description
