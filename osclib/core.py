@@ -204,6 +204,17 @@ def devel_project_fallback(apiurl, target_project, target_package):
 
     return project, package
 
+@memoize(session=True)
+def devel_projects(apiurl, project):
+    devel_projects = set()
+
+    root = search(apiurl, 'package', "@project='{}' and devel/@project!=''".format(project))
+    for devel_project in root.xpath('package/devel/@project'):
+        if devel_project != project:
+            devel_projects.add(devel_project)
+
+    return sorted(devel_projects)
+
 def request_age(request):
     if isinstance(request, Request):
         created = request.statehistory[0].when
