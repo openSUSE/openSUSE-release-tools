@@ -663,11 +663,15 @@ def package_version(apiurl, project, package):
 
     return str(root.xpath('(//version)[last()]/text()')[0])
 
-def project_attribute_list(apiurl, attribute):
+def project_attribute_list(apiurl, attribute, locked=None):
     xpath = 'attribute/@name="{}"'.format(attribute)
     root = search(apiurl, 'project', xpath)
-    for project in root.findall('project'):
-        yield project.get('name')
+    for project in root.xpath('project/@name'):
+        # Locked not exposed via OBS xpath engine.
+        if locked is not None and project_locked(apiurl, project) != locked:
+            continue
+
+        yield project
 
 @memoize(session=True)
 def project_remote_list(apiurl):
