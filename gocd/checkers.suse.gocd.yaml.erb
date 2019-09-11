@@ -108,7 +108,7 @@ pipelines:
               mkdir -p $tempdir/.osc-plugins
               ln -s $PWD/osc-origin.py $tempdir/.osc-plugins
               ln -s $PWD/osclib $tempdir/.osc-plugins
-              HOME=$tempdir osc -A https://api.suse.de origin -p SUSE:SLE-15-SP2:GA update
+              HOME=$tempdir osc -A https://api.suse.de origin update
               rm -rf $tempdir
   S15.SP2.Staging.Bot.Regular:
     group: SLE.Checkers
