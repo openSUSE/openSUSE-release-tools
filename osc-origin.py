@@ -35,6 +35,8 @@ OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
 @cmdln.option('--dry', action='store_true', help='perform a dry-run where applicable')
 @cmdln.option('--force-refresh', action='store_true', help='force refresh of data')
 @cmdln.option('--format', default='plain', help='output format')
+@cmdln.option('--listen', action='store_true', help='listen to events')
+@cmdln.option('--listen-seconds', help='number of seconds to listen to events')
 @cmdln.option('--mail', action='store_true', help='mail report to <confg:mail-release-list>')
 @cmdln.option('--origins-only', action='store_true', help='list origins instead of expanded config')
 @cmdln.option('-p', '--project', help='project on which to operate')
@@ -62,7 +64,7 @@ def do_origin(self, subcmd, opts, *args):
         osc origin potentials [--format json|yaml] PACKAGE
         osc origin projects [--format json|yaml]
         osc origin report [--diff] [--force-refresh] [--mail]
-        osc origin update [PACKAGE...]
+        osc origin update [--listen] [--listen-seconds] [PACKAGE...]
     """
 
     if len(args) == 0:
@@ -344,6 +346,21 @@ def osrt_origin_report(apiurl, opts, *args):
                   body, None, dry=opts.dry)
 
 def osrt_origin_update(apiurl, opts, *packages):
+    if opts.listen:
+        import logging
+        from osclib.origin_listener import OriginSourceChangeListener
+
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        listener = OriginSourceChangeListener(apiurl, logger, opts.project, opts.dry)
+        try:
+            runtime = int(opts.listen_seconds) if opts.listen_seconds else None
+            listener.run(runtime=runtime)
+        except KeyboardInterrupt:
+            listener.stop()
+
+        return
+
     if not opts.project:
         for project in origin_updatable(apiurl):
             opts.project = project
