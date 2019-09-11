@@ -1010,6 +1010,15 @@ class RequestFuture:
 
         return False
 
+    def print_and_create(self, dry=False):
+        if dry:
+            print(self)
+            return None
+
+        request_id = self.create_tolerant()
+        print('{} = {}'.format(self, request_id))
+        return request_id
+
     def __str__(self):
         return self.description
 
