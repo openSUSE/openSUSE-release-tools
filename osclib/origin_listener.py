@@ -32,11 +32,11 @@ class OriginSourceChangeListener(PubSubConsumer):
             raise Exception('Unrequested message: {}'.format(method.routing_key))
 
     def on_message_package_update(self, payload):
-        origins = origin_updatable_map(self.apiurl)
+        origins = self.origin_updatable_map()
         self.update_consider(origins, payload['project'], payload['package'])
 
     def on_message_request_create(self, payload):
-        origins = origin_updatable_map(self.apiurl, pending=True)
+        origins = self.origin_updatable_map(pending=True)
         for action in payload['actions']:
             # The following code demonstrates the quality of the data structure.
             # The base structure is inconsistent enough and yet the event data
@@ -67,6 +67,9 @@ class OriginSourceChangeListener(PubSubConsumer):
                 continue
 
             self.update_consider(origins, project, package)
+
+    def origin_updatable_map(self, pending=None):
+        return origin_updatable_map(self.apiurl, pending=pending)
 
     def update_consider(self, origins, origin_project, package):
         if origin_project not in origins:
