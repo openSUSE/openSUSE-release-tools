@@ -73,7 +73,7 @@ class OriginSourceChangeListener(PubSubConsumer):
 
     def update_consider(self, origins, origin_project, package):
         if origin_project not in origins:
-            self.logger.info('skipped irrelevant project: {}'.format(origin_project))
+            self.logger.info('skipped irrelevant origin: {}'.format(origin_project))
             return
 
         for project in origins[origin_project]:
