@@ -20,7 +20,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - monitor
             tasks:
             - script: |-
                 export PYTHONPATH=$PWD/scripts
@@ -45,7 +45,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - monitor
             tasks:
             # endless loop
             - script: |-
@@ -71,7 +71,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - monitor
             tasks:
             # endless loop
             - script: |-
@@ -101,7 +101,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - monitor
             tasks:
             # endless loop
             - script: |-
@@ -129,7 +129,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - monitor
             tasks:
             - script: |-
                 tempdir=$(mktemp -d)
@@ -156,7 +156,7 @@ pipelines:
           Run:
             timeout: 0
             resources:
-            - staging-bot
+            - monitor
             tasks:
             - script: |-
                 tempdir=$(mktemp -d)
