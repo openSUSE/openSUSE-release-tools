@@ -248,7 +248,7 @@ class CheckSource(ReviewBot.ReviewBot):
                             self.logger.info(f'found missing whitelist for warning: {entry}')
                             found_entries.add(entry)
                 except HTTPError as e:
-                    self.logger.error('ERROR in URL %s [%s]' % (url, e))
+                    self.logger.info('ERROR in URL %s [%s]' % (url, e))
         return found_entries
 
     def is_devel_project(self, source_project, target_project):
