@@ -15,7 +15,7 @@ from osclib.core import target_archs
 from lxml import etree as ET
 
 from urllib.error import HTTPError
-from PubSubConsumer import PubSubConsumer
+from osclib.PubSubConsumer import PubSubConsumer
 
 class Listener(PubSubConsumer):
     def __init__(self, apiurl, amqp_prefix, namespaces):

@@ -111,3 +111,57 @@ pipelines:
                 git clone git://botmaster.suse.de/opensuse-repos.git
                 cd opensuse-repos
                 ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap
+  openSUSE.OriginManagerUpdate:
+    group: Monitors
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-origin-manager
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: |-
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-origin.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                HOME=$tempdir osc -A https://api.opensuse.org origin update --listen --listen-seconds 43200
+                rm -rf $tempdir
+  SUSE.OriginManagerUpdate:
+    group: Monitors
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-origin-manager
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 0
+            resources:
+            - staging-bot
+            tasks:
+            - script: |-
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-origin.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                HOME=$tempdir osc -A https://api.suse.de origin update --listen --listen-seconds 43200
+                rm -rf $tempdir

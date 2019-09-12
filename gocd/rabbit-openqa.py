@@ -19,7 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 
 import requests
-from PubSubConsumer import PubSubConsumer
+from osclib.PubSubConsumer import PubSubConsumer
 
 class Project(object):
     def __init__(self, name):

@@ -32,6 +32,7 @@ from osc.util.helper import decode_it
 from osclib.conf import Config
 from osclib.memoize import memoize
 import subprocess
+import traceback
 
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
 RPM_REGEX = BINARY_REGEX + r'\.rpm'
@@ -203,6 +204,17 @@ def devel_project_fallback(apiurl, target_project, target_package):
                 project = project.split(':', 1)[1]
 
     return project, package
+
+@memoize(session=True)
+def devel_projects(apiurl, project):
+    devel_projects = set()
+
+    root = search(apiurl, 'package', "@project='{}' and devel/@project!=''".format(project))
+    for devel_project in root.xpath('package/devel/@project'):
+        if devel_project != project:
+            devel_projects.add(devel_project)
+
+    return sorted(devel_projects)
 
 def request_age(request):
     if isinstance(request, Request):
@@ -652,14 +664,28 @@ def package_version(apiurl, project, package):
 
     return str(root.xpath('(//version)[last()]/text()')[0])
 
-def project_attribute_list(apiurl, attribute, value=None):
+def project_attribute_list(apiurl, attribute, locked=None):
     xpath = 'attribute/@name="{}"'.format(attribute)
-    if value is not None:
-        xpath += '="{}"'.format(value)
-
     root = search(apiurl, 'project', xpath)
-    for project in root.findall('project'):
-        yield project.get('name')
+    for project in root.xpath('project/@name'):
+        # Locked not exposed via OBS xpath engine.
+        if locked is not None and project_locked(apiurl, project) != locked:
+            continue
+
+        yield project
+
+# OBS xpath engine does not support multiple attribute queries nor negation. As
+# such both must be done client-side.
+def project_attributes_list(apiurl, attributes, attributes_not=None, locked=None):
+    projects = set()
+
+    for attribute in attributes:
+        projects.update(project_attribute_list(apiurl, attribute, locked))
+
+    for attribute in attributes_not:
+        projects.difference_update(project_attribute_list(apiurl, attribute, locked))
+
+    return list(projects)
 
 @memoize(session=True)
 def project_remote_list(apiurl):
@@ -975,6 +1001,23 @@ class RequestFuture:
 
     def create(self):
         return self.create_function()
+
+    def create_tolerant(self):
+        try:
+            return self.create()
+        except HTTPError:
+            traceback.print_exc()
+
+        return False
+
+    def print_and_create(self, dry=False):
+        if dry:
+            print(self)
+            return None
+
+        request_id = self.create_tolerant()
+        print('{} = {}'.format(self, request_id))
+        return request_id
 
     def __str__(self):
         return self.description

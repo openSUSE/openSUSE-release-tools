@@ -19,14 +19,13 @@ from osclib.origin import origin_find
 from osclib.origin import origin_history
 from osclib.origin import origin_potentials
 from osclib.origin import origin_revision_state
+from osclib.origin import origin_updatable
 from osclib.origin import origin_update
 from osclib.sentry import sentry_init
 from osclib.util import mail_send
 from shutil import copyfile
 import sys
 import time
-import traceback
-from urllib.error import HTTPError
 import yaml
 
 OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
@@ -36,6 +35,8 @@ OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
 @cmdln.option('--dry', action='store_true', help='perform a dry-run where applicable')
 @cmdln.option('--force-refresh', action='store_true', help='force refresh of data')
 @cmdln.option('--format', default='plain', help='output format')
+@cmdln.option('--listen', action='store_true', help='listen to events')
+@cmdln.option('--listen-seconds', help='number of seconds to listen to events')
 @cmdln.option('--mail', action='store_true', help='mail report to <confg:mail-release-list>')
 @cmdln.option('--origins-only', action='store_true', help='list origins instead of expanded config')
 @cmdln.option('-p', '--project', help='project on which to operate')
@@ -63,7 +64,7 @@ def do_origin(self, subcmd, opts, *args):
         osc origin potentials [--format json|yaml] PACKAGE
         osc origin projects [--format json|yaml]
         osc origin report [--diff] [--force-refresh] [--mail]
-        osc origin update [PACKAGE...]
+        osc origin update [--listen] [--listen-seconds] [PACKAGE...]
     """
 
     if len(args) == 0:
@@ -84,7 +85,7 @@ def do_origin(self, subcmd, opts, *args):
 
     Cache.init()
     apiurl = self.get_api_url()
-    if command not in ['cron', 'projects']:
+    if command not in ['cron', 'projects', 'update']:
         if not opts.project:
             raise oscerr.WrongArgs('A project must be indicated.')
         config = config_load(apiurl, opts.project)
@@ -345,28 +346,34 @@ def osrt_origin_report(apiurl, opts, *args):
                   body, None, dry=opts.dry)
 
 def osrt_origin_update(apiurl, opts, *packages):
+    if opts.listen:
+        import logging
+        from osclib.origin_listener import OriginSourceChangeListener
+
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        listener = OriginSourceChangeListener(apiurl, logger, opts.project, opts.dry)
+        try:
+            runtime = int(opts.listen_seconds) if opts.listen_seconds else None
+            listener.run(runtime=runtime)
+        except KeyboardInterrupt:
+            listener.stop()
+
+        return
+
+    if not opts.project:
+        for project in origin_updatable(apiurl):
+            opts.project = project
+            osrt_origin_update(apiurl, opts, *packages)
+
+        return
+
     if len(packages) == 0:
         packages = package_list_kind_filtered(apiurl, opts.project)
 
-    return_value = 0
     for package in packages:
-        print('checking for updates to {}...'.format(package))
+        print('checking for updates to {}/{}...'.format(opts.project, package))
 
         request_future = origin_update(apiurl, opts.project, package)
-        if not request_future:
-            continue
-
-        print(request_future)
-        if opts.dry:
-            continue
-
-        try:
-            request_id = request_future.create()
-            if request_id:
-                print('-> created request {}'.format(request_id))
-        except HTTPError:
-            return_value = 1
-            traceback.print_exc()
-
-    if return_value != 0:
-        sys.exit(return_value)
+        if request_future:
+            request_future.print_and_create(opts.dry)

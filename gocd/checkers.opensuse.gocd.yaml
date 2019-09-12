@@ -256,7 +256,7 @@ pipelines:
       script:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
     timer:
-      spec: 0 0 7 ? * *
+      spec: 0 0 7 ? * SUN
       only_on_changes: false
     stages:
     - Run:
@@ -269,6 +269,5 @@ pipelines:
               mkdir -p $tempdir/.osc-plugins
               ln -s $PWD/osc-origin.py $tempdir/.osc-plugins
               ln -s $PWD/osclib $tempdir/.osc-plugins
-              HOME=$tempdir osc -A https://api.opensuse.org origin -p openSUSE:Leap:15.2 update
-              HOME=$tempdir osc -A https://api.opensuse.org origin -p openSUSE:Leap:15.2:NonFree update
+              HOME=$tempdir osc -A https://api.opensuse.org origin update
               rm -rf $tempdir
