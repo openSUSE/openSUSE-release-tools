@@ -23,6 +23,7 @@ pipelines:
             - monitor
             tasks:
             - script: |-
+                install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
                 export PYTHONPATH=$PWD/scripts
                 ./scripts/gocd/rabbit-openqa.py -A https://api.opensuse.org
   SUSE.openQA:
@@ -49,6 +50,7 @@ pipelines:
             tasks:
             # endless loop
             - script: |-
+                install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
                 export PYTHONPATH=$PWD/scripts
                 ./scripts/gocd/rabbit-openqa.py -A https://api.suse.de
   SUSE.Repo.Monitor:
