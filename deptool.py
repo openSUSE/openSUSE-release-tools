@@ -14,6 +14,8 @@ from ConfigParser import SafeConfigParser
 import solv
 import rpm
 
+DATA_DIR = os.path.dirname(os.path.realpath(__file__))
+
 logger = None
 
 REASONS = dict([(getattr(solv.Solver, i), i[14:]) for i in dir(solv.Solver) if i.startswith('SOLVER_REASON_')])
@@ -30,6 +32,7 @@ class DepTool(cmdln.Cmdln):
         parser.add_option("--verbose", action="store_true", help="verbose")
         parser.add_option("--system", action="store_true", help="with system repo")
         parser.add_option("--arch", dest="arch", help="architecture", default='x86_64')
+        parser.add_option("--context", '-C', dest="context", help="context to use ('list' to list known ones)")
         return parser
 
     def postoptparse(self):
@@ -43,6 +46,12 @@ class DepTool(cmdln.Cmdln):
 
         global logger
         logger = logging.getLogger()
+
+        if self.options.context and self.options.context == 'list':
+            d = DATA_DIR + "/deptool"
+            print('\n'.join(sorted([os.path.basename(f) for f in os.listdir(d) if os.path.isdir(os.path.join(d, f))])))
+            sys.exit(0)
+
 
     def prepare_pool(self, repos):
 
@@ -60,6 +69,12 @@ class DepTool(cmdln.Cmdln):
     def _read_repos(self, repos):
         repodir = '/etc/zypp/repos.d'
         solvfile = '/var/cache/zypp/solv/%s/solv'
+        if self.options.context:
+            repodir = DATA_DIR + "/deptool/%s/repos"%self.options.context
+            solvfile = DATA_DIR + '/deptool/%s/.cache/zypp/solv/%%s/solv'%self.options.context
+        else:
+            logger.debug("using system repos")
+
         onlyenabled = False
 
         parser = SafeConfigParser()
@@ -88,6 +103,7 @@ class DepTool(cmdln.Cmdln):
                         if parser.has_option(name, 'priority'):
                             repo.priority = parser.getint(name, 'priority')
                         logger.debug("add repo %s" % name)
+                        logger.debug(solvfile % name)
                 except Exception as e:
                     logger.error(e)
 
