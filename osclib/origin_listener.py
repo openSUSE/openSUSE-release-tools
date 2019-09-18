@@ -113,6 +113,7 @@ class OriginSourceChangeListener(PubSubConsumer):
 
             kind = package_kind(self.apiurl, project, package)
             if kind == 'source':
+                self.logger.info('checking for updates to {}/{}...'.format(project, package))
                 request_future = origin_update(self.apiurl, project, package)
                 if request_future:
                     request_future.print_and_create(self.dry)
