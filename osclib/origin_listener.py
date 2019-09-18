@@ -96,7 +96,7 @@ class OriginSourceChangeListener(PubSubConsumer):
                 if origin.startswith(remote + ':') and apiurl not in self.listeners:
                     self.logger.info('starting remote listener due to {} origin'.format(origin))
                     self.listeners[apiurl] = OriginSourceChangeListenerRemote(apiurl, self, remote)
-                    threading.Thread(target=self.listeners[apiurl].run).start()
+                    threading.Thread(target=self.listeners[apiurl].run, name=apiurl).start()
 
     def origin_updatable_map(self, pending=None):
         return origin_updatable_map(self.apiurl, pending=pending)
@@ -113,6 +113,7 @@ class OriginSourceChangeListener(PubSubConsumer):
 
             kind = package_kind(self.apiurl, project, package)
             if kind == 'source':
+                self.logger.info('checking for updates to {}/{}...'.format(project, package))
                 request_future = origin_update(self.apiurl, project, package)
                 if request_future:
                     request_future.print_and_create(self.dry)

@@ -77,7 +77,11 @@ def do_origin(self, subcmd, opts, *args):
         raise oscerr.WrongArgs('A package must be indicated.')
 
     level = logging.DEBUG if opts.debug else None
-    logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
+    if command == 'update':
+        # Only way to include thread in pika log message.
+        logging.basicConfig(level=level, format='<%(threadName)s> [%(levelname).1s] %(message)s')
+    else:
+        logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
 
     # Allow for determining project from osc store.
     if not opts.project and core.is_project_dir('.'):
@@ -347,7 +351,6 @@ def osrt_origin_report(apiurl, opts, *args):
 
 def osrt_origin_update(apiurl, opts, *packages):
     if opts.listen:
-        import logging
         from osclib.origin_listener import OriginSourceChangeListener
 
         logger = logging.getLogger()
