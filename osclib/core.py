@@ -986,11 +986,7 @@ def request_create_delete(apiurl, target_project, target_package, message=None):
     message = message_suffix('created', message)
 
     def create_function():
-        subprocess.check_call(
-            ' '.join(['osc', 'dr', '-m', message, target_project, target_package]), shell=True)
-
-        # Would be nicer to return newly create request ID, but not worth rewriting.
-        return True
+        return create_delete_request(apiurl, target_project, target_package, message)
 
     return RequestFuture('delete {}/{}'.format(target_project, target_package), create_function)
 
