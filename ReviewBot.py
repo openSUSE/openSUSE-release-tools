@@ -268,10 +268,15 @@ class ReviewBot(object):
         if doit == True:
             self.logger.debug("setting %s to %s"%(req.reqid, state))
             if not self.dryrun:
-                osc.core.change_review_state(apiurl = self.apiurl,
+                try:
+                    osc.core.change_review_state(apiurl=self.apiurl,
                         reqid = req.reqid, newstate = newstate,
                         by_group=self.review_group,
                         by_user=self.review_user, message=msg)
+                except HTTPError as e:
+                    if e.code != 403:
+                        raise e
+                    self.logger.info('unable to change review state (likely superseded or revoked)')
         else:
             self.logger.debug("%s review not changed"%(req.reqid))
 
