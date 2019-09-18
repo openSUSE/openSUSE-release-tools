@@ -347,7 +347,6 @@ def osrt_origin_report(apiurl, opts, *args):
 
 def osrt_origin_update(apiurl, opts, *packages):
     if opts.listen:
-        import logging
         from osclib.origin_listener import OriginSourceChangeListener
 
         logger = logging.getLogger()
