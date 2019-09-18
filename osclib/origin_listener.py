@@ -69,6 +69,8 @@ class OriginSourceChangeListener(PubSubConsumer):
                 project = action['targetproject']
                 package = action['targetpackage']
             elif action['type'] == 'maintenance_incident':
+                if action['sourcepackage'] == 'patchinfo':
+                    continue
                 project = action['target_releaseproject']
                 if not action.get('targetpackage'):
                     package = action['sourcepackage']
@@ -76,6 +78,8 @@ class OriginSourceChangeListener(PubSubConsumer):
                     repository_suffix_length = len(project) + 1 # package.project
                     package = action['targetpackage'][:-repository_suffix_length]
             elif action['type'] == 'maintenance_release':
+                if action['sourcepackage'] == 'patchinfo':
+                    continue
                 project = action['targetproject']
                 repository_suffix_length = len(project) + 1 # package.project
                 package = action['sourcepackage'][:-repository_suffix_length]
