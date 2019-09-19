@@ -322,7 +322,15 @@ class ReviewBot(object):
             key = request_action_key(self.action)
             msg = yaml.dump({key: msg}, default_flow_style=False)
 
-        r = osc.core.http_POST(u, data=msg)
+        try:
+            r = osc.core.http_POST(u, data=msg)
+        except HTTPError as e:
+            if e.code != 403:
+                raise e
+            del query['cmd']
+            self.logger.info('unable to add review {} with message: {}'.format(query, msg))
+            return
+
         code = ET.parse(r).getroot().attrib['code']
         if code != 'ok':
             raise Exception('non-ok return code: {}'.format(code))
@@ -333,14 +341,7 @@ class ReviewBot(object):
             self.logger.warning('no devel project found for {}/{}'.format(project, package))
             return False
 
-        try:
-            self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
-        except HTTPError as e:
-            # could happen when the bot is not actually a reviewer and has no permissions
-            if e.code != 403:
-                raise e
-            self.logger.error('failed to add devel project review for {}/{}'.format(devel_project, devel_package))
-            return False
+        self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
 
         return True
 
