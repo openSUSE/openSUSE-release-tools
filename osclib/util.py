@@ -177,3 +177,17 @@ def sha1_short(data):
         data = data.encode('utf-8')
 
     return hashlib.sha1(data).hexdigest()[:7]
+
+def rmtree_nfs_safe(path, attempts=5):
+    import shutil
+    try:
+        shutil.rmtree(path)
+    except OSError as e:
+        # Directory not empty due to slow filesystem (see #1326 old occurance).
+        if attempts <= 0 or e.errno != 39:
+            raise e
+
+        from time import sleep
+        sleep(0.25)
+
+        rmtree_nfs_safe(path, attempts - 1)
