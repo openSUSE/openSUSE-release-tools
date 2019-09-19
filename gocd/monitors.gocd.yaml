@@ -129,7 +129,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 10 # 5 minute still alive message
             resources:
             - monitor
             tasks:
@@ -156,7 +156,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 10 # 5 minute still alive message
             resources:
             - monitor
             tasks:
