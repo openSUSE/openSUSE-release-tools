@@ -986,13 +986,39 @@ def request_create_delete(apiurl, target_project, target_package, message=None):
     message = message_suffix('created', message)
 
     def create_function():
-        subprocess.check_call(
-            ' '.join(['osc', 'dr', '-m', message, target_project, target_package]), shell=True)
-
-        # Would be nicer to return newly create request ID, but not worth rewriting.
-        return True
+        return create_delete_request(apiurl, target_project, target_package, message)
 
     return RequestFuture('delete {}/{}'.format(target_project, target_package), create_function)
+
+# Should exist within osc.core like create_submit_request(), but rather it was
+# duplicated in osc.commandline.
+def create_delete_request(apiurl, target_project, target_package=None, message=None):
+    if not message:
+        message = message_suffix('created')
+
+    request = ETL.Element('request')
+
+    state = ETL.Element('state')
+    state.set('name', 'new')
+    request.append(state)
+
+    description = ETL.Element('description')
+    description.text = message
+    request.append(description)
+
+    action = ETL.Element('action')
+    action.set('type', 'delete')
+    request.append(action)
+
+    target = ETL.Element('target')
+    target.set('project', target_project)
+    if target_package:
+        target.set('package', target_package)
+    action.append(target)
+
+    url = makeurl(apiurl, ['request'], {'cmd': 'create'})
+    root = ETL.parse(http_POST(url, data=ETL.tostring(request))).getroot()
+    return root.get('id')
 
 class RequestFuture:
     def __init__(self, description, create_function):
