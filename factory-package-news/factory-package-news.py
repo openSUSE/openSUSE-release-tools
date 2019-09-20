@@ -102,7 +102,9 @@ class ChangeLogger(cmdln.Cmdln):
                 if not iso.is_open() or fd is None:
                     raise Exception("Could not open %s as an ISO-9660 image." %  arg)
 
-                for path in ['/suse/x86_64', '/suse/noarch', '/suse/aarch64', '/suse/s390x']:
+                # On Tumbleweed, there is no '/suse' prefix
+                for path in ['/suse/x86_64', '/suse/noarch', '/suse/aarch64', '/suse/s390x',
+                             '/x86_64',      '/noarch',      '/aarch64',      '/s390x' ]:
                     file_stats = iso.readdir(path)
                     if file_stats is None:
                         continue
