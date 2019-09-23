@@ -5,7 +5,6 @@ import hashlib
 import os
 import osc.core
 import re
-import shutil
 import sys
 
 try:
@@ -25,6 +24,7 @@ from io import BytesIO
 from osc import conf
 from osc.core import urlopen
 from osclib.cache_manager import CacheManager
+from osclib.util import rmtree_nfs_safe
 from time import time
 
 try:
@@ -246,12 +246,12 @@ class Cache(object):
 
         if os.path.exists(path):
             if conf.config['debug']: print('CACHE_DELETE_PROJECT', apiurl, project, file=sys.stderr)
-            shutil.rmtree(path)
+            rmtree_nfs_safe(path)
 
     @staticmethod
     def delete_all():
         if os.path.exists(Cache.CACHE_DIR):
-            shutil.rmtree(Cache.CACHE_DIR)
+            rmtree_nfs_safe(Cache.CACHE_DIR)
 
     @staticmethod
     def match(url):
