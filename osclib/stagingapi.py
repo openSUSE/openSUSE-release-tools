@@ -890,7 +890,7 @@ class StagingAPI(object):
         if fail_count < 3:
             return True
 
-        log = self.buildlog_get(project, package, repository, architecture)
+        log = self.buildlog_get(project, package, repository, architecture, -4096)
         if 'Job seems to be stuck here, killed.' in log:
             return True
 
