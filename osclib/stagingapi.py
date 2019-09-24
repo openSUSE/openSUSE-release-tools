@@ -922,6 +922,14 @@ class StagingAPI(object):
         all_bytes = bytes.maketrans(b'', b'')
         remove_bytes = all_bytes[:8] + all_bytes[14:32]  # accept tabs and newlines
 
+        path = ['build', prj, repository, arch, package, '_log']
+        if offset < 0:
+            url = makeurl(self.apiurl, path, {'view': 'entry'})
+            root = ET.parse(http_GET(url)).getroot()
+            size = root.xpath('entry[@name="_log"]/@size')
+            if size:
+                offset += int(size[0])
+
         query = {'nostream': '1', 'start': '%s' % offset}
         if last:
             query['last'] = 1
@@ -929,7 +937,7 @@ class StagingAPI(object):
         while True:
             query['start'] = offset
             start_offset = offset
-            u = makeurl(self.apiurl, ['build', prj, repository, arch, package, '_log'], query=query)
+            u = makeurl(self.apiurl, path, query)
             for data in streamfile(u, bufsize="line"):
                 offset += len(data)
                 if strip_time:
