@@ -18,6 +18,7 @@ from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
+from osclib.core import package_kind
 from osclib.core import source_file_load
 from osclib.core import target_archs
 from urllib.error import HTTPError
@@ -77,8 +78,9 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = 'Only one action per request allowed'
             return False
 
-        if target_package.startswith('00') or target_package.startswith('_'):
-            self.review_messages['accepted'] = 'Skipping all checks for product related packages'
+        kind = package_kind(self.apiurl, target_project, target_package)
+        if kind == 'meta':
+            self.review_messages['accepted'] = 'Skipping all checks for meta packages'
             return True
 
         inair_renamed = target_package != source_package
