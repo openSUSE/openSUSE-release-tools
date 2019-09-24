@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from osclib.core import package_source_hash
+from osclib.core import package_kind
 from osclib.origin import origin_annotation_dump
 from osclib.origin import config_load
 from osclib.origin import origin_find
@@ -31,6 +32,11 @@ class OriginManager(ReviewBot.ReviewBot):
         return True
 
     def check_source_submission(self, src_project, src_package, src_rev, tgt_project, tgt_package):
+        kind = package_kind(self.apiurl, tgt_project, tgt_package)
+        if not (kind is None or kind == 'source'):
+            self.review_messages['accepted'] = 'skipping {} package since not source'.format(kind)
+            return True
+
         advance, result = self.config_validate(tgt_project)
         if not advance:
             return result
