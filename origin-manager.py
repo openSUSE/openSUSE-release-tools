@@ -114,11 +114,7 @@ class OriginManager(ReviewBot.ReviewBot):
                            only_replace=only_replace, bot_name_suffix=suffix)
 
 
-class CommandLineInterface(ReviewBot.CommandLineInterface):
-    def __init__(self, *args, **kwargs):
-        ReviewBot.CommandLineInterface.__init__(self, *args, **kwargs)
-        self.clazz = OriginManager
-
-if __name__ == "__main__":
-    app = CommandLineInterface()
+if __name__ == '__main__':
+    app = ReviewBot.CommandLineInterface()
+    app.clazz = OriginManager
     sys.exit(app.main())
