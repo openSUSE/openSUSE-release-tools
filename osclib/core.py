@@ -511,7 +511,7 @@ def entity_exists(apiurl, project, package=None):
     return True
 
 def package_kind(apiurl, project, package):
-    if package.startswith('00'):
+    if package.startswith('00') or package.startswith('_'):
         return 'meta'
 
     if ':' in package:
