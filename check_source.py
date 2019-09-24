@@ -82,6 +82,9 @@ class CheckSource(ReviewBot.ReviewBot):
         if kind == 'meta':
             self.review_messages['accepted'] = 'Skipping all checks for meta packages'
             return True
+        elif kind != 'source':
+            self.review_messages['accepted'] = 'May not modify a non-source package of type {}'.format(kind)
+            return False
 
         inair_renamed = target_package != source_package
 
