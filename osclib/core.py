@@ -965,8 +965,8 @@ def request_create_submit(apiurl, source_project, source_package,
         # No sense submitting identical sources.
         return False
 
-    for request, action in request_action_single_list(
-        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, 'submit'):
+    for request, action in request_action_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['submit']):
         source_hash_pending = package_source_hash(
             apiurl, action.src_project, action.src_package, action.src_rev)
         if source_hash_pending == source_hash_consider:
@@ -984,8 +984,8 @@ def request_create_submit(apiurl, source_project, source_package,
         source_project, source_package, target_project, target_package), create_function)
 
 def request_create_delete(apiurl, target_project, target_package, message=None):
-    for request, action in request_action_single_list(
-        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, 'delete'):
+    for request, action in request_action_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['delete']):
         return False
 
     # No proper API function to perform the same operation.
