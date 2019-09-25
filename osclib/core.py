@@ -929,10 +929,10 @@ def request_action_single_list(apiurl, project, package, states, request_type):
     conf.config['include_request_from_project'] = before
 
     for request in requests:
-        if len(request.actions) > 1:
-            raise Exception('request {} has more than one action'.format(request.reqid))
-
-        yield request, request.actions[0]
+        for action in request.actions:
+            if action.tgt_project == project and action.tgt_package == package:
+                yield request, action
+                break
 
 def request_action_list(apiurl, project, package, states=['new', 'review'], types=['submit']):
     for request_type in types:
