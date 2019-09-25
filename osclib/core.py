@@ -708,9 +708,9 @@ def project_remote_apiurl(apiurl, project):
 
     return apiurl, project
 
-def review_find_last(request, user):
+def review_find_last(request, user, states=['all']):
     for review in reversed(request.reviews):
-        if review.by_user == user:
+        if review.by_user == user and ('all' in states or review.state in states):
             return review
 
     return None
