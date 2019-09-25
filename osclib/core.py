@@ -29,6 +29,7 @@ from osc.core import show_project_meta
 from osc.core import show_results_meta
 from osc.core import xpath_join
 from osc.util.helper import decode_it
+from osc import conf
 from osclib.conf import Config
 from osclib.memoize import memoize
 import subprocess
@@ -921,8 +922,13 @@ def request_action_list_maintenance_release(apiurl, project, package, states=['n
                 break
 
 def request_action_single_list(apiurl, project, package, states, request_type):
-    # TODO To be consistent this should not include request source from project.
-    for request in get_request_list(apiurl, project, package, None, states, request_type):
+    # Disable including source project in get_request_list() query.
+    before = conf.config['include_request_from_project']
+    conf.config['include_request_from_project'] = False
+    requests = get_request_list(apiurl, project, package, None, states, request_type)
+    conf.config['include_request_from_project'] = before
+
+    for request in requests:
         if len(request.actions) > 1:
             raise Exception('request {} has more than one action'.format(request.reqid))
 
