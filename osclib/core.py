@@ -921,7 +921,7 @@ def request_action_list_maintenance_release(apiurl, project, package, states=['n
                 yield request, action
                 break
 
-def request_action_single_list(apiurl, project, package, states, request_type):
+def request_action_simple_list(apiurl, project, package, states, request_type):
     # Disable including source project in get_request_list() query.
     before = conf.config['include_request_from_project']
     conf.config['include_request_from_project'] = False
@@ -941,7 +941,7 @@ def request_action_list(apiurl, project, package, states=['new', 'review'], type
         if request_type == 'maintenance_release':
             yield from request_action_list_maintenance_release(apiurl, project, package, states)
         else:
-            yield from request_action_single_list(apiurl, project, package, states, request_type)
+            yield from request_action_simple_list(apiurl, project, package, states, request_type)
 
 def request_action_list_source(apiurl, project, package, states=['new', 'review'], include_release=False):
     types = []
