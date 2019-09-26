@@ -16,7 +16,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -37,13 +37,13 @@ pipelines:
         approval: manual
         jobs:
           SLE_15_SP2:
-            timeout: 0
+            timeout: 30
             resources:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP2:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP2:GA
           SLE_12_SP5:
-            timeout: 0
+            timeout: 30
             resources:
             - repo-checker
             tasks:
@@ -63,7 +63,7 @@ pipelines:
         approval: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - leaper
             tasks:
@@ -126,7 +126,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -161,7 +161,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -182,7 +182,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -203,7 +203,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -225,7 +225,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -249,7 +249,7 @@ pipelines:
           - SUSE:SLE-12-SP5:GA:Staging:<%= letter %>_-_standard.yaml
     stages:
     - Run:
-        timeout: 0
+        timeout: 30
         resources:
         - repo-checker
         tasks:

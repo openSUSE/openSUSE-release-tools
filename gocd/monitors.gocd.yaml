@@ -18,7 +18,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - monitor
             tasks:
@@ -44,7 +44,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - monitor
             tasks:
@@ -71,7 +71,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - monitor
             tasks:
@@ -101,7 +101,7 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 0
+            timeout: 30
             resources:
             - monitor
             tasks:

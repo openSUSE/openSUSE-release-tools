@@ -14,7 +14,7 @@ pipelines:
     - Run:
         approval:
           type: manual
-        timeout: 0
+        timeout: 30
         resources:
         - staging-bot
         tasks:
