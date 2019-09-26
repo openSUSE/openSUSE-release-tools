@@ -177,7 +177,7 @@ class RepoChecker():
             if not per_source[source]['builds']:  # nothing we can do
                 continue
             old_output = oldstate['check'].get(source, {}).get('problem', [])
-            if old_output == per_source[source]['output']:
+            if sorted(old_output) == sorted(per_source[source]['output']):
                 self.logger.debug("unchanged problem")
                 continue
             self.logger.info("rebuild %s", source)
