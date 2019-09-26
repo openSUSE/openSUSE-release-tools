@@ -15,6 +15,9 @@ class OriginManager(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
 
         # ReviewBot options.
+        # Younger than default splitter-request-age-threshold to allow for quick
+        # strategy to still be useful which requires a completed review.
+        self.request_age_min_default = 30 * 60
         self.request_default_return = True
         self.override_allow = False
 
@@ -40,6 +43,10 @@ class OriginManager(ReviewBot.ReviewBot):
         advance, result = self.config_validate(tgt_project)
         if not advance:
             return result
+
+        if self.request_age_wait():
+            # Allow for parallel submission to be created.
+            return None
 
         source_hash_new = package_source_hash(self.apiurl, src_project, src_package, src_rev)
         origin_info_new = origin_find(self.apiurl, tgt_project, tgt_package, source_hash_new)

@@ -15,6 +15,7 @@ from osclib.core import devel_project_fallback
 from osclib.core import group_members
 from osclib.core import maintainers_get
 from osclib.core import request_action_key
+from osclib.core import request_age
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
 from osclib.sentry import sentry_init
@@ -114,6 +115,8 @@ class ReviewBot(object):
         self.comment_handler = False
         self.override_allow = True
         self.override_group_key = '{}-override-group'.format(self.bot_name.lower())
+        self.request_age_min_default = 0
+        self.request_age_min_key = '{}-request-age-min'.format(self.bot_name.lower())
         self.lookup = PackageLookup(self.apiurl)
 
         self.load_config()
@@ -769,6 +772,25 @@ class ReviewBot(object):
                     break
 
             self.logger.debug("srcmd5 not found in history either")
+
+        return False
+
+    def request_age_wait(self, age_min=None, request=None, target_project=None):
+        if not request:
+            request = self.request
+
+        if not target_project:
+            target_project = self.action.tgt_project
+
+        if age_min is None or isinstance(age_min, str):
+            key = self.request_age_min_key if age_min is None else age_min
+            age_min = int(Config.get(self.apiurl, target_project).get(key, self.request_age_min_default))
+
+        age = request_age(request).total_seconds()
+        if age < age_min:
+            self.logger.info('skipping {} of age {:.2f}s since it is younger than {}s'.format(
+                request.reqid, age, age_min))
+            return True
 
         return False
 
