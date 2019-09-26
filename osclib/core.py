@@ -29,6 +29,7 @@ from osc.core import show_project_meta
 from osc.core import show_results_meta
 from osc.core import xpath_join
 from osc.util.helper import decode_it
+from osc import conf
 from osclib.conf import Config
 from osclib.memoize import memoize
 import subprocess
@@ -920,13 +921,18 @@ def request_action_list_maintenance_release(apiurl, project, package, states=['n
                 yield request, action
                 break
 
-def request_action_single_list(apiurl, project, package, states, request_type):
-    # TODO To be consistent this should not include request source from project.
-    for request in get_request_list(apiurl, project, package, None, states, request_type):
-        if len(request.actions) > 1:
-            raise Exception('request {} has more than one action'.format(request.reqid))
+def request_action_simple_list(apiurl, project, package, states, request_type):
+    # Disable including source project in get_request_list() query.
+    before = conf.config['include_request_from_project']
+    conf.config['include_request_from_project'] = False
+    requests = get_request_list(apiurl, project, package, None, states, request_type)
+    conf.config['include_request_from_project'] = before
 
-        yield request, request.actions[0]
+    for request in requests:
+        for action in request.actions:
+            if action.tgt_project == project and action.tgt_package == package:
+                yield request, action
+                break
 
 def request_action_list(apiurl, project, package, states=['new', 'review'], types=['submit']):
     for request_type in types:
@@ -935,7 +941,7 @@ def request_action_list(apiurl, project, package, states=['new', 'review'], type
         if request_type == 'maintenance_release':
             yield from request_action_list_maintenance_release(apiurl, project, package, states)
         else:
-            yield from request_action_single_list(apiurl, project, package, states, request_type)
+            yield from request_action_simple_list(apiurl, project, package, states, request_type)
 
 def request_action_list_source(apiurl, project, package, states=['new', 'review'], include_release=False):
     types = []
@@ -959,8 +965,8 @@ def request_create_submit(apiurl, source_project, source_package,
         # No sense submitting identical sources.
         return False
 
-    for request, action in request_action_single_list(
-        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, 'submit'):
+    for request, action in request_action_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['submit']):
         source_hash_pending = package_source_hash(
             apiurl, action.src_project, action.src_package, action.src_rev)
         if source_hash_pending == source_hash_consider:
@@ -978,8 +984,8 @@ def request_create_submit(apiurl, source_project, source_package,
         source_project, source_package, target_project, target_package), create_function)
 
 def request_create_delete(apiurl, target_project, target_package, message=None):
-    for request, action in request_action_single_list(
-        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, 'delete'):
+    for request, action in request_action_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['delete']):
         return False
 
     # No proper API function to perform the same operation.
