@@ -318,7 +318,8 @@ def origin_annotation_dump(origin_info_new, origin_info_old, override=False, raw
     return yaml.dump(data, default_flow_style=False)
 
 def origin_annotation_load(request, action, user):
-    review = review_find_last(request, user)
+    # Find last accepted review which means it was reviewed and annotated.
+    review = review_find_last(request, user, ['accepted'])
     if not review:
         return False
 
@@ -331,7 +332,8 @@ def origin_annotation_load(request, action, user):
         comment_stripped = re.sub(r'^  ', '', review.comment, flags=re.MULTILINE)
         annotation = yaml.safe_load(comment_stripped)
 
-    if not annotation:
+    if not annotation or type(annotation) is not dict:
+        # Only returned structured data (ie. dict), otherwise None.
         return None
 
     if len(request.actions) > 1:
