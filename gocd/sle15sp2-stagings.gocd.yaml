@@ -149,6 +149,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.B:
     environment_variables:
@@ -205,6 +213,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.C:
     environment_variables:
@@ -261,6 +277,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.D:
     environment_variables:
@@ -317,6 +341,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.E:
     environment_variables:
@@ -373,6 +405,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.F:
     environment_variables:
@@ -429,6 +469,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.G:
     environment_variables:
@@ -485,6 +533,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.H:
     environment_variables:
@@ -541,6 +597,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.S:
     environment_variables:
@@ -597,6 +661,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.V:
     environment_variables:
@@ -653,6 +725,14 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   
   SLE15.SP2.Staging.Y:
     environment_variables:
@@ -709,4 +789,12 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   

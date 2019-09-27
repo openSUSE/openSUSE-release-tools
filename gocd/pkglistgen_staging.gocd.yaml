@@ -1090,6 +1090,13 @@ pipelines:
         tasks:
           - script: |-
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
   "Leap.Staging.B":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.2:Staging:B
@@ -1136,6 +1143,13 @@ pipelines:
         tasks:
           - script: |-
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
   "Leap.Staging.C":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.2:Staging:C
@@ -1182,6 +1196,13 @@ pipelines:
         tasks:
           - script: |-
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
   "Leap.Staging.D":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.2:Staging:D
@@ -1228,6 +1249,13 @@ pipelines:
         tasks:
           - script: |-
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
   "Leap.Staging.E":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:15.2:Staging:E
@@ -1274,4 +1302,11 @@ pipelines:
         tasks:
           - script: |-
               ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
