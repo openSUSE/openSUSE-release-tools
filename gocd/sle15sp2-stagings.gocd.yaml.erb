@@ -82,4 +82,12 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
   <% end -%>
