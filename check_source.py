@@ -150,7 +150,7 @@ class CheckSource(ReviewBot.ReviewBot):
         shutil.rmtree(os.path.join(target_package, '.osc'))
 
         new_info = self.package_source_parse(source_project, source_package, source_revision)
-        if not new_info['filename'].endswith('.kiwi') and new_info['name'] != target_package:
+        if not new_info.get('filename', '').endswith('.kiwi') and new_info['name'] != target_package:
             shutil.rmtree(dir)
             self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (target_package, target_package, new_info['name'])
             return False
