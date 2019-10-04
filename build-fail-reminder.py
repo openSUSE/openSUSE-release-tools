@@ -77,7 +77,7 @@ Kind regards,
 def SendMail(logger, project, sender, to, fullname, subject, text):
     try:
         xmailer = '{} - Failure Notification'.format(project)
-        to = email.utils.formataddr((to, fullname))
+        to = email.utils.formataddr((fullname, to))
         mail_send_with_details(sender=sender, to=to,
                         subject=subject, text=text, xmailer=xmailer,
                         relay=args.relay, dry=args.dry)
@@ -170,8 +170,8 @@ def main(args):
                     Person[userid] = osc.core.get_user_data(apiurl, userid, 'login', 'realname', 'email')
             if Reminded[package].remindCount in (1, 2):
                 for userid in maintainers:
-                    to = Person[userid][1]
-                    fullname = Person[userid][2]
+                    to = Person[userid][2]
+                    fullname = Person[userid][1]
                     subject = '%s - %s - Build fail notification' % (project, package)
                     text = MAIL_TEMPLATES[Reminded[package].remindCount-1] % {
                                 'recepient': to,
