@@ -1656,6 +1656,8 @@ class StagingAPI(object):
         # put twice because on first put, the API adds useless maintainer
         http_PUT(url, data=meta)
 
+        self.register_new_staging_project(name)
+
         if use_frozenlinks:
             self.update_adi_frozenlinks(name, src_prj)
 
@@ -1676,6 +1678,16 @@ class StagingAPI(object):
             url = self.makeurl(['status_reports', 'built_repositories', project,
                                 self.cmain_repo, architecture, 'required_checks'])
             http_POST(url, data=ET.tostring(root))
+
+    def register_new_staging_project(self, name):
+        data='<workflow><staging_project>{}</staging_project></workflow>'.format(name)
+        url = self.makeurl(['staging', self.project, 'staging_projects'])
+        try:
+            http_POST(url, data=data)
+        except HTTPError as e:
+            # if not using staging workflow, this will fail
+            if e.code != 400:
+                raise e
 
     def is_user_member_of(self, user, group):
         root = ET.fromstring(get_group(self.apiurl, group))
