@@ -308,6 +308,7 @@ class StagingAPI(object):
         :return list of known staging projects
         """
 
+
         return project_list_prefix(self.apiurl, self.cstaging + ':')
 
     def extract_staging_short(self, p):
@@ -949,19 +950,19 @@ class StagingAPI(object):
         return log.getvalue()
 
     @memoize(session=True)
-    def project_status(self, staging=None, aggregate=False):
-        path = ('project', 'staging_projects', self.project)
-        if staging:
-            if aggregate:
-                full = self.prj_from_short(staging)
-                for status in self.project_status():
-                    if status['name'] == full:
-                        return status
-                return None
-            else:
-                path += (self.extract_staging_short(staging),)
-        url = self.makeurl(path, {'format': 'json'})
-        return json.load(self.retried_GET(url))
+    def staging_status(self):
+        url = self.makeurl(['staging', self.project, 'staging_projects'])
+        return ET.parse(self.retried_GET(url)).getroot()
+
+    def project_status(self, staging):
+        if not staging:
+            raise oscerr.WrongArgs('No staging given')
+
+        root = self.staging_status()
+        staging = self.prj_from_short(staging)
+        for project in root.findall('staging_project[@name="{}"]'.format(staging)):
+            return project
+        return None
 
     def check_project_status(self, project):
         """

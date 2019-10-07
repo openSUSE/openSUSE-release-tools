@@ -101,8 +101,6 @@ def clean_args(args):
               help='indicate the project on which to operate, default is openSUSE:Factory')
 @cmdln.option('--force', action='store_true',
               help='force action, overruling internal checks (CAUTION)')
-@cmdln.option('-o', '--old', action='store_true',
-              help='use the old check algorithm')
 @cmdln.option('-v', '--version', action='store_true',
               help='print the plugin version')
 @cmdln.option('--no-freeze', dest='no_freeze', action='store_true',
@@ -332,7 +330,7 @@ def do_staging(self, subcmd, opts, *args):
     Usage:
         osc staging accept [--force] [--no-cleanup] [LETTER...]
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
-        osc staging check [--old] [STAGING...]
+        osc staging check [STAGING...]
         osc staging check_duplicate_binaries
         osc staging config [--append] [--clear] [STAGING...] [key] [value]
         osc staging cleanup_rings
@@ -436,10 +434,10 @@ def do_staging(self, subcmd, opts, *args):
         # call the respective command and parse args by need
         if cmd == 'check':
             if len(args) == 1:
-                CheckCommand(api).perform(None, opts.old)
+                CheckCommand(api).perform(None)
             else:
                 for prj in args[1:]:
-                    CheckCommand(api).perform(prj, opts.old)
+                    CheckCommand(api).perform(prj)
                     print()
         elif cmd == 'check_duplicate_binaries':
             CheckDuplicateBinariesCommand(api).perform(opts.save)
