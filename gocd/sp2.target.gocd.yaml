@@ -81,7 +81,7 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
-            for product in kiwi-templates-SLES15-JeOS \
+            for product in kiwi-templates-JeOS \
                 SLES15-SP2-Azure SLES15-SP2-Azure-BYOS \
                 SLES15-SP2-Azure-Priority SLES15-SP2-Azure-Standard \
                 SLES15-SP2-EC2-ECS-HVM SLES15-SP2-EC2-HVM \
