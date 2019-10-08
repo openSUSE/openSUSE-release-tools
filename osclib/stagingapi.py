@@ -28,6 +28,7 @@ from osc.core import makeurl
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
+from osc.core import http_DELETE
 from osc.core import rebuild
 from osc.core import search
 from osc.core import show_project_meta
@@ -308,8 +309,11 @@ class StagingAPI(object):
         :return list of known staging projects
         """
 
-
-        return project_list_prefix(self.apiurl, self.cstaging + ':')
+        result = []
+        status = self.staging_status()
+        for project in status.findall('staging_project'):
+            result.append(project.get('name'))
+        return result
 
     def extract_staging_short(self, p):
         if not p.startswith(self.cstaging):
@@ -589,14 +593,12 @@ class StagingAPI(object):
 
     @memoize(session=True)
     def get_ignored_requests(self):
-        ignore = self.pseudometa_file_load('ignored_requests')
-        if ignore is None or not ignore:
-            return {}
-        return yaml.safe_load(ignore)
-
-    def set_ignored_requests(self, ignore_requests):
-        ignore = yaml.dump(ignore_requests, default_flow_style=False)
-        self.pseudometa_file_ensure('ignored_requests', ignore)
+        ignore = {}
+        url = self.makeurl(['staging', self.project, 'excluded_requests'])
+        root = ET.parse(self.retried_GET(url)).getroot()
+        for entry in root.findall('request'):
+            ignore[entry.get('id')] = entry.get('desciption')
+        return ignore
 
     @memoize(session=True, add_invalidate=True)
     def get_open_requests(self, query_extra=None, include_nonfree=True):
@@ -673,81 +675,6 @@ class StagingAPI(object):
         data['requests'] = data.get('requests', [])
         return data
 
-    @memoize(ttl=60, session=True, add_invalidate=True)
-    def get_prj_pseudometa(self, project, revision=None):
-        """
-        Gets project data from YAML in project description
-        :param project: project to read data from
-        :return structured object with metadata
-        """
-
-        root = self.get_prj_meta(project, revision)
-        description = root.find('description')
-        # If YAML parsing fails, load default
-        # FIXME: Better handling of errors
-        # * broken description
-        # * directly linked packages
-        # * removed linked packages
-        return self.load_prj_pseudometa(description.text)
-
-    def set_prj_pseudometa(self, project, meta):
-        """
-        Sets project description to the YAML of the provided object
-        :param project: project to save into
-        :param meta: data to save
-        """
-
-        # Get current metadata
-        root = self.get_prj_meta(project)
-        # Find description
-        description = root.find('description')
-        # Order the requests and replace it with yaml
-        meta['requests'] = sorted(meta.get('requests', []), key=lambda x: x['id'])
-        yaml_new = yaml.dump(meta, default_flow_style=None)
-        if yaml_new == description.text:
-            return
-        description.text = yaml_new
-        # Find title
-        title = root.find('title')
-        # Put something nice into title as well
-        new_title = []
-        for request in meta['requests']:
-            new_title.append(request['package'])
-        nt = ', '.join(sorted(new_title))
-        title.text = nt[:240]
-        # Write XML back
-        url = make_meta_url('prj', project, self.apiurl, force=True)
-        http_PUT(url, data=ET.tostring(root))
-
-        # Invalidate here the cache for this stating project
-        self._invalidate_get_prj_pseudometa(project)
-
-    def clear_prj_pseudometa(self, project):
-        self.set_prj_pseudometa(project, {})
-
-    def _add_rq_to_prj_pseudometa(self, project, request_id, package, act_type=None):
-        """
-        Records request as part of the project within metadata
-        :param project: project to record into
-        :param request_id: request id to record
-        :param package: package the request is about
-        """
-
-        data = self.get_prj_pseudometa(project)
-        append = True
-        for request in data['requests']:
-            if request['package'] == package:
-                # Only update if needed (to save calls to get_request)
-                if request['id'] != request_id or not request.get('author') or not request.get('type'):
-                    request['id'] = request_id
-                    request['type'] = act_type
-                    request['author'] = get_request(self.apiurl, str(request_id)).get_creator()
-                append = False
-        if append:
-            author = get_request(self.apiurl, str(request_id)).get_creator()
-            data['requests'].append({'id': request_id, 'package': package, 'author': author, 'type': act_type})
-        self.set_prj_pseudometa(project, data)
-
     def set_splitter_info_in_prj_pseudometa(self, project, group, strategy_info):
         data = self.get_prj_pseudometa(project)
         data['splitter_info'] = {
@@ -763,10 +690,10 @@ class StagingAPI(object):
         :param project: project the package is in
         :param package: package we want to query for
         """
-        data = self.get_prj_pseudometa(project)
-        for x in data['requests']:
-            if x['package'] == package:
-                return int(x['id'])
+        data = self.project_status(project)
+        for x in data.findall('staged_requests/entry'):
+            if x.get('package') == package:
+                return int(x.get('id'))
         return None
 
     def get_package_for_request_id(self, project, request_id):
@@ -775,26 +702,15 @@ class StagingAPI(object):
         :param project: project the package is in
         :param package: package we want to query for
         """
-        data = self.get_prj_pseudometa(project)
-        request_id = int(request_id)
-        for x in data['requests']:
-            if x['id'] == request_id:
-                return x['package']
+        data = self.project_status(project)
+        request_id = str(request_id)
+        for x in data.findall('staged_requests/entry'):
+            if x.get('id') == request_id:
+                return x.get('package')
         return None
 
-    def _remove_package_from_prj_pseudometa(self, project, package):
-        """
-        Delete request from the project pseudometa
-        :param project: project to remove from
-        :param package: package we want to remove from meta
-        """
-
-        data = self.get_prj_pseudometa(project)
-        data['requests'] = filter(lambda x: x['package'] != package, data['requests'])
-        self.set_prj_pseudometa(project, data)
-
     def rm_from_prj(self, project, package=None, request_id=None,
-                    msg=None, review='accepted'):
+                    msg=None):
         """
         Delete request from the project
         :param project: project to remove from
@@ -808,10 +724,10 @@ class StagingAPI(object):
         if not package:
             package = self.get_package_for_request_id(project, request_id)
         if not package or not request_id:
+            print('no package or no request_id')
             return
 
         orig_project = project
-        self._remove_package_from_prj_pseudometa(project, package)
         if self._supersede:
             self.is_package_disabled(project, package, store=True)
 
@@ -821,9 +737,22 @@ class StagingAPI(object):
             delete_package(self.apiurl, project, sub_pkg, force=True, msg=msg)
 
         # Delete the main package in the last
-        delete_package(self.apiurl, project, package, force=True, msg=msg)
+        self.delete_requests(self.project, project, [request_id])
 
-        self.set_review(request_id, orig_project, state=review, msg=msg)
+    # https://github.com/openSUSE/osc/pull/631/files
+    def delete_requests(self, project, stage, rqids):
+        requestxml = "<requests>"
+        for rq in rqids:
+            requestxml += "<number>%s</number>" % rq
+        requestxml += "</requests>"
+        u = makeurl(self.apiurl, ['staging', project,
+                                  'staging_projects', stage, 'staged_requests'])
+        try:
+            return http_DELETE(u, data=requestxml)
+        except HTTPError as e:
+            # https://github.com/openSUSE/open-build-service/issues/8522
+            print(e)
+            return None
 
     def is_package_disabled(self, project, package, store=False):
         meta = show_package_meta(self.apiurl, project, package)
@@ -974,7 +903,7 @@ class StagingAPI(object):
 
         """
         status = self.project_status(project)
-        return status and status['overall_state'] == 'acceptable'
+        return status and status.get('overall_state') == 'acceptable'
 
     def project_status_build_percent(self, status):
         final, tobuild = self.project_status_build_sum(status)
@@ -1306,29 +1235,13 @@ class StagingAPI(object):
                 return status.tag
 
     def switch_flag_in_prj(self, project, flag='build', state='disable', repository=None, arch=None):
-        url = self.makeurl(['source', project, '_meta'])
-        prjmeta = ET.parse(http_GET(url)).getroot()
-
-        flagxml = prjmeta.find(flag)
-        if flagxml is None:
-            flagxml = ET.SubElement(prjmeta, flag)
-
-        foundone = False
-        for build in flagxml:
-            if build.get('repository', None) == repository and build.get('arch', None) == arch:
-                build.tag = state
-                foundone = True
-
-        # need to add a global one
-        if not foundone:
-            query = {}
-            if arch:
-                query['arch'] = arch
-            if repository:
-                query['repository'] = repository
-            ET.SubElement(flagxml, state, query)
-
-        http_PUT(url, data=ET.tostring(prjmeta))
+        query = { 'cmd': 'set_flag', 'flag': flag, 'status': state }
+        if repository:
+            query['repository'] = _repository
+        if arch:
+            query['arch'] = arch
+        url = self.makeurl(['source', project], query)
+        http_POST(url)
 
     def build_switch_prj(self, project, state):
         """
@@ -1420,8 +1333,8 @@ class StagingAPI(object):
         return attribute_value_save(self.apiurl, self.project, name, value)
 
     def update_status_or_deactivate(self, project, command):
-        meta = self.get_prj_pseudometa(project)
-        if len(meta['requests']) == 0:
+        root = self.project_status(project)
+        if root.get('state') == 'empty':
             # Cleanup like accept since the staging is now empty.
             self.staging_deactivate(project)
         else:

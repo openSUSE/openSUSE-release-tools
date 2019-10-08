@@ -55,7 +55,6 @@ class UnselectCommand(object):
             msg = 'Unselecting "{}" from "{}"'.format(request, staging_project)
             print(msg)
             self.api.rm_from_prj(staging_project, request_id=request, msg='Removing from {}, re-evaluation needed'.format(staging_project))
-            self.api.add_review(request, by_group=self.api.cstaging_group, msg='Requesting new staging review')
 
             req = get_request(self.api.apiurl, str(request))
             if req.state.name in ('new', 'review') and request not in ignored_requests:
