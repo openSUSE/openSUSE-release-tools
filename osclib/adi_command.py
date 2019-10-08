@@ -135,10 +135,6 @@ class AdiCommand:
 
                 print(line + Fore.GREEN + ' (staged in {})'.format(name) + Fore.RESET)
 
-            if name:
-                # Notify everybody about the changes.
-                self.api.update_status_comments(name, 'select')
-
     def perform(self, packages, move=False, by_dp=False, split=False):
         """
         Perform the list command

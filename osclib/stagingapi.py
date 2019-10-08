@@ -731,10 +731,15 @@ class StagingAPI(object):
         if self._supersede:
             self.is_package_disabled(project, package, store=True)
 
+        # https://github.com/openSUSE/open-build-service/issues/7356
         for sub_pkg in self.get_sub_packages(package, project):
             if self._supersede:
                 self.is_package_disabled(project, sub_pkg, store=True)
-            delete_package(self.apiurl, project, sub_pkg, force=True, msg=msg)
+            try:
+                delete_package(self.apiurl, project, sub_pkg, force=True, msg=msg)
+            except HTTPError as e:
+                # don't make this an hard error
+                print(e)
 
         # Delete the main package in the last
         self.delete_requests(self.project, project, [request_id])
@@ -1339,77 +1344,6 @@ class StagingAPI(object):
             self.staging_deactivate(project)
         else:
             self.build_switch_staging_project(project, 'enable')
-            self.update_status_comments(project, command)
-
-    def update_status_comments(self, project, command):
-        """
-        Refresh the status comments, used for notification purposes, based on
-        the current list of requests. To ensure that all involved users
-        (and nobody else) get notified, old status comments are deleted and
-        a new one is created.
-        :param project: project name
-        :param command: name of the command to include in the message
-        """
-
-        bot = 'osc-staging'
-        info = {'type': 'package-list'}
-        comment_api = CommentAPI(self.apiurl)
-        comments = comment_api.get_comments(project_name=project)
-        comment, _ = comment_api.comment_find(comments, bot, info)
-        parent_id = None
-
-        meta = self.get_prj_pseudometa(project)
-        revision = meta.get('requests_comment', None)
-        lines = []
-        if comment and revision:
-            parent_id = comment['id'] if comment else None
-            info['type'] = 'package-diff'
-
-            requests_new = [r['id'] for r in meta['requests']]
-            meta_old = self.get_prj_pseudometa(project, revision)
-            requests_old = [r['id'] for r in meta_old['requests']]
-            requests_common = set(requests_new).intersection(set(requests_old))
-
-            lines.append('Requests: {} added, {} removed; using {} command'.format(
-                len(requests_new) - len(requests_common),
-                len(requests_old) - len(requests_common),
-                command
-            ))
-            lines.append('')  # Blank line.
-
-            requests = []
-            for req in meta['requests']:
-                if req['id'] not in requests_common:
-                    req = req.copy()
-                    req['prefix'] = 'added '
-                    requests.append(req)
-
-            for req in meta_old['requests']:
-                if req['id'] not in requests_common:
-                    req['prefix'] = 'removed '
-                    requests.append(req)
-
-            if not len(requests):
-                # Nothing changed so no sense posting comment.
-                return
-        else:
-            dashboard_url = '{}/project/staging_projects/{}/{}'.format(
-                self.apiurl, self.project, self.extract_staging_short(project))
-            lines.append('Requests ([dashboard]({})):'.format(dashboard_url))
-            lines.append('')  # Blank line.
-
-            requests = meta['requests']
-
-        for req in requests:
-            lines.append('  * {}request#{} for package {} submitted by {}'.format(
-                req.get('prefix', ''), req['id'], req['package'], req.get('author')))
-        msg = '\n'.join(lines)
-        msg = comment_api.add_marker(msg, bot, info)
-        comment_api.add_comment(project_name=project, comment=msg, parent_id=parent_id)
-
-        # Store current meta revision for diffing against next time.
-        meta['requests_comment'] = self.get_prj_meta_revision(project)
-        self.set_prj_pseudometa(project, meta)
 
     def accept_status_comment(self, project, packages):
         if not len(packages):
