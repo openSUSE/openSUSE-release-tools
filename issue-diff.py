@@ -117,7 +117,7 @@ def prompt_continue(change_count):
     return prompt_continue(change_count)
 
 def prompt_interactive(changes, project, package):
-    with tempfile.NamedTemporaryFile(suffix='.yml') as temp:
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml') as temp:
         temp.write(yaml.safe_dump(changes, default_flow_style=False, default_style="'") + '\n')
         temp.write('# {}/{}\n'.format(project, package))
         temp.write('# comment or remove lines to whitelist issues')
