@@ -593,7 +593,7 @@ def do_staging(self, subcmd, opts, *args):
                     return
 
                 if opts.interactive:
-                    with tempfile.NamedTemporaryFile(suffix='.yml') as temp:
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml') as temp:
                         temp.write(yaml.safe_dump(splitter.proposal, default_flow_style=False) + '\n\n')
 
                         if len(splitter.requests):
