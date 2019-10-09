@@ -1,16 +1,10 @@
-from __future__ import print_function
-
 import json
-
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 from colorama import Fore
 
 from osc import oscerr
+from osc.core import get_request
 from osc.core import delete_project
 from osc.core import show_package_meta
 from osc import conf
@@ -83,7 +77,14 @@ class AdiCommand:
 
     def create_new_adi(self, wanted_requests, by_dp=False, split=False):
         source_projects_expand = self.config.get('source_projects_expand', '').split()
+        # if we don't call it, there is no invalidate function added
         requests = self.api.get_open_requests()
+        if len(wanted_requests):
+            requests = []
+            rf = RequestFinder(self.api)
+            for p in wanted_requests:
+                requests.append(rf.load_request(p))
+
         splitter = RequestSplitter(self.api, requests, in_ring=False)
         splitter.filter_add('./action[@type="submit"]')
         if len(wanted_requests):

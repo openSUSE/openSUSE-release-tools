@@ -576,17 +576,11 @@ class StagingAPI(object):
             # Remove the old request
             self.rm_from_prj(stage_info['prj'],
                              request_id=stage_info['rq_id'],
-                             msg='Replaced by sr#{}'.format(request_id),
-                             review='declined')
+                             msg='Replaced by sr#{}'.format(request_id))
             if code is None:
                 # Add the new request that should be replacing the old one.
                 self.rq_to_prj(request_id, stage_info['prj'])
                 self._invalidate_get_open_requests()
-
-            # Skip over supersede for purpose of diff comments.
-            meta = self.get_prj_pseudometa(stage_info['prj'])
-            meta['requests_comment'] = self.get_prj_meta_revision(stage_info['prj'])
-            self.set_prj_pseudometa(stage_info['prj'], meta)
 
         return stage_info, code
 

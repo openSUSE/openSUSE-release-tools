@@ -83,7 +83,6 @@ class RequestSplitter(object):
     def split(self):
         for request in self.requests:
             self.supplement(request)
-
             if not self.filter_check(request):
                 continue
 

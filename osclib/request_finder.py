@@ -1,11 +1,7 @@
-try:
-    from urllib.parse import quote
-    from urllib.error import HTTPError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError, quote
+from urllib.parse import quote
+from urllib.error import HTTPError
 
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 from osc import oscerr
 from osc.core import makeurl
@@ -60,7 +56,7 @@ class RequestFinder(object):
         """
 
         root = self.load_request(request_id)
-        if not root:
+        if root is None:
             return False
 
         project = root.find('action').find('target').get('project')
