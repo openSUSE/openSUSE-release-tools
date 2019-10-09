@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from flask import Flask
 from flask import request
@@ -7,7 +7,7 @@ from flask import make_response
 import re
 import os
 import sys
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 digits_re = re.compile('^[0-9.]+$')
 
