@@ -888,9 +888,13 @@ class StagingAPI(object):
         url = self.makeurl(['staging', self.project, 'staging_projects'])
         return ET.parse(self.retried_GET(url)).getroot()
 
-    def project_status(self, staging):
+    def project_status(self, staging, reload=False):
         if not staging:
             raise oscerr.WrongArgs('No staging given')
+
+        if reload:
+            url = self.makeurl(['staging', self.project, 'staging_projects', staging])
+            return ET.parse(self.retried_GET(url)).getroot()
 
         root = self.staging_status()
         staging = self.prj_from_short(staging)
@@ -900,15 +904,13 @@ class StagingAPI(object):
 
     def check_project_status(self, project):
         """
-        Checks a staging project for acceptance. Use the JSON document
-        for staging project to base the decision.
+        Checks a staging project for acceptance.
         :param project: project to check
         :return true (ok)/false (empty prj) or list of strings with
                 informations)
 
         """
-        status = self.project_status(project)
-        return status and status.get('overall_state') == 'acceptable'
+        return self.project_status(project).get('state') == 'acceptable'
 
     def project_status_build_percent(self, status):
         final, tobuild = self.project_status_build_sum(status)
@@ -942,7 +944,7 @@ class StagingAPI(object):
 
     def project_status_final(self, status):
         """Determine if staging project is both active and no longer pending."""
-        return status['overall_state'] in ['acceptable', 'review', 'failed']
+        return status.get('state') in ['acceptable', 'review', 'failed']
 
     # we use a private function to mock it - httpretty is all or nothing
     def _fetch_project_meta(self, project):

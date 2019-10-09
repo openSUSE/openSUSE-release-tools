@@ -36,14 +36,9 @@ class RequestFinder(object):
         self.api = api
         self.srs = {}
 
-    def find_request_id(self, request_id):
-        """
-        Look up the request by ID to verify if it is correct
-        :param request_id: ID of the added request
-        """
-
+    def load_request(self, request_id):
         if not _is_int(request_id):
-            return False
+            return None
 
         url = makeurl(self.api.apiurl, ['request', str(request_id)])
         try:
@@ -55,6 +50,18 @@ class RequestFinder(object):
 
         if root.get('id', None) != str(request_id):
             return None
+
+        return root
+
+    def find_request_id(self, request_id):
+        """
+        Look up the request by ID to verify if it is correct
+        :param request_id: ID of the added request
+        """
+
+        root = self.load_request(request_id)
+        if not root:
+            return False
 
         project = root.find('action').find('target').get('project')
         if (project != self.api.project and not project.startswith(self.api.cstaging)):

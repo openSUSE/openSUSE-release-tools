@@ -1,10 +1,7 @@
 import re
+import time
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 import warnings
 from xml.etree import cElementTree as ET
@@ -12,11 +9,13 @@ from xml.etree import cElementTree as ET
 from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
 from osc.core import delete_package, search, set_devel_project
+from osc.core import Request
 from osc.util.helper import decode_it
 from osclib.core import attribute_value_save
 from osclib.core import attribute_value_load
 from osclib.core import source_file_load
 from osclib.core import source_file_save
+from osclib.request_finder import RequestFinder
 from datetime import date
 
 
@@ -64,7 +63,7 @@ class AcceptCommand(object):
 
     def perform(self, project, force=False):
         """Accept the staging project for review and submit to Factory /
-        openSUSE 13.2 ...
+        Leap ...
 
         Then disable the build to disabled
         :param project: staging project we are working with
@@ -78,25 +77,32 @@ class AcceptCommand(object):
             if not force:
                 return False
 
-        meta = self.api.get_prj_pseudometa(project)
+        status = self.api.project_status(project)
         packages = []
-        for req in meta['requests']:
-            self.api.rm_from_prj(project, request_id=req['id'], msg='ready to accept')
-            packages.append(req['package'])
 
-            oldspecs = self.api.get_filelist_for_package(pkgname=req['package'],
-                                                         project=self.api.project,
-                                                         extension='spec')
-            print('Accepting staging review for {}'.format(req['package']))
-            change_request_state(self.api.apiurl,
-                                 str(req['id']),
-                                 'accepted',
-                                 message='Accept to %s' % self.api.project,
-                                 force=force)
-            self.create_new_links(self.api.project, req['package'], oldspecs)
+        rf = RequestFinder(self.api)
+        oldspecs = {}
+        for req in status.findall('staged_requests/entry'):
+            packages.append(req.get('package'))
 
-        self.api.accept_status_comment(project, packages)
+            print('Checking file list of {}'.format(req.get('package')))
+            os = self.api.get_filelist_for_package(pkgname=req.get('package'),
+                                                   project=self.api.project,
+                                                   extension='spec')
+            oldspecs[req.get('package')] = os
+            #self.create_new_links(self.api.project, req['package'], oldspecs)
+
+        print(oldspecs)
+
+        u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'])
+        f = http_POST(u)
+
+        while True:
+            print(self.api.project_status(project, reload=True).get('state'))
+            time.sleep(1)
+
         self.api.staging_deactivate(project)
+        self.api.accept_status_comment(project, packages)
 
         return True
 
