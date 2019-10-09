@@ -13,7 +13,6 @@ from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
 from osc.core import delete_package, search, set_devel_project
 from osc.util.helper import decode_it
-from osclib.config_command import ConfigCommand
 from osclib.core import attribute_value_save
 from osclib.core import attribute_value_load
 from osclib.core import source_file_load
@@ -98,7 +97,6 @@ class AcceptCommand(object):
 
         self.api.accept_status_comment(project, packages)
         self.api.staging_deactivate(project)
-        ConfigCommand(self.api).perform([project], 'todo')
 
         return True
 

@@ -1,4 +1,3 @@
-from osclib.config_command import ConfigCommand
 from osclib.core import source_file_load
 from osclib.core import source_file_save
 import time
@@ -109,9 +108,6 @@ class FreezeCommand(object):
 
     def perform(self, prj, copy_bootstrap=True):
         self.prj = prj
-
-        # Depending on what eventually lives in config this may need to change.
-        ConfigCommand(self.api).perform([prj], clear=True)
 
         if self.api.is_adi_project(prj):
             src_prj = self.api.find_devel_project_from_adi_frozenlinks(self.prj)
