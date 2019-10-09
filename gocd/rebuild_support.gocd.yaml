@@ -17,3 +17,20 @@ pipelines:
         - staging-bot
         tasks:
         - script: ./suppkg_rebuild.py -p openSUSE:Factory
+  Leap.Rebuild.Support:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        resources:
+        - staging-bot
+        tasks:
+        - script: ./suppkg_rebuild.py -p openSUSE:Leap:15.2
