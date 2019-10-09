@@ -52,9 +52,10 @@ class SelectCommand(object):
             # requests for the same project are fine
             if staging == self.target_project:
                 continue
-            for rq in self.api.get_prj_pseudometa(staging)['requests']:
-                if int(rq['id']) < int(request) and rq['package'] == package:
-                    candidates.append((rq['id'], package, staging))
+            pstatus = self.api.project_status(staging)
+            for rq in pstatus.findall('selected_requests/entry'):
+                if int(rq.get('id')) < int(request) and rq.get('package') == package:
+                    candidates.append((rq.get('id'), package, staging))
 
         assert len(candidates) <= 1, 'There are more thant one candidate to supersede {} ({}): {}'.format(request, package, candidates)
 

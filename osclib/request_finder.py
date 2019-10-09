@@ -144,9 +144,9 @@ class RequestFinder(object):
         This function is only called for its side effect.
         """
         for p in pkgs:
-            if self.find_request_package(p):
+            if _is_int(p) and self.find_request_id(p):
                 continue
-            if self.find_request_id(p):
+            if self.find_request_package(p):
                 continue
             if self.find_request_project(p, newcand):
                 continue

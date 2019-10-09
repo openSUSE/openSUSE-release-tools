@@ -230,12 +230,11 @@ class StagingAPI(object):
 
         packages_staged = {}
         for prj in self.get_staging_projects():
-            status = self.project_status(prj, True)
-            if not status:
+            status = self.project_status(prj)
+            if status is None:
                 continue
-            meta = self.load_prj_pseudometa(status['description'])
-            for req in meta['requests']:
-                packages_staged[req['package']] = {'prj': prj, 'rq_id': req['id']}
+            for req in status.findall('staged_requests/entry'):
+                packages_staged[req.get('package')] = {'prj': prj, 'rq_id': req.get('id')}
 
         return packages_staged
 
@@ -980,28 +979,22 @@ class StagingAPI(object):
         act = req.get_actions('submit')
         if act:
             act_type = 'submit'
-            tar_pkg = self.submit_to_prj(act[0], project)
 
         act = req.get_actions('delete')
         if act:
             act_type = 'delete'
-            tar_pkg = self.delete_to_prj(act[0], project)
 
-        if not tar_pkg:
+        if not act_type:
             msg = 'Request {} is not a submit or delete request'
             msg = msg.format(request_id)
             raise oscerr.WrongArgs(msg)
 
-        # register the package name
-        self._add_rq_to_prj_pseudometa(project, int(request_id), tar_pkg, act_type=act_type)
+        requestxml = "<requests><number>%s</number></requests>" % str(request_id)
+        u = makeurl(self.apiurl, ['staging', self.project, 'staging_projects', project, 'staged_requests'])
+        f = http_POST(u, data=requestxml)
 
-        # add review
-        self.add_review(request_id, project)
-
-        # now remove the staging checker
-        self.do_change_review_state(request_id, 'accepted',
-                                    by_group=self.cstaging_group,
-                                    message='Picked {}'.format(project))
+        if act_type == 'delete':
+            self.delete_to_prj(act[0], project)
 
         # unignore a request selected to a project
         requests_ignored = self.get_ignored_requests()
@@ -1078,24 +1071,24 @@ class StagingAPI(object):
         src_pkg = act.src_package
         tar_pkg = act.tgt_package
 
-        self.create_package_container(project, tar_pkg)
+        # https://github.com/openSUSE/open-build-service/issues/7343
+        if False:
+            # expand the revision to a md5
+            url = self.makeurl(['source', src_prj, src_pkg],
+                               {'rev': src_rev, 'expand': 1})
+            f = http_GET(url)
+            root = ET.parse(f).getroot()
+            src_rev = root.attrib['srcmd5']
+            src_vrev = root.attrib.get('vrev')
 
-        # expand the revision to a md5
-        url = self.makeurl(['source', src_prj, src_pkg],
-                           {'rev': src_rev, 'expand': 1})
-        f = http_GET(url)
-        root = ET.parse(f).getroot()
-        src_rev = root.attrib['srcmd5']
-        src_vrev = root.attrib.get('vrev')
-
-        # link stuff - not using linkpac because linkpac copies meta
-        # from source
-        root = ET.Element('link', package=src_pkg, project=src_prj,
-                          rev=src_rev)
-        if src_vrev:
-            root.attrib['vrev'] = src_vrev
-        url = self.makeurl(['source', project, tar_pkg, '_link'])
-        http_PUT(url, data=ET.tostring(root))
+            # link stuff - not using linkpac because linkpac copies meta
+            # from source
+            root = ET.Element('link', package=src_pkg, project=src_prj,
+                              rev=src_rev)
+            if src_vrev:
+                root.attrib['vrev'] = src_vrev
+            url = self.makeurl(['source', project, tar_pkg, '_link'])
+            http_PUT(url, data=ET.tostring(root))
 
         # If adi project, check for baselibs.conf in all specs to catch both
         # dynamically generated and static baselibs.conf.
@@ -1265,8 +1258,8 @@ class StagingAPI(object):
         :returns True if we can select into it
         """
 
-        data = self.get_prj_pseudometa(project)
-        if data['requests']:
+        data = self.project_status(project)
+        if data.get('state') == 'empty':
             return True  # already has content
 
         # young enough
@@ -1340,7 +1333,7 @@ class StagingAPI(object):
         return attribute_value_save(self.apiurl, self.project, name, value)
 
     def update_status_or_deactivate(self, project, command):
-        root = self.project_status(project)
+        root = self.project_status(project, reload=True)
         if root.get('state') == 'empty':
             # Cleanup like accept since the staging is now empty.
             self.staging_deactivate(project)
@@ -1549,8 +1542,6 @@ class StagingAPI(object):
 
     def staging_deactivate(self, project):
         """Cleanup staging after last request is removed and disable building."""
-        # Clear pseudometa since it no longer represents the staging.
-        self.clear_prj_pseudometa(project)
 
         # Clear all comments.
         CommentAPI(self.apiurl).delete_from(project_name=project)
