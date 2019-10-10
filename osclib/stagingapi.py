@@ -990,6 +990,9 @@ class StagingAPI(object):
         if act_type == 'delete':
             self.delete_to_prj(act[0], project)
 
+        if act_type == 'submit':
+            self.submit_to_prj(req.get_actions('submit')[0], project)
+
         # unignore a request selected to a project
         requests_ignored = self.get_ignored_requests()
         request_id = int(request_id)
