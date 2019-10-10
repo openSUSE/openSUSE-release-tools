@@ -54,7 +54,7 @@ class CheckCommand(object):
 
         # openQA results
         for check in project.findall('missing_checks/*'):
-            report.append('   - Missing check: ' + check)
+            report.append('   - Missing check: ' + check.get('name'))
 
         for check in project.findall('checks/*'):
             if check.get('state') != 'success':
