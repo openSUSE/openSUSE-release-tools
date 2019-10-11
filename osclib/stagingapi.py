@@ -267,8 +267,9 @@ class StagingAPI(object):
             for entry in ET.fromstring(content).findall('entry'):
                 filelist.append(entry.attrib['name'])
         except HTTPError as err:
-            if err.code == 404:
+            if err.code == 404 or err.code == 400:
                 # The package we were supposed to query does not exist
+                # or the sources are broken (as we link into branches it can happen)
                 # we can pass this up and return the empty filelist
                 return []
             raise err
