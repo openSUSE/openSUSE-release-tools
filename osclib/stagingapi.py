@@ -1643,6 +1643,11 @@ class StagingAPI(object):
             <path project="{1}" repository="standard"/>
             <arch>x86_64</arch>
           </repository>
+          <repository name="images">
+            <path project="{0}" repository="standard"/>
+            <path project="{1}" repository="images"/>
+            <arch>x86_64</arch>
+          </repository>
         </project>""".format(name, self.project, self.extract_adi_number(name), linkproject, repository,
                              self.cstaging, nonfree_path)
 
