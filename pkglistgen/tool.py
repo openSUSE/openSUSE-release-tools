@@ -480,8 +480,7 @@ class PkgListGen(ToolBase.ToolBase):
             self.ignore_broken = True
         global_use_recommends = not ignore_recommended
         if locale:
-            for l in locale:
-                self.locales |= set(l.split(','))
+            self.locales |= set(locale.split(' '))
         if locales_from:
             with open(os.path.join(self.input_dir, locales_from), 'r') as fh:
                 root = ET.parse(fh).getroot()
@@ -645,7 +644,7 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
                                          ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
-                                         locale = target_config.get('pkglistgen-local'),
+                                         locale = target_config.get('pkglistgen-locale'),
                                          locales_from = target_config.get('pkglistgen-locales-from'))
 
         if stop_after_solve:
