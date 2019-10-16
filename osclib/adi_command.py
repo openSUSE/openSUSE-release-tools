@@ -24,8 +24,8 @@ class AdiCommand:
         query_project = self.api.extract_staging_short(project)
         info = self.api.project_status(project, True)
 
-        if len(info['selected_requests']):
-            if len(info['building_repositories']):
+        if info.find('selected_requests/entry') is not None:
+            if info.find('building_repositories/entry') is not None:
                 print(query_project + ' ' + Fore.MAGENTA + 'building')
                 return
             if len(info['untracked_requests']):
