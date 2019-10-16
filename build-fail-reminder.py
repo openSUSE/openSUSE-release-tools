@@ -99,7 +99,7 @@ def main(args):
     project = args.project
 
     logger.debug('loading build fails for %s'%project)
-    url = osc.core.makeurl(apiurl, ['project', 'status', project],
+    url = osc.core.makeurl(apiurl, ['projects', project, 'status'],
         { 'ignore_pending': True,
            'limit_to_fails': True,
            'include_versions': False,
