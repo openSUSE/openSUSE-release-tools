@@ -30,7 +30,7 @@ class RemindedPackage(object):
 def jdefault(o):
     return o.__dict__
 
-MAIL_TEMPLATES = ( u"""Dear %(recepient)s,
+MAIL_TEMPLATES = ( u"""Dear %(recipient)s,
 
 Please be informed that '%(package)s' in %(project)s has
 not had a successful build since %(date)s. See
@@ -52,7 +52,7 @@ maintainer if the package has no explicit maintainer assigned)
 Kind regards,
 %(sender)s
 """,
-u"""Dear %(recepient)s,
+u"""Dear %(recipient)s,
 
 Following-up the reminder of one week ago, we have to inform you that
 '%(package)s' is still failing in %(project)s. See
@@ -174,7 +174,7 @@ def main(args):
                     fullname = Person[userid][1]
                     subject = '%s - %s - Build fail notification' % (project, package)
                     text = MAIL_TEMPLATES[Reminded[package].remindCount-1] % {
-                                'recepient': to,
+                                'recipient': fullname,
                                 'sender': sender,
                                 'project' : project,
                                 'package' : package,
