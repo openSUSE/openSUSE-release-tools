@@ -10,6 +10,8 @@
 // @grant        none
 // ==/UserScript==
 
+jQuery.noConflict();
+
 (function()
 {
     var pathParts = window.location.pathname.split('/');
