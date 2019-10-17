@@ -151,7 +151,7 @@ class StagingHelper(object):
                 osc.core.rebuild(self.apiurl, stgname, None, None, None)
                 stg.find('rebuild').text = 'unneeded'
 
-        rebuild_data_updated = ET.tostring(root)
+        rebuild_data_updated = ET.tostring(root).decode()
         logging.debug(rebuild_data_updated)
         if rebuild_data_updated != rebuild_data:
             logging.info('Updating support pkg list...')
