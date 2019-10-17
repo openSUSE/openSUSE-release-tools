@@ -69,7 +69,7 @@ def _full_project_name(self, project):
 
 def lock_needed(cmd, opts):
     return not(
-        cmd in ('acheck', 'check', 'check_duplicate_binaries', 'frozenage', 'rebuild', 'unlock') or
+        cmd in ('check', 'check_duplicate_binaries', 'frozenage', 'rebuild', 'unlock') or
         (cmd == 'list' and not opts.supersede)
     )
 
@@ -135,11 +135,6 @@ def do_staging(self, subcmd, opts, *args):
         $PROJECT:Staging:<LETTER> into $PROJECT
         If openSUSE:* project, requests marked ready from adi stagings will also
         be accepted.
-
-    "acheck" will check if it is safe to accept new staging projects
-        As $PROJECT is syncing the right package versions between
-        /standard, /totest and /snapshot, it is important that the projects
-        are clean prior to a checkin round.
 
     "adi" will list already staged requests, stage new requests, and supersede
         requests where applicable. New adi stagings will be created for new
@@ -336,7 +331,6 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging accept [--force] [--no-cleanup] [LETTER...]
-        osc staging acheck
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
         osc staging check [--old] [STAGING...]
         osc staging check_duplicate_binaries
@@ -389,7 +383,6 @@ def do_staging(self, subcmd, opts, *args):
     ):
         min_args, max_args = 1, None
     elif cmd in (
-        'acheck',
         'check_duplicate_binaries',
         'cleanup_rings',
         'list',
@@ -482,44 +475,21 @@ def do_staging(self, subcmd, opts, *args):
                     Fore.YELLOW + prj + Fore.RESET,
                     Fore.GREEN if api.prj_frozen_enough(prj) else Fore.RED,
                     api.days_since_last_freeze(prj)))
-        elif cmd == 'acheck':
-            # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
-            version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
-            if version_totest:
-                version_openqa = api.pseudometa_file_load('version_totest')
-                totest_dirty = api.is_repo_dirty(api.project, 'totest')
-                print("version_openqa: %s / version_totest: %s / totest_dirty: %s\n" % (version_openqa, version_totest, totest_dirty))
-            else:
-                print("acheck is unavailable in %s!\n" % (api.project))
         elif cmd == 'accept':
-            # Is it safe to accept? Meaning: /totest contains what it should and is not dirty
-            version_totest = api.get_binary_version(api.project, "openSUSE-release.rpm", repository="totest", arch="x86_64")
-
-            if version_totest is None or opts.force:
-                # SLE does not have a totest_version or openqa_version - ignore it
-                version_openqa = version_totest
-                totest_dirty   = False
-            else:
-                version_openqa = api.pseudometa_file_load('version_totest')
-                totest_dirty   = api.is_repo_dirty(api.project, 'totest')
-
-            if version_openqa == version_totest and not totest_dirty:
-                cmd = AcceptCommand(api)
-                for prj in args[1:]:
-                    if cmd.perform(api.prj_from_letter(prj), opts.force):
-                        cmd.reset_rebuild_data(prj)
-                    else:
-                        return
-                    if not opts.no_cleanup:
-                        if api.item_exists(api.prj_from_letter(prj)):
-                            cmd.cleanup(api.prj_from_letter(prj))
-                cmd.accept_other_new()
-                if opts.project.startswith('openSUSE:'):
-                    cmd.update_factory_version()
-                    if api.item_exists(api.crebuild):
-                        cmd.sync_buildfailures()
-            else:
-                print("Not safe to accept: /totest is not yet synced")
+            cmd = AcceptCommand(api)
+            for prj in args[1:]:
+                if cmd.perform(api.prj_from_letter(prj), opts.force):
+                    cmd.reset_rebuild_data(prj)
+                else:
+                    return
+                if not opts.no_cleanup:
+                    if api.item_exists(api.prj_from_letter(prj)):
+                        cmd.cleanup(api.prj_from_letter(prj))
+            cmd.accept_other_new()
+            if opts.project.startswith('openSUSE:'):
+                cmd.update_factory_version()
+                if api.item_exists(api.crebuild):
+                    cmd.sync_buildfailures()
         elif cmd == 'unselect':
             if opts.message:
                 print('Ignoring requests first')
