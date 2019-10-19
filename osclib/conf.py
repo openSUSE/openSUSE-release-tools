@@ -31,7 +31,6 @@ DEFAULT = {
         'openqa': 'https://openqa.opensuse.org',
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
-        'delreq-review': 'factory-maintainers',
         'main-repo': 'standard',
         'pseudometa_package': 'openSUSE:%(project)s:Staging/dashboard',
         'download-baseurl': 'http://download.opensuse.org/tumbleweed/',
@@ -73,7 +72,6 @@ DEFAULT = {
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
         'leaper-override-group': 'leap-reviewers',
-        'delreq-review': '',
         'main-repo': 'standard',
         'pseudometa_package': 'openSUSE:%(project)s:Staging/dashboard',
         'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
@@ -167,7 +165,6 @@ DEFAULT = {
         'openqa': '',
         'lock': '',
         'lock-ns': '',
-        'delreq-review': '',
         '_priority': '0', # Apply defaults first
     },
 }

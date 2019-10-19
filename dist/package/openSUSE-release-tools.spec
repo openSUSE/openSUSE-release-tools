@@ -74,6 +74,8 @@ Requires:       osclib = %{version}
 Obsoletes:      %{name}-totest-manager
 # no longer supported
 Obsoletes:      osc-plugin-check_dups
+# vdelreq is no longer needed/supported; delete requests are handled immediately again
+Obsoletes:      osc-plugin-vdelreq
 
 # Avoid needlessly building on s390x and such in various repos.
 # Must include noarch for older systems even though it makes no sense due to
@@ -305,16 +307,6 @@ Requires:       osclib = %{version}
 %description -n osc-plugin-staging
 OSC plugin for the staging workflow, see `osc staging --help`.
 
-%package -n osc-plugin-vdelreq
-Summary:        OSC plugin to check for virtually accepted request
-Group:          Development/Tools/Other
-BuildArch:      noarch
-Requires:       osc >= 0.165.1
-Requires:       osclib = %{version}
-
-%description -n osc-plugin-vdelreq
-OSC plugin to check for virtually accepted request, see `osc vdelreq --help`.
-
 %prep
 %setup -q
 
@@ -457,7 +449,6 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-origin.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
-%exclude %{_datadir}/%{source_dir}/osc-vdelreq.py
 %exclude %{_datadir}/%{source_dir}/update_crawler.py
 %exclude %{_datadir}/%{source_dir}/findfileconflicts
 %exclude %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
@@ -622,10 +613,5 @@ exit 0
 %defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-staging.py
 %{osc_plugin_dir}/osc-staging.py
-
-%files -n osc-plugin-vdelreq
-%defattr(-,root,root,-)
-%{_datadir}/%{source_dir}/osc-vdelreq.py
-%{osc_plugin_dir}/osc-vdelreq.py
 
 %changelog
