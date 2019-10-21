@@ -96,7 +96,7 @@ pipelines:
     - Generate.Release.Package:
         approval: manual
         jobs:
-<% leap_stagings = %w(A B C D E) -%>
+<% leap_stagings = %w(A B C D E F) -%>
 <% leap_stagings.each do |letter| -%>
           "Staging.<%= letter %>":
             resources:
