@@ -6,12 +6,7 @@ import re
 import socket
 from xml.etree import cElementTree as ET
 from lxml import etree as ETL
-
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 from osc.core import create_submit_request
 from osc.core import get_binarylist
@@ -532,9 +527,6 @@ def package_kind(apiurl, project, package):
 
     if root.find('releasename') is not None:
         return 'maintenance_update'
-
-    if root.find('bcntsynctag') is not None:
-        return 'multispec_subpackage'
 
     # Some multispec subpackages do not have bcntsynctag, so check link.
     link = entity_source_link(apiurl, project, package)
