@@ -186,7 +186,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./check_source.py -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto review
+            - script: ./check_source.py -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto --user factory-auto review
   SLE.Legal.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
