@@ -1,20 +1,16 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 from xdg.BaseDirectory import load_first_config
 from xml.etree import cElementTree as ET
+
 import sys
 import cmdln
 import logging
-import osc.core
 import os
 
+import osc.core
 import ToolBase
-
-makeurl = osc.core.makeurl
-
-logger = logging.getLogger()
-
 
 class Requestfinder(ToolBase.ToolBase):
 
@@ -23,7 +19,7 @@ class Requestfinder(ToolBase.ToolBase):
 
     def fill_package_meta(self, project):
         self.package_metas = dict()
-        url = makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
+        url = osc.core.makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
         root = ET.fromstring(self.cached_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
@@ -211,7 +207,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         query = (review[@by_project='example' and @state='new']
                  and state/@name='review'
                  and action/source/@project='openSUSE:Factory'
-                 and action/target/@project='openSUSE:Leap:15.0'
+                 and action/target/@project='openSUSE:Leap:15.0')
         exclude-user = repo-checker
         exclude-project = openSUSE:Leap:15.0:Staging
         message = override
