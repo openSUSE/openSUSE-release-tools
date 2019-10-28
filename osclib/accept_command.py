@@ -82,7 +82,7 @@ class AcceptCommand(object):
 
         rf = RequestFinder(self.api)
         oldspecs = {}
-        for req in status.findall('staged_requests/entry'):
+        for req in status.findall('staged_requests/request'):
             packages.append(req.get('package'))
 
             print('Checking file list of {}'.format(req.get('package')))

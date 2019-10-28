@@ -52,8 +52,7 @@ class UnselectCommand(object):
                                                                      self.api).items():
             staging_project = request_project['staging']
             affected_projects.add(staging_project)
-            msg = 'Unselecting "{}" from "{}"'.format(request, staging_project)
-            print(msg)
+            print('Unselecting "{}" from "{}"'.format(request, staging_project))
             self.api.rm_from_prj(staging_project, request_id=request, msg='Removing from {}, re-evaluation needed'.format(staging_project))
 
             req = get_request(self.api.apiurl, str(request))

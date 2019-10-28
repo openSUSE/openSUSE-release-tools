@@ -233,7 +233,7 @@ class StagingAPI(object):
             status = self.project_status(prj)
             if status is None:
                 continue
-            for req in status.findall('staged_requests/entry'):
+            for req in status.findall('staged_requests/request'):
                 packages_staged[req.get('package')] = {'prj': prj, 'rq_id': req.get('id')}
 
         return packages_staged
@@ -591,7 +591,7 @@ class StagingAPI(object):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.parse(self.retried_GET(url)).getroot()
         for entry in root.findall('request'):
-            ignore[entry.get('id')] = entry.get('desciption')
+            ignore[entry.get('id')] = entry.get('description')
         return ignore
 
     @memoize(session=True, add_invalidate=True)
@@ -619,8 +619,10 @@ class StagingAPI(object):
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
+        ignored_requests = self.get_ignored_requests()
         for rq in root.findall('request'):
-            requests.append(rq)
+            if not rq.get('id') in ignored_requests:
+                requests.append(rq)
         return requests
 
     def dispatch_open_requests(self, target_requests=None):
@@ -636,15 +638,10 @@ class StagingAPI(object):
         # get all current pending requests
         self._supersede = True
         requests = self.get_open_requests()
-        requests_ignored = self.get_ignored_requests()
         # check if we can reduce it down by accepting some
         for rq in requests:
-            request_id = int(rq.get('id'))
-            if not len(target_requests) and request_id in requests_ignored:
-                continue
-            # if self.crings:
-            #     self.accept_non_ring_request(rq)
             stage_info, code = self.update_superseded_request(rq, target_requests)
+            print('STAGING', stage_info, code)
             if stage_info:
                 yield (stage_info, code, rq)
         self._supersede = False
@@ -685,7 +682,7 @@ class StagingAPI(object):
         :param package: package we want to query for
         """
         data = self.project_status(project)
-        for x in data.findall('staged_requests/entry'):
+        for x in data.findall('staged_requests/request'):
             if x.get('package') == package:
                 return int(x.get('id'))
         return None
@@ -698,7 +695,7 @@ class StagingAPI(object):
         """
         data = self.project_status(project)
         request_id = str(request_id)
-        for x in data.findall('staged_requests/entry'):
+        for x in data.findall('staged_requests/request'):
             if x.get('id') == request_id:
                 return x.get('package')
         return None
