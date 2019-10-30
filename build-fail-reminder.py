@@ -200,24 +200,24 @@ def main(args):
 
         text = u"""Dear Package maintainers and hackers.
 
-        Below package(s) in %(project)s have been failing to build for at
-        least 4 weeks. We tried to send out notifications to the
-        configured bugowner/maintainers of the package(s), but so far no
-        fix has been submitted. This probably means that the
-        maintainer/bugowner did not yet find the time to look into the
-        matter and he/she would certainly appreciate help to get this
-        sorted.
+Below package(s) in %(project)s have been failing to build for at
+least 4 weeks. We tried to send out notifications to the
+configured bugowner/maintainers of the package(s), but so far no
+fix has been submitted. This probably means that the
+maintainer/bugowner did not yet find the time to look into the
+matter and he/she would certainly appreciate help to get this
+sorted.
 
-        """ % { 'project': project }
+""" % { 'project': project }
         for pkg in ProjectComplainList:
             text += "- %s\n" % pkg
         text += u"""
-        Unless somebody is stepping up and submitting fixes, the listed
-        package(s) are going to be removed from %(project)s.
+Unless somebody is stepping up and submitting fixes, the listed
+package(s) are going to be removed from %(project)s.
 
-        Kind regards,
-        %(sender)s
-        """ % { 'project': project, 'sender': sender }
+Kind regards,
+%(sender)s
+""" % { 'project': project, 'sender': sender }
         SendMail(logger, project, sender, to, fullname, subject, text)
 
 if __name__ == '__main__':
