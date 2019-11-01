@@ -322,3 +322,73 @@ class TestOrigin(OBSLocal.TestCase):
         memoize_session_reset()
         origin_info = origin_find(self.wf.apiurl, self.target_project, package)
         self.assertEqual(str(origin_info), upstream1_project)
+
+    def test_new_package_submission(self):
+        self.remote_config_set_age_minimum()
+
+        upstream1_project = self.randomString('upstream1')
+        upstream2_project = self.randomString('upstream2')
+        upstream3_project = self.randomString('upstream3')
+        package1 = self.randomString('package1')
+        package2 = self.randomString('package2')
+
+        target_package1 = self.wf.create_package(self.target_project, package1)
+        upstream1_package1 = self.wf.create_package(upstream1_project, package1)
+        upstream2_package1 = self.wf.create_package(upstream2_project, package1)
+
+        upstream1_package1.create_commit()
+        copy_package(self.wf.apiurl, upstream1_project, package1,
+                     self.wf.apiurl, upstream2_project, package1)
+
+        upstream3_package2 = self.wf.create_package(upstream3_project, package2)
+        upstream3_package2.create_commit()
+
+        attribute_value_save(self.wf.apiurl, upstream1_project, 'ApprovedRequestSource', '', 'OBS')
+        attribute_value_save(self.wf.apiurl, upstream2_project, 'ApprovedRequestSource', '', 'OBS')
+        attribute_value_save(self.wf.apiurl, upstream3_project, 'ApprovedRequestSource', '', 'OBS')
+
+        self.origin_config_write([
+            {upstream1_project: { 'automatic_updates_initial': True }},
+            {upstream2_project: { 'automatic_updates_initial': True }},
+            {upstream3_project: {}},
+        ])
+
+        self.osc_user(self.bot_user)
+        memoize_session_reset()
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package1)
+        self.assertNotEqual(request_future, False)
+        if request_future:
+            request_id_package1 = request_future.print_and_create()
+
+        # Ensure a second request is not triggered.
+        memoize_session_reset()
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package1)
+        self.assertEqual(request_future, False)
+
+        # No new package submission from upstream3 since not automatic_updates_initial.
+        memoize_session_reset()
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package2)
+        self.assertEqual(request_future, False)
+        self.osc_user_pop()
+
+        upstream2_package2 = self.wf.create_package(upstream2_project, package2)
+        upstream2_package2.create_commit()
+
+        self.osc_user(self.bot_user)
+        memoize_session_reset()
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package2)
+        self.assertNotEqual(request_future, False)
+        if request_future:
+            request_id_package2 = request_future.print_and_create()
+        self.osc_user_pop()
+
+        request_state_change(self.wf.apiurl, request_id_package2, 'declined')
+        upstream2_package2.create_commit()
+
+        self.osc_user(self.bot_user)
+        # No new package submission from upstream2 for new revision since
+        # declined initial package submission.
+        memoize_session_reset()
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package2)
+        self.assertEqual(request_future, False)
+        self.osc_user_pop()
