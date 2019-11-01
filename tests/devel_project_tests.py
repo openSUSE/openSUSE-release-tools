@@ -6,6 +6,7 @@ class TestDevelProject(OBSLocal.TestCase):
     script_debug_osc = False
 
     def setUp(self):
+        super().setUp()
         self.wf = OBSLocal.StagingWorkflow()
         spa = self.wf.create_project('server:php:applications')
         OBSLocal.Package('drush', project=spa)
@@ -15,6 +16,7 @@ class TestDevelProject(OBSLocal.TestCase):
         self.wf.api.pseudometa_file_ensure('devel_projects', 'server:php:applications')
 
     def tearDown(self):
+        super().tearDown()
         self.osc_user('Admin')
         del self.wf
 

@@ -50,6 +50,7 @@ class TestCase(unittest.TestCase):
             # Avoid stale cookiejar since local OBS may be completely reset.
             os.remove(OSCCOOKIEJAR)
 
+        self.users = []
         self.osc_user('Admin')
         self.apiurl = conf.config['apiurl']
         self.assertOBS()
@@ -76,11 +77,16 @@ class TestCase(unittest.TestCase):
 
     def osc_user(self, userid):
         print(f'setting osc user to {userid}')
+        self.users.append(userid)
         self.oscrc(userid)
 
         # Rather than modify userid and email, just re-parse entire config and
         # reset authentication by clearing opener to avoid edge-cases.
         self.oscParse()
+
+    def osc_user_pop(self):
+        self.users.pop()
+        self.osc_user(self.users.pop())
 
     def oscParse(self):
         # Otherwise, will stick to first user for a given apiurl.
