@@ -20,6 +20,7 @@ from osclib.core import request_remote_identifier
 from osclib.core import review_find_last
 from osclib.core import reviews_remaining
 from osclib.memoize import memoize
+from osclib.memoize import memoize_session_reset
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior_pattern
 import re
@@ -683,3 +684,41 @@ def origin_updatable_map(apiurl, pending=None):
                 origins[origin].add(project)
 
     return origins
+
+class devel_project_simulate_exception(Exception):
+    pass
+
+class devel_project_simulate:
+    lock = None
+
+    def __init__(self, apiurl, target_project, target_package, devel_project, devel_package):
+        self.apiurl = apiurl
+        self.target_project = target_project
+        self.target_package = target_package
+        self.devel_project = devel_project
+        self.devel_package = devel_package
+
+    def get(self, apiurl, target_project, target_package):
+        if (apiurl == self.apiurl and
+            target_project == self.target_project and
+            target_package == self.target_package):
+            return self.devel_project, self.devel_package
+
+        return False, False
+
+    def __enter__(self):
+        if devel_project_simulate.lock:
+            raise devel_project_simulate_exception(
+                'Devel project simulation lock already aquired for {}:{}/{}'.format(
+                    self.apiurl, self.target_project, self.target_package))
+
+        devel_project_simulate.lock = self
+
+        # Ensure devel lookups are forgotten.
+        memoize_session_reset()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        devel_project_simulate.lock = None
+
+        # Ensure devel lookups are forgotten.
+        memoize_session_reset()
