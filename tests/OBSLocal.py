@@ -210,8 +210,24 @@ class StagingWorkflow(object):
     def setup_remote_config(self):
         self.create_target()
         self.create_attribute_type('OSRT', 'Config', 1)
-        attribute_value_save(APIURL, self.project, 'Config', 'overridden-by-local = remote-nope\n'
-                                                        'remote-only = remote-indeed\n')
+
+        config = {
+            'overridden-by-local': 'remote-nope',
+            'remote-only': 'remote-indeed',
+        }
+        self.remote_config_set(config, replace_all=True)
+
+    def remote_config_set(self, config, replace_all=False):
+        if not replace_all:
+            config_existing = Config.get(self.apiurl, self.project)
+            config_existing.update(config)
+            config = config_existing
+
+        config_lines = []
+        for key, value in config.items():
+            config_lines.append(f'{key} = {value}')
+
+        attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 
     def create_group(self, name, users=[]):
 
