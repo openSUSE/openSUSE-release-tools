@@ -302,8 +302,10 @@ class StagingWorkflow(object):
                                       project_links=project_links)
         return self.projects[name]
 
-    def submit_package(self, package=None):
-        request = Request(source_package=package, target_project=self.project)
+    def submit_package(self, package=None, project=None):
+        if not project:
+            project = self.project
+        request = Request(source_package=package, target_project=project)
         self.requests.append(request)
         return request
 
