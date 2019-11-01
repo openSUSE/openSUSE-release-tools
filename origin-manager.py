@@ -86,7 +86,7 @@ class OriginManager(ReviewBot.ReviewBot):
         if result.wait:
             # Allow overriding a policy wait by accepting as workaround with the
             # hope that pending request will be accepted.
-            override = self.request_override_check(self.request, True)
+            override = self.request_override_check(True)
             if override:
                 self.review_messages['accepted'] = origin_annotation_dump(
                     origin_info_new, origin_info_old, self.review_messages['accepted'], raw=True)
