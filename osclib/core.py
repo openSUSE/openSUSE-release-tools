@@ -1013,6 +1013,24 @@ def request_create_delete(apiurl, target_project, target_package, message=None):
 
     return RequestFuture('delete {}/{}'.format(target_project, target_package), create_function)
 
+def request_create_change_devel(apiurl, source_project, source_package,
+                                target_project, target_package=None, message=None):
+    if not target_package:
+        target_package = source_package
+
+    for request, action in request_action_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['change_devel']):
+        return False
+
+    message = message_suffix('created', message)
+
+    def create_function():
+        return create_change_devel_request(apiurl, source_project, source_package,
+                                           target_project, target_package, message)
+
+    return RequestFuture('change_devel {}/{} -> {}/{}'.format(
+        source_project, source_package, target_project, target_package), create_function)
+
 # Should exist within osc.core like create_submit_request(), but rather it was
 # duplicated in osc.commandline.
 def create_delete_request(apiurl, target_project, target_package=None, message=None):
@@ -1037,6 +1055,41 @@ def create_delete_request(apiurl, target_project, target_package=None, message=N
     target.set('project', target_project)
     if target_package:
         target.set('package', target_package)
+    action.append(target)
+
+    url = makeurl(apiurl, ['request'], {'cmd': 'create'})
+    root = ETL.parse(http_POST(url, data=ETL.tostring(request))).getroot()
+    return root.get('id')
+
+# Should exist within osc.core like create_submit_request(), but rather it was
+# duplicated in osc.commandline.
+def create_change_devel_request(apiurl, source_project, source_package,
+                                target_project, target_package=None, message=None):
+    if not message:
+        message = message_suffix('created')
+
+    request = ETL.Element('request')
+
+    state = ETL.Element('state')
+    state.set('name', 'new')
+    request.append(state)
+
+    description = ETL.Element('description')
+    description.text = message
+    request.append(description)
+
+    action = ETL.Element('action')
+    action.set('type', 'change_devel')
+    request.append(action)
+
+    source = ETL.Element('source')
+    source.set('project', source_project)
+    source.set('package', source_package)
+    action.append(source)
+
+    target = ETL.Element('target')
+    target.set('project', target_project)
+    target.set('package', target_package)
     action.append(target)
 
     url = makeurl(apiurl, ['request'], {'cmd': 'create'})
