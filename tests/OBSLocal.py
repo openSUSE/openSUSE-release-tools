@@ -124,14 +124,14 @@ class TestCase(unittest.TestCase):
         try:
             env = os.environ
             env['OSC_CONFIG'] = OSCRC
-            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT, env=env)
+            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT, text=True, env=env)
         except subprocess.CalledProcessError as e:
             print(e.output)
             raise e
         print(self.output) # For debugging assertion failures.
 
     def assertOutput(self, text):
-        self.assertTrue(bytes(text, 'utf-8') in self.output, '[MISSING] ' + text)
+        self.assertTrue(text in self.output, '[MISSING] ' + text)
 
     def assertReview(self, rid, **kwargs):
         request = get_request(self.apiurl, rid)
