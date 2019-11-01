@@ -337,8 +337,9 @@ def origin_annotation_load(request, action, user):
         comment_stripped = re.sub(r'^  ', '', review.comment, flags=re.MULTILINE)
         annotation = yaml.safe_load(comment_stripped)
 
-    if not annotation or type(annotation) is not dict:
-        # Only returned structured data (ie. dict), otherwise None.
+    if not annotation or type(annotation) is not dict or 'origin' not in annotation:
+        # Only returned structured data (ie. dict) with a minimum of the origin
+        # key available, otherwise None.
         return None
 
     if len(request.actions) > 1:
