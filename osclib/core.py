@@ -84,6 +84,16 @@ def maintainers_get(apiurl, project, package=None):
     return maintainers
 
 @memoize(session=True)
+def package_role_expand(apiurl, project, package, role='maintainer', inherit=True):
+    meta = ETL.fromstringlist(show_package_meta(apiurl, project, package))
+    users = meta_role_expand(apiurl, meta, role)
+
+    if inherit:
+        users.extend(project_role_expand(apiurl, project, role))
+
+    return users
+
+@memoize(session=True)
 def project_role_expand(apiurl, project, role='maintainer'):
     meta = ETL.fromstringlist(show_project_meta(apiurl, project))
     return meta_role_expand(apiurl, meta, role)
