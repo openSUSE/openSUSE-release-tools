@@ -23,6 +23,7 @@ from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
 from osclib.core import attribute_value_save
+from osclib.core import request_state_change
 from osclib.memoize import memoize_session_reset
 
 try:
@@ -440,10 +441,8 @@ class Request(object):
     def revoke(self):
         if self.revoked: return
         self.revoked = True
-        url = osc.core.makeurl(APIURL, ['request', self.reqid], { 'newstate': 'revoked',
-                                                                  'cmd': 'changestate' })
         try:
-            osc.core.http_POST(url)
+            request_state_change(APIURL, self.reqid, state)
         except HTTPError:
             # may fail if already accepted/declined in tests
             pass

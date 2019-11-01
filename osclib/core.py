@@ -1130,3 +1130,8 @@ def message_suffix(action, message=None):
 
     message += ' (host {})'.format(socket.gethostname())
     return message
+
+def request_state_change(apiurl, request_id, state):
+    query = { 'newstate': state, 'cmd': 'changestate' }
+    url = makeurl(apiurl, ['request', request_id], query)
+    return ETL.parse(http_POST(url)).getroot().get('code')
