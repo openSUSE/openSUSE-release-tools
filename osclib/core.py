@@ -212,13 +212,15 @@ def devel_projects(apiurl, project):
 
     return sorted(devel_projects)
 
-def request_age(request):
+def request_created(request):
     if isinstance(request, Request):
         created = request.statehistory[0].when
     else:
         created = request.find('history').get('when')
-    created = date_parse(created)
-    return datetime.utcnow() - created
+    return date_parse(created)
+
+def request_age(request):
+    return datetime.utcnow() - request_created(request)
 
 def project_list_prefix(apiurl, prefix):
     """Get a list of project with the same prefix."""
