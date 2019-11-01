@@ -72,7 +72,7 @@ def config_origin_generator(origins, apiurl=None, project=None, package=None, sk
                 break
 
             if (origin == '<devel>' or origin == '<devel>~') and apiurl and project and package:
-                devel_project, devel_package = devel_project_get(apiurl, project, package)
+                devel_project, devel_package = origin_devel_project(apiurl, project, package)
                 if not devel_project:
                     break
                 origin = devel_project
@@ -723,6 +723,18 @@ class devel_project_simulate:
 
         # Ensure devel lookups are forgotten.
         memoize_session_reset()
+
+@memoize(session=True)
+def origin_devel_project(apiurl, project, package):
+    if devel_project_simulate.lock:
+        devel_project, devel_package = devel_project_simulate.lock.get(apiurl, project, package)
+        if devel_project:
+            return devel_project, devel_package
+
+    for devel_project, devel_package in origin_devel_project_requests(apiurl, project, package):
+        return devel_project, devel_package
+
+    return devel_project_get(apiurl, project, package)
 
 def origin_devel_project_requests(apiurl, project, package=None):
     config = config_load(apiurl, project)
