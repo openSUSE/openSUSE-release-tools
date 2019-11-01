@@ -158,6 +158,13 @@ class TestCase(unittest.TestCase):
         if comment:
             self.assertEqual(review.comment, comment)
 
+    def randomString(self, prefix='', length=None):
+        if prefix and not prefix.endswith('_'):
+            prefix += '_'
+        if not length:
+            length = random.randint(10, 30)
+        return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
+
 
 class StagingWorkflow(object):
     def __init__(self, project=PROJECT):
