@@ -378,8 +378,9 @@ class Project(object):
         url = osc.core.makeurl(APIURL, ['source', self.name], {'force': 1})
         try:
             osc.core.http_DELETE(url)
-        except HTTPError:
-            pass
+        except HTTPError as e:
+            if e.code != 404:
+                raise e
         self.name = None
 
     def __del__(self):
@@ -421,9 +422,9 @@ class Package(object):
         url = osc.core.makeurl(APIURL, ['source', self.project.name, self.name])
         try:
             osc.core.http_DELETE(url)
-        except HTTPError:
-            # only cleanup
-            pass
+        except HTTPError as e:
+            if e.code != 404:
+                raise e
         self.project = None
 
     def create_commit(self, text=None, filename='README'):
@@ -451,9 +452,10 @@ class Request(object):
         self.revoked = True
         try:
             request_state_change(APIURL, self.reqid, state)
-        except HTTPError:
-            # may fail if already accepted/declined in tests
-            pass
+        except HTTPError as e:
+            # may fail if already accepted/declined in tests or project deleted
+            if e.code != 403 and e.code != 404:
+                raise e
 
     def _translate_review(self, review):
         ret = {'state': review.get('state')}
