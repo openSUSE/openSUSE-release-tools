@@ -143,9 +143,20 @@ class TestCase(unittest.TestCase):
             for key, value in kwargs.items():
                 if hasattr(review, key) and getattr(review, key) == value[0]:
                     self.assertEqual(review.state, value[1], '{}={} not {}'.format(key, value[0], value[1]))
-                    return
+                    return review
 
         self.fail('{} not found'.format(kwargs))
+
+    def assertReviewBot(self, request_id, user, before, after, comment=None):
+        self.assertReview(request_id, by_user=(user, before))
+
+        self.osc_user(user)
+        self.execute_script(['id', request_id])
+        self.osc_user_pop()
+
+        review = self.assertReview(request_id, by_user=(user, after))
+        if comment:
+            self.assertEqual(review.comment, comment)
 
 
 class StagingWorkflow(object):
