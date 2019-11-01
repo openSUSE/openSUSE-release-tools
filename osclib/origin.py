@@ -560,11 +560,16 @@ def origin_revision_state(apiurl, target_project, package, origin_info=False, li
     # To simplify usage which is left-right (oldest-newest) place oldest first.
     return list(reversed(revisions))
 
-def origin_potential(apiurl, target_project, package):
+def origin_potential(apiurl, target_project, package, require_update_initial=False):
     config = config_load(apiurl, target_project)
     for origin, _ in config_origin_generator(config['origins'], apiurl, target_project, package, True):
         version = package_version(apiurl, origin, package)
         if version is not False:
+            if require_update_initial:
+                policy = policy_get(apiurl, target_project, package, origin)
+                if not policy['automatic_updates_initial']:
+                    continue
+
             # Package exists in origin, but may still have unknown version.
             return origin, version
 
@@ -606,6 +611,7 @@ def origin_update(apiurl, target_project, package):
     origin_info = origin_find(apiurl, target_project, package)
     if not origin_info:
         # Cases for a lack of origin:
+        # - package does not exist in target_project
         # - initial package submission from devel (lacking devel meta on package)
         # - initial package submission overriden to allow from no origin
         # - origin project/package deleted
@@ -630,13 +636,25 @@ def origin_update(apiurl, target_project, package):
                 message = f'Set devel project based on initial submission in request#{request.reqid}.'
                 return request_create_change_devel(apiurl, origin, package, target_project, message=message)
 
-        # One of the second two cases.
-        origin, version = origin_potential(apiurl, target_project, package)
+        # Either the first or one of the second two cases.
+        exists = entity_exists(apiurl, target_project, package)
+        origin, version = origin_potential(apiurl, target_project, package, not exists)
         if origin is None:
+            if not exists:
+                # Package does not exist to be deleted.
+                return False
+
             # Package is not found in any origin so request deletion.
             message = 'Package not available from any potential origin.'
             return request_create_delete(apiurl, target_project, package, message)
 
+        if not exists:
+            message = 'Submitting new package from highest potential origin.'
+            return request_create_submit(apiurl, origin, package, target_project, message=message,
+                                         ignore_if_any_request=True)
+
+        # No longer tracking previous origin (likely removed from origin) so
+        # submit from the highest potential origin.
         message = 'Submitting package from highest potential origin.'
         return request_create_submit(apiurl, origin, package, target_project, message=message)
 
