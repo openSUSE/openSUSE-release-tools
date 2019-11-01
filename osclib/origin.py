@@ -464,9 +464,6 @@ def policy_input_evaluate(policy, inputs):
         if not inputs['from_highest_priority']:
             result.reviews['fallback'] = 'Not from the highest priority origin which provides the package.'
     else:
-        if inputs['direction'] == 'none':
-            return PolicyResult(False, False, {}, ['Identical source.'])
-
         if inputs['origin_change']:
             if inputs['higher_priority']:
                 if not inputs['same_family'] and inputs['direction'] != 'forward':
@@ -480,6 +477,9 @@ def policy_input_evaluate(policy, inputs):
             else:
                 result.reviews['fallback'] = 'Changing to a lower priority origin.'
         else:
+            if inputs['direction'] == 'none':
+                return PolicyResult(False, False, {}, ['Identical source.'])
+
             if inputs['direction'] == 'forward':
                 if not policy['automatic_updates']:
                     result.reviews['fallback'] = 'Forward direction, but automatic updates not allowed.'
