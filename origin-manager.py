@@ -8,6 +8,8 @@ from osclib.origin import origin_devel_projects
 from osclib.origin import origin_workaround_strip
 from osclib.origin import config_load
 from osclib.origin import config_origin_list
+from osclib.origin import devel_project_simulate
+from osclib.origin import devel_project_simulate_exception
 from osclib.origin import origin_find
 from osclib.origin import policy_evaluate
 import ReviewBot
@@ -57,6 +59,22 @@ class OriginManager(ReviewBot.ReviewBot):
 
         source_hash_old = package_source_hash(self.apiurl, tgt_project, tgt_package)
         origin_info_old = origin_find(self.apiurl, tgt_project, tgt_package, source_hash_old, True)
+
+        # Check if simulating the devel project is appropriate.
+        devel_project, reason = self.devel_project_simulate_check(src_project, tgt_project)
+        if devel_project and (reason.startswith('change_devel command') or origin_info_new is None):
+            self.logger.debug(f'reevaluate considering {devel_project} as devel since {reason}')
+
+            try:
+                with devel_project_simulate(self.apiurl, tgt_project, tgt_package, src_project, src_package):
+                    # Recurse with simulated devel project.
+                    ret = self.check_source_submission(
+                        src_project, src_package, src_rev, tgt_project, tgt_package)
+                    self.review_messages['accepted']['comment'] = reason
+                    return ret
+            except devel_project_simulate_exception:
+                # Invalid infinite recursion so fallback to normal behavior.
+                pass
 
         result = policy_evaluate(self.apiurl, tgt_project, tgt_package,
                                  origin_info_new, origin_info_old,
