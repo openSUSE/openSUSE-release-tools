@@ -13,6 +13,7 @@ from osclib.core import package_version
 from osclib.core import project_attributes_list
 from osclib.core import project_remote_apiurl
 from osclib.core import request_action_key
+from osclib.core import request_action_list
 from osclib.core import request_action_list_source
 from osclib.core import request_create_delete
 from osclib.core import request_create_submit
@@ -722,3 +723,26 @@ class devel_project_simulate:
 
         # Ensure devel lookups are forgotten.
         memoize_session_reset()
+
+def origin_devel_project_requests(apiurl, project, package=None):
+    config = config_load(apiurl, project)
+    for request, action in request_action_list(apiurl, project, package, types=['change_devel', 'submit']):
+        if action.type == 'submit' and entity_exists(apiurl, action.tgt_project, action.tgt_package):
+            # Only consider initial submit.
+            continue
+
+        annotation = origin_annotation_load(request, action, config['review-user'])
+        if not annotation:
+            # No annotation means not reviewed.
+            continue
+
+        origin = annotation.get('origin')
+        if origin and origin in config_origin_list(config, apiurl, project):
+            # Not a devel origin so not relevant.
+            continue
+
+        if config['fallback-group'] in reviews_remaining(request):
+            # Still pending approval.
+            continue
+
+        yield action.src_project, action.src_package
