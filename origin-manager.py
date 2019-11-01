@@ -2,7 +2,9 @@
 
 from osclib.core import package_source_hash
 from osclib.core import package_kind
+from osclib.core import package_role_expand
 from osclib.origin import origin_annotation_dump
+from osclib.origin import origin_workaround_strip
 from osclib.origin import config_load
 from osclib.origin import origin_find
 from osclib.origin import policy_evaluate
@@ -102,13 +104,22 @@ class OriginManager(ReviewBot.ReviewBot):
     def policy_result_reviews_add(self, project, package, reviews, origin_info_new, origin_info_old):
         for key, comment in reviews.items():
             if key == 'maintainer':
-                self.devel_project_review_ensure(self.request, project, package, comment)
+                self.origin_maintainer_review_ensure(origin_info_new, package, message=comment)
             elif key == 'fallback':
                 fallback_group = config_load(self.apiurl, project).get('fallback-group')
                 comment += '\n\n' + origin_annotation_dump(origin_info_new, origin_info_old)
                 self.add_review(self.request, by_group=fallback_group, msg=comment)
             else:
                 self.add_review(self.request, by_group=key, msg=comment)
+
+    def origin_maintainer_review_ensure(self, origin_info, package, message, request=None):
+        if not request:
+            request = self.request
+
+        origin = origin_workaround_strip(origin_info.project)
+        users = package_role_expand(self.apiurl, origin, package, 'maintainer')
+        if request.creator not in users:
+            self.add_review(request, by_project=origin, by_package=package, msg=message)
 
     def policy_result_comment_add(self, project, package, comments):
         message = '\n\n'.join(comments)
