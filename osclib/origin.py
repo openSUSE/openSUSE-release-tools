@@ -740,6 +740,16 @@ def origin_updatable_map(apiurl, pending=None, include_self=False):
 
     return origins
 
+def origin_updatable_initial(apiurl, target_project):
+    origins = []
+
+    config = config_load(apiurl, target_project)
+    for origin, values in config_origin_generator(config['origins'], skip_workarounds=True):
+        if origin != '<devel>' and values['automatic_updates_initial']:
+            origins.append(origin)
+
+    return origins
+
 class devel_project_simulate_exception(Exception):
     pass
 
