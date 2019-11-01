@@ -421,14 +421,18 @@ def policy_input_calculate(apiurl, project, package,
             config = config_load(apiurl, project)
             origins = config_origin_list(config, apiurl, project, package)
 
-            inputs['higher_priority'] = \
-                origins.index(origin_info_new.project) < origins.index(origin_info_old.project)
-            if workaround_new:
-                inputs['same_family'] = True
+            if origin_info_old.project in origins:
+                inputs['higher_priority'] = \
+                    origins.index(origin_info_new.project) < origins.index(origin_info_old.project)
+                if workaround_new:
+                    inputs['same_family'] = True
+                else:
+                    inputs['same_family'] = \
+                        origin_info_new.project in project_list_family(
+                            apiurl, origin_info_old.project.rstrip('~'), True)
             else:
-                inputs['same_family'] = \
-                    origin_info_new.project in project_list_family(
-                        apiurl, origin_info_old.project.rstrip('~'), True)
+                inputs['higher_priority'] = None
+                inputs['same_family'] = False
         else:
             inputs['higher_priority'] = None
             inputs['same_family'] = True
