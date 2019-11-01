@@ -66,6 +66,7 @@ class TestCase(unittest.TestCase):
                 '[general]',
                 'apiurl = http://api:3000',
                 'cookiejar = {}'.format(OSCCOOKIEJAR),
+                'osrt.cache.disable = true',
                 '[http://api:3000]',
                 'user = {}'.format(userid),
                 'pass = opensuse',
