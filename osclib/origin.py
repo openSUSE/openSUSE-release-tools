@@ -677,7 +677,7 @@ def origin_updatable_map(apiurl, pending=None):
                 continue
 
             if origin == '<devel>':
-                for devel in devel_projects(apiurl, project):
+                for devel in origin_devel_projects(apiurl, project):
                     origins.setdefault(devel, set())
                     origins[devel].add(project)
             else:
@@ -735,6 +735,18 @@ def origin_devel_project(apiurl, project, package):
         return devel_project, devel_package
 
     return devel_project_get(apiurl, project, package)
+
+@memoize(session=True)
+def origin_devel_projects(apiurl, project):
+    projects = set(devel_projects(apiurl, project))
+
+    for devel_project, _ in origin_devel_project_requests(apiurl, project):
+        projects.add(devel_project)
+
+    devel_whitelist = Config.get(apiurl, project).get('devel-whitelist', '').split()
+    projects.update(devel_whitelist)
+
+    return sorted(projects)
 
 def origin_devel_project_requests(apiurl, project, package=None):
     config = config_load(apiurl, project)
