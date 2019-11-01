@@ -453,7 +453,12 @@ class Request(object):
 
     def revoke(self):
         if self.revoked: return
+        self.change_state('revoked')
         self.revoked = True
+
+    def change_state(self, state):
+        print(f'changing request state of {self.reqid} to {state}')
+
         try:
             request_state_change(APIURL, self.reqid, state)
         except HTTPError as e:
