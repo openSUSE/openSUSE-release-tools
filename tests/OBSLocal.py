@@ -75,6 +75,7 @@ class TestCase(unittest.TestCase):
             ]))
 
     def osc_user(self, userid):
+        print(f'setting osc user to {userid}')
         self.oscrc(userid)
 
         # Rather than modify userid and email, just re-parse entire config and
