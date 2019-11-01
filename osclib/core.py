@@ -83,6 +83,11 @@ def maintainers_get(apiurl, project, package=None):
 
     return maintainers
 
+@memoize(session=True)
+def project_role_expand(apiurl, project, role='maintainer'):
+    meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+    return meta_role_expand(apiurl, meta, role)
+
 def meta_role_expand(apiurl, meta, role='maintainer'):
     users = meta.xpath('//person[@role="{}"]/@userid'.format(role))
 
