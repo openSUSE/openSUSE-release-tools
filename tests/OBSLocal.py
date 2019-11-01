@@ -90,6 +90,7 @@ class TestCase(unittest.TestCase):
         conf.get_config(override_conffile=OSCRC,
                         override_no_keyring=True,
                         override_no_gnome_keyring=True)
+        os.environ['OSC_CONFIG'] = OSCRC
 
     def execute_script(self, args):
         if self.script:
@@ -159,6 +160,8 @@ class StagingWorkflow(object):
         osc.core.conf.get_config(override_conffile=oscrc,
                                  override_no_keyring=True,
                                  override_no_gnome_keyring=True)
+        os.environ['OSC_CONFIG'] = oscrc
+
         if os.environ.get('OSC_DEBUG'):
             osc.core.conf.config['debug'] = 1
 

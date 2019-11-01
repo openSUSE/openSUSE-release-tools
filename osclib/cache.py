@@ -24,6 +24,7 @@ from io import BytesIO
 from osc import conf
 from osc.core import urlopen
 from osclib.cache_manager import CacheManager
+from osclib.conf import str2bool
 from osclib.util import rmtree_nfs_safe
 from time import time
 
@@ -126,6 +127,12 @@ class Cache(object):
         Cache.CACHE_DIR = CacheManager.directory('request', directory)
 
         Cache.patterns = []
+
+        conf.get_config()
+        if str2bool(conf.config.get('osrt.cache.disable', '')):
+            if conf.config['debug']: print('CACHE_DISABLE via osrt.cache.disable', file=sys.stderr)
+            return
+
         for pattern in Cache.PATTERNS:
             Cache.patterns.append(re.compile(pattern))
 
