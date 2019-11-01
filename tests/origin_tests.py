@@ -251,3 +251,74 @@ class TestOrigin(OBSLocal.TestCase):
         memoize_session_reset()
         origin_info = origin_find(self.wf.apiurl, self.wf.project, package)
         self.assertEqual(str(origin_info), devel_project_new)
+
+    def test_split_product(self):
+        self.remote_config_set_age_minimum()
+
+        upstream1_project = self.randomString('upstream1')
+        upstream2_project = self.randomString('upstream2')
+        devel_project = self.randomString('devel')
+        package = self.randomString('package')
+
+        target_package = self.wf.create_package(self.target_project, package)
+        upstream1_package = self.wf.create_package(upstream1_project, package)
+        upstream2_package = self.wf.create_package(upstream2_project, package)
+        devel_package = self.wf.create_package(devel_project, package)
+
+        upstream1_package.create_commit()
+        upstream2_package.create_commit()
+        devel_package.create_commit()
+
+        attribute_value_save(self.wf.apiurl, upstream1_project, 'ApprovedRequestSource', '', 'OBS')
+        attribute_value_save(self.wf.apiurl, upstream2_project, 'ApprovedRequestSource', '', 'OBS')
+        attribute_value_save(self.wf.apiurl, devel_project, 'ApprovedRequestSource', '', 'OBS')
+
+        self.origin_config_write([
+            {'<devel>': {}},
+            {upstream1_project: {}},
+            {upstream2_project: { 'pending_submission_consider': True }},
+            {'*~': {}},
+        ], {'unknown_origin_wait': True})
+
+        # Simulate branch project from upstream1.
+        copy_package(self.wf.apiurl, upstream1_project, package,
+                     self.wf.apiurl, self.target_project, package)
+
+        memoize_session_reset()
+        origin_info = origin_find(self.wf.apiurl, self.target_project, package)
+        self.assertEqual(str(origin_info), upstream1_project)
+
+        # Create request against upstream2 which considers pending submissions.
+        request_upstream2 = self.wf.submit_package(devel_package, upstream2_project)
+        request_target = self.wf.submit_package(devel_package, self.target_project)
+
+        self.assertReviewBot(request_target.reqid, self.bot_user, 'new', 'new')
+        comment = [
+            '<!-- OriginManager state=seen result=None -->',
+            f'Waiting on acceptance of request#{request_upstream2.reqid}.',
+        ]
+        self.assertComment(request_target.reqid, comment)
+
+        request_upstream2.change_state('accepted')
+
+        self.assertReviewBot(request_target.reqid, self.bot_user, 'new', 'accepted')
+        self.assertAnnotation(request_target.reqid, {
+            'origin': upstream2_project,
+            'origin_old': upstream1_project,
+        })
+
+        # Accept fallback review for changing to lower priority origin.
+        self.accept_fallback_review(request_target.reqid)
+        request_target.change_state('accepted')
+
+        memoize_session_reset()
+        origin_info = origin_find(self.wf.apiurl, self.target_project, package)
+        self.assertEqual(str(origin_info), upstream2_project)
+
+        # Simulate upstream1 incorporating upstream2 version of package.
+        copy_package(self.wf.apiurl, upstream2_project, package,
+                     self.wf.apiurl, upstream1_project, package)
+
+        memoize_session_reset()
+        origin_info = origin_find(self.wf.apiurl, self.target_project, package)
+        self.assertEqual(str(origin_info), upstream1_project)
