@@ -699,7 +699,7 @@ def origin_updatable(apiurl):
     return projects
 
 @memoize(session=True)
-def origin_updatable_map(apiurl, pending=None):
+def origin_updatable_map(apiurl, pending=None, include_self=False):
     origins = {}
     for project in origin_updatable(apiurl):
         config = config_load(apiurl, project)
@@ -714,6 +714,10 @@ def origin_updatable_map(apiurl, pending=None):
             else:
                 origins.setdefault(origin, set())
                 origins[origin].add(project)
+
+        if include_self:
+            origins.setdefault(project, set())
+            origins[project].add(project)
 
     return origins
 
