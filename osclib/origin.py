@@ -39,6 +39,7 @@ DEFAULTS = {
 POLICY_DEFAULTS = {
     'additional_reviews': [],
     'automatic_updates': True,
+    'automatic_updates_initial': False,
     'maintainer_review_always': False,
     'maintainer_review_initial': True,
     'pending_submission_allow': False,
