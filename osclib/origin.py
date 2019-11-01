@@ -200,6 +200,11 @@ def origin_workaround_ensure(origin):
         return origin + '~'
     return origin
 
+def origin_workaround_strip(origin):
+    if origin_workaround_check(origin):
+        return origin[:-1]
+    return origin
+
 @memoize(session=True)
 def origin_find(apiurl, target_project, package, source_hash=None, current=False,
                 pending_allow=True, fallback=True):
