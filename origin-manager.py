@@ -81,6 +81,17 @@ class OriginManager(ReviewBot.ReviewBot):
 
         return True, True
 
+    def devel_project_simulate_check_command(self, source_project, target_project):
+        who_allowed = self.request_override_check_users(target_project)
+        if self.request.creator not in who_allowed:
+            who_allowed.append(self.request.creator)
+
+        for args, who in self.request_commands('change_devel', who_allowed):
+            override = args[1] if len(args) >= 2 else source_project
+            return override, who
+
+        return False, None
+
     def policy_result_handle(self, project, package, origin_info_new, origin_info_old, result):
         self.policy_result_reviews_add(project, package, result.reviews, origin_info_new, origin_info_old)
         self.policy_result_comment_add(project, package, result.comments)
