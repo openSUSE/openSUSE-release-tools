@@ -972,7 +972,12 @@ def request_action_list_source(apiurl, project, package, states=['new', 'review'
     yield from request_action_list(apiurl, project, package, states, types)
 
 def request_create_submit(apiurl, source_project, source_package,
-                          target_project, target_package=None, message=None, revision=None):
+                          target_project, target_package=None, message=None, revision=None,
+                          ignore_if_any_request=False):
+    """
+    ignore_if_any_request: ignore source changes and do not submit if any prior requests
+    """
+
     if not target_package:
         target_package = source_package
 
@@ -984,6 +989,9 @@ def request_create_submit(apiurl, source_project, source_package,
 
     for request, action in request_action_list(
         apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['submit']):
+        if ignore_if_any_request:
+            return False
+
         source_hash_pending = package_source_hash(
             apiurl, action.src_project, action.src_package, action.src_rev)
         if source_hash_pending == source_hash_consider:
