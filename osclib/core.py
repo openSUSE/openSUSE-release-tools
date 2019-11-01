@@ -83,6 +83,14 @@ def maintainers_get(apiurl, project, package=None):
 
     return maintainers
 
+def meta_role_expand(apiurl, meta, role='maintainer'):
+    users = meta.xpath('//person[@role="{}"]/@userid'.format(role))
+
+    groups = meta.xpath('//group[@role="{}"]/@groupid'.format(role))
+    users.extend(groups_members(apiurl, groups))
+
+    return users
+
 def package_list(apiurl, project):
     url = makeurl(apiurl, ['source', project], { 'expand': 1 })
     root = ET.parse(http_GET(url)).getroot()
