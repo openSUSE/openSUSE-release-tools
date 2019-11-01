@@ -55,6 +55,10 @@ class TestCase(unittest.TestCase):
         self.apiurl = conf.config['apiurl']
         self.assertOBS()
 
+    def tearDown(self):
+        # Ensure admin user so that tearDown cleanup succeeds.
+        self.osc_user('Admin')
+
     def assertOBS(self):
         url = makeurl(self.apiurl, ['about'])
         root = ET.parse(http_GET(url)).getroot()
