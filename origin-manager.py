@@ -4,8 +4,10 @@ from osclib.core import package_source_hash
 from osclib.core import package_kind
 from osclib.core import package_role_expand
 from osclib.origin import origin_annotation_dump
+from osclib.origin import origin_devel_projects
 from osclib.origin import origin_workaround_strip
 from osclib.origin import config_load
+from osclib.origin import config_origin_list
 from osclib.origin import origin_find
 from osclib.origin import policy_evaluate
 import ReviewBot
@@ -80,6 +82,25 @@ class OriginManager(ReviewBot.ReviewBot):
                     config['review-user'], self.review_user))
 
         return True, True
+
+    def devel_project_simulate_check(self, source_project, target_project):
+        config = config_load(self.apiurl, target_project)
+        origin_list = config_origin_list(config, self.apiurl, target_project, skip_workarounds=True)
+
+        if '<devel>' not in origin_list:
+            return False, None
+
+        if len(origin_list) == 1:
+            return source_project, 'only devel origin allowed'
+
+        if source_project in origin_devel_projects(self.apiurl, target_project):
+            return source_project, 'familiar devel origin'
+
+        override, who = self.devel_project_simulate_check_command(source_project, target_project)
+        if override:
+            return override, 'change_devel command by {}'.format(who)
+
+        return False, None
 
     def devel_project_simulate_check_command(self, source_project, target_project):
         who_allowed = self.request_override_check_users(target_project)
