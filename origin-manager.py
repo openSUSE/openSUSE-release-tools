@@ -12,6 +12,7 @@ from osclib.origin import devel_project_simulate
 from osclib.origin import devel_project_simulate_exception
 from osclib.origin import origin_find
 from osclib.origin import policy_evaluate
+from osclib.origin import PolicyResult
 import ReviewBot
 import sys
 
@@ -26,6 +27,33 @@ class OriginManager(ReviewBot.ReviewBot):
         self.request_age_min_default = 30 * 60
         self.request_default_return = True
         self.override_allow = False
+
+    def check_action_change_devel(self, request, action):
+        advance, result = self.config_validate(action.tgt_project)
+        if not advance:
+            return result
+
+        source_hash = package_source_hash(self.apiurl, action.tgt_project, action.tgt_package)
+        origin_info_old = origin_find(self.apiurl, action.tgt_project, action.tgt_package, source_hash, True)
+
+        with devel_project_simulate(self.apiurl, action.tgt_project, action.tgt_package,
+                                    action.src_project, action.src_package):
+            origin_info_new = origin_find(self.apiurl, action.tgt_project, action.tgt_package, source_hash)
+            result = policy_evaluate(self.apiurl, action.tgt_project, action.tgt_package,
+                                     origin_info_new, origin_info_old,
+                                     source_hash, source_hash)
+
+        reviews = {}
+
+        # Remove all additional_reviews as there are no source changes.
+        for key, comment in result.reviews.items():
+            if key in ('fallback', 'maintainer'):
+                reviews[key] = comment
+
+        if len(reviews) != len(result.reviews):
+            result = PolicyResult(result.wait, result.accept, reviews, result.comments)
+
+        return self.policy_result_handle(action.tgt_project, action.tgt_package, origin_info_new, origin_info_old, result)
 
     def check_action_delete_package(self, request, action):
         advance, result = self.config_validate(action.tgt_project)
