@@ -119,3 +119,135 @@ class TestOrigin(OBSLocal.TestCase):
         self.origin_config_write([{'fakeProject': {}}], {'unknown_origin_wait': False})
         self.assertReviewBot(request.reqid, self.bot_user, 'new', 'declined', 'review failed')
         self.assertComment(request.reqid, comment)
+
+    def test_devel_only(self):
+        self.origin_config_write([{'<devel>': {}}])
+        self.devel_workflow(True)
+
+    def test_devel_possible(self):
+        self.product_project = self.randomString('product')
+        self.origin_config_write([
+            {'<devel>': {}},
+            {self.product_project: {}},
+        ], {'unknown_origin_wait': True})
+        self.devel_workflow(False)
+
+    def devel_workflow(self, only_devel):
+        self.remote_config_set_age_minimum()
+
+        devel_project = self.randomString('devel')
+        package = self.randomString('package')
+        request = self.wf.create_submit_request(devel_project, package)
+        attribute_value_save(self.wf.apiurl, devel_project, 'ApprovedRequestSource', '', 'OBS')
+
+        if not only_devel:
+            self.assertReviewBot(request.reqid, self.bot_user, 'new', 'new')
+
+            comment = [
+                '<!-- OriginManager state=seen result=None -->',
+                'Source not found in allowed origins:',
+                f'- {self.product_project}',
+            ]
+            self.assertComment(request.reqid, comment)
+
+            CommentAPI(self.wf.api.apiurl).add_comment(
+                request_id=request.reqid, comment=f'@{self.bot_user} change_devel')
+
+            comment = 'change_devel command by {}'.format('Admin')
+        else:
+            comment = 'only devel origin allowed'
+
+        self.assertReviewBot(request.reqid, self.bot_user, 'new', 'accepted')
+        self.assertAnnotation(request.reqid, {
+            'comment': comment,
+            'origin': devel_project,
+        })
+
+        request.change_state('accepted')
+
+        memoize_session_reset()
+        self.osc_user(self.bot_user)
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package)
+        self.assertNotEqual(request_future, False)
+        if request_future:
+            request_id_change_devel = request_future.print_and_create()
+
+        # Ensure a second request is not triggered.
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package)
+        self.assertEqual(request_future, False)
+        self.osc_user_pop()
+
+        memoize_session_reset()
+        origin_info = origin_find(self.wf.apiurl, self.wf.project, package)
+        self.assertEqual(origin_info, None)
+
+        self.assertReviewBot(request_id_change_devel, self.bot_user, 'new', 'accepted')
+        self.assertAnnotation(request_id_change_devel, {
+            'origin': devel_project,
+        })
+
+        # Origin should change before request is accepted since it is properly
+        # annotated and without fallback review.
+        memoize_session_reset()
+        origin_info = origin_find(self.wf.apiurl, self.wf.project, package)
+        self.assertEqual(str(origin_info), devel_project)
+
+        self.wf.projects[devel_project].packages[0].create_commit()
+
+        self.osc_user(self.bot_user)
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package)
+        self.assertNotEqual(request_future, False)
+        if request_future:
+            request_id_update = request_future.print_and_create()
+
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package)
+        self.assertEqual(request_future, False)
+        self.osc_user_pop()
+
+        self.assertReviewBot(request_id_update, self.bot_user, 'new', 'accepted')
+        self.assertAnnotation(request_id_update, {
+            'origin': devel_project,
+        })
+
+        memoize_session_reset()
+        devel_project_actual, _ = devel_project_get(self.wf.apiurl, self.wf.project, package)
+        self.assertEqual(devel_project_actual, None)
+
+        request = get_request(self.wf.apiurl, request_id_change_devel)
+        request_state_change(self.wf.apiurl, request_id_change_devel, 'accepted')
+
+        memoize_session_reset()
+        devel_project_actual, devel_package_actual = devel_project_get(
+            self.wf.apiurl, self.wf.project, package)
+        self.assertEqual(devel_project_actual, devel_project)
+        self.assertEqual(devel_package_actual, package)
+
+        request = get_request(self.wf.apiurl, request_id_update)
+        request_state_change(self.wf.apiurl, request_id_update, 'accepted')
+
+
+        devel_project_new = self.randomString('develnew')
+        self.wf.create_package(devel_project_new, package)
+        attribute_value_save(self.wf.apiurl, devel_project_new, 'ApprovedRequestSource', '', 'OBS')
+
+        copy_package(self.wf.apiurl, devel_project, package,
+                     self.wf.apiurl, devel_project_new, package)
+
+        request_future = request_create_change_devel(
+            self.wf.apiurl, devel_project_new, package, self.wf.project)
+        self.assertNotEqual(request_future, False)
+        if request_future:
+            request_id_change_devel_new = request_future.print_and_create()
+
+        self.assertReviewBot(request_id_change_devel_new, self.bot_user, 'new', 'accepted')
+        self.assertAnnotation(request_id_change_devel_new, {
+            'origin': devel_project_new,
+            'origin_old': devel_project,
+        })
+
+        self.accept_fallback_review(request_id_change_devel_new)
+        request_state_change(self.wf.apiurl, request_id_change_devel_new, 'accepted')
+
+        memoize_session_reset()
+        origin_info = origin_find(self.wf.apiurl, self.wf.project, package)
+        self.assertEqual(str(origin_info), devel_project_new)
