@@ -240,7 +240,8 @@ class ReviewBot(object):
                 self.review_messages['declined'] = message
                 return False
 
-    def request_commands(self, command, who_allowed=None, request=None, action=None):
+    def request_commands(self, command, who_allowed=None, request=None, action=None,
+                         include_description=True):
         if not request:
             request = self.request
         if not action:
@@ -249,6 +250,10 @@ class ReviewBot(object):
             who_allowed = self.request_override_check_users(action.tgt_project)
 
         comments = self.comment_api.get_comments(request_id=request.reqid)
+        if include_description:
+            request_comment = self.comment_api.request_as_comment_dict(request)
+            comments[request_comment['id']] = request_comment
+
         yield from self.comment_api.command_find(comments, self.review_user, command, who_allowed)
 
     def _set_review(self, req, state):
