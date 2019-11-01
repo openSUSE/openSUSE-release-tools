@@ -15,6 +15,7 @@ from osclib.core import project_remote_apiurl
 from osclib.core import request_action_key
 from osclib.core import request_action_list
 from osclib.core import request_action_list_source
+from osclib.core import request_create_change_devel
 from osclib.core import request_create_delete
 from osclib.core import request_create_submit
 from osclib.core import request_remote_identifier
@@ -603,6 +604,32 @@ def origin_history(apiurl, target_project, package, user):
 def origin_update(apiurl, target_project, package):
     origin_info = origin_find(apiurl, target_project, package)
     if not origin_info:
+        # Cases for a lack of origin:
+        # - initial package submission from devel (lacking devel meta on package)
+        # - initial package submission overriden to allow from no origin
+        # - origin project/package deleted
+        #
+        # Ideally, the second case should never be used and instead the first
+        # case should be opted for instead.
+
+        # Check for accepted source submission with devel annotation and create
+        # change_devel request as automatic follow-up to approval.
+        config = config_load(apiurl, target_project)
+        request_actions = request_action_list_source(apiurl, target_project, package, states=['accepted'])
+        for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
+            annotation = origin_annotation_load(request, action, config['review-user'])
+            if not annotation:
+                continue
+
+            origin = annotation.get('origin')
+            if origin_workaround_check(origin):
+                continue
+
+            if origin not in config_origin_list(config, apiurl, target_project):
+                message = f'Set devel project based on initial submission in request#{request.reqid}.'
+                return request_create_change_devel(apiurl, origin, package, target_project, message=message)
+
+        # One of the second two cases.
         origin, version = origin_potential(apiurl, target_project, package)
         if origin is None:
             # Package is not found in any origin so request deletion.

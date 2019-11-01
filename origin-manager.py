@@ -50,6 +50,14 @@ class OriginManager(ReviewBot.ReviewBot):
             if key in ('fallback', 'maintainer'):
                 reviews[key] = comment
 
+        if result.accept:
+            config = config_load(self.apiurl, action.tgt_project)
+            if request.creator == config['review-user']:
+                # Remove all reviews since the request was generated via
+                # origin_update() which indicates it was approved already. Acts
+                # as workaround for to lack of set devel on a submit request.
+                reviews = {}
+
         if len(reviews) != len(result.reviews):
             result = PolicyResult(result.wait, result.accept, reviews, result.comments)
 
