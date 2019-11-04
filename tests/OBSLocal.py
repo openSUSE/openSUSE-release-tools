@@ -142,7 +142,14 @@ class StagingWorkflow(object):
         THIS_DIR = os.path.dirname(os.path.abspath(__file__))
         oscrc = os.path.join(THIS_DIR, 'test.oscrc')
 
+        # set to None so we return the destructor early in case of exceptions
+        self.api = None
         self.apiurl = APIURL
+        self.project = project
+        self.projects = {}
+        self.requests = []
+        self.groups = []
+        self.users = []
         logging.basicConfig()
 
         # clear cache from other tests - otherwise the VCR is replayed depending
@@ -154,11 +161,7 @@ class StagingWorkflow(object):
                                  override_no_gnome_keyring=True)
         if os.environ.get('OSC_DEBUG'):
             osc.core.conf.config['debug'] = 1
-        self.project = project
-        self.projects = {}
-        self.requests = []
-        self.groups = []
-        self.users = []
+
         CacheManager.test = True
         # disable caching, the TTLs break any reproduciblity
         Cache.CACHE_DIR = None
@@ -291,6 +294,8 @@ class StagingWorkflow(object):
         return staging
 
     def __del__(self):
+        if not self.api:
+            return
         try:
             self.remove()
         except:
