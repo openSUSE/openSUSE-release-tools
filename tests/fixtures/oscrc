@@ -103,4 +103,6 @@ pass=opensuse
 #keyring = 1
 
 [openSUSE:Factory]
+user=dummy
+pass=dummy
 overridden-by-local = local

@@ -7,5 +7,8 @@ user=Admin
 pass=opensuse
 
 [openSUSE:Factory]
+# https://github.com/openSUSE/osc/issues/667
+user=dummy
+pass=dummy
 overridden-by-local = local
 
