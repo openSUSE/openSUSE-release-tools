@@ -158,7 +158,7 @@ class PkgListGen(ToolBase.ToolBase):
         tocheck = set()
         tocheck_locales = set()
         for arch in self.filtered_architectures:
-            pool = self._prepare_pool(arch)
+            pool = self.prepare_pool(arch, True)
             sel = pool.Selection()
             for s in pool.solvables_iter():
                 sel.add_raw(solv.Job.SOLVER_SOLVABLE, s.id)
@@ -187,7 +187,7 @@ class PkgListGen(ToolBase.ToolBase):
         for p in tocheck_locales - all_grouped:
             self.logger.warning('package %s provides supported locale but is not grouped', p)
 
-    def _prepare_pool(self, arch):
+    def prepare_pool(self, arch, ignore_conflicts):
         pool = solv.Pool()
         pool.setarch(arch)
 
@@ -204,8 +204,9 @@ class PkgListGen(ToolBase.ToolBase):
                         'failed to add repo {}/{}/{}. Need to run update first?'.format(project, reponame, arch))
                 continue
             for solvable in repo.solvables_iter():
-                solvable.unset(solv.SOLVABLE_CONFLICTS)
-                solvable.unset(solv.SOLVABLE_OBSOLETES)
+                if ignore_conflicts:
+                    solvable.unset(solv.SOLVABLE_CONFLICTS)
+                    solvable.unset(solv.SOLVABLE_OBSOLETES)
                 # only take the first solvable in the repo chain
                 if solvable.name in solvables:
                     self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE | solv.Job.SOLVER_LOCK, solvable.id))
@@ -244,7 +245,7 @@ class PkgListGen(ToolBase.ToolBase):
             unsorted.solved_packages['*'] = dict()
 
         for arch in self.filtered_architectures:
-            pool = self._prepare_pool(arch)
+            pool = self.prepare_pool(arch, False)
             pool.Selection()
             archpacks = [s.name for s in pool.solvables_iter()]
 
