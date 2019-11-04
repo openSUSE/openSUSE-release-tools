@@ -37,6 +37,7 @@ class OriginSourceChangeListener(PubSubConsumer):
     def routing_keys(self):
         return [self._prefix + k for k in [
             '.obs.package.commit',
+            '.obs.package.delete',
             '.obs.request.create',
         ]]
 
@@ -45,6 +46,8 @@ class OriginSourceChangeListener(PubSubConsumer):
 
         payload = json.loads(body)
         if method.routing_key == '{}.obs.package.commit'.format(self._prefix):
+            self.on_message_package_update(payload)
+        elif method.routing_key == '{}.obs.package.delete'.format(self._prefix):
             self.on_message_package_update(payload)
         elif method.routing_key == '{}.obs.request.create'.format(self._prefix):
             self.on_message_request_create(payload)
