@@ -103,7 +103,10 @@ class OriginSourceChangeListener(PubSubConsumer):
                     threading.Thread(target=self.listeners[apiurl].run, name=apiurl).start()
 
     def origin_updatable_map(self, pending=None):
-        return origin_updatable_map(self.apiurl, pending=pending)
+        # include_self=True to check for updates whenever the target package is
+        # updated. This will catch needed follow-up change_devel and handle
+        # updates blocked by frequency control.
+        return origin_updatable_map(self.apiurl, pending=pending, include_self=not pending)
 
     def update_consider(self, origins, origin_project, package):
         if origin_project not in origins:

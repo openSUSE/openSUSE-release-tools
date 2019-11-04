@@ -182,20 +182,16 @@ class ReviewBot(object):
             with sentry_sdk.configure_scope() as scope:
                 scope.set_extra('request.id', self.request.reqid)
 
-            override = self.request_override_check(req)
-            if override is not None:
-                good = override
-            else:
-                try:
-                    good = self.check_one_request(req)
-                except Exception as e:
-                    good = None
+            try:
+                good = self.check_one_request(req)
+            except Exception as e:
+                good = None
 
-                    import traceback
-                    traceback.print_exc()
-                    return_value = 1
+                import traceback
+                traceback.print_exc()
+                return_value = 1
 
-                    sentry_sdk.capture_exception(e)
+                sentry_sdk.capture_exception(e)
 
             if self.review_mode == 'no':
                 good = None
@@ -228,15 +224,12 @@ class ReviewBot(object):
 
         return users
 
-    def request_override_check(self, request, force=False):
+    def request_override_check(self, force=False):
         """Check for a comment command requesting review override."""
         if not force and not self.override_allow:
             return None
 
-        comments = self.comment_api.get_comments(request_id=request.reqid)
-        users = self.request_override_check_users(request.actions[0].tgt_project)
-        for args, who in self.comment_api.command_find(
-            comments, self.review_user, 'override', users):
+        for args, who in self.request_commands('override'):
             message = 'overridden by {}'.format(who)
             override = args[1] if len(args) >= 2 else 'accept'
             if override == 'accept':
@@ -246,6 +239,22 @@ class ReviewBot(object):
             if override == 'decline':
                 self.review_messages['declined'] = message
                 return False
+
+    def request_commands(self, command, who_allowed=None, request=None, action=None,
+                         include_description=True):
+        if not request:
+            request = self.request
+        if not action:
+            action = self.action
+        if not who_allowed:
+            who_allowed = self.request_override_check_users(action.tgt_project)
+
+        comments = self.comment_api.get_comments(request_id=request.reqid)
+        if include_description:
+            request_comment = self.comment_api.request_as_comment_dict(request)
+            comments[request_comment['id']] = request_comment
+
+        yield from self.comment_api.command_find(comments, self.review_user, command, who_allowed)
 
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
@@ -407,8 +416,12 @@ class ReviewBot(object):
             with sentry_sdk.configure_scope() as scope:
                 scope.set_extra('action.key', key)
 
-            func = getattr(self, self.action_method(a))
-            ret = func(req, a)
+            override = self.request_override_check()
+            if override is not None:
+                ret = override
+            else:
+                func = getattr(self, self.action_method(a))
+                ret = func(req, a)
 
             # In the case of multiple actions take the "lowest" result where the
             # order from lowest to highest is: False, None, True.

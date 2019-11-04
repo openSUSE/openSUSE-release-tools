@@ -2,10 +2,17 @@
 
 from osclib.core import package_source_hash
 from osclib.core import package_kind
+from osclib.core import package_role_expand
 from osclib.origin import origin_annotation_dump
+from osclib.origin import origin_devel_projects
+from osclib.origin import origin_workaround_strip
 from osclib.origin import config_load
+from osclib.origin import config_origin_list
+from osclib.origin import devel_project_simulate
+from osclib.origin import devel_project_simulate_exception
 from osclib.origin import origin_find
 from osclib.origin import policy_evaluate
+from osclib.origin import PolicyResult
 import ReviewBot
 import sys
 
@@ -20,6 +27,41 @@ class OriginManager(ReviewBot.ReviewBot):
         self.request_age_min_default = 30 * 60
         self.request_default_return = True
         self.override_allow = False
+
+    def check_action_change_devel(self, request, action):
+        advance, result = self.config_validate(action.tgt_project)
+        if not advance:
+            return result
+
+        source_hash = package_source_hash(self.apiurl, action.tgt_project, action.tgt_package)
+        origin_info_old = origin_find(self.apiurl, action.tgt_project, action.tgt_package, source_hash, True)
+
+        with devel_project_simulate(self.apiurl, action.tgt_project, action.tgt_package,
+                                    action.src_project, action.src_package):
+            origin_info_new = origin_find(self.apiurl, action.tgt_project, action.tgt_package, source_hash)
+            result = policy_evaluate(self.apiurl, action.tgt_project, action.tgt_package,
+                                     origin_info_new, origin_info_old,
+                                     source_hash, source_hash)
+
+        reviews = {}
+
+        # Remove all additional_reviews as there are no source changes.
+        for key, comment in result.reviews.items():
+            if key in ('fallback', 'maintainer'):
+                reviews[key] = comment
+
+        if result.accept:
+            config = config_load(self.apiurl, action.tgt_project)
+            if request.creator == config['review-user']:
+                # Remove all reviews since the request was generated via
+                # origin_update() which indicates it was approved already. Acts
+                # as workaround for to lack of set devel on a submit request.
+                reviews = {}
+
+        if len(reviews) != len(result.reviews):
+            result = PolicyResult(result.wait, result.accept, reviews, result.comments)
+
+        return self.policy_result_handle(action.tgt_project, action.tgt_package, origin_info_new, origin_info_old, result)
 
     def check_action_delete_package(self, request, action):
         advance, result = self.config_validate(action.tgt_project)
@@ -54,6 +96,22 @@ class OriginManager(ReviewBot.ReviewBot):
         source_hash_old = package_source_hash(self.apiurl, tgt_project, tgt_package)
         origin_info_old = origin_find(self.apiurl, tgt_project, tgt_package, source_hash_old, True)
 
+        # Check if simulating the devel project is appropriate.
+        devel_project, reason = self.devel_project_simulate_check(src_project, tgt_project)
+        if devel_project and (reason.startswith('change_devel command') or origin_info_new is None):
+            self.logger.debug(f'reevaluate considering {devel_project} as devel since {reason}')
+
+            try:
+                with devel_project_simulate(self.apiurl, tgt_project, tgt_package, src_project, src_package):
+                    # Recurse with simulated devel project.
+                    ret = self.check_source_submission(
+                        src_project, src_package, src_rev, tgt_project, tgt_package)
+                    self.review_messages['accepted']['comment'] = reason
+                    return ret
+            except devel_project_simulate_exception:
+                # Invalid infinite recursion so fallback to normal behavior.
+                pass
+
         result = policy_evaluate(self.apiurl, tgt_project, tgt_package,
                                  origin_info_new, origin_info_old,
                                  source_hash_new, source_hash_old)
@@ -79,6 +137,36 @@ class OriginManager(ReviewBot.ReviewBot):
 
         return True, True
 
+    def devel_project_simulate_check(self, source_project, target_project):
+        config = config_load(self.apiurl, target_project)
+        origin_list = config_origin_list(config, self.apiurl, target_project, skip_workarounds=True)
+
+        if '<devel>' not in origin_list:
+            return False, None
+
+        if len(origin_list) == 1:
+            return source_project, 'only devel origin allowed'
+
+        if source_project in origin_devel_projects(self.apiurl, target_project):
+            return source_project, 'familiar devel origin'
+
+        override, who = self.devel_project_simulate_check_command(source_project, target_project)
+        if override:
+            return override, 'change_devel command by {}'.format(who)
+
+        return False, None
+
+    def devel_project_simulate_check_command(self, source_project, target_project):
+        who_allowed = self.request_override_check_users(target_project)
+        if self.request.creator not in who_allowed:
+            who_allowed.append(self.request.creator)
+
+        for args, who in self.request_commands('change_devel', who_allowed):
+            override = args[1] if len(args) >= 2 else source_project
+            return override, who
+
+        return False, None
+
     def policy_result_handle(self, project, package, origin_info_new, origin_info_old, result):
         self.policy_result_reviews_add(project, package, result.reviews, origin_info_new, origin_info_old)
         self.policy_result_comment_add(project, package, result.comments)
@@ -86,7 +174,7 @@ class OriginManager(ReviewBot.ReviewBot):
         if result.wait:
             # Allow overriding a policy wait by accepting as workaround with the
             # hope that pending request will be accepted.
-            override = self.request_override_check(self.request, True)
+            override = self.request_override_check(True)
             if override:
                 self.review_messages['accepted'] = origin_annotation_dump(
                     origin_info_new, origin_info_old, self.review_messages['accepted'], raw=True)
@@ -102,13 +190,22 @@ class OriginManager(ReviewBot.ReviewBot):
     def policy_result_reviews_add(self, project, package, reviews, origin_info_new, origin_info_old):
         for key, comment in reviews.items():
             if key == 'maintainer':
-                self.devel_project_review_ensure(self.request, project, package, comment)
+                self.origin_maintainer_review_ensure(origin_info_new, package, message=comment)
             elif key == 'fallback':
                 fallback_group = config_load(self.apiurl, project).get('fallback-group')
                 comment += '\n\n' + origin_annotation_dump(origin_info_new, origin_info_old)
                 self.add_review(self.request, by_group=fallback_group, msg=comment)
             else:
                 self.add_review(self.request, by_group=key, msg=comment)
+
+    def origin_maintainer_review_ensure(self, origin_info, package, message, request=None):
+        if not request:
+            request = self.request
+
+        origin = origin_workaround_strip(origin_info.project)
+        users = package_role_expand(self.apiurl, origin, package, 'maintainer')
+        if request.creator not in users:
+            self.add_review(request, by_project=origin, by_package=package, msg=message)
 
     def policy_result_comment_add(self, project, package, comments):
         message = '\n\n'.join(comments)

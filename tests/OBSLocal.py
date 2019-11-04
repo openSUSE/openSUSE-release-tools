@@ -23,6 +23,7 @@ from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
 from osclib.core import attribute_value_save
+from osclib.core import request_state_change
 from osclib.memoize import memoize_session_reset
 
 try:
@@ -49,9 +50,14 @@ class TestCase(unittest.TestCase):
             # Avoid stale cookiejar since local OBS may be completely reset.
             os.remove(OSCCOOKIEJAR)
 
+        self.users = []
         self.osc_user('Admin')
         self.apiurl = conf.config['apiurl']
         self.assertOBS()
+
+    def tearDown(self):
+        # Ensure admin user so that tearDown cleanup succeeds.
+        self.osc_user('Admin')
 
     def assertOBS(self):
         url = makeurl(self.apiurl, ['about'])
@@ -65,6 +71,7 @@ class TestCase(unittest.TestCase):
                 '[general]',
                 'apiurl = http://api:3000',
                 'cookiejar = {}'.format(OSCCOOKIEJAR),
+                'osrt.cache.disable = true',
                 '[http://api:3000]',
                 'user = {}'.format(userid),
                 'pass = opensuse',
@@ -73,11 +80,17 @@ class TestCase(unittest.TestCase):
             ]))
 
     def osc_user(self, userid):
+        print(f'setting osc user to {userid}')
+        self.users.append(userid)
         self.oscrc(userid)
 
         # Rather than modify userid and email, just re-parse entire config and
         # reset authentication by clearing opener to avoid edge-cases.
         self.oscParse()
+
+    def osc_user_pop(self):
+        self.users.pop()
+        self.osc_user(self.users.pop())
 
     def oscParse(self):
         # Otherwise, will stick to first user for a given apiurl.
@@ -90,6 +103,7 @@ class TestCase(unittest.TestCase):
         conf.get_config(override_conffile=OSCRC,
                         override_no_keyring=True,
                         override_no_gnome_keyring=True)
+        os.environ['OSC_CONFIG'] = OSCRC
 
     def execute_script(self, args):
         if self.script:
@@ -114,14 +128,14 @@ class TestCase(unittest.TestCase):
         try:
             env = os.environ
             env['OSC_CONFIG'] = OSCRC
-            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT, env=env)
+            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT, text=True, env=env)
         except subprocess.CalledProcessError as e:
             print(e.output)
             raise e
         print(self.output) # For debugging assertion failures.
 
     def assertOutput(self, text):
-        self.assertTrue(bytes(text, 'utf-8') in self.output, '[MISSING] ' + text)
+        self.assertTrue(text in self.output, '[MISSING] ' + text)
 
     def assertReview(self, rid, **kwargs):
         request = get_request(self.apiurl, rid)
@@ -129,9 +143,27 @@ class TestCase(unittest.TestCase):
             for key, value in kwargs.items():
                 if hasattr(review, key) and getattr(review, key) == value[0]:
                     self.assertEqual(review.state, value[1], '{}={} not {}'.format(key, value[0], value[1]))
-                    return
+                    return review
 
         self.fail('{} not found'.format(kwargs))
+
+    def assertReviewBot(self, request_id, user, before, after, comment=None):
+        self.assertReview(request_id, by_user=(user, before))
+
+        self.osc_user(user)
+        self.execute_script(['id', request_id])
+        self.osc_user_pop()
+
+        review = self.assertReview(request_id, by_user=(user, after))
+        if comment:
+            self.assertEqual(review.comment, comment)
+
+    def randomString(self, prefix='', length=None):
+        if prefix and not prefix.endswith('_'):
+            prefix += '_'
+        if not length:
+            length = random.randint(10, 30)
+        return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
 
 
 class StagingWorkflow(object):
@@ -159,6 +191,8 @@ class StagingWorkflow(object):
         osc.core.conf.get_config(override_conffile=oscrc,
                                  override_no_keyring=True,
                                  override_no_gnome_keyring=True)
+        os.environ['OSC_CONFIG'] = oscrc
+
         if os.environ.get('OSC_DEBUG'):
             osc.core.conf.config['debug'] = 1
 
@@ -194,8 +228,24 @@ class StagingWorkflow(object):
     def setup_remote_config(self):
         self.create_target()
         self.create_attribute_type('OSRT', 'Config', 1)
-        attribute_value_save(APIURL, self.project, 'Config', 'overridden-by-local = remote-nope\n'
-                                                        'remote-only = remote-indeed\n')
+
+        config = {
+            'overridden-by-local': 'remote-nope',
+            'remote-only': 'remote-indeed',
+        }
+        self.remote_config_set(config, replace_all=True)
+
+    def remote_config_set(self, config, replace_all=False):
+        if not replace_all:
+            config_existing = Config.get(self.apiurl, self.project)
+            config_existing.update(config)
+            config = config_existing
+
+        config_lines = []
+        for key, value in config.items():
+            config_lines.append(f'{key} = {value}')
+
+        attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 
     def create_group(self, name, users=[]):
 
@@ -270,8 +320,10 @@ class StagingWorkflow(object):
                                       project_links=project_links)
         return self.projects[name]
 
-    def submit_package(self, package=None):
-        request = Request(source_package=package, target_project=self.project)
+    def submit_package(self, package=None, project=None):
+        if not project:
+            project = self.project
+        request = Request(source_package=package, target_project=project)
         self.requests.append(request)
         return request
 
@@ -366,8 +418,9 @@ class Project(object):
         url = osc.core.makeurl(APIURL, ['source', self.name], {'force': 1})
         try:
             osc.core.http_DELETE(url)
-        except HTTPError:
-            pass
+        except HTTPError as e:
+            if e.code != 404:
+                raise e
         self.name = None
 
     def __del__(self):
@@ -409,9 +462,9 @@ class Package(object):
         url = osc.core.makeurl(APIURL, ['source', self.project.name, self.name])
         try:
             osc.core.http_DELETE(url)
-        except HTTPError:
-            # only cleanup
-            pass
+        except HTTPError as e:
+            if e.code != 404:
+                raise e
         self.project = None
 
     def create_commit(self, text=None, filename='README'):
@@ -436,14 +489,18 @@ class Request(object):
 
     def revoke(self):
         if self.revoked: return
+        self.change_state('revoked')
         self.revoked = True
-        url = osc.core.makeurl(APIURL, ['request', self.reqid], { 'newstate': 'revoked',
-                                                                  'cmd': 'changestate' })
+
+    def change_state(self, state):
+        print(f'changing request state of {self.reqid} to {state}')
+
         try:
-            osc.core.http_POST(url)
-        except HTTPError:
-            # may fail if already accepted/declined in tests
-            pass
+            request_state_change(APIURL, self.reqid, state)
+        except HTTPError as e:
+            # may fail if already accepted/declined in tests or project deleted
+            if e.code != 403 and e.code != 404:
+                raise e
 
     def _translate_review(self, review):
         ret = {'state': review.get('state')}

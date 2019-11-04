@@ -83,6 +83,29 @@ def maintainers_get(apiurl, project, package=None):
 
     return maintainers
 
+@memoize(session=True)
+def package_role_expand(apiurl, project, package, role='maintainer', inherit=True):
+    meta = ETL.fromstringlist(show_package_meta(apiurl, project, package))
+    users = meta_role_expand(apiurl, meta, role)
+
+    if inherit:
+        users.extend(project_role_expand(apiurl, project, role))
+
+    return users
+
+@memoize(session=True)
+def project_role_expand(apiurl, project, role='maintainer'):
+    meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+    return meta_role_expand(apiurl, meta, role)
+
+def meta_role_expand(apiurl, meta, role='maintainer'):
+    users = meta.xpath('//person[@role="{}"]/@userid'.format(role))
+
+    groups = meta.xpath('//group[@role="{}"]/@groupid'.format(role))
+    users.extend(groups_members(apiurl, groups))
+
+    return users
+
 def package_list(apiurl, project):
     url = makeurl(apiurl, ['source', project], { 'expand': 1 })
     root = ET.parse(http_GET(url)).getroot()
@@ -212,13 +235,15 @@ def devel_projects(apiurl, project):
 
     return sorted(devel_projects)
 
-def request_age(request):
+def request_created(request):
     if isinstance(request, Request):
         created = request.statehistory[0].when
     else:
         created = request.find('history').get('when')
-    created = date_parse(created)
-    return datetime.utcnow() - created
+    return date_parse(created)
+
+def request_age(request):
+    return datetime.utcnow() - request_created(request)
 
 def project_list_prefix(apiurl, prefix):
     """Get a list of project with the same prefix."""
@@ -988,6 +1013,24 @@ def request_create_delete(apiurl, target_project, target_package, message=None):
 
     return RequestFuture('delete {}/{}'.format(target_project, target_package), create_function)
 
+def request_create_change_devel(apiurl, source_project, source_package,
+                                target_project, target_package=None, message=None):
+    if not target_package:
+        target_package = source_package
+
+    for request, action in request_action_list(
+        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['change_devel']):
+        return False
+
+    message = message_suffix('created', message)
+
+    def create_function():
+        return create_change_devel_request(apiurl, source_project, source_package,
+                                           target_project, target_package, message)
+
+    return RequestFuture('change_devel {}/{} -> {}/{}'.format(
+        source_project, source_package, target_project, target_package), create_function)
+
 # Should exist within osc.core like create_submit_request(), but rather it was
 # duplicated in osc.commandline.
 def create_delete_request(apiurl, target_project, target_package=None, message=None):
@@ -1012,6 +1055,41 @@ def create_delete_request(apiurl, target_project, target_package=None, message=N
     target.set('project', target_project)
     if target_package:
         target.set('package', target_package)
+    action.append(target)
+
+    url = makeurl(apiurl, ['request'], {'cmd': 'create'})
+    root = ETL.parse(http_POST(url, data=ETL.tostring(request))).getroot()
+    return root.get('id')
+
+# Should exist within osc.core like create_submit_request(), but rather it was
+# duplicated in osc.commandline.
+def create_change_devel_request(apiurl, source_project, source_package,
+                                target_project, target_package=None, message=None):
+    if not message:
+        message = message_suffix('created')
+
+    request = ETL.Element('request')
+
+    state = ETL.Element('state')
+    state.set('name', 'new')
+    request.append(state)
+
+    description = ETL.Element('description')
+    description.text = message
+    request.append(description)
+
+    action = ETL.Element('action')
+    action.set('type', 'change_devel')
+    request.append(action)
+
+    source = ETL.Element('source')
+    source.set('project', source_project)
+    source.set('package', source_package)
+    action.append(source)
+
+    target = ETL.Element('target')
+    target.set('project', target_project)
+    target.set('package', target_package)
     action.append(target)
 
     url = makeurl(apiurl, ['request'], {'cmd': 'create'})
@@ -1052,3 +1130,8 @@ def message_suffix(action, message=None):
 
     message += ' (host {})'.format(socket.gethostname())
     return message
+
+def request_state_change(apiurl, request_id, state):
+    query = { 'newstate': state, 'cmd': 'changestate' }
+    url = makeurl(apiurl, ['request', request_id], query)
+    return ETL.parse(http_POST(url)).getroot().get('code')

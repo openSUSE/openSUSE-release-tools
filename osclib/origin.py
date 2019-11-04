@@ -13,13 +13,16 @@ from osclib.core import package_version
 from osclib.core import project_attributes_list
 from osclib.core import project_remote_apiurl
 from osclib.core import request_action_key
+from osclib.core import request_action_list
 from osclib.core import request_action_list_source
+from osclib.core import request_create_change_devel
 from osclib.core import request_create_delete
 from osclib.core import request_create_submit
 from osclib.core import request_remote_identifier
 from osclib.core import review_find_last
 from osclib.core import reviews_remaining
 from osclib.memoize import memoize
+from osclib.memoize import memoize_session_reset
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior_pattern
 import re
@@ -70,7 +73,7 @@ def config_origin_generator(origins, apiurl=None, project=None, package=None, sk
                 break
 
             if (origin == '<devel>' or origin == '<devel>~') and apiurl and project and package:
-                devel_project, devel_package = devel_project_get(apiurl, project, package)
+                devel_project, devel_package = origin_devel_project(apiurl, project, package)
                 if not devel_project:
                     break
                 origin = devel_project
@@ -198,6 +201,11 @@ def origin_workaround_check(origin):
 def origin_workaround_ensure(origin):
     if not origin_workaround_check(origin):
         return origin + '~'
+    return origin
+
+def origin_workaround_strip(origin):
+    if origin_workaround_check(origin):
+        return origin[:-1]
     return origin
 
 @memoize(session=True)
@@ -332,8 +340,9 @@ def origin_annotation_load(request, action, user):
         comment_stripped = re.sub(r'^  ', '', review.comment, flags=re.MULTILINE)
         annotation = yaml.safe_load(comment_stripped)
 
-    if not annotation or type(annotation) is not dict:
-        # Only returned structured data (ie. dict), otherwise None.
+    if not annotation or type(annotation) is not dict or 'origin' not in annotation:
+        # Only returned structured data (ie. dict) with a minimum of the origin
+        # key available, otherwise None.
         return None
 
     if len(request.actions) > 1:
@@ -413,14 +422,18 @@ def policy_input_calculate(apiurl, project, package,
             config = config_load(apiurl, project)
             origins = config_origin_list(config, apiurl, project, package)
 
-            inputs['higher_priority'] = \
-                origins.index(origin_info_new.project) < origins.index(origin_info_old.project)
-            if workaround_new:
-                inputs['same_family'] = True
+            if origin_info_old.project in origins:
+                inputs['higher_priority'] = \
+                    origins.index(origin_info_new.project) < origins.index(origin_info_old.project)
+                if workaround_new:
+                    inputs['same_family'] = True
+                else:
+                    inputs['same_family'] = \
+                        origin_info_new.project in project_list_family(
+                            apiurl, origin_info_old.project.rstrip('~'), True)
             else:
-                inputs['same_family'] = \
-                    origin_info_new.project in project_list_family(
-                        apiurl, origin_info_old.project.rstrip('~'), True)
+                inputs['higher_priority'] = None
+                inputs['same_family'] = False
         else:
             inputs['higher_priority'] = None
             inputs['same_family'] = True
@@ -456,9 +469,6 @@ def policy_input_evaluate(policy, inputs):
         if not inputs['from_highest_priority']:
             result.reviews['fallback'] = 'Not from the highest priority origin which provides the package.'
     else:
-        if inputs['direction'] == 'none':
-            return PolicyResult(False, False, {}, ['Identical source.'])
-
         if inputs['origin_change']:
             if inputs['higher_priority']:
                 if not inputs['same_family'] and inputs['direction'] != 'forward':
@@ -472,6 +482,9 @@ def policy_input_evaluate(policy, inputs):
             else:
                 result.reviews['fallback'] = 'Changing to a lower priority origin.'
         else:
+            if inputs['direction'] == 'none':
+                return PolicyResult(False, False, {}, ['Identical source.'])
+
             if inputs['direction'] == 'forward':
                 if not policy['automatic_updates']:
                     result.reviews['fallback'] = 'Forward direction, but automatic updates not allowed.'
@@ -591,6 +604,32 @@ def origin_history(apiurl, target_project, package, user):
 def origin_update(apiurl, target_project, package):
     origin_info = origin_find(apiurl, target_project, package)
     if not origin_info:
+        # Cases for a lack of origin:
+        # - initial package submission from devel (lacking devel meta on package)
+        # - initial package submission overriden to allow from no origin
+        # - origin project/package deleted
+        #
+        # Ideally, the second case should never be used and instead the first
+        # case should be opted for instead.
+
+        # Check for accepted source submission with devel annotation and create
+        # change_devel request as automatic follow-up to approval.
+        config = config_load(apiurl, target_project)
+        request_actions = request_action_list_source(apiurl, target_project, package, states=['accepted'])
+        for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
+            annotation = origin_annotation_load(request, action, config['review-user'])
+            if not annotation:
+                continue
+
+            origin = annotation.get('origin')
+            if origin_workaround_check(origin):
+                continue
+
+            if origin not in config_origin_list(config, apiurl, target_project):
+                message = f'Set devel project based on initial submission in request#{request.reqid}.'
+                return request_create_change_devel(apiurl, origin, package, target_project, message=message)
+
+        # One of the second two cases.
         origin, version = origin_potential(apiurl, target_project, package)
         if origin is None:
             # Package is not found in any origin so request deletion.
@@ -660,7 +699,7 @@ def origin_updatable(apiurl):
     return projects
 
 @memoize(session=True)
-def origin_updatable_map(apiurl, pending=None):
+def origin_updatable_map(apiurl, pending=None, include_self=False):
     origins = {}
     for project in origin_updatable(apiurl):
         config = config_load(apiurl, project)
@@ -669,11 +708,100 @@ def origin_updatable_map(apiurl, pending=None):
                 continue
 
             if origin == '<devel>':
-                for devel in devel_projects(apiurl, project):
+                for devel in origin_devel_projects(apiurl, project):
                     origins.setdefault(devel, set())
                     origins[devel].add(project)
             else:
                 origins.setdefault(origin, set())
                 origins[origin].add(project)
 
+        if include_self:
+            origins.setdefault(project, set())
+            origins[project].add(project)
+
     return origins
+
+class devel_project_simulate_exception(Exception):
+    pass
+
+class devel_project_simulate:
+    lock = None
+
+    def __init__(self, apiurl, target_project, target_package, devel_project, devel_package):
+        self.apiurl = apiurl
+        self.target_project = target_project
+        self.target_package = target_package
+        self.devel_project = devel_project
+        self.devel_package = devel_package
+
+    def get(self, apiurl, target_project, target_package):
+        if (apiurl == self.apiurl and
+            target_project == self.target_project and
+            target_package == self.target_package):
+            return self.devel_project, self.devel_package
+
+        return False, False
+
+    def __enter__(self):
+        if devel_project_simulate.lock:
+            raise devel_project_simulate_exception(
+                'Devel project simulation lock already aquired for {}:{}/{}'.format(
+                    self.apiurl, self.target_project, self.target_package))
+
+        devel_project_simulate.lock = self
+
+        # Ensure devel lookups are forgotten.
+        memoize_session_reset()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        devel_project_simulate.lock = None
+
+        # Ensure devel lookups are forgotten.
+        memoize_session_reset()
+
+@memoize(session=True)
+def origin_devel_project(apiurl, project, package):
+    if devel_project_simulate.lock:
+        devel_project, devel_package = devel_project_simulate.lock.get(apiurl, project, package)
+        if devel_project:
+            return devel_project, devel_package
+
+    for devel_project, devel_package in origin_devel_project_requests(apiurl, project, package):
+        return devel_project, devel_package
+
+    return devel_project_get(apiurl, project, package)
+
+@memoize(session=True)
+def origin_devel_projects(apiurl, project):
+    projects = set(devel_projects(apiurl, project))
+
+    for devel_project, _ in origin_devel_project_requests(apiurl, project):
+        projects.add(devel_project)
+
+    devel_whitelist = Config.get(apiurl, project).get('devel-whitelist', '').split()
+    projects.update(devel_whitelist)
+
+    return sorted(projects)
+
+def origin_devel_project_requests(apiurl, project, package=None):
+    config = config_load(apiurl, project)
+    for request, action in request_action_list(apiurl, project, package, types=['change_devel', 'submit']):
+        if action.type == 'submit' and entity_exists(apiurl, action.tgt_project, action.tgt_package):
+            # Only consider initial submit.
+            continue
+
+        annotation = origin_annotation_load(request, action, config['review-user'])
+        if not annotation:
+            # No annotation means not reviewed.
+            continue
+
+        origin = annotation.get('origin')
+        if origin and origin in config_origin_list(config, apiurl, project):
+            # Not a devel origin so not relevant.
+            continue
+
+        if config['fallback-group'] in reviews_remaining(request):
+            # Still pending approval.
+            continue
+
+        yield action.src_project, action.src_package

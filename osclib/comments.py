@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil.parser import parse as date_parse
 import re
 from xml.etree import cElementTree as ET
 
@@ -48,6 +49,15 @@ class CommentAPI(object):
             'comment': comment_element.text,
         }
         return comment
+
+    def request_as_comment_dict(self, request):
+        return {
+            'who': request.creator,
+            'when': date_parse(request.statehistory[0].when),
+            'id': '-1',
+            'parent': None,
+            'comment': request.description,
+        }
 
     def get_comments(self, request_id=None, project_name=None,
                      package_name=None):
