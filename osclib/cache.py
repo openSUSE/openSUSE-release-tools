@@ -112,9 +112,8 @@ class Cache(object):
 
         Cache.patterns = []
 
-        conf.get_config()
-        if str2bool(conf.config.get('osrt.cache.disable', '')):
-            if conf.config['debug']: print('CACHE_DISABLE via osrt.cache.disable', file=sys.stderr)
+        if str2bool(os.environ.get('OSRT_DISABLE_CACHE', '')):
+            if conf.config['debug']: print('CACHE_DISABLE via $OSRT_DISABLE_CACHE', file=sys.stderr)
             return
 
         for pattern in Cache.PATTERNS:

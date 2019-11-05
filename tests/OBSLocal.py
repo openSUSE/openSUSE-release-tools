@@ -26,11 +26,7 @@ from osclib.core import attribute_value_save
 from osclib.core import request_state_change
 from osclib.memoize import memoize_session_reset
 
-try:
-    from urllib.error import HTTPError, URLError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError, URLError
+from urllib.error import HTTPError, URLError
 
 # pointing to other docker container
 APIURL = 'http://api:3000'
@@ -71,7 +67,6 @@ class TestCase(unittest.TestCase):
                 '[general]',
                 'apiurl = http://api:3000',
                 'cookiejar = {}'.format(OSCCOOKIEJAR),
-                'osrt.cache.disable = true',
                 '[http://api:3000]',
                 'user = {}'.format(userid),
                 'pass = opensuse',
@@ -104,6 +99,7 @@ class TestCase(unittest.TestCase):
                         override_no_keyring=True,
                         override_no_gnome_keyring=True)
         os.environ['OSC_CONFIG'] = OSCRC
+        os.environ['OSRT_DISABLE_CACHE'] = 'true'
 
     def execute_script(self, args):
         if self.script:
