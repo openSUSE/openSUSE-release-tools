@@ -121,7 +121,7 @@ class Group(object):
         self.recommends = dict()
         self.suggested = dict()
         for arch in self.pkglist.filtered_architectures:
-            pool = self.pkglist._prepare_pool(arch)
+            pool = self.pkglist.prepare_pool(arch, False)
             solver = pool.Solver()
             solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, not use_recommends)
             solver.set_flag(solver.SOLVER_FLAG_ADD_ALREADY_RECOMMENDED, use_recommends)
@@ -205,6 +205,12 @@ class Group(object):
             for n, group in self.packages[arch]:
                 solve_one_package(n, group)
 
+            # resetup the pool with ignored conflicts to get supplements from the list
+            pool = self.pkglist.prepare_pool(arch, True)
+            solver = pool.Solver()
+            solver.set_flag(solver.SOLVER_FLAG_IGNORE_RECOMMENDED, not use_recommends)
+            solver.set_flag(solver.SOLVER_FLAG_ADD_ALREADY_RECOMMENDED, use_recommends)
+
             jobs = list(self.pkglist.lockjobs[arch])
             locked = self.locked | self.pkglist.unwanted
             for l in locked:
@@ -275,7 +281,7 @@ class Group(object):
 
     def collect_devel_packages(self):
         for arch in self.pkglist.filtered_architectures:
-            pool = self.pkglist._prepare_pool(arch)
+            pool = self.pkglist.prepare_pool(arch, False)
             pool.Selection()
             for s in pool.solvables_iter():
                 if s.name.endswith('-devel'):
