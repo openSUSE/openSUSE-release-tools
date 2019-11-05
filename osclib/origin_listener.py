@@ -37,6 +37,7 @@ class OriginSourceChangeListener(PubSubConsumer):
     def routing_keys(self):
         return [self._prefix + k for k in [
             '.obs.package.commit',
+            '.obs.package.delete',
             '.obs.request.create',
         ]]
 
@@ -45,6 +46,8 @@ class OriginSourceChangeListener(PubSubConsumer):
 
         payload = json.loads(body)
         if method.routing_key == '{}.obs.package.commit'.format(self._prefix):
+            self.on_message_package_update(payload)
+        elif method.routing_key == '{}.obs.package.delete'.format(self._prefix):
             self.on_message_package_update(payload)
         elif method.routing_key == '{}.obs.request.create'.format(self._prefix):
             self.on_message_request_create(payload)
@@ -118,14 +121,16 @@ class OriginSourceChangeListener(PubSubConsumer):
                 self.logger.info('skipping filtered target project: {}'.format(project))
                 continue
 
-            kind = package_kind(self.apiurl, project, package)
-            if kind == 'source':
+            # Check if package is of kind source in either target or origin
+            # project -- this allows for deletes and new submissions. Execute
+            # the checks lazily since they are expensive.
+            if (package_kind(self.apiurl, project, package) == 'source' or
+                package_kind(self.apiurl, origin_project, package) == 'source'):
                 self.logger.info('checking for updates to {}/{}...'.format(project, package))
                 request_future = origin_update(self.apiurl, project, package)
                 if request_future:
                     request_future.print_and_create(self.dry)
             else:
-                # This eliminates the possibility for deletes by listener.
                 self.logger.info('skipped updating non-existant package {}/{}'.format(project, package))
 
 class OriginSourceChangeListenerRemote(OriginSourceChangeListener):

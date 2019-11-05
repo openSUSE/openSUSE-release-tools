@@ -20,6 +20,7 @@ from osclib.origin import origin_history
 from osclib.origin import origin_potentials
 from osclib.origin import origin_revision_state
 from osclib.origin import origin_updatable
+from osclib.origin import origin_updatable_initial
 from osclib.origin import origin_update
 from osclib.sentry import sentry_init
 from osclib.util import mail_send
@@ -372,7 +373,14 @@ def osrt_origin_update(apiurl, opts, *packages):
         return
 
     if len(packages) == 0:
-        packages = package_list_kind_filtered(apiurl, opts.project)
+        packages = set(package_list_kind_filtered(apiurl, opts.project))
+
+        # Include packages from origins with initial update enabled to allow for
+        # potential new package submissions.
+        for origin in origin_updatable_initial(apiurl, opts.project):
+            # Package list must be filtered in origin project since all relevant
+            # packages will be of kind None in target project.
+            packages.update(package_list_kind_filtered(apiurl, origin))
 
     for package in packages:
         print('checking for updates to {}/{}...'.format(opts.project, package))
