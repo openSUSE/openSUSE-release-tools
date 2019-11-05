@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import datetime
 import hashlib
 import os
@@ -7,18 +5,9 @@ import osc.core
 import re
 import sys
 
-try:
-    from urllib.parse import unquote
-    from urllib.parse import urlsplit, SplitResult
-    from urllib.error import URLError, HTTPError
-    from io import StringIO
-except ImportError:
-    # python 2.x
-    from urlparse import urlsplit, SplitResult
-    from urllib import unquote
-    from urllib2 import URLError, HTTPError
-    from StringIO import StringIO
-
+from urllib.parse import unquote
+from urllib.parse import urlsplit, SplitResult
+from urllib.error import URLError, HTTPError
 from io import BytesIO
 
 from osc import conf
@@ -27,12 +16,7 @@ from osclib.cache_manager import CacheManager
 from osclib.conf import str2bool
 from osclib.util import rmtree_nfs_safe
 from time import time
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
-
+from xml.etree import cElementTree as ET
 
 def http_request(method, url, headers={}, data=None, file=None):
     """
@@ -128,9 +112,8 @@ class Cache(object):
 
         Cache.patterns = []
 
-        conf.get_config()
-        if str2bool(conf.config.get('osrt.cache.disable', '')):
-            if conf.config['debug']: print('CACHE_DISABLE via osrt.cache.disable', file=sys.stderr)
+        if str2bool(os.environ.get('OSRT_DISABLE_CACHE', '')):
+            if conf.config['debug']: print('CACHE_DISABLE via $OSRT_DISABLE_CACHE', file=sys.stderr)
             return
 
         for pattern in Cache.PATTERNS:
@@ -209,7 +192,7 @@ class Cache(object):
             # Since urlopen does not return a seekable stream it cannot be reset
             # after writing to cache. As such a wrapper must be used. This could
             # be replaced with urlopen('file://...') to be consistent, but until
-            # the need arrises StringIO has less overhead.
+            # the need arrises BytesIO has less overhead.
             text = data.read()
             data = BytesIO(text)
 
