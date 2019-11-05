@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from osclib.core import devel_project_get
 from osclib.core import package_source_hash
 from osclib.core import package_kind
 from osclib.core import package_role_expand
@@ -203,6 +204,13 @@ class OriginManager(ReviewBot.ReviewBot):
             request = self.request
 
         origin = origin_workaround_strip(origin_info.project)
+
+        # Check if the origin package is actually developed elsewhere and add
+        # the maintainer review for the development location.
+        devel_project, _ = devel_project_get(self.apiurl, origin, package)
+        if devel_project:
+            origin = devel_project
+
         users = package_role_expand(self.apiurl, origin, package, 'maintainer')
         if request.creator not in users:
             self.add_review(request, by_project=origin, by_package=package, msg=message)
