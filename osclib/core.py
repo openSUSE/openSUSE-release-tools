@@ -361,8 +361,9 @@ def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
 
         yield package
 
-def attribute_value_load(apiurl, project, name, namespace='OSRT'):
-    url = makeurl(apiurl, ['source', project, '_attribute', namespace + ':' + name])
+def attribute_value_load(apiurl, project, name, namespace='OSRT', package=None):
+    path = list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))
+    url = makeurl(apiurl, path)
 
     try:
         root = ETL.parse(http_GET(url)).getroot()
@@ -389,7 +390,7 @@ def attribute_value_load(apiurl, project, name, namespace='OSRT'):
 #   `api -T $xml /attribute/OSRT/$NEWATTRIBUTE/_meta`
 #
 # Remember to create for both OBS and IBS as necessary.
-def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
+def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package=None):
     root = ET.Element('attributes')
 
     attribute = ET.SubElement(root, 'attribute')
@@ -399,7 +400,7 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
     ET.SubElement(attribute, 'value').text = value
 
     # The OBS API of attributes is super strange, POST to update.
-    url = makeurl(apiurl, ['source', project, '_attribute'])
+    url = makeurl(apiurl, list(filter(None, ['source', project, package, '_attribute'])))
     http_POST(url, data=ET.tostring(root))
 
 @memoize(session=True)
