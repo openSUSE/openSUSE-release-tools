@@ -240,6 +240,8 @@ function history_table_init(selector) {
         initialSort: [
             { column: 'request', dir: 'desc' },
         ],
+        pagination: 'local',
+        paginationSize: 15,
         rowClick: history_select_hash,
         selectable: 1,
         tooltips: true,
