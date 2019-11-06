@@ -10,6 +10,9 @@ from osc import oscerr
 from osc.core import get_request_list
 from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
+from osclib.core import entity_exists
+from osclib.core import package_kind
+from osclib.core import package_list
 from osclib.core import package_list_kind_filtered
 from osclib.core import project_attribute_list
 from osclib.core import project_locked
@@ -378,9 +381,19 @@ def osrt_origin_update(apiurl, opts, *packages):
         # Include packages from origins with initial update enabled to allow for
         # potential new package submissions.
         for origin in origin_updatable_initial(apiurl, opts.project):
-            # Package list must be filtered in origin project since all relevant
-            # packages will be of kind None in target project.
-            packages.update(package_list_kind_filtered(apiurl, origin))
+            for package in package_list(apiurl, origin):
+                # Only add missing package if it does not exist in target
+                # project. If it exists in target then it is not a source
+                # package (since origin list is filtered to source) and should
+                # not be updated. This also properly avoids submitting a package
+                # that is a subpackage in target, but is a source package in an
+                # origin project.
+                if package in packages or entity_exists(apiurl, opts.project, package):
+                    continue
+
+                # No sense submitting a non-source package (most expensive).
+                if package_kind(apiurl, origin, package) == 'source':
+                    packages.add(package)
 
     for package in packages:
         print('checking for updates to {}/{}...'.format(opts.project, package))

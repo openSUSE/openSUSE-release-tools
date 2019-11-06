@@ -121,17 +121,22 @@ class OriginSourceChangeListener(PubSubConsumer):
                 self.logger.info('skipping filtered target project: {}'.format(project))
                 continue
 
-            # Check if package is of kind source in either target or origin
-            # project -- this allows for deletes and new submissions. Execute
-            # the checks lazily since they are expensive.
-            if (package_kind(self.apiurl, project, package) == 'source' or
-                package_kind(self.apiurl, origin_project, package) == 'source'):
+            # Check if package is of kind source in target or does not exists in
+            # target and is source in origin project -- this allows for deletes
+            # and new submissions. Execute the check lazily due to expense.
+            kind_target = package_kind(self.apiurl, project, package)
+            kind_target_source = kind_target == 'source'
+            kind_new_source = (kind_target is None and
+                               package_kind(self.apiurl, origin_project, package) == 'source')
+            if kind_target_source or kind_new_source:
                 self.logger.info('checking for updates to {}/{}...'.format(project, package))
                 request_future = origin_update(self.apiurl, project, package)
                 if request_future:
                     request_future.print_and_create(self.dry)
+            elif not kind_target_source:
+                self.logger.info(f'skipped updating non-source package {project}/{package}')
             else:
-                self.logger.info('skipped updating non-existant package {}/{}'.format(project, package))
+                self.logger.info(f'skipped submitting new non-source package {project}/{package}')
 
 class OriginSourceChangeListenerRemote(OriginSourceChangeListener):
     def __init__(self, apiurl, parent, prefix):
