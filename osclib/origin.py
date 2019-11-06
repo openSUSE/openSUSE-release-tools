@@ -12,6 +12,7 @@ from osclib.core import package_source_hash_history
 from osclib.core import package_version
 from osclib.core import project_attributes_list
 from osclib.core import project_remote_apiurl
+from osclib.core import project_remote_prefixed
 from osclib.core import request_action_key
 from osclib.core import request_action_list
 from osclib.core import request_action_list_source
@@ -687,7 +688,8 @@ def origin_update_pending(apiurl, origin_project, package, target_project):
     for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
         identifier = request_remote_identifier(apiurl, apiurl_remote, request.reqid)
         message = 'Newer pending source available from package origin. See {}.'.format(identifier)
-        return request_create_submit(apiurl, action.src_project, action.src_package,
+        src_project = project_remote_prefixed(apiurl, apiurl_remote, action.src_project)
+        return request_create_submit(apiurl, src_project, action.src_package,
                                      target_project, package, message=message, revision=action.src_rev)
 
     return False
