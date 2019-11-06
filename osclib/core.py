@@ -13,6 +13,7 @@ from osc.core import get_binarylist
 from osc.core import get_commitlog
 from osc.core import get_dependson
 from osc.core import get_request_list
+from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
@@ -402,6 +403,10 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package
     # The OBS API of attributes is super strange, POST to update.
     url = makeurl(apiurl, list(filter(None, ['source', project, package, '_attribute'])))
     http_POST(url, data=ET.tostring(root))
+
+def attribute_value_delete(apiurl, project, name, namespace='OSRT', package=None):
+    http_DELETE(makeurl(
+        apiurl, list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))))
 
 @memoize(session=True)
 def _repository_path_expand(apiurl, project, repo):
