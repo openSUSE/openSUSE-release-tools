@@ -968,7 +968,7 @@ def request_action_simple_list(apiurl, project, package, states, request_type):
     # Disable including source project in get_request_list() query.
     before = conf.config['include_request_from_project']
     conf.config['include_request_from_project'] = False
-    requests = get_request_list(apiurl, project, package, None, states, request_type)
+    requests = get_request_list(apiurl, project, package, None, states, request_type, withfullhistory=True)
     conf.config['include_request_from_project'] = before
 
     for request in requests:
