@@ -1,0 +1,5 @@
+<definition name="OSRT:OriginUpdateDelay" namespace="OSRT">
+  <description>OriginManager update delay frequency in seconds (minimum time since source change)</description>
+  <count>1</count>
+  <modifiable_by role="maintainer"/>
+</definition>

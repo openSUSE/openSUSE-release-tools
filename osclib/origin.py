@@ -3,10 +3,12 @@ from collections import namedtuple
 import logging
 from osc.core import get_request_list
 from osclib.conf import Config
+from osclib.conf import str2bool
 from osclib.core import attribute_value_load
 from osclib.core import devel_project_get
 from osclib.core import devel_projects
 from osclib.core import entity_exists
+from osclib.core import package_source_age
 from osclib.core import package_source_hash
 from osclib.core import package_source_hash_history
 from osclib.core import package_version
@@ -41,6 +43,9 @@ POLICY_DEFAULTS = {
     'additional_reviews': [],
     'automatic_updates': True,
     'automatic_updates_initial': False,
+    'automatic_updates_supersede': True,
+    'automatic_updates_delay': 0,
+    'automatic_updates_frequency': 0,
     'maintainer_review_always': False,
     'maintainer_review_initial': True,
     'pending_submission_allow': False,
@@ -673,15 +678,28 @@ def origin_update(apiurl, target_project, package):
     if not policy['automatic_updates']:
         return False
 
+    mode = origin_update_mode(apiurl, target_project, package, policy, origin_info.project)
+    if mode['skip']:
+        return False
+
+    age = package_source_age(apiurl, origin_info.project, package).total_seconds()
+    if age < int(mode['delay']):
+        return False
+
+    supersede = str2bool(str(mode['supersede']))
+    frequency = int(mode['frequency'])
+
     if policy['pending_submission_allow']:
-        request_id = origin_update_pending(apiurl, origin_info.project, package, target_project)
+        request_id = origin_update_pending(
+            apiurl, origin_info.project, package, target_project, supersede, frequency)
         if request_id:
             return request_id
 
     message = 'Newer source available from package origin.'
-    return request_create_submit(apiurl, origin_info.project, package, target_project, message=message)
+    return request_create_submit(apiurl, origin_info.project, package, target_project, message=message,
+                                 supersede=supersede, frequency=frequency)
 
-def origin_update_pending(apiurl, origin_project, package, target_project):
+def origin_update_pending(apiurl, origin_project, package, target_project, supersede, frequency):
     apiurl_remote, project_remote = project_remote_apiurl(apiurl, origin_project)
     request_actions = request_action_list_source(
         apiurl_remote, project_remote, package, include_release=True)
@@ -690,9 +708,34 @@ def origin_update_pending(apiurl, origin_project, package, target_project):
         message = 'Newer pending source available from package origin. See {}.'.format(identifier)
         src_project = project_remote_prefixed(apiurl, apiurl_remote, action.src_project)
         return request_create_submit(apiurl, src_project, action.src_package,
-                                     target_project, package, message=message, revision=action.src_rev)
+                                     target_project, package, message=message, revision=action.src_rev,
+                                     supersede=supersede, frequency=frequency)
 
     return False
+
+def origin_update_mode(apiurl, target_project, package, policy, origin_project):
+    values = {}
+    for key in ('skip', 'supersede', 'delay', 'frequency'):
+        attribute = 'OriginUpdate{}'.format(key.capitalize())
+        for project in (origin_project, target_project):
+            for package_attribute in (package, None):
+                value = attribute_value_load(apiurl, project, attribute, package=package_attribute)
+                if value is not None:
+                    values[key] = value
+                    break
+
+            if key in values:
+                break
+
+        if key in values:
+            continue
+
+        if key == 'skip':
+            values[key] = not policy['automatic_updates']
+        else:
+            values[key] = policy[f'automatic_updates_{key}']
+
+    return values
 
 @memoize(session=True)
 def origin_updatable(apiurl):

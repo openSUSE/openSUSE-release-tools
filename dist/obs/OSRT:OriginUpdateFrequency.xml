@@ -1,0 +1,5 @@
+<definition name="OSRT:OriginUpdateFrequency" namespace="OSRT">
+  <description>OriginManager update frequency in seconds (minimum time since last request)</description>
+  <count>1</count>
+  <modifiable_by role="maintainer"/>
+</definition>
