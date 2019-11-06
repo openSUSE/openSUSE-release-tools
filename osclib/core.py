@@ -550,7 +550,7 @@ def package_kind(apiurl, project, package):
 
         raise e
 
-    if root.find('releasename') is not None:
+    if root.find('releasename') is not None and root.find('releasename').text != package:
         return 'maintenance_update'
 
     # Some multispec subpackages do not have bcntsynctag, so check link.
