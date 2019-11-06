@@ -97,8 +97,7 @@ class AcceptCommand(object):
         u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'])
         f = http_POST(u)
 
-        while True:
-            print(self.api.project_status(project, reload=True).get('state'))
+        while self.api.project_status(project, reload=True, requests=False).get('state') != 'empty':
             time.sleep(1)
 
         self.api.staging_deactivate(project)

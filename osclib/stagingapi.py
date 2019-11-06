@@ -229,12 +229,11 @@ class StagingAPI(object):
         """
 
         packages_staged = {}
-        for prj in self.get_staging_projects():
-            status = self.project_status(prj)
-            if status is None:
-                continue
-            for req in status.findall('staged_requests/request'):
-                packages_staged[req.get('package')] = {'prj': prj, 'rq_id': req.get('id')}
+        url = self.makeurl(['staging', self.project, 'staging_projects'], { 'requests': 1 })
+        status = ET.parse(self.retried_GET(url)).getroot()
+        for prj in status.findall('staging_project'):
+            for req in prj.findall('./staged_requests/request'):
+                packages_staged[req.get('package')] = {'prj': prj.get('name'), 'rq_id': req.get('id')}
 
         return packages_staged
 
@@ -310,7 +309,8 @@ class StagingAPI(object):
         """
 
         result = []
-        status = self.staging_status()
+        url = self.makeurl(['staging', self.project, 'staging_projects'])
+        status = ET.parse(self.retried_GET(url)).getroot()
         for project in status.findall('staging_project'):
             result.append(project.get('name'))
         return result
@@ -681,7 +681,8 @@ class StagingAPI(object):
         :param project: project the package is in
         :param package: package we want to query for
         """
-        data = self.project_status(project)
+        logging.error('get_request_id_for_package')
+        data = self.project_status(project, status=False)
         for x in data.findall('staged_requests/request'):
             if x.get('package') == package:
                 return int(x.get('id'))
@@ -693,7 +694,8 @@ class StagingAPI(object):
         :param project: project the package is in
         :param package: package we want to query for
         """
-        data = self.project_status(project)
+        logging.error('get_package_for_request_id')
+        data = self.project_status(project, status=False)
         request_id = str(request_id)
         for x in data.findall('staged_requests/request'):
             if x.get('id') == request_id:
@@ -874,24 +876,19 @@ class StagingAPI(object):
 
         return log.getvalue()
 
-    @memoize(session=True)
-    def staging_status(self):
-        url = self.makeurl(['staging', self.project, 'staging_projects'])
-        return ET.parse(self.retried_GET(url)).getroot()
-
-    def project_status(self, staging, reload=False):
+    def project_status(self, staging, status=True, requests=True, reload=False):
         if not staging:
             raise oscerr.WrongArgs('No staging given')
 
-        if reload:
-            url = self.makeurl(['staging', self.project, 'staging_projects', staging])
-            return ET.parse(self.retried_GET(url)).getroot()
-
-        root = self.staging_status()
-        staging = self.prj_from_short(staging)
-        for project in root.findall('staging_project[@name="{}"]'.format(staging)):
-            return project
-        return None
+        import traceback
+        traceback.print_stack()
+        opts = {}
+        if requests:
+            opts['requests'] = 1
+        if status:
+            opts['status'] = 1
+        url = self.makeurl(['staging', self.project, 'staging_projects', staging], opts)
+        return ET.parse(self.retried_GET(url)).getroot()
 
     def check_project_status(self, project):
         """
@@ -901,7 +898,7 @@ class StagingAPI(object):
                 informations)
 
         """
-        return self.project_status(project).get('state') == 'acceptable'
+        return self.project_status(project, requests=False).get('state') == 'acceptable'
 
     def project_status_build_percent(self, status):
         final, tobuild = self.project_status_build_sum(status)
