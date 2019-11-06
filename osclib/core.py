@@ -999,7 +999,7 @@ def request_action_list_source(apiurl, project, package, states=['new', 'review'
 
 def request_create_submit(apiurl, source_project, source_package,
                           target_project, target_package=None, message=None, revision=None,
-                          ignore_if_any_request=False):
+                          ignore_if_any_request=False, supersede=True):
     """
     ignore_if_any_request: ignore source changes and do not submit if any prior requests
     """
@@ -1016,6 +1016,8 @@ def request_create_submit(apiurl, source_project, source_package,
     for request, action in request_action_list(
         apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['submit']):
         if ignore_if_any_request:
+            return False
+        if not supersede and request.state.name in ('new', 'review'):
             return False
 
         source_hash_pending = package_source_hash(
