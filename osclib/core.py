@@ -1,6 +1,7 @@
 from collections import namedtuple
 from collections import OrderedDict
 from datetime import datetime
+from datetime import timezone
 from dateutil.parser import parse as date_parse
 import re
 import socket
@@ -525,6 +526,14 @@ def project_meta_revision(apiurl, project):
     root = ET.fromstringlist(get_commitlog(
         apiurl, project, '_project', None, format='xml', meta=True))
     return int(root.find('logentry').get('revision'))
+
+def package_source_changed(apiurl, project, package):
+    url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
+    root = ETL.parse(http_GET(url)).getroot()
+    return datetime.fromtimestamp(int(root.find('revision/time').text), timezone.utc).replace(tzinfo=None)
+
+def package_source_age(apiurl, project, package):
+    return datetime.utcnow() - package_source_changed(apiurl, project, package)
 
 def entity_exists(apiurl, project, package=None):
     try:
