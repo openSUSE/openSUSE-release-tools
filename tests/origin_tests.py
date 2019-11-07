@@ -360,6 +360,7 @@ class TestOrigin(OBSLocal.TestCase):
         upstream3_project = self.randomString('upstream3')
         package1 = self.randomString('package1')
         package2 = self.randomString('package2')
+        package3 = self.randomString('package3')
 
         target_package1 = self.wf.create_package(self.target_project, package1)
         upstream1_package1 = self.wf.create_package(upstream1_project, package1)
@@ -371,6 +372,9 @@ class TestOrigin(OBSLocal.TestCase):
 
         upstream3_package2 = self.wf.create_package(upstream3_project, package2)
         upstream3_package2.create_commit()
+
+        upstream1_package3 = self.wf.create_package(upstream1_project, package3)
+        upstream1_package3.create_commit()
 
         attribute_value_save(self.wf.apiurl, upstream1_project, 'ApprovedRequestSource', '', 'OBS')
         attribute_value_save(self.wf.apiurl, upstream2_project, 'ApprovedRequestSource', '', 'OBS')
@@ -421,6 +425,14 @@ class TestOrigin(OBSLocal.TestCase):
         request_future = origin_update(self.wf.apiurl, self.wf.project, package2)
         self.assertEqual(request_future, False)
         self.osc_user_pop()
+
+        # Ensure blacklist prevents initial package submission.
+        self.wf.create_attribute_type('OSRT', 'OriginUpdateInitialBlacklist', 1)
+        attribute_value_save(self.wf.apiurl, self.target_project, 'OriginUpdateInitialBlacklist', package3)
+        self.assertNoUpdate(package3)
+
+        attribute_value_delete(self.wf.apiurl, self.target_project, 'OriginUpdateInitialBlacklist')
+        self.assertUpdate(package3)
 
     def test_automatic_update_modes(self):
         self.remote_config_set_age_minimum()
