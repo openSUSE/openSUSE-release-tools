@@ -519,10 +519,14 @@ def policy_input_evaluate(policy, inputs):
     return result
 
 def policy_input_evaluate_reviews_not_allowed(policy, inputs):
+    return reviews_filter_allowed(inputs['pending_submission'].reviews_remaining,
+                                  policy['pending_submission_allowed_reviews'])
+
+def reviews_filter_allowed(reviews_remaining, allowed_reviews):
     reviews_not_allowed = []
-    for review_remaining in inputs['pending_submission'].reviews_remaining:
+    for review_remaining in reviews_remaining:
         allowed = False
-        for review_allowed in policy['pending_submission_allowed_reviews']:
+        for review_allowed in allowed_reviews:
             if review_allowed.endswith('*') and review_remaining.startswith(review_allowed[:-1]):
                 allowed = True
                 break
