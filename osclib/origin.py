@@ -525,16 +525,26 @@ def policy_input_evaluate_reviews_not_allowed(policy, inputs):
 def reviews_filter_allowed(reviews_remaining, allowed_reviews):
     reviews_not_allowed = []
     for review_remaining in reviews_remaining:
-        allowed = False
+        allowed = None
+        not_rule = False
         for review_allowed in allowed_reviews:
+            result = True
+            if review_allowed.startswith('!'):
+                not_rule = True
+                review_allowed = review_allowed[1:]
+                result = False
+
             if review_allowed.endswith('*') and review_remaining.startswith(review_allowed[:-1]):
-                allowed = True
+                allowed = result
                 break
             if review_remaining == review_allowed:
-                allowed = True
+                allowed = result
                 break
 
-        if not allowed:
+        # If not the allowed case then add the review to not allowed list.
+        # Allowed if either matches an allow rule or does not match anything
+        # when at least one not rule is present.
+        if not (allowed or (not_rule and allowed is None)):
             reviews_not_allowed.append(review_remaining)
 
     return reviews_not_allowed
