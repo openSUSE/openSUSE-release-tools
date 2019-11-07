@@ -52,7 +52,6 @@ POLICY_DEFAULTS = {
     'pending_submission_consider': False,
     'pending_submission_allowed_reviews': [
         '<config_source:staging>*',
-        '<config_source:repo-checker>',
     ],
     # Submit pending requests with a set of allowed reviews, but still wait for
     # the above reviews before being accepted.
