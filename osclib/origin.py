@@ -277,7 +277,7 @@ def project_source_pending(apiurl, project, package, source_hash):
         if source_hash_consider == source_hash:
             return PendingRequestInfo(
                 request_remote_identifier(apiurl, apiurl_remote, request.reqid),
-                reviews_remaining(request))
+                reviews_remaining(request, True))
 
     return False
 
