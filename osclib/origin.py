@@ -51,7 +51,11 @@ POLICY_DEFAULTS = {
     'pending_submission_allow': False,
     'pending_submission_consider': False,
     'pending_submission_allowed_reviews': [
+        # Non-maintenance projects:
         '<config_source:staging>*',
+        # Maintenance projects:
+        '<config_source:review-install-check>',
+        '<config_source:review-openqa>',
     ],
     # Submit pending requests with a set of allowed reviews, but still wait for
     # the above reviews before being accepted.
