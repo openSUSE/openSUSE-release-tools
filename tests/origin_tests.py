@@ -1,7 +1,9 @@
+from datetime import datetime
 from osc.core import change_review_state
 from osc.core import copy_pac as copy_package
 from osc.core import get_request
 from osclib.comments import CommentAPI
+from osclib.core import attribute_value_delete
 from osclib.core import attribute_value_save
 from osclib.core import devel_project_get
 from osclib.core import request_create_change_devel
@@ -14,6 +16,7 @@ from osclib.origin import NAME
 from osclib.origin import origin_annotation_load
 from osclib.origin import origin_find
 from osclib.origin import origin_update
+import time
 import yaml
 from . import OBSLocal
 
@@ -70,12 +73,38 @@ class TestOrigin(OBSLocal.TestCase):
         self.assertTrue(type(annotation_actual) is dict)
         self.assertEqual(annotation_actual, annotation)
 
+    def _assertUpdate(self, package, desired):
+        memoize_session_reset()
+        self.osc_user(self.bot_user)
+        request_future = origin_update(self.wf.apiurl, self.wf.project, package)
+        if desired:
+            self.assertNotEqual(request_future, False)
+            request_id = request_future.print_and_create()
+        else:
+            self.assertEqual(request_future, False)
+            request_id = None
+        self.osc_user_pop()
+
+        return request_id
+
+    def assertUpdate(self, package):
+        return self._assertUpdate(package, True)
+
+    def assertNoUpdate(self, package):
+        return self._assertUpdate(package, False)
+
     def accept_fallback_review(self, request_id):
         self.osc_user(self.review_user)
         change_review_state(apiurl=self.wf.apiurl,
                             reqid=request_id, newstate='accepted',
                             by_group=self.review_group, message='approved')
         self.osc_user_pop()
+
+    def waitDelta(self, start, delay):
+        delta = (datetime.now() - start).total_seconds()
+        sleep = max(delay - delta, 0) + 1
+        print('sleep', sleep)
+        time.sleep(sleep)
 
     def testRequestMinAge(self):
         self.origin_config_write([])
@@ -392,3 +421,76 @@ class TestOrigin(OBSLocal.TestCase):
         request_future = origin_update(self.wf.apiurl, self.wf.project, package2)
         self.assertEqual(request_future, False)
         self.osc_user_pop()
+
+    def test_automatic_update_modes(self):
+        self.remote_config_set_age_minimum()
+
+        upstream1_project = self.randomString('upstream1')
+        package1 = self.randomString('package1')
+
+        target_package1 = self.wf.create_package(self.target_project, package1)
+        upstream1_package1 = self.wf.create_package(upstream1_project, package1)
+
+        upstream1_package1.create_commit()
+        copy_package(self.wf.apiurl, upstream1_project, package1,
+                     self.wf.apiurl, self.target_project, package1)
+
+        attribute_value_save(self.wf.apiurl, upstream1_project, 'ApprovedRequestSource', '', 'OBS')
+        self.wf.create_attribute_type('OSRT', 'OriginUpdateSkip', 0)
+
+        def config_write(delay=0, supersede=True, frequency=0):
+            self.origin_config_write([
+                {upstream1_project: {
+                    'automatic_updates_delay': delay,
+                    'automatic_updates_supersede': supersede,
+                    'automatic_updates_frequency': frequency,
+                }},
+            ])
+
+        # Default config with fresh commit.
+        config_write()
+        upstream1_package1.create_commit()
+
+        # Check the full order of precidence available to mode attributes.
+        for project in (upstream1_project, self.target_project):
+            for package in (package1, None):
+                # Ensure no update is triggered due to OSRT:OriginUpdateSkip.
+                attribute_value_save(self.wf.apiurl, project, 'OriginUpdateSkip', '', package=package)
+                self.assertNoUpdate(package1)
+                attribute_value_delete(self.wf.apiurl, project, 'OriginUpdateSkip', package=package)
+
+        # Configure a delay, make commit, and ensure no update until delayed.
+        delay = 17  # Allow enough time for API speed fluctuation.
+        config_write(delay=delay)
+        upstream1_package1.create_commit()
+        start = datetime.now()
+
+        self.assertNoUpdate(package1)
+        self.waitDelta(start, delay)
+        request_id_package1_1 = self.assertUpdate(package1)
+
+        # Configure no supersede and ensure no update generated for new commit.
+        config_write(supersede=False)
+        upstream1_package1.create_commit()
+        self.assertNoUpdate(package1)
+
+        # Accept request and ensure update since no request to supersede.
+        self.assertReviewBot(request_id_package1_1, self.bot_user, 'new', 'accepted')
+        request_state_change(self.wf.apiurl, request_id_package1_1, 'accepted')
+
+        request_id_package1_2 = self.assertUpdate(package1)
+
+        # Track time since last request created for testing frequency.
+        start = datetime.now()
+
+        # Configure frequency (removes supersede=False).
+        config_write(frequency=delay)
+
+        upstream1_package1.create_commit()
+        self.assertNoUpdate(package1)
+
+        # Fresh commit should not impact frequency which only looks at requests.
+        self.waitDelta(start, delay)
+        upstream1_package1.create_commit()
+
+        request_id_package1_3 = self.assertUpdate(package1)

@@ -158,7 +158,7 @@ class TestCase(unittest.TestCase):
         if prefix and not prefix.endswith('_'):
             prefix += '_'
         if not length:
-            length = random.randint(10, 30)
+            length = 2
         return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
 
 
@@ -479,6 +479,9 @@ class Request(object):
                                  src_package=self.source_package.name,
                                  dst_project=self.target_project)
         self.revoked = False
+
+        print('created submit request {}/{} -> {}'.format(
+            self.source_package.project.name, self.source_package.name, self.target_project))
 
     def __del__(self):
         self.revoke()

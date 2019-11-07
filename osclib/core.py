@@ -1,6 +1,7 @@
 from collections import namedtuple
 from collections import OrderedDict
 from datetime import datetime
+from datetime import timezone
 from dateutil.parser import parse as date_parse
 import re
 import socket
@@ -13,6 +14,7 @@ from osc.core import get_binarylist
 from osc.core import get_commitlog
 from osc.core import get_dependson
 from osc.core import get_request_list
+from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
@@ -361,8 +363,9 @@ def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
 
         yield package
 
-def attribute_value_load(apiurl, project, name, namespace='OSRT'):
-    url = makeurl(apiurl, ['source', project, '_attribute', namespace + ':' + name])
+def attribute_value_load(apiurl, project, name, namespace='OSRT', package=None):
+    path = list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))
+    url = makeurl(apiurl, path)
 
     try:
         root = ETL.parse(http_GET(url)).getroot()
@@ -389,7 +392,7 @@ def attribute_value_load(apiurl, project, name, namespace='OSRT'):
 #   `api -T $xml /attribute/OSRT/$NEWATTRIBUTE/_meta`
 #
 # Remember to create for both OBS and IBS as necessary.
-def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
+def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package=None):
     root = ET.Element('attributes')
 
     attribute = ET.SubElement(root, 'attribute')
@@ -399,8 +402,12 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT'):
     ET.SubElement(attribute, 'value').text = value
 
     # The OBS API of attributes is super strange, POST to update.
-    url = makeurl(apiurl, ['source', project, '_attribute'])
+    url = makeurl(apiurl, list(filter(None, ['source', project, package, '_attribute'])))
     http_POST(url, data=ET.tostring(root))
+
+def attribute_value_delete(apiurl, project, name, namespace='OSRT', package=None):
+    http_DELETE(makeurl(
+        apiurl, list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))))
 
 @memoize(session=True)
 def _repository_path_expand(apiurl, project, repo):
@@ -519,6 +526,14 @@ def project_meta_revision(apiurl, project):
     root = ET.fromstringlist(get_commitlog(
         apiurl, project, '_project', None, format='xml', meta=True))
     return int(root.find('logentry').get('revision'))
+
+def package_source_changed(apiurl, project, package):
+    url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
+    root = ETL.parse(http_GET(url)).getroot()
+    return datetime.fromtimestamp(int(root.find('revision/time').text), timezone.utc).replace(tzinfo=None)
+
+def package_source_age(apiurl, project, package):
+    return datetime.utcnow() - package_source_changed(apiurl, project, package)
 
 def entity_exists(apiurl, project, package=None):
     try:
@@ -953,7 +968,7 @@ def request_action_simple_list(apiurl, project, package, states, request_type):
     # Disable including source project in get_request_list() query.
     before = conf.config['include_request_from_project']
     conf.config['include_request_from_project'] = False
-    requests = get_request_list(apiurl, project, package, None, states, request_type)
+    requests = get_request_list(apiurl, project, package, None, states, request_type, withfullhistory=True)
     conf.config['include_request_from_project'] = before
 
     for request in requests:
@@ -984,7 +999,7 @@ def request_action_list_source(apiurl, project, package, states=['new', 'review'
 
 def request_create_submit(apiurl, source_project, source_package,
                           target_project, target_package=None, message=None, revision=None,
-                          ignore_if_any_request=False):
+                          ignore_if_any_request=False, supersede=True, frequency=None):
     """
     ignore_if_any_request: ignore source changes and do not submit if any prior requests
     """
@@ -1001,6 +1016,10 @@ def request_create_submit(apiurl, source_project, source_package,
     for request, action in request_action_list(
         apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['submit']):
         if ignore_if_any_request:
+            return False
+        if not supersede and request.state.name in ('new', 'review'):
+            return False
+        if frequency and request_age(request).total_seconds() < frequency:
             return False
 
         source_hash_pending = package_source_hash(
