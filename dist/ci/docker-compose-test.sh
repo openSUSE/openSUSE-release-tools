@@ -17,6 +17,7 @@ for file in tests/*_tests.py; do
   if test -f /code/travis.settings; then
     COVER_ARGS="--with-coverage --cover-package=. --cover-inclusive"
   fi
+  echo "running tests from $file..."
   run_as_tester nosetests $COVER_ARGS -c .noserc -s $file
 done
 
