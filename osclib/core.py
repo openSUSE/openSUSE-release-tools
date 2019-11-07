@@ -759,11 +759,19 @@ def review_find_last(request, user, states=['all']):
 
     return None
 
-def reviews_remaining(request):
+def reviews_remaining(request, incident_psuedo=False):
     reviews = []
     for review in request.reviews:
         if review.state != 'accepted':
             reviews.append(review_short(review))
+
+    if incident_psuedo:
+        # Add review in the same style as the staging review used for non
+        # maintenance projects to allow for the same wait on review.
+        for action in request.actions:
+            if action.type == 'maintenance_incident':
+                reviews.append('maintenance_incident')
+                break
 
     return reviews
 
