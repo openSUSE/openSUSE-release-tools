@@ -480,6 +480,9 @@ class Request(object):
                                  dst_project=self.target_project)
         self.revoked = False
 
+        print('created submit request {}/{} -> {}'.format(
+            self.source_package.project.name, self.source_package.name, self.target_project))
+
     def __del__(self):
         self.revoke()
 
