@@ -142,11 +142,13 @@ class TestOrigin(OBSLocal.TestCase):
             '<!-- OriginManager state=seen result=None -->',
             'Source not found in allowed origins:',
             '- fakeProject',
+            f'Decision may be overridden via `@{self.bot_user} override`.',
         ]
         self.assertComment(request.reqid, comment)
 
         self.origin_config_write([{'fakeProject': {}}], {'unknown_origin_wait': False})
         self.assertReviewBot(request.reqid, self.bot_user, 'new', 'declined', 'review failed')
+        comment.pop()
         self.assertComment(request.reqid, comment)
 
     def test_devel_only(self):
@@ -176,6 +178,7 @@ class TestOrigin(OBSLocal.TestCase):
                 '<!-- OriginManager state=seen result=None -->',
                 'Source not found in allowed origins:',
                 f'- {self.product_project}',
+                f'Decision may be overridden via `@{self.bot_user} override`.',
             ]
             self.assertComment(request.reqid, comment)
 
