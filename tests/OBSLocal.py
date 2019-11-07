@@ -158,7 +158,7 @@ class TestCase(unittest.TestCase):
         if prefix and not prefix.endswith('_'):
             prefix += '_'
         if not length:
-            length = random.randint(10, 30)
+            length = 2
         return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
 
 
