@@ -630,11 +630,10 @@ def origin_history(apiurl, target_project, package, user):
     request_actions = request_action_list_source(apiurl, target_project, package, states=['all'])
     for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
         annotation = origin_annotation_load(request, action, user)
-        if not annotation:
-            continue
-
         history.append({
-            'origin': annotation.get('origin', 'None'),
+            # Not completely accurate, but more useful to have non-annotated
+            # entries than to exclude them.
+            'origin': annotation['origin'] if annotation else action.src_project,
             'request': request.reqid,
             'state': request.state.name,
             'source_project': action.src_project,
