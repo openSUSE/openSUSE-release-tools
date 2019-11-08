@@ -880,8 +880,8 @@ class StagingAPI(object):
         if not staging:
             raise oscerr.WrongArgs('No staging given')
 
-        import traceback
-        traceback.print_stack()
+        #import traceback
+        #traceback.print_stack()
         opts = {}
         if requests:
             opts['requests'] = 1

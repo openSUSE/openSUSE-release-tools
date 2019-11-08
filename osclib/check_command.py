@@ -57,10 +57,12 @@ class CheckCommand(object):
             report.append('   - Missing check: ' + check.get('name'))
 
         for check in project.findall('checks/*'):
-            if check.get('state') != 'success':
-                info = "   - %s check: %s" % (check.get('state'), check.get('name'))
-                if check.get('url'):
-                    info += " " + check.get('url')
+            state = check.find('state').text
+            if state != 'success':
+                info = "   - %s check: %s" % (state, check.get('name'))
+                url = check.find('url')
+                if url is not None:
+                    info += " " + url.text
                 report.append(info)
                 break
 
@@ -89,11 +91,11 @@ class CheckCommand(object):
         :param project: project to check, None for all
         """
         if project:
-           report = self._check_project(project)
+            report = self._check_project(project)
         else:
-           report = []
-           for project in self.api.get_staging_projects():
-               report.extend(self._check_project(project))
+            report = []
+            for project in self.api.get_staging_projects():
+                report.extend(self._check_project(project))
 
         print('\n'.join(report))
 
