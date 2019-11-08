@@ -162,7 +162,7 @@ class InstallChecker(object):
             self.logger.error('no project status for {}'.format(project))
             return False
 
-        for req in status.findall('selected_requests/entry'):
+        for req in status.findall('staged_requests/request'):
             if req.get('type') == 'delete':
                 result = result and self.check_delete_request(req, to_ignore, result_comment)
 

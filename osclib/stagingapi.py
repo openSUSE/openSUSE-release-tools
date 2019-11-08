@@ -402,40 +402,6 @@ class StagingAPI(object):
 
         return False
 
-    def accept_non_ring_request(self, request):
-        """
-        Accept review of requests that are not yet in any ring so we
-        don't delay their testing.
-        :param request: request to check
-        """
-
-        # Consolidate all data from request
-        request_id = int(request.get('id'))
-        action = request.findall('action')
-        if not action:
-            msg = 'Request {} has no action'.format(request_id)
-            raise oscerr.WrongArgs(msg)
-        # we care only about first action
-        action = action[0]
-
-        # Where are we targeting the package
-        target_project = action.find('target').get('project')
-        target_package = action.find('target').get('package')
-
-        # If the values are empty it is no error
-        if not target_project or not target_package:
-            msg = 'no target/package in request {}, action {}; '
-            msg = msg.format(request_id, action)
-            logging.info(msg)
-
-        # Verify the package ring
-        ring = self.ring_packages.get(target_package, None)
-        if not ring:
-            # accept the request here
-            message = 'No need for staging, not in tested ring projects.'
-            self.do_change_review_state(request_id, 'accepted', message=message,
-                                        by_group=self.cstaging_group)
-
     @memoize(session=True)
     def source_info(self, project, package, rev=None):
         query = {'view': 'info'}
