@@ -479,7 +479,7 @@ def policy_input_calculate(apiurl, project, package,
                 else:
                     inputs['direction'] = 'forward' if index_new < index_old else 'backward'
             except ValueError:
-                inputs['direction'] = 'unkown'
+                inputs['direction'] = 'unknown'
 
     return inputs
 
