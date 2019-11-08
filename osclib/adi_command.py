@@ -25,7 +25,7 @@ class AdiCommand:
         info = self.api.project_status(project, reload=True)
 
         if info.find('staged_requests/request') is not None:
-            if info.find('building_repositories/entry') is not None:
+            if info.find('building_repositories/repo') is not None:
                 print(query_project + ' ' + Fore.MAGENTA + 'building')
                 return
             if info.find('untracked_requests/request') is not None:
@@ -52,7 +52,7 @@ class AdiCommand:
             for check in info.findall('checks/check'):
                 state = check.find('state').text
                 if state != 'success':
-                    print(query_project + '{} {} check: {}'.format(Fore.MAGENTA, state, check.get('name').text))
+                    print(query_project + '{} {} check: {}'.format(Fore.MAGENTA, state, check.get('name')))
                     return
 
         overall_state = info.get('state')
