@@ -120,6 +120,8 @@ DEFAULT = {
         'repo_checker-arch-whitelist': 'x86_64',
         'repo_checker-no-filter': 'True',
         'repo_checker-package-comment-devel': 'True',
+        'review-install-check': 'maintenance-installcheck',
+        'review-openqa': 'qam-openqa',
     },
     r'openSUSE:(?P<project>Backports:(?P<version>[^:]+))$': {
         'staging': 'openSUSE:%(project)s:Staging',

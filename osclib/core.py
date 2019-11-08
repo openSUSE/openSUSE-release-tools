@@ -759,11 +759,19 @@ def review_find_last(request, user, states=['all']):
 
     return None
 
-def reviews_remaining(request):
+def reviews_remaining(request, incident_psuedo=False):
     reviews = []
     for review in request.reviews:
         if review.state != 'accepted':
             reviews.append(review_short(review))
+
+    if incident_psuedo:
+        # Add review in the same style as the staging review used for non
+        # maintenance projects to allow for the same wait on review.
+        for action in request.actions:
+            if action.type == 'maintenance_incident':
+                reviews.append('maintenance_incident')
+                break
 
     return reviews
 
@@ -903,7 +911,15 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
         # Before being assigned to an incident.
         xpath_project = xpath_join(xpath_project, 'action/target/@project="{}"'.format(
             maintenance_project))
-        xpath_project = xpath_join(xpath_project, 'action/source/@package="{}"'.format(package), op='and', inner=True)
+
+        xpath_project_package = ''
+        xpath_project_package = xpath_join(
+            xpath_project_package, 'action/source/@package="{}"'.format(package))
+        xpath_project_package = xpath_join(
+            xpath_project_package, 'action/source/@package="{}"'.format(
+                package_repository), op='or', inner=True)
+
+        xpath_project = xpath_join(xpath_project, f'({xpath_project_package})', op='and', inner=True)
 
         xpath = xpath_join(xpath, xpath_project, op='or', nexpr_parentheses=True)
         xpath_project = ''
@@ -933,7 +949,8 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
 
         for action in request.actions:
             if action.type == 'maintenance_incident' and action.tgt_releaseproject == project and (
-                (action.tgt_package is None and action.src_package == package) or
+                (action.tgt_package is None and
+                    (action.src_package == package or action.src_package == package_repository)) or
                 (action.tgt_package == package_repository)):
                 yield request, action
                 break

@@ -51,8 +51,16 @@ POLICY_DEFAULTS = {
     'pending_submission_allow': False,
     'pending_submission_consider': False,
     'pending_submission_allowed_reviews': [
+        # Non-maintenance projects:
         '<config_source:staging>*',
-        '<config_source:repo-checker>',
+        # Maintenance projects:
+        '<config_source:review-install-check>',
+        '<config_source:review-openqa>',
+    ],
+    # Submit pending requests with a set of allowed reviews, but still wait for
+    # the above reviews before being accepted.
+    'pending_submission_allowed_reviews_update': [
+        '!maintenance_incident',
     ],
 }
 
@@ -277,7 +285,7 @@ def project_source_pending(apiurl, project, package, source_hash):
         if source_hash_consider == source_hash:
             return PendingRequestInfo(
                 request_remote_identifier(apiurl, apiurl_remote, request.reqid),
-                reviews_remaining(request))
+                reviews_remaining(request, True))
 
     return False
 
@@ -403,9 +411,11 @@ def policy_get(apiurl, project, package, origin):
 def policy_get_preprocess(apiurl, origin, policy):
     project = origin.rstrip('~')
     config_project = Config.get(apiurl, project)
-    policy['pending_submission_allowed_reviews'] = list(filter(None, [
-        config_resolve_variable(v, config_project, 'config_source')
-        for v in policy['pending_submission_allowed_reviews']]))
+    for suffix in ('', '_update'):
+        key = 'pending_submission_allowed_reviews{}'.format(suffix)
+        policy[key] = list(filter(None, [
+            config_resolve_variable(v, config_project, 'config_source')
+            for v in policy[key]]))
 
     return policy
 
@@ -519,18 +529,32 @@ def policy_input_evaluate(policy, inputs):
     return result
 
 def policy_input_evaluate_reviews_not_allowed(policy, inputs):
+    return reviews_filter_allowed(inputs['pending_submission'].reviews_remaining,
+                                  policy['pending_submission_allowed_reviews'])
+
+def reviews_filter_allowed(reviews_remaining, allowed_reviews):
     reviews_not_allowed = []
-    for review_remaining in inputs['pending_submission'].reviews_remaining:
-        allowed = False
-        for review_allowed in policy['pending_submission_allowed_reviews']:
+    for review_remaining in reviews_remaining:
+        allowed = None
+        not_rule = False
+        for review_allowed in allowed_reviews:
+            result = True
+            if review_allowed.startswith('!'):
+                not_rule = True
+                review_allowed = review_allowed[1:]
+                result = False
+
             if review_allowed.endswith('*') and review_remaining.startswith(review_allowed[:-1]):
-                allowed = True
+                allowed = result
                 break
             if review_remaining == review_allowed:
-                allowed = True
+                allowed = result
                 break
 
-        if not allowed:
+        # If not the allowed case then add the review to not allowed list.
+        # Allowed if either matches an allow rule or does not match anything
+        # when at least one not rule is present.
+        if not (allowed or (not_rule and allowed is None)):
             reviews_not_allowed.append(review_remaining)
 
     return reviews_not_allowed
@@ -691,7 +715,7 @@ def origin_update(apiurl, target_project, package):
 
     if policy['pending_submission_allow']:
         request_id = origin_update_pending(
-            apiurl, origin_info.project, package, target_project, supersede, frequency)
+            apiurl, origin_info.project, package, target_project, policy, supersede, frequency)
         if request_id:
             return request_id
 
@@ -699,11 +723,16 @@ def origin_update(apiurl, target_project, package):
     return request_create_submit(apiurl, origin_info.project, package, target_project, message=message,
                                  supersede=supersede, frequency=frequency)
 
-def origin_update_pending(apiurl, origin_project, package, target_project, supersede, frequency):
+def origin_update_pending(apiurl, origin_project, package, target_project, policy, supersede, frequency):
     apiurl_remote, project_remote = project_remote_apiurl(apiurl, origin_project)
     request_actions = request_action_list_source(
         apiurl_remote, project_remote, package, include_release=True)
     for request, action in sorted(request_actions, key=lambda i: i[0].reqid, reverse=True):
+        reviews_not_allowed = reviews_filter_allowed(
+            reviews_remaining(request, True), policy['pending_submission_allowed_reviews_update'])
+        if len(reviews_not_allowed):
+            continue
+
         identifier = request_remote_identifier(apiurl, apiurl_remote, request.reqid)
         message = 'Newer pending source available from package origin. See {}.'.format(identifier)
         src_project = project_remote_prefixed(apiurl, apiurl_remote, action.src_project)
