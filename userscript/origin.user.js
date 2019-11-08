@@ -87,7 +87,7 @@ function origin_load(element, project, package) {
             if (origin.startsWith('OSRT:OriginConfig attribute missing')) {
                 item.innerHTML = '';
             } else {
-                item.innerHTML = '<i class="fas fa-bug text-warning"></i> Origin: failed to load';
+                origin_load_fail(item);
             }
         } else {
             var origin_project = origin.trim();
@@ -111,7 +111,14 @@ function origin_load(element, project, package) {
                 '<a target="_blank" href="' + url + '">Origin Manager Interface</a>';
             element.appendChild(item);
         }
-    }});
+    }})
+    .fail(function() {
+        origin_load_fail(item);
+    });
+}
+
+function origin_load_fail(item) {
+    item.innerHTML = '<i class="fas fa-bug text-warning"></i> Origin: failed to load';
 }
 
 function operator_url() {
