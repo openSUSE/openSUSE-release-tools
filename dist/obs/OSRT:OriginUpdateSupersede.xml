@@ -1,4 +1,4 @@
-<definition name="OSRT:OSRT:OriginUpdateSupersede" namespace="OSRT">
+<definition name="OriginUpdateSupersede" namespace="OSRT">
   <description>OriginManager allowed to supersede existing requests (true or false)</description>
   <count>1</count>
   <modifiable_by role="maintainer"/>
