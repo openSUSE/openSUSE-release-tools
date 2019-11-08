@@ -164,16 +164,11 @@ class RequestFinder(object):
         for p in pkgs:
             found = False
             for staging in status.findall('staging_project'):
-                if _is_int(p) and self.api.get_package_for_request_id(staging.get('name'), p):
-                    self.srs[int(p)] = {'staging': staging.get('name')}
-                    found = True
-                    break
-                else:
-                    for request in staging.findall('staged_requests/request'):
-                        if request.get('package') == p:
-                            self.srs[int(request.get('id'))] = {'staging': staging.get('name')}
-                            found = True
-                            break
+                for request in staging.findall('staged_requests/request'):
+                    if request.get('package') == p or request.get('id') == p:
+                        self.srs[int(request.get('id'))] = {'staging': staging.get('name')}
+                        found = True
+                        break
             if not found:
                 raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 

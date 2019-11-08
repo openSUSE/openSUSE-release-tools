@@ -2,7 +2,6 @@ from osc import conf
 from osc.core import get_request
 from osclib.request_finder import RequestFinder
 
-
 class UnselectCommand(object):
     CLEANUP_WHITELIST = 'origin-manager'
 
@@ -21,14 +20,14 @@ class UnselectCommand(object):
 
     @staticmethod
     def filter_obsolete(request, updated_delta):
-        if request['state'] == 'superseded':
+        if request.get('state') == 'superseded':
             # Allow for cases where a request is superseded, but a newer request
             # is never staged due all newer requests being superseded/declined.
             return updated_delta.days >= UnselectCommand.cleanup_days
 
-        if (request['state'] == 'revoked' or
-           (request['state'] == 'declined' and (
-                request['creator'] in UnselectCommand.cleanup_whitelist or
+        if (request.get('state') == 'revoked' or
+           (request.get('state') == 'declined' and (
+                request.get('creator') in UnselectCommand.cleanup_whitelist or
                 updated_delta.days >= UnselectCommand.cleanup_days))):
             return True
 

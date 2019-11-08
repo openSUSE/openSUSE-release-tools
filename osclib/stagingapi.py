@@ -842,17 +842,15 @@ class StagingAPI(object):
         return log.getvalue()
 
     def project_status(self, staging, status=True, requests=True, reload=False):
-        if not staging:
-            raise oscerr.WrongArgs('No staging given')
-
-        #import traceback
-        #traceback.print_stack()
         opts = {}
         if requests:
             opts['requests'] = 1
         if status:
             opts['status'] = 1
-        url = self.makeurl(['staging', self.project, 'staging_projects', staging], opts)
+        paths = ['staging', self.project, 'staging_projects']
+        if staging:
+            paths.append(staging)
+        url = self.makeurl(paths, opts)
         return ET.parse(self.retried_GET(url)).getroot()
 
     def check_project_status(self, project):
@@ -877,13 +875,12 @@ class StagingAPI(object):
         return final, tobuild
 
     def project_status_requests(self, request_type, filter_function=None):
-        key = '{}_requests'.format(request_type)
         requests = []
-        for status in self.project_status():
-            for request in status[key]:
-                updated_at = dateutil.parser.parse(request['updated_at'], ignoretz=True)
+        for status in self.project_status(None):
+            for request in status.findall(f'{request_type}_requests/request'):
+                updated_at = dateutil.parser.parse(request.get('updated'), ignoretz=True)
                 updated_delta = datetime.utcnow() - updated_at
-                if updated_delta.total_seconds() < 5 * 60:
+                if updated_delta.total_seconds() < 0 * 60:
                     # Allow for dashboard to update caches by not considering
                     # requests whose state has changed in the last 5 minutes.
                     continue
@@ -891,7 +888,7 @@ class StagingAPI(object):
                 if filter_function and not filter_function(request, updated_delta):
                     continue
 
-                requests.append(str(request['number']))
+                requests.append(str(request.get('id')))
 
         return requests
 
