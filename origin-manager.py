@@ -169,6 +169,9 @@ class OriginManager(ReviewBot.ReviewBot):
         return False, None
 
     def policy_result_handle(self, project, package, origin_info_new, origin_info_old, result):
+        if result.wait and not result.accept:
+            result.comments.append(f'Decision may be overridden via `@{self.review_user} override`.')
+
         self.policy_result_reviews_add(project, package, result.reviews, origin_info_new, origin_info_old)
         self.policy_result_comment_add(project, package, result.comments)
 
