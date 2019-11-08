@@ -376,24 +376,7 @@ def osrt_origin_update(apiurl, opts, *packages):
         return
 
     if len(packages) == 0:
-        packages = set(package_list_kind_filtered(apiurl, opts.project))
-
-        # Include packages from origins with initial update enabled to allow for
-        # potential new package submissions.
-        for origin in origin_updatable_initial(apiurl, opts.project):
-            for package in package_list(apiurl, origin):
-                # Only add missing package if it does not exist in target
-                # project. If it exists in target then it is not a source
-                # package (since origin list is filtered to source) and should
-                # not be updated. This also properly avoids submitting a package
-                # that is a subpackage in target, but is a source package in an
-                # origin project.
-                if package in packages or entity_exists(apiurl, opts.project, package):
-                    continue
-
-                # No sense submitting a non-source package (most expensive).
-                if package_kind(apiurl, origin, package) == 'source':
-                    packages.add(package)
+        packages = osrt_origin_update_packages(apiurl, opts.project)
 
     for package in packages:
         print('checking for updates to {}/{}...'.format(opts.project, package))
@@ -401,3 +384,25 @@ def osrt_origin_update(apiurl, opts, *packages):
         request_future = origin_update(apiurl, opts.project, package)
         if request_future:
             request_future.print_and_create(opts.dry)
+
+def osrt_origin_update_packages(apiurl, project):
+    packages = set(package_list_kind_filtered(apiurl, project))
+
+    # Include packages from origins with initial update enabled to allow for
+    # potential new package submissions.
+    for origin in origin_updatable_initial(apiurl, project):
+        for package in package_list(apiurl, origin):
+            # Only add missing package if it does not exist in target
+            # project. If it exists in target then it is not a source
+            # package (since origin list is filtered to source) and should
+            # not be updated. This also properly avoids submitting a package
+            # that is a subpackage in target, but is a source package in an
+            # origin project.
+            if package in packages or entity_exists(apiurl, project, package):
+                continue
+
+            # No sense submitting a non-source package (most expensive).
+            if package_kind(apiurl, origin, package) == 'source':
+                packages.add(package)
+
+    return packages

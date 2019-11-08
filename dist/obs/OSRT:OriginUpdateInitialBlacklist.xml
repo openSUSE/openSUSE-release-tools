@@ -1,0 +1,5 @@
+<definition name="OriginUpdateInitialBlacklist" namespace="OSRT">
+  <description>OriginManager update initial blacklist patterns (filters potential new package submissions)</description>
+  <count>1</count>
+  <modifiable_by role="maintainer"/>
+</definition>

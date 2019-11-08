@@ -685,6 +685,9 @@ def origin_update(apiurl, target_project, package):
             return request_create_delete(apiurl, target_project, package, message)
 
         if not exists:
+            if origin_update_initial_blacklisted(apiurl, target_project, package):
+                return False
+
             message = 'Submitting new package from highest potential origin.'
             return request_create_submit(apiurl, origin, package, target_project, message=message,
                                          ignore_if_any_request=True)
@@ -771,6 +774,28 @@ def origin_update_mode(apiurl, target_project, package, policy, origin_project):
             values[key] = policy[f'automatic_updates_{key}']
 
     return values
+
+def origin_update_initial_blacklisted(apiurl, target_project, package):
+    patterns = origin_update_initial_blacklisted_patterns(apiurl, target_project)
+    for pattern in patterns:
+        if pattern.match(package):
+            return True
+
+    return False
+
+@memoize(session=True)
+def origin_update_initial_blacklisted_patterns(apiurl, target_project):
+    patterns = []
+
+    blacklist = attribute_value_load(apiurl, target_project, 'OriginUpdateInitialBlacklist')
+    if blacklist:
+        for entry in blacklist.strip().splitlines():
+            if not entry:
+                continue
+
+            patterns.append(re.compile(entry, re.IGNORECASE))
+
+    return patterns
 
 @memoize(session=True)
 def origin_updatable(apiurl):
