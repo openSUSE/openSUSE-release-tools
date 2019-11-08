@@ -647,7 +647,6 @@ class StagingAPI(object):
         :param project: project the package is in
         :param package: package we want to query for
         """
-        logging.error('get_request_id_for_package')
         data = self.project_status(project, status=False)
         for x in data.findall('staged_requests/request'):
             if x.get('package') == package:

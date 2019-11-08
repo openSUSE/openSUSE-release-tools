@@ -158,19 +158,22 @@ class RequestFinder(object):
         This function is only called for its side effect.
         """
 
+        url = self.api.makeurl(['staging', self.api.project, 'staging_projects'], { 'requests': 1 })
+        status = ET.parse(self.api.retried_GET(url)).getroot()
+
         for p in pkgs:
             found = False
-            for staging in self.api.get_staging_projects():
-                if _is_int(p) and self.api.get_package_for_request_id(staging, p):
-                    self.srs[int(p)] = {'staging': staging}
+            for staging in status.findall('staging_project'):
+                if _is_int(p) and self.api.get_package_for_request_id(staging.get('name'), p):
+                    self.srs[int(p)] = {'staging': staging.get('name')}
                     found = True
                     break
                 else:
-                    rq = self.api.get_request_id_for_package(staging, p)
-                    if rq:
-                        self.srs[rq] = {'staging': staging}
-                        found = True
-                        break
+                    for request in staging.findall('staged_requests/request'):
+                        if request.get('package') == p:
+                            self.srs[int(request.get('id'))] = {'staging': staging.get('name')}
+                            found = True
+                            break
             if not found:
                 raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
