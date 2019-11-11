@@ -4,7 +4,7 @@ from osclib.request_finder import RequestFinder
 
 
 class UnselectCommand(object):
-    CLEANUP_WHITELIST = 'leaper'
+    CLEANUP_WHITELIST = 'origin-manager'
 
     def __init__(self, api):
         self.api = api
