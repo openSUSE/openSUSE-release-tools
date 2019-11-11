@@ -459,4 +459,4 @@ pipelines:
                 cd home:maintenance-installcheck:15-SP1:QR/000product
                 sed -e 's,home:maintenance-installcheck:15-SP1:QR,SUSE:SLE-15-SP1:Update:QR,' -i *
                 osc ci -m 'Fix repoid'
-                osc sr SUSE:SLE-15-SP1:Update:QR -m 'Update Package List'
+                osc sr --yes SUSE:SLE-15-SP1:Update:QR -m 'Update Package List'
