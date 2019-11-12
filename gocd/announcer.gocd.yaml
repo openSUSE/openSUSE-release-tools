@@ -18,6 +18,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: ./factory-package-news/announcer.py --config config/announcer/openSUSE:Factory.yml --verbose --state-file /home/go/config/announcer.yaml
+  Announcer.FactoryARM:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: ./factory-package-news/announcer.py --config config/announcer/openSUSE:Factory:ARM.yml --verbose --state-file /home/go/config/announcer.yaml
   Announcer.Kubic:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -36,6 +54,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: ./factory-package-news/announcer.py --config config/announcer/openSUSE:Kubic.yml --verbose --state-file /home/go/config/announcer.yaml
+  Announcer.KubicARM:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 1 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: ./factory-package-news/announcer.py --config config/announcer/openSUSE:Kubic:ARM.yml --verbose --state-file /home/go/config/announcer.yaml
   Announcer.MicroOS:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -54,6 +90,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: ./factory-package-news/announcer.py --config config/announcer/openSUSE:MicroOS.yml --verbose --state-file /home/go/config/announcer.yaml
+  Announcer.MicroOSARM:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 2 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: ./factory-package-news/announcer.py --config config/announcer/openSUSE:MicroOS:ARM.yml --verbose --state-file /home/go/config/announcer.yaml
   Announcer.Leap_15.2:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
