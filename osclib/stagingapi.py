@@ -876,7 +876,7 @@ class StagingAPI(object):
 
     def project_status_requests(self, request_type, filter_function=None):
         requests = []
-        for status in self.project_status(None):
+        for status in self.project_status(None, status=False):
             for request in status.findall(f'{request_type}_requests/request'):
                 updated_at = dateutil.parser.parse(request.get('updated'), ignoretz=True)
                 updated_delta = datetime.utcnow() - updated_at
