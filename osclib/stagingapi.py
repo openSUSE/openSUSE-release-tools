@@ -560,6 +560,14 @@ class StagingAPI(object):
             ignore[entry.get('id')] = entry.get('description')
         return ignore
 
+    @memoize(session=True)
+    def add_ignored_request(self, request_id, comment):
+        ignore = {}
+        url = self.makeurl(['staging', self.project, 'excluded_requests'])
+        root = ET.Element('excluded_requests')
+        req = ET.SubElement(root, 'request', { 'number': str(request_id), 'description': comment })
+        http_POST(url, data=ET.tostring(root))
+
     @memoize(session=True, add_invalidate=True)
     def get_open_requests(self, query_extra=None, include_nonfree=True):
         """
