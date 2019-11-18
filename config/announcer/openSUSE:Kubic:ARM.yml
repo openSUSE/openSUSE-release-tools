@@ -24,7 +24,7 @@ bodytemplate: '
 iso: openSUSE-Kubic-DVD-aarch64-Current.iso
 changesfile: "Changes.Kubic.{version}.txt"
 to: opensuse-kubic@opensuse.org
-name: openSUSE:Kubic
+name: openSUSE:Kubic:ARM
 subject: New ARM Kubic snapshot {version} released!
 sender: Guillaume Gardet <guillaume.gardet@arm.com>
 url: http://download.opensuse.org/ports/aarch64/tumbleweed/iso/
