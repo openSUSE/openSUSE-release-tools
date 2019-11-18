@@ -284,6 +284,9 @@ class StagingWorkflow(object):
         if self.projects.get('target'): return
         self.create_group('factory-staging')
         self.projects['target'] = Project(name=self.project, reviewer={'groups': ['factory-staging']})
+        url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
+        data = "<workflow managers='factory-staging'/>"
+        osc.core.http_POST(url, data=data)
 
     def setup_rings(self):
         self.create_target()
