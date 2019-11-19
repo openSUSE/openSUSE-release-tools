@@ -436,10 +436,7 @@ def do_staging(self, subcmd, opts, *args):
                 if api.item_exists(api.crebuild):
                     cmd.sync_buildfailures()
         elif cmd == 'unselect':
-            if opts.message:
-                print('Ignoring requests first')
-                IgnoreCommand(api).perform(args[1:], opts.message)
-            UnselectCommand(api).perform(args[1:], opts.cleanup)
+            UnselectCommand(api).perform(args[1:], opts.cleanup, opts.message)
         elif cmd == 'select':
             # Include list of all stagings in short-hand and by full name.
             existing_stagings = api.get_staging_projects_short(None)

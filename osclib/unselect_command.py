@@ -1,5 +1,6 @@
 from osc import conf
 from osc.core import get_request
+from osclib.comments import CommentAPI
 from osclib.request_finder import RequestFinder
 
 class UnselectCommand(object):
@@ -8,6 +9,7 @@ class UnselectCommand(object):
     def __init__(self, api):
         self.api = api
         self.config_init(api)
+        self.comment = CommentAPI(self.api.apiurl)
 
     @classmethod
     def config_init(cls, api):
@@ -33,7 +35,7 @@ class UnselectCommand(object):
 
         return False
 
-    def perform(self, packages, cleanup=False):
+    def perform(self, packages, cleanup, message):
         """
         Remove request from staging project
         :param packages: packages/requests to delete from staging projects
@@ -45,7 +47,6 @@ class UnselectCommand(object):
                 print('Cleanup {} obsolete requests'.format(len(obsolete)))
                 packages += tuple(obsolete)
 
-        ignored_requests = self.api.get_ignored_requests()
         affected_projects = set()
         for request, request_project in RequestFinder.find_staged_sr(packages,
                                                                      self.api).items():
@@ -55,7 +56,10 @@ class UnselectCommand(object):
             self.api.rm_from_prj(staging_project, request_id=request, msg='Removing from {}, re-evaluation needed'.format(staging_project))
 
             req = get_request(self.api.apiurl, str(request))
-            if req.state.name in ('new', 'review') and request not in ignored_requests:
+            if message:
+                self.api.add_ignored_request(request, message)
+                self.comment.add_comment(request_id=str(request), comment=message)
+            elif req.state.name in ('new', 'review'):
                 print('  Consider marking the request ignored to let others know not to restage.')
 
         # Notify everybody about the changes
