@@ -30,11 +30,11 @@ class AdiCommand:
                 return
             if info.find('untracked_requests/request') is not None:
                 print(query_project + ' ' + Fore.YELLOW + 'untracked: ' + ', '.join(['{}[{}]'.format(
-                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info.findall('untracked_requests/request')]))
+                    Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')) for req in info.findall('untracked_requests/request')]))
                 return
             if info.find('obsolete_requests/request') is not None:
                 print(query_project + ' ' + Fore.YELLOW + 'obsolete: ' + ', '.join(['{}[{}]'.format(
-                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info.findall('obsolete_requests/request')]))
+                    Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')) for req in info.findall('obsolete_requests/request')]))
                 return
             if info.find('broken_packages/package') is not None:
                 print(query_project + ' ' + Fore.RED + 'broken: ' + ', '.join([
