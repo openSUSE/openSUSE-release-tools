@@ -562,10 +562,11 @@ def do_staging(self, subcmd, opts, *args):
                     request_ids = map(str, info['requests'].keys())
                     target_project = api.prj_from_short(info['staging'])
 
-                    if 'merge' not in info:
-                        # Assume that the original splitter_info is desireable
-                        # and that this staging is simply manual followup.
-                        api.set_splitter_info_in_prj_pseudometa(target_project, info['group'], info['strategy'])
+                    # TODO: Find better place for splitter info
+                    # if 'merge' not in info:
+                    #    Assume that the original splitter_info is desireable
+                    #    and that this staging is simply manual followup.
+                    #    api.set_splitter_info_in_prj_pseudometa(target_project, info['group'], info['strategy'])
 
                     SelectCommand(api, target_project) \
                         .perform(request_ids, no_freeze=opts.no_freeze)
