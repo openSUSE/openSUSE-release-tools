@@ -497,14 +497,6 @@ class StagingAPI(object):
                                                     by_group=self.cstaging_group, message=message)
                         return stage_info, True
 
-                # If both submits are from different source projects then check
-                # the source info and proceed accordingly, otherwise supersede.
-                # A targeted package overrides this condition.
-                if (is_targeted or replace_old or
-                    (request_new.find('action/source').get('project') ==
-                     request_old.find('action/source').get('project'))):
-                    return stage_info, None
-
                 source_info_new = self.source_info_request(request_new)
                 source_info_old = self.source_info_request(request_old)
 
@@ -615,7 +607,6 @@ class StagingAPI(object):
         # check if we can reduce it down by accepting some
         for rq in requests:
             stage_info, code = self.update_superseded_request(rq, target_requests)
-            print('STAGING', stage_info, code)
             if stage_info:
                 yield (stage_info, code, rq)
         self._supersede = False
