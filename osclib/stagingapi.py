@@ -772,12 +772,11 @@ class StagingAPI(object):
 
     def rebuild_broken(self, status, check=True):
         """ Rebuild broken packages given a staging's status information. """
-        for package in status['broken_packages']:
-            package = {k: str(v) for k, v in package.items()}
-            if package['state'] == 'unresolvable':
+        for package in status.findall('broken_packages/package'):
+            if package.get('state') == 'unresolvable':
                 continue
-            key = (package['project'], package['package'],
-                   package['repository'], package['arch'])
+            key = (package.get('project'), package.get('package'),
+                   package.get('repository'), package.get('arch'))
             if check and not self.rebuild_check(*key):
                 yield (key, 'skipped')
                 continue
