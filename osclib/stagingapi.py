@@ -796,6 +796,17 @@ class StagingAPI(object):
 
         return False
 
+    def format_review(self, review):
+        if review.get('by_group'):
+            return 'group:{}'.format(review.get('by_group'))
+        if review.get('by_user'):
+            return review.get('by_user')
+        if review.get('by_package'):
+            return '{}/{}'.format(review.get('by_project'), review.get('by_package'))
+        if review.get('by_project'):
+            return review.get('by_project')
+        raise oscerr.WrongArgs('Invalid review')
+
     def job_history_fail_count(self, history):
         fail_count = 0
         for job in reversed(history.findall('jobhist')):
@@ -1198,7 +1209,7 @@ class StagingAPI(object):
     def switch_flag_in_prj(self, project, flag='build', state='disable', repository=None, arch=None):
         query = { 'cmd': 'set_flag', 'flag': flag, 'status': state }
         if repository:
-            query['repository'] = _repository
+            query['repository'] = repository
         if arch:
             query['arch'] = arch
         url = self.makeurl(['source', project], query)

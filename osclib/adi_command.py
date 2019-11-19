@@ -42,9 +42,9 @@ class AdiCommand:
                 return
             for review in info.findall('missing_reviews/review'):
                 print(query_project + ' ' + Fore.WHITE + 'review: ' + '{} for {}[{}]'.format(
-                    Fore.YELLOW + review.get('by', 'https://github.com/openSUSE/open-build-service/issues/8575') + Fore.RESET,
+                    Fore.YELLOW + self.api.format_review(review) + Fore.RESET,
                     Fore.CYAN + review.get('package') + Fore.RESET,
-                    review.get('id', 'https://github.com/openSUSE/open-build-service/issues/8575')))
+                    review.get('request')))
                 return
             for check in info.findall('missing_checks/check'):
                 print(query_project + ' ' + Fore.MAGENTA + 'missing: {}'.format(check.get('name')))

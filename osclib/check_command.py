@@ -31,13 +31,13 @@ class CheckCommand(object):
                 break
 
         # Missing reviews
-        for r in project.findall('missing_reviews/*'):
-            report.append('   - %s: Missing reviews: %s' % (r.get('package'), r.get('by')))
+        for r in project.findall('missing_reviews/review'):
+            report.append('   - %s: Missing reviews: %s' % (r.get('package'), self.api.format_review(r)))
             if not verbose:
                 break
 
         # Building repositories
-        if project.find('building_repositories/*') is not None:
+        if project.find('building_repositories/repo') is not None:
             report.append('   - At least following repositories are still building:')
         for r in project.findall('building_repositories/*'):
             report.append('     %s/%s: %s' % (r.get('repository'), r.get('arch'), r.get('state')))
@@ -45,9 +45,9 @@ class CheckCommand(object):
                 break
 
         # Broken packages
-        if project.find('broken_packages/*') is not None:
+        if project.find('broken_packages/package') is not None:
             report.append('   - Following packages are broken:')
-        for r in project.findall('broken_packages/*'):
+        for r in project.findall('broken_packages/package'):
             report.append('     %s (%s): %s' % (r.get('package'), r.get('repository'), r.get('state')))
             if not verbose:
                 break
