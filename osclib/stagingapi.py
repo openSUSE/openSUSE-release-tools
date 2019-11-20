@@ -1222,7 +1222,7 @@ class StagingAPI(object):
         """
 
         data = self.project_status(project)
-        if data.get('state') == 'empty':
+        if data.get('state') != 'empty':
             return True  # already has content
 
         # young enough

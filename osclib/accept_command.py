@@ -100,8 +100,8 @@ class AcceptCommand(object):
         while self.api.project_status(project, reload=True, requests=False).get('state') != 'empty':
             time.sleep(1)
 
-        self.api.staging_deactivate(project)
         self.api.accept_status_comment(project, packages)
+        self.api.staging_deactivate(project)
 
         return True
 

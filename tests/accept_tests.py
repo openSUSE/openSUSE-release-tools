@@ -11,7 +11,7 @@ from . import OBSLocal
 
 class TestAccept(unittest.TestCase):
 
-    def setup_vcr(self):
+    def setup_wf(self):
         wf = OBSLocal.StagingWorkflow()
         wf.setup_rings()
 
@@ -23,11 +23,10 @@ class TestAccept(unittest.TestCase):
         self.winerq = wf.create_submit_request('devel:wine', 'wine', text='Hallo World')
         self.assertEqual(True, SelectCommand(wf.api, self.prj).perform(['wine']))
         self.comments = self.c_api.get_comments(project_name=self.prj)
-        self.assertGreater(len(self.comments), 0)
         return wf
 
     def test_accept_comments(self):
-        wf = self.setup_vcr()
+        wf = self.setup_wf()
 
         self.assertEqual(True, AcceptCommand(wf.api).perform(self.prj))
 
@@ -36,7 +35,7 @@ class TestAccept(unittest.TestCase):
         self.assertEqual(len(accepted_comments), 0)
 
     def test_accept_final_comment(self):
-        wf = self.setup_vcr()
+        wf = self.setup_wf()
 
         # snipe out cleanup to see the comments before the final countdown
         wf.api.staging_deactivate = MagicMock(return_value=True)

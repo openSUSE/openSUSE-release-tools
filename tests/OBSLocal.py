@@ -287,6 +287,9 @@ class StagingWorkflow(object):
         url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
         data = "<workflow managers='factory-staging'/>"
         osc.core.http_POST(url, data=data)
+        # creates A and B as well
+        self.projects['staging:A'] = Project(self.project + ':Staging:A', create=False)
+        self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
 
     def setup_rings(self):
         self.create_target()
@@ -333,15 +336,28 @@ class StagingWorkflow(object):
         return self.submit_package(package)
 
     def create_staging(self, suffix, freeze=False, rings=None):
+        staging_key = 'staging:{}'.format(suffix)
+        # do not reattach if already present
+        if not staging_key in self.projects:
+            staging_name = self.project + ':Staging:' + suffix
+            staging = Project(staging_name, create=False)
+            url = osc.core.makeurl(APIURL, ['staging', self.project, 'staging_projects'])
+            data = '<workflow><staging_project>{}</staging_project></workflow>'
+            osc.core.http_POST(url, data=data.format(staging_name))
+            self.projects[staging_key] = staging
+        else:
+            staging = self.projects[staging_key]
+
         project_links = []
         if rings == 0:
             project_links.append(self.project + ":Rings:0-Bootstrap")
         if rings == 1 or rings == 0:
             project_links.append(self.project + ":Rings:1-MinimalX")
-        staging = Project(self.project + ':Staging:' + suffix, project_links=project_links)
+        staging.update_meta(project_links=project_links)
+
         if freeze:
             FreezeCommand(self.api).perform(staging.name)
-        self.projects['staging:{}'.format(suffix)] = staging
+
         return staging
 
     def __del__(self):
@@ -379,6 +395,9 @@ class Project(object):
         if not create:
             return
 
+        self.update_meta(reviewer, maintainer, project_links)
+
+    def update_meta(self, reviewer={}, maintainer={}, project_links=[]):
         meta = """
             <project name="{0}">
               <title></title>

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 import unittest
 import re
@@ -8,8 +6,9 @@ import osc.core
 
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 from mock import MagicMock
+from nose.tools import nottest
 from . import OBSLocal
 
 class TestApiCalls(OBSLocal.TestCase):
@@ -64,26 +63,6 @@ class TestApiCalls(OBSLocal.TestCase):
             'wine': 'openSUSE:Factory:Rings:1-MinimalX',
         }
         self.assertEqual(ring_packages, self.wf.api.ring_packages)
-
-    def test_pseudometa_get_prj(self):
-        """
-        Test getting project metadata from YAML in project description
-        """
-
-        self.wf.create_staging('A')
-
-        # Try to get data from project that has no metadata
-        data = self.wf.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
-        # Should be empty, but contain structure to work with
-        self.assertEqual(data, {'requests': []})
-        # Add some sample data
-        rq = {'id': '123', 'package': 'test-package'}
-        data['requests'].append(rq)
-        # Save them and read them back
-        self.wf.api.set_prj_pseudometa('openSUSE:Factory:Staging:A', data)
-        test_data = self.wf.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
-        # Verify that we got back the same data
-        self.assertEqual(data, test_data)
 
     def test_list_projects(self):
         """
@@ -144,28 +123,26 @@ class TestApiCalls(OBSLocal.TestCase):
 
         # Verify that review is closed
         rq = self.winerq.xml()
-        self.assertIsNotNone(rq.find('.//state[@name="new"]'))
+        xpath = "//review[@name='new' and @by_project='{}']".format(self.staging_b.name)
+        self.assertIsNotNone(rq.xpath(xpath))
+
 
     def test_add_sr(self):
+        # setup is already adding the request, we just verify
         prj = self.staging_b.name
         pkg = 'wine'
         num = self.winerq.reqid
 
-        # Running it twice shouldn't change anything
-        for i in range(2):
-            # Add rq to the project
-            self.wf.api.rq_to_prj(num, prj)
-            # Verify that review is there
-            reviews = [{'by_group': 'factory-staging', 'state': 'accepted'},
-                       {'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'}]
-            self.assertEqual(self.winerq.reviews(), reviews)
-            self.assertEqual(self.wf.api.get_prj_pseudometa(prj),
-                    {'requests': [{'id': int(num), 'package': 'wine', 'author': 'Admin', 'type': 'submit'}]})
+        # Verify that review is there
+        reviews = [{'by_group': 'factory-staging', 'state': 'accepted'},
+                   {'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'}]
+        self.assertEqual(self.winerq.reviews(), reviews)
+        self.assertEqual(self.wf.api.packages_staged,
+                {'wine': {'prj': 'openSUSE:Factory:Staging:B', 'rq_id': num}})
 
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
 
-        self.wf = OBSLocal.StagingWorkflow()
         self.wf.create_staging('B')
         self.wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
 
@@ -209,7 +186,6 @@ class TestApiCalls(OBSLocal.TestCase):
 
     def test_prj_from_letter(self):
 
-        self.wf = OBSLocal.StagingWorkflow()
         # Verify it works
         self.assertEqual(self.wf.api.prj_from_letter('openSUSE:Factory'), 'openSUSE:Factory')
         self.assertEqual(self.wf.api.prj_from_letter('A'), 'openSUSE:Factory:Staging:A')
@@ -254,6 +230,7 @@ class TestApiCalls(OBSLocal.TestCase):
 
         self.wf.api._fetch_project_meta = MagicMock(return_value=body)
 
+    @nottest # TODO
     def test_move(self):
         """Test package movement."""
 
