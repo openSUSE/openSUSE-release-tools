@@ -1,0 +1,92 @@
+<staging_project name="openSUSE:Factory:Staging:H" state="failed">
+  <staged_requests count="16">
+    <request id="730409" type="submit" creator="vitezslav_cizek" state="review" package="thrift" superseded_by="" updated="2019-11-18T14:41:30Z"/>
+    <request id="731558" type="submit" creator="lnussel_factory" state="review" package="neon" superseded_by="" updated="2019-11-18T14:41:35Z"/>
+    <request id="731559" type="submit" creator="lnussel_factory" state="review" package="mysql-connector-cpp" superseded_by="" updated="2019-11-18T14:41:39Z"/>
+    <request id="731560" type="submit" creator="lnussel_factory" state="review" package="openslp" superseded_by="" updated="2019-11-18T14:41:44Z"/>
+    <request id="731562" type="submit" creator="lnussel_factory" state="review" package="apr-util" superseded_by="" updated="2019-11-18T14:41:53Z"/>
+    <request id="733184" type="submit" creator="lnussel_factory" state="review" package="perl-Net-SSLeay" superseded_by="" updated="2019-11-18T14:41:57Z"/>
+    <request id="733185" type="submit" creator="lnussel_factory" state="review" package="perl-IO-Socket-SSL" superseded_by="" updated="2019-11-18T14:42:02Z"/>
+    <request id="733186" type="submit" creator="lnussel_factory" state="review" package="python-cryptography" superseded_by="" updated="2019-11-18T14:42:09Z"/>
+    <request id="733193" type="submit" creator="lnussel_factory" state="review" package="python-M2Crypto" superseded_by="" updated="2019-11-18T14:42:14Z"/>
+    <request id="733202" type="submit" creator="lnussel_factory" state="review" package="fipscheck" superseded_by="" updated="2019-11-18T14:42:21Z"/>
+    <request id="737629" type="submit" creator="origin-manager" state="review" package="python-pyOpenSSL" superseded_by="" updated="2019-11-18T14:42:26Z"/>
+    <request id="744011" type="submit" creator="origin-manager" state="review" package="python3" superseded_by="" updated="2019-11-18T14:42:31Z"/>
+    <request id="745363" type="submit" creator="lnussel" state="review" package="nodejs8" superseded_by="" updated="2019-11-18T14:42:38Z"/>
+    <request id="745371" type="submit" creator="lnussel" state="review" package="postfix" superseded_by="" updated="2019-11-18T14:42:44Z"/>
+    <request id="745542" type="submit" creator="lnussel_factory" state="review" package="python" superseded_by="" updated="2019-11-18T14:42:50Z"/>
+    <request id="746554" type="submit" creator="origin-manager" state="review" package="git" superseded_by="" updated="2019-11-18T14:42:58Z"/>
+  </staged_requests>
+  <untracked_requests count="0"/>
+  <obsolete_requests count="0"/>
+  <missing_reviews count="12">
+    <review request="731558" state="new" package="neon" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="731559" state="new" package="mysql-connector-cpp" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="731560" state="new" package="openslp" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="731562" state="new" package="apr-util" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="733184" state="new" package="perl-Net-SSLeay" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="733185" state="new" package="perl-IO-Socket-SSL" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="733186" state="new" package="python-cryptography" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="733193" state="new" package="python-M2Crypto" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="733202" state="new" package="fipscheck" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="745363" state="new" package="nodejs8" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="745371" state="new" package="postfix" creator="origin-manager" by_group="origin-reviewers"/>
+    <review request="745542" state="new" package="python" creator="origin-manager" by_group="origin-reviewers"/>
+  </missing_reviews>
+  <building_repositories count="0"/>
+  <broken_packages count="5">
+    <package package="git" project="openSUSE:Factory:Staging:H" state="unresolvable" repository="standard" arch="i586"/>
+    <package package="python-CherryPy" project="openSUSE:Factory:Staging:H" state="failed" repository="standard" arch="i586"/>
+    <package package="python-pep8" project="openSUSE:Factory:Staging:H" state="failed" repository="standard" arch="x86_64"/>
+    <package package="python3-doc" project="openSUSE:Factory:Staging:H" state="failed" repository="standard" arch="x86_64"/>
+    <package package="000product:openSUSE-dvd5-dvd-x86_64" project="openSUSE:Factory:Staging:H" state="failed" repository="images" arch="x86_64"/>
+  </broken_packages>
+  <checks count="9">
+    <check name="openqa:RAID1" required="false">
+      <state>success</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077663</url>
+    </check>
+    <check name="openqa:minimalx@smp_64" required="false">
+      <state>success</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077664</url>
+    </check>
+    <check name="openqa:rescue_system" required="false">
+      <state>success</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077665</url>
+    </check>
+    <check name="openqa:cryptlvm" required="true">
+      <state>success</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077666</url>
+    </check>
+    <check name="openqa:minimalx@uefi-staging" required="false">
+      <state>success</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077667</url>
+    </check>
+    <check name="openqa:gnome" required="false">
+      <state>success</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077668</url>
+    </check>
+    <check name="openqa:kde" required="false">
+      <state>failure</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077669#step/dolphin/5</url>
+    </check>
+    <check name="openqa:textmode" required="false">
+      <state>success</state>
+      <short_description/>
+      <url>https://openqa.opensuse.org/tests/1077670</url>
+    </check>
+    <check name="installcheck" required="true">
+      <state>success</state>
+      <short_description/>
+      <url>https://botmaster.suse.de/go/tab/build/detail/Leap.Staging.B/23/Checks/1/Repo.Checker#tab-console</url>
+    </check>
+  </checks>
+  <missing_checks count="0"/>
+</staging_project>
