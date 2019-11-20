@@ -28,6 +28,7 @@ class UnignoreCommand(object):
                 if request_id in requests_ignored:
                     print('{}: unignored'.format(request_id))
                     del requests_ignored[request_id]
+                    self.api.del_ignored_request(request_id)
                     self.comment.add_comment(request_id=str(request_id), comment=self.MESSAGE)
 
         if cleanup:
@@ -40,13 +41,6 @@ class UnignoreCommand(object):
                     if diff.days > 3:
                         print('Removing {} which was {} {} days ago'
                               .format(request_id, request.state.name, diff.days))
-                        del requests_ignored[request_id]
-
-        diff = length - len(requests_ignored)
-        if diff > 0:
-            self.api.set_ignored_requests(requests_ignored)
-            print('Unignored {} requests'.format(diff))
-        else:
-            print('No requests to unignore')
+                        self.api.del_ignored_request(request_id)
 
         return True
