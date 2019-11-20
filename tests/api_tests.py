@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 import unittest
 import re
@@ -8,7 +6,7 @@ import osc.core
 
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
 
@@ -64,26 +62,6 @@ class TestApiCalls(OBSLocal.TestCase):
             'wine': 'openSUSE:Factory:Rings:1-MinimalX',
         }
         self.assertEqual(ring_packages, self.wf.api.ring_packages)
-
-    def test_pseudometa_get_prj(self):
-        """
-        Test getting project metadata from YAML in project description
-        """
-
-        self.wf.create_staging('A')
-
-        # Try to get data from project that has no metadata
-        data = self.wf.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
-        # Should be empty, but contain structure to work with
-        self.assertEqual(data, {'requests': []})
-        # Add some sample data
-        rq = {'id': '123', 'package': 'test-package'}
-        data['requests'].append(rq)
-        # Save them and read them back
-        self.wf.api.set_prj_pseudometa('openSUSE:Factory:Staging:A', data)
-        test_data = self.wf.api.get_prj_pseudometa('openSUSE:Factory:Staging:A')
-        # Verify that we got back the same data
-        self.assertEqual(data, test_data)
 
     def test_list_projects(self):
         """
@@ -144,7 +122,8 @@ class TestApiCalls(OBSLocal.TestCase):
 
         # Verify that review is closed
         rq = self.winerq.xml()
-        self.assertIsNotNone(rq.find('.//state[@name="new"]'))
+        xpath = "//review[@name='new' and @by_project='{}']".format(self.staging_b.name)
+        self.assertIsNotNone(rq.xpath(xpath))
 
     def test_add_sr(self):
         prj = self.staging_b.name
