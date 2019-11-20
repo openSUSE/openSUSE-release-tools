@@ -33,41 +33,6 @@ class TestSelect(unittest.TestCase):
         staging = self.wf.create_staging('Old')
         self.assertEqual(False, SelectCommand(self.wf.api, staging.name).perform(['gcc']))
 
-    def test_select_comments(self):
-        self.wf.setup_rings()
-
-        staging_b = self.wf.create_staging('B', freeze=True)
-
-        c_api = CommentAPI(self.wf.api.apiurl)
-        comments = c_api.get_comments(project_name=staging_b.name)
-
-        r1 = self.wf.create_submit_request('devel:wine', 'wine')
-        r2 = self.wf.create_submit_request('devel:gcc', 'gcc')
-
-        # First select
-        self.assertEqual(True, SelectCommand(self.wf.api, staging_b.name).perform(['gcc', 'wine']))
-        first_select_comments = c_api.get_comments(project_name=staging_b.name)
-        last_id = sorted(first_select_comments.keys())[-1]
-        first_select_comment = first_select_comments[last_id]
-        # Only one comment is added
-        self.assertEqual(len(first_select_comments), len(comments) + 1)
-        # With the right content
-        expected = 'request#{} for package gcc submitted by Admin'.format(r2.reqid)
-        self.assertTrue(expected in first_select_comment['comment'])
-
-        # Second select
-        r3 = self.wf.create_submit_request('devel:gcc', 'gcc8')
-        self.assertEqual(True, SelectCommand(self.wf.api, staging_b.name).perform(['gcc8']))
-        second_select_comments = c_api.get_comments(project_name=staging_b.name)
-        last_id = sorted(second_select_comments.keys())[-1]
-        second_select_comment = second_select_comments[last_id]
-        # The number of comments increased by one
-        self.assertEqual(len(second_select_comments) - 1, len(first_select_comments))
-        self.assertNotEqual(second_select_comment['comment'], first_select_comment['comment'])
-        # The new comments contains new, but not old
-        self.assertFalse('request#{} for package gcz submitted by Admin'.format(r2.reqid) in second_select_comment['comment'])
-        self.assertTrue('added request#{} for package gcc8 submitted by Admin'.format(r3.reqid) in second_select_comment['comment'])
-
     def test_no_matches(self):
         staging = self.wf.create_staging('N', freeze=True)
 
@@ -99,7 +64,7 @@ class TestSelect(unittest.TestCase):
 
         self.assertEqual(package_list(self.wf.apiurl, staging.name), ['gcc8', 'gcc8-tests'])
         uc = UnselectCommand(self.wf.api)
-        self.assertIsNone(uc.perform(['gcc8']))
+        self.assertIsNone(uc.perform(['gcc8'], False, None))
 
         # no stale links
         self.assertEqual([], package_list(self.wf.apiurl, staging.name))
