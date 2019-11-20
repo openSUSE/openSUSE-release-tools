@@ -125,21 +125,19 @@ class TestApiCalls(OBSLocal.TestCase):
         xpath = "//review[@name='new' and @by_project='{}']".format(self.staging_b.name)
         self.assertIsNotNone(rq.xpath(xpath))
 
+
     def test_add_sr(self):
+        # setup is already adding the request, we just verify
         prj = self.staging_b.name
         pkg = 'wine'
         num = self.winerq.reqid
 
-        # Running it twice shouldn't change anything
-        for i in range(2):
-            # Add rq to the project
-            self.wf.api.rq_to_prj(num, prj)
-            # Verify that review is there
-            reviews = [{'by_group': 'factory-staging', 'state': 'accepted'},
-                       {'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'}]
-            self.assertEqual(self.winerq.reviews(), reviews)
-            self.assertEqual(self.wf.api.get_prj_pseudometa(prj),
-                    {'requests': [{'id': int(num), 'package': 'wine', 'author': 'Admin', 'type': 'submit'}]})
+        # Verify that review is there
+        reviews = [{'by_group': 'factory-staging', 'state': 'accepted'},
+                   {'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'}]
+        self.assertEqual(self.winerq.reviews(), reviews)
+        self.assertEqual(self.wf.api.packages_staged,
+                {'wine': {'prj': 'openSUSE:Factory:Staging:B', 'rq_id': num}})
 
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
