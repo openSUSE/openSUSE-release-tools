@@ -625,26 +625,6 @@ class StagingAPI(object):
         meta = show_project_meta(self.apiurl, project, rev=revision)
         return ET.fromstringlist(meta)
 
-    def load_prj_pseudometa(self, description_text):
-        try:
-            data = yaml.safe_load(description_text)
-            if isinstance(data, str) or data is None:
-                data = {}
-        except (TypeError, AttributeError):
-            data = {}
-        # make sure we have a requests field
-        data['requests'] = data.get('requests', [])
-        return data
-
-    def set_splitter_info_in_prj_pseudometa(self, project, group, strategy_info):
-        data = self.get_prj_pseudometa(project)
-        data['splitter_info'] = {
-            'group': group,
-            'strategy': strategy_info,
-            'activated': str(datetime.utcnow()),
-        }
-        self.set_prj_pseudometa(project, data)
-
     def get_request_id_for_package(self, project, package):
         """
         Query the request id from meta
