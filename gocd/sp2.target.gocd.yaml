@@ -94,3 +94,14 @@ pipelines:
                 SLES15-SP2-SAP-GCE SLES15-SP2-SAP-GCE-BYOS 000product; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP2:GA $product
             done
+
+    - Release.Images.To.Publish:
+        approval: manual
+        roles:
+        - SLE
+        environment_variables:
+          OSC_CONFIG: /home/go/config/oscrc-totest-manager
+        resources:
+        - staging-bot
+        tasks:
+        - script: osc -A https://api.suse.de release SUSE:SLE-15-SP2:GA:TEST
