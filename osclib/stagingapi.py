@@ -568,7 +568,7 @@ class StagingAPI(object):
     def del_ignored_request(self, request_id):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        req = ET.SubElement(root, 'request', { 'id': request_id })
+        req = ET.SubElement(root, 'request', { 'id': str(request_id) })
         http_DELETE(url, data=ET.tostring(root))
 
     @memoize(session=True, add_invalidate=True)
