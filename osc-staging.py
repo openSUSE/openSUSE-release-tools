@@ -393,7 +393,6 @@ def do_staging(self, subcmd, opts, *args):
 
     api = StagingAPI(opts.apiurl, opts.project)
     needed = lock_needed(cmd, opts)
-    needed = False # TODO: REMOVE
     with OBSLock(opts.apiurl, opts.project, reason=cmd, needed=needed) as lock:
 
         # call the respective command and parse args by need
