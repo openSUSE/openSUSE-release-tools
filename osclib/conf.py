@@ -19,13 +19,12 @@ from osclib.memoize import memoize
 #   the project.
 
 DEFAULT = {
-    r'openSUSE:(?P<project>Factory)(?::NonFree)?$': {
+    r'openSUSE:(?P<project>Factory)?$': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64',
         'staging-dvd-archs': '',
         'rings': 'openSUSE:%(project)s:Rings',
-        'nonfree': 'openSUSE:%(project)s:NonFree',
         'rebuild': 'openSUSE:%(project)s:Rebuild',
         'product': 'openSUSE.product',
         'openqa': 'https://openqa.opensuse.org',
@@ -58,14 +57,18 @@ DEFAULT = {
         'mail-maintainer': 'Dirk Mueller <dmueller@suse.com>',
         'mail-noreply': 'noreply@opensuse.org',
     },
-    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))(?::NonFree)?$': {
+    r'openSUSE:(?P<project>.*:NonFree)$': {
+        'staging': 'openSUSE:%(project)s:Staging',
+        'staging-group': 'factory-staging',
+        'onlyadi': 'True',
+    },
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))$': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
         'staging-archs': 'i586 x86_64',
         'staging-dvd-archs': '',
         'nocleanup-packages': 'bootstrap-copy 000product 000release-packages',
         'rings': 'openSUSE:%(project)s:Rings',
-        'nonfree': 'openSUSE:%(project)s:NonFree',
         'rebuild': 'openSUSE:%(project)s:Rebuild',
         'product': 'openSUSE.product',
         'openqa': 'https://openqa.opensuse.org',
@@ -110,7 +113,7 @@ DEFAULT = {
         'mail-maintainer': 'Dirk Mueller <dmueller@suse.com>',
         'mail-noreply': 'noreply@opensuse.org',
     },
-    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)(?::NonFree)?:Update)$': {
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)?:Update)$': {
         'main-repo': 'standard',
         'leaper-override-group': 'leap-reviewers',
         'repo_checker-arch-whitelist': 'x86_64',
@@ -154,7 +157,6 @@ DEFAULT = {
         'installcheck-ignore-duplicated-binaries': '',
         'onlyadi': '',
         'rings': '',
-        'nonfree': '',
         'rebuild': '',
         'product': '',
         'openqa': '',

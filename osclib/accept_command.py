@@ -146,9 +146,6 @@ class AcceptCommand(object):
         changed = False
 
         rqlist = self.find_new_requests(self.api.project)
-        if self.api.cnonfree:
-            rqlist += self.find_new_requests(self.api.cnonfree)
-
         for req in rqlist:
             oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project=self.api.project, extension='spec')
             print('Accepting request %d: %s' % (req['id'], ','.join(req['packages'])))

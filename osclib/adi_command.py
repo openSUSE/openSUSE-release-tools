@@ -108,8 +108,6 @@ class AdiCommand:
             else:
                 splitter.group_by('./action/source/@project')
 
-            if not split:
-                splitter.group_by('./action/target/@nonfree')
         splitter.split()
 
         for group in sorted(splitter.grouped.keys()):
@@ -137,9 +135,7 @@ class AdiCommand:
                 # request is processed from a particular group.
                 if name is None:
                     use_frozenlinks = group in source_projects_expand and not split
-                    nonfree = bool(target.get('nonfree'))
-                    name = self.api.create_adi_project(None,
-                            use_frozenlinks, group, nonfree)
+                    name = self.api.create_adi_project(None, use_frozenlinks, group)
 
                 if not self.api.rq_to_prj(request_id, name):
                     return False

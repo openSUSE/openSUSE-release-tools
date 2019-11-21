@@ -128,9 +128,6 @@ class RequestSplitter(object):
             target.set('devel_project', devel)
             StrategySuper.supplement(request)
 
-        if target_project == self.api.cnonfree:
-            target.set('nonfree', 'nonfree')
-
         ring = self.ring_get(target_package)
         if ring:
             target.set('ring', ring)

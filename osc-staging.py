@@ -193,7 +193,6 @@ def do_staging(self, subcmd, opts, *args):
         - ./action/target/@devel_project_super: super devel project if relevant
         - ./action/target/@ring: the ring to which the package belongs
         - ./@aged: either True or False based on splitter-request-age-threshold
-        - ./@nonfree: set to nonfree if targetting nonfree sub project
         - ./@ignored: either False or the provided message
 
         Some useful examples:
@@ -465,7 +464,7 @@ def do_staging(self, subcmd, opts, *args):
                     print('--move and --filter-from must be used with explicit staging and request list')
                     return
 
-                open_requests = api.get_open_requests({'withhistory': 1}, include_nonfree=False)
+                open_requests = api.get_open_requests({'withhistory': 1})
                 if len(open_requests) == 0:
                     print('No open requests to consider')
                     return
