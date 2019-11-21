@@ -139,6 +139,13 @@ class StagingAPI(object):
     def packages_staged(self, value):
         raise Exception("setting packages_staged is not allowed")
 
+    @property
+    def use_images(self):
+        # Determine if staging is bootstrapped.
+        meta = self.get_prj_meta(self.project)
+        xpath = 'repository[@name="images"]'
+        return len(meta.xpath(xpath)) > 0
+
     def makeurl(self, l, query=None):
         """
         Wrapper around osc's makeurl passing our apiurl
@@ -565,7 +572,7 @@ class StagingAPI(object):
         http_DELETE(url, data=ET.tostring(root))
 
     @memoize(session=True, add_invalidate=True)
-    def get_open_requests(self, query_extra=None, include_nonfree=True):
+    def get_open_requests(self, query_extra=None):
         """
         Get all requests with open review for staging project
         that are not yet included in any staging project
@@ -577,8 +584,6 @@ class StagingAPI(object):
         # xpath query, using the -m, -r, -s options
         where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
         projects = [format(self.project)]
-        if include_nonfree and self.cnonfree:
-            projects.append(self.cnonfree)
         targets = ["target[@project='{}']".format(p) for p in projects]
 
         query = {'match': "state/@name='review' and review[{}] and ({})".format(
@@ -1374,7 +1379,7 @@ class StagingAPI(object):
         l = ET.tostring(flink)
         http_PUT(url, data=l)
 
-    def create_adi_project(self, name, use_frozenlinks=False, src_prj=None, nonfree=False):
+    def create_adi_project(self, name, use_frozenlinks=False, src_prj=None):
         """Create an ADI project."""
         if not name:
             name = self._candidate_adi_project()
@@ -1392,36 +1397,35 @@ class StagingAPI(object):
             linkproject = ''
             repository = '<repository name="standard">'
 
-        if nonfree:
-            nonfree_path = "<path project=\"{}\" repository=\"standard\"/>".format(self.cnonfree)
+        if self.use_images:
+            images_repo = f"""
+               <repository name="images">
+                 <path project="{name}" repository="standard"/>
+                 <path project="{self.project}" repository="images"/>
+                 <arch>x86_64</arch>
+              </repository>"""
         else:
-            nonfree_path = ''
+            images_repo = ''
 
-        meta = """
-        <project name="{0}">
+        meta = f"""
+        <project name="{name}">
           <title></title>
           <description></description>
-          {3}
-          <url>/project/staging_projects/{1}/adi:{2}</url>
+          {linkproject}
+          <url>/project/staging_projects/{self.project}/adi:{self.extract_adi_number(name)}</url>
           <publish>
             <disable/>
           </publish>
           <debuginfo>
             <enable/>
           </debuginfo>
-          {4}
-            {6}
-            <path project="{5}" repository="standard"/>
-            <path project="{1}" repository="standard"/>
+          {repository}
+            <path project="{self.cstaging}" repository="standard"/>
+            <path project="{self.project}" repository="standard"/>
             <arch>x86_64</arch>
           </repository>
-          <repository name="images">
-            <path project="{0}" repository="standard"/>
-            <path project="{1}" repository="images"/>
-            <arch>x86_64</arch>
-          </repository>
-        </project>""".format(name, self.project, self.extract_adi_number(name), linkproject, repository,
-                             self.cstaging, nonfree_path)
+          {images_repo}
+        </project>"""
 
         url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)
