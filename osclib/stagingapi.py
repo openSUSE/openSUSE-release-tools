@@ -549,7 +549,7 @@ class StagingAPI(object):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.parse(self.retried_GET(url)).getroot()
         for entry in root.findall('request'):
-            ignore[entry.get('id')] = entry.get('description')
+            ignore[int(entry.get('id'))] = entry.get('description')
         return ignore
 
     def add_ignored_request(self, request_id, comment):
