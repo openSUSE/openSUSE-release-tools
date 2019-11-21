@@ -579,15 +579,16 @@ class StagingAPI(object):
         :return list of pending open review requests
         """
 
+        # not using the backlog API of staging workflow as callers
+        # expect Request objects
+
         requests = []
 
         # xpath query, using the -m, -r, -s options
         where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
-        projects = [format(self.project)]
-        targets = ["target[@project='{}']".format(p) for p in projects]
+        target = "target[@project='{}']".format(self.project)
 
-        query = {'match': "state/@name='review' and review[{}] and ({})".format(
-            where, ' or '.join(targets))}
+        query = {'match': f"state/@name='review' and review[{where}] and {target}" }
         if query_extra is not None:
             query.update(query_extra)
         url = self.makeurl(['search', 'request'], query)
