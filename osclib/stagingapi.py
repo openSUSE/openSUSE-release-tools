@@ -549,7 +549,7 @@ class StagingAPI(object):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.parse(self.retried_GET(url)).getroot()
         for entry in root.findall('request'):
-            ignore[entry.get('id')] = entry.get('description')
+            ignore[int(entry.get('id'))] = entry.get('description')
         return ignore
 
     def add_ignored_request(self, request_id, comment):
@@ -931,13 +931,6 @@ class StagingAPI(object):
 
         if act_type == 'submit':
             self.submit_to_prj(req.get_actions('submit')[0], project)
-
-        # unignore a request selected to a project
-        requests_ignored = self.get_ignored_requests()
-        request_id = int(request_id)
-        if request_id in requests_ignored:
-            del requests_ignored[request_id]
-            self.set_ignored_requests(requests_ignored)
 
         return True
 
@@ -1491,7 +1484,7 @@ class StagingAPI(object):
 
     def ignore_format(self, request_id):
         requests_ignored = self.get_ignored_requests()
-        if request_id in requests_ignored:
+        if int(request_id) in requests_ignored.keys():
             ignore_indent = ' ' * (2 + len(str(request_id)) + 1)
             return textwrap.fill(str(requests_ignored[request_id]),
                                  initial_indent=ignore_indent,
