@@ -555,14 +555,13 @@ class StagingAPI(object):
     def add_ignored_request(self, request_id, comment):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        req = ET.SubElement(root, 'request', { 'number': str(request_id), 'description': comment })
+        req = ET.SubElement(root, 'request', { 'id': str(request_id), 'description': comment })
         http_POST(url, data=ET.tostring(root))
 
     def del_ignored_request(self, request_id):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        req = ET.SubElement(root, 'number')
-        req.text = str(request_id)
+        req = ET.SubElement(root, 'request', { 'id': request_id })
         http_DELETE(url, data=ET.tostring(root))
 
     @memoize(session=True, add_invalidate=True)
@@ -672,25 +671,15 @@ class StagingAPI(object):
         if self._supersede:
             self.is_package_disabled(project, package, store=True)
 
-        # https://github.com/openSUSE/open-build-service/issues/7356
         for sub_pkg in self.get_sub_packages(package, project):
             if self._supersede:
                 self.is_package_disabled(project, sub_pkg, store=True)
-            try:
-                delete_package(self.apiurl, project, sub_pkg, force=True, msg=msg)
-            except HTTPError as e:
-                # don't make this an hard error
-                print(e)
 
-        # Delete the main package in the last
-        self.delete_requests(self.project, project, [request_id])
+        # Deleting the main package removes local links as well
+        self.delete_request(self.project, project, request_id)
 
-    # https://github.com/openSUSE/osc/pull/631/files
-    def delete_requests(self, project, stage, rqids):
-        requestxml = "<requests>"
-        for rq in rqids:
-            requestxml += "<number>%s</number>" % rq
-        requestxml += "</requests>"
+    def delete_request(self, project, stage, request):
+        requestxml = f"<requests><request id='{request}'/></requests>"
         u = makeurl(self.apiurl, ['staging', project,
                                   'staging_projects', stage, 'staged_requests'])
         try:
@@ -933,7 +922,7 @@ class StagingAPI(object):
             msg = msg.format(request_id)
             raise oscerr.WrongArgs(msg)
 
-        requestxml = "<requests><number>%s</number></requests>" % str(request_id)
+        requestxml = f"<requests><request id='{request_id}'/></requests>"
         u = makeurl(self.apiurl, ['staging', self.project, 'staging_projects', project, 'staged_requests'])
         f = http_POST(u, data=requestxml)
 
