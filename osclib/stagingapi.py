@@ -507,8 +507,8 @@ class StagingAPI(object):
                 source_info_new = self.source_info_request(request_new)
                 source_info_old = self.source_info_request(request_old)
 
-                if source_info_old is None:
-                    # Old source was removed thus new request likely to replace.
+                if source_info_old is None or request_old.find('state').get('name') in ['revoked', 'superseded', 'declined']:
+                    # Old source was removed or obsoleted thus new request likely to replace.
                     return stage_info, None
 
                 source_same = source_info_new.get('verifymd5') == source_info_old.get('verifymd5')
