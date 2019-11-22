@@ -507,8 +507,8 @@ class StagingAPI(object):
                 source_info_new = self.source_info_request(request_new)
                 source_info_old = self.source_info_request(request_old)
 
-                if source_info_old is None:
-                    # Old source was removed thus new request likely to replace.
+                if source_info_old is None or request_old.find('state').get('name') in ['revoked', 'superseded', 'declined']:
+                    # Old source was removed or obsoleted thus new request likely to replace.
                     return stage_info, None
 
                 source_same = source_info_new.get('verifymd5') == source_info_old.get('verifymd5')
@@ -535,9 +535,15 @@ class StagingAPI(object):
         if not target_requests:
             target_requests = []
 
-        stage_info, code = self.superseded_request(request, target_requests)
         request_id = int(request.get('id'))
 
+        # do not process the request has been excluded
+        requests_ignored = self.get_ignored_requests()
+        requests_ignored = [rq for rq in requests_ignored.keys()]
+        if request_id in requests_ignored:
+            return False, False
+
+        stage_info, code = self.superseded_request(request, target_requests)
         if stage_info and (code is None or code == 'unstage'):
             # Remove the old request
             self.rm_from_prj(stage_info['prj'],
