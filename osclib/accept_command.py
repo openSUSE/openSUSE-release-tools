@@ -55,11 +55,26 @@ class AcceptCommand(object):
                 stg.find('rebuild').text = 'unknown'
                 stg.find('supportpkg').text = ''
 
-        # reset accpted staging project rebuild state to unknown and clean up
+        # reset accepted staging project rebuild state to unknown and clean up
         # supportpkg list
         content = ET.tostring(root)
         if content != data:
             self.api.pseudometa_file_save('support_pkg_rebuild', content, 'accept command update')
+
+    def accept_all(self, projects, force=False, cleanup=True):
+        for prj in projects:
+            if self.perform(self.api.prj_from_letter(prj), force):
+                self.reset_rebuild_data(prj)
+            else:
+                return
+            if cleanup:
+                if self.api.item_exists(self.api.prj_from_letter(prj)):
+                    self.cleanup(self.api.prj_from_letter(prj))
+        self.accept_other_new()
+        if self.api.project.startswith('openSUSE:'):
+            self.update_factory_version()
+            if self.api.item_exists(self.api.crebuild):
+                self.sync_buildfailures()
 
     def perform(self, project, force=False):
         """Accept the staging project for review and submit to Factory /
