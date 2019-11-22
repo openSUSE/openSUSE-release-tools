@@ -535,9 +535,15 @@ class StagingAPI(object):
         if not target_requests:
             target_requests = []
 
-        stage_info, code = self.superseded_request(request, target_requests)
         request_id = int(request.get('id'))
 
+        # do not process the request has been excluded
+        requests_ignored = self.get_ignored_requests()
+        requests_ignored = [rq for rq in requests_ignored.keys()]
+        if request_id in requests_ignored:
+            return False, False
+
+        stage_info, code = self.superseded_request(request, target_requests)
         if stage_info and (code is None or code == 'unstage'):
             # Remove the old request
             self.rm_from_prj(stage_info['prj'],
