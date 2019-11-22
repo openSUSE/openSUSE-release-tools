@@ -109,7 +109,11 @@ class AcceptCommand(object):
 
         print(oldspecs)
 
-        u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'])
+        opts = {}
+        if force:
+            opts['force'] = '1'
+
+        u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'], opts)
         f = http_POST(u)
 
         while self.api.project_status(project, reload=True, requests=False).get('state') != 'empty':
