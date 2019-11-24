@@ -67,6 +67,7 @@ class AcceptCommand(object):
 
     def accept_all(self, projects, force=False, cleanup=True):
         self.requests = { 'delete': [], 'submit': [] }
+        staging_packages = {}
 
         for prj in projects:
             project = self.api.prj_from_letter(prj)
@@ -76,78 +77,57 @@ class AcceptCommand(object):
                 print('The project "{}" is not yet acceptable.'.format(project))
                 #return False
 
+            staging_packages[project] = []
             for request in status.findall('staged_requests/request'):
                 self.requests[request.get('type')].append(request.get('package'))
+                staging_packages[project].append(request.get('package'))
 
         other_new = self.find_new_requests(self.api.project)
         for req in other_new:
             self.requests[req['type']].append(req['package'])
 
-        print('requests', self.requests)
+        print('delete links to packages pending deletion...')
         self.delete_linked()
-        return True
+
+        # requests = {'delete': ['AppStream', 'yast2-x11'], 'submit': ['bash']}
+        opts = {}
+        if force:
+            opts['force'] = '1'
+
+        print('triggering staging accepts...')
         for prj in projects:
             project = self.api.prj_from_letter(prj)
 
-            if self.perform(project, force):
-                self.reset_rebuild_data(prj)
-            else:
-                return
-            if cleanup:
-                if self.api.item_exists(self.api.prj_from_letter(prj)):
-                    self.cleanup(self.api.prj_from_letter(prj))
+            u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'], opts)
+            f = http_POST(u)
 
         for req in other_new:
-            oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project=self.api.project, extension='spec')
-            print('Accepting request %d: %s' % (req['id'], ','.join(req['packages'])))
+            print(f"Accepting request {req['id']}: {req['package']}")
             change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
-            # Check if all .spec files of the package we just accepted has a package container to build
-            self.create_new_links(self.api.project, req['packages'][0], oldspecs)
+
+        for prj in projects:
+            project = self.api.prj_from_letter(prj)
+            print(f'waiting for staging project {project} to be accepted')
+
+            while True:
+                status = self.api.project_status(project, reload=True)
+                if status.get('state') == 'empty':
+                    break
+                print('{} requests still staged - waiting'.format(status.find('staged_requests').get('count')))
+                time.sleep(1)
+
+            self.api.accept_status_comment(project, staging_packages[project])
+            self.api.staging_deactivate(project)
+
+            self.reset_rebuild_data(prj)
+
+            if cleanup:
+                self.cleanup(project)
 
         if self.api.project.startswith('openSUSE:'):
             self.update_factory_version()
             if self.api.item_exists(self.api.crebuild):
                 self.sync_buildfailures()
-
-    def perform(self, project, force=False):
-        """Accept the staging project for review and submit to Factory /
-        Leap ...
-
-        Then disable the build to disabled
-        :param project: staging project we are working with
-
-        """
-
-        status = self.api.project_status(project)
-        packages = []
-
-        oldspecs = {}
-        for req in status.findall('staged_requests/request'):
-            packages.append(req.get('package'))
-
-            print('Checking file list of {}'.format(req.get('package')))
-            os = self.api.get_filelist_for_package(pkgname=req.get('package'),
-                                                   project=self.api.project,
-                                                   extension='spec')
-            oldspecs[req.get('package')] = os
-            #self.create_new_links(self.api.project, req['package'], oldspecs)
-
-        print(oldspecs)
-
-        opts = {}
-        if force:
-            opts['force'] = '1'
-
-        u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'], opts)
-        f = http_POST(u)
-
-        while self.api.project_status(project, reload=True, requests=False).get('state') != 'empty':
-            time.sleep(1)
-
-        self.api.accept_status_comment(project, packages)
-        self.api.staging_deactivate(project)
-
-        return True
 
     def cleanup(self, project):
         if not self.api.item_exists(project):
