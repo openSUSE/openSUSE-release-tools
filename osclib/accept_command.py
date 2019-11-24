@@ -131,9 +131,11 @@ class AcceptCommand(object):
             if self.api.item_exists(self.api.crebuild):
                 self.sync_buildfailures()
 
+        return True
+
     def cleanup(self, project):
         if not self.api.item_exists(project):
-            return False
+            return
 
         pkglist = self.api.list_packages(project)
         clean_list = set(pkglist) - set(self.api.cnocleanup_packages)
@@ -142,7 +144,7 @@ class AcceptCommand(object):
             print("[cleanup] deleted %s/%s" % (project, package))
             delete_package(self.api.apiurl, project, package, force=True, msg="autocleanup")
 
-        return True
+        return
 
     def fix_linking_packages(self, package):
         project = self.api.project

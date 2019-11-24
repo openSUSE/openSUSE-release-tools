@@ -156,6 +156,7 @@ DEFAULT = {
         'staging-required-checks-adi': '',
         'installcheck-ignore-duplicated-binaries': '',
         'onlyadi': '',
+        'nocleanup-packages': '',
         'rings': '',
         'rebuild': '',
         'product': '',

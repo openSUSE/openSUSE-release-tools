@@ -28,7 +28,7 @@ class TestAccept(unittest.TestCase):
     def test_accept_comments(self):
         wf = self.setup_wf()
 
-        self.assertEqual(True, AcceptCommand(wf.api).perform(self.prj))
+        self.assertEqual(True, AcceptCommand(wf.api).accept_all(['B']))
 
         # Comments are cleared up
         accepted_comments = self.c_api.get_comments(project_name=self.prj)
@@ -40,7 +40,7 @@ class TestAccept(unittest.TestCase):
         # snipe out cleanup to see the comments before the final countdown
         wf.api.staging_deactivate = MagicMock(return_value=True)
 
-        self.assertEqual(True, AcceptCommand(wf.api).perform(self.prj))
+        self.assertEqual(True, AcceptCommand(wf.api).accept_all(['B']))
 
         comments = self.c_api.get_comments(project_name=self.prj)
         self.assertGreater(len(comments), len(self.comments))
