@@ -66,7 +66,7 @@ def _full_project_name(self, project):
 
 def lock_needed(cmd, opts):
     return not(
-        cmd in ('check', 'check_duplicate_binaries', 'frozenage', 'rebuild', 'unlock') or
+        cmd in ('check', 'check_duplicate_binaries', 'check_local_links', 'frozenage', 'rebuild', 'unlock') or
         (cmd == 'list' and not opts.supersede)
     )
 
@@ -136,6 +136,8 @@ def do_staging(self, subcmd, opts, *args):
         ready, unstaged, and the adi staging deleted.
 
     "check" will check if all packages are links without changes
+
+    "check_local_links" lists local links that don't match multispec package
 
     "check_duplicate_binaries" list binaries provided by multiple packages
 
@@ -297,6 +299,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
         osc staging check [STAGING...]
         osc staging check_duplicate_binaries
+        osc staging check_local_links
         osc staging cleanup_rings
         osc staging freeze [--no-bootstrap] STAGING...
         osc staging frozenage [STAGING...]
@@ -346,6 +349,7 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 1, None
     elif cmd in (
         'check_duplicate_binaries',
+        'check_local_links',
         'cleanup_rings',
         'list',
         'lock',
@@ -405,6 +409,8 @@ def do_staging(self, subcmd, opts, *args):
                     print()
         elif cmd == 'check_duplicate_binaries':
             CheckDuplicateBinariesCommand(api).perform(opts.save)
+        elif cmd == 'check_local_links':
+            AcceptCommand(api).check_local_links()
         elif cmd == 'freeze':
             for prj in args[1:]:
                 prj = api.prj_from_short(prj)
