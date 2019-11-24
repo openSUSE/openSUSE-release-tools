@@ -847,16 +847,6 @@ class StagingAPI(object):
         url = self.makeurl(paths, opts)
         return ET.parse(self.retried_GET(url)).getroot()
 
-    def check_project_status(self, project):
-        """
-        Checks a staging project for acceptance.
-        :param project: project to check
-        :return true (ok)/false (empty prj) or list of strings with
-                informations)
-
-        """
-        return self.project_status(project, requests=False).get('state') == 'acceptable'
-
     def project_status_build_percent(self, status):
         final, tobuild = self.project_status_build_sum(status)
         return final / float(final + tobuild) * 100
@@ -965,6 +955,18 @@ class StagingAPI(object):
             ret.append(spec[:-5])
 
         return ret
+
+    def linked_packages(self, package, project=None):
+        if not project:
+            project=self.project
+
+        url = self.makeurl(['source', project, package], { 'cmd': 'showlinked' })
+        f = http_POST(url)
+        root = ET.parse(f).getroot()
+        result = []
+        for package in root.findall('package'):
+            result.append({'project': package.get('project'), 'package': package.get('name')})
+        return result
 
     def create_and_wipe_package(self, project, package):
         """
