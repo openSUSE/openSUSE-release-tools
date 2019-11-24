@@ -8,7 +8,7 @@ from xml.etree import cElementTree as ET
 
 from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
-from osc.core import delete_package, search, set_devel_project
+from osc.core import delete_package, search
 from osc.core import Request
 from osc.util.helper import decode_it
 from osclib.core import attribute_value_save
@@ -57,6 +57,14 @@ class AcceptCommand(object):
         if content != data:
             self.api.pseudometa_file_save('support_pkg_rebuild', content, 'accept command update')
 
+    def delete_linked(self):
+        for package in self.requests['delete']:
+            for link in self.api.linked_packages(package):
+                if link['project'] in self.api.rings or link['project'] == self.api.project:
+                    print(f"delete {link['project']}/{link['package']}")
+                    delete_package(self.api.apiurl, link['project'], link['package'],
+                                   msg="remove link while accepting delete of {}".format(package))
+
     def accept_all(self, projects, force=False, cleanup=True):
         self.requests = { 'delete': [], 'submit': [] }
 
@@ -75,7 +83,8 @@ class AcceptCommand(object):
         for req in other_new:
             self.requests[req['type']].append(req['package'])
 
-        print(self.requests)
+        print('requests', self.requests)
+        self.delete_linked()
         return True
         for prj in projects:
             project = self.api.prj_from_letter(prj)
@@ -152,14 +161,6 @@ class AcceptCommand(object):
             delete_package(self.api.apiurl, project, package, force=True, msg="autocleanup")
 
         return True
-
-    def remove_obsoleted_develtag(self, project, package):
-        xpath = {
-            'package': "@project='%s' and devel/@project=@project and devel/@package='%s'" % (project, package),
-        }
-        collection = search(self.api.apiurl, **xpath)['package']
-        for pkg in collection.findall('package'):
-            set_devel_project(self.api.apiurl, project, pkg.attrib['name'], devprj=None)
 
     def create_new_links(self, project, pkgname, oldspeclist):
         filelist = self.api.get_filelist_for_package(pkgname=pkgname, project=project, extension='spec')

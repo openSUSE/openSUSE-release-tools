@@ -956,6 +956,18 @@ class StagingAPI(object):
 
         return ret
 
+    def linked_packages(self, package, project=None):
+        if not project:
+            project=self.project
+
+        url = self.makeurl(['source', project, package], { 'cmd': 'showlinked' })
+        f = http_POST(url)
+        root = ET.parse(f).getroot()
+        result = []
+        for package in root.findall('package'):
+            result.append({'project': package.get('project'), 'package': package.get('name')})
+        return result
+
     def create_and_wipe_package(self, project, package):
         """
         Helper function for delete requests
