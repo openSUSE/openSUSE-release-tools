@@ -89,7 +89,6 @@ class AcceptCommand(object):
         print('delete links to packages pending deletion...')
         self.delete_linked()
 
-        # requests = {'delete': ['AppStream', 'yast2-x11'], 'submit': ['bash']}
         opts = {}
         if force:
             opts['force'] = '1'
@@ -124,6 +123,9 @@ class AcceptCommand(object):
             if cleanup:
                 self.cleanup(project)
 
+        for package in self.requests['submit']:
+            self.fix_linking_packages(package)
+
         if self.api.project.startswith('openSUSE:'):
             self.update_factory_version()
             if self.api.item_exists(self.api.crebuild):
@@ -142,15 +144,26 @@ class AcceptCommand(object):
 
         return True
 
-    def create_new_links(self, project, pkgname, oldspeclist):
-        filelist = self.api.get_filelist_for_package(pkgname=pkgname, project=project, extension='spec')
-        removedspecs = set(oldspeclist) - set(filelist)
-        for spec in removedspecs:
-            # Deleting all the packages that no longer have a .spec file
-            url = self.api.makeurl(['source', project, spec[:-5]])
-            print("Deleting package %s from project %s" % (spec[:-5], project))
+    def fix_linking_packages(self, package):
+        project = self.api.project
+        file_list = self.api.get_filelist_for_package(package, project)
+        # ignore
+        if '_multibuild' in file_list or '_link' in file_list:
+            return
+        needed_links = set()
+        for file in file_list:
+            if file.endswith('.spec') and file != f'{package}.spec':
+                needed_links.add(file[:-5])
+        local_links = set()
+        for link in self.api.linked_packages(package):
+            if link['project'] == project:
+                local_links.add(link['package'])
+
+        # Deleting all the packages that no longer have a .spec file
+        for link in local_links - needed_links:
+            print(f"Deleting package {project}/{link}")
             try:
-                http_DELETE(url)
+                delete_package(self.api.apiurl, project, link, msg=f"No longer linking to {package}")
             except HTTPError as err:
                 if err.code == 404:
                     # the package link was not yet created, which was likely a mistake from earlier
@@ -160,37 +173,28 @@ class AcceptCommand(object):
                     raise
 
             # Remove package from Rings in case 2nd specfile was removed
-            if self.api.ring_packages.get(spec[:-5]):
-                delete_package(self.api.apiurl, self.api.ring_packages.get(spec[:-5]), spec[:-5], force=True, msg="Cleanup package in Rings")
+            if self.api.ring_packages.get(link):
+                delete_package(self.api.apiurl, self.api.ring_packages.get(link), link, force=True, msg="Cleanup package in Rings")
 
-        if len(filelist) > 1:
+        for link in needed_links - local_links:
             # There is more than one .spec file in the package; link package containers as needed
-            origmeta = source_file_load(self.api.apiurl, project, pkgname, '_meta')
-            for specfile in filelist:
-                package = specfile[:-5]  # stripping .spec off the filename gives the packagename
-                if package == pkgname:
-                    # This is the original package and does not need to be linked to itself
-                    continue
-                # Check if the target package already exists, if it does not, we get a HTTP error 404 to catch
-                if not self.api.item_exists(project, package):
-                    print("Creating new package %s linked to %s" % (package, pkgname))
-                    # new package does not exist. Let's link it with new metadata
-                    newmeta = re.sub(r'(<package.*name=.){}'.format(pkgname),
-                                     r'\1{}'.format(package),
-                                     origmeta)
-                    newmeta = re.sub(r'<devel.*>',
-                                     r'<devel package="{}"/>'.format(pkgname),
-                                     newmeta)
-                    newmeta = re.sub(r'<bcntsynctag>.*</bcntsynctag>',
-                                     r'',
-                                     newmeta)
-                    newmeta = re.sub(r'</package>',
-                                     r'<bcntsynctag>{}</bcntsynctag></package>'.format(pkgname),
-                                     newmeta)
-                    source_file_save(self.api.apiurl, project, package, '_meta', newmeta)
-                    link = "<link package=\"{}\" cicount=\"copy\" />".format(pkgname)
-                    source_file_save(self.api.apiurl, project, package, '_link', link)
-        return True
+            meta = ET.fromstring(source_file_load(self.api.apiurl, project, package, '_meta'))
+            print(f"Creating new link {link}->{package}")
+
+            meta.attrib['name'] = link
+            bcnt = meta.find('bcntsynctag')
+            if bcnt is None:
+                bcnt = ET.SubElement(meta, 'bcntsynctag')
+            bcnt.text = package
+            devel = meta.find('devel')
+            if devel is None:
+                devel = ET.SubElement(meta, 'devel')
+            devel.attrib['project'] = project
+            devel.attrib['package'] = package
+
+            source_file_save(self.api.apiurl, project, link, '_meta', ET.tostring(meta))
+            xml = f"<link package='{package}' cicount='copy' />"
+            source_file_save(self.api.apiurl, project, link, '_link', xml)
 
     def update_version_attribute(self, project, version):
         version_attr = attribute_value_load(self.api.apiurl, project, 'ProductVersion')
