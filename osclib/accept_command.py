@@ -24,24 +24,20 @@ class AcceptCommand(object):
         self.api = api
 
     def find_new_requests(self, project):
-        query = "match=state/@name='new'+and+action/target/@project='{}'".format(project)
-        url = self.api.makeurl(['search', 'request'], query)
+        match = f"state/@name='new' and action/target/@project='{project}'"
+        url = self.api.makeurl(['search', 'request'], { 'match': match })
 
         f = http_GET(url)
         root = ET.parse(f).getroot()
 
         rqs = []
         for rq in root.findall('request'):
-            pkgs = []
-            act_type = None
-            actions = rq.findall('action')
-            for action in actions:
-                act_type = action.get('type')
-                targets = action.findall('target')
-                for t in targets:
-                    pkgs.append(str(t.get('package')))
-
-            rqs.append({'id': int(rq.get('id')), 'packages': pkgs, 'type': act_type})
+            for action in rq.findall('action'):
+                for t in action.findall('target'):
+                    rqs.append({'id': int(rq.get('id')),
+                                'package': str(t.get('package')),
+                                'type': action.get('type')})
+                    break
         return rqs
 
     def reset_rebuild_data(self, project):
@@ -62,15 +58,43 @@ class AcceptCommand(object):
             self.api.pseudometa_file_save('support_pkg_rebuild', content, 'accept command update')
 
     def accept_all(self, projects, force=False, cleanup=True):
+        self.requests = { 'delete': [], 'submit': [] }
+
         for prj in projects:
-            if self.perform(self.api.prj_from_letter(prj), force):
+            project = self.api.prj_from_letter(prj)
+
+            status = self.api.project_status(project)
+            if status.get('state') != 'acceptable' and not force:
+                print('The project "{}" is not yet acceptable.'.format(project))
+                #return False
+
+            for request in status.findall('staged_requests/request'):
+                self.requests[request.get('type')].append(request.get('package'))
+
+        other_new = self.find_new_requests(self.api.project)
+        for req in other_new:
+            self.requests[req['type']].append(req['package'])
+
+        print(self.requests)
+        return True
+        for prj in projects:
+            project = self.api.prj_from_letter(prj)
+
+            if self.perform(project, force):
                 self.reset_rebuild_data(prj)
             else:
                 return
             if cleanup:
                 if self.api.item_exists(self.api.prj_from_letter(prj)):
                     self.cleanup(self.api.prj_from_letter(prj))
-        self.accept_other_new()
+
+        for req in other_new:
+            oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project=self.api.project, extension='spec')
+            print('Accepting request %d: %s' % (req['id'], ','.join(req['packages'])))
+            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
+            # Check if all .spec files of the package we just accepted has a package container to build
+            self.create_new_links(self.api.project, req['packages'][0], oldspecs)
+
         if self.api.project.startswith('openSUSE:'):
             self.update_factory_version()
             if self.api.item_exists(self.api.crebuild):
@@ -85,17 +109,9 @@ class AcceptCommand(object):
 
         """
 
-        status = self.api.check_project_status(project)
-
-        if not status:
-            print('The project "{}" is not yet acceptable.'.format(project))
-            if not force:
-                return False
-
         status = self.api.project_status(project)
         packages = []
 
-        rf = RequestFinder(self.api)
         oldspecs = {}
         for req in status.findall('staged_requests/request'):
             packages.append(req.get('package'))
@@ -135,48 +151,7 @@ class AcceptCommand(object):
             print("[cleanup] deleted %s/%s" % (project, package))
             delete_package(self.api.apiurl, project, package, force=True, msg="autocleanup")
 
-        # wipe Test-DVD binaries and breaks kiwi build
-        if project.startswith('openSUSE:'):
-            for package in pkglist:
-                if package.startswith('Test-DVD-'):
-                    # intend to break the kiwi file
-                    arch = package.split('-')[-1]
-                    fakepkgname = 'I-am-breaks-kiwi-build'
-                    oldkiwifile = source_file_load(self.api.apiurl, project, package, 'PRODUCT-'+arch+'.kiwi')
-                    if oldkiwifile is not None:
-                        newkiwifile = re.sub(r'<repopackage name="openSUSE-release"/>', '<repopackage name="%s"/>' % fakepkgname, oldkiwifile)
-                        source_file_save(self.api.apiurl, project, package, 'PRODUCT-' + arch + '.kiwi', newkiwifile)
-
-                    # do wipe binary now
-                    query = { 'cmd': 'wipe' }
-                    query['package'] = package
-                    query['repository'] = 'images'
-
-                    url = self.api.makeurl(['build', project], query)
-                    try:
-                        http_POST(url)
-                    except HTTPError as err:
-                        # failed to wipe isos but we can just continue
-                        pass
-
         return True
-
-    def accept_other_new(self):
-        changed = False
-
-        rqlist = self.find_new_requests(self.api.project)
-        for req in rqlist:
-            oldspecs = self.api.get_filelist_for_package(pkgname=req['packages'][0], project=self.api.project, extension='spec')
-            print('Accepting request %d: %s' % (req['id'], ','.join(req['packages'])))
-            if req['type'] == 'delete':
-                # Remove devel project/package tag before accepting the request
-                self.remove_obsoleted_develtag(self.api.project, req['packages'][0])
-            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
-            # Check if all .spec files of the package we just accepted has a package container to build
-            self.create_new_links(self.api.project, req['packages'][0], oldspecs)
-            changed = True
-
-        return changed
 
     def remove_obsoleted_develtag(self, project, package):
         xpath = {
