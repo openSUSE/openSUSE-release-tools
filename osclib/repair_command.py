@@ -33,19 +33,19 @@ class RepairCommand(object):
 
         staging_project = reviews[0]
         try:
-            data = self.api.get_prj_pseudometa(staging_project)
+            data = self.api.project_status(staging_project)
         except HTTPError as e:
             if e.code == 404:
                 data = None
 
         # Pre-check and pre-setup
-        if data:
-            for request in data['requests']:
-                if request['id'] == reqid:
+        if data is not None:
+            for request in data.findall('staged_requests/requests'):
+                if request.get('id') == reqid:
                     print('Request "{}" had the good setup in "{}"'.format(reqid, staging_project))
                     return
         else:
-            # this situation should only happens on adi staging
+            # this situation should only happen on adi staging
             print('Project is not exist, re-creating "{}"'.format(staging_project))
             name = self.api.create_adi_project(staging_project)
 
