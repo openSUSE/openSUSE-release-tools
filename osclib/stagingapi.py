@@ -291,23 +291,12 @@ class StagingAPI(object):
         :param destination_project: Destination project
         """
 
-        # Get the relevant information about source
-        meta = self.get_prj_pseudometa(source_project)
-        found = False
-        for req in meta['requests']:
-            if int(req['id']) == int(req_id):
-                found = True
-                break
-        if not found:
-            return None
+        if not self.rm_from_prj(source_project, request_id=req_id,
+                         msg='Moved to {}'.format(destination_project)):
+            return False
 
         # Copy the package
-        self.rq_to_prj(req_id, destination_project)
-        # Delete the old one
-        self.rm_from_prj(source_project, request_id=req_id,
-                         msg='Moved to {}'.format(destination_project))
-
-        return True
+        return self.rq_to_prj(req_id, destination_project)
 
     def get_staging_projects(self):
         """
@@ -677,7 +666,7 @@ class StagingAPI(object):
             package = self.get_package_for_request_id(project, request_id)
         if not package or not request_id:
             print('no package or no request_id')
-            return
+            return False
 
         orig_project = project
         if self._supersede:
@@ -689,6 +678,7 @@ class StagingAPI(object):
 
         # Deleting the main package removes local links as well
         self.delete_request(self.project, project, request_id)
+        return True
 
     def delete_request(self, project, stage, request):
         requestxml = f"<requests><request id='{request}'/></requests>"
