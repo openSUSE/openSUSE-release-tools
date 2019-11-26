@@ -689,12 +689,7 @@ class StagingAPI(object):
         requestxml = f"<requests><request id='{request}'/></requests>"
         u = makeurl(self.apiurl, ['staging', project,
                                   'staging_projects', stage, 'staged_requests'])
-        try:
-            return http_DELETE(u, data=requestxml)
-        except HTTPError as e:
-            # https://github.com/openSUSE/open-build-service/issues/8522
-            print(e)
-            return None
+        return http_DELETE(u, data=requestxml)
 
     def is_package_disabled(self, project, package, store=False):
         meta = show_package_meta(self.apiurl, project, package)
