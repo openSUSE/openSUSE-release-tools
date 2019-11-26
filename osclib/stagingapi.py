@@ -689,12 +689,7 @@ class StagingAPI(object):
         requestxml = f"<requests><request id='{request}'/></requests>"
         u = makeurl(self.apiurl, ['staging', project,
                                   'staging_projects', stage, 'staged_requests'])
-        try:
-            return http_DELETE(u, data=requestxml)
-        except HTTPError as e:
-            # https://github.com/openSUSE/open-build-service/issues/8522
-            print(e)
-            return None
+        return http_DELETE(u, data=requestxml)
 
     def is_package_disabled(self, project, package, store=False):
         meta = show_package_meta(self.apiurl, project, package)
@@ -1008,25 +1003,6 @@ class StagingAPI(object):
         src_rev = act.src_rev
         src_pkg = act.src_package
         tar_pkg = act.tgt_package
-
-        # https://github.com/openSUSE/open-build-service/issues/7343
-        if False:
-            # expand the revision to a md5
-            url = self.makeurl(['source', src_prj, src_pkg],
-                               {'rev': src_rev, 'expand': 1})
-            f = http_GET(url)
-            root = ET.parse(f).getroot()
-            src_rev = root.attrib['srcmd5']
-            src_vrev = root.attrib.get('vrev')
-
-            # link stuff - not using linkpac because linkpac copies meta
-            # from source
-            root = ET.Element('link', package=src_pkg, project=src_prj,
-                              rev=src_rev)
-            if src_vrev:
-                root.attrib['vrev'] = src_vrev
-            url = self.makeurl(['source', project, tar_pkg, '_link'])
-            http_PUT(url, data=ET.tostring(root))
 
         # If adi project, check for baselibs.conf in all specs to catch both
         # dynamically generated and static baselibs.conf.
