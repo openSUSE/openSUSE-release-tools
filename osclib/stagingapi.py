@@ -508,6 +508,11 @@ class StagingAPI(object):
                     self.do_change_review_state(request_id, 'declined',
                                                 by_group=self.cstaging_group, message=message)
                 else:
+                    # Supersedes request is from the same project
+                    if request_new.find('./action/source').get('project') == request_old.find('./action/source').get('project'):
+                        message = 'sr#{} has newer source and is from the same project'.format(request_new.get('id'))
+                        self.set_review(int(stage_info['rq_id']), stage_info['prj'], state='declined', msg=message)
+                        return stage_info, None
                     # Ingore the new request pending manual review.
                     IgnoreCommand(self).perform([str(request_id)], message)
 
