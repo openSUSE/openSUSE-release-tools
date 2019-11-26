@@ -17,7 +17,11 @@ services:
     command: /usr/sbin/memcached -u memcached
   api:
     <<: *obs
-    command: chroot --userspec=wwwrun / /bin/bash -c "cd /srv/www/obs/api && RAILS_ENV=production rake ts:rebuild && /usr/bin/bundle exec rails s -e production"
+    command: >
+      chroot --userspec=wwwrun / /bin/bash -c "cd /srv/www/obs/api &&
+         RAILS_ENV=production rake ts:rebuild &&
+         RAILS_ENV=production ./script/delayed_job.api.rb --queues=staging,quick start &&
+         /usr/bin/bundle exec rails s -e production"
     depends_on:
       - db
       - cache

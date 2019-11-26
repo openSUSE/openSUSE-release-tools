@@ -48,24 +48,25 @@ class SelectCommand(object):
         package = self._package(request)
 
         candidates = []   # Store candidates to be supersede by 'request'
-        for staging in self.api.get_staging_projects():
-            # requests for the same project are fine
-            if staging == self.target_project:
-                continue
-            for rq in self.api.get_prj_pseudometa(staging)['requests']:
-                if int(rq['id']) < int(request) and rq['package'] == package:
-                    candidates.append((rq['id'], package, staging))
+        url = self.api.makeurl(['staging', self.api.project, 'staging_projects'], { 'requests': 1 })
+        status = ET.parse(self.api.retried_GET(url)).getroot()
+        for prj in status.findall('staging_project'):
+            for req in prj.findall('./staged_requests/request'):
+                if int(req.get('id')) < int(request) and req.get('package') == package:
+                    candidates.append((req.get('id'), package, prj.get('name')))
 
-        assert len(candidates) <= 1, 'There are more thant one candidate to supersede {} ({}): {}'.format(request, package, candidates)
+        assert len(candidates) <= 1, 'There are more than one candidate to supersede {} ({}): {}'.format(request, package, candidates)
 
         return candidates[0] if candidates else None
 
     def select_request(self, request, move, filter_from):
-        supersede = self._supersede(request)
+        supersede = False
 
         staged_requests = {
-            self.api.packages_staged[package]['rq_id']: package for package in self.api.packages_staged
+            int(self.api.packages_staged[package]['rq_id']): package for package in self.api.packages_staged
         }
+        if request in staged_requests:
+            supersede =  self._supersede(request)
 
         if request not in staged_requests and not supersede:
             # Normal 'select' command

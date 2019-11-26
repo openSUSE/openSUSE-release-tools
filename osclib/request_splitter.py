@@ -72,6 +72,9 @@ class RequestSplitter(object):
         if required:
             self.filter_add(xpath)
 
+    def is_staging_mergeable(self, staging):
+        return self.stagings[staging]['status'].find('staged_requests/request') is not None
+
     def filter_only(self):
         ret = []
         for request in self.requests:
@@ -83,7 +86,6 @@ class RequestSplitter(object):
     def split(self):
         for request in self.requests:
             self.supplement(request)
-
             if not self.filter_check(request):
                 continue
 
@@ -125,9 +127,6 @@ class RequestSplitter(object):
         if devel:
             target.set('devel_project', devel)
             StrategySuper.supplement(request)
-
-        if target_project == self.api.cnonfree:
-            target.set('nonfree', 'nonfree')
 
         ring = self.ring_get(target_package)
         if ring:
@@ -176,18 +175,16 @@ class RequestSplitter(object):
             return '00'
         return '__'.join(key)
 
-    def is_staging_mergeable(self, status, pseudometa):
-        return len(pseudometa['requests']) > 0 and 'splitter_info' in pseudometa
-
-    def should_staging_merge(self, status, pseudometa, bootstrapped):
-        if (not bootstrapped and
-            pseudometa['splitter_info']['strategy']['name'] in ('devel', 'super') and
-            status['overall_state'] not in ('acceptable', 'review')):
+    def should_staging_merge(self, staging):
+        staging = self.stagings[staging]
+        if (not staging['bootstrapped'] and
+            staging['splitter_info']['strategy']['name'] in ('devel', 'super') and
+            staging['status'].get('state') not in ('acceptable', 'review')):
             # Simplistic attempt to allow for followup requests to be staged
             # after age max has been passed while still stopping when ready.
             return True
 
-        if 'activated' not in pseudometa['splitter_info']:
+        if 'activated' not in staging['splitter_info']:
             # No information on the age of the staging.
             return False
 
@@ -195,17 +192,15 @@ class RequestSplitter(object):
         # created shortly after. This method removes the need to wait to create
         # a larger staging at once while not ending up with lots of tiny
         # stagings. As such this handles both high and low request backlogs.
-        activated = dateutil.parser.parse(pseudometa['splitter_info']['activated'])
+        activated = dateutil.parser.parse(staging['splitter_info']['activated'])
         delta = datetime.utcnow() - activated
         return delta.total_seconds() <= self.staging_age_max
 
-    def staging_status_load(self, project):
-        status = self.api.project_status(project)
-        return status, self.api.load_prj_pseudometa(status['description'])
-
-    def is_staging_considerable(self, project, pseudometa):
-        return (len(pseudometa['requests']) == 0 and
-                self.api.prj_frozen_enough(project))
+    def is_staging_considerable(self, staging):
+        staging = self.stagings[staging]
+        if staging['status'].find('staged_requests/request') is not None:
+            return False
+        return self.api.prj_frozen_enough(staging['project'])
 
     def stagings_load(self, stagings):
         self.stagings = {}
@@ -228,25 +223,25 @@ class RequestSplitter(object):
 
         for staging in stagings:
             project = self.api.prj_from_short(staging)
-            status, pseudometa = self.staging_status_load(project)
+            status = self.api.project_status(project)
             bootstrapped = self.api.is_staging_bootstrapped(project)
 
             # Store information about staging.
             self.stagings[staging] = {
                 'project': project,
                 'bootstrapped': bootstrapped,
-                'status': status,
-                'pseudometa': pseudometa,
+                # TODO: find better place for splitter info
+                'splitter_info': { 'strategy': { 'name': 'none' } },
+                'status': status
             }
 
             # Decide if staging of interested.
-            if self.is_staging_mergeable(status, pseudometa) and (
-               should_always or self.should_staging_merge(status, pseudometa, bootstrapped)):
-                if pseudometa['splitter_info']['strategy']['name'] == 'none':
+            if self.is_staging_mergeable(staging) and (should_always or self.should_staging_merge(staging)):
+                if self.stagings[staging]['splitter_info']['strategy']['name'] == 'none':
                     self.stagings_mergeable_none.append(staging)
                 else:
                     self.stagings_mergeable.append(staging)
-            elif self.is_staging_considerable(project, pseudometa):
+            elif self.is_staging_considerable(staging):
                 self.stagings_considerable.append(staging)
 
         # Allow both considered and remaining to be accessible after proposal.
@@ -359,8 +354,9 @@ class RequestSplitter(object):
             if group not in groups:
                 del self.grouped[group]
 
-    def merge_staging(self, staging, pseudometa):
-        splitter_info = pseudometa['splitter_info']
+    def merge_staging(self, staging):
+        staging = self.stagings[staging]
+        splitter_info = staging['splitter_info']
         self.strategy_from_splitter_info(splitter_info)
 
         if not self.stagings[staging]['bootstrapped']:
@@ -377,8 +373,7 @@ class RequestSplitter(object):
     def merge(self, strategy_none=False):
         stagings = self.stagings_mergeable_none if strategy_none else self.stagings_mergeable
         for staging in sorted(stagings):
-            self.merge_staging(staging, self.stagings[staging]['pseudometa'])
-
+            self.merge_staging(staging)
 
 class Strategy(object):
     def __init__(self, **kwargs):

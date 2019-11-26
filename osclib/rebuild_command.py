@@ -19,7 +19,7 @@ class RebuildCommand(object):
 
     def perform(self, stagings=None, force=False):
         if not stagings:
-            stagings = self.api.get_staging_projects_short()
+            stagings = self.api.get_staging_projects()
 
         for staging in stagings:
             status = self.api.project_status(staging)

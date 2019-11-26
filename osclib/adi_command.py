@@ -1,16 +1,10 @@
-from __future__ import print_function
-
 import json
-
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 from colorama import Fore
 
 from osc import oscerr
+from osc.core import get_request
 from osc.core import delete_project
 from osc.core import show_package_meta
 from osc import conf
@@ -28,45 +22,52 @@ class AdiCommand:
 
     def check_adi_project(self, project):
         query_project = self.api.extract_staging_short(project)
-        info = self.api.project_status(project, True)
+        info = self.api.project_status(project, reload=True)
 
-        if len(info['selected_requests']):
-            if len(info['building_repositories']):
+        if info.find('staged_requests/request') is not None:
+            if info.find('building_repositories/repo') is not None:
                 print(query_project + ' ' + Fore.MAGENTA + 'building')
                 return
-            if len(info['untracked_requests']):
+            if info.find('untracked_requests/request') is not None:
                 print(query_project + ' ' + Fore.YELLOW + 'untracked: ' + ', '.join(['{}[{}]'.format(
-                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['untracked_requests']]))
+                    Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')) for req in info.findall('untracked_requests/request')]))
                 return
-            if len(info['obsolete_requests']):
+            if info.find('obsolete_requests/request') is not None:
                 print(query_project + ' ' + Fore.YELLOW + 'obsolete: ' + ', '.join(['{}[{}]'.format(
-                    Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['obsolete_requests']]))
+                    Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')) for req in info.findall('obsolete_requests/request')]))
                 return
-            if len(info['broken_packages']):
+            if info.find('broken_packages/package') is not None:
                 print(query_project + ' ' + Fore.RED + 'broken: ' + ', '.join([
-                    Fore.CYAN + p['package'] + Fore.RESET for p in info['broken_packages']]))
+                    Fore.CYAN + p.get('package') + Fore.RESET for p in info.findall('broken_packages/package')]))
                 return
-            for review in info['missing_reviews']:
+            for review in info.findall('missing_reviews/review'):
                 print(query_project + ' ' + Fore.WHITE + 'review: ' + '{} for {}[{}]'.format(
-                    Fore.YELLOW + review['by'] + Fore.RESET,
-                    Fore.CYAN + review['package'] + Fore.RESET,
-                    review['request']))
+                    Fore.YELLOW + self.api.format_review(review) + Fore.RESET,
+                    Fore.CYAN + review.get('package') + Fore.RESET,
+                    review.get('request')))
                 return
-            for check in info['missing_checks']:
-                print(query_project + ' ' + Fore.MAGENTA + 'missing: {}'.format(check))
+            for check in info.findall('missing_checks/check'):
+                print(query_project + ' ' + Fore.MAGENTA + 'missing: {}'.format(check.get('name')))
                 return
-            for check in info['checks']:
-                if check['state'] != 'success':
-                    print(query_project + '{} {} check: {}'.format(Fore.MAGENTA, check['state'], check['name']))
+            for check in info.findall('checks/check'):
+                state = check.find('state').text
+                if state != 'success':
+                    print(query_project + '{} {} check: {}'.format(Fore.MAGENTA, state, check.get('name')))
                     return
+
+        overall_state = info.get('state')
+        if overall_state != 'acceptable' and overall_state != 'empty':
+            raise oscerr.WrongArgs('Missed some case')
 
         if self.api.is_user_member_of(self.api.user, self.api.cstaging_group):
             print(query_project + ' ' + Fore.GREEN + 'ready')
             packages = []
-            for req in info['selected_requests']:
-                print(' - {} [{}]'.format(Fore.CYAN + req['package'] + Fore.RESET, req['number']))
-                self.api.rm_from_prj(project, request_id=req['number'], msg='ready to accept')
-                packages.append(req['package'])
+            for req in info.findall('staged_requests/request'):
+                msg = 'ready to accept'
+                print(' - {} [{}]'.format(Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')))
+                self.api.rm_from_prj(project, request_id=req.get('id'), msg=msg)
+                self.api.do_change_review_state(req.get('id'), 'accepted', by_group=self.api.cstaging_group, message=msg)
+                packages.append(req.get('package'))
             self.api.accept_status_comment(project, packages)
             try:
                 delete_project(self.api.apiurl, project, force=True)
@@ -74,8 +75,11 @@ class AdiCommand:
                 print(e)
                 pass
         else:
-            print(query_project, Fore.GREEN + 'ready:', ', '.join(['{}[{}]'.format(
-                Fore.CYAN + req['package'] + Fore.RESET, req['number']) for req in info['selected_requests']]))
+            ready=[]
+            for req in info.findall('staged_requests/request'):
+                ready.append('{}[{}]'.format(Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')))
+            if len(ready):
+                print(query_project, Fore.GREEN + 'ready:', ', '.join(ready))
 
     def check_adi_projects(self):
         for p in self.api.get_adi_projects():
@@ -83,7 +87,14 @@ class AdiCommand:
 
     def create_new_adi(self, wanted_requests, by_dp=False, split=False):
         source_projects_expand = self.config.get('source_projects_expand', '').split()
+        # if we don't call it, there is no invalidate function added
         requests = self.api.get_open_requests()
+        if len(wanted_requests):
+            requests = []
+            rf = RequestFinder(self.api)
+            for p in wanted_requests:
+                requests.append(rf.load_request(p))
+
         splitter = RequestSplitter(self.api, requests, in_ring=False)
         splitter.filter_add('./action[@type="submit"]')
         if len(wanted_requests):
@@ -97,8 +108,6 @@ class AdiCommand:
             else:
                 splitter.group_by('./action/source/@project')
 
-            if not split:
-                splitter.group_by('./action/target/@nonfree')
         splitter.split()
 
         for group in sorted(splitter.grouped.keys()):
@@ -126,18 +135,12 @@ class AdiCommand:
                 # request is processed from a particular group.
                 if name is None:
                     use_frozenlinks = group in source_projects_expand and not split
-                    nonfree = bool(target.get('nonfree'))
-                    name = self.api.create_adi_project(None,
-                            use_frozenlinks, group, nonfree)
+                    name = self.api.create_adi_project(None, use_frozenlinks, group)
 
                 if not self.api.rq_to_prj(request_id, name):
                     return False
 
                 print(line + Fore.GREEN + ' (staged in {})'.format(name) + Fore.RESET)
-
-            if name:
-                # Notify everybody about the changes.
-                self.api.update_status_comments(name, 'select')
 
     def perform(self, packages, move=False, by_dp=False, split=False):
         """

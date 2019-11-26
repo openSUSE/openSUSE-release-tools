@@ -153,19 +153,17 @@ class InstallChecker(object):
             return True
 
         repository_pairs = repository_path_expand(api.apiurl, project, repository)
-
-        status = api.project_status(project)
-        if not status:
-            self.logger.error('no project status for {}'.format(project))
-            return False
-
         result_comment = []
 
         result = True
         to_ignore = self.packages_to_ignore(project)
-        meta = api.load_prj_pseudometa(status['description'])
-        for req in meta['requests']:
-            if req['type'] == 'delete':
+        status = api.project_status(project)
+        if status is None:
+            self.logger.error('no project status for {}'.format(project))
+            return False
+
+        for req in status.findall('staged_requests/request'):
+            if req.get('type') == 'delete':
                 result = result and self.check_delete_request(req, to_ignore, result_comment)
 
         for arch in architectures:

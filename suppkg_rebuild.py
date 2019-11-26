@@ -105,8 +105,8 @@ class StagingHelper(object):
         staging_projects = ["%s:%s"%(self.api.cstaging, p) for p in self.api.get_staging_projects_short()]
         cand_sources = defaultdict(list)
         for stg in staging_projects:
-            prj_meta = self.api.get_prj_pseudometa(stg)
-            prj_staged_packages = [req['package'] for req in prj_meta['requests']]
+            status = self.api.project_status(stg, status=False)
+            prj_staged_packages = [req.get('package') for req in status.findall('./staged_requests/request')]
             prj_expanded_packages = self.check_multiple_specs(self.project, prj_staged_packages)
             for pkg in support_pkgs:
                 if files.get(pkg) and files.get(pkg) in prj_expanded_packages:

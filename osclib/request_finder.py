@@ -1,11 +1,7 @@
-try:
-    from urllib.parse import quote
-    from urllib.error import HTTPError
-except ImportError:
-    #python 2.x
-    from urllib2 import HTTPError, quote
+from urllib.parse import quote
+from urllib.error import HTTPError
 
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 from osc import oscerr
 from osc.core import makeurl
@@ -36,14 +32,9 @@ class RequestFinder(object):
         self.api = api
         self.srs = {}
 
-    def find_request_id(self, request_id):
-        """
-        Look up the request by ID to verify if it is correct
-        :param request_id: ID of the added request
-        """
-
+    def load_request(self, request_id):
         if not _is_int(request_id):
-            return False
+            return None
 
         url = makeurl(self.api.apiurl, ['request', str(request_id)])
         try:
@@ -55,6 +46,18 @@ class RequestFinder(object):
 
         if root.get('id', None) != str(request_id):
             return None
+
+        return root
+
+    def find_request_id(self, request_id):
+        """
+        Look up the request by ID to verify if it is correct
+        :param request_id: ID of the added request
+        """
+
+        root = self.load_request(request_id)
+        if root is None:
+            return False
 
         project = root.find('action').find('target').get('project')
         if (project != self.api.project and not project.startswith(self.api.cstaging)):
@@ -137,9 +140,9 @@ class RequestFinder(object):
         This function is only called for its side effect.
         """
         for p in pkgs:
-            if self.find_request_package(p):
+            if _is_int(p) and self.find_request_id(p):
                 continue
-            if self.find_request_id(p):
+            if self.find_request_package(p):
                 continue
             if self.find_request_project(p, newcand):
                 continue
@@ -155,17 +158,15 @@ class RequestFinder(object):
         This function is only called for its side effect.
         """
 
+        url = self.api.makeurl(['staging', self.api.project, 'staging_projects'], { 'requests': 1 })
+        status = ET.parse(self.api.retried_GET(url)).getroot()
+
         for p in pkgs:
             found = False
-            for staging in self.api.get_staging_projects():
-                if _is_int(p) and self.api.get_package_for_request_id(staging, p):
-                    self.srs[int(p)] = {'staging': staging}
-                    found = True
-                    break
-                else:
-                    rq = self.api.get_request_id_for_package(staging, p)
-                    if rq:
-                        self.srs[rq] = {'staging': staging}
+            for staging in status.findall('staging_project'):
+                for request in staging.findall('staged_requests/request'):
+                    if request.get('package') == p or request.get('id') == p:
+                        self.srs[int(request.get('id'))] = {'staging': staging.get('name')}
                         found = True
                         break
             if not found:

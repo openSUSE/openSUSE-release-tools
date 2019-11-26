@@ -8,7 +8,7 @@ import json
 from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-
+from lxml import etree as ET
 import osc
 
 MARGIN_HOURS = 4
@@ -23,11 +23,11 @@ class StagingReport(object):
 
     def _package_url(self, package):
         link = '/package/live_build_log/%s/%s/%s/%s'
-        link = link % (package['project'],
-                       package['package'],
-                       package['repository'],
-                       package['arch'])
-        text = '[%s](%s)' % (package['arch'], link)
+        link = link % (package.get('project'),
+                       package.get('package'),
+                       package.get('repository'),
+                       package.get('arch'))
+        text = '[%s](%s)' % (package.get('arch'), link)
         return text
 
     def old_enough(self, _date):
@@ -52,12 +52,10 @@ class StagingReport(object):
             self.comment.add_comment(project_name=project, comment=report)
 
     def _report_broken_packages(self, info):
-        broken_package_status = info['broken_packages']
-
         # Group packages by name
         groups = defaultdict(list)
-        for package in broken_package_status:
-            groups[package['package']].append(package)
+        for package in info.findall('broken_packages/package'):
+            groups[package.get('package')].append(package)
 
         failing_lines = [
             '* Build failed %s (%s)' % (key, ', '.join(self._package_url(p) for p in value))
@@ -73,9 +71,10 @@ class StagingReport(object):
         failing_lines, green_lines = [], []
 
         links_state = {}
-        for check in info['checks']:
-            links_state.setdefault(check['state'], [])
-            links_state[check['state']].append('[{}]({})'.format(check['name'], check['url']))
+        for check in info.findall('checks/check'):
+            state = check.find('state').text
+            links_state.setdefault(state, [])
+            links_state[state].append('[{}]({})'.format(check.get('name'), check.find('url').text))
 
         lines = []
         failure = False
@@ -94,8 +93,8 @@ class StagingReport(object):
 
         return '\n'.join(lines).strip(), failure
 
-    def report(self, project, aggregate=True, force=False):
-        info = self.api.project_status(project, aggregate)
+    def report(self, project, force=False):
+        info = self.api.project_status(project)
 
         # Do not attempt to process projects without staging info, or projects
         # in a pending state that will change before settling. This avoids
@@ -103,7 +102,7 @@ class StagingReport(object):
         # long-lived stagings where checks may be re-triggered multiple times
         # and thus enter pending state (not seen on first run) which is not
         # useful to report.
-        if not info or not self.api.project_status_final(info):
+        if info is None or not self.api.project_status_final(info):
             return
 
         report_broken_packages = self._report_broken_packages(info)
@@ -153,7 +152,7 @@ if __name__ == '__main__':
     staging_report = StagingReport(api)
 
     if args.staging:
-        staging_report.report(api.prj_from_letter(args.staging), False, args.force)
+        staging_report.report(api.prj_from_letter(args.staging), args.force)
     else:
         for staging in api.get_staging_projects():
-            staging_report.report(staging, True, args.force)
+            staging_report.report(staging, args.force)
