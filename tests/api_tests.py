@@ -8,7 +8,6 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from mock import MagicMock
-from nose.tools import nottest
 from . import OBSLocal
 
 class TestApiCalls(OBSLocal.TestCase):
@@ -230,7 +229,6 @@ class TestApiCalls(OBSLocal.TestCase):
 
         self.wf.api._fetch_project_meta = MagicMock(return_value=body)
 
-    @nottest # TODO
     def test_move(self):
         """Test package movement."""
 
