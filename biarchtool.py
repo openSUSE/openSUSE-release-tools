@@ -249,7 +249,6 @@ class BiArchTool(ToolBase.ToolBase):
                 except HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
-
     def enable_baselibs_packages(self, force=False, wipebinaries=False):
         self._init_biarch_packages()
         todo = dict()

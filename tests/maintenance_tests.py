@@ -274,8 +274,6 @@ class TestMaintenance(unittest.TestCase):
 
         self.assertFalse(result['devel_review_added'])
 
-
-
     def test_backports_submit(self):
 
         httpretty.register_uri(httpretty.GET,

@@ -408,7 +408,6 @@ class FccSubmitter(object):
             print('None')
 
 
-
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)

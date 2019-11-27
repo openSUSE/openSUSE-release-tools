@@ -174,7 +174,6 @@ class StagingAPI(object):
                 if (retry_sleep_seconds % 60):
                     retry_sleep_seconds += 1
 
-
     def retried_GET(self, url):
         return self._retried_request(url, http_GET)
 

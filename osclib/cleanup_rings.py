@@ -72,7 +72,6 @@ class CleanupRings(object):
                                 print("osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg))
                                 self.links[mainpkg] = pkg
 
-
     def fill_pkgdeps(self, prj, repo, arch):
         root = builddepinfo(self.api.apiurl,  prj, repo, arch)
 

@@ -137,7 +137,6 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         return True
 
-
     def check_one_request(self, req):
         self.add_factory_source = False
         self.needs_maintainer_review = set()

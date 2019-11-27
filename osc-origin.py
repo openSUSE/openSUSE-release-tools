@@ -345,7 +345,6 @@ def osrt_origin_report(apiurl, opts, *args):
         for package, origins in sorted(package_diff.items()):
             report.append(line_format.format(package, *origins))
 
-
     body = '\n'.join(report)
     print(body)
 

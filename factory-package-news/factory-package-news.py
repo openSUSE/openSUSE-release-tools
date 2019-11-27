@@ -176,7 +176,6 @@ class ChangeLogger(cmdln.Cmdln):
         pprint(pkgs[package])
         pprint(changelogs[pkgs[package]['sourcerpm']])
 
-
     def _get_packages_grouped(self, pkgs, names):
         group = dict()
         for pkg in names:
@@ -185,7 +184,6 @@ class ChangeLogger(cmdln.Cmdln):
             else:
                 group[pkgs[pkg]['sourcerpm']].append(pkg)
         return group
-
 
     @cmdln.option("--dir", action="store", type='string', dest='dir', help="data directory")
     def do_diff(self, subcmd, opts, version1, version2):

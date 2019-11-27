@@ -107,7 +107,6 @@ class ToolBase(object):
         query = [] if not query else query
         return osc.core.makeurl(self.apiurl, l, query)
 
-
     def process(self, packages):
         """ reimplement this """
         True

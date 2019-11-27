@@ -36,7 +36,6 @@ class PrioCommand(object):
                 except HTTPError as e:
                     print(e)
 
-
     def perform(self, projects=None, priority=None):
         """
         Set priority on specific stagings or all of them at once
