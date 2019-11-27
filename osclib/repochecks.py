@@ -93,7 +93,8 @@ def parsed_installcheck(pfile, arch, target_packages, whitelist):
     if not len(target_packages):
         return reported_problems
 
-    p = subprocess.run(['/usr/bin/installcheck', arch, pfile], stdout=subprocess.PIPE, text=True)
+    p = subprocess.run(['/usr/bin/installcheck', arch, pfile],
+                       stdout=subprocess.PIPE, errors='backslashreplace', text=True)
     if p.returncode:
         in_problem = False
         package = None
