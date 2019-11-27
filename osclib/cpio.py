@@ -14,7 +14,7 @@ class Cpio(object):
         f = CpioFile(self.off, self.buf)
         if f.fin():
             raise StopIteration
-        self.off = self.off+f.length()
+        self.off = self.off + f.length()
         return f
 
 class CpioFile(object):
@@ -22,8 +22,8 @@ class CpioFile(object):
         self.off = off
         self.buf = buf
 
-        if off&3:
-            raise Exception("invalid offset %d"% off)
+        if (off & 3):
+            raise Exception("invalid offset %d" % off)
 
         fmt = "6s8s8s8s8s8s8s8s8s8s8s8s8s8s"
         off = self.off + struct.calcsize(fmt)
@@ -31,7 +31,7 @@ class CpioFile(object):
         fields = struct.unpack(fmt, buf[self.off:off])
 
         if fields[0] != "070701":
-            raise Exception("invalid cpio header %s"%self.c_magic)
+            raise Exception("invalid cpio header %s" % self.c_magic)
 
         names = ("c_ino", "c_mode", "c_uid", "c_gid",
                 "c_nlink", "c_mtime", "c_filesize",
@@ -41,25 +41,25 @@ class CpioFile(object):
             setattr(self, n, int(v, 16))
 
         nlen = self.c_namesize - 1
-        self.name = struct.unpack('%ds'%nlen, buf[off:off+nlen])[0]
+        self.name = struct.unpack('%ds' % nlen, buf[off:off + nlen])[0]
         off = off + nlen + 1
-        if off&3:
-            off = off + 4-(off&3) # padding
+        if (off & 3):
+            off = off + 4 - (off & 3)   # padding
         self.payloadstart = off
 
     def fin(self):
         return self.name == 'TRAILER!!!'
 
     def __str__(self):
-        return "[%s %d]"%(self.name, self.c_filesize)
+        return "[%s %d]" % (self.name, self.c_filesize)
 
     def header(self):
-        return self.buf[self.payloadstart:self.payloadstart+self.c_filesize]
+        return self.buf[self.payloadstart:self.payloadstart + self.c_filesize]
 
     def length(self):
-        l = self.payloadstart-self.off + self.c_filesize
-        if self.c_filesize&3:
-            l = l + 4-(self.c_filesize&3)
+        l = self.payloadstart - self.off + self.c_filesize
+        if (self.c_filesize & 3):
+            l = l + 4 - (self.c_filesize & 3)
         return l
 
 if __name__ == '__main__':
@@ -79,4 +79,3 @@ if __name__ == '__main__':
             ofh = open(i.name, 'wb')
             ofh.write(i.header())
             ofh.close()
-

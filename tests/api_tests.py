@@ -125,7 +125,6 @@ class TestApiCalls(OBSLocal.TestCase):
         xpath = "//review[@name='new' and @by_project='{}']".format(self.staging_b.name)
         self.assertIsNotNone(rq.xpath(xpath))
 
-
     def test_add_sr(self):
         # setup is already adding the request, we just verify
         prj = self.staging_b.name

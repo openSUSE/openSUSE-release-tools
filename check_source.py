@@ -215,7 +215,7 @@ class CheckSource(ReviewBot.ReviewBot):
     def suppresses_whitelist_warnings( self, source_project, source_package ):
         # checks if there's a rpmlintrc that suppresses warnings that we check
         found_entries = set()
-        contents = source_file_load(self.apiurl, source_project, source_package, source_package+'-rpmlintrc')
+        contents = source_file_load(self.apiurl, source_project, source_package, source_package + '-rpmlintrc')
         if contents:
             contents = re.sub(r'(?m)^ *#.*\n?', '', contents)
             matches = re.findall(r'addFilter\(["\']([^"\']+)["\']\)', contents)
@@ -250,7 +250,7 @@ class CheckSource(ReviewBot.ReviewBot):
                     result = osc.core.http_GET(url)
                     contents = str(result.read())
                     for entry in self.bad_rpmlint_entries:
-                        if (': W: '+entry in contents) and not (entry in found_entries):
+                        if (': W: ' + entry in contents) and not (entry in found_entries):
                             self.logger.info(f'found missing whitelist for warning: {entry}')
                             found_entries.add(entry)
                 except HTTPError as e:

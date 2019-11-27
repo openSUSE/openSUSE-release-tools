@@ -100,7 +100,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         for req in requests:
             for a in req.actions:
                 si = self.get_sourceinfo(prjprefix + a.src_project, a.src_package, a.src_rev)
-                self.logger.debug("rq %s: %s/%s@%s"%(req.reqid, prjprefix + a.src_project, a.src_package, si.verifymd5))
+                self.logger.debug("rq %s: %s/%s@%s" % (req.reqid, prjprefix + a.src_project, a.src_package, si.verifymd5))
                 if si.verifymd5 == rev:
                     if req.state.name == 'new':
                         self.logger.info("%s ok", srref(req.reqid))

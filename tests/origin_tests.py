@@ -257,7 +257,6 @@ class TestOrigin(OBSLocal.TestCase):
         request = get_request(self.wf.apiurl, request_id_update)
         request_state_change(self.wf.apiurl, request_id_update, 'accepted')
 
-
         devel_project_new = self.randomString('develnew')
         self.wf.create_package(devel_project_new, package)
         attribute_value_save(self.wf.apiurl, devel_project_new, 'ApprovedRequestSource', '', 'OBS')

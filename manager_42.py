@@ -153,7 +153,6 @@ class Manager42(object):
         return self.cached_GET(makeurl(self.apiurl,
                                 ['source', project, package], opts))
 
-
     def crawl(self, packages):
         """Main method of the class that runs the crawler."""
 
@@ -218,7 +217,7 @@ class Manager42(object):
         if (unknown):
             logger.info("unknown packages: %s", ', '.join(unknown))
 
-        return (stale|unknown)
+        return (stale | unknown)
 
     def get_package_history(self, project, package, deleted = False):
         try:
@@ -231,7 +230,6 @@ class Manager42(object):
             if e.code == 404:
                 return None
             raise
-
 
     def _is_ignored(self, package):
         if package in self.config.ignored_packages:
@@ -262,7 +260,7 @@ class Manager42(object):
             revs.append(rev.find('srcmd5').text)
         revs.reverse()
         for i in range(min(len(revs), 5)): # check last commits
-            srcmd5=revs.pop(0)
+            srcmd5 = revs.pop(0)
             root = self.cached_GET(makeurl(self.apiurl,
                                     ['source', project, package], { 'rev': srcmd5, 'view': 'info'}))
             root = ET.fromstring(root)

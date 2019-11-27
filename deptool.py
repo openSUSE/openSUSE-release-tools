@@ -219,7 +219,7 @@ class DepTool(cmdln.Cmdln):
             for s in sel.solvables():
                 print('- {}-{}@{}:'.format(s.name, s.evr, s.arch))
                 for kind in ('RECOMMENDS', 'REQUIRES', 'SUPPLEMENTS', 'ENHANCES', 'PROVIDES', 'SUGGESTS'):
-                    deps = s.lookup_deparray(getattr(solv, 'SOLVABLE_'+kind), 0)
+                    deps = s.lookup_deparray(getattr(solv, 'SOLVABLE_' + kind), 0)
                     if deps:
                         print('  {}:'.format(kind))
                         for dep in deps:
@@ -260,7 +260,7 @@ class DepTool(cmdln.Cmdln):
                 name = str(dep)
                 if name.startswith('pattern-order()'):
                     # XXX: no function in bindings to do that properly
-                    order = name[name.find('= ')+2:]
+                    order = name[name.find('= ') + 2:]
             print("{} {}".format(order, s.name))
 
     @cmdln.option("--providers", action="store_true",
@@ -283,7 +283,7 @@ class DepTool(cmdln.Cmdln):
             kinds.append('PROVIDES')
 
         for kind in kinds:
-            kindid = getattr(solv, 'SOLVABLE_'+kind, 0)
+            kindid = getattr(solv, 'SOLVABLE_' + kind, 0)
             kindprinted = False
             if opts.relation:
                 # FIXME: doesnt work
@@ -335,7 +335,7 @@ class DepTool(cmdln.Cmdln):
             p = self.pool.str2id(r)
             for kind in kinds:
                 kindprinted = False
-                kindid = getattr(solv, 'SOLVABLE_'+kind, 0)
+                kindid = getattr(solv, 'SOLVABLE_' + kind, 0)
                 sel = self.pool.matchdepid(p, solv.Selection.SELECTION_REL | solv.Selection.SELECTION_FLAT, kindid)
                 if sel.isempty():
                     logger.debug('nothing %s %s', kind.lower(), p)

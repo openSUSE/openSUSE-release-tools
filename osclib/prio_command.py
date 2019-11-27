@@ -22,7 +22,7 @@ class PrioCommand(object):
 
         # XXX taking name verbatim would produce null byte error
         # https://github.com/openSUSE/open-build-service/issues/2493
-        message = 'raising priority for %s'%str(project['name'])
+        message = 'raising priority for %s' % str(project['name'])
         for r in project['missing_reviews']:
             reqid = str(r['request'])
             req = osc.core.get_request(self.api.apiurl, reqid)
@@ -35,7 +35,6 @@ class PrioCommand(object):
                     print(reqid + ' ' + r['by'] + ' ' + priority)
                 except HTTPError as e:
                     print(e)
-
 
     def perform(self, projects=None, priority=None):
         """

@@ -111,7 +111,7 @@ class CompareList(object):
     def submit_new_package(self, source, target, package, msg=None):
         req = osc.core.get_request_list(self.apiurl, target, package, req_state=('new', 'review', 'declined'))
         if req:
-            print("There is a request to %s / %s already, skip!"%(target, package))
+            print("There is a request to %s / %s already, skip!" % (target, package))
         else:
             if not msg:
                 msg = 'New package submitted by compare_pkglist'
@@ -131,10 +131,10 @@ class CompareList(object):
                 return
             if self.submitfrom and self.submitto:
                 if not self.item_exists(self.submitfrom):
-                    print("Project %s is not exist"%self.submitfrom)
+                    print("Project %s is not exist" % self.submitfrom)
                     return
                 if not self.item_exists(self.submitto):
-                    print("Project %s is not exist"%self.submitto)
+                    print("Project %s is not exist" % self.submitto)
                     return
 
         # get souce packages from target
@@ -180,7 +180,7 @@ class CompareList(object):
 
                         if self.submitfrom and self.submitto:
                             if not self.item_exists(self.submitfrom, pkg):
-                                print("%s not found in %s"%(pkg, self.submitfrom))
+                                print("%s not found in %s" % (pkg, self.submitfrom))
                                 continue
                             msg = "Automated submission of a package from %s to %s" % (self.submitfrom, self.submitto)
                             if self.existin:

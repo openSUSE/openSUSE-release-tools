@@ -109,7 +109,7 @@ def meta_role_expand(apiurl, meta, role='maintainer'):
     return users
 
 def package_list(apiurl, project):
-    url = makeurl(apiurl, ['source', project], { 'expand': 1 })
+    url = makeurl(apiurl, ['source', project], {'expand': 1})
     root = ET.parse(http_GET(url)).getroot()
 
     packages = []

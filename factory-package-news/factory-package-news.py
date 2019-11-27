@@ -78,9 +78,9 @@ class ChangeLogger(cmdln.Cmdln):
                 'kernel-vanilla',
                 'kernel-xen',
                 ):
-                srpm = '%s-%s-%s.src.rpm'%('kernel-source', m.group('version'), m.group('release'))
+                srpm = '%s-%s-%s.src.rpm' % ('kernel-source', m.group('version'), m.group('release'))
                 pkgdata[binrpm]['sourcerpm'] = srpm
-                print("%s -> %s"%(str(h['sourcerpm'], 'utf-8'), srpm))
+                print("%s -> %s" % (str(h['sourcerpm'], 'utf-8'), srpm))
 
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(binrpm)
@@ -100,7 +100,7 @@ class ChangeLogger(cmdln.Cmdln):
                 fd = os.open(arg, os.O_RDONLY)
 
                 if not iso.is_open() or fd is None:
-                    raise Exception("Could not open %s as an ISO-9660 image." %  arg)
+                    raise Exception("Could not open %s as an ISO-9660 image." % arg)
 
                 # On Tumbleweed, there is no '/suse' prefix
                 for path in ['/suse/x86_64', '/suse/noarch', '/suse/aarch64', '/suse/s390x',
@@ -111,15 +111,15 @@ class ChangeLogger(cmdln.Cmdln):
 
                     for stat in file_stats:
                         filename = stat[0]
-                        LSN      = stat[1]
-                        size     = stat[2]
+                        LSN = stat[1]
+                        size = stat[2]
                         sec_size = stat[3]
-                        is_dir   = stat[4] == 2
+                        is_dir = stat[4] == 2
 #                       print("%s [LSN %6d] %8d %s%s" % (dir_tr[is_dir], LSN, size, path,
 #                           iso9660.name_translate(filename)))
 
                         if (filename.endswith('.rpm')):
-                            os.lseek(fd, LSN*pycdio.ISO_BLOCKSIZE, io.SEEK_SET)
+                            os.lseek(fd, LSN * pycdio.ISO_BLOCKSIZE, io.SEEK_SET)
                             h = self.ts.hdrFromFdno(fd)
                             _getdata(h)
 
@@ -133,7 +133,7 @@ class ChangeLogger(cmdln.Cmdln):
                         h = self.readRpmHeader( pkg )
                         _getdata(h)
             else:
-                raise Exception("don't know what to do with %s"%arg)
+                raise Exception("don't know what to do with %s" % arg)
 
         return pkgdata, changelogs
 
@@ -149,7 +149,7 @@ class ChangeLogger(cmdln.Cmdln):
         if not opts.dir:
             raise Exception("need --dir option")
         if not os.path.isdir(opts.dir):
-            raise Exception("%s must be a directory"%opts.dir)
+            raise Exception("%s must be a directory" % opts.dir)
         if not opts.snapshot:
             raise Exception("missing snapshot option")
 
@@ -176,7 +176,6 @@ class ChangeLogger(cmdln.Cmdln):
         pprint(pkgs[package])
         pprint(changelogs[pkgs[package]['sourcerpm']])
 
-
     def _get_packages_grouped(self, pkgs, names):
         group = dict()
         for pkg in names:
@@ -185,7 +184,6 @@ class ChangeLogger(cmdln.Cmdln):
             else:
                 group[pkgs[pkg]['sourcerpm']].append(pkg)
         return group
-
 
     @cmdln.option("--dir", action="store", type='string', dest='dir', help="data directory")
     def do_diff(self, subcmd, opts, version1, version2):
@@ -197,24 +195,24 @@ class ChangeLogger(cmdln.Cmdln):
         if not opts.dir:
             raise Exception("need --dir option")
         if not os.path.isdir(opts.dir):
-            raise Exception("%s must be a directory"%opts.dir)
+            raise Exception("%s must be a directory" % opts.dir)
 
         f = open(os.path.join(opts.dir, version1), 'rb')
         (v, (v1pkgs, v1changelogs)) = pickle.load(f,
             encoding='utf-8', errors='backslashreplace')
         if v != data_version:
-            raise Exception("not matching version %s in %s"%(v, version1))
+            raise Exception("not matching version %s in %s" % (v, version1))
         f = open(os.path.join(opts.dir, version2), 'rb')
         (v, (v2pkgs, v2changelogs)) = pickle.load(f,
             encoding='utf-8', errors='backslashreplace')
         if v != data_version:
-            raise Exception("not matching version %s in %s"%(v, version2))
+            raise Exception("not matching version %s in %s" % (v, version2))
 
         p1 = set(v1pkgs.keys())
         p2 = set(v2pkgs.keys())
 
         print('Packages changed:')
-        group = self._get_packages_grouped(v2pkgs, p1&p2)
+        group = self._get_packages_grouped(v2pkgs, p1 & p2)
 #        pprint(p1&p2)
 #        pprint(group)
 #        print "  "+"\n  ".join(["\n   * ".join(sorted(group[s])) for s in sorted(group.keys()) ])
@@ -240,7 +238,7 @@ class ChangeLogger(cmdln.Cmdln):
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
                 continue # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
-            details += "\n==== %s ====\n"%name
+            details += "\n==== %s ====\n" % name
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:
                 print("  %s (%s -> %s)" % (name, v1pkgs[pkgs[0]]['version'],
                                            v2pkgs[pkgs[0]]['version']))
@@ -249,7 +247,7 @@ class ChangeLogger(cmdln.Cmdln):
             else:
                 print("  %s" % name)
             if len(pkgs) > 1:
-                details += "Subpackages: %s\n"%" ".join([p for p in pkgs if p != name])
+                details += "Subpackages: %s\n" % " ".join([p for p in pkgs if p != name])
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
                 if t2 == t1:
                     break

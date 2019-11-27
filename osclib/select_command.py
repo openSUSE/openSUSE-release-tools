@@ -66,7 +66,7 @@ class SelectCommand(object):
             int(self.api.packages_staged[package]['rq_id']): package for package in self.api.packages_staged
         }
         if request in staged_requests:
-            supersede =  self._supersede(request)
+            supersede = self._supersede(request)
 
         if request not in staged_requests and not supersede:
             # Normal 'select' command

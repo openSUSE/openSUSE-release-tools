@@ -114,8 +114,8 @@ class BiArchTool(ToolBase.ToolBase):
             if ':Rings' in self.project:
                 self.biarch_packages = set()
             else:
-                self.biarch_packages = set(self.meta_get_packagelist("%s:Rings:0-Bootstrap"%self.project))
-                self.biarch_packages |= set(self.meta_get_packagelist("%s:Rings:1-MinimalX"%self.project))
+                self.biarch_packages = set(self.meta_get_packagelist("%s:Rings:0-Bootstrap" % self.project))
+                self.biarch_packages |= set(self.meta_get_packagelist("%s:Rings:1-MinimalX" % self.project))
 
         self._init_rdeps()
         self.fill_package_meta()
@@ -248,7 +248,6 @@ class BiArchTool(ToolBase.ToolBase):
                             'package' : pkg }))
                 except HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
-
 
     def enable_baselibs_packages(self, force=False, wipebinaries=False):
         self._init_biarch_packages()

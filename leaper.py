@@ -93,7 +93,7 @@ class Leaper(ReviewBot.ReviewBot):
                 project = project[len(prefix):]
                 break
 
-        return '[%(project)s/%(package)s](%(url)s/package/show/%(project)s/%(package)s)'%{
+        return '[%(project)s/%(package)s](%(url)s/package/show/%(project)s/%(package)s)' % {
                     'url': self._webui_from_api(apiurl),
                     'project': project,
                     'package': package,
@@ -113,7 +113,7 @@ class Leaper(ReviewBot.ReviewBot):
                 target_project = target_project[len(prefix):]
                 break
 
-        return self.package_link(target_project, target_package) + ' ([diff](%(url)s/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s))'%{
+        return self.package_link(target_project, target_package) + ' ([diff](%(url)s/package/rdiff/%(src_project)s/%(src_package)s?opackage=%(target_package)s&oproject=%(target_project)s&rev=%(src_rev)s))' % {
                 'url': self._webui_from_api(apiurl),
                 'src_project': src_project,
                 'src_package': src_package,
@@ -206,12 +206,12 @@ class Leaper(ReviewBot.ReviewBot):
                     if sle_version == 12:
                         versions_to_check = [ '42.3' ]
                     elif sle_version == 15:
-                        versions_to_check = [ '15.%d'%i for i in range(sp_version+1) ]
+                        versions_to_check = [ '15.%d' % i for i in range(sp_version + 1) ]
                     else:
                         self.logger.error("can't handle %d.%d", sle_version, sp_version)
 
                     for version in versions_to_check:
-                        leap = 'openSUSE.org:openSUSE:Leap:%s'%(version)
+                        leap = 'openSUSE.org:openSUSE:Leap:%s' % (version)
                         other_projects_to_check += [ leap, leap + ':Update', leap + ':NonFree', leap + ':NonFree:Update' ]
 
                 for prj in other_projects_to_check:
@@ -403,15 +403,15 @@ class Leaper(ReviewBot.ReviewBot):
                     self.logger.debug("submission origin ok")
                     return True
                 elif origin.endswith(':GA') \
-                    and src_project == origin[:-2]+'Update':
+                    and src_project == origin[:-2] + 'Update':
                     self.logger.debug("sle update submission")
                     return True
 
                 # check  if submitted from higher SP
                 priolist = ['SUSE:SLE-15:', 'SUSE:SLE-15-SP1:', 'SUSE:SLE-15-SP2:', 'SUSE:SLE-15-SP3:']
-                for i in range(len(priolist)-1):
+                for i in range(len(priolist) - 1):
                     if origin.startswith(priolist[i]):
-                        for prj in priolist[i+1:]:
+                        for prj in priolist[i + 1:]:
                             if src_project.startswith(prj):
                                 self.logger.info("submission from higher service pack %s:* ok", prj)
                                 return True
@@ -438,7 +438,7 @@ class Leaper(ReviewBot.ReviewBot):
             subprj = src_project[len('openSUSE:Factory'):]
             # disabled for reference. Needed again for 16.0 probably
             if False and self.source_in_factory and target_project.startswith('openSUSE:Leap:15.0') \
-                and self.is_package_in_project('openSUSE:Leap:42.3'+subprj, package):
+                and self.is_package_in_project('openSUSE:Leap:42.3' + subprj, package):
                 self.logger.info('package was in 42.3')
                 self.do_check_maintainer_review = False
                 return True

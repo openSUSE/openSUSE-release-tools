@@ -90,7 +90,7 @@ if not options.version:
 
     m = re.search(r'(?:Snapshot|Build)([\d.]+)-Media', loc)
     if m is None:
-        raise Exception("failed to parse %s"%loc)
+        raise Exception("failed to parse %s" % loc)
 
     version = m.group(1)
     logger.debug("found version %s", version)

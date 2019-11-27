@@ -128,7 +128,7 @@ def parse_susetags(repo, baseurl):
         f.write(content.read())
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
+        repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
         return True
     return False
 
@@ -220,7 +220,7 @@ def update_project(apiurl, project):
                 # FIXME: port to lzma module with python3
                 st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
-                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
+                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
         repo1 = pool.add_repo(''.join(random.choice(string.ascii_letters) for _ in range(5)))
         repo1.add_solv(solv_file)
