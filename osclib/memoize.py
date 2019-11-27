@@ -72,7 +72,7 @@ def memoize(ttl=None, session=False, add_invalidate=False):
     # Configuration variables
     SLOTS = 4096            # Number of slots in the cache file
     NCLEAN = 1024           # Number of slots to remove when limit reached
-    TIMEOUT = 60*60*2       # Time to live for every cache slot (seconds)
+    TIMEOUT = 60 * 60 * 2   # Time to live for every cache slot (seconds)
     memoize.session_functions = []
 
     def _memoize(fn):
@@ -156,7 +156,7 @@ def memoize(ttl=None, session=False, add_invalidate=False):
             cache = _open_cache(cache_name)
             if key in cache:
                 timestamp, value = cache[key]
-                updated = True if total_seconds(now-timestamp) < ttl else False
+                updated = True if total_seconds(now - timestamp) < ttl else False
             if not updated:
                 value = fn(*args, **kwargs)
                 cache[key] = (now, value)

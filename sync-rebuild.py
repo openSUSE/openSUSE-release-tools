@@ -71,7 +71,7 @@ def rebuild_pkg_in_factory(package, prj, arch, testmode, code=None):
     u = osc.core.makeurl(osc.conf.config['apiurl'], ['build', prj], query=query)
 
     if testmode != False:
-        print("Trigger rebuild for this package: " +  u)
+        print("Trigger rebuild for this package: " + u)
 
     else:
         try:
@@ -86,7 +86,7 @@ try:
     if sys.argv[1] != None:
         if sys.argv[1] == '-test':
             testmode = True
-            print("testmode: "+str(testmode))
+            print("testmode: " + str(testmode))
     else:
         testmode = False
 except:

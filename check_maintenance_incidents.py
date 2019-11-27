@@ -100,18 +100,18 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             known_maintainer = False
             for m in maintainers:
                 if author == m:
-                    self.logger.debug("%s is maintainer"%author)
+                    self.logger.debug("%s is maintainer" % author)
                     known_maintainer = True
             if not known_maintainer:
                 for r in req.reviews:
                     if r.by_user in maintainers:
-                        self.logger.debug("found %s as reviewer"%r.by_user)
+                        self.logger.debug("found %s as reviewer" % r.by_user)
                         known_maintainer = True
             if not known_maintainer:
-                self.logger.debug("author: %s, maintainers: %s => need review"%(author, ','.join(maintainers)))
+                self.logger.debug("author: %s, maintainers: %s => need review" % (author, ','.join(maintainers)))
                 self.needs_maintainer_review.add(pkgname)
         else:
-            self.logger.warning("%s doesn't have maintainers"%pkgname)
+            self.logger.warning("%s doesn't have maintainers" % pkgname)
             self.needs_maintainer_review.add(pkgname)
 
     def check_action_maintenance_incident(self, req, a):
@@ -152,7 +152,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                     break
 
         if self.add_factory_source:
-            self.logger.debug("%s needs review by factory-source"%req.reqid)
+            self.logger.debug("%s needs review by factory-source" % req.reqid)
             self.add_review(req, by_user='factory-source')
 
         if self.needs_maintainer_review:

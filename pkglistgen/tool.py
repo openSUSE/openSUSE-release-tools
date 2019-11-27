@@ -395,7 +395,7 @@ class PkgListGen(ToolBase.ToolBase):
                 # FIXME: port to lzma module with python3
                 st = subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
-                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE|solv.Repo.SUSETAGS_RECORD_SHARES)
+                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
                 for arch in self.all_architectures:
                     for project, repo in self.repos:

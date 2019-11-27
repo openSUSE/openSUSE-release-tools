@@ -883,7 +883,7 @@ class StagingAPI(object):
         root = ET.fromstring(self._fetch_project_meta(project))
         for entry in root.findall('entry'):
             if entry.get('name') == '_frozenlinks':
-                return (time.time() - float(entry.get('mtime')))/3600/24
+                return (time.time() - float(entry.get('mtime'))) / 3600 / 24
         return 100000  # quite some!
 
     def rq_to_prj(self, request_id, project):
@@ -947,7 +947,7 @@ class StagingAPI(object):
 
     def linked_packages(self, package, project=None):
         if not project:
-            project=self.project
+            project = self.project
 
         url = self.makeurl(['source', project, package], { 'cmd': 'showlinked' })
         f = http_POST(url)
@@ -1435,7 +1435,7 @@ class StagingAPI(object):
             http_POST(url, data=ET.tostring(root))
 
     def register_new_staging_project(self, name):
-        data='<workflow><staging_project>{}</staging_project></workflow>'.format(name)
+        data = '<workflow><staging_project>{}</staging_project></workflow>'.format(name)
         url = self.makeurl(['staging', self.project, 'staging_projects'])
         try:
             http_POST(url, data=data)

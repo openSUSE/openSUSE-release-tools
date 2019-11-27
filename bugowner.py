@@ -120,7 +120,7 @@ class BugownerTool(ToolBase.ToolBase):
             user = srcrev['user']
 
         if self.is_release_manager(user):
-            logging.debug("%s was last touched by %s, ignored."%(package, user))
+            logging.debug("%s was last touched by %s, ignored." % (package, user))
             return None
 
         return [ Owner('person', user) ]

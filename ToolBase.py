@@ -28,7 +28,7 @@ def chunks(l, n):
     """ Yield successive n-sized chunks from l.
     """
     for i in range(0, len(l), n):
-        yield l[i:i+n]
+        yield l[i:i + n]
 
 class ToolBase(object):
     def __init__(self):
@@ -180,14 +180,14 @@ class CommandLineInterface(cmdln.Cmdln):
                 logger.exception(e)
 
             if interval:
-                logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
-                signal.alarm(interval*60)
+                logger.info("sleeping %d minutes. Press enter to check now ..." % interval)
+                signal.alarm(interval * 60)
                 try:
                     input()
                 except ExTimeout:
                     pass
                 signal.alarm(0)
-                logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                logger.info("recheck at %s" % datetime.datetime.now().isoformat())
                 continue
             break
 

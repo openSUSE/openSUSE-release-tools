@@ -102,7 +102,7 @@ class StagingHelper(object):
         logging.info('Gathering support package list from %s' % self.project)
         support_pkgs = self.get_support_package_list(self.project, 'standard')
         files = self.process_project_binarylist(self.project, 'standard', 'x86_64')
-        staging_projects = ["%s:%s"%(self.api.cstaging, p) for p in self.api.get_staging_projects_short()]
+        staging_projects = ["%s:%s" % (self.api.cstaging, p) for p in self.api.get_staging_projects_short()]
         cand_sources = defaultdict(list)
         for stg in staging_projects:
             status = self.api.project_status(stg, status=False)
@@ -125,7 +125,7 @@ class StagingHelper(object):
             if suppkg_list:
                 suppkgs = suppkg_list.split(',')
 
-            stgname =  stg.get('name')
+            stgname = stg.get('name')
             if len(cand_sources[stgname]) and rebuild == 'unknown':
                 need_rebuild = True
                 stg.find('rebuild').text = 'needed'

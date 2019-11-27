@@ -19,7 +19,7 @@ class RequestSplitter(object):
         # 55 minutes to avoid two staging bot loops of 30 minutes
         self.request_age_threshold = int(self.config.get('splitter-request-age-threshold', 55 * 60))
         self.staging_age_max = int(self.config.get('splitter-staging-age-max', 8 * 60 * 60))
-        special_packages= self.config.get('splitter-special-packages')
+        special_packages = self.config.get('splitter-special-packages')
         if special_packages is not None:
             StrategySpecial.PACKAGES = special_packages.split(' ')
 
@@ -150,7 +150,7 @@ class RequestSplitter(object):
             ring = self.api.ring_packages_for_links.get(target_package)
             if ring:
                 # Cut off *:Rings: prefix.
-                return ring[len(self.api.crings)+1:]
+                return ring[len(self.api.crings) + 1:]
         else:
             # Projects not using rings handle all requests as ring requests.
             return self.api.project

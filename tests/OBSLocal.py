@@ -207,14 +207,14 @@ class StagingWorkflow(object):
         self.config = Config(APIURL, project)
 
     def create_attribute_type(self, namespace, name, values=None):
-        meta="""
+        meta = """
         <namespace name='{}'>
             <modifiable_by user='Admin'/>
         </namespace>""".format(namespace)
         url = osc.core.makeurl(APIURL, ['attribute', namespace, '_meta'])
         osc.core.http_PUT(url, data=meta)
 
-        meta="<definition name='{}' namespace='{}'><description/>".format(name, namespace)
+        meta = "<definition name='{}' namespace='{}'><description/>".format(name, namespace)
         if values:
             meta += "<count>{}</count>".format(values)
         meta += "<modifiable_by role='maintainer'/></definition>"
@@ -255,7 +255,7 @@ class StagingWorkflow(object):
             root = ET.fromstring(meta)
             persons = ET.SubElement(root, 'person')
             for user in users:
-                ET.SubElement(persons, 'person', { 'userid': user } )
+                ET.SubElement(persons, 'person', {'userid': user} )
             meta = ET.tostring(root)
 
         if not name in self.groups:

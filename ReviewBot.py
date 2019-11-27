@@ -153,7 +153,7 @@ class ReviewBot(object):
     @review_mode.setter
     def review_mode(self, value):
         if value not in self.REVIEW_CHOICES:
-            raise Exception("invalid review option: %s"%value)
+            raise Exception("invalid review option: %s" % value)
         self._review_mode = value
 
     def set_request_ids(self, ids):
@@ -177,7 +177,7 @@ class ReviewBot(object):
         return_value = 0
 
         for req in self.requests:
-            self.logger.info("checking %s"%req.reqid)
+            self.logger.info("checking %s" % req.reqid)
             self.request = req
             with sentry_sdk.configure_scope() as scope:
                 scope.set_extra('request.id', self.request.reqid)
@@ -199,7 +199,7 @@ class ReviewBot(object):
                 good = True
 
             if good is None:
-                self.logger.info("%s ignored"%req.reqid)
+                self.logger.info("%s ignored" % req.reqid)
             elif good:
                 self._set_review(req, 'accepted')
             elif self.review_mode != 'accept-onpass':
@@ -259,7 +259,7 @@ class ReviewBot(object):
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
         if doit is None:
-            self.logger.info("can't change state, %s does not have the reviewer"%(req.reqid))
+            self.logger.info("can't change state, %s does not have the reviewer" % (req.reqid))
 
         newstate = state
 
@@ -267,18 +267,18 @@ class ReviewBot(object):
         by_group = self.fallback_group
 
         msg = self.review_messages[state] if state in self.review_messages else state
-        self.logger.info("%s %s: %s"%(req.reqid, state, msg))
+        self.logger.info("%s %s: %s" % (req.reqid, state, msg))
 
         if state == 'declined':
             if self.review_mode == 'fallback-onfail':
-                self.logger.info("%s needs fallback reviewer"%req.reqid)
+                self.logger.info("%s needs fallback reviewer" % req.reqid)
                 self.add_review(req, by_group=by_group, by_user=by_user, msg="Automated review failed. Needs fallback reviewer.")
                 newstate = 'accepted'
         elif self.review_mode == 'fallback-always':
             self.add_review(req, by_group=by_group, by_user=by_user, msg='Adding fallback reviewer')
 
         if doit == True:
-            self.logger.debug("setting %s to %s"%(req.reqid, state))
+            self.logger.debug("setting %s to %s" % (req.reqid, state))
             if not self.dryrun:
                 try:
                     osc.core.change_review_state(apiurl=self.apiurl,
@@ -290,7 +290,7 @@ class ReviewBot(object):
                         raise e
                     self.logger.info('unable to change review state (likely superseded or revoked)')
         else:
-            self.logger.debug("%s review not changed"%(req.reqid))
+            self.logger.debug("%s review not changed" % (req.reqid))
 
     # allow_duplicate=True should only be used if it makes sense to force a
     # re-review in a scenario where the bot adding the review will rerun.
@@ -506,7 +506,7 @@ class ReviewBot(object):
         # to find the real package name
         (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
         if linkpkg is None or linkprj is None or linkprj != a.tgt_project:
-            self.logger.warning("%s/%s is not a link to %s"%(a.src_project, pkgname, a.tgt_project))
+            self.logger.warning("%s/%s is not a link to %s" % (a.src_project, pkgname, a.tgt_project))
             return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
         else:
             pkgname = linkpkg
@@ -527,7 +527,7 @@ class ReviewBot(object):
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         """ default implemention does nothing """
-        self.logger.info("%s/%s@%s -> %s/%s"%(src_project, src_package, src_rev, target_project, target_package))
+        self.logger.info("%s/%s@%s -> %s/%s" % (src_project, src_package, src_rev, target_project, target_package))
         return None
 
     @staticmethod
@@ -748,7 +748,7 @@ class ReviewBot(object):
 
     def _check_matching_srcmd5(self, project, package, rev, history_limit = 5):
         """check if factory sources contain the package and revision. check head and history"""
-        self.logger.debug("checking %s in %s"%(package, project))
+        self.logger.debug("checking %s in %s" % (package, project))
         try:
             osc.core.show_package_meta(self.apiurl, project, package)
         except (HTTPError, URLError):
@@ -777,9 +777,9 @@ class ReviewBot(object):
                 node = revision.find('srcmd5')
                 if node is None:
                     continue
-                self.logger.debug("checking %s"%node.text)
+                self.logger.debug("checking %s" % node.text)
                 if node.text == rev:
-                    self.logger.debug("got it, rev %s"%revision.get('rev'))
+                    self.logger.debug("got it, rev %s" % revision.get('rev'))
                     return True
                 if i == history_limit:
                     break
@@ -949,14 +949,14 @@ class CommandLineInterface(cmdln.Cmdln):
                 self.logger.exception(e)
 
             if os.isatty(0):
-                self.logger.info("sleeping %d minutes. Press enter to check now ..."%interval)
-                signal.alarm(interval*60)
+                self.logger.info("sleeping %d minutes. Press enter to check now ..." % interval)
+                signal.alarm(interval * 60)
                 try:
                     input()
                 except ExTimeout:
                     pass
                 signal.alarm(0)
-                self.logger.info("recheck at %s"%datetime.datetime.now().isoformat())
+                self.logger.info("recheck at %s" % datetime.datetime.now().isoformat())
             else:
                 self.logger.info("sleeping %d minutes." % interval)
                 time.sleep(interval * 60)

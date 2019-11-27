@@ -254,7 +254,7 @@ class FccSubmitter(object):
     def is_sle_base_pkgs(self, package):
         link = self.get_link(self.to_prj, package)
         if link is None or link.get('project') not in self.sle_base_prjs:
-            logging.debug("%s not from SLE base"%package)
+            logging.debug("%s not from SLE base" % package)
             return False
         return True
 
@@ -263,7 +263,7 @@ class FccSubmitter(object):
         succeeded_packages = []
         succeeded_packages = self.get_build_succeeded_packages(self.from_prj)
         if not len(succeeded_packages) > 0:
-            logging.info('No build succeeded package in %s'%self.from_prj)
+            logging.info('No build succeeded package in %s' % self.from_prj)
             return
 
         print('Build succeeded packages:')
@@ -300,7 +300,7 @@ class FccSubmitter(object):
         succeeded_packages = []
         succeeded_packages = self.get_build_succeeded_packages(self.from_prj)
         if not len(succeeded_packages) > 0:
-            logging.info('No build succeeded package in %s'%self.from_prj)
+            logging.info('No build succeeded package in %s' % self.from_prj)
             return
 
         # randomize the list
@@ -321,11 +321,11 @@ class FccSubmitter(object):
             submit_ok = True
 
             if package in deleted_packages:
-                logging.info('%s has been dropped from %s, ignore it!'%(package, self.to_prj))
+                logging.info('%s has been dropped from %s, ignore it!' % (package, self.to_prj))
                 submit_ok = False
 
             if self.is_sle_base_pkgs(package) is True:
-                logging.info('%s origin from SLE base, skip for now!'%package)
+                logging.info('%s origin from SLE base, skip for now!' % package)
                 submit_ok = False
 
             # make sure it is new package
@@ -336,18 +336,18 @@ class FccSubmitter(object):
 
             multi_specs = self.check_multiple_specfiles(self.factory, package)
             if multi_specs is None:
-                logging.info('%s does not exist in %s'%(package, 'openSUSE:Factory'))
+                logging.info('%s does not exist in %s' % (package, 'openSUSE:Factory'))
                 submit_ok = False
 
             if multi_specs:
                 if multi_specs['linkinfo']:
-                    logging.info('%s in %s is sub-package of %s, skip it!'%(package, 'openSUSE:Factory', multi_specs['linkinfo']))
+                    logging.info('%s in %s is sub-package of %s, skip it!' % (package, 'openSUSE:Factory', multi_specs['linkinfo']))
                     ms_packages.append(package)
                     submit_ok = False
 
                 for spec in multi_specs['specs']:
                     if spec not in succeeded_packages:
-                        logging.info('%s is sub-pacakge of %s but build failed, skip it!'%(spec, package))
+                        logging.info('%s is sub-pacakge of %s but build failed, skip it!' % (spec, package))
                         submit_ok = False
 
             if not submit_ok:
@@ -358,9 +358,9 @@ class FccSubmitter(object):
                 # make sure there is no request against same package
                 request = self.get_request_list(package)
                 if request:
-                    logging.debug("There is a request to %s / %s already or it has been declined/revoked, skip!"%(package, self.to_prj))
+                    logging.debug("There is a request to %s / %s already or it has been declined/revoked, skip!" % (package, self.to_prj))
                 else:
-                    logging.info("%d - Preparing submit %s to %s"%(i, package, self.to_prj))
+                    logging.info("%d - Preparing submit %s to %s" % (i, package, self.to_prj))
                     # get devel project
                     devel_prj, devel_pkg = devel_project_get(self.apiurl, self.factory, package)
                     # check devel project does not in the skip list
@@ -397,7 +397,7 @@ class FccSubmitter(object):
                     else:
                         logging.error('Error occurred when creating submit request')
             else:
-                logging.debug('%s is exist in %s, skip!'%(package, self.to_prj))
+                logging.debug('%s is exist in %s, skip!' % (package, self.to_prj))
 
         # dump multi specs packages
         print("Multi-specfile packages:")

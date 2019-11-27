@@ -75,7 +75,7 @@ class AdiCommand:
                 print(e)
                 pass
         else:
-            ready=[]
+            ready = []
             for req in info.findall('staged_requests/request'):
                 ready.append('{}[{}]'.format(Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')))
             if len(ready):

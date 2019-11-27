@@ -38,7 +38,7 @@ def chunks(l, n):
     """ Yield successive n-sized chunks from l.
     """
     for i in range(0, len(l), n):
-        yield l[i:i+n]
+        yield l[i:i + n]
 
 class UpdateCrawler(object):
     def __init__(self, from_prj, to_prj):
@@ -59,7 +59,7 @@ class UpdateCrawler(object):
     # FIXME: duplicated from manager_42
     def latest_packages(self):
         apiurl = self.apiurl
-        prj  = self.from_prj
+        prj = self.from_prj
         if prj.startswith('openSUSE.org:'):
             apiurl = 'https://api.opensuse.org'
             prj = prj[len('openSUSE.org:'):]
@@ -116,9 +116,9 @@ class UpdateCrawler(object):
         return [ node.get('name') for node in root.findall('entry') if not node.get('name') == '000product' and not node.get('name').startswith('patchinfo.') ]
 
     def _get_source_infos(self, project, packages):
-        query = [ 'view=info' ]
+        query = ['view=info']
         if packages:
-            query += [ 'package=%s'%quote_plus(p) for p in packages ]
+            query += ['package=%s' % quote_plus(p) for p in packages]
 
         return self.cached_GET(makeurl(self.apiurl,
                                 ['source', project],
@@ -222,7 +222,7 @@ class UpdateCrawler(object):
                                              {
                                                  'rev': rev
                                              })))
-        linkinfo =  xml.find('linkinfo')
+        linkinfo = xml.find('linkinfo')
         if not linkinfo is None:
             ret = self.follow_link(linkinfo.get('project'), linkinfo.get('package'), linkinfo.get('srcmd5'), verifymd5)
             if ret:

@@ -15,14 +15,14 @@ from osclib.util import mail_send_with_details
 import email.utils
 
 # for maintainer search
-FACTORY='openSUSE:Factory'
+FACTORY = 'openSUSE:Factory'
 
 class RemindedPackage(object):
     def __init__(self, firstfail, reminded, remindCount, bug):
-        self.firstfail=firstfail
-        self.reminded=reminded
-        self.bug=bug
-        self.remindCount=remindCount
+        self.firstfail = firstfail
+        self.reminded = reminded
+        self.bug = bug
+        self.remindCount = remindCount
 
     def __str__(self):
         return '{} {} {} {}'.format(self.firstfail, self.reminded, self.bug, self.remindCount)
@@ -98,7 +98,7 @@ def main(args):
     sender = args.sender
     project = args.project
 
-    logger.debug('loading build fails for %s'%project)
+    logger.debug('loading build fails for %s' % project)
     url = osc.core.makeurl(apiurl, ['projects', project, 'status'],
         { 'ignore_pending': True,
            'limit_to_fails': True,
@@ -135,13 +135,13 @@ def main(args):
             if not package["name"] in RemindedLoaded.keys():
                 # This is the first time we see this package failing for > 7 days
                 reminded = now
-                bug=""
+                bug = ""
                 remindCount = 1
             else:
                 if RemindedLoaded[package["name"]]["reminded"] < now - seconds_to_remember:
                     # We had seen this package in the last run - special treatment
                     reminded = now
-                    bug="boo#123"
+                    bug = "boo#123"
                     remindCount = RemindedLoaded[package["name"]]["remindCount"] + 1
                 else:
                     reminded = RemindedLoaded[package["name"]]["reminded"]
@@ -173,7 +173,7 @@ def main(args):
                     to = Person[userid][2]
                     fullname = Person[userid][1]
                     subject = '%s - %s - Build fail notification' % (project, package)
-                    text = MAIL_TEMPLATES[Reminded[package].remindCount-1] % {
+                    text = MAIL_TEMPLATES[Reminded[package].remindCount - 1] % {
                                 'recipient': fullname,
                                 'sender': sender,
                                 'project' : project,
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.debug:
-        level  = logging.DEBUG
+        level = logging.DEBUG
     elif args.verbose:
         level = logging.INFO
     else:
