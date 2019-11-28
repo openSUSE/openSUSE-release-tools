@@ -278,10 +278,12 @@ class CheckSource(ReviewBot.ReviewBot):
             sys.stdout = _stdout
         return result
 
-    def package_source_parse(self, project, package, revision=None):
+    def _package_source_parse(self, project, package, revision=None, repository=None):
         query = {'view': 'info', 'parse': 1}
         if revision:
             query['rev'] = revision
+        if repository:
+            query['repository'] = repository
         url = osc.core.makeurl(self.apiurl, ['source', project, package], query)
 
         ret = {'name': None, 'version': None}
@@ -290,6 +292,10 @@ class CheckSource(ReviewBot.ReviewBot):
             xml = ET.parse(osc.core.http_GET(url)).getroot()
         except HTTPError as e:
             self.logger.error('ERROR in URL %s [%s]' % (url, e))
+            return ret
+
+        if xml.find('error') is not None:
+            self.logger.error("%s/%s/%s: %s", project, package, repository, xml.find('error').text)
             return ret
 
         # ET boolean check fails.
@@ -301,6 +307,36 @@ class CheckSource(ReviewBot.ReviewBot):
 
         if xml.find('filename') is not None:
             ret['filename'] = xml.find('filename').text
+
+        self.logger.debug("%s/%s/%s: %s", project, package, repository, ret)
+
+        return ret
+
+    def package_source_parse(self, project, package, revision=None):
+        ret = self._package_source_parse(project, package, revision)
+
+        if ret['name'] is not None:
+            return ret
+
+        d = {}
+        for repo in osc.core.get_repositories_of_project(self.apiurl, project):
+            r = self._package_source_parse(project, package, revision, repo)
+            if r['name'] is not None:
+                d[r['name']] = r
+
+        if len(d) == 1:
+            # here is only one so use that
+            ret = d[next(iter(d))]
+        else:
+            # check if any name matches
+            self.logger.debug("found multiple names %s", ', '.join(d.keys()))
+            for n, r in d.items():
+                if n == package:
+                    ret = r
+                    break
+
+            if ret['name'] is None:
+                self.logger.error("none of the names matched")
 
         return ret
 
