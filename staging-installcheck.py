@@ -68,7 +68,7 @@ class InstallChecker(object):
         return False
 
     def check_delete_request(self, req, to_ignore, comments):
-        package = req['package']
+        package = req.get('package')
         if package in to_ignore:
             self.logger.info('Delete request for package {} ignored'.format(package))
             return True
