@@ -128,7 +128,7 @@ class AcceptCommand(object):
 
         if self.api.project.startswith('openSUSE:'):
             self.update_factory_version()
-            if self.api.item_exists(self.api.crebuild):
+            if self.api.crebuild and self.api.item_exists(self.api.crebuild):
                 self.sync_buildfailures()
 
         return True
