@@ -21,7 +21,7 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./check_tags_in_requests.py -A https://api.suse.de --verbose --user=sle-changelog-checker --review=accept-onpass --factory=openSUSE.org:openSUSE:Factory review
-  SLE.Project.Only:
+  SLE15SP2.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -42,32 +42,6 @@ pipelines:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP2:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP2:GA
-          SLE_12_SP5:
-            timeout: 30
-            resources:
-            - repo-checker
-            tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-12-SP5:GA:Staging/dashboard --no-rebuild SUSE:SLE-12-SP5:GA
-  SLE.Leaper:
-    group: SLE.Checkers
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 */5 * ? * *
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-leaper
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Run:
-        approval: manual
-        jobs:
-          Run:
-            timeout: 30
-            resources:
-            - leaper
-            tasks:
-            - script: ./leaper.py -A https://api.suse.de --group=leaper --user=leaper --verbose --manual-version-updates --manual-maintenance-updates review
   SLE.Origin.Manager:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -230,33 +204,6 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-suse)
-<% %w(A B C D H S V Y).each do |letter| -%>
-  SLE12.SP5.InstallCheck.<%= letter %>:
-    group: SLE.Checkers
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-repo-checker
-    materials:
-      scripts:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-        destination: scripts
-        whitelist:
-          - DO_NOT_TRIGGER
-      stagings:
-        git: git://botmaster.suse.de/suse-repos.git
-        destination: repos
-        whitelist:
-          - SUSE:SLE-12-SP5:GA:Staging:<%= letter %>_-_standard.yaml
-    stages:
-    - Run:
-        timeout: 30
-        resources:
-        - repo-checker
-        tasks:
-        - script: |-
-           cd scripts
-           ./staging-installcheck.py -d -p SUSE:SLE-12-SP5:GA -A https://api.suse.de -s <%= letter %>
-<% end %>
   SLE15.SP1.QR:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
