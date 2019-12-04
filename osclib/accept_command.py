@@ -75,7 +75,7 @@ class AcceptCommand(object):
             status = self.api.project_status(project)
             if status.get('state') != 'acceptable' and not force:
                 print('The project "{}" is not yet acceptable.'.format(project))
-                #return False
+                return False
 
             staging_packages[project] = []
             for request in status.findall('staged_requests/request'):

@@ -59,6 +59,9 @@ class AdiCommand:
         if overall_state != 'acceptable' and overall_state != 'empty':
             raise oscerr.WrongArgs('Missed some case')
 
+        # no longer accept/delete adi projects
+        return
+
         if self.api.is_user_member_of(self.api.user, self.api.cstaging_group):
             print(query_project + ' ' + Fore.GREEN + 'ready')
             packages = []
