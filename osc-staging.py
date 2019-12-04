@@ -66,7 +66,7 @@ def _full_project_name(self, project):
 
 def lock_needed(cmd, opts):
     return not(
-        cmd in ('check', 'check_duplicate_binaries', 'check_local_links', 'frozenage', 'rebuild', 'unlock') or
+        cmd in ('check', 'check_duplicate_binaries', 'check_local_links', 'frozenage', 'rebuild', 'unlock', 'setprio') or
         (cmd == 'list' and not opts.supersede)
     )
 
@@ -338,12 +338,12 @@ def do_staging(self, subcmd, opts, *args):
         'unselect',
         'rebuild',
         'repair',
-        'setprio',
         'supersede',
     ):
         min_args, max_args = 0, None
     elif cmd in (
         'freeze',
+        'setprio',
         'ignore',
     ):
         min_args, max_args = 1, None
