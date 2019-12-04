@@ -8,7 +8,7 @@ from xml.etree import cElementTree as ET
 
 from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
-from osc.core import delete_package, search
+from osc.core import delete_package, search, meta_get_packagelist
 from osc.core import Request
 from osc.util.helper import decode_it
 from osclib.core import attribute_value_save
@@ -146,7 +146,11 @@ class AcceptCommand(object):
 
         return
 
-    def fix_linking_packages(self, package):
+    def check_local_links(self):
+        for package in meta_get_packagelist(self.api.apiurl, self.api.project):
+            self.fix_linking_packages(package, True)
+
+    def fix_linking_packages(self, package, dry=False):
         project = self.api.project
         file_list = self.api.get_filelist_for_package(package, project)
         # ignore
@@ -164,6 +168,8 @@ class AcceptCommand(object):
         # Deleting all the packages that no longer have a .spec file
         for link in local_links - needed_links:
             print(f"Deleting package {project}/{link}")
+            if dry:
+                continue
             try:
                 delete_package(self.api.apiurl, project, link, msg=f"No longer linking to {package}")
             except HTTPError as err:
@@ -182,6 +188,8 @@ class AcceptCommand(object):
             # There is more than one .spec file in the package; link package containers as needed
             meta = ET.fromstring(source_file_load(self.api.apiurl, project, package, '_meta'))
             print(f"Creating new link {link}->{package}")
+            if dry:
+                continue
 
             meta.attrib['name'] = link
             bcnt = meta.find('bcntsynctag')
