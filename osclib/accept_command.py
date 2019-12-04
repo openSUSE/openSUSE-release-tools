@@ -153,13 +153,17 @@ class AcceptCommand(object):
     def fix_linking_packages(self, package, dry=False):
         project = self.api.project
         file_list = self.api.get_filelist_for_package(package, project)
-        # ignore
-        if '_multibuild' in file_list or '_link' in file_list:
+        # ignore linked packages
+        if '_link' in file_list:
             return
         needed_links = set()
-        for file in file_list:
-            if file.endswith('.spec') and file != f'{package}.spec':
-                needed_links.add(file[:-5])
+        # if there's a multibuild we assume all flavors are built
+        # using multibuild. So any potential previous links have to
+        # be removed ie set of needed_links left empty.
+        if '_multibuild' not in file_list:
+            for file in file_list:
+                if file.endswith('.spec') and file != f'{package}.spec':
+                    needed_links.add(file[:-5])
         local_links = set()
         for link in self.api.linked_packages(package):
             if link['project'] == project:
