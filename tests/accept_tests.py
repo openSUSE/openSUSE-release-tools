@@ -5,6 +5,7 @@ from osclib.select_command import SelectCommand
 from osclib.conf import Config
 from osclib.comments import CommentAPI
 from osclib.stagingapi import StagingAPI
+from osclib.core import package_list
 
 from mock import MagicMock
 from . import OBSLocal
@@ -49,3 +50,69 @@ class TestAccept(unittest.TestCase):
         new_id = (set(comments.keys()) - set(self.comments.keys())).pop()
         comment = comments[new_id]['comment']
         self.assertEqual('Project "{}" accepted. The following packages have been submitted to openSUSE:Factory: wine.'.format(self.prj), comment)
+
+    def test_accept_new_multibuild_package(self):
+        wf = self.setup_wf()
+
+        staging = wf.create_staging('A', freeze=True)
+
+        project = wf.create_project('devel:gcc')
+        package = OBSLocal.Package(name='gcc9', project=project)
+        package.create_commit(filename='gcc9.spec')
+        package.create_commit(filename='gcc9-tests.spec')
+        package.create_commit('<multibuild><flavor>gcc9-tests.spec</flavor></multibuild>', filename='_multibuild')
+        wf.submit_package(package)
+
+        ret = SelectCommand(wf.api, staging.name).perform(['gcc9'])
+        ac = AcceptCommand(wf.api)
+        self.assertEqual(True, ac.accept_all(['A'], True))
+
+        # no stale links
+        self.assertEqual([], package_list(wf.apiurl, staging.name))
+        self.assertEqual(['gcc9', 'wine'], package_list(wf.apiurl, wf.project))
+
+    def test_accept_new_multispec_package(self):
+        wf = self.setup_wf()
+
+        staging = wf.create_staging('A', freeze=True)
+
+        project = wf.create_project('devel:gcc')
+        package = OBSLocal.Package(name='gcc9', project=project)
+        package.create_commit(filename='gcc9.spec')
+        package.create_commit(filename='gcc9-tests.spec')
+        wf.submit_package(package)
+
+        ret = SelectCommand(wf.api, staging.name).perform(['gcc9'])
+        ac = AcceptCommand(wf.api)
+        self.assertEqual(True, ac.accept_all(['A'], True))
+
+        # no stale links
+        self.assertEqual([], package_list(wf.apiurl, staging.name))
+        self.assertEqual(['gcc9', 'gcc9-tests', 'wine'], package_list(wf.apiurl, wf.project))
+
+    def test_accept_switch_to_multibuild_package(self):
+        wf = self.setup_wf()
+
+        staging = wf.create_staging('A', freeze=True)
+
+        tpackage = wf.create_package('target', 'gcc9')
+        tpackage.create_commit(filename='gcc9.spec')
+        tpackage.create_commit(filename='gcc9-tests.spec')
+        lpackage = wf.create_package('target', 'gcc9-tests')
+        lpackage.create_commit('<link package="gcc9" cicount="copy" />', filename='_link')
+
+        project = wf.create_project('devel:gcc')
+        package = OBSLocal.Package(name='gcc9', project=project)
+        package.create_commit(filename='gcc9.spec')
+        package.create_commit(filename='gcc9-tests.spec')
+        package.create_commit('<multibuild><flavor>gcc9-tests.spec</flavor></multibuild>', filename='_multibuild')
+
+        wf.submit_package(package)
+
+        ret = SelectCommand(wf.api, staging.name).perform(['gcc9'])
+        ac = AcceptCommand(wf.api)
+        self.assertEqual(True, ac.accept_all(['A'], True))
+
+        # no stale links
+        self.assertEqual([], package_list(wf.apiurl, staging.name))
+        self.assertEqual(['gcc9', 'wine'], package_list(wf.apiurl, wf.project))
