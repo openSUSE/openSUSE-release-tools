@@ -936,12 +936,16 @@ class StagingAPI(object):
         # guarantee the sub-pacakges are created according to the
         # specfiles of main package. Therefore, main package must be
         # created before through get_sub_packages().
-        filelist = self.get_filelist_for_package(pkgname=package, project=project, expand='1', extension='spec')
+        filelist = self.get_filelist_for_package(pkgname=package, project=project, expand='1')
+        if '_multibuild' in filelist:
+            return [package]
+
         mainspec = "{}{}".format(package, '.spec')
         if mainspec in filelist:
             filelist.remove(mainspec)
-        for spec in filelist:
-            ret.append(spec[:-5])
+        for file in filelist:
+            if file.endswith('.spec'):
+                ret.append(file[:-5])
 
         return ret
 
