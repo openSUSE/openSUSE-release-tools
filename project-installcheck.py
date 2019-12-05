@@ -16,6 +16,7 @@ from urllib.parse import urlencode
 import yaml
 from lxml import etree as ET
 from osc import conf
+from osc.core import http_request
 
 import ToolBase
 from osclib.conf import Config
@@ -248,8 +249,9 @@ class RepoChecker():
             return
 
         query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
-        url = makeurl(self.apiurl, ['build', project], urlencode(query, doseq=True))
-        http_POST(url)
+        url = makeurl(self.apiurl, ['build', project])
+        headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
+        http_request('POST', url, headers, data=urlencode(query, doseq=True))
 
         self.store_yaml(oldstate, project, repository, arch)
 
