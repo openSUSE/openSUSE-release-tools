@@ -68,3 +68,24 @@ class TestSelect(unittest.TestCase):
 
         # no stale links
         self.assertEqual([], package_list(self.wf.apiurl, staging.name))
+
+    def test_select_multibuild_package(self):
+        self.wf.setup_rings()
+        staging = self.wf.create_staging('A', freeze=True)
+
+        project = self.wf.create_project('devel:gcc')
+        package = OBSLocal.Package(name='gcc9', project=project)
+        package.create_commit(filename='gcc9.spec')
+        package.create_commit(filename='gcc9-tests.spec')
+        package.create_commit('<multibuild><flavor>gcc9-tests.spec</flavor></multibuild>', filename='_multibuild')
+        self.wf.submit_package(package)
+
+        ret = SelectCommand(self.wf.api, staging.name).perform(['gcc9'])
+        self.assertEqual(True, ret)
+
+        self.assertEqual(package_list(self.wf.apiurl, staging.name), ['gcc9'])
+        uc = UnselectCommand(self.wf.api)
+        self.assertIsNone(uc.perform(['gcc9'], False, None))
+
+        # no stale links
+        self.assertEqual([], package_list(self.wf.apiurl, staging.name))
