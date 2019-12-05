@@ -1460,11 +1460,6 @@ class StagingAPI(object):
 
         self.build_switch_staging_project(project, 'disable')
 
-    def ring_archs(self, ring):
-        if self.rings.index(ring) == 2:
-            return self.cstaging_dvd_archs
-        return self.cstaging_archs
-
     def ignore_format(self, request_id):
         requests_ignored = self.get_ignored_requests()
         if int(request_id) in requests_ignored.keys():

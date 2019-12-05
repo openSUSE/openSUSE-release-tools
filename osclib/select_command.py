@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from xml.etree import cElementTree as ET
 
 from osc import oscerr
@@ -7,8 +5,6 @@ from osc.core import http_GET
 
 from osclib.request_finder import RequestFinder
 from osclib.freeze_command import MAX_FROZEN_AGE
-# from osclib.freeze_command import FreezeCommand
-
 
 SELECT = 'select'
 # SUPERSEDE = 'supersede'
@@ -127,7 +123,6 @@ class SelectCommand(object):
             print('Project needs to be frozen or there was no change for last %d days.' % MAX_FROZEN_AGE)
             print('Please freeze the project or use an option to ignore the time from the last freee.')
             return False
-            # FreezeCommand(self.api).perform(self.target_project)
 
         # picks new candidate requests only if it's not to move requests
         # ie. the review state of staging-project must be new if newcand is True

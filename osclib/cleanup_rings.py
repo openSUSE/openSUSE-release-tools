@@ -152,7 +152,7 @@ class CleanupRings(object):
 
     def check_requiredby(self, project, package):
         # Prioritize x86_64 bit.
-        for arch in reversed(self.api.ring_archs(project)):
+        for arch in reversed(self.api.cstaging_archs):
             for fileinfo in fileinfo_ext_all(self.api.apiurl, project, 'standard', arch, package):
                 for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
                     b = self.bin2src[requiredby.get('name')]
@@ -168,14 +168,13 @@ class CleanupRings(object):
             return False
 
         self.find_inner_ring_links(prj)
-        for arch in self.api.ring_archs(prj):
+        for arch in self.api.cstaging_archs:
             self.fill_pkgdeps(prj, 'standard', arch)
 
         if self.api.rings.index(prj) == 0:
             self.check_buildconfig(prj)
-        else: # Ring 1 or 2.
-            # Always look at DVD archs for image, even in ring 1.
-            for arch in self.api.cstaging_dvd_archs:
+        else:
+            for arch in self.api.cstaging_archs:
                 self.check_image_bdeps(prj, arch)
 
         for source in self.sources:
