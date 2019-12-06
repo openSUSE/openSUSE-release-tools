@@ -20,6 +20,7 @@ from osc.core import show_package_meta
 from osc.core import buildlog_strip_time
 from osc.core import change_review_state
 from osc.core import delete_package
+from osc.core import delete_project
 from osc.core import get_commitlog
 from osc.core import get_group
 from osc.core import get_request
@@ -70,6 +71,7 @@ class StagingAPI(object):
         self._package_metas = dict()
         self._supersede = False
         self._package_disabled = {}
+        self._is_staging_manager = None
 
         Cache.init()
 
@@ -145,6 +147,12 @@ class StagingAPI(object):
         meta = self.get_prj_meta(self.project)
         xpath = 'repository[@name="images"]'
         return len(meta.xpath(xpath)) > 0
+
+    @property
+    def is_staging_manager(self):
+        if self._is_staging_manager is None:
+            self._is_staging_manager = self.is_user_member_of(self.user, self.cstaging_group)
+        return self._is_staging_manager
 
     def makeurl(self, l, query=None):
         """
@@ -1249,7 +1257,10 @@ class StagingAPI(object):
         root = self.project_status(project, reload=True)
         if root.get('state') == 'empty':
             # Cleanup like accept since the staging is now empty.
-            self.staging_deactivate(project)
+            if self.is_adi_project(project):
+                self.api.delete_empty_adi_project(project)
+            else:
+                self.staging_deactivate(project)
         else:
             self.build_switch_staging_project(project, 'enable')
 
@@ -1484,3 +1495,16 @@ class StagingAPI(object):
             return meta.find(xpath) is not None
 
         return False
+
+    def delete_empty_adi_project(self, project):
+        if not self.is_adi_project(project):
+            return
+
+        if not self.is_staging_manager:
+            return
+
+        try:
+            delete_project(self.apiurl, project, force=True)
+        except HTTPError as e:
+            print(e)
+            pass
