@@ -66,16 +66,29 @@ class AcceptCommand(object):
                                    msg="remove link while accepting delete of {}".format(package))
 
     def accept_all(self, projects, force=False, cleanup=True):
+        accept_all_green = len(projects) == 0
+        if accept_all_green:
+            print('Accepting all acceptable projects')
+            if force:
+                print('ERROR: Not compatible with force option')
+                return False
+
         self.requests = { 'delete': [], 'submit': [] }
         staging_packages = {}
+
+        if accept_all_green:
+            projects = self.api.get_staging_projects()
 
         for prj in projects:
             project = self.api.prj_from_letter(prj)
 
             status = self.api.project_status(project)
-            if status.get('state') != 'acceptable' and not force:
-                print('The project "{}" is not yet acceptable.'.format(project))
-                return False
+            if status.get('state') != 'acceptable':
+                if accept_all_green:
+                    continue
+                if not force:
+                    print('The project "{}" is not yet acceptable.'.format(project))
+                    return False
 
             staging_packages[project] = []
             for request in status.findall('staged_requests/request'):
@@ -94,18 +107,15 @@ class AcceptCommand(object):
             opts['force'] = '1'
 
         print('triggering staging accepts...')
-        for prj in projects:
-            project = self.api.prj_from_letter(prj)
-
+        for project in staging_packages.keys():
             u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'], opts)
-            f = http_POST(u)
+            http_POST(u)
 
         for req in other_new:
             print(f"Accepting request {req['id']}: {req['package']}")
             change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
 
-        for prj in projects:
-            project = self.api.prj_from_letter(prj)
+        for project in staging_packages.keys():
             print(f'waiting for staging project {project} to be accepted')
 
             while True:

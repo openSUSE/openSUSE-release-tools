@@ -124,16 +124,13 @@ def do_staging(self, subcmd, opts, *args):
 
     ${cmd_option_list}
 
-    "accept" will accept all requests in
-        $PROJECT:Staging:<LETTER> into $PROJECT
-        If openSUSE:* project, requests marked ready from adi stagings will also
-        be accepted.
+    "accept" will accept all requests in the given stagings. Without argument,
+        it accepts all acceptable stagings.
 
     "adi" will list already staged requests, stage new requests, and supersede
         requests where applicable. New adi stagings will be created for new
         packages based on the grouping options used. The default grouping is by
-        source project. When adi stagings are ready the request will be marked
-        ready, unstaged, and the adi staging deleted.
+        source project. When adi stagings are empty, they are deleted.
 
     "check" will check if all packages are links without changes
 
@@ -295,7 +292,7 @@ def do_staging(self, subcmd, opts, *args):
         A request list can be used to limit what is superseded.
 
     Usage:
-        osc staging accept [--force] [--no-cleanup] [LETTER...]
+        osc staging accept [--force] [--no-cleanup] [STAGING...]
         osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
         osc staging check [STAGING...]
         osc staging check_duplicate_binaries
