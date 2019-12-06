@@ -11,6 +11,7 @@ from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize_session_reset
+from osclib.core import source_file_load
 import logging
 
 from mock import MagicMock
@@ -55,7 +56,7 @@ class TestSelect(unittest.TestCase):
 
         project = self.wf.create_project('devel:gcc')
         package = OBSLocal.Package(name='gcc8', project=project)
-        package.create_commit(filename='gcc8.spec')
+        package.create_commit(filename='gcc8.spec', text='Name: gcc8')
         package.create_commit(filename='gcc8-tests.spec')
         self.wf.submit_package(package)
 
@@ -63,6 +64,12 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(True, ret)
 
         self.assertEqual(package_list(self.wf.apiurl, staging.name), ['gcc8', 'gcc8-tests'])
+        file = source_file_load(self.wf.apiurl, staging.name, 'gcc8', 'gcc8.spec')
+        self.assertEqual(file, 'Name: gcc8')
+        # we should see the spec file also in the 2nd package
+        file = source_file_load(self.wf.apiurl, staging.name, 'gcc8-tests', 'gcc8.spec')
+        self.assertEqual(file, 'Name: gcc8')
+
         uc = UnselectCommand(self.wf.api)
         self.assertIsNone(uc.perform(['gcc8'], False, None))
 
@@ -75,7 +82,7 @@ class TestSelect(unittest.TestCase):
 
         project = self.wf.create_project('devel:gcc')
         package = OBSLocal.Package(name='gcc9', project=project)
-        package.create_commit(filename='gcc9.spec')
+        package.create_commit(filename='gcc9.spec', text='Name: gcc9')
         package.create_commit(filename='gcc9-tests.spec')
         package.create_commit('<multibuild><flavor>gcc9-tests.spec</flavor></multibuild>', filename='_multibuild')
         self.wf.submit_package(package)
@@ -84,6 +91,9 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(True, ret)
 
         self.assertEqual(package_list(self.wf.apiurl, staging.name), ['gcc9'])
+        file = source_file_load(self.wf.apiurl, staging.name, 'gcc9', 'gcc9.spec')
+        self.assertEqual(file, 'Name: gcc9')
+
         uc = UnselectCommand(self.wf.api)
         self.assertIsNone(uc.perform(['gcc9'], False, None))
 
