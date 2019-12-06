@@ -946,7 +946,7 @@ class StagingAPI(object):
         # created before through get_sub_packages().
         filelist = self.get_filelist_for_package(pkgname=package, project=project, expand='1')
         if '_multibuild' in filelist:
-            return [package]
+            return []
 
         mainspec = "{}{}".format(package, '.spec')
         if mainspec in filelist:
