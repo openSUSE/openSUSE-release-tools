@@ -5,7 +5,6 @@ from colorama import Fore
 
 from osc import oscerr
 from osc.core import get_request
-from osc.core import delete_project
 from osc.core import show_package_meta
 from osc import conf
 
@@ -56,33 +55,19 @@ class AdiCommand:
                     return
 
         overall_state = info.get('state')
-        if overall_state != 'acceptable' and overall_state != 'empty':
+
+        if overall_state == 'empty':
+            self.api.delete_empty_adi_project(project)
+            return
+
+        if overall_state != 'acceptable':
             raise oscerr.WrongArgs('Missed some case')
 
-        # no longer accept/delete adi projects
-        return
-
-        if self.api.is_user_member_of(self.api.user, self.api.cstaging_group):
-            print(query_project + ' ' + Fore.GREEN + 'ready')
-            packages = []
-            for req in info.findall('staged_requests/request'):
-                msg = 'ready to accept'
-                print(' - {} [{}]'.format(Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')))
-                self.api.rm_from_prj(project, request_id=req.get('id'), msg=msg)
-                self.api.do_change_review_state(req.get('id'), 'accepted', by_group=self.api.cstaging_group, message=msg)
-                packages.append(req.get('package'))
-            self.api.accept_status_comment(project, packages)
-            try:
-                delete_project(self.api.apiurl, project, force=True)
-            except HTTPError as e:
-                print(e)
-                pass
-        else:
-            ready = []
-            for req in info.findall('staged_requests/request'):
-                ready.append('{}[{}]'.format(Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')))
-            if len(ready):
-                print(query_project, Fore.GREEN + 'ready:', ', '.join(ready))
+        ready = []
+        for req in info.findall('staged_requests/request'):
+            ready.append('{}[{}]'.format(Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')))
+        if len(ready):
+            print(query_project, Fore.GREEN + 'ready:', ', '.join(ready))
 
     def check_adi_projects(self):
         for p in self.api.get_adi_projects():

@@ -116,6 +116,10 @@ class AcceptCommand(object):
                 time.sleep(1)
 
             self.api.accept_status_comment(project, staging_packages[project])
+            if self.api.is_adi_project(project):
+                self.api.delete_empty_adi_project(project)
+                return
+
             self.api.staging_deactivate(project)
 
             self.reset_rebuild_data(prj)
