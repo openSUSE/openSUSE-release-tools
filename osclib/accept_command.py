@@ -102,9 +102,9 @@ class AcceptCommand(object):
         print('delete links to packages pending deletion...')
         self.delete_linked()
 
-        opts = {}
-        if force:
-            opts['force'] = '1'
+        # we have checked ourselves and accepting one staging project creates a race
+        # for the other staging projects to appear building again
+        opts = { 'force': '1' }
 
         print('triggering staging accepts...')
         for project in staging_packages.keys():
