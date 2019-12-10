@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 from pprint import pprint
-import os, sys, io
+import io
+import os
+import sys
 import logging
 from optparse import OptionParser
 import rpm

@@ -69,7 +69,7 @@ def diff(version):
     if not os.path.exists(os.path.join(_dir, version)):
         return "invalid version", 400
     import subprocess
-    cmd = [os.path.dirname(os.path.abspath(__file__)) + '/factory-package-news.py', \
+    cmd = [os.path.dirname(os.path.abspath(__file__)) + '/factory-package-news.py',
             'diff', '--dir', _dir, "current", version]
     app.logger.debug(cmd)
     response = make_response(subprocess.check_output(cmd))
@@ -85,4 +85,3 @@ if __name__ == '__main__':
     app.run(debug=options.debug, host=options.host)
 
 application = app
-

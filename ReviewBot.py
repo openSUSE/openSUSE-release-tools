@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 from pprint import pprint
-import os, sys, re
+import os
+import sys
+import re
 import logging
 from optparse import OptionParser
 import cmdln
@@ -883,10 +885,10 @@ class CommandLineInterface(cmdln.Cmdln):
         if user is None and group is None:
             user = conf.get_apiurl_usr(apiurl)
 
-        return self.clazz(apiurl = apiurl, \
-                dryrun = self.options.dry, \
-                user = user, \
-                group = group, \
+        return self.clazz(apiurl = apiurl,
+                dryrun = self.options.dry,
+                user = user,
+                group = group,
                 logger = self.logger)
 
     def do_id(self, subcmd, opts, *args):
