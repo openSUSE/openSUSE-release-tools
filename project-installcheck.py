@@ -118,7 +118,11 @@ class RepoChecker():
 
         oldstate = oldstate or {}
         oldstate.setdefault('check', {})
+        if not isinstance(oldstate['check'], dict):
+            oldstate['check'] = {}
         oldstate.setdefault('leafs', {})
+        if not isinstance(oldstate['leafs'], dict):
+            oldstate['leafs'] = {}
 
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         directories = []
