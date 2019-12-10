@@ -24,7 +24,7 @@ from osclib.core import (http_GET, http_POST, makeurl,
                          project_pseudometa_file_ensure,
                          repository_path_expand, repository_path_search,
                          target_archs, source_file_load, source_file_ensure)
-from osclib.repochecks import installcheck, mirror, parsed_installcheck, CorruptRepos
+from osclib.repochecks import mirror, parsed_installcheck, CorruptRepos
 
 class RepoChecker():
     def __init__(self):
@@ -107,10 +107,11 @@ class RepoChecker():
 
         oldstate = None
         self.store_filename = 'rebuildpacs.{}-{}.yaml'.format(project, repository)
-        state_yaml = source_file_load(self.apiurl, self.store_project, self.store_package,
-                                      self.store_filename)
-        if state_yaml:
-            oldstate = yaml.safe_load(state_yaml)
+        if self.store_project and self.store_package:
+            state_yaml = source_file_load(self.apiurl, self.store_project, self.store_package,
+                                        self.store_filename)
+            if state_yaml:
+                oldstate = yaml.safe_load(state_yaml)
 
         oldstate = oldstate or {}
         oldstate.setdefault('check', {})
@@ -186,7 +187,7 @@ class RepoChecker():
             for line in difflib.unified_diff(old_output, per_source[source]['output'], 'before', 'now'):
                 self.logger.debug(line.strip())
             oldstate['check'][source] = {'problem': per_source[source]['output'],
-                                         'rebuild':  str(datetime.datetime.now())}
+                                         'rebuild': str(datetime.datetime.now())}
 
         for source in list(oldstate['check']):
             if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):

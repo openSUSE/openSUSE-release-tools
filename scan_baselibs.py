@@ -52,11 +52,11 @@ class ScanBaselibs(object):
         return False
 
     def package_has_32bit_binaries(self, project, repo, package):
-        query = { 'package' : package,
-                  'repository' : repo,
-                  'arch' : 'x86_64',
-                  'multibuild' : 1,
-                  'view' : 'binarylist' }
+        query = { 'package': package,
+                  'repository': repo,
+                  'arch': 'x86_64',
+                  'multibuild': 1,
+                  'view': 'binarylist' }
         root = ET.parse(http_GET(makeurl(self.apiurl, ['build', project, '_result'], query = query))).getroot()
         # assume 32bit importing RPMs can be appeared in multibuild-ed package
         for binarylist in root.findall('./result/binarylist'):
@@ -81,10 +81,10 @@ class ScanBaselibs(object):
                             print('%s has baselibs.conf but 32bit RPMs does not exist on 64bit\'s build result.' % pkg)
                         if wipebinaries:
                             http_POST(makeurl(self.apiurl, ['build', project], {
-                                'cmd' : 'wipe',
-                                'repository' : repo,
-                                'package' : pkg,
-                                'arch' : 'i586' }))
+                                'cmd': 'wipe',
+                                'repository': repo,
+                                'package': pkg,
+                                'arch': 'i586' }))
             f.close()
 
     def scan(self):

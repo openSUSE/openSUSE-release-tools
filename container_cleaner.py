@@ -77,7 +77,7 @@ class ContainerCleaner(ToolBase.ToolBase):
                     if srccontainer not in srccontainerarchs:
                         srccontainerarchs[srccontainer] = []
 
-                    logging.debug("%s provides binaries for %s",  srccontainer, arch)
+                    logging.debug("%s provides binaries for %s", srccontainer, arch)
                     srccontainerarchs[srccontainer] += [arch]
 
         # Now go through each bucket and find out what doesn't contribute to the newest five
@@ -97,7 +97,7 @@ class ContainerCleaner(ToolBase.ToolBase):
                             contributes = True
 
                 if contributes:
-                    logging.debug("%s contributes to %s",  srccontainer, package)
+                    logging.debug("%s contributes to %s", srccontainer, package)
                 else:
                     logging.info("%s does not contribute", srccontainer)
                     if len([count for count in archs_found.values() if count > 0]) == 0:

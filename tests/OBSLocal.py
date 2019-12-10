@@ -312,7 +312,7 @@ class StagingWorkflow(object):
                                                                                source_package.name))
         return target_package
 
-    def create_project(self, name,  reviewer={}, maintainer={}, project_links=[]):
+    def create_project(self, name, reviewer={}, maintainer={}, project_links=[]):
         if isinstance(name, Project):
             return name
         if name in self.projects:

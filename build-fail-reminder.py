@@ -176,8 +176,8 @@ def main(args):
                     text = MAIL_TEMPLATES[Reminded[package].remindCount - 1] % {
                                 'recipient': fullname,
                                 'sender': sender,
-                                'project' : project,
-                                'package' : package,
+                                'project': project,
+                                'package': package,
                                 'date': time.ctime(Reminded[package].firstfail),
                                 }
                     SendMail(logger, project, sender, to, fullname, subject, text)

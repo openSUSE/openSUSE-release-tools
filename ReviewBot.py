@@ -81,7 +81,7 @@ class ReviewBot(object):
         return (None|True|False)
     """
 
-    DEFAULT_REVIEW_MESSAGES = { 'accepted' : 'ok', 'declined': 'review failed' }
+    DEFAULT_REVIEW_MESSAGES = { 'accepted': 'ok', 'declined': 'review failed' }
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
     COMMENT_MARKER_REGEX = re.compile(r'<!-- (?P<bot>[^ ]+) state=(?P<state>[^ ]+)(?: result=(?P<result>[^ ]+))? -->')
@@ -91,7 +91,7 @@ class ReviewBot(object):
             # list of tuples (prefix, apiurl, submitrequestprefix)
             # set this if the obs instance maps another instance into it's
             # namespace
-            'project_namespace_api_map' : [
+            'project_namespace_api_map': [
                 ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
                 ],
             }
@@ -158,7 +158,7 @@ class ReviewBot(object):
 
     def set_request_ids(self, ids):
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withfullhistory' : '1' })
+            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withfullhistory': '1' })
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
             req = osc.core.Request()
@@ -826,8 +826,8 @@ class CommandLineInterface(cmdln.Cmdln):
     def get_optparser(self):
         parser = cmdln.Cmdln.get_optparser(self)
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
-        parser.add_option("--user",  metavar="USER", help="reviewer user name")
-        parser.add_option("--group",  metavar="GROUP", help="reviewer group name")
+        parser.add_option("--user", metavar="USER", help="reviewer user name")
+        parser.add_option("--group", metavar="GROUP", help="reviewer group name")
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")

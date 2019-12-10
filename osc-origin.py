@@ -115,7 +115,7 @@ def osrt_origin_config(apiurl, opts, *args):
     if opts.origins_only:
         print('\n'.join(config_origin_list(config)))
     else:
-        yaml.Dumper.ignore_aliases = lambda *args : True
+        yaml.Dumper.ignore_aliases = lambda *args: True
         print(yaml.dump(config))
 
 def osrt_origin_cron(apiurl, opts, *args):
@@ -331,7 +331,7 @@ def osrt_origin_report(apiurl, opts, *args):
     report = [line_format.format(*columns)]
 
     total = len(lookup)
-    for origin, count in sorted(origin_count.items(), key=lambda x : x[1], reverse=True):
+    for origin, count in sorted(origin_count.items(), key=lambda x: x[1], reverse=True):
         values = [origin, count, round(float(count) / total * 100, 2)]
         if opts.diff:
             values.insert(2, origin_count_change.get(origin, 0))

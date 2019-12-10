@@ -119,7 +119,7 @@ class TestMaintenance(unittest.TestCase):
                 </directory>
             """)
 
-        result = { 'devel_review_added' : None }
+        result = { 'devel_review_added': None }
 
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)
@@ -237,7 +237,7 @@ class TestMaintenance(unittest.TestCase):
                 </directory>
             """)
 
-        result = { 'devel_review_added' : None }
+        result = { 'devel_review_added': None }
 
         def change_request(result, method, uri, headers):
             u = urlparse(uri)
@@ -335,7 +335,7 @@ class TestMaintenance(unittest.TestCase):
                 <collection/>
             """)
 
-        result = { 'factory_review_added' : None }
+        result = { 'factory_review_added': None }
 
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)

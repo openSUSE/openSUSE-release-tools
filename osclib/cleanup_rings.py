@@ -73,7 +73,7 @@ class CleanupRings(object):
                                 self.links[mainpkg] = pkg
 
     def fill_pkgdeps(self, prj, repo, arch):
-        root = builddepinfo(self.api.apiurl,  prj, repo, arch)
+        root = builddepinfo(self.api.apiurl, prj, repo, arch)
 
         for package in root.findall('package'):
             # use main package name for multibuild. We can't just ignore

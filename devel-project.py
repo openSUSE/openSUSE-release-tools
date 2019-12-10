@@ -281,7 +281,7 @@ if __name__ == '__main__':
 
     parser_notify = subparsers.add_parser('notify', help='notify maintainers of their packages')
     parser_notify.set_defaults(func=notify)
-    parser_notify.add_argument('--dry', action='store_true',  help='dry run emails')
+    parser_notify.add_argument('--dry', action='store_true', help='dry run emails')
     parser_notify.add_argument("packages", nargs='*', help="packages to check")
 
     parser_requests = subparsers.add_parser('requests', help='List open requests.')

@@ -243,7 +243,7 @@ class CheckSource(ReviewBot.ReviewBot):
         for f in xml.findall('entry'):
             # we check all repos in the source project for errors that exist in the target project
             repo = f.attrib['name']
-            query = { 'last' : 1, }
+            query = { 'last': 1, }
             for arch in target_archs(self.apiurl, source_project, repo):
                 url = osc.core.makeurl(self.apiurl, ['build', source_project, repo, arch, source_package, '_log'], query = query)
                 try:

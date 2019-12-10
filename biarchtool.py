@@ -232,7 +232,7 @@ class BiArchTool(ToolBase.ToolBase):
                 bn = pkgmeta.find('build')
                 if bn is None:
                     bn = ET.SubElement(pkgmeta, 'build')
-                ET.SubElement(bn, 'disable', { 'arch' : self.arch })
+                ET.SubElement(bn, 'disable', { 'arch': self.arch })
                 changed = True
 
             if changed:
@@ -243,9 +243,9 @@ class BiArchTool(ToolBase.ToolBase):
                         self._invalidate__cached_GET(pkgmetaurl)
                     if wipebinaries:
                         self.http_POST(self.makeurl(['build', self.project], {
-                            'cmd' : 'wipe',
+                            'cmd': 'wipe',
                             'arch': self.arch,
-                            'package' : pkg }))
+                            'package': pkg }))
                 except HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
@@ -296,7 +296,7 @@ class BiArchTool(ToolBase.ToolBase):
                     bn = pkgmeta.find('build')
                     if bn is None:
                         bn = ET.SubElement(pkgmeta, 'build')
-                    ET.SubElement(bn, 'disable', { 'arch' : self.arch })
+                    ET.SubElement(bn, 'disable', { 'arch': self.arch })
                     changed = True
                 else:
                     logger.debug('%s already disabled for %s', pkg, self.arch)
@@ -326,9 +326,9 @@ class BiArchTool(ToolBase.ToolBase):
                 if wipebinaries and pkgmeta.find("./build/disable[@arch='{}']".format(self.arch)) is not None:
                     logger.debug("wiping %s", pkg)
                     self.http_POST(self.makeurl(['build', self.project], {
-                        'cmd' : 'wipe',
+                        'cmd': 'wipe',
                         'arch': self.arch,
-                        'package' : pkg }))
+                        'package': pkg }))
             except HTTPError as e:
                 logger.error('failed to update %s: %s', pkg, e)
 
