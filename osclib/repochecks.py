@@ -93,7 +93,14 @@ def parsed_installcheck(pfile, arch, target_packages, whitelist):
     if not len(target_packages):
         return reported_problems
 
-    p = subprocess.run(['/usr/bin/installcheck', arch, pfile],
+    def maparch2installarch(arch):
+        _mapping = {'armv6l': 'armv6hl',
+                    'armv7l': 'armv7hl'}
+        if arch in _mapping:
+            return _mapping[arch]
+        return arch
+
+    p = subprocess.run(['/usr/bin/installcheck', maparch2installarch(arch), pfile],
                        stdout=subprocess.PIPE, errors='backslashreplace', text=True)
     if p.returncode:
         in_problem = False
