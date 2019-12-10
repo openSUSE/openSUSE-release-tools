@@ -21,7 +21,7 @@ config_defaults = {
     'sender': 'noreply@opensuse.org',
     'to': 'opensuse-factory@opensuse.org',
     'relay': 'relay.suse.de',
-    'changesfile' : "Changes.{version}.txt",
+    'changesfile': "Changes.{version}.txt",
 }
 
 def _load_config(handle = None):

@@ -33,17 +33,17 @@ http_POST = osc.core.http_POST
 class Manager42(object):
 
     config_defaults = {
-        'ignored_packages' : [
+        'ignored_packages': [
             '00Meta',
             '00aggregates',
             '000product',
             '000package-groups',
             '000release-packages',
             ],
-        'project_preference_order' : [],
-        'drop_if_vanished_from' : [],
-        'from_prj' : 'openSUSE:Leap:42.3',
-        'factory' : 'openSUSE:Factory',
+        'project_preference_order': [],
+        'drop_if_vanished_from': [],
+        'from_prj': 'openSUSE:Leap:42.3',
+        'factory': 'openSUSE:Factory',
         }
 
     def __init__(self, caching = True, configfh = None):
