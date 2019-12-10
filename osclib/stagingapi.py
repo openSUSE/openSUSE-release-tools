@@ -1262,7 +1262,7 @@ class StagingAPI(object):
         if root.get('state') == 'empty':
             # Cleanup like accept since the staging is now empty.
             if self.is_adi_project(project):
-                self.api.delete_empty_adi_project(project)
+                self.delete_empty_adi_project(project)
             else:
                 self.staging_deactivate(project)
         else:
