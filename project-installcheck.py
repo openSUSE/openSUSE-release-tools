@@ -97,6 +97,9 @@ class RepoChecker():
         return repository
 
     def store_yaml(self, state, project, repository, arch):
+        if not self.store_project or not self.store_package:
+            return
+
         state_yaml = yaml.dump(state, default_flow_style=False)
         comment = 'Updated rebuild infos for {}/{}/{}'.format(project, repository, arch)
         source_file_ensure(self.apiurl, self.store_project, self.store_package,
@@ -115,7 +118,11 @@ class RepoChecker():
 
         oldstate = oldstate or {}
         oldstate.setdefault('check', {})
+        if not isinstance(oldstate['check'], dict):
+            oldstate['check'] = {}
         oldstate.setdefault('leafs', {})
+        if not isinstance(oldstate['leafs'], dict):
+            oldstate['leafs'] = {}
 
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         directories = []
