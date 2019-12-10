@@ -826,8 +826,8 @@ class CommandLineInterface(cmdln.Cmdln):
     def get_optparser(self):
         parser = cmdln.Cmdln.get_optparser(self)
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
-        parser.add_option("--user",  metavar="USER", help="reviewer user name")
-        parser.add_option("--group",  metavar="GROUP", help="reviewer group name")
+        parser.add_option("--user", metavar="USER", help="reviewer user name")
+        parser.add_option("--group", metavar="GROUP", help="reviewer group name")
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")

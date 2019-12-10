@@ -211,7 +211,7 @@ def ingest_requests(api, project):
             tags['type'] = '_'.join(tags['type'])
 
             point('review', {'open_for': (completed_at - opened_at).total_seconds()}, completed_at, tags)
-            point('review_count', {'count':  1}, opened_at, tags, True)
+            point('review_count', {'count': 1}, opened_at, tags, True)
             point('review_count', {'count': -1}, completed_at, tags, True)
 
         found = []

@@ -187,7 +187,7 @@ class RepoChecker():
             for line in difflib.unified_diff(old_output, per_source[source]['output'], 'before', 'now'):
                 self.logger.debug(line.strip())
             oldstate['check'][source] = {'problem': per_source[source]['output'],
-                                         'rebuild':  str(datetime.datetime.now())}
+                                         'rebuild': str(datetime.datetime.now())}
 
         for source in list(oldstate['check']):
             if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):
