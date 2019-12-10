@@ -97,6 +97,9 @@ class RepoChecker():
         return repository
 
     def store_yaml(self, state, project, repository, arch):
+        if not self.store_project or not self.store_package:
+            return
+
         state_yaml = yaml.dump(state, default_flow_style=False)
         comment = 'Updated rebuild infos for {}/{}/{}'.format(project, repository, arch)
         source_file_ensure(self.apiurl, self.store_project, self.store_package,
