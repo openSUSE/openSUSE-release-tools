@@ -115,7 +115,7 @@ class AcceptCommand(object):
             print(f"Accepting request {req['id']}: {req['package']}")
             change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
 
-        for project in staging_packages.keys():
+        for project in sorted(staging_packages.keys()):
             print(f'waiting for staging project {project} to be accepted')
 
             while True:
@@ -128,11 +128,11 @@ class AcceptCommand(object):
             self.api.accept_status_comment(project, staging_packages[project])
             if self.api.is_adi_project(project):
                 self.api.delete_empty_adi_project(project)
-                return
+                continue
 
             self.api.staging_deactivate(project)
 
-            self.reset_rebuild_data(prj)
+            self.reset_rebuild_data(project)
 
             if cleanup:
                 self.cleanup(project)
