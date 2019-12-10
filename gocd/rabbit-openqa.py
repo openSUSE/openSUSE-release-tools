@@ -71,16 +71,9 @@ class Project(object):
         return {'isos': self.gather_isos(name, 'images'),
                 'id': self.gather_buildid(name, 'images')}
 
-    def fetch_openqa_jobs(self, staging, iso):
-        buildid = self.staging_projects[staging].get('id')
-        if not buildid:
-            self.logger.info("I don't know the build id of " + staging)
-            return
-        # all openQA jobs are created at the same URL
-        url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
+    def fetch_openqa_jobs(self, staging, iso, openqa_infos):
         openqa = self.listener.jobs_for_iso(iso)
         # collect job infos to pick names
-        openqa_infos = dict()
         for job in openqa:
             print(staging, iso, job['id'], job['state'], job['result'],
                   job['settings']['MACHINE'], job['settings']['TEST'])
@@ -89,6 +82,18 @@ class Project(object):
             openqa_infos[job['id']]['name'] = job['settings']['TEST']
             openqa_infos[job['id']]['machine'] = job['settings']['MACHINE']
 
+    def update_staging_status(self, staging):
+        openqa_infos = dict()
+        for iso in self.staging_projects[staging]['isos']:
+            self.fetch_openqa_jobs(staging, iso, openqa_infos)
+
+        buildid = self.staging_projects[staging].get('id')
+        if not buildid:
+            self.logger.info("I don't know the build id of " + staging)
+            return
+        # all openQA jobs are created at the same URL
+        url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
+
         # make sure the names are unique
         taken_names = dict()
         for id in openqa_infos:
@@ -96,8 +101,10 @@ class Project(object):
             if name in taken_names:
                 openqa_infos[id]['name'] = openqa_infos[id]['name'] + "@" + openqa_infos[id]['machine']
                 # the other id
-                id = taken_names[name]
-                openqa_infos[id]['name'] = openqa_infos[id]['name'] + "@" + openqa_infos[id]['machine']
+                oid = taken_names[name]
+                openqa_infos[oid]['name'] = openqa_infos[oid]['name'] + "@" + openqa_infos[oid]['machine']
+                if openqa_infos[id]['name'] == openqa_infos[oid]['name']:
+                    raise Exception(f'Names of job #{id} and #{oid} collide')
             taken_names[name] = id
 
         for info in openqa_infos.values():
@@ -106,10 +113,6 @@ class Project(object):
                 http_POST(url, data=xml)
             except HTTPError:
                 self.logger.error('failed to post status to ' + url)
-
-    def update_staging_status(self, project):
-        for iso in self.staging_projects[project]['isos']:
-            self.fetch_openqa_jobs(project, iso)
 
     def update_staging_buildid(self, project, repository, buildid):
         self.staging_projects[project]['id'] = buildid
@@ -140,7 +143,7 @@ class Project(object):
         if not staging:
             return
         # we fetch all openqa jobs so we can avoid long job names
-        self.fetch_openqa_jobs(staging, iso)
+        self.update_staging_status(staging)
 
     def openqa_check_xml(self, url, state, name):
         check = ET.Element('check')
