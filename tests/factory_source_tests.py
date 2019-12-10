@@ -42,8 +42,8 @@ class TestFactorySourceAccept(unittest.TestCase):
         self.logger = logging.getLogger(__file__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.checker = FactorySourceChecker(apiurl = APIURL, \
-                user = 'factory-source', \
+        self.checker = FactorySourceChecker(apiurl = APIURL,
+                user = 'factory-source',
                 logger = self.logger)
         self.checker.override_allow = False # Test setup cannot handle.
 
