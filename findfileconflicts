@@ -355,7 +355,7 @@ for my $tc (sort keys %tocheck) {
 	}
 	# got one!
 	$f =~ /^(\d+)\/(.*)/;
-	push @con, "$dirs[$1]$2$info";
+	push @con, "$dirs[$1]$2$info" unless "$dirs[$1]$2" =~ m{/etc/uefi/certs/.*crt};
       }
       next unless @con;
       my @sp1 = split(' ', $p1);
