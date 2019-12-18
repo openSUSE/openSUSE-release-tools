@@ -184,6 +184,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.commentapi = CommentAPI(self.apiurl)
 
+        self.current_request = None
+
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
 
         # happens for maintenance incidents
@@ -198,6 +200,17 @@ class ABIChecker(ReviewBot.ReviewBot):
         # default is to accept the review, just leave a note if
         # there were problems.
         ret = True
+
+        if self.has_staging(dst_project):
+            # if staged we don't look at the request source but what
+            # is in staging
+            if self.current_request.staging_project:
+                src_project = self.current_request.staging_project
+                src_package = dst_package
+                src_rev = None
+            else:
+                self.logger.debug("request not staged yet")
+                return None
 
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
@@ -514,6 +527,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.dblogger.request_id = req.reqid
 
+        self.current_request = req
+
         self.reports = []
         self.text_summary = ''
         try:
@@ -552,6 +567,8 @@ class ABIChecker(ReviewBot.ReviewBot):
             ret = None
 
         self.dblogger.request_id = None
+
+        self.current_request = None
 
         return ret
 
@@ -901,24 +918,31 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         # set of source repo name, target repo name, arch
         matchrepos = set()
-        for repo in root.findall('repository'):
-            name = repo.attrib['name']
-            path = repo.findall('path')
-            if path is None or len(path) != 1:
-                self.logger.error("repo %s has more than one path"%name)
-                continue
-            prj = path[0].attrib['project']
-            if prj == 'openSUSE:Tumbleweed':
-                prj = 'openSUSE:Factory' # XXX: hack
-            if prj != dst_project:
-                continue
-            for node in repo.findall('arch'):
+        # XXX: another staging hack
+        if self.current_request.staging_project:
+            for node in root.findall("repository[@name='standard']/arch"):
                 arch = node.text
-                dstname = path[0].attrib['repository']
-                if prj == 'openSUSE:Factory' and dstname == 'snapshot':
-                    dstname = 'standard' # XXX: hack
-                if (dstname, arch) in dstrepos:
-                    matchrepos.add(MR(name, dstname, arch))
+                self.logger.debug('arch %s', arch)
+                matchrepos.add(MR('standard', 'standard', arch))
+        else:
+            for repo in root.findall('repository'):
+                name = repo.attrib['name']
+                path = repo.findall('path')
+                if path is None or len(path) != 1:
+                    self.logger.error("repo %s has more than one path"%name)
+                    continue
+                prj = path[0].attrib['project']
+                if prj == 'openSUSE:Tumbleweed':
+                    prj = 'openSUSE:Factory' # XXX: hack
+                if prj != dst_project:
+                    continue
+                for node in repo.findall('arch'):
+                    arch = node.text
+                    dstname = path[0].attrib['repository']
+                    if prj == 'openSUSE:Factory' and dstname == 'snapshot':
+                        dstname = 'standard' # XXX: hack
+                    if (dstname, arch) in dstrepos:
+                        matchrepos.add(MR(name, dstname, arch))
 
         if not matchrepos:
             return None
