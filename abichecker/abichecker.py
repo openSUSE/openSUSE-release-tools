@@ -43,18 +43,19 @@ PROJECT_BLACKLIST = {
     'SUSE:SLE-11-SP2:Update' : "abi-checker doesn't support SLE 11",
     'SUSE:SLE-11-SP3:Update' : "abi-checker doesn't support SLE 11",
     'SUSE:SLE-11-SP4:Update' : "abi-checker doesn't support SLE 11",
+    'SUSE:SLE-11-SP5:Update' : "abi-checker doesn't support SLE 11",
     }
 
 # some project have more repos than what we are interested in
 REPO_WHITELIST = {
         'openSUSE:Factory':      ('standard', 'snapshot'),
-        'openSUSE:13.1:Update':  'standard',
-        'openSUSE:13.2:Update':  'standard',
-
         'SUSE:SLE-12:Update' :   'standard',
         }
 
 # same for arch
+ARCH_BLACKLIST = {
+        }
+
 ARCH_WHITELIST = {
         'SUSE:SLE-12:Update' :   ('i586', 'ppc64le', 's390', 's390x', 'x86_64'),
         }
@@ -183,6 +184,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.commentapi = CommentAPI(self.apiurl)
 
+        self.current_request = None
+
     def check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package):
 
         # happens for maintenance incidents
@@ -198,6 +201,17 @@ class ABIChecker(ReviewBot.ReviewBot):
         # there were problems.
         ret = True
 
+        if self.has_staging(dst_project):
+            # if staged we don't look at the request source but what
+            # is in staging
+            if self.current_request.staging_project:
+                src_project = self.current_request.staging_project
+                src_package = dst_package
+                src_rev = None
+            else:
+                self.logger.debug("request not staged yet")
+                return None
+
         ReviewBot.ReviewBot.check_source_submission(self, src_project, src_package, src_rev, dst_project, dst_package)
 
         report = Report(src_project, src_package, src_rev, dst_project, dst_package, [], None)
@@ -207,7 +221,6 @@ class ABIChecker(ReviewBot.ReviewBot):
         if dst_srcinfo is None:
             msg = "%s/%s seems to be a new package, no need to review"%(dst_project, dst_package)
             self.logger.info(msg)
-            self.text_summary += msg + "\n"
             self.reports.append(report)
             return True
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
@@ -288,7 +301,7 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         for mr in myrepos:
             try:
-                dst_libs = self.extract(dst_project, dst_package, dst_srcinfo, mr.dstrepo, mr.arch)
+                dst_libs, dst_libdebug = self.extract(dst_project, dst_package, dst_srcinfo, mr.dstrepo, mr.arch)
                 # nothing to fetch, so no libs
                 if dst_libs is None:
                     continue
@@ -308,7 +321,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 continue
 
             try:
-                src_libs = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
+                src_libs, src_libdebug = self.extract(src_project, src_package, src_srcinfo, mr.srcrepo, mr.arch)
                 if src_libs is None:
                     if dst_libs:
                         self.text_summary += "*Warning*: the submission does not contain any libs anymore\n\n"
@@ -357,10 +370,10 @@ class ABIChecker(ReviewBot.ReviewBot):
             # for each pair dump and compare the abi
             for old, new in pairs:
                 # abi dump of old lib
-                new_base = os.path.join(UNPACKDIR, dst_project, dst_package, mr.dstrepo, mr.arch)
+                old_base = os.path.join(UNPACKDIR, dst_project, dst_package, mr.dstrepo, mr.arch)
                 old_dump = os.path.join(CACHEDIR, 'old.dump')
                 # abi dump of new lib
-                old_base = os.path.join(UNPACKDIR, src_project, src_package, mr.srcrepo, mr.arch)
+                new_base = os.path.join(UNPACKDIR, src_project, src_package, mr.srcrepo, mr.arch)
                 new_dump = os.path.join(CACHEDIR, 'new.dump')
 
                 def cleanup():
@@ -373,12 +386,12 @@ class ABIChecker(ReviewBot.ReviewBot):
 
                 # we just need that to pass a name to abi checker
                 m = so_re.match(old)
-                htmlreport = 'report-%s-%s-%s-%s-%s-%08x.html'%(mr.srcrepo, os.path.basename(old), mr.dstrepo, os.path.basename(new), mr.arch, time.time())
+                htmlreport = 'report-%s-%s-%s-%s-%s-%08x.html'%(mr.srcrepo, os.path.basename(old), mr.dstrepo, os.path.basename(new), mr.arch, int(time.time()))
 
                 # run abichecker
                 if m \
-                    and self.run_abi_dumper(old_dump, new_base, old) \
-                    and self.run_abi_dumper(new_dump, old_base, new):
+                    and self.run_abi_dumper(old_dump, old_base, old, dst_libdebug[old]) \
+                    and self.run_abi_dumper(new_dump, new_base, new, src_libdebug[new]):
                         reportfn = os.path.join(CACHEDIR, htmlreport)
                         r = self.run_abi_checker(m.group(1), old_dump, new_dump, reportfn)
                         if r is not None:
@@ -514,6 +527,8 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         self.dblogger.request_id = req.reqid
 
+        self.current_request = req
+
         self.reports = []
         self.text_summary = ''
         try:
@@ -552,6 +567,8 @@ class ABIChecker(ReviewBot.ReviewBot):
             ret = None
 
         self.dblogger.request_id = None
+
+        self.current_request = None
 
         return ret
 
@@ -647,14 +664,12 @@ class ABIChecker(ReviewBot.ReviewBot):
             return None
         return r == 0
 
-    def run_abi_dumper(self, output, base, filename):
+    def run_abi_dumper(self, output, base, filename, debuglib):
         cmd = ['abi-dumper',
                 '-o', output,
                 '-lver', os.path.basename(filename),
                 '/'.join([base, filename])]
-        debuglib = '%s/usr/lib/debug/%s.debug'%(base, filename)
-        if os.path.exists(debuglib):
-            cmd.append(debuglib)
+        cmd.append('/'.join([base, debuglib]))
         self.logger.debug(cmd)
         r = subprocess.Popen(cmd, close_fds=True, cwd=CACHEDIR).wait()
         if r != 0:
@@ -666,12 +681,12 @@ class ABIChecker(ReviewBot.ReviewBot):
     def extract(self, project, package, srcinfo, repo, arch):
             # fetch cpio headers
             # check file lists for library packages
-            fetchlist, liblist = self.compute_fetchlist(project, package, srcinfo, repo, arch)
+            fetchlist, liblist, debuglist = self.compute_fetchlist(project, package, srcinfo, repo, arch)
 
             if not fetchlist:
                 msg = "no libraries found in %s/%s %s/%s"%(project, package, repo, arch)
                 self.logger.info(msg)
-                return None
+                return None, None
 
             # mtimes in cpio are not the original ones, so we need to fetch
             # that separately :-(
@@ -679,8 +694,9 @@ class ABIChecker(ReviewBot.ReviewBot):
 
             self.logger.debug("fetchlist %s", pformat(fetchlist))
             self.logger.debug("liblist %s", pformat(liblist))
+            self.logger.debug("debuglist %s", pformat(debuglist))
 
-            debugfiles = set(['/usr/lib/debug%s.debug'%f for f in liblist])
+            debugfiles = debuglist.values()
 
             # fetch binary rpms
             downloaded = self.download_files(project, package, repo, arch, fetchlist, mtimes)
@@ -701,7 +717,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                     cpio = CpioRead(tmpfile)
                     cpio.read()
                     for ch in cpio:
-                        fn = ch.filename
+                        fn = ch.filename.decode('utf-8')
                         if fn.startswith('./'): # rpm payload is relative
                             fn = fn[1:]
                         self.logger.debug("cpio fn %s", fn)
@@ -719,12 +735,12 @@ class ABIChecker(ReviewBot.ReviewBot):
                             with open(dst, 'wb') as fh:
                                 while True:
                                     buf = cpiofh.read(4096)
-                                    if buf is None or buf == '':
+                                    if buf is None or buf == b'':
                                         break
                                     fh.write(buf)
             os.unlink(tmpfile)
 
-            return liblist
+            return liblist, debuglist
 
     def download_files(self, project, package, repo, arch, filenames, mtimes):
         downloaded = dict()
@@ -852,6 +868,9 @@ class ABIChecker(ReviewBot.ReviewBot):
                 if project in ARCH_WHITELIST and arch not in ARCH_WHITELIST[project]:
                     continue
 
+                if project in ARCH_BLACKLIST and arch in ARCH_BLACKLIST[project]:
+                    continue
+
                 repos.add((name, arch))
 
         return repos
@@ -899,22 +918,31 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         # set of source repo name, target repo name, arch
         matchrepos = set()
-        for repo in root.findall('repository'):
-            name = repo.attrib['name']
-            path = repo.findall('path')
-            if path is None or len(path) != 1:
-                self.logger.error("repo %s has more than one path"%name)
-                continue
-            prj = path[0].attrib['project']
-            if prj == 'openSUSE:Tumbleweed':
-                prj = 'openSUSE:Factory' # XXX: hack
-            if prj != dst_project:
-                continue
-            for node in repo.findall('arch'):
+        # XXX: another staging hack
+        if self.current_request.staging_project:
+            for node in root.findall("repository[@name='standard']/arch"):
                 arch = node.text
-                dstname = path[0].attrib['repository']
-                if (dstname, arch) in dstrepos:
-                    matchrepos.add(MR(name, dstname, arch))
+                self.logger.debug('arch %s', arch)
+                matchrepos.add(MR('standard', 'standard', arch))
+        else:
+            for repo in root.findall('repository'):
+                name = repo.attrib['name']
+                path = repo.findall('path')
+                if path is None or len(path) != 1:
+                    self.logger.error("repo %s has more than one path"%name)
+                    continue
+                prj = path[0].attrib['project']
+                if prj == 'openSUSE:Tumbleweed':
+                    prj = 'openSUSE:Factory' # XXX: hack
+                if prj != dst_project:
+                    continue
+                for node in repo.findall('arch'):
+                    arch = node.text
+                    dstname = path[0].attrib['repository']
+                    if prj == 'openSUSE:Factory' and dstname == 'snapshot':
+                        dstname = 'standard' # XXX: hack
+                    if (dstname, arch) in dstrepos:
+                        matchrepos.add(MR(name, dstname, arch))
 
         if not matchrepos:
             return None
@@ -940,7 +968,7 @@ class ABIChecker(ReviewBot.ReviewBot):
     # common with repochecker
     def _md5_disturl(self, disturl):
         """Get the md5 from the DISTURL from a RPM file."""
-        return os.path.basename(disturl.decode('utf-8')).split('-')[0]
+        return os.path.basename(disturl).split('-')[0]
 
     def disturl_matches_md5(self, disturl, md5):
         if self._md5_disturl(disturl) != md5:
@@ -974,19 +1002,21 @@ class ABIChecker(ReviewBot.ReviewBot):
             # skip src rpm
             if h['sourcepackage']:
                 continue
-            pkgname = h['name']
-            if pkgname.endswith(b'-32bit') or pkgname.endswith(b'-64bit'):
+            pkgname = h['name'].decode('utf-8')
+            if pkgname.endswith('-32bit') or pkgname.endswith('-64bit'):
                 # -32bit and -64bit packages are just repackaged, so
                 # we skip them and only check the original one.
                 continue
-            self.logger.debug(pkgname)
-            if not self.disturl_matches(h['disturl'], prj, srcinfo):
-                raise DistUrlMismatch(h['disturl'], srcinfo)
+            self.logger.debug("inspecting %s", pkgname)
+            if not self.disturl_matches(h['disturl'].decode('utf-8'), prj, srcinfo):
+                raise DistUrlMismatch(h['disturl'].decode('utf-8'), srcinfo)
             pkgs[pkgname] = (rpmfn, h)
-            if debugpkg_re.match(pkgname.decode('utf-8')):
+            if debugpkg_re.match(pkgname):
                 continue
             for fn, mode, lnk in zip(h['filenames'], h['filemodes'], h['filelinktos']):
-                if so_re.match(fn.decode('utf-8')):
+                fn = fn.decode('utf-8')
+                lnk = lnk.decode('utf-8')
+                if so_re.match(fn):
                     if S_ISREG(mode):
                         self.logger.debug('found lib: %s'%fn)
                         lib_packages.setdefault(pkgname, set()).add(fn)
@@ -998,9 +1028,9 @@ class ABIChecker(ReviewBot.ReviewBot):
 
         fetchlist = set()
         liblist = dict()
+        debuglist = dict()
         # check whether debug info exists for each lib
         for pkgname in sorted(lib_packages.keys()):
-            pkgname = pkgname.decode('utf-8')
             dpkgname = pkgname+'-debuginfo'
             if not dpkgname in pkgs:
                 missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
@@ -1008,17 +1038,31 @@ class ABIChecker(ReviewBot.ReviewBot):
 
             # check file list of debuginfo package
             rpmfn, h = pkgs[dpkgname]
-            files = set (h['filenames'])
+            files = set ([f.decode('utf-8') for f in h['filenames']])
             ok = True
             for lib in lib_packages[pkgname]:
-                fn = '/usr/lib/debug%s.debug'%lib
-                if not fn in files:
-                    missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
-                    ok = False
+                libdebug = '/usr/lib/debug%s.debug'%lib
+                if not libdebug in files:
+                    # some new format that includes version, release and arch in debuginfo?
+                    # FIXME: version and release are actually the
+                    # one from the main package, sub packages may
+                    # differ. BROKEN RIGHT NOW
+                    # XXX: would have to actually read debuglink
+                    # info to get that right so just guessing
+                    arch = h['arch'].decode('utf-8')
+                    if arch == 'i586':
+                        arch = 'i386'
+                    libdebug = '/usr/lib/debug%s-%s-%s.%s.debug'%(lib,
+                            h['version'].decode('utf-8'), h['release'].decode('utf-8'), arch)
+                    if not libdebug in files:
+                        missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
+                        ok = False
+
                 if ok:
                     fetchlist.add(pkgs[pkgname][0])
                     fetchlist.add(rpmfn)
                     liblist.setdefault(lib, set())
+                    debuglist.setdefault(lib, libdebug)
                     libname = os.path.basename(lib)
                     if libname in lib_aliases:
                         liblist[lib] |= lib_aliases[libname]
@@ -1027,7 +1071,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             self.logger.error('missing debuginfo: %s'%pformat(missing_debuginfo))
             raise MissingDebugInfo(missing_debuginfo)
 
-        return fetchlist, liblist
+        return fetchlist, liblist, debuglist
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from pprint import pprint
 import os, sys, re
@@ -6,7 +6,8 @@ import logging
 import cmdln
 
 import abichecker_dbmodel as DB
-from abichecker_common import Config
+from abichecker_common import Config, CACHEDIR
+from datetime import datetime, timedelta
 
 class BoilderPlate(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
@@ -38,12 +39,33 @@ class BoilderPlate(cmdln.Cmdln):
         ${cmd_option_list}
         """
 
-        for r in self.session.query(DB.Request).all():
-            print('%s %s'%(r.id, r.state))
-            for a in r.abichecks:
+        for req in self.session.query(DB.Request).all():
+            print('%s %s'%(req.id, req.state))
+            for a in req.abichecks:
                 print('  %s %s %s'%(a.dst_project, a.dst_package, a.result))
                 for r in a.reports:
                     print('    %s %10s %-25s %s'%(r.id, r.arch, r.dst_lib, r.result))
+
+    def do_prune(self, subcmd, opts, days):
+        """${cmd_name}: prune old records
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        oldest = datetime.today() - timedelta(days = 365)
+
+        requests = self.session.query(DB.Request).filter(DB.Request.t_updated < oldest)
+        for req in requests:
+            for a in req.abichecks:
+                self.logger.info('prune  %s %s %s', req.id, a.dst_project, a.dst_package)
+                for r in a.reports:
+                    fn = os.path.join(CACHEDIR, r.htmlreport)
+                    if os.path.exists(fn):
+                        self.logger.info('removing %s', r.htmlreport)
+                        os.unlink(fn)
+            self.session.delete(req)
+        self.session.commit()
 
     def do_log(self, subcmd, opts, request_id):
         """${cmd_name}: foo bar
@@ -54,7 +76,7 @@ class BoilderPlate(cmdln.Cmdln):
 
         request = self.session.query(DB.Request).filter(DB.Request.id == request_id).one()
         for log in request.log:
-            print log.line
+            print(log.line)
 
     def do_delete(self, subcmd, opts, request_id):
         """${cmd_name}: foo bar
@@ -96,12 +118,12 @@ class BoilderPlate(cmdln.Cmdln):
         if opts.set:
             config.set(args[0], args[1])
         elif opts.get:
-            print config.get(args[0])
+            print(config.get(args[0]))
         elif opts.delete:
             config.delete(args[0])
         else:
             for entry in config.settings():
-                print "%s=%s"%entry
+                print("%s=%s"%entry)
 
 if __name__ == "__main__":
     app = BoilderPlate()

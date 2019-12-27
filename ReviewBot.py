@@ -135,6 +135,18 @@ class ReviewBot(object):
         else:
             self.config = self._load_config()
 
+    def has_staging(self, project):
+        try:
+            url = osc.core.makeurl(self.apiurl, ('staging', project, 'staging_projects'))
+            osc.core.http_GET(url)
+            return True
+        except HTTPError as e:
+            if e.code != 404:
+                self.logger.error('ERROR in URL %s [%s]' % (url, e))
+                raise
+            pass
+        return False
+
     def staging_api(self, project):
         # Allow for the Staging subproject to be passed directly from config
         # which should be stripped before initializing StagingAPI. This allows
@@ -183,6 +195,17 @@ class ReviewBot(object):
             self.request = req
             with sentry_sdk.configure_scope() as scope:
                 scope.set_extra('request.id', self.request.reqid)
+
+            # XXX: this is a hack. Annotating the request with staging_project.
+            # OBS itself should provide an API for that but that's currently not the case
+            # https://github.com/openSUSE/openSUSE-release-tools/pull/2377
+            if not hasattr(req, 'staging_project'):
+                staging_project = None
+                for r in req.reviews:
+                    if r.state == 'new' and r.by_project and ":Staging:" in r.by_project:
+                        staging_project = r.by_project
+                        break
+                setattr(req, 'staging_project', staging_project)
 
             try:
                 good = self.check_one_request(req)
