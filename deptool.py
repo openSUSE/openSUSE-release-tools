@@ -190,8 +190,10 @@ class DepTool(cmdln.Cmdln):
                 return False
 
             for s in trans.newsolvables():
-                print(','.join(packages), s.name)
-                if opts.explain and s.name in opts.explain:
+                if opts.size:
+                    print(s.lookup_num(solv.SOLVABLE_INSTALLSIZE), s.name, ','.join(packages))
+                else:
+                    print(s.name, ','.join(packages))
                 if opts.explain and (s.name in opts.explain or '*' in opts.explain):
                     reason, rule = solver.describe_decision(s)
                     ruleinfo = None
@@ -206,7 +208,7 @@ class DepTool(cmdln.Cmdln):
 
             if opts.size:
                 size = trans.calc_installsizechange()
-                print("SIZE %s" % (size))
+                print("%s TOTAL" % (size))
 
             return True
 
