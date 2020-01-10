@@ -110,6 +110,7 @@ class AcceptCommand(object):
         for project in staging_packages.keys():
             u = self.api.makeurl(['staging', self.api.project, 'staging_projects', project, 'accept'], opts)
             http_POST(u)
+            self.api.switch_flag_in_prj(project, flag='build', state='disable', repository='images')
 
         for req in other_new:
             print(f"Accepting request {req['id']}: {req['package']}")
