@@ -1,4 +1,5 @@
 {
+   "https://openqa.opensuse.org" : {
       "openSUSE:Leap:15.1:Update" : {
          "settings" : {
             "OS_TEST_ISSUES" : "",
