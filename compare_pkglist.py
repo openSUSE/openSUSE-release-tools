@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import argparse
 import logging
@@ -17,8 +17,8 @@ import osc.core
 
 from osc import oscerr
 
-OPENSUSE = 'openSUSE:Leap:15.1'
-SLE = 'SUSE:SLE-15-SP1:GA'
+OPENSUSE = 'openSUSE:Leap:15.2'
+SLE = 'SUSE:SLE-15-SP2:GA'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
