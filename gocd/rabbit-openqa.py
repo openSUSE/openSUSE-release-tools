@@ -166,7 +166,7 @@ class Listener(PubSubConsumer):
 
     def routing_keys(self):
         ret = []
-        for suffix in ['.obs.repo.published', '.openqa.job.done',
+        for suffix in ['.obs.repo.published', '.obs.repo.build_finished', '.openqa.job.done',
                        '.openqa.job.create', '.openqa.job.restart']:
             ret.append(self.amqp_prefix + suffix)
         return ret
