@@ -30,4 +30,4 @@ iso: openSUSE-Leap-15.2-DVD-x86_64-Current.iso
 name: openSUSE:Leap:15.2
 subject: Leap 15.2 Build {version} released!
 url: http://download.opensuse.org/distribution/leap/15.2/iso/
-sender: Ludwig Nussel <ludwig.nussel@suse.de>
+sender: openSUSE release team <opensuse-releaseteam@opensuse.org>
