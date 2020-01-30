@@ -20,6 +20,6 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
-         set -x
-         PYTHONPATH=$PWD python3 ./dashboard/generate.py -p openSUSE:Factory > dashboard/output/index.html
-         rsync -av dashboard/output/ rsync://coolo@195.135.221.140:11873/factory-dashboard.opensuse.org/
+           set -x
+           PYTHONPATH=$PWD python3 ./dashboard/generate.py -p openSUSE:Factory > dashboard/output/index.html
+           rsync -av dashboard/output/ rsync://coolo@195.135.221.140:11873/factory-dashboard.opensuse.org/
