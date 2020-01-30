@@ -1,76 +1,89 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-  	<title>Dashboard for {{ projectname }}</title>
-  </head>
-  <body>
-	<h1>Dashboard for {{ projectname }}</h1>
-  <table class="table">
-    <thead>
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <title>Dashboard for {{ projectname }}</title>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="h1 col text-left">Dashboard for {{ projectname }}</div>
+      <div class="col-3 text-right">Last update: <time class="timeago" datetime="{{lastupdate}}">{{ lastupdate }}</time></div>
+    </div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Part</th>
+          <th scope="col">standard</th>
+          <th scope="col">images</th>
+          <th scope="col">source</th>
+          <th scope="col">testing</th>
+          <th scope="col">published</th>
+        </tr>
+      </thead>
+      {% for project in projects %}
       <tr>
-        <th scope="col">Part</th>
-        <th scope="col">standard</th>
-        <th scope="col">images</th>
-	<th scope="col">source</th>
-	<th scope="col">testing</th>
-	<th scope="col">published</th>
-      </tr>
-    </thead>
-    {% for project in projects %}
-    <tr>
-      <th scope="row"><a href="https://build.opensuse.org/project/show/{{ project.name }}">{{project.nick}}</a></th>
-      <td>
-        {% set progress = project.standard_progress() %}
-        {% if progress['building'] < 1000 %}
-          {{ progress['building'] / 10}}% done
-        {% else %}
-          done
-        {% endif %}
-        {% if progress['failed'] > 0 %}
-         , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_standard=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
-        {% endif %}
-        {% if progress['unresolvable'] > 0 %}
-         , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_standard=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
-        {% endif %}
-      </td>
-      <td>
-        {% set progress = project.images_progress() %}
-        {% if progress['building'] >= 0 %}
+        <th scope="row"><a href="https://build.opensuse.org/project/show/{{ project.name }}">{{project.nick}}</a></th>
+        <td>
+          {% set progress = project.standard_progress() %}
           {% if progress['building'] < 1000 %}
-            {{ progress['building'] / 10}}% done
+          {{ progress['building'] / 10}}% done
           {% else %}
-            done
+          done
           {% endif %}
           {% if progress['failed'] > 0 %}
-            , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_images=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
+          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_standard=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
           {% endif %}
           {% if progress['unresolvable'] > 0 %}
-            , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_images=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
+          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_standard=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
           {% endif %}
-        {% else %}
+        </td>
+        <td>
+          {% set progress = project.images_progress() %}
+          {% if progress['building'] >= 0 %}
+          {% if progress['building'] < 1000 %}
+          {{ progress['building'] / 10}}% done
+          {% else %}
+          done
+          {% endif %}
+          {% if progress['failed'] > 0 %}
+          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_images=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
+          {% endif %}
+          {% if progress['unresolvable'] > 0 %}
+          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_images=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
+          {% endif %}
+          {% else %}
           n.a.
-        {% endif %}
-      </td>
-      <td>
-        {{ project.ttm_version or 'n.a.' }}
-      </td>
-      <td>
-        {{ project.ttm_status.get('testing', 'n.a.') }}
-      </td>
-      <td>
-        {{ project.ttm_status.get('published', 'n.a.') }}
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
+          {% endif %}
+        </td>
+        <td>
+          {{ project.ttm_version or 'n.a.' }}
+        </td>
+        <td>
+          {{ project.ttm_status.get('testing', 'n.a.') }}
+        </td>
+        <td>
+          {{ project.ttm_status.get('published', 'n.a.') }}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
   <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timeago/1.6.7/jquery.timeago.min.js" integrity="sha256-0+5OfvOxkLHqpLPPwy9pDjug8N3cwaqcmleaxnR5VS8=" crossorigin="anonymous"></script>
+  <script>
+    jQuery(document).ready(function() {
+      jQuery("time.timeago").timeago();
+    });
+  </script>
+</body>
 
-  </body>
 </html>

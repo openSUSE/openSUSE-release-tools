@@ -19,6 +19,7 @@ from openqa_client.client import OpenQA_Client
 from openqa_client.exceptions import ConnectionError, RequestError
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
+from datetime import datetime
 
 import requests
 from osclib.PubSubConsumer import PubSubConsumer
@@ -144,5 +145,6 @@ if __name__ == '__main__':
     with app.app_context():
         rendered = render_template('dashboard.html',
             projectname = args.project,
+            lastupdate = datetime.now(),
             projects = fetcher.projects)
         print(rendered)
