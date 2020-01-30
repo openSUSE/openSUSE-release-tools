@@ -7,16 +7,19 @@ import sys
 import json
 import osc
 import re
+import yaml
 from time import sleep
 from osc.core import http_GET, http_POST, makeurl, show_project_meta
 from M2Crypto.SSL import SSLError as SSLError
 from osclib.conf import Config
+from osclib.core import attribute_value_load
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
 from openqa_client.exceptions import ConnectionError, RequestError
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
+from datetime import datetime
 
 import requests
 from osclib.PubSubConsumer import PubSubConsumer
@@ -80,12 +83,23 @@ class Fetcher(object):
             result.append(f"arch_{arch}=1")
         return '&'.join(result)
 
+    def fetch_ttm_status(self, project):
+        text = attribute_value_load(self.apiurl, project, 'ToTestManagerStatus')
+        if text:
+            return yaml.safe_load(text)
+        return dict()
+
+    def fetch_product_version(self, project):
+        return attribute_value_load(self.apiurl, project, 'ProductVersion')
+
 class Project(object):
     def __init__(self, fetcher, name, nick):
         self.fetcher = fetcher
         self.name = name
         self.nick = nick
         self.all_archs = fetcher.generate_all_archs(name)
+        self.ttm_status = fetcher.fetch_ttm_status(name)
+        self.ttm_version = fetcher.fetch_product_version(name)
 
     def standard_progress(self):
         return fetcher.build_summary(self.name, 'standard')
@@ -131,5 +145,6 @@ if __name__ == '__main__':
     with app.app_context():
         rendered = render_template('dashboard.html',
             projectname = args.project,
+            lastupdate = datetime.now(),
             projects = fetcher.projects)
         print(rendered)
