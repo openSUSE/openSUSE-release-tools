@@ -16,6 +16,9 @@
         <th scope="col">Part</th>
         <th scope="col">standard</th>
         <th scope="col">images</th>
+	<th scope="col">source</th>
+	<th scope="col">testing</th>
+	<th scope="col">published</th>
       </tr>
     </thead>
     {% for project in projects %}
@@ -50,8 +53,17 @@
             , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_images=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
           {% endif %}
         {% else %}
-          N.A.
+          n.a.
         {% endif %}
+      </td>
+      <td>
+        {{ project.ttm_version or 'n.a.' }}
+      </td>
+      <td>
+        {{ project.ttm_status.get('testing', 'n.a.') }}
+      </td>
+      <td>
+        {{ project.ttm_status.get('published', 'n.a.') }}
       </td>
     </tr>
     {% endfor %}
