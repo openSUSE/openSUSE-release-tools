@@ -1,0 +1,25 @@
+format_version: 3
+pipelines:
+  Dashboard.Factory:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-totest-manager
+      RSYNC_PASSWORD: '{{SECRET:[RSYNC_FOR_COOLO][RSYNC_FOR_COOLO]}}'
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        destination: scripts
+    timer:
+      spec: 0 */5 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+        - staging-bot
+        tasks:
+        - script: |-
+         set -x
+         PYTHONPATH=$PWD python3 ./dashboard/generate.py -p openSUSE:Factory > dashboard/output/index.html
+         rsync -av dashboard/output/ rsync://coolo@195.135.221.140:11873/factory-dashboard.opensuse.org/
