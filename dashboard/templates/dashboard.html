@@ -26,6 +26,7 @@
           <th scope="col">source</th>
           <th scope="col">testing</th>
           <th scope="col">published</th>
+          <th scope="col">openQA</th>
         </tr>
       </thead>
       {% for project in projects %}
@@ -89,6 +90,12 @@
           {% else %}
 	     n.a.
 	  {% endif %}
+        </td>
+        <td>
+          {% set openqa_summary = project.openqa_summary() %}
+          {% for state in openqa_summary.keys() %}
+            {{ state }}: {{ openqa_summary[state]|length }}
+          {% endfor %}
         </td>
       </tr>
       {% endfor %}
