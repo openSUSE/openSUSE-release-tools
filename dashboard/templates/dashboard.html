@@ -33,36 +33,14 @@
       <tr>
         <th scope="row"><a href="https://build.opensuse.org/project/show/{{ project.name }}">{{project.nick}}</a></th>
         <td>
-          {% set progress = project.standard_progress() %}
-          {% if progress['building'] < 1000 %}
-          {{ progress['building'] / 10}}% done
-          {% else %}
-          done
-          {% endif %}
-          {% if progress['failed'] > 0 %}
-          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_standard=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
-          {% endif %}
-          {% if progress['unresolvable'] > 0 %}
-          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_standard=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
-          {% endif %}
+          {% with repository = 'standard' %}
+            {% include "repository.html" %}
+          {% endwith %}
         </td>
         <td>
-          {% set progress = project.images_progress() %}
-          {% if progress['building'] >= 0 %}
-          {% if progress['building'] < 1000 %}
-          {{ progress['building'] / 10}}% done
-          {% else %}
-          done
-          {% endif %}
-          {% if progress['failed'] > 0 %}
-          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_images=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
-          {% endif %}
-          {% if progress['unresolvable'] > 0 %}
-          , <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_images=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
-          {% endif %}
-          {% else %}
-          n.a.
-          {% endif %}
+          {% with repository = 'images' %}
+            {% include "repository.html" %}
+          {% endwith %}
         </td>
         <td>
 	  {% if project.ttm_version %}
