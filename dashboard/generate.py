@@ -36,10 +36,28 @@ class Fetcher(object):
         else:
             amqp_prefix = 'opensuse'
             openqa_url = 'https://openqa.opensuse.org'
+        self.openqa = OpenQA_Client(openqa_url)
 
-    def add(self, name, nick):
+    def openqa_results(self, openqa_group, snapshot):
+        jobs = {}
+        if not openqa_group or not snapshot:
+            return jobs
+        result = self.openqa.openqa_request('GET', 'jobs', {'groupid': openqa_group, 'build': snapshot, 'latest': 1})
+        for job in result['jobs']:
+            if job['clone_id'] or job['result'] == 'obsoleted':
+                continue
+            name = job['name'].replace(snapshot, '')
+            key = job['result']
+            if job['state'] != 'done':
+                key = job['state']
+                if key == 'uploading' or key == 'assigned':
+                    key = 'running'
+            jobs.setdefault(key, []).append(job['name'])
+        return jobs
+
+    def add(self, name, **kwargs):
         # cyclic dependency!
-        self.projects.append(Project(self, name, nick))
+        self.projects.append(Project(self, name, kwargs))
 
     def build_summary(self, project, repository):
         url = makeurl(self.apiurl, ['build', project, '_result'], { 'repository': repository, 'view': 'summary' })
@@ -93,10 +111,14 @@ class Fetcher(object):
         return attribute_value_load(self.apiurl, project, 'ProductVersion')
 
 class Project(object):
-    def __init__(self, fetcher, name, nick):
+    def __init__(self, fetcher, name, kwargs):
         self.fetcher = fetcher
         self.name = name
-        self.nick = nick
+        self.nick = kwargs.get('nick')
+        self.openqa_version = kwargs.get('openqa_version')
+        self.openqa_group = kwargs.get('openqa_group')
+        self.openqa_id = kwargs.get('openqa_groupid')
+        self.download_url = kwargs.get('download_url')
         self.all_archs = fetcher.generate_all_archs(name)
         self.ttm_status = fetcher.fetch_ttm_status(name)
         self.ttm_version = fetcher.fetch_product_version(name)
@@ -113,6 +135,9 @@ class Project(object):
 
     def all_archs(self):
         self.all_archs
+
+    def openqa_summary(self):
+        return self.fetcher.openqa_results(self.openqa_id, self.ttm_status.get('testing'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -134,13 +159,14 @@ if __name__ == '__main__':
 
     app = Flask(__name__)
 
-    fetcher.add('openSUSE:Factory', 'Factory')
-    fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', 'Ring 0')
-    fetcher.add('openSUSE:Factory:Rings:1-MinimalX', 'Ring 1')
-    fetcher.add('openSUSE:Factory:ARM', 'ARM')
-    fetcher.add('openSUSE:Factory:PowerPC', 'Power')
-    fetcher.add('openSUSE:Factory:zSystems', 'System Z')
-    fetcher.add('openSUSE:Factory:RISCV', 'Risc V')
+    fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
+    fetcher.add('openSUSE:Factory:Live', nick='Live')
+    fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
+    fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
+    fetcher.add('openSUSE:Factory:ARM', nick='ARM', download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/', openqa_groupid=3)
+    fetcher.add('openSUSE:Factory:PowerPC', nick='Power', download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/', openqa_groupid=4)
+    fetcher.add('openSUSE:Factory:zSystems', nick='System Z', download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/', openqa_groupid=34)
+    fetcher.add('openSUSE:Factory:RISCV', nick='Risc V', download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
 
     with app.app_context():
         rendered = render_template('dashboard.html',

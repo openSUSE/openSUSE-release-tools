@@ -4,6 +4,7 @@
 <head>
   <!-- Required meta tags -->
   <meta charset="utf-8">
+  <meta http-equiv="refresh" content="60" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
@@ -25,6 +26,7 @@
           <th scope="col">source</th>
           <th scope="col">testing</th>
           <th scope="col">published</th>
+          <th scope="col">openQA</th>
         </tr>
       </thead>
       {% for project in projects %}
@@ -63,13 +65,37 @@
           {% endif %}
         </td>
         <td>
-          {{ project.ttm_version or 'n.a.' }}
+	  {% if project.ttm_version %}
+	    <a href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
+	  {% else %}
+	    n.a.
+	  {% endif %}
         </td>
         <td>
-          {{ project.ttm_status.get('testing', 'n.a.') }}
+          {% set ttm_testing = project.ttm_status.get('testing') %}
+          {% if ttm_testing %}
+	    {% if project.openqa_version %}
+	      <a href='https://openqa.opensuse.org/tests/overview?distri=opensuse&version={{ project.openqa_version }}'>{{ ttm_testing }}</a>
+	    {% else %}
+	      {{ ttm_testing }}
+	    {% endif %}
+	  {% else %}
+	    n.a.
+	  {% endif %}
         </td>
         <td>
-          {{ project.ttm_status.get('published', 'n.a.') }}
+	  {% set ttm_published = project.ttm_status.get('published', None) %}
+	  {% if ttm_published %}
+	    <a href="{{ project.download_url }}">{{ ttm_published }}</a>
+          {% else %}
+	     n.a.
+	  {% endif %}
+        </td>
+        <td>
+          {% set openqa_summary = project.openqa_summary() %}
+          {% for state in openqa_summary.keys() %}
+            {{ state }}: {{ openqa_summary[state]|length }}
+          {% endfor %}
         </td>
       </tr>
       {% endfor %}
