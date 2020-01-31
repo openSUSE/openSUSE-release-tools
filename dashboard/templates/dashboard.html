@@ -4,6 +4,7 @@
 <head>
   <!-- Required meta tags -->
   <meta charset="utf-8">
+  <meta http-equiv="refresh" content="60" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
@@ -63,13 +64,22 @@
           {% endif %}
         </td>
         <td>
-          {{ project.ttm_version or 'n.a.' }}
+	  {% if project.ttm_version %}
+	    <a href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
+	  {% else %}
+	    n.a.
+	  {% endif %}
         </td>
         <td>
           {{ project.ttm_status.get('testing', 'n.a.') }}
         </td>
         <td>
-          {{ project.ttm_status.get('published', 'n.a.') }}
+	  {% set ttm_published = project.ttm_status.get('published', None) %}
+	  {% if ttm_published %}
+	    <a href="{{ project.download_url }}">{{ ttm_published }}</a>
+          {% else %}
+	     n.a.
+	  {% endif %}
         </td>
       </tr>
       {% endfor %}

@@ -37,9 +37,9 @@ class Fetcher(object):
             amqp_prefix = 'opensuse'
             openqa_url = 'https://openqa.opensuse.org'
 
-    def add(self, name, nick):
+    def add(self, name, **kwargs):
         # cyclic dependency!
-        self.projects.append(Project(self, name, nick))
+        self.projects.append(Project(self, name, kwargs))
 
     def build_summary(self, project, repository):
         url = makeurl(self.apiurl, ['build', project, '_result'], { 'repository': repository, 'view': 'summary' })
@@ -93,10 +93,11 @@ class Fetcher(object):
         return attribute_value_load(self.apiurl, project, 'ProductVersion')
 
 class Project(object):
-    def __init__(self, fetcher, name, nick):
+    def __init__(self, fetcher, name, kwargs):
         self.fetcher = fetcher
         self.name = name
-        self.nick = nick
+        self.nick = kwargs.get('nick')
+        self.download_url = kwargs.get('download_url')
         self.all_archs = fetcher.generate_all_archs(name)
         self.ttm_status = fetcher.fetch_ttm_status(name)
         self.ttm_version = fetcher.fetch_product_version(name)
@@ -134,13 +135,14 @@ if __name__ == '__main__':
 
     app = Flask(__name__)
 
-    fetcher.add('openSUSE:Factory', 'Factory')
-    fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', 'Ring 0')
-    fetcher.add('openSUSE:Factory:Rings:1-MinimalX', 'Ring 1')
-    fetcher.add('openSUSE:Factory:ARM', 'ARM')
-    fetcher.add('openSUSE:Factory:PowerPC', 'Power')
-    fetcher.add('openSUSE:Factory:zSystems', 'System Z')
-    fetcher.add('openSUSE:Factory:RISCV', 'Risc V')
+    fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/')
+    fetcher.add('openSUSE:Factory:Live', nick='Live')
+    fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
+    fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
+    fetcher.add('openSUSE:Factory:ARM', nick='ARM', download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/')
+    fetcher.add('openSUSE:Factory:PowerPC', nick='Power', download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/')
+    fetcher.add('openSUSE:Factory:zSystems', nick='System Z', download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/')
+    fetcher.add('openSUSE:Factory:RISCV', nick='Risc V', download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
 
     with app.app_context():
         rendered = render_template('dashboard.html',
