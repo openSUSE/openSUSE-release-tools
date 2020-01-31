@@ -237,29 +237,13 @@ class AcceptCommand(object):
 
         project = self.api.project
         curr_version = date.today().strftime('%Y%m%d')
-        update_version_attr = False
-        url = self.api.makeurl(['source', project], {'view': 'productlist'})
 
-        products = ET.parse(http_GET(url)).getroot()
-        for product in products.findall('product'):
-            product_name = product.get('name') + '.product'
-            product_pkg = product.get('originpackage')
-            product_spec = source_file_load(self.api.apiurl, project, product_pkg, product_name)
-            new_product = re.sub(r'<version>\d{8}</version>', '<version>%s</version>' % curr_version, product_spec)
-
-            if product_spec != new_product:
-                update_version_attr = True
-                url = self.api.makeurl(['source', project, product_pkg, product_name])
-                http_PUT(url + '?comment=Update+version', data=new_product)
-
-        if update_version_attr:
-            self.update_version_attribute(project, curr_version)
+        self.update_version_attribute(project, curr_version)
 
         ports_prjs = ['PowerPC', 'ARM', 'zSystems' ]
-
         for ports in ports_prjs:
             project = self.api.project + ':' + ports
-            if self.api.item_exists(project) and update_version_attr:
+            if self.api.item_exists(project):
                 self.update_version_attribute(project, curr_version)
 
     def sync_buildfailures(self):
