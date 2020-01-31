@@ -164,6 +164,7 @@ if __name__ == '__main__':
     fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
     fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
     fetcher.add('openSUSE:Factory:ARM', nick='ARM', download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/', openqa_groupid=3)
+    fetcher.add('openSUSE:Factory:ARM:Live', nick='ARM Live')
     fetcher.add('openSUSE:Factory:PowerPC', nick='Power', download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/', openqa_groupid=4)
     fetcher.add('openSUSE:Factory:zSystems', nick='System Z', download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/', openqa_groupid=34)
     fetcher.add('openSUSE:Factory:RISCV', nick='Risc V', download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
