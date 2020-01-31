@@ -97,6 +97,8 @@ class Project(object):
         self.fetcher = fetcher
         self.name = name
         self.nick = kwargs.get('nick')
+        self.openqa_version = kwargs.get('openqa_version')
+        self.openqa_group = kwargs.get('openqa_group')
         self.download_url = kwargs.get('download_url')
         self.all_archs = fetcher.generate_all_archs(name)
         self.ttm_status = fetcher.fetch_ttm_status(name)
@@ -135,7 +137,7 @@ if __name__ == '__main__':
 
     app = Flask(__name__)
 
-    fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/')
+    fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed')
     fetcher.add('openSUSE:Factory:Live', nick='Live')
     fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
     fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
