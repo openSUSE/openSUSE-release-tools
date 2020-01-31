@@ -61,7 +61,10 @@ class Fetcher(object):
 
     def build_summary(self, project, repository):
         url = makeurl(self.apiurl, ['build', project, '_result'], { 'repository': repository, 'view': 'summary' })
-        f = http_GET(url)
+        try:
+            f = http_GET(url)
+        except HTTPError as e:
+            return { 'building': -1 }
         root = ET.parse(f).getroot()
         failed = 0
         unresolvable = 0
@@ -87,6 +90,8 @@ class Fetcher(object):
         if building > 0:
             building += unresolvable
             unresolvable = 0
+        if building + failed + succeeded == 0:
+            return {'building': -1}
         return { 'building': 1000 - int(building * 1000 / (building + failed + succeeded)),
                  'failed': failed,
                  'unresolvable': unresolvable }
@@ -123,15 +128,8 @@ class Project(object):
         self.ttm_status = fetcher.fetch_ttm_status(name)
         self.ttm_version = fetcher.fetch_product_version(name)
 
-    def standard_progress(self):
-        return fetcher.build_summary(self.name, 'standard')
-
-    def images_progress(self):
-        try:
-            return fetcher.build_summary(self.name, 'images')
-        except HTTPError as e:
-            print(f"failed to fetch images for {self.name}", file=sys.stderr)
-            return {'building': -1}
+    def build_summary(self, repo):
+        return fetcher.build_summary(self.name, repo)
 
     def all_archs(self):
         self.all_archs
