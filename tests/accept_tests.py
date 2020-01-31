@@ -24,6 +24,7 @@ class TestAccept(unittest.TestCase):
         self.winerq = wf.create_submit_request('devel:wine', 'wine', text='Hallo World')
         self.assertEqual(True, SelectCommand(wf.api, self.prj).perform(['wine']))
         self.comments = self.c_api.get_comments(project_name=self.prj)
+        wf.create_attribute_type('OSRT', 'ProductVersion', 1)
         return wf
 
     def test_accept_comments(self):
