@@ -82,14 +82,18 @@ pipelines:
         tasks:
         - script: |-
             for product in kiwi-templates-JeOS \
+                SLES15-SP2-BYOS SLES15-SP2-HPC-BYOS \
+                SLES15-SP2-SAP SLES15-SP2-SAP-BYOS \
                 SLED-15-SP2-Vagrant SLES-15-SP2-Vagrant \
                 SLES15-SP2-CHOST-BYOS SLES15-SP2-on-demand \
                 SLES15-SP2-Azure SLES15-SP2-Azure-BYOS \
                 SLES15-SP2-Azure-Priority SLES15-SP2-Azure-Standard \
+                SLES15-SP2-Azure-HPC \
                 SLES15-SP2-EC2-ECS-HVM SLES15-SP2-EC2-HVM \
                 SLES15-SP2-EC2-HVM-BYOS SLES15-SP2-GCE SLES15-SP2-GCE-BYOS \
                 SLES15-SP2-SAP-Azure SLES15-SP2-SAP-Azure-BYOS \
                 SLES15-SP2-SAP-Azure-LI-BYOS \
+                SLES15-SP2-SAP-Azure-VLI-BYOS \
                 SLES15-SP2-SAP-EC2-HVM SLES15-SP2-SAP-EC2-HVM-BYOS \
                 SLES15-SP2-OCI-BYOS SLES15-SP2-SAP-OCI-BYOS \
                 SLES15-SP2-SAP-GCE SLES15-SP2-SAP-GCE-BYOS 000product; do
