@@ -53,7 +53,7 @@
           {% set ttm_testing = project.ttm_status.get('testing') %}
           {% if ttm_testing %}
 	    {% if project.openqa_version %}
-	      <a href='https://openqa.opensuse.org/tests/overview?distri=opensuse&version={{ project.openqa_version }}'>{{ ttm_testing }}</a>
+	      <a href='https://openqa.opensuse.org/tests/overview?version={{ project.openqa_version }}&groupid={{ project.openqa_id }}'>{{ ttm_testing }}</a>
 	    {% else %}
 	      {{ ttm_testing }}
 	    {% endif %}
