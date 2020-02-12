@@ -35,4 +35,4 @@ pipelines:
         resources:
         - staging-bot
         tasks:
-        - script: ./build-fail-reminder.py --sender="Ludwig Nussel <ludwig.nussel@suse.de>" --project=openSUSE:Leap:15.2 --relay=relay.suse.de --json=/home/go/config/openSUSE:Leap:15.2.reminded.json --debug
+        - script: ./build-fail-reminder.py --sender="openSUSE release team <opensuse-releaseteam@opensuse.org>" --project=openSUSE:Leap:15.2 --relay=relay.suse.de --json=/home/go/config/openSUSE:Leap:15.2.reminded.json --debug
