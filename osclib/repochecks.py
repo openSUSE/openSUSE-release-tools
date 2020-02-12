@@ -168,6 +168,25 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
 
         return parts
 
+def mirrorRepomd(cachedir, url):
+    # Use repomd.xml to get the location of primary.xml.gz
+    repoindex = ETL.fromstring(requests.get('{}/repodata/repomd.xml'.format(url)).content)
+    primarypath = repoindex.xpath("string(./repo:data[@type='primary']/repo:location/@href)",
+                                  namespaces={'repo': 'http://linux.duke.edu/metadata/repo'})
+    if not primarypath.endswith(".xml.gz"):
+        raise Excpetion('unsupported primary format')
+
+    primarydest = os.path.join(cachedir, os.path.basename(primarypath))
+    if not os.path.exists(primarydest):
+        # Delete the old files first
+        for oldfile in glob.glob(glob.escape(directory) + "/*.xml.gz"):
+            os.unlink(oldfile)
+
+        with tempfile.NamedTemporaryFile(dir=cachedir) as primarytemp:
+            primarytemp.write(requests.get(url + '/' + primarypath).content)
+            os.link(primarytemp.name, primarydest)
+    return primarydest
+
 def mirror(apiurl, project, repository, arch):
     """Call bs_mirrorfull script to mirror packages."""
     directory = os.path.join(CACHEDIR, project, repository, arch)
@@ -188,16 +207,7 @@ def mirror(apiurl, project, repository, arch):
         repotype = download[0].get('repotype')
         if repotype != 'rpmmd':
             raise Exception('repotype {} not supported'.format(repotype))
-        url = download[0].get('url')
-        repoindex = ETL.fromstring(requests.get('{}/repodata/repomd.xml'.format(url)).content)
-        primarypath = repoindex.xpath("string(./repo:data[@type='primary']/repo:location/@href)", namespaces={'repo': 'http://linux.duke.edu/metadata/repo'})
-        primaryname = os.path.basename(primarypath)
-        primarydest = os.path.join(directory, os.path.basename(primarypath))
-        if not os.path.exists(primarydest):
-            with tempfile.NamedTemporaryFile(dir=directory) as primarytemp:
-                primarytemp.write(requests.get(url + '/' + primarypath).content)
-                os.link(primarytemp.name, primarydest)
-        return primarydest
+        return mirrorRepomd(directory, download[0].get('url'))
 
     script = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
     path = '/'.join((project, repository, arch))
