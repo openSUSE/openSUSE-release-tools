@@ -78,7 +78,7 @@ class ToTestPublisher(ToTestManager):
                         # update reference
                         self.issues_to_ignore[ref] = build_nr
 
-                if ignored:
+                if ignored or job['result'] == 'parallel_failed':
                     self.failed_ignored_jobs.append(job['id'])
                     if labeled:
                         text = 'Ignored issue' if len(refs) > 0 else 'Ignored failure'
