@@ -191,12 +191,12 @@ class ToTestReleaser(ToTestManager):
                                   target_repository=self.project.totest_container_repo)
 
         if len(self.project.main_products):
+            for product in self.project.ftp_products:
+                self.release_package(self.project.name, product, repository=self.project.product_repo)
+
             for cd in self.project.main_products:
                 self.release_package(self.project.name, cd, set_release=set_release,
                                       repository=self.project.product_repo)
-
-            for product in self.project.ftp_products:
-                self.release_package(self.project.name, product, repository=self.project.product_repo)
 
         for cd in self.project.livecd_products:
             self.release_package('%s:Live' %
