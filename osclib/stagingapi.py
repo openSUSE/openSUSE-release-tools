@@ -1406,7 +1406,7 @@ class StagingAPI(object):
           <title></title>
           <description></description>
           {linkproject}
-          <url>/project/staging_projects/{self.project}/adi:{self.extract_adi_number(name)}</url>
+          <url>/staging_workflows/{self.project}/staging_projects/{self.project}:Staging:adi:{self.extract_adi_number(name)}</url>
           <publish>
             <disable/>
           </publish>
