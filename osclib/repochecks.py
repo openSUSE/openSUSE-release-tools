@@ -4,6 +4,7 @@ import re
 import requests
 import subprocess
 import tempfile
+import glob
 from fnmatch import fnmatch
 from lxml import etree as ETL
 from osc.core import http_GET
@@ -174,12 +175,12 @@ def mirrorRepomd(cachedir, url):
     primarypath = repoindex.xpath("string(./repo:data[@type='primary']/repo:location/@href)",
                                   namespaces={'repo': 'http://linux.duke.edu/metadata/repo'})
     if not primarypath.endswith(".xml.gz"):
-        raise Excpetion('unsupported primary format')
+        raise Exception('unsupported primary format')
 
     primarydest = os.path.join(cachedir, os.path.basename(primarypath))
     if not os.path.exists(primarydest):
         # Delete the old files first
-        for oldfile in glob.glob(glob.escape(directory) + "/*.xml.gz"):
+        for oldfile in glob.glob(glob.escape(cachedir) + "/*.xml.gz"):
             os.unlink(oldfile)
 
         with tempfile.NamedTemporaryFile(dir=cachedir) as primarytemp:
