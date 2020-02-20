@@ -1,8 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import argparse
 import logging
 import sys
+import time
 
 try:
     from urllib.error import HTTPError, URLError
@@ -22,9 +23,10 @@ from osclib.core import project_pseudometa_package
 from osc import oscerr
 from osclib.memoize import memoize
 
-OPENSUSE = 'openSUSE:Leap:15.1'
-OPENSUSE_PREVERSION = 'openSUSE:Leap:15.0'
-FCC = '{}:Staging:FactoryCandidates'.format(OPENSUSE)
+OPENSUSE = 'openSUSE:Leap:15.2'
+OPENSUSE_PREVERSION = 'openSUSE:Leap:15.1'
+OPENSUSE_RELEASED_VERSION = ['openSUSE:Leap:15.0', 'openSUSE:Leap:15.1']
+FCC = '{}:FactoryCandidates'.format(OPENSUSE)
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -133,7 +135,10 @@ class FccSubmitter(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         self.sle_base_prjs = [
+                'SUSE:SLE-15-SP2:GA',
+                'SUSE:SLE-15-SP1:Update',
                 'SUSE:SLE-15-SP1:GA',
+                'SUSE:SLE-15:Update',
                 'SUSE:SLE-15:GA',
                 'SUSE:SLE-12-SP4:Update',
                 'SUSE:SLE-12-SP4:GA',
@@ -309,7 +314,8 @@ class FccSubmitter(object):
         target_packages = self.get_source_packages(self.to_prj)
         deleted_packages = self.get_deleted_packages(self.to_prj)
         if self.to_prj.startswith("openSUSE:"):
-            deleted_packages = deleted_packages + self.get_deleted_packages(OPENSUSE_PREVERSION)
+            for prd in OPENSUSE_RELEASED_VERSION:
+                deleted_packages = deleted_packages + self.get_deleted_packages(prd)
 
         pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, 'openSUSE:Factory')
         skip_pkgs_list = self.load_skip_pkgs_list(pseudometa_project, pseudometa_package).splitlines()
@@ -381,7 +387,7 @@ class FccSubmitter(object):
                     # check package does not in the skip list
                     match = None
                     for elem in skip_pkgs_list:
-                        m = re.search(elem, package)
+                        m = re.search(str(elem), package)
                         if m is not None:
                             match = True
 
@@ -398,6 +404,7 @@ class FccSubmitter(object):
                         logging.error('Error occurred when creating submit request')
             else:
                 logging.debug('%s is exist in %s, skip!' % (package, self.to_prj))
+            time.sleep(5)
 
         # dump multi specs packages
         print("Multi-specfile packages:")
