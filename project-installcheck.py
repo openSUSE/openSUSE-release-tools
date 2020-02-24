@@ -126,8 +126,13 @@ class RepoChecker():
 
         repository_pairs = repository_path_expand(self.apiurl, project, repository)
         directories = []
+        primaryxmls = []
         for pair_project, pair_repository in repository_pairs:
-            directories.append(mirror(self.apiurl, pair_project, pair_repository, arch))
+            mirrored = mirror(self.apiurl, pair_project, pair_repository, arch)
+            if os.path.isdir(mirrored):
+                directories.append(mirrored)
+            else:
+                primaryxmls.append(mirrored)
 
         parsed = dict()
         with tempfile.TemporaryDirectory(prefix='repochecker') as dir:
@@ -148,7 +153,7 @@ class RepoChecker():
                 catalog = yaml.safe_load(file)
                 target_packages = catalog.get(directories[0], [])
 
-            parsed = parsed_installcheck(pfile, arch, target_packages, [])
+            parsed = parsed_installcheck([pfile] + primaryxmls, arch, target_packages, [])
             for package in parsed:
                 parsed[package]['output'] = "\n".join(parsed[package]['output'])
 

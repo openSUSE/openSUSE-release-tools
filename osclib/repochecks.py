@@ -1,9 +1,13 @@
 import logging
 import os
 import re
+import requests
 import subprocess
 import tempfile
+import glob
 from fnmatch import fnmatch
+from lxml import etree as ETL
+from osc.core import http_GET
 
 import yaml
 
@@ -87,7 +91,7 @@ def filter_release(line):
     line = re.sub(r'(provided by [^ ]*\-[^-]*)\-[^-]*(\.\w+)$', r'\1\2', line)
     return line
 
-def parsed_installcheck(pfile, arch, target_packages, whitelist):
+def parsed_installcheck(repos, arch, target_packages, whitelist):
     reported_problems = dict()
 
     if not len(target_packages):
@@ -100,7 +104,10 @@ def parsed_installcheck(pfile, arch, target_packages, whitelist):
             return _mapping[arch]
         return arch
 
-    p = subprocess.run(['/usr/bin/installcheck', maparch2installarch(arch), pfile],
+    if not isinstance(repos, list):
+        repos = [repos]
+
+    p = subprocess.run(['/usr/bin/installcheck', maparch2installarch(arch)] + repos,
                        stdout=subprocess.PIPE, errors='backslashreplace', text=True)
     if p.returncode:
         in_problem = False
@@ -162,14 +169,46 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
 
         return parts
 
+def mirrorRepomd(cachedir, url):
+    # Use repomd.xml to get the location of primary.xml.gz
+    repoindex = ETL.fromstring(requests.get('{}/repodata/repomd.xml'.format(url)).content)
+    primarypath = repoindex.xpath("string(./repo:data[@type='primary']/repo:location/@href)",
+                                  namespaces={'repo': 'http://linux.duke.edu/metadata/repo'})
+    if not primarypath.endswith(".xml.gz"):
+        raise Exception('unsupported primary format')
+
+    primarydest = os.path.join(cachedir, os.path.basename(primarypath))
+    if not os.path.exists(primarydest):
+        # Delete the old files first
+        for oldfile in glob.glob(glob.escape(cachedir) + "/*.xml.gz"):
+            os.unlink(oldfile)
+
+        with tempfile.NamedTemporaryFile(dir=cachedir) as primarytemp:
+            primarytemp.write(requests.get(url + '/' + primarypath).content)
+            os.link(primarytemp.name, primarydest)
+    return primarydest
 
 def mirror(apiurl, project, repository, arch):
     """Call bs_mirrorfull script to mirror packages."""
     directory = os.path.join(CACHEDIR, project, repository, arch)
-    # return directory
 
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+    meta = ETL.parse(http_GET('{}/public/source/{}/_meta'.format(apiurl, project))).getroot()
+    repotag = meta.xpath("/project/repository[@name='{}']".format(repository))[0]
+    if arch not in repotag.xpath("./arch/text()"):
+        # Arch not in this project, skip mirroring
+        return directory
+
+    download = repotag.xpath("./download[@arch='{}']".format(arch))
+    if download is not None and len(download) > 0:
+        if len(download) > 1:
+            raise Exception('Multiple download urls unsupported')
+        repotype = download[0].get('repotype')
+        if repotype != 'rpmmd':
+            raise Exception('repotype {} not supported'.format(repotype))
+        return mirrorRepomd(directory, download[0].get('url'))
 
     script = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
     path = '/'.join((project, repository, arch))
