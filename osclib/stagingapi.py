@@ -464,7 +464,7 @@ class StagingAPI(object):
             if stage_info and stage_info['rq_id'] != request_id:
                 request_old = get_request(self.apiurl, str(stage_info['rq_id'])).to_xml()
                 request_new = request
-                replace_old = request_old.find('state').get('name') in ['revoked', 'superseded']
+                replace_old = request_old.find('state').get('name') in ['revoked', 'superseded', 'declined']
 
                 if (request_new.find('action').get('type') == 'delete' and
                     request_old.find('action').get('type') == 'delete'):
