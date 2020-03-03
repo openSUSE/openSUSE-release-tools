@@ -27,6 +27,7 @@ class ToTest(object):
         self.do_not_release = False
         self.need_same_build_number = False
         self.set_snapshot_number = False
+        self.snapshot_number_prefix = "Snapshot"
         self.take_source_from_product = False
         self.arch = 'x86_64'
         self.openqa_server = None

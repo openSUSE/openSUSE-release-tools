@@ -214,7 +214,7 @@ class ToTestReleaser(ToTestManager):
         if not self.project.set_snapshot_number:
             snapshot = None
         if snapshot:
-            release = 'Snapshot%s' % snapshot
+            release = self.project.snapshot_number_prefix + snapshot
             self.logger.info('Updating snapshot %s' % snapshot)
         else:
             release = None
