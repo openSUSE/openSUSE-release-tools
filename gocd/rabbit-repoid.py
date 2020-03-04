@@ -146,6 +146,6 @@ if __name__ == '__main__':
     listener = Listener(apiurl, amqp_prefix, args.namespaces)
 
     try:
-        listener.run(3600)
+        listener.run(108000)
     except KeyboardInterrupt:
         listener.stop()
