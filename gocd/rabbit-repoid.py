@@ -23,6 +23,16 @@ class Listener(PubSubConsumer):
         self.apiurl = apiurl
         self.amqp_prefix = amqp_prefix
         self.namespaces = namespaces
+        self.repositories_to_check = []
+
+    def interval(self):
+        if len(self.repositories_to_check):
+            return 5
+        return 300
+
+    def still_alive(self):
+        self.check_some_repos()
+        super(Listener, self).still_alive()
 
     def routing_keys(self):
         return [self.amqp_prefix + '.obs.repo.build_finished']
@@ -64,10 +74,19 @@ class Listener(PubSubConsumer):
                 state = state.replace('.yaml', '')
                 # split
                 project, repository = state.split('_-_')
-                self.update_repo(project, repository)
-        self.push_git('Restart of Repo Monitor')
-        self.logger.info('Finished refreshing repoids')
+                self.repositories_to_check.append([project, repository])
+        self.check_some_repos()
         super(Listener, self).start_consuming()
+
+    def check_some_repos(self):
+        count = 0
+        limit = 25
+        while len(self.repositories_to_check):
+            project, repository = self.repositories_to_check.pop()
+            self.logger.debug(f"Check repo {project}/{repository}")
+            count += 1
+            if count >= limit:
+                return
 
     def push_git(self, message):
         os.system('git add . ')
@@ -82,8 +101,11 @@ class Listener(PubSubConsumer):
         with open(pathname, 'w') as f:
             for arch in sorted(ids.keys()):
                 f.write('{}: {}\n'.format(arch, ids[arch]))
+        self.push_git('Repository update: {}/{}'.format(project, repository))
 
     def on_message(self, unused_channel, method, properties, body):
+        self.logger.debug("on_message")
+        self.check_some_repos()
         self.acknowledge_message(method.delivery_tag)
         try:
             body = json.loads(body)
@@ -95,7 +117,6 @@ class Listener(PubSubConsumer):
             self.restart_timer()
             self.logger.info('Repo finished event: {}/{}/{}'.format(body['project'], body['repo'], body['arch']))
             self.update_repo(body['project'], body['repo'])
-            self.push_git('Repository finished: {}/{}'.format(body['project'], body['repo']))
         else:
             self.logger.warning(
                 'unknown rabbitmq message {}'.format(method.routing_key))
@@ -120,11 +141,11 @@ if __name__ == '__main__':
     else:
         amqp_prefix = 'opensuse'
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
     listener = Listener(apiurl, amqp_prefix, args.namespaces)
 
     try:
-        listener.run(3600)
+        listener.run(108000)
     except KeyboardInterrupt:
         listener.stop()

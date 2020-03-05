@@ -40,10 +40,15 @@ class PubSubConsumer(object):
         self._run_until = None
         self.logger = logger
 
+    # to be overwritten dynamically by subclass
+    def interval(self):
+        return 300
+
     def restart_timer(self):
-        interval = 300
+        interval = None
         if self._timer_id:
             self._connection.ioloop.remove_timeout(self._timer_id)
+            interval = self.interval()
         else:
             # check the initial state on first timer hit
             # so be quick about it
