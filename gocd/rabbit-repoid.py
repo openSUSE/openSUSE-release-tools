@@ -28,7 +28,7 @@ class Listener(PubSubConsumer):
     def interval(self):
         if len(self.repositories_to_check):
             return 5
-        return 300
+        return super(Listener, self).interval()
 
     def still_alive(self):
         self.check_some_repos()
@@ -146,6 +146,6 @@ if __name__ == '__main__':
     listener = Listener(apiurl, amqp_prefix, args.namespaces)
 
     try:
-        listener.run(108000)
+        listener.run(10800)
     except KeyboardInterrupt:
         listener.stop()
