@@ -166,11 +166,11 @@ Requires(pre):  shadow
 Suggests:       grafana
 %if 0%{?suse_version} > 1500
 Requires:       influxdb
-Requires:       python-influxdb
+Requires:       python3-influxdb
 Requires:       telegraf
 %else
 Suggests:       influxdb
-Suggests:       python-influxdb
+Suggests:       python3-influxdb
 Suggests:       telegraf
 %endif
 
