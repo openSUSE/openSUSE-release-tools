@@ -17,6 +17,7 @@ from lxml import etree as ET
 
 from osc import conf
 import osc.core
+from urllib.error import HTTPError
 from osclib.cache_manager import CacheManager
 
 import requests
@@ -128,7 +129,11 @@ def parse_susetags(repo, baseurl):
         f.write(content.read())
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+        try:
+            repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+        except TypeError:
+            logger.error(f"Failed to add susetags for {url}")
+            return False
         return True
     return False
 
@@ -230,6 +235,10 @@ def update_project(apiurl, project):
         os.unlink(solv_file)
 
         url = osc.core.makeurl(apiurl, ['source', project, '000update-repos', path + '.xz'])
-        osc.core.http_PUT(url, data=open(packages_file + '.xz', 'rb').read())
+        try:
+            osc.core.http_PUT(url, data=open(packages_file + '.xz', 'rb').read())
+        except HTTPError:
+            logger.error(f"Failed to upload to {url}")
+            sys.exit(1)
 
         del pool
