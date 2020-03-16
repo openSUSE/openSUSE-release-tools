@@ -80,10 +80,11 @@ class Listener(PubSubConsumer):
 
     def check_some_repos(self):
         count = 0
-        limit = 25
+        limit = 15
         while len(self.repositories_to_check):
             project, repository = self.repositories_to_check.pop()
             self.logger.debug(f"Check repo {project}/{repository}")
+            self.update_repo(project, repository)
             count += 1
             if count >= limit:
                 return

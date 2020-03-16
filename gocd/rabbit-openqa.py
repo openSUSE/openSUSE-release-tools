@@ -32,11 +32,13 @@ class Project(object):
         self.replace_string = self.api.attribute_value_load('OpenQAMapping')
 
     def init(self):
-        for p in self.api.get_staging_projects():
-            if self.api.is_adi_project(p):
+        projects = set()
+        for project in self.api.get_staging_projects():
+            if self.api.is_adi_project(project):
                 continue
-            self.staging_projects[p] = self.initial_staging_state(p)
-            self.update_staging_status(p)
+            self.staging_projects[project] = self.initial_staging_state(project)
+            projects.add(project)
+        return projects
 
     def staging_letter(self, name):
         return name.split(':')[-1]
@@ -163,6 +165,7 @@ class Listener(PubSubConsumer):
         self.amqp_prefix = amqp_prefix
         self.openqa_url = openqa_url
         self.openqa = OpenQA_Client(server=openqa_url)
+        self.projects_to_check = set()
 
     def routing_keys(self):
         ret = []
@@ -178,11 +181,32 @@ class Listener(PubSubConsumer):
     def start_consuming(self):
         # now we are (re-)connected to the bus and need to fetch the
         # initial state
+        self.projects_to_check = set()
         for project in self.projects:
             self.logger.info('Fetching ISOs of %s', project.name)
-            project.init()
+            for sproj in project.init():
+                self.projects_to_check.add((project, sproj))
         self.logger.info('Finished fetching initial ISOs, listening')
         super(Listener, self).start_consuming()
+
+    def interval(self):
+        if len(self.projects_to_check):
+            return 5
+        return super(Listener, self).interval()
+
+    def check_some_projects(self):
+        count = 0
+        limit = 5
+        while len(self.projects_to_check):
+            project, staging = self.projects_to_check.pop()
+            project.update_staging_status(staging)
+            count += 1
+            if count >= limit:
+                return
+
+    def still_alive(self):
+        self.check_some_projects()
+        super(Listener, self).still_alive()
 
     def jobs_for_iso(self, iso):
         values = {
