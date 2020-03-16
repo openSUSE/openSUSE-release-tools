@@ -116,13 +116,12 @@ pipelines:
             resources:
             - monitor
             tasks:
-            # endless loop
             - script: |-
                 export PYTHONPATH=$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
                 cd repos
-                ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap
+                ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap Virtualization:WSL
   openSUSE.ObsRsync:
     group: Monitors
     lock_behavior: unlockWhenFinished
@@ -141,20 +140,20 @@ pipelines:
         git: git://botmaster.suse.de/opensuse-notifications.git
         branch: master
         destination: notifications
+        whitelist:
+          - nothing
     stages:
     - Run:
         jobs:
           Run:
-            timeout: 30
             resources:
-            - monitor
+            - staging-bot
             tasks:
-            # endless loop
             - script: |-
                 export PYTHONPATH=$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
-                echo "Here we would sync"
+                scripts/gocd/notify-obs_rsync.py --openqa https://openqa.opensuse.org --repos repos --to notifications
   SUSE.ObsRsync:
     group: Monitors
     lock_behavior: unlockWhenFinished
@@ -173,20 +172,21 @@ pipelines:
         git: git://botmaster.suse.de/suse-notifications.git
         branch: master
         destination: notifications
+        whitelist:
+          - nothing
     stages:
     - Run:
         jobs:
           Run:
-            timeout: 30
             resources:
-            - monitor
+            - staging-bot
             tasks:
             # endless loop
             - script: |-
                 export PYTHONPATH=$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
-                echo "Here we would sync"
+                scripts/gocd/notify-obs_rsync.py --openqa https://openqa.suse.de --repos repos --to notifications
 
   openSUSE.OriginManagerUpdate:
     group: Monitors
