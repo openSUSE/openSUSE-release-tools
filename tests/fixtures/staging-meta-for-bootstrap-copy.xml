@@ -18,12 +18,12 @@
        <arch>i586</arch>
        <arch>x86_64</arch>
   </repository>
-  <repository linkedbuild="all" name="standard" rebuild="direct">
+  <repository name="standard" linkedbuild="all" rebuild="direct">
     <path project="openSUSE:Factory:Staging:A" repository="bootstrap_copy"/>
     <arch>i586</arch>
     <arch>x86_64</arch>
   </repository>
-  <repository linkedbuild="all" name="images">
+  <repository name="images" linkedbuild="all">
     <path project="openSUSE:Factory:Staging:A" repository="standard"/>
     <arch>x86_64</arch>
   </repository>
