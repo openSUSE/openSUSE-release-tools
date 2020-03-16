@@ -65,6 +65,14 @@ pipelines:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         branch: master
         destination: scripts
+      repos:
+        git: git://botmaster.suse.de/suse-repos.git
+        branch: master
+        destination: repos
+      notifications:
+        git: git://botmaster.suse.de/suse-notifications.git
+        branch: master
+        destination: notifications
     stages:
     - Run:
         approval:
@@ -80,8 +88,7 @@ pipelines:
                 export PYTHONPATH=$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
-                git clone git://botmaster.suse.de/suse-repos.git
-                cd suse-repos
+                cd repos
                 ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE
   openSUSE.Repo.Monitor:
     group: Monitors
@@ -95,6 +102,10 @@ pipelines:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         branch: master
         destination: scripts
+      repos:
+        git: git://botmaster.suse.de/opensuse-repos.git
+        branch: master
+        destination: repos
     stages:
     - Run:
         approval:
@@ -110,9 +121,73 @@ pipelines:
                 export PYTHONPATH=$PWD/scripts
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
-                git clone git://botmaster.suse.de/opensuse-repos.git
-                cd opensuse-repos
+                cd repos
                 ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap
+  openSUSE.ObsRsync:
+    group: Monitors
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        branch: master
+        destination: scripts
+      repos:
+        git: git://botmaster.suse.de/opensuse-repos.git
+        branch: master
+        destination: repos
+      notifications:
+        git: git://botmaster.suse.de/opensuse-notifications.git
+        branch: master
+        destination: notifications
+    stages:
+    - Run:
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - monitor
+            tasks:
+            # endless loop
+            - script: |-
+                export PYTHONPATH=$PWD/scripts
+                git config --global user.email "coolo@suse.de"
+                git config --global user.name "GoCD Repo Monitor"
+                echo "Here we would sync"
+  SUSE.ObsRsync:
+    group: Monitors
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        branch: master
+        destination: scripts
+      repos:
+        git: git://botmaster.suse.de/suse-repos.git
+        branch: master
+        destination: repos
+      notifications:
+        git: git://botmaster.suse.de/suse-notifications.git
+        branch: master
+        destination: notifications
+    stages:
+    - Run:
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - monitor
+            tasks:
+            # endless loop
+            - script: |-
+                export PYTHONPATH=$PWD/scripts
+                git config --global user.email "coolo@suse.de"
+                git config --global user.name "GoCD Repo Monitor"
+                echo "Here we would sync"
+
   openSUSE.OriginManagerUpdate:
     group: Monitors
     lock_behavior: unlockWhenFinished

@@ -169,7 +169,7 @@ class Listener(PubSubConsumer):
 
     def routing_keys(self):
         ret = []
-        for suffix in ['.obs.repo.published', '.obs.repo.build_finished', '.openqa.job.done',
+        for suffix in ['.obs.repo.published', '.openqa.job.done',
                        '.openqa.job.create', '.openqa.job.restart']:
             ret.append(self.amqp_prefix + suffix)
         return ret
@@ -234,15 +234,6 @@ class Listener(PubSubConsumer):
         for p in self.projects:
             p.check_published_repo(str(payload['project']), str(payload['repo']), str(payload['buildid']))
 
-    def on_finished_repo(self, payload):
-        # notify openQA to sync the projects - the plugin will check itself it
-        # the project is to be synced. For now we notify about every 'images' repo
-        if payload['repo'] == 'images':
-            try:
-                self.openqa.openqa_request('PUT', 'obs_rsync/{}/runs'.format(payload['project']), retries=0)
-            except RequestError as e:
-                self.logger.info("Got exception on syncing repository: {}".format(e))
-
     def on_openqa_job(self, iso):
         self.logger.debug('openqa_job_change %s', iso)
         for p in self.projects:
@@ -252,8 +243,6 @@ class Listener(PubSubConsumer):
         self.acknowledge_message(method.delivery_tag)
         if method.routing_key == '{}.obs.repo.published'.format(amqp_prefix):
             self.on_published_repo(json.loads(body))
-        elif method.routing_key == '{}.obs.repo.build_finished'.format(amqp_prefix):
-            self.on_finished_repo(json.loads(body))
         elif re.search(r'.openqa.', method.routing_key):
             self.on_openqa_job(json.loads(body).get('ISO'))
         else:
