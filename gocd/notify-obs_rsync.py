@@ -28,6 +28,7 @@ def file_changed(state):
 def notify_project(openqa, state):
     project, repository = state.split('_-_')
     if not file_changed(state):
+        logger.debug(f'{state} did not change')
         return
     try:
         openqa.openqa_request('PUT', 'obs_rsync/{}/runs?repository={}'.format(project, repository), retries=0)
@@ -44,21 +45,17 @@ if __name__ == '__main__':
     parser.add_argument('--repos', type=str, required=True, help='Directory to read from')
     parser.add_argument('--to', type=str, required=True, help='Directory to commit into')
 
-    interesting_repos = dict()
-    # not the complete list - WIP
-    interesting_repos['SUSE:SLE-15-SP2:GA:Staging:A_-_images'] = 1
-    interesting_repos['SUSE:SLE-15-SP2:GA:TEST_-_images'] = 1
-    interesting_repos['openSUSE:Factory:Staging:A_-_images'] = 1
-    interesting_repos['openSUSE:Factory:ToTest_-_images'] = 1
-    interesting_repos['openSUSE:Factory:WSL:ToTest_-_standard'] = 1
-    interesting_repos['openSUSE:Leap:15.2:Staging:A_-_images'] = 1
-    interesting_repos['openSUSE:Leap:15.2:ToTest_-_images'] = 1
-
     global args
     args = parser.parse_args()
     global logger
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
+
+    interesting_repos = dict()
+    # not the complete list - openQA API is WIP
+    for state in glob.glob('{}/*.yaml'.format(args.to)):
+        state = basename(state).replace('.yaml', '')
+        interesting_repos[state] = 1
 
     openqa = OpenQA_Client(server=args.openqa)
     for state in glob.glob('{}/*.yaml'.format(args.repos)):
