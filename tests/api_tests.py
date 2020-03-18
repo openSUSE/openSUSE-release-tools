@@ -168,20 +168,6 @@ class TestApiCalls(OBSLocal.TestCase):
         self.wf.api.add_review(num, by_project='openSUSE:Factory:Staging:B')
         self.assertEqual(request.reviews(), reviews)
 
-        # Accept review
-        self.wf.api.set_review(num, 'openSUSE:Factory:Staging:B')
-        reviews[1]['state'] = 'accepted'
-        self.assertEqual(request.reviews(), reviews)
-
-        # Try to accept it again should do anything
-        self.wf.api.set_review(num, 'openSUSE:Factory:Staging:B')
-        self.assertEqual(request.reviews(), reviews)
-
-        # But we should be able to reopen it
-        self.wf.api.add_review(num, by_project='openSUSE:Factory:Staging:B')
-        reviews.append({'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'})
-        self.assertEqual(request.reviews(), reviews)
-
     def test_prj_from_letter(self):
 
         # Verify it works

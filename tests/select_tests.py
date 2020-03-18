@@ -9,6 +9,7 @@ from osclib.conf import Config
 from osclib.core import package_list
 from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
+from osclib.supersede_command import SupersedeCommand
 from osclib.stagingapi import StagingAPI
 from osclib.memoize import memoize_session_reset
 from osclib.core import source_file_load
@@ -17,15 +18,16 @@ import logging
 from mock import MagicMock
 from . import OBSLocal
 
-class TestSelect(unittest.TestCase):
+class TestSelect(OBSLocal.TestCase):
 
     def setUp(self):
+        super().setUp()
         super(TestSelect, self).setUp()
         self.wf = OBSLocal.StagingWorkflow()
 
     def tearDown(self):
-        del self.wf
         super(TestSelect, self).tearDown()
+        del self.wf
 
     def test_old_frozen(self):
         self.wf.api.prj_frozen_enough = MagicMock(return_value=False)
@@ -99,3 +101,21 @@ class TestSelect(unittest.TestCase):
 
         # no stale links
         self.assertEqual([], package_list(self.wf.apiurl, staging.name))
+
+    def test_supersede(self):
+        self.wf.setup_rings()
+        staging = self.wf.create_staging('A', freeze=True)
+
+        rq1 = self.wf.create_submit_request('devel:wine', 'wine')
+        ret = SelectCommand(self.wf.api, staging.name).perform(['wine'])
+        rq2 = self.wf.create_submit_request('devel:wine', 'wine', text='Something new')
+        self.wf.api._packages_staged = None
+
+        self.osc_user('staging-bot')
+        Config.get(self.wf.apiurl, self.wf.project)
+
+        SupersedeCommand(self.wf.api).perform()
+
+        self.assertEqual(rq1.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'accepted', 'by_project': 'openSUSE:Factory:Staging:A'},
+                                    {'state': 'declined', 'by_group': 'factory-staging'}])
+        self.assertEqual(rq2.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'new', 'by_project': 'openSUSE:Factory:Staging:A'}])
