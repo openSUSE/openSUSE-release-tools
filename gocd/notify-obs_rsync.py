@@ -51,11 +51,13 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
 
+    openqa = OpenQA_Client(server=args.openqa)
+
     interesting_repos = dict()
-    # not the complete list - openQA API is WIP
-    for state in glob.glob('{}/*.yaml'.format(args.to)):
-        state = basename(state).replace('.yaml', '')
-        interesting_repos[state] = 1
+    list = openqa.openqa_request('GET', 'obs_rsync')
+    for repopair in list:
+        project, repository = repopair
+        interesting_repos[f'{project}_-_{repository}'] = 1
 
     openqa = OpenQA_Client(server=args.openqa)
     for state in glob.glob('{}/*.yaml'.format(args.repos)):
