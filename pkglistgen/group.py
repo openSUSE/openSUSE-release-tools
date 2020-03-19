@@ -29,6 +29,7 @@ class Group(object):
         self.srcpkgs = None
         self.develpkgs = dict()
         self.silents = set()
+        self.required = set()
         self.ignored = set()
         # special feature for SLE. Patterns are marked for expansion
         # of recommended packages, all others aren't. Only works
@@ -70,6 +71,8 @@ class Group(object):
                     continue
                 elif rel == 'silent':
                     self.silents.add(name)
+                elif rel == 'required':
+                    self.required.add(name)
                 elif rel == 'recommended':
                     self.expand_recommended.add(name)
                 elif rel == 'suggested':
@@ -90,6 +93,7 @@ class Group(object):
 
         self.locked.update(group.locked)
         self.silents.update(group.silents)
+        self.required.update(group.required)
         self.expand_recommended.update(group.expand_recommended)
         self.expand_suggested.update(group.expand_suggested)
 
@@ -168,10 +172,7 @@ class Group(object):
                 if problems:
                     for problem in problems:
                         msg = 'unresolvable: {}:{}.{}: {}'.format(self.name, n, arch, problem)
-                        if self.pkglist.ignore_broken:
-                            self.logger.debug(msg)
-                        else:
-                            self.logger.debug(msg)
+                        self.logger.debug(msg)
                         self.unresolvable[arch][n] = str(problem)
                     return
 
@@ -334,14 +335,14 @@ class Group(object):
                 continue
             if name in missing:
                 msg = ' {} not found on {}'.format(name, ','.join(sorted(missing[name])))
-                if ignore_broken:
+                if ignore_broken and name not in self.required:
                     c = ET.Comment(msg)
                     packagelist.append(c)
                     continue
                 name = msg
             if name in unresolvable:
                 msg = ' {} uninstallable: {}'.format(name, unresolvable[name])
-                if ignore_broken:
+                if ignore_broken and name not in self.required:
                     c = ET.Comment(msg)
                     packagelist.append(c)
                     continue
