@@ -43,6 +43,8 @@ You can also adapt the solving on a package level by putting a hash into the pac
  Do not put the package into this group. Used to *force* certain packages into other modules
  * silent
  Use this package for dependency solving of groups "on top", but do not output the package for this group. Mainly to mark the product to use by adding release packages. Use with care, this breaks dependency chains!
+ * required
+ If the package is missing or is uninstallable, don't leave a comment but put the error as package entry for OBS to create unresolvable error to avoid building a DVD
 
 Note that you can write yaml lists in 2 ways. You can put the modifier lists as multiple lines starting with -, but it's recommended to put them as [M1,M2] behind the package name. See the difference between pkg4 and pkg5 in the example. 
 
