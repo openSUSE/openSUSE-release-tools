@@ -298,8 +298,7 @@ class StagingAPI(object):
         :param destination_project: Destination project
         """
 
-        if not self.rm_from_prj(source_project, request_id=req_id,
-                         msg='Moved to {}'.format(destination_project)):
+        if not self.rm_from_prj(source_project, request_id=req_id):
             return False
 
         # Copy the package
@@ -518,7 +517,9 @@ class StagingAPI(object):
                     # Supersedes request is from the same project
                     if request_new.find('./action/source').get('project') == request_old.find('./action/source').get('project'):
                         message = 'sr#{} has newer source and is from the same project'.format(request_new.get('id'))
-                        self.set_review(int(stage_info['rq_id']), stage_info['prj'], state='declined', msg=message)
+
+                        self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'])
+                        self.do_change_review_state(stage_info['rq_id'], 'declined', by_group=self.cstaging_group, message=message)
                         return stage_info, None
                     # Ingore the new request pending manual review.
                     IgnoreCommand(self).perform([str(request_id)], message)
@@ -547,9 +548,7 @@ class StagingAPI(object):
         stage_info, code = self.superseded_request(request, target_requests)
         if stage_info and (code is None or code == 'unstage'):
             # Remove the old request
-            self.rm_from_prj(stage_info['prj'],
-                             request_id=stage_info['rq_id'],
-                             msg='Replaced by sr#{}'.format(request_id))
+            self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'])
             if code is None:
                 # Add the new request that should be replacing the old one.
                 self.rq_to_prj(request_id, stage_info['prj'])
@@ -662,13 +661,11 @@ class StagingAPI(object):
                 return x.get('package')
         return None
 
-    def rm_from_prj(self, project, package=None, request_id=None,
-                    msg=None):
+    def rm_from_prj(self, project, package=None, request_id=None):
         """
         Delete request from the project
         :param project: project to remove from
         :param request_id: request we want to remove
-        :param msg: message for the log
         :param review: review state for the review, defautl accepted
         """
 
@@ -1120,30 +1117,6 @@ class StagingAPI(object):
         query['cmd'] = 'addreview'
         url = self.makeurl(['request', str(request_id)], query)
         http_POST(url, data=msg)
-
-    def set_review(self, request_id, project, state='accepted', msg=None):
-        """
-        Sets review for request done by project
-        :param request_id: request to change review for
-        :param project: project to do the review
-        """
-        req = get_request(self.apiurl, str(request_id))
-        if not req:
-            raise oscerr.WrongArgs('Request {} not found'.format(request_id))
-        # don't try to change reviews if the request is dead
-        if req.state.name not in ('new', 'review'):
-            return
-        cont = False
-        for i in req.reviews:
-            if i.by_project == project and i.state == 'new':
-                cont = True
-        if not cont:
-            return
-        if not msg:
-            msg = 'Reviewed by staging project "{}" with result: "{}"'
-            msg = msg.format(project, state)
-        self.do_change_review_state(request_id, state, by_project=project,
-                                    message=msg)
 
     def get_flag_in_prj(self, project, flag='build', repository=None, arch=None):
         """Return the flag value in a project."""

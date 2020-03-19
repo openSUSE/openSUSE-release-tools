@@ -227,6 +227,7 @@ class StagingWorkflow(object):
 
         config = {
             'overridden-by-local': 'remote-nope',
+            'staging-group': 'factory-staging',
             'remote-only': 'remote-indeed',
         }
         self.remote_config_set(config, replace_all=True)
@@ -282,7 +283,8 @@ class StagingWorkflow(object):
 
     def create_target(self):
         if self.projects.get('target'): return
-        self.create_group('factory-staging')
+        self.create_user('staging-bot')
+        self.create_group('factory-staging', users=['staging-bot'])
         self.projects['target'] = Project(name=self.project, reviewer={'groups': ['factory-staging']})
         url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
         data = "<workflow managers='factory-staging'/>"
@@ -353,7 +355,7 @@ class StagingWorkflow(object):
             project_links.append(self.project + ":Rings:0-Bootstrap")
         if rings == 1 or rings == 0:
             project_links.append(self.project + ":Rings:1-MinimalX")
-        staging.update_meta(project_links=project_links)
+        staging.update_meta(project_links=project_links, maintainer={'groups': ['factory-staging']})
 
         if freeze:
             FreezeCommand(self.api).perform(staging.name)

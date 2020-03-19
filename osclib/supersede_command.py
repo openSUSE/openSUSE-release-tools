@@ -26,4 +26,4 @@ class SupersedeCommand(object):
                 Fore.CYAN + target_package + Fore.RESET,
                 verbage,
                 stage_info['rq_id'],
-                Fore.YELLOW + stage_info['prj']))
+                Fore.YELLOW + stage_info['prj'] + Fore.RESET))
