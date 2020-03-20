@@ -70,6 +70,42 @@ class CheckSource(ReviewBot.ReviewBot):
             # It might make sense to supersede maintbot, but for now.
             self.skip_add_reviews = True
 
+    def is_good_name(self, package, target_package):
+        self.logger.debug(f"is_good_name {package} <-> {target_package}")
+        if target_package is None:
+            # if the name doesn't matter, existance is all
+            return package is not None
+
+        return target_package == package
+
+    def package_source_parse(self, project, package, revision=None, target_package=None):
+        ret = self._package_source_parse(project, package, revision)
+
+        if self.is_good_name(ret['name'], target_package):
+            return ret
+
+        d = {}
+        for repo in osc.core.get_repositories_of_project(self.apiurl, project):
+            r = self._package_source_parse(project, package, revision, repo)
+            if r['name'] is not None:
+                d[r['name']] = r
+
+        if len(d) == 1:
+            # here is only one so use that
+            ret = d[next(iter(d))]
+        else:
+            # check if any name matches
+            self.logger.debug("found multiple names %s", ', '.join(d.keys()))
+            for n, r in d.items():
+                if n == target_package:
+                    ret = r
+                    break
+
+            if not self.is_good_name(ret['name'], target_package):
+                self.logger.error("none of the names matched")
+
+        return ret
+
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
@@ -149,7 +185,7 @@ class CheckSource(ReviewBot.ReviewBot):
         os.rename(source_package, target_package)
         shutil.rmtree(os.path.join(target_package, '.osc'))
 
-        new_info = self.package_source_parse(source_project, source_package, source_revision)
+        new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
         if not new_info.get('filename', '').endswith('.kiwi') and new_info['name'] != target_package:
             shutil.rmtree(dir)
             self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (target_package, target_package, new_info['name'])
@@ -309,34 +345,6 @@ class CheckSource(ReviewBot.ReviewBot):
             ret['filename'] = xml.find('filename').text
 
         self.logger.debug("%s/%s/%s: %s", project, package, repository, ret)
-
-        return ret
-
-    def package_source_parse(self, project, package, revision=None):
-        ret = self._package_source_parse(project, package, revision)
-
-        if ret['name'] is not None:
-            return ret
-
-        d = {}
-        for repo in osc.core.get_repositories_of_project(self.apiurl, project):
-            r = self._package_source_parse(project, package, revision, repo)
-            if r['name'] is not None:
-                d[r['name']] = r
-
-        if len(d) == 1:
-            # here is only one so use that
-            ret = d[next(iter(d))]
-        else:
-            # check if any name matches
-            self.logger.debug("found multiple names %s", ', '.join(d.keys()))
-            for n, r in d.items():
-                if n == package:
-                    ret = r
-                    break
-
-            if ret['name'] is None:
-                self.logger.error("none of the names matched")
 
         return ret
 
