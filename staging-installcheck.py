@@ -15,6 +15,7 @@ from osc import conf
 
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.conf import str2bool
 from osclib.core import (builddepinfo, depends_on, duplicated_binaries_in_repo,
                          fileinfo_ext_all, repository_arch_state,
                          repository_path_expand, target_archs)
@@ -42,6 +43,7 @@ class InstallChecker(object):
 
         self.ignore_duplicated = set(self.config.get('installcheck-ignore-duplicated-binaries', '').split(' '))
         self.ignore_conflicts = set(self.config.get('installcheck-ignore-conflicts', '').split(' '))
+        self.ignore_deletes = str2bool(self.config.get('installcheck-ignore-deletes', 'False'))
 
     def check_required_by(self, fileinfo, provides, requiredby, built_binaries, comments):
         if requiredby.get('name') in built_binaries:
@@ -69,7 +71,7 @@ class InstallChecker(object):
 
     def check_delete_request(self, req, to_ignore, comments):
         package = req.get('package')
-        if package in to_ignore:
+        if package in to_ignore or self.ignore_deletes:
             self.logger.info('Delete request for package {} ignored'.format(package))
             return True
 
