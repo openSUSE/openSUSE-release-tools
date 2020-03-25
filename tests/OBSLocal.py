@@ -24,6 +24,7 @@ from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
 from osclib.core import attribute_value_save
 from osclib.core import request_state_change
+from osclib.core import create_delete_request
 from osclib.memoize import memoize_session_reset
 
 from urllib.error import HTTPError, URLError
@@ -66,6 +67,8 @@ class TestCase(unittest.TestCase):
             f.write('\n'.join([
                 '[general]',
                 'apiurl = http://api:3000',
+                'http_debug = false',
+                'debug = false',
                 'cookiejar = {}'.format(OSCCOOKIEJAR),
                 '[http://api:3000]',
                 'user = {}'.format(userid),
@@ -285,7 +288,10 @@ class StagingWorkflow(object):
         if self.projects.get('target'): return
         self.create_user('staging-bot')
         self.create_group('factory-staging', users=['staging-bot'])
-        self.projects['target'] = Project(name=self.project, reviewer={'groups': ['factory-staging']})
+        p = Project(name=self.project, reviewer={'groups': ['factory-staging']})
+        self.projects['target'] = p
+        self.projects[self.project] = p
+
         url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
         data = "<workflow managers='factory-staging'/>"
         osc.core.http_POST(url, data=data)
@@ -331,18 +337,25 @@ class StagingWorkflow(object):
         self.requests.append(request)
         return request
 
+    def request_package_delete(self, package, project=None):
+        if not project:
+            project = package.project
+        request = Request(target_package=package, target_project=project, type='delete')
+        self.requests.append(request)
+        return request
+
     def create_submit_request(self, project, package, text=None):
         project = self.create_project(project)
         package = Package(name=package, project=project)
         package.create_commit(text=text)
         return self.submit_package(package)
 
-    def create_staging(self, suffix, freeze=False, rings=None):
+    def create_staging(self, suffix, freeze=False, rings=None, with_repo=False):
         staging_key = 'staging:{}'.format(suffix)
         # do not reattach if already present
         if not staging_key in self.projects:
             staging_name = self.project + ':Staging:' + suffix
-            staging = Project(staging_name, create=False)
+            staging = Project(staging_name, create=False, with_repo=with_repo)
             url = osc.core.makeurl(APIURL, ['staging', self.project, 'staging_projects'])
             data = '<workflow><staging_project>{}</staging_project></workflow>'
             osc.core.http_POST(url, data=data.format(staging_name))
@@ -355,7 +368,8 @@ class StagingWorkflow(object):
             project_links.append(self.project + ":Rings:0-Bootstrap")
         if rings == 1 or rings == 0:
             project_links.append(self.project + ":Rings:1-MinimalX")
-        staging.update_meta(project_links=project_links, maintainer={'groups': ['factory-staging']})
+        staging.update_meta(project_links=project_links, maintainer={'groups': ['factory-staging']},
+                            with_repo=with_repo)
 
         if freeze:
             FreezeCommand(self.api).perform(staging.name)
@@ -390,16 +404,16 @@ class StagingWorkflow(object):
             self.api._invalidate_all()
 
 class Project(object):
-    def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True):
+    def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True, with_repo=False):
         self.name = name
         self.packages = []
 
         if not create:
             return
 
-        self.update_meta(reviewer, maintainer, project_links)
+        self.update_meta(reviewer, maintainer, project_links, with_repo=with_repo)
 
-    def update_meta(self, reviewer={}, maintainer={}, project_links=[]):
+    def update_meta(self, reviewer={}, maintainer={}, project_links=[], with_repo=False):
         meta = """
             <project name="{0}">
               <title></title>
@@ -419,6 +433,11 @@ class Project(object):
 
         for link in project_links:
             ET.SubElement(root, 'link', { 'project': link })
+
+        if with_repo:
+            repo = ET.SubElement(root, 'repository', { 'name': 'standard' })
+            ET.SubElement(repo, 'arch').text = 'x86_64'
+
         self.custom_meta(ET.tostring(root))
 
     def add_package(self, package):
@@ -494,18 +513,23 @@ class Package(object):
         osc.core.http_PUT(url, data=text)
 
 class Request(object):
-    def __init__(self, source_package, target_project):
-        self.source_package = source_package
-        self.target_project = target_project
+    def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
+        self.revoked = True
 
-        self.reqid = osc.core.create_submit_request(APIURL,
-                                 src_project=self.source_package.project.name,
-                                 src_package=self.source_package.name,
-                                 dst_project=self.target_project)
+        if type == 'submit':
+            self.reqid = osc.core.create_submit_request(APIURL,
+                                     src_project=source_package.project.name,
+                                     src_package=source_package.name,
+                                     dst_project=target_project,
+                                     dst_package=target_package)
+            print('created submit request {}/{} -> {}'.format(
+                source_package.project.name, source_package.name, target_project))
+        elif type == 'delete':
+            self.reqid = create_delete_request(APIURL, target_project.name, target_package.name)
+        else:
+            raise oscerr.WrongArgs(f'unknown request type {type}')
+
         self.revoked = False
-
-        print('created submit request {}/{} -> {}'.format(
-            self.source_package.project.name, self.source_package.name, self.target_project))
 
     def __del__(self):
         self.revoke()

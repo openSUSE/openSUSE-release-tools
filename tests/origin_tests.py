@@ -41,7 +41,8 @@ class TestOrigin(OBSLocal.TestCase):
         self.review_group = self.randomString('group')
         self.wf.create_group(self.review_group, [self.review_user])
 
-        self.wf.create_project(self.target_project, reviewer={'users': [self.bot_user]})
+        target = self.wf.create_project(self.target_project)
+        target.update_meta(reviewer={'users': [self.bot_user]})
 
     def tearDown(self):
         super().tearDown()
