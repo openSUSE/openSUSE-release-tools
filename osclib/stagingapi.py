@@ -966,6 +966,15 @@ class StagingAPI(object):
             result.append({'project': package.get('project'), 'package': package.get('name')})
         return result
 
+    def _wipe_package(self, project, package):
+        url = self.makeurl(['build', project],
+                           {'cmd': 'wipe', 'package': package})
+        try:
+            http_POST(url)
+        except HTTPError as e:
+            print(e.read())
+            raise e
+
     def create_and_wipe_package(self, project, package):
         """
         Helper function for delete requests
@@ -974,9 +983,13 @@ class StagingAPI(object):
         self.create_package_container(project, package, disable_build=True)
 
         # now trigger wipebinaries to emulate a delete
-        url = self.makeurl(['build', project],
-                           {'cmd': 'wipe', 'package': package})
-        http_POST(url)
+        self._wipe_package(project, package)
+
+        url = self.makeurl(['source', project, package], { 'view': 'getmultibuild' })
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        for entry in root.findall('entry'):
+            self._wipe_package(project, package + ":" + entry.get('name'))
 
     def delete_to_prj(self, act, project):
         """

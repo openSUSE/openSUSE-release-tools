@@ -2,6 +2,8 @@ import unittest
 import os.path
 from osc import oscerr
 import osc.conf
+from osc.core import http_GET, http_POST, makeurl
+from lxml import etree as ET
 from osclib.cache import Cache
 from osclib.cache_manager import CacheManager
 from osclib.comments import CommentAPI
@@ -119,3 +121,18 @@ class TestSelect(OBSLocal.TestCase):
         self.assertEqual(rq1.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'accepted', 'by_project': 'openSUSE:Factory:Staging:A'},
                                     {'state': 'declined', 'by_group': 'factory-staging'}])
         self.assertEqual(rq2.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'new', 'by_project': 'openSUSE:Factory:Staging:A'}])
+
+    def test_delete_multibuild_package(self):
+        self.wf.setup_rings()
+        staging = self.wf.create_staging('A', freeze=True, with_repo=True)
+
+        package = self.wf.create_package(self.wf.project, 'wine')
+        package.create_commit('<multibuild><flavor>libs</flavor></multibuild>', filename='_multibuild')
+
+        rq = self.wf.request_package_delete(package)
+        ret = SelectCommand(self.wf.api, staging.name).perform(['wine'])
+        self.assertEqual(True, ret)
+
+        # TODO: record which URLs were called so we can verify them
+        # but we wont' be able to test the actual wipe unless we really build something
+        # which is too expensive
