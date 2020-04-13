@@ -16,6 +16,8 @@ SRPM_RE = re.compile(
 
 data_version = 3
 
+changelog_max_lines = 100  # maximum number of changelog lines per package
+
 try:
     from xml.etree import cElementTree as ET
 except ImportError:
@@ -250,10 +252,21 @@ class ChangeLogger(cmdln.Cmdln):
                 print("  %s" % name)
             if len(pkgs) > 1:
                 details += "Subpackages: %s\n" % " ".join([p for p in pkgs if p != name])
+
+            changedetails = ""
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
                 if t2 == t1:
                     break
-                details += "\n" + v2changelogs[srpm]['changelogtext'][i2]
+                changedetails += "\n" + v2changelogs[srpm]['changelogtext'][i2]
+
+            # if a changelog is too long, cut it off after changelog_max_lines lines
+            changedetails_lines = changedetails.splitlines()
+            if len(changedetails_lines) > changelog_max_lines + 5:  # apply 5 lines tolerance to avoid silly-looking "skipping 2 lines"
+                changedetails = '\n'.join(changedetails_lines[0:changelog_max_lines])
+                changedetails += '\n    ... changelog too long, skipping %s lines ...\n' % (len(changedetails_lines) - changelog_max_lines - 1)
+                changedetails += changedetails_lines[-1]  # add last line of changelog diff so that it's possible to find out the end of the changelog section
+
+            details += changedetails
             details += '\n'
 
         print("\n=== Details ===")
