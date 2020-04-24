@@ -58,10 +58,6 @@ Requires:       python3-pycurl
 Requires:       python3-python-dateutil
 Requires:       python3-pyxdg
 Requires:       python3-requests
-# ttm/manager.py
-%if %{without python3}
-Requires:       python-enum34
-%endif
 
 # bs_mirrorfull
 Requires:       perl-Net-SSLeay
