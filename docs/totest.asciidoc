@@ -26,27 +26,85 @@ of the project openSUSE:Factory:ToTest, if the version is different
 from the current Factory.
 
 
-Installation
-------------
-[id="install"]
-
-Clone this repository:
-
--------------------------------------------------------------------------------
-git clone https://github.com/openSUSE/openSUSE-release-tools.git
--------------------------------------------------------------------------------
-
-Link the plugin and the library in +~/.osc-plugins+ or +/var/lib/osc-plugins+.
-
--------------------------------------------------------------------------------
-cd openSUSE-release-tools
-ln -sr ./osc-totest.py ./osclib ~/.osc-plugins
--------------------------------------------------------------------------------
-
-
-Command line
+Setup
 ------------
 [id="cli"]
 
-This plugin does not have any parameters, and needs to be executed with
-the proper permissions in OBS.
+Create a :ToTest subproject of the project you like to have ttm running. The
+user account of the ttm needs to have access, eg.
+
+-------------------------------------------------------------------------------
+$ osc meta prj MyProject:ToTest
+[...]
+<person userid="totest-manager" role="maintainer"/>
+[...]
+-------------------------------------------------------------------------------
+
+If images or products are meant to be released make sure to set the image type:
+
+-------------------------------------------------------------------------------
+$ osc meta prjconf MyProject:ToTest
+%if "%_repository" == "images"
+%Type: kiwi
+%Repotype: staticlinks
+%Patterntype: none
+%Prefer: openSUSE-release
+%endif
+-------------------------------------------------------------------------------
+
+In the main project meta, add release targets for the repos that you want to
+have released into :ToTest
+
+-------------------------------------------------------------------------------
+$ osc meta prj MyProject
+[...]
+<repository name="images">
+  <releasetarget project="MyProject:ToTest" repository="images" trigger="manual"/>
+[...]
+-------------------------------------------------------------------------------
+
+Configure the attribute for ttm so it knows what to release:
+
+-------------------------------------------------------------------------------
+$ cat <<EOF > myattribute
+jobs_num: 2
+openqa_group: My Product 66.6
+openqa_server: https://openqa.opensuse.org
+product_repo: images
+product_arch: x86_64
+products:
+  ftp:
+  - 000product:MyProduct-ftp-ftp-x86_64
+  main:
+  - 000product:MyProduct-dvd5-dvd-x86_64
+  images:
+  - MyProduct-Live:
+      - x86_64
+take_source_from_product: true
+need_same_build_number: true
+set_snapshot_number: true
+test_subproject: ToTest
+EOF
+$ osc meta attribute MyProject -c -a OSRT:ToTestManagerConfig -F myattribute
+-------------------------------------------------------------------------------
+
+Create a 00Meta package in the main project for ttm to store some metadata:
+
+-------------------------------------------------------------------------------
+$ osc meta pkg -e MyProject/00Meta
+[...]
+<person userid="totest-manager" role="maintainer"/>
+[...]
+-------------------------------------------------------------------------------
+
+Force release initially
+
+-------------------------------------------------------------------------------
+./totest-manager.py release --force MyProject
+-------------------------------------------------------------------------------
+
+After that run
+
+-------------------------------------------------------------------------------
+./totest-manager.py run MyProject
+-------------------------------------------------------------------------------
