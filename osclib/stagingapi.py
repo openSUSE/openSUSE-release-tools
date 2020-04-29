@@ -213,9 +213,12 @@ class StagingAPI(object):
 
             for si in ET.parse(root).getroot().findall('sourceinfo'):
                 pkg = si.get('package')
-                # XXX TODO - Test-DVD-x86_64 is hardcoded here
-                if pkg in ret and not pkg.startswith('Test-DVD-'):
+                if pkg in ret:
                     msg = '{} is defined in two projects ({} and {})'
+                    filelist = self.get_filelist_for_package(pkgname=pkg, project=prj, expand='1')
+                    if '_multibuild' in filelist:
+                        logging.debug(msg.format(pkg, ret[pkg], prj))
+                        msg = ''
                     if pkg.startswith('000') or (checklinks and pkg in except_pkgs and prj == except_pkgs[pkg]):
                         msg = ''
                     if len(msg):
