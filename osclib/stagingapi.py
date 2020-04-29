@@ -213,6 +213,8 @@ class StagingAPI(object):
 
             for si in ET.parse(root).getroot().findall('sourceinfo'):
                 pkg = si.get('package')
+                if ':' in pkg:
+                    continue
                 if pkg in ret:
                     msg = '{} is defined in two projects ({} and {})'
                     filelist = self.get_filelist_for_package(pkgname=pkg, project=prj, expand='1')
