@@ -683,7 +683,8 @@ class PkgListGen(ToolBase.ToolBase):
 
         # do not overwrite weakremovers.inc if it exists
         # we will commit there afterwards if needed
-        if not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
+        if os.path.exists(os.path.join(group_dir, 'weakremovers.inc')) and \
+           not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
             file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
 
         file_utils.multibuild_from_glob(release_dir, '*.spec')
