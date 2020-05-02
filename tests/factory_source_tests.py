@@ -6,12 +6,7 @@ import osc
 import re
 from osclib.cache import Cache
 
-try:
-    from urllib.parse import urlparse, parse_qs
-except ImportError:
-    # python 2.x
-    from urlparse import urlparse, parse_qs
-
+from urllib.parse import urlparse, parse_qs
 from check_source_in_factory import FactorySourceChecker
 
 APIURL = 'http://testhost.example.com'
@@ -30,13 +25,14 @@ class TestFactorySourceAccept(unittest.TestCase):
 
         Cache.last_updated[APIURL] = {'__oldest': '2016-12-18T11:49:37Z'}
         httpretty.reset()
-        httpretty.enable()
+        httpretty.enable(allow_net_connect=False)
 
         oscrc = os.path.join(FIXTURES, 'oscrc')
         osc.core.conf.get_config(override_conffile=oscrc,
                                  override_no_keyring=True,
                                  override_no_gnome_keyring=True)
         #osc.conf.config['debug'] = 1
+        #osc.conf.config['http_debug'] = 1
 
         logging.basicConfig()
         self.logger = logging.getLogger(__file__)
@@ -80,6 +76,25 @@ class TestFactorySourceAccept(unittest.TestCase):
                   <filename>timezone.spec</filename>
                 </sourceinfo>
             """)
+
+        httpretty.register_uri(httpretty.GET,
+            APIURL + "/source/openSUSE:Factory/timezone/_meta",
+            body = """
+               <package name="timezone" project="openSUSE:Factory">
+                 <title>timezone</title>
+                 <description></description>
+               </package>
+            """)
+
+        httpretty.register_uri(httpretty.GET,
+            APIURL + "/source/Base:System/timezone/_meta",
+            body = """
+               <package name="timezone" project="Base:System">
+                 <title>timezone</title>
+                 <description></description>
+               </package>
+            """)
+
         httpretty.register_uri(httpretty.GET,
             APIURL + "/source/openSUSE:Factory/timezone?view=info",
             match_querystring = True,
@@ -245,7 +260,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/openSUSE:Factory/plan",
+            APIURL + "/source/openSUSE:Factory/plan/_meta",
             status = 404,
             body = """
                 <status code="unknown_package">
@@ -258,8 +273,7 @@ class TestFactorySourceAccept(unittest.TestCase):
             status = 404)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + '/search/request?match=%28state%2F%40name%3D%27new%27+or+state%2F%40name%3D%27review%27%29+and+%28action%2Ftarget%2F%40project%3D%27openSUSE%3AFactory%27+or+action%2Fsource%2F%40project%3D%27openSUSE%3AFactory%27%29+and+%28action%2Ftarget%2F%40package%3D%27plan%27+or+action%2Fsource%2F%40package%3D%27plan%27%29+and+action%2F%40type%3D%27submit%27',
-            match_querystring = True,
+            APIURL + '/search/request',
             body = """
                 <collection matches="0">
                 </collection>
