@@ -151,7 +151,8 @@ class RepoChecker():
             target_packages = []
             with open(os.path.join(dir, 'catalog.yml')) as file:
                 catalog = yaml.safe_load(file)
-                target_packages = catalog.get(directories[0], [])
+                if catalog is not None:
+                    target_packages = catalog.get(directories[0], [])
 
             parsed = parsed_installcheck([pfile] + primaryxmls, arch, target_packages, [])
             for package in parsed:
