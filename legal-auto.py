@@ -214,6 +214,9 @@ class LegalAuto(ReviewBot.ReviewBot):
                 continue
             if package == 'patchinfo' or package.startswith('patchinfo.'):
                 continue
+            # skip packages that have _channel inside
+            if si.find('filename').text == '_channel':
+                continue
             # handle maintenance links - we only want the latest
             match = re.match(r'(\S+)\.\d+$', package)
             if match:
