@@ -239,12 +239,16 @@ class CheckSource(ReviewBot.ReviewBot):
                 self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
         if self.bad_rpmlint_entries:
-            if self.has_whitelist_warnings(source_project, source_package, target_project, target_package):
+            warnings = self.has_whitelist_warnings(source_project, source_package, target_project, target_package)
+            if warnings:
                 # if there are any add a review for the security team
                 # maybe add the found warnings to the message for the review
-                self.add_review(self.request, by_group=self.security_review_team, msg=CheckSource.AUDIT_BUG_MESSAGE)
-            if self.suppresses_whitelist_warnings( source_project, source_package ):
-                self.add_review(self.request, by_group=self.security_review_team, msg=CheckSource.AUDIT_BUG_MESSAGE)
+                message = CheckSource.AUDIT_BUG_MESSAGE + "\nTriggered by whitelist warnings:\n{}".format("\n".join(warnings))
+                self.add_review(self.request, by_group=self.security_review_team, msg=message)
+            warnings = self.suppresses_whitelist_warnings(source_project, source_package)
+            if warnings:
+                message = CheckSource.AUDIT_BUG_MESSAGE + "\nTriggered by suppressed whitelist warning:\n{}".format("\n".join(warnings))
+                self.add_review(self.request, by_group=self.security_review_team, msg=message)
 
         return True
 
