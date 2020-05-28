@@ -262,11 +262,10 @@ def common_args_add(parser):
     parser.add_argument('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')
     parser.add_argument('--remind', action='store_true', help='remind maintainers to review')
 
-
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Operate on devel projects for a given project.')
     subparsers = parser.add_subparsers(title='subcommands')
-
+    parser.set_defaults(func=list)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debuging')
     parser.add_argument('-p', '--project', default='openSUSE:Factory', metavar='PROJECT', help='project from which to source devel projects')
@@ -296,3 +295,6 @@ if __name__ == '__main__':
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
     sys.exit(args.func(args))
+
+if __name__ == '__main__':
+    main()
