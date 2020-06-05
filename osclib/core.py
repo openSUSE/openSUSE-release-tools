@@ -410,30 +410,19 @@ def attribute_value_delete(apiurl, project, name, namespace='OSRT', package=None
         apiurl, list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))))
 
 @memoize(session=True)
-def _repository_path_expand(apiurl, project, repo):
-    """Recursively list underlying projects."""
-
-    repos = OrderedDict()
-
-    meta = ET.fromstringlist(show_project_meta(apiurl, project))
-    for path in meta.findall('.//repository[@name="{}"]/path'.format(repo)):
-        rp = repository_path_expand(apiurl, path.get('project', project), path.get('repository'))
-        for project, repo in rp:
-            # only the last repo for a project is remembered by OBS
-            if project in repos:
-                del repos[project]
-            repos[project] = repo
-
-    return repos
-
-@memoize(session=True)
 def repository_path_expand(apiurl, project, repo):
     """Recursively list underlying projects."""
-    repodict = _repository_path_expand(apiurl, project, repo)
-    repos = []
-    repos.append([project, repo])
-    for project, repo in repodict.items():
-        repos.append([project, repo])
+    repos = [[project, repo]]
+    meta = ET.fromstringlist(show_project_meta(apiurl, project))
+    paths = meta.findall('.//repository[@name="{}"]/path'.format(repo))
+
+    # The listed paths are taken as-is, except for the last one...
+    for path in paths[:-1]:
+        repos += [[path.get('project', project), path.get('repository')]]
+
+    # ...which is expanded recursively
+    if len(paths) > 0:
+        repos += repository_path_expand(apiurl, paths[-1].get('project', project), paths[-1].get('repository'))
     return repos
 
 @memoize(session=True)
