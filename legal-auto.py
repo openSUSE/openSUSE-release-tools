@@ -230,7 +230,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             for l in si.findall('linked'):
                 if l.get('project') == 'SUSE:Channels':
                     self.logger.info("SKIP {}, it links to {}".format(package, l.get('project')))
-                    skip  = True
+                    skip = True
                     break
                 lpackage = l.get('package')
                 # strip sle11's .imported_ suffix
