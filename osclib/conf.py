@@ -61,6 +61,7 @@ DEFAULT = {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
         'onlyadi': 'True',
+        'review-team': 'opensuse-review-team',
     },
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+))$': {
         'staging': 'openSUSE:%(project)s:Staging',
