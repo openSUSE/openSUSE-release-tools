@@ -113,7 +113,7 @@ class TestOrigin(OBSLocal.TestCase):
         request = self.wf.create_submit_request(self.randomString('devel'), self.randomString('package'))
         self.assertReviewBot(request.reqid, self.bot_user, 'new', 'new')
         self.assertOutput(f'skipping {request.reqid} of age')
-        self.assertOutput(f'since it is younger than 1800s')
+        self.assertOutput('since it is younger than 1800s')
 
     def test_config(self):
         attribute_value_save(self.wf.apiurl, self.target_project, 'OriginConfig', 'origins: []')
