@@ -8,9 +8,6 @@ pipelines:
     materials:
       script:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
-    timer:
-      spec: 0 */10 * ? * *
-      only_on_changes: false
     stages:
     - Run:
         approval: manual
