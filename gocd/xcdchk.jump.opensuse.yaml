@@ -18,4 +18,4 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
-             ./xcdchk-testsuite.py
+             ./xcdchk.py

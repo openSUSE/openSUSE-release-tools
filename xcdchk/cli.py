@@ -1,19 +1,20 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import os
 import sys
 
-import logging
 import ToolBase
 
 from xdg.BaseDirectory import load_first_config
 from lxml import etree as ET
 
-logger = logging.getLogger()
+from xcdchk.tool import XCDCHK
+
+
 
 JUMP="openSUSE:Jump:15.2"
 
-class XCDCHKTestSuite(ToolBase.ToolBase):
+class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -25,11 +26,12 @@ class XCDCHKTestSuite(ToolBase.ToolBase):
                         default = JUMP)
         return parser
 
-    def setup_tool(self):
-        tool = XCDCHKTestSuite()
+    def setup_tool(self, toolclass=XCDCHK):
+        tool = toolclass()
         tool.project = self.options.project
+
         return tool
 
 if __name__ == "__main__":
-    app = XCDCHKTestSuite()
+    app = CommandLineInterface()
     sys.exit( app.main() )
