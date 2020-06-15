@@ -12,7 +12,7 @@ pipelines:
     - Run:
         approval: manual
         resources:
-          - staging-bot
+          - repo-checker
         tasks:
           - script: |-
              ./xcdchk.py
