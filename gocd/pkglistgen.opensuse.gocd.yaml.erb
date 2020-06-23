@@ -69,7 +69,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-  <% ['openSUSE:Leap:15.2/target', 'openSUSE:Leap:15.2/rings', 'openSUSE:Leap:15.2:ARM', 'openSUSE:Leap:15.2:PowerPC'].each do |project|
+  <% ['openSUSE:Leap:15.2/target', 'openSUSE:Leap:15.2/rings', 'openSUSE:Leap:15.2:ARM', 'openSUSE:Leap:15.2:PowerPC', 'openSUSE:Leap:15.2:MicroOS'].each do |project|
     project=project.split('/')
     name=project[0].gsub(':', '_')
     if project.size > 1
