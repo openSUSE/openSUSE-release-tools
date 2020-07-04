@@ -80,6 +80,26 @@ pipelines:
           - script: |-
               echo "openSUSE:Factory:zSystems"
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds openSUSE:Factory:zSystems
+  Trigger.Rebuild.Factory.RISCV:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              echo "openSUSE:Factory:RISCV"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds openSUSE:Factory:RISCV
   Trigger.Rebuild.Leap.152:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
