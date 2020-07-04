@@ -41,6 +41,11 @@ pipelines:
             - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems
+          openSUSE_Factory_RISCV:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV
   Update.Repos.Factory:
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -72,6 +77,11 @@ pipelines:
             - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
+          openSUSE_Factory_RISCV:
+            resources:
+            - repo-checker
+            tasks:
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
   Pkglistgen.openSUSE_Leap:
     group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
