@@ -7,6 +7,18 @@ datasources:
   access: proxy
   database: openSUSE:Factory
 
+- name: openSUSE:Leap:15.2
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:Leap:15.2
+
+- name: openSUSE:Leap:15.1
+  type: influxdb
+  url: http://localhost:8086
+  access: proxy
+  database: openSUSE:Leap:15.1
+
 - name: openSUSE:Leap:15.0
   type: influxdb
   url: http://localhost:8086
