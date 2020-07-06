@@ -323,7 +323,7 @@ class StagingAPI(object):
         return result
 
     def extract_staging_short(self, p):
-        if not p.startswith(self.cstaging):
+        if len(self.cstaging) == 0 or not p.startswith(self.cstaging):
             return p
         prefix = len(self.cstaging) + 1
         return p[prefix:]
