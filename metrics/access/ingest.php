@@ -4,12 +4,32 @@
 const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* size:(\S+) \S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|-)"?)?/';
 const REGEX_PRODUCT = '#/(?:(tumbleweed)|distribution/(?:leap/)?(\d+\.\d+)|openSUSE(?:_|:/)(?:leap(?:_|:/))?(factory|tumbleweed|\d+\.\d+))#i';
 const REGEX_IMAGE = '#(?:/(?:iso|live)/[^/]+-(DVD|NET|GNOME-Live|KDE-Live|Rescue-CD|Kubic-DVD)-[^/]+\.iso(?:\.torrent)?|/jeos/[^/]+-(JeOS)\.[^/]+\.(?:qcow2|vhdx|vmdk|vmx)$)#';
+const REGEX_RPM_NAME = '#(?:^/.+/([\w+-\.]+)\.rpm$)#i';
 
 $total = 0;
 $total_invalid = 0;
 $total_product = [];
 $unique_product = [];
 $total_image_product = [];
+$total_package_product = [];
+
+$packages_file = '15.2_packages';
+$packages = file($packages_file, FILE_IGNORE_NEW_LINES);
+$packages = array_map('ltrim', $packages);
+rsort($packages);
+
+// Find a substring at the beginning of a string from an array of substrings
+// $substrings - array of possible substrings (needles)
+// $string - examined string (haystack)
+// Returns the first match
+function find_substring($substrings, $string) {
+  foreach ($substrings as $sub) {
+    if(stripos($string, $sub) === 0) {
+      return $sub;
+    }
+  }
+  return NULL;
+}
 
 $file = $argc == 2 ? $argv[1] : 'php://stdin';
 $handle = fopen($file, 'r');
@@ -35,6 +55,15 @@ while (($line = fgets($handle)) !== false) {
 
   if (!isset($total_product[$product])) $total_product[$product] = 0;
   $total_product[$product] += 1;
+
+  if (preg_match(REGEX_RPM_NAME, $match[3], $match_rpm_name)) {
+    $package = find_substring($packages, $match_rpm_name[1]);
+    if ($package) {
+      if (!isset($total_package_product[$product])) $total_package_product[$product] = [];
+      if (!isset($total_package_product[$product][$package])) $total_package_product[$product][$package] = 0;
+      $total_package_product[$product][$package] += 1;
+    }
+  }
 
   if (count($match) == 9 && $match[7] != '-') {
     $uuid = $match[7];
@@ -66,6 +95,7 @@ echo json_encode([
   'total_product' => $total_product,
   'unique_product' => $unique_product,
   'total_image_product' => $total_image_product,
+  'total_package_product' => $total_package_product,
   'total_invalid' => $total_invalid,
   'bytes' => $position,
 ]) . "\n"; // JSON_PRETTY_PRINT for debugging.
