@@ -216,6 +216,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 continue
             # skip packages that have _channel inside
             if si.find('filename').text == '_channel':
+                self.logger.info("SKIP {}".format(si.find('filename').text))
                 continue
             # handle maintenance links - we only want the latest
             match = re.match(r'(\S+)\.\d+$', package)
@@ -227,6 +228,10 @@ class LegalAuto(ReviewBot.ReviewBot):
                 continue
             skip = False
             for l in si.findall('linked'):
+                if l.get('project') == 'SUSE:Channels':
+                    self.logger.info("SKIP {}, it links to {}".format(package, l.get('project')))
+                    skip = True
+                    break
                 lpackage = l.get('package')
                 # strip sle11's .imported_ suffix
                 lpackage = re.sub(r'\.imported_\d+$', '', lpackage)
