@@ -26,7 +26,7 @@ function exception_error_handler($severity, $message, $file, $line) {
 set_error_handler("exception_error_handler");
 
 function get_packages_list($product) {
-  $packages_file = "packages/" . $product;
+  $packages_file = __DIR__ . "packages/" . $product;
   try {
     $packages = file($packages_file, FILE_IGNORE_NEW_LINES);
   } catch (ErrorException $e) {
