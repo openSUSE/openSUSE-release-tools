@@ -26,7 +26,7 @@ function exception_error_handler($severity, $message, $file, $line) {
 set_error_handler("exception_error_handler");
 
 function get_packages_list($product) {
-  $packages_file = __DIR__ . "packages/" . $product;
+  $packages_file = __DIR__ . "/packages/" . $product;
   try {
     $packages = file($packages_file, FILE_IGNORE_NEW_LINES);
   } catch (ErrorException $e) {
@@ -51,7 +51,10 @@ function find_substring($substrings, $string) {
 }
 
 function check_next_element($substrings, $string, $index, $match) {
-  if (stripos($string, $substrings[$index + 1]) === 0)
+  if ($index >= count($substrings) - 1)
+    return $match;
+
+  elseif (stripos($string, $substrings[$index + 1]) === 0)
     return check_next_element($substrings, $string, $index + 1, $substrings[$index + 1]);
 
   elseif (stripos($substrings[$index + 1], $match) === 0 &&
