@@ -42,6 +42,27 @@ pipelines:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP3:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP3:GA
+  MicroOS.Project:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-repo-checker
+    stages:
+    - Run:
+        approval: manual
+        jobs:
+          MicroOS:
+            timeout: 30
+            resources:
+            - repo-checker
+            tasks:
+            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging/dashboard --no-rebuild SUSE:SLE-15-SP2:Update:Products:MicroOS
   SLE.Origin.Manager:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -119,6 +140,41 @@ pipelines:
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:GA unselect --cleanup
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:GA repair --cleanup
                rm -rf $tempdir
+  MicroOS.Staging.Bot.Regular:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - staging-bot
+            tasks:
+            - script: |-
+               set -e
+               tempdir=$(mktemp -d)
+               mkdir -p $tempdir/.osc-plugins
+               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+               ln -s $PWD/osclib $tempdir/.osc-plugins
+               export HOME=$tempdir
+
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS rebuild
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS list --supersede
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS adi --by-develproject
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS select --non-interactive --merge --try-strategies
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS unselect --cleanup
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS repair --cleanup
+               rm -rf $tempdir
   S15.SP3.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -140,6 +196,27 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP3:GA
+  MicroOS.Staging.Bot.Report:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */3 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - staging-bot
+            tasks:
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP2:Update:Products:MicroOS
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
