@@ -177,7 +177,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--request', action='store_true', help='print osc request lines')
     @cmdln.option('--employee', action='store_true', help='only filter employees')
     def do_owner(self, subcmd, opts, *package):
-        """${cmd_name}: find owners of the given pacakge
+        """${cmd_name}: find owners of the given package
 
         ${cmd_usage}
         ${cmd_option_list}
