@@ -147,6 +147,18 @@ DEFAULT = {
         'repo_checker-project-skip': 'True',
         '_priority': '101',
     },
+    r'openSUSE:(?P<project>Jump:(?P<version>[\d.]+))$': {
+        'product': 'openSUSE.product',
+        'openqa': 'https://openqa.opensuse.org',
+        'lock-ns': 'openSUSE',
+        'main-repo': 'standard',
+        'pseudometa_package': 'openSUSE:%(project)s:Staging/dashboard',
+        'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
+        'download-baseurl-update': 'http://download.opensuse.org/update/leap/%(version)s/',
+        'pkglistgen-archs': 'x86_64 aarch64 ppc64le s390x',
+        'pkglistgen-scopes': 'target',
+        'pkglistgen-locales-from': 'openSUSE.product',
+    },
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.
     r'(?P<project>.*$)': {

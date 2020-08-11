@@ -100,46 +100,6 @@ pipelines:
           - script: |-
               echo "openSUSE:Factory:RISCV"
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds openSUSE:Factory:RISCV
-  Trigger.Rebuild.Leap.152:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
-    materials:
-      script:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    timer:
-      spec: 0 0 * ? * *
-      only_on_changes: false
-    stages:
-    - Run:
-        approval: manual
-        resources:
-          - repo-checker
-        tasks:
-          - script: |-
-              echo "openSUSE Leap 15.2"
-              ./project-installcheck.py --debug check --store openSUSE:Leap:15.2:Staging/dashboard openSUSE:Leap:15.2
-  Trigger.Rebuild.Leap.152.ARM:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
-    materials:
-      script:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    timer:
-      spec: 0 0 * ? * *
-      only_on_changes: false
-    stages:
-    - Run:
-        approval: manual
-        resources:
-          - repo-checker
-        tasks:
-          - script: |-
-              echo "openSUSE Leap 15.2 ARM"
-              ./project-installcheck.py --debug check --store openSUSE:Leap:15.2:ARM:Staging/dashboard openSUSE:Leap:15.2:ARM
   Trigger.Rebuild.GNOME:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

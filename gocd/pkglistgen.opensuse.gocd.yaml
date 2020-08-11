@@ -83,7 +83,7 @@ pipelines:
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
   Pkglistgen.openSUSE_Leap:
-    group: Leap.15.2.pkglistgen
+    group: Leap.jump.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -98,33 +98,13 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.2_target:
+          openSUSE_Jump_15.2_target:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2 -s target
-          openSUSE_Leap_15.2_rings:
-            resources:
-            - repo-checker
-            tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2 -s rings
-          openSUSE_Leap_15.2_ARM:
-            resources:
-            - repo-checker
-            tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:ARM
-          openSUSE_Leap_15.2_PowerPC:
-            resources:
-            - repo-checker
-            tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:PowerPC
-          openSUSE_Leap_15.2_MicroOS:
-            resources:
-            - repo-checker
-            tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:MicroOS
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Jump:15.2 -s target
   Update.Repos.Leap:
-    group: Leap.15.2.pkglistgen
+    group: Leap.jump.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -139,18 +119,8 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.2:
+          openSUSE_Jump_15.2:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.2
-          openSUSE_Leap_15.2_ARM:
-            resources:
-            - repo-checker
-            tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.2:ARM
-          openSUSE_Leap_15.2_PowerPC:
-            resources:
-            - repo-checker
-            tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.2:PowerPC
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Jump:15.2

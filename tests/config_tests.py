@@ -45,6 +45,7 @@ class TestConfig(unittest.TestCase):
         projects = (
             'openSUSE:Factory',
             'openSUSE:Factory:ARM',
+            'openSUSE:Jump:15.2',
             'openSUSE:Leap:15.2',
             'openSUSE:Leap:15.2:ARM',
             'openSUSE:Leap:15.2:NonFree',
