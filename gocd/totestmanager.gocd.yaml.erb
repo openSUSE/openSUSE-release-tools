@@ -8,13 +8,11 @@ pipelines:
       openSUSE:Factory:zSystems
       openSUSE:Leap:15.1:ARM:Images
       openSUSE:Leap:15.1:Images
-      openSUSE:Leap:15.2
-      openSUSE:Leap:15.2:ARM
       openSUSE:Leap:15.2:ARM:Images
       openSUSE:Leap:15.2:Images
       openSUSE:Leap:15.2:MicroOS
-      openSUSE:Leap:15.2:PowerPC
       openSUSE:Leap:15.2:WSL
+      openSUSE:Jump:15.2
   ) -%>
   TTM.<%= project.gsub('openSUSE:', '').gsub(':', '_') %>:
     group: openSUSE.Checkers
