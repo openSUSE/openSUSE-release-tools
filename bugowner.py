@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # Copyright (c) 2018 SUSE LLC
 #
@@ -22,7 +22,7 @@
 
 from __future__ import print_function
 
-from ConfigParser import ConfigParser
+from osc import OscConfigParser
 from xdg.BaseDirectory import load_first_config
 from lxml import etree as ET
 from collections import namedtuple
@@ -30,7 +30,7 @@ from collections import namedtuple
 import sys
 import cmdln
 import logging
-import urllib2
+import urllib
 import osc.core
 import yaml
 import os
