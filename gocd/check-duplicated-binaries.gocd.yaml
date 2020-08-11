@@ -24,27 +24,3 @@ pipelines:
             ln -s $PWD/osclib $tempdir/.osc-plugins
             HOME=$tempdir osc staging -p openSUSE:Factory check_duplicate_binaries --save
             rm -rf $tempdir
-  Leap.Duplicated.Binaries:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    materials:
-      scripts:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    timer:
-      spec: 0 0 0 ? * *
-      only_on_changes: false
-    stages:
-    - Run:
-        approval: manual
-        resources:
-        - staging-bot
-        tasks:
-        - script: |-
-            tempdir=$(mktemp -d)
-            mkdir -p $tempdir/.osc-plugins
-            ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-            ln -s $PWD/osclib $tempdir/.osc-plugins
-            HOME=$tempdir osc staging -p openSUSE:Leap:15.2 check_duplicate_binaries --save
-            rm -rf $tempdir
