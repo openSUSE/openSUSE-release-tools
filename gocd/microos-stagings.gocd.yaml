@@ -1,0 +1,161 @@
+---
+format_version: 3
+pipelines:
+  MicroOS.Stagings.RelPkgs:
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: MicroOS.Stagings
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Generate.Release.Package:
+        approval: manual
+        jobs:
+          MicroOS.Staging.A:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                 --staging SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging:A
+                 --only-release-packages --force
+          MicroOS.Staging.B:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                 --staging SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging:B
+                 --only-release-packages --force
+
+  MicroOS.Staging.A:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging:A
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: MicroOS.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging:A_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:Update:Products:MicroOS -s $STAGING_PROJECT
+  
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
+  
+  MicroOS.Staging.B:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging:B
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: MicroOS.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging:B_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP2:Update:Products:MicroOS -s $STAGING_PROJECT
+  
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+       resources:
+         - staging-bot
+       tasks:
+         - script: |-
+             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+
+  

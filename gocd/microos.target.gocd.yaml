@@ -1,0 +1,45 @@
+format_version: 3
+pipelines:
+  MicroOS.RelPkgs:
+    group: MicroOS.Target
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Create.Release.Packages:
+        approval: manual
+        resources:
+        - repo-checker
+        tasks:
+        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP2:Update:Products:MicroOS -s target --only-release-packages --force
+
+  MicroOS.Package.Lists:
+    group: MicroOS.Target
+    lock_behavior: unlockWhenFinished
+    materials:
+      repos:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLE-15-SP2:Update:Products:MicroOS_-_standard.yaml
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        auto_update: true
+        destination: scripts
+        whitelist:
+          - DO_NOT_TRIGGER
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Update.000product:
+        resources:
+        - repo-checker
+        tasks:
+        - script: ./scripts/pkglistgen.py -A https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP2:Update:Products:MicroOS -s target --force
