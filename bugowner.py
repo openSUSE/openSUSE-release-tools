@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # Copyright (c) 2018 SUSE LLC
 #
@@ -22,7 +22,7 @@
 
 from __future__ import print_function
 
-from ConfigParser import ConfigParser
+from osc import OscConfigParser
 from xdg.BaseDirectory import load_first_config
 from lxml import etree as ET
 from collections import namedtuple
@@ -30,7 +30,7 @@ from collections import namedtuple
 import sys
 import cmdln
 import logging
-import urllib2
+import urllib
 import osc.core
 import yaml
 import os
@@ -177,7 +177,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--request', action='store_true', help='print osc request lines')
     @cmdln.option('--employee', action='store_true', help='only filter employees')
     def do_owner(self, subcmd, opts, *package):
-        """${cmd_name}: find owners of the given pacakge
+        """${cmd_name}: find owners of the given package
 
         ${cmd_usage}
         ${cmd_option_list}
