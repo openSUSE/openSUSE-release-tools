@@ -176,6 +176,39 @@ def print_repo_delta(pool, repo2, packages_file):
             print(dep, file=packages_file)
         print('-Prv:', file=packages_file)
 
+def merge_susetags(output, files):
+    pool = solv.Pool()
+    pool.setarch()
+
+    for file in files:
+        oldsysrepo = pool.add_repo(file)
+        defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+        f = tempfile.TemporaryFile()
+        st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+        os.lseek(f.fileno(), 0, os.SEEK_SET)
+        oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+
+    packages = dict()
+    for s in pool.solvables_iter():
+        evr = s.evr.split('-')
+        release = evr.pop()
+        version = '-'.join(evr)
+        key = s.name + "-" + version + "." + s.arch
+        if re.search('-release', s.name): # just take one version of it
+            key = s.name + "." + s.arch
+        packages[key] = { 'name': s.name, 'version': version, 'arch': s.arch, 'release': release, 'provides': set()}
+        for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):
+            packages[key]['provides'].add(str(dep))
+    output_file = open(output, 'w')
+    print("=Ver: 2.0", file=output_file)
+    for package in sorted(packages):
+        infos = packages[package]
+        print('=Pkg:', infos['name'], infos['version'], infos['release'], infos['arch'], file=output_file)
+        print('+Prv:', file=output_file)
+        for dep in sorted(infos['provides']):
+            print(dep, file=output_file)
+        print('-Prv:', file=output_file)
+
 def update_project(apiurl, project):
     # Cache dir specific to hostname and project.
     host = urlparse(apiurl).hostname

@@ -13,7 +13,7 @@ from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from pkglistgen.tool import PkgListGen
-from pkglistgen.update_repo_handler import update_project
+from pkglistgen.update_repo_handler import update_project, merge_susetags
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging']
@@ -39,6 +39,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
         return update_project(conf.config['apiurl'], project)
+
+    def do_merge_susetags(self, subcmd, opts, output, *files):
+        """${cmd_name}: Merge susetags files and output into a new
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        return merge_susetags(output, files)
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
