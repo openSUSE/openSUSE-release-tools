@@ -73,7 +73,7 @@ class Fetcher(object):
         for result in root.findall('.//statuscount'):
             code = result.get('code')
             count = int(result.get('count'))
-            if code == 'excluded' or code == 'disabled':
+            if code == 'excluded' or code == 'disabled' or code == 'locked':
                 continue # ignore
             if code == 'succeeded':
                 succeeded += count
