@@ -70,6 +70,7 @@ class Fetcher(object):
         unresolvable = 0
         building = 0
         succeeded = 0
+        broken = 0
         for result in root.findall('.//statuscount'):
             code = result.get('code')
             count = int(result.get('count'))
@@ -77,6 +78,9 @@ class Fetcher(object):
                 continue # ignore
             if code == 'succeeded':
                 succeeded += count
+                continue
+            if code == 'broken':
+                broken += count
                 continue
             if code == "failed":
                 failed += count
@@ -92,8 +96,9 @@ class Fetcher(object):
             unresolvable = 0
         if building + failed + succeeded == 0:
             return {'building': -1}
-        return { 'building': 1000 - int(building * 1000 / (building + failed + succeeded)),
+        return { 'building': 1000 - int(building * 1000 / (building + failed + succeeded + broken)),
                  'failed': failed,
+                 'broken': broken,
                  'unresolvable': unresolvable }
 
     def generate_all_archs(self, project):
