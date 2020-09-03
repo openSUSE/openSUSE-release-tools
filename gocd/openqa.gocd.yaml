@@ -13,6 +13,7 @@ pipelines:
       only_on_changes: false
     stages:
     - Run:
+        timeout: 30
         approval: manual
         resources:
           - staging-bot
