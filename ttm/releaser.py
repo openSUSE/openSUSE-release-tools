@@ -47,6 +47,10 @@ class ToTestReleaser(ToTestManager):
                 self.logger.debug('not snapshotable')
                 return QAResult.failed
 
+            if not self.all_built_products_in_config():
+                self.logger.debug('config incomplete')
+                return QAResult.failed
+
         self.update_totest(new_snapshot)
         self.update_status('testing', new_snapshot)
         self.update_status('failed', '')
@@ -134,6 +138,51 @@ class ToTestReleaser(ToTestManager):
                 return False
 
         return True
+
+    def all_built_products_in_config(self):
+        """Verify that all succeeded products are mentioned in the ttm config"""
+
+        # Don't return false early, to show all errors at once
+        all_found = True
+
+        product_archs = {} # {'foo:ftp': ['local'], some-image': ['x86_64'], ...}
+        for simple_product in self.project.ftp_products + self.project.main_products:
+            product_archs[simple_product] = [self.project.product_arch]
+        for image_product in self.project.image_products + self.project.container_products:
+            product_archs[image_product.package] = image_product.archs
+
+        # Get all results for the product repo from OBS
+        url = self.api.makeurl(['build', self.project.name, "_result"],
+                               {'repository': self.project.product_repo,
+                                'multibuild': 1})
+        f = self.api.retried_GET(url)
+        resultlist = ET.parse(f).getroot()
+
+        # Loop through all successfully built products and check whether they are part of
+        # product_archs
+        for result in resultlist.findall('result'):
+            arch = result.get('arch')
+            for package in result.findall('status[@code="succeeded"]'):
+                packagename = package.get('package')
+                released_archs = None
+                if packagename in product_archs:
+                    released_archs = product_archs[packagename]
+                elif ':' in packagename:
+                    # For multibuild, it's enough to release the container
+                    multibuildcontainer = packagename.split(':')[0]
+                    if multibuildcontainer in product_archs:
+                        released_archs = product_archs[multibuildcontainer]
+
+                if released_archs is None:
+                    self.logger.error("%s is built for %s, but not mentioned as product" % (
+                        packagename, arch))
+                    all_found = False
+                elif arch not in released_archs:
+                    self.logger.error("%s is built for %s, but that arch is not mentioned" % (
+                        packagename, arch))
+                    all_found = False
+
+        return all_found
 
     def is_snapshotable(self):
         """Check various conditions required for factory to be snapshotable
