@@ -172,6 +172,9 @@ class ToTestReleaser(ToTestManager):
                     multibuildcontainer = packagename.split(':')[0]
                     if multibuildcontainer in product_archs:
                         released_archs = product_archs[multibuildcontainer]
+                        # Ignore the arch check for multibuild containers,
+                        # as it might not build for the same archs as all flavors.
+                        continue
 
                 if released_archs is None:
                     self.logger.error("%s is built for %s, but not mentioned as product" % (
