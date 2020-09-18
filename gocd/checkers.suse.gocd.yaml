@@ -310,3 +310,32 @@ pipelines:
                 sed -e 's,home:maintenance-installcheck:15-SP1:QR,SUSE:SLE-15-SP1:Update:QR,' -i *
                 osc ci -m 'Fix repoid'
                 osc sr --yes SUSE:SLE-15-SP1:Update:QR -m 'Update Package List'
+  SLE15.SP2.QR:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-maintenance-installcheck
+    timer:
+      spec: 0 0 0 ? * SUN
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        destination: scripts
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - repo-checker
+            tasks:
+            - script: |-
+                cd scripts
+                ./pkglistgen.py -A https://api.suse.de --debug update_and_solve -p home:maintenance-installcheck:15-SP2:QR -s target --force
+                osc -A https://api.suse.de co home:maintenance-installcheck:15-SP2:QR 000product
+                cd home:maintenance-installcheck:15-SP2:QR/000product
+                sed -e 's,home:maintenance-installcheck:15-SP2:QR,SUSE:SLE-15-SP2:Update:QR,' -i *
+                osc ci -m 'Fix repoid'
+                osc sr --yes SUSE:SLE-15-SP2:Update:QR -m 'Update Package List'
