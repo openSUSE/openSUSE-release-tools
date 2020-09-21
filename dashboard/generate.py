@@ -96,7 +96,7 @@ class Fetcher(object):
             unresolvable = 0
         if building + failed + succeeded == 0:
             return {'building': -1}
-        return { 'building': 1000 - int(building * 1000 / (building + failed + succeeded + broken)),
+        return { 'building': 10000 - int(building * 10000 / (building + failed + succeeded + broken)),
                  'failed': failed,
                  'broken': broken,
                  'unresolvable': unresolvable }
