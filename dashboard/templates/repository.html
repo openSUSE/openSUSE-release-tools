@@ -1,7 +1,7 @@
 {% set progress = project.build_summary(repository) %}
 {% if progress['building'] >= 0 %}
-  {% if progress['building'] < 1000 %}
-    {{ progress['building'] / 10}}% done
+  {% if progress['building'] < 10000 %}
+    {{ progress['building'] / 100}}% done
   {% else %}
     done
   {% endif %}
