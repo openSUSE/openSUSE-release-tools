@@ -287,7 +287,7 @@ pipelines:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-maintenance-installcheck
     timer:
-      spec: 0 0 0 ? * SUN
+      spec: 0 0 0 ? * THU
     materials:
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
