@@ -32,8 +32,8 @@ class Listener(PubSubConsumer):
         return super(Listener, self).interval()
 
     def still_alive(self):
-        self.check_some_repos()
         super(Listener, self).still_alive()
+        self.check_some_repos()
 
     def routing_keys(self):
         return [self.amqp_prefix + '.obs.repo.build_finished']
@@ -106,7 +106,6 @@ class Listener(PubSubConsumer):
 
     def on_message(self, unused_channel, method, properties, body):
         self.logger.debug("on_message")
-        self.check_some_repos()
         self.acknowledge_message(method.delivery_tag)
         try:
             body = json.loads(body)
