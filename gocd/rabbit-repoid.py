@@ -7,6 +7,7 @@ import json
 import logging
 import os.path
 import time
+import subprocess
 
 import osc
 from osc.core import http_GET, makeurl
@@ -90,9 +91,8 @@ class Listener(PubSubConsumer):
                 return
 
     def push_git(self, message):
-        os.system('git add . ')
-        os.system('git commit -m "{}" > /dev/null'.format(message))
-        os.system('git push > /dev/null')
+        cmd = '(git add . && git commit -m "{}" && git push) > /dev/null'
+        subprocess.run(cmd.format(message), shell=True, check=True)
 
     def update_repo(self, project, repository):
         ids = self.check_all_archs(project, repository)
