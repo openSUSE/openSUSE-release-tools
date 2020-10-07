@@ -91,7 +91,7 @@ class Listener(PubSubConsumer):
                 return
 
     def push_git(self, message):
-        cmd = '(git add . && git commit -m "{}" && git push) > /dev/null'
+        cmd = 'git add . && git diff --exit-code --quiet HEAD || ( git commit -m "{}" && git push ) > /dev/null'
         subprocess.run(cmd.format(message), shell=True, check=True)
 
     def update_repo(self, project, repository):
