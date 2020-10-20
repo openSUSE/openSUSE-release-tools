@@ -281,6 +281,35 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-suse)
+  SLE15.SP1.QR:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-maintenance-installcheck
+    timer:
+      spec: 0 0 0 ? * THU
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        destination: scripts
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - repo-checker
+            tasks:
+            - script: |-
+                cd scripts
+                ./pkglistgen.py -A https://api.suse.de --debug update_and_solve -p home:maintenance-installcheck:15-SP1:QR -s target --force
+                osc -A https://api.suse.de co home:maintenance-installcheck:15-SP1:QR 000product
+                cd home:maintenance-installcheck:15-SP1:QR/000product
+                sed -e 's,home:maintenance-installcheck:15-SP1:QR,SUSE:SLE-15-SP1:Update:QR,' -i *
+                osc ci -m 'Fix repoid'
+                osc sr --yes SUSE:SLE-15-SP1:Update:QR -m 'Update Package List'
   SLE15.SP2.QR:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
