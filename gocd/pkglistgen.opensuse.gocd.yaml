@@ -102,7 +102,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-              - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:MicroOS -s target
+              - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:MicroOS
   Pkglistgen.openSUSE_Jump:
     group: Leap.jump.pkglistgen
     lock_behavior: unlockWhenFinished
