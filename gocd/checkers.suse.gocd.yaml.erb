@@ -281,7 +281,8 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-suse)
-  SLE15.SP2.QR:
+<% ['SP1', 'SP2'].each do |servicepack| -%>
+  SLE15.<%= servicepack %>.QR:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -304,9 +305,10 @@ pipelines:
             tasks:
             - script: |-
                 cd scripts
-                ./pkglistgen.py -A https://api.suse.de --debug update_and_solve -p home:maintenance-installcheck:15-SP2:QR -s target --force
-                osc -A https://api.suse.de co home:maintenance-installcheck:15-SP2:QR 000product
-                cd home:maintenance-installcheck:15-SP2:QR/000product
-                sed -e 's,home:maintenance-installcheck:15-SP2:QR,SUSE:SLE-15-SP2:Update:QR,' -i *
+                ./pkglistgen.py -A https://api.suse.de --debug update_and_solve -p home:maintenance-installcheck:15-<%= servicepack %>:QR -s target --force
+                osc -A https://api.suse.de co home:maintenance-installcheck:15-<%= servicepack %>:QR 000product
+                cd home:maintenance-installcheck:15-<%= servicepack %>:QR/000product
+                sed -e 's,home:maintenance-installcheck:15-<%= servicepack %>:QR,SUSE:SLE-15-<%= servicepack %>:Update:QR,' -i *
                 osc ci -m 'Fix repoid'
-                osc sr --yes SUSE:SLE-15-SP2:Update:QR -m 'Update Package List'
+                osc sr --yes SUSE:SLE-15-<%= servicepack %>:Update:QR -m 'Update Package List'
+<% end -%>
