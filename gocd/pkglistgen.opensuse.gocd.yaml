@@ -82,7 +82,7 @@ pipelines:
             - repo-checker
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
-  Pkglistgen.openSUSE_Leap:
+  Pkglistgen.openSUSE_Leap_15.2:
     group: Leap.15.2.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -103,7 +103,7 @@ pipelines:
             - repo-checker
             tasks:
               - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:MicroOS
-  Pkglistgen.openSUSE_Leap:
+  Pkglistgen.openSUSE_Leap_15.3:
     group: Leap.15.3.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
