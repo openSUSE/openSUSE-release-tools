@@ -103,8 +103,8 @@ pipelines:
             - repo-checker
             tasks:
               - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.2:MicroOS
-  Pkglistgen.openSUSE_Jump:
-    group: Leap.jump.pkglistgen
+  Pkglistgen.openSUSE_Leap:
+    group: Leap.15.3.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -119,13 +119,13 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Jump_15.2_target:
+          openSUSE_Leap_15.3_target:
             resources:
             - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Jump:15.2 -s target
-  Update.Repos.Jump:
-    group: Leap.jump.pkglistgen
+  Update.Repos.Leap:
+    group: Leap.15.3.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -140,8 +140,8 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Jump_15.2:
+          openSUSE_Leap_15.3:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Jump:15.2
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.3

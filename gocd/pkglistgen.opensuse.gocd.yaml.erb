@@ -82,8 +82,8 @@ pipelines:
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
   <% end -%>
-  Pkglistgen.openSUSE_Jump:
-    group: Leap.jump.pkglistgen
+  Pkglistgen.openSUSE_Leap:
+    group: Leap.15.3.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -98,7 +98,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-  <% ['openSUSE:Jump:15.2/target'].each do |project|
+  <% ['openSUSE:Leap:15.3/target'].each do |project|
     project=project.split('/')
     name=project[0].gsub(':', '_')
     if project.size > 1
@@ -111,8 +111,8 @@ pipelines:
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
   <% end -%>
-Update.Repos.Jump:
-    group: Leap.jump.pkglistgen
+Update.Repos.Leap:
+    group: Leap.15.3.pkglistgen
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -127,7 +127,7 @@ Update.Repos.Jump:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Jump:15.2).each do |project| -%>
+<% %w(openSUSE:Leap:15.3).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker
