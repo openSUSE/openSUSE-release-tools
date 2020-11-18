@@ -18,6 +18,7 @@ There are various kinds of product types:
 * ftp: Like main, but does not use `set_release`.
 * image: Like main, but released into the `totest_images_repo` in the test subproject. On publishing, the `totest_images_repo` is publish enabled.
 * container: Like main, but released into the `totest_container_repo` instead, which is always publish enabled so that they can be fetched from the OBS registry during testing. For publishing, those products are released into the releasetarget of `totest_container_repo`. This is best combined with a `kind="maintenance_release"` as the target project, to keep older builds instead of overwriting them. For long-living projects, `container-cleaner.py` is run which deletes older images.
+* containerfile: Like container, but taken from a repo called `containerfile` instead, where container images are built using `Dockerfile` recipes.
 
 Every product can have multiple architectures defined, those are only used to check for build success before doing a release. If any of the listed architectures failed to build, a release is blocked.
 
@@ -67,5 +68,8 @@ products:
     - x86_64
   container:
   - foo-container-image:docker:
+    - x86_64
+  containerfile:
+  - some-dockerfile:
     - x86_64
 ```

@@ -142,24 +142,39 @@ class ToTestReleaser(ToTestManager):
     def all_built_products_in_config(self):
         """Verify that all succeeded products are mentioned in the ttm config"""
 
+        # First for all products in product_repo
+        products = {}
+        for simple_product in self.project.ftp_products + self.project.main_products:
+            products[simple_product] = [self.project.product_arch]
+        for image_product in self.project.image_products + self.project.container_products:
+            products[image_product.package] = image_product.archs
+
+        all_found = self.verify_package_list_complete(self.project.product_repo, products)
+
+        # Then for containerfile_products
+        if self.project.containerfile_products:
+            products = {}
+            for image_product in self.project.containerfile_products:
+                products[image_product.package] = image_product.archs
+
+            all_found = all_found and self.verify_package_list_complete('containerfile', products)
+
+        return all_found
+
+    def verify_package_list_complete(self, repository, product_archs):
+        """Loop through all successfully built products and check whether they
+           are part of product_archs (e.g. {'foo:ftp': ['local'], some-image': ['x86_64'], ...})"""
+
         # Don't return false early, to show all errors at once
         all_found = True
 
-        product_archs = {} # {'foo:ftp': ['local'], some-image': ['x86_64'], ...}
-        for simple_product in self.project.ftp_products + self.project.main_products:
-            product_archs[simple_product] = [self.project.product_arch]
-        for image_product in self.project.image_products + self.project.container_products:
-            product_archs[image_product.package] = image_product.archs
-
         # Get all results for the product repo from OBS
         url = self.api.makeurl(['build', self.project.name, "_result"],
-                               {'repository': self.project.product_repo,
+                               {'repository': repository,
                                 'multibuild': 1})
         f = self.api.retried_GET(url)
         resultlist = ET.parse(f).getroot()
 
-        # Loop through all successfully built products and check whether they are part of
-        # product_archs
         for result in resultlist.findall('result'):
             arch = result.get('arch')
             for package in result.findall('status[@code="succeeded"]'):
@@ -239,6 +254,13 @@ class ToTestReleaser(ToTestManager):
             # Containers are built in the same repo as other image products,
             # but released into a different repo in :ToTest
             self.release_package(self.project.name, container.package, repository=self.project.product_repo,
+                                  target_project=self.project.test_project,
+                                  target_repository=self.project.totest_container_repo)
+
+        for container in self.project.containerfile_products:
+            # Dockerfile builds are done in a separate repo, but released into the same location
+            # as container_products
+            self.release_package(self.project.name, container.package, repository='containerfile',
                                   target_project=self.project.test_project,
                                   target_repository=self.project.totest_container_repo)
 

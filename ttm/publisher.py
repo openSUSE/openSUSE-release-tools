@@ -291,11 +291,12 @@ class ToTestPublisher(ToTestManager):
         self.logger.info('Publish test project content')
         if self.dryrun or self.project.do_not_release:
             return
-        if self.project.container_products:
+        if self.project.container_products or self.project.containerfile_products:
             self.logger.info('Releasing container products from ToTest')
-            for container in self.project.container_products:
+            for container in self.project.container_products + self.project.containerfile_products:
                 self.release_package(self.project.test_project, container.package,
                                       repository=self.project.totest_container_repo)
+
         self.api.switch_flag_in_prj(
             self.project.test_project, flag='publish', state='enable',
             repository=self.project.product_repo)
