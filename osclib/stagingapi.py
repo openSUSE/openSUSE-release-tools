@@ -142,17 +142,16 @@ class StagingAPI(object):
         raise Exception("setting packages_staged is not allowed")
 
     @property
-    def use_images(self):
-        # Determine if staging is bootstrapped.
-        meta = self.get_prj_meta(self.project)
-        xpath = 'repository[@name="images"]'
-        return len(meta.xpath(xpath)) > 0
-
-    @property
     def is_staging_manager(self):
         if self._is_staging_manager is None:
             self._is_staging_manager = self.is_user_member_of(self.user, self.cstaging_group)
         return self._is_staging_manager
+
+    def project_has_repo(self, repo_name):
+        # Determine if the project has a repo with given name
+        meta = self.get_prj_meta(self.project)
+        xpath = f'repository[@name="{repo_name}"]'
+        return len(meta.xpath(xpath)) > 0
 
     def makeurl(self, l, query=None):
         """
@@ -1385,15 +1384,25 @@ class StagingAPI(object):
             linkproject = ''
             repository = '<repository name="standard">'
 
-        if self.use_images:
+        images_repo = ''
+        if self.project_has_repo('images'):
             images_repo = f"""
                <repository name="images">
                  <path project="{name}" repository="standard"/>
                  <path project="{self.project}" repository="images"/>
                  <arch>x86_64</arch>
               </repository>"""
-        else:
-            images_repo = ''
+
+        containerfile_repo = ''
+        if self.project_has_repo('containerfile'):
+            images_path = f'<path project="{name}" repository="images"/>' if images_repo else ''
+            containerfile_repo = f"""
+               <repository name="containerfile">
+                 <path project="{name}" repository="standard"/>
+                 {images_path}
+                 <path project="{self.project}" repository="containerfile"/>
+                 <arch>x86_64</arch>
+              </repository>"""
 
         meta = f"""
         <project name="{name}">
@@ -1413,6 +1422,7 @@ class StagingAPI(object):
             <arch>x86_64</arch>
           </repository>
           {images_repo}
+          {containerfile_repo}
         </project>"""
 
         url = make_meta_url('prj', name, self.apiurl)
