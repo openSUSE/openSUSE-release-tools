@@ -85,6 +85,7 @@ pipelines:
             for product in kiwi-templates-JeOS 000product $PRODUCTS; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA $product
             done
+            osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:CR sles15-image
 
     - Release.Images.To.Publish:
         approval: manual
@@ -95,7 +96,9 @@ pipelines:
         resources:
         - staging-bot
         tasks:
-        - script: osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA:TEST
+        - script: |-
+            osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA:TEST
+            osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:CR:ToTest sles15-image
 
   SLE15.SP3.ImagesManual:
     group: SLE15.SP3.Target
