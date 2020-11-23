@@ -142,6 +142,7 @@ pipelines:
                   for product in kiwi-templates-JeOS 000product $PRODUCTS; do
                     osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA $product
                   done
+                  osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:CR sles15-image
 
     - Release.Images.To.Publish:
         approval: manual
