@@ -311,4 +311,11 @@ pipelines:
                 sed -e 's,home:maintenance-installcheck:15-<%= servicepack %>:QR,SUSE:SLE-15-<%= servicepack %>:Update:QR,' -i *
                 osc ci -m 'Fix repoid'
                 osc sr --yes SUSE:SLE-15-<%= servicepack %>:Update:QR -m 'Update Package List'
+    - Accept:
+        resources:
+        - repo-checker
+        tasks:
+        - script: |-
+            reqID=$(osc -A https://api.suse.de request list SUSE:SLE-15-<%= servicepack %>:Update:QR --state=new | tr -s " " "," | head -1|cut -f1 -d,)
+            osc -A https://api.suse.de request accept -m "Accept the change to update 000product files" $reqID
 <% end -%>

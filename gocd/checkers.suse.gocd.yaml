@@ -310,6 +310,13 @@ pipelines:
                 sed -e 's,home:maintenance-installcheck:15-SP1:QR,SUSE:SLE-15-SP1:Update:QR,' -i *
                 osc ci -m 'Fix repoid'
                 osc sr --yes SUSE:SLE-15-SP1:Update:QR -m 'Update Package List'
+    - Accept:
+        resources:
+        - repo-checker
+        tasks:
+        - script: |-
+            reqID=$(osc -A https://api.suse.de request list SUSE:SLE-15-SP1:Update:QR --state=new | tr -s " " "," | head -1|cut -f1 -d,)
+            osc -A https://api.suse.de request accept -m "Accept the change to update 000product files" $reqID
   SLE15.SP2.QR:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -339,3 +346,10 @@ pipelines:
                 sed -e 's,home:maintenance-installcheck:15-SP2:QR,SUSE:SLE-15-SP2:Update:QR,' -i *
                 osc ci -m 'Fix repoid'
                 osc sr --yes SUSE:SLE-15-SP2:Update:QR -m 'Update Package List'
+    - Accept:
+        resources:
+        - repo-checker
+        tasks:
+        - script: |-
+            reqID=$(osc -A https://api.suse.de request list SUSE:SLE-15-SP2:Update:QR --state=new | tr -s " " "," | head -1|cut -f1 -d,)
+            osc -A https://api.suse.de request accept -m "Accept the change to update 000product files" $reqID
