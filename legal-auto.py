@@ -218,6 +218,9 @@ class LegalAuto(ReviewBot.ReviewBot):
             if si.find('filename').text == '_channel':
                 self.logger.info("SKIP {}".format(si.find('filename').text))
                 continue
+            if ".SUSE_Channels" in package:
+                self.logger.info("SKIP {}".format(package))
+                continue
             # handle maintenance links - we only want the latest
             match = re.match(r'(\S+)\.\d+$', package)
             if match:
