@@ -396,7 +396,7 @@ def dashboard_at(api, filename, datetime=None, revision=None):
 
             cp = ConfigParser()
             config = '[remote]\n' + content
-            cp.readfp(io.BytesIO(config))
+            cp.read_string(config)
             return dict(cp.items('remote'))
         return {}
 
