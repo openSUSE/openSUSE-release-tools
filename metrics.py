@@ -391,7 +391,7 @@ def dashboard_at(api, filename, datetime=None, revision=None):
     elif filename in ('config'):
         if content:
             # TODO re-use from osclib.conf.
-            from ConfigParser import ConfigParser
+            from configparser import ConfigParser
             import io
 
             cp = ConfigParser()
