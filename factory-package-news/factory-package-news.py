@@ -65,6 +65,7 @@ class ChangeLogger(cmdln.Cmdln):
             # dirty hack to reduce kernel spam
             m = SRPM_RE.match(srpm)
             if m and m.group('name') in (
+                'kernel-64kb',
                 'kernel-debug',
                 'kernel-default',
                 'kernel-desktop',
