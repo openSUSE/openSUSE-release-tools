@@ -84,15 +84,25 @@ while(<FL>) {
     }
     next unless /^(\d+ (\d+) \S+) (.*\/)(.*?)$/;
     my $perms = $1;
+    my $flag = oct($2);
     my $n = $dirs{$3};
     if (!defined($n)) {
       $n = @dirs;
       $dirs{$3} = $n;
       $dirs[$n] = $3;
     }
-    # ignore link targets and permissions of ghosts
-    if ((oct($2) & 0100) != 0) {
+    # special ghost handling
+    if (($flag & 0100) != 0) {
+      # it's a ghost directory, remove the ghost flag so no conflict is
+      # produced due to file flag mismatch.
+      if ((oct($perms)&07770000) == 040000) {
+        $flag ^= 0100;
+        my $sf =  sprintf("%o", $flag);
+        $perms =~ s/^(\d+ )(\d+)/$1$sf/;
+      }
+      # ignore link target
       $lnk = '' if $lnk;
+      # pretend a ghost file has normal mode
       $perms =~ s/^100000/100644/;
     }
     my $m = $modes{"$perms$lnk"};
@@ -101,7 +111,7 @@ while(<FL>) {
       $modes{"$perms$lnk"} = $m;
       $modes[$m] = "$perms$lnk";
       $modes_type[$m] = oct($perms) & 07770000;
-      $modes_ghost[$m] = oct($2) & 0100;
+      $modes_ghost[$m] = $flag & 0100;
     }
     my $f = "$n/$4";
     if (exists $files{$f}) {
