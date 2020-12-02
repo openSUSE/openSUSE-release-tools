@@ -391,12 +391,12 @@ def dashboard_at(api, filename, datetime=None, revision=None):
     elif filename in ('config'):
         if content:
             # TODO re-use from osclib.conf.
-            from ConfigParser import ConfigParser
+            from configparser import ConfigParser
             import io
 
             cp = ConfigParser()
             config = '[remote]\n' + content
-            cp.readfp(io.BytesIO(config))
+            cp.read_string(config)
             return dict(cp.items('remote'))
         return {}
 
@@ -548,9 +548,9 @@ def main(args):
     if args.wipe_cache:
         Cache.delete_all()
     if args.heavy_cache:
-        Cache.PATTERNS[r'/search/request'] = sys.maxint
-        Cache.PATTERNS[r'/source/[^/]+/{}/_history'.format(package)] = sys.maxint
-    Cache.PATTERNS[r'/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxint
+        Cache.PATTERNS[r'/search/request'] = sys.maxsize
+        Cache.PATTERNS[r'/source/[^/]+/{}/_history'.format(package)] = sys.maxsize
+    Cache.PATTERNS[r'/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxsize
     Cache.init('metrics')
 
     Config(apiurl, args.project)
