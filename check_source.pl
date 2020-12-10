@@ -75,17 +75,17 @@ my $changes_updated = 0;
 for my $spec (@specs) {
     $changes = $spec;
     $changes =~ s/\.spec$/.changes/;
-    if (!-f "$dir/$changes") {
-        print "$changes is missing. A package containing FooBar.spec needs to have a FooBar.changes file with a format created by `osc vc`.\n";
-        $ret = 1;
+
+    # new or deleted .changes files also count
+    if ((-f "$old/$changes") != (-f "$dir/$changes")) {
+        $changes_updated = 1;
+        last;
     }
-    if (-f "$old/$changes") {
+    elsif ((-f "$old/$changes") && (-f "$dir/$changes")) {
         if (system(("cmp", "-s", "$old/$changes", "$dir/$changes"))) {
             $changes_updated = 1;
+            last;
         }
-    }
-    else { # a new file is an update too
-        $changes_updated = 1;
     }
 }
 
