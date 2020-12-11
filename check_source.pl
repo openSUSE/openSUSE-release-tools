@@ -21,8 +21,8 @@ if (-f "$dir/_service") {
     my $service = XMLin("$dir/_service", ForceArray => ['service']);
     while( my ($name, $s) = each %{$service->{service}} ) {
         my $mode = $s->{mode} || '';
-        next if ($mode eq "localonly" || $mode eq "disabled" || $mode eq "buildtime");
-        print "Services are only allowed if they are mode='localonly', 'disabled' or 'buildtime'. Please change the mode of $name and use `osc service localrun/disabledrun`.\n";
+        next if ($mode eq "localonly" || $mode eq "disabled" || $mode eq "buildtime" || $mnode eq "manual" );
+        print "Services are only allowed if they are mode='localonly', 'disabled', 'manual' or 'buildtime'. Please change the mode of $name and use `osc service localrun/disabledrun`.\n";
         $ret = 1;
     }
     # move it away to have full service from source validator
