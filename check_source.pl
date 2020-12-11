@@ -21,8 +21,8 @@ if (-f "$dir/_service") {
     my $service = XMLin("$dir/_service", ForceArray => ['service']);
     while( my ($name, $s) = each %{$service->{service}} ) {
         my $mode = $s->{mode} || '';
-        next if ($mode eq "localonly" || $mode eq "disabled" || $mode eq "buildtime");
-        print "Services are only allowed if they are mode='localonly', 'disabled' or 'buildtime'. Please change the mode of $name and use `osc service localrun`.\n";
+        next if ($mode eq "localonly" || $mode eq "disabled" || $mode eq "buildtime" || $mnode eq "manual" );
+        print "Services are only allowed if they are mode='localonly', 'disabled', 'manual' or 'buildtime'. Please change the mode of $name and use `osc service localrun/disabledrun`.\n";
         $ret = 1;
     }
     # move it away to have full service from source validator
@@ -60,7 +60,7 @@ close(SPEC);
 if ($spec !~ m/#[*\s]+Copyright\s/) {
     print "$bname.spec does not appear to contain a Copyright comment. Please stick to the format\n\n";
     print "# Copyright (c) 2011 Stephan Kulow\n\n";
-    print "or use osc service localrun format_spec_file\n";
+    print "or use osc service runall format_spec_file\n";
     $ret = 1;
 }
 
@@ -101,7 +101,7 @@ if ($spec !~ m/\n%changelog\s/ && $spec != m/\n%changelog$/) {
 
 if ($spec !~ m/(#[^\n]*license)/i) {
     print "$bname.spec does not appear to have a license. The file needs to contain a free software license\n";
-    print "Suggestion: use \"osc service localrun format_spec_file\" to get our default license or\n";
+    print "Suggestion: use \"osc service runall format_spec_file\" to get our default license or\n";
     print "the minimal license:\n\n";
     print "# This file is under MIT license\n";
     $ret = 1;
@@ -113,7 +113,7 @@ for my $test (glob("/usr/lib/obs/service/source_validators/*")) {
     next if (!-f "$test");
     my $checkivsd = `/bin/bash $test --batchmode $dir $old < /dev/null 2>&1`;
     if ($?) {
-        print "Source validator failed. Try \"osc service localrun source_validator\"\n";
+        print "Source validator failed. Try \"osc service runall source_validator\"\n";
         print $checkivsd;
         print "\n";
         $ret = 1;
@@ -242,7 +242,7 @@ my $odir = getcwd;
 my $tmpdir = tempdir("obs-XXXXXXX", TMPDIR => 1, CLEANUP => 1);
 chdir($dir) || die 'tempdir failed';
 if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--enforcelocal", "yes", "--outdir", $tmpdir)) {
-    print "Source URLs are not valid. Try \"osc service localrun download_files\".\n";
+    print "Source URLs are not valid. Try \"osc service runall download_files\".\n";
     $ret = 2;
 }
 chdir($odir);
