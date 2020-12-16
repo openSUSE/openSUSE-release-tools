@@ -1078,6 +1078,9 @@ class StagingAPI(object):
         meta = ET.tostring(meta)
         http_PUT(self.project_meta_url(project), data=meta)
 
+        for required_check in self.cstaging_required_checks_adi.split():
+            self.add_required_check(project, required_check)
+
     def prj_from_letter(self, letter):
         if ':' in letter:  # not a letter
             return letter
