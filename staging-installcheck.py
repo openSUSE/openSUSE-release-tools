@@ -236,8 +236,7 @@ class InstallChecker(object):
     def report_state(self, state, report_url, project, repository, buildids):
         architectures = self.target_archs(project, repository)
         for arch in architectures:
-            self.report_pipeline(state, report_url, project, repository, arch,
-                                 buildids[arch], arch == architectures[-1])
+            self.report_pipeline(state, report_url, project, repository, arch, buildids[arch])
 
     def gocd_url(self):
         if not os.environ.get('GO_SERVER_URL'):
@@ -262,15 +261,9 @@ class InstallChecker(object):
         return self.api.makeurl(['status_reports', 'built', project,
                                  repository, architecture, 'reports', buildid])
 
-    def report_pipeline(self, state, report_url, project, repository, architecture, buildid, is_last):
+    def report_pipeline(self, state, report_url, project, repository, architecture, buildid):
         url = self.report_url(project, repository, architecture, buildid)
         name = 'installcheck'
-        # this is a little bit ugly, but we don't need 2 failures. So save a success for the
-        # other archs to mark them as visited - pending we put in both
-        if not is_last:
-            if state == 'failure':
-                state = 'success'
-
         xml = self.check_xml(report_url, state, name)
         try:
             osc.core.http_POST(url, data=xml)
