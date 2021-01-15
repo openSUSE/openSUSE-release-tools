@@ -118,7 +118,7 @@ class PkgListGen(ToolBase.ToolBase):
             fn = '{}.group'.format(group.name)
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 for arch in archs:
-                    x = group.toxml(arch, self.ignore_broken, None)
+                    x = group.toxml(arch, group.ignore_broken, None)
                     x = ET.tostring(x, pretty_print=True, encoding='unicode')
                     fh.write(x)
 
@@ -135,7 +135,7 @@ class PkgListGen(ToolBase.ToolBase):
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 comment = group.comment
                 for arch in archs:
-                    x = group.toxml(arch, self.ignore_broken, comment)
+                    x = group.toxml(arch, group.ignore_broken, comment)
                     # only comment first time
                     comment = None
                     x = ET.tostring(x, pretty_print=True, encoding='unicode')
@@ -500,6 +500,9 @@ class PkgListGen(ToolBase.ToolBase):
             use_recommends = settings.get('recommends', global_use_recommends)
             self.solve_module(groupname, includes, excludes, use_recommends)
             g = self.groups[groupname]
+            # the default is a little double negated but Factory has ignore_broken
+            # as default and we only disable it for single groups (for now)
+            g.ignore_broken = not settings.get('require_all', not self.ignore_broken)
             g.conflicts = settings.get('conflicts', [])
             g.default_support_status = settings.get('default-support', 'unsupported')
             modules.append(g)

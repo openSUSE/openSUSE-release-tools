@@ -21,6 +21,7 @@ class Group(object):
         self.not_found = dict()
         self.unresolvable = dict()
         self.default_support_status = None
+        self.ignore_broken = False
         for a in self.architectures:
             self.packages[a] = []
             self.unresolvable[a] = dict()
