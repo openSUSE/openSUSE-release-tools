@@ -351,9 +351,11 @@ class PkgListGen(ToolBase.ToolBase):
                 args.append('--nodebug')
                 args.append('{}/public/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
                 args.append(d)
-                p = subprocess.Popen(args, stdout=subprocess.PIPE)
-                for line in p.stdout:
-                    self.logger.info(line.decode('utf-8').rstrip())
+                with subprocess.Popen(args, stdout=subprocess.PIPE) as p:
+                    for line in p.stdout:
+                        self.logger.info(line.decode('utf-8').rstrip())
+                    if p.wait() != 0:
+                        raise Exception("Mirroring repository failed")
 
                 files = [os.path.join(d, f)
                          for f in os.listdir(d) if f.endswith('.rpm')]
@@ -361,8 +363,9 @@ class PkgListGen(ToolBase.ToolBase):
                 p = subprocess.Popen(
                     ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
                 p.communicate(bytes('\0'.join(files), 'utf-8'))
-                p.wait()
                 fh.close()
+                if p.wait() != 0:
+                    raise Exception("rpm2solv failed")
 
                 # Create hash file now that solv creation is complete.
                 open(solv_file_hash, 'a').close()
