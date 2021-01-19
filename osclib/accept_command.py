@@ -92,12 +92,15 @@ class AcceptCommand(object):
 
             staging_packages[project] = []
             for request in status.findall('staged_requests/request'):
-                self.requests[request.get('type')].append(request.get('package'))
+                type = request.get('type')
+                if type in self.requests:
+                    self.requests[type].append(request.get('package'))
                 staging_packages[project].append(request.get('package'))
 
         other_new = self.find_new_requests(self.api.project)
         for req in other_new:
-            self.requests[req['type']].append(req['package'])
+            if req['type'] in self.requests:
+                self.requests[req['type']].append(req['package'])
 
         print('delete links to packages pending deletion...')
         self.delete_linked()
