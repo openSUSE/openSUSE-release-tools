@@ -189,7 +189,11 @@ class PkgListGen(ToolBase.ToolBase):
 
     def prepare_pool(self, arch, ignore_conflicts):
         pool = solv.Pool()
-        pool.setarch(arch)
+        # the i586 DVD is really a i686 one
+        if arch == 'i586':
+            pool.setarch('i686')
+        else:
+            pool.setarch(arch)
 
         self.lockjobs[arch] = []
         solvables = set()
