@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from xdg.BaseDirectory import save_cache_path, save_data_path
 

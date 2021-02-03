@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from copy import deepcopy
 from lxml import etree as ET
@@ -10,12 +10,7 @@ from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import show_upstream_rev
 from osclib.core import project_pseudometa_package
-
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 import argparse
 import osc.conf

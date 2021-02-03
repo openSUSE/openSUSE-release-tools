@@ -1,14 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from xml.etree import cElementTree as ET
 import sys
 import cmdln
 import logging
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 import osc.core
 
 import ToolBase

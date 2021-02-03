@@ -1,17 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import argparse
 import itertools
 import logging
 import sys
-
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
-
 import time
+from urllib.error import HTTPError
 from xml.etree import cElementTree as ET
 
 import osc.conf
