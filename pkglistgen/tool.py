@@ -330,10 +330,11 @@ class PkgListGen(ToolBase.ToolBase):
                 if not os.path.exists(d):
                     os.makedirs(d)
 
-                try:
-                    # Fetch state before mirroring in-case it changes during download.
-                    state = repository_arch_state(self.apiurl, project, repo, arch)
-                except HTTPError:
+                # Fetch state before mirroring in-case it changes during download.
+                state = repository_arch_state(self.apiurl, project, repo, arch)
+
+                if state is None:
+                    # Repo might not have this architecture
                     continue
 
                 # Would be preferable to include hash in name, but cumbersome to handle without
