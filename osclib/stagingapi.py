@@ -1384,18 +1384,29 @@ class StagingAPI(object):
             linkproject = ''
             repository = '<repository name="standard">'
 
+        # Add "images" and "containerfile" repos if the main project has them.
+        # If both are present, they build against each other and the parent project.
+
         images_repo = ''
         if self.project_has_repo('images'):
+            containerfile_path = ''
+            if self.project_has_repo('containerfile'):
+                containerfile_path = f'<path project="{name}" repository="containerfile"/>'
+
             images_repo = f"""
                <repository name="images">
                  <path project="{name}" repository="standard"/>
+                 {containerfile_path}
                  <path project="{self.project}" repository="images"/>
                  <arch>x86_64</arch>
               </repository>"""
 
         containerfile_repo = ''
         if self.project_has_repo('containerfile'):
-            images_path = f'<path project="{name}" repository="images"/>' if images_repo else ''
+            images_path = ''
+            if self.project_has_repo('images'):
+                images_path = f'<path project="{name}" repository="images"/>'
+
             containerfile_repo = f"""
                <repository name="containerfile">
                  <path project="{name}" repository="standard"/>
