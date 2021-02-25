@@ -51,6 +51,7 @@ class TestConfig(unittest.TestCase):
             'openSUSE:Leap:15.2:NonFree',
             'openSUSE:Leap:15.2:Update',
             'openSUSE:Leap:15.3',
+            'openSUSE:Leap:15.3:ARM',
             'openSUSE:Leap:15.3:NonFree',
             'openSUSE:Leap:15.3:Update',
             'openSUSE:Backports:SLE-15',
