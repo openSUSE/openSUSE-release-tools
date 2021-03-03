@@ -84,7 +84,7 @@ class AdiCommand:
                 requests.append(rf.load_request(p))
 
         splitter = RequestSplitter(self.api, requests, in_ring=False)
-        splitter.filter_add('./action[@type="submit"]')
+        splitter.filter_add('./action[@type="submit" or @type="delete"]')
         if len(wanted_requests):
             splitter.filter_add_requests([str(p) for p in wanted_requests])
             # wanted_requests forces all requests into a single group.
