@@ -2,9 +2,9 @@
 
 Ingest relevant OBS and annotation data to generate insightful metrics.
 
-The overall structure is to loop over all requests to extract point of change
+The overall structure is to loop over all requests to extract points of change
 and calculate metrics. Many of the points of change are treated as deltas,
-meaning add one to this bucket or minus one from another. After all requests are
+meaning to add one to this bucket or minus one from another. After all requests are
 ingested the points are walked to evaluate the deltas and recreate the state at
 that point in time.
 
@@ -41,8 +41,8 @@ Once completed the Grafana dashboard should make pretty graphs.
 ## Development
 
 Grafana provides an export to JSON option which can be used when the dashboards
-are modified to export them and version control the changes in git. Ensure not
-to unintentionally change the default project, annotation state, or time period
+are modified to export them and version control the changes in git. Ensure you do
+not unintentionally change the default project, annotation state, or time period
 by saving the dashboard with different defaults.
 
 Use the `--debug` option and inspect individual request XML dumps by looking in

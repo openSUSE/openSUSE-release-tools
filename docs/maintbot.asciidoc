@@ -22,7 +22,7 @@ Command line
 ------------
 [id="cli"]
 
-Check all request that have "maintbot" as reviewer:
+Check all requests that have "maintbot" as reviewer:
 
 -------------------------------------------------------------------------------
 ./check_maintenance_incidents.py review
