@@ -6,7 +6,6 @@ import osc
 import osc.core
 import osc.conf
 import xml.etree.ElementTree as ET
-import cgi
 import logging
 import argparse
 import sys
@@ -188,7 +187,7 @@ def main(args):
                 # Package failed to build for 6 weeks - file a delete request
                 r = osc.core.Request()
                 r.add_action('delete', tgt_project=project, tgt_package=package)
-                r.description = cgi.escape("[botdel] Package has failed to build for >= 6 weeks")
+                r.description = "[botdel] Package has failed to build for &gt;= 6 weeks"
                 r.create(apiurl)
 
     if len(ProjectComplainList):
