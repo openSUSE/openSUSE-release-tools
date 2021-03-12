@@ -3,14 +3,32 @@
 $| = 1;
 use strict;
 
+# this one maps a directory path to the index in the dirs array below
 my %dirs;
+# this is an array of all seen directory pathes, starting with dirs[0] = '/'
 my @dirs;
+# known "filemode fileflags owner:group -> link target" combos.
+# Value is the index to the mode array.
+# eg "40755 0 root:root" => 3
 my %modes;
+# array of modes, same value as %mode keys
 my @modes;
+# file type for each mode in the array
 my @modes_type;
+# rpm ghost file flag for each mode in the array, ie 0100 if ghost
 my @modes_ghost;
+# map of files but with the directoy part replaced with index into dir array.
+# So /foobar would actually be 0/foobar as it's in the root directory
+# The value is a string consisting of name, version, release and
+# arch separated by space. Then a slash and the index of the mode
+# array. eg "hello 42 1.1 noarch/5"
 my %files;
+# file conflicts map. Similar to %files but the value is an array
+# of strings. Strings have same format as in %files.
 my %filesc;
+
+# set if the filesystem package is found to be usrmerged.
+my $usrmerge;
 
 $dirs{'/'} = 0;
 push @dirs, '/';
@@ -77,14 +95,21 @@ while(<FL>) {
       $fls = 0;
       next;
     }
+    if ($pkg =~ /^filesystem / && /^120777 0 root:root (\/(?:s?bin|lib(?:64)?)) -> \/?usr(\/(?:s?bin|lib(?:64)?))$/ && $1 eq $2) {
+      $usrmerge = 1;
+    }
+    # 120777 0 root:root /usr/bin/foo -> /usr/sbin/bar
     my $lnk = '';
     if (/^(12.*)( -> .*?)$/) {
       $_ = $1;
       $lnk = $2;
     }
+    # 120777 0 root:root /usr/bin/foo
+    # splits off directory part also
     next unless /^(\d+ (\d+) \S+) (.*\/)(.*?)$/;
     my $perms = $1;
     my $flag = oct($2);
+    # n is the index of the path in the dirs array
     my $n = $dirs{$3};
     if (!defined($n)) {
       $n = @dirs;
@@ -175,6 +200,48 @@ while(<FL>) {
   }
 }
 close(FL) || die("close failed\n");
+
+if ($usrmerge) {
+  for my $rn (0..$#dirs) {
+    my $rd = $dirs[$rn];
+    next unless $rd =~ /^\/(?:s?bin|lib(?:64)?)/;
+    my $d = "/usr$rd";
+    my $n = $dirs{$d};
+    if (!defined $n) {
+      # the dir we are looking at does not exist in /usr so just rename the
+      # existing one, keeping the index
+      $n = $rn;
+      $dirs{$d} = $n;
+      delete $dirs{$rd};
+      $dirs[$rn] = $d;
+    } else {
+      # change all files to /usr directory index
+      for my $rf (keys %files) {
+        next unless $rf =~ /^$rn(\/.*)/;
+        my $f = "$n$1";
+        if ($files{$f}) {
+          # merge known conflicts of the / file into the the one of
+          # the /usr file
+          $filesc{$f} ||= [ $files{$f} ];
+          if ($filesc{$rf}) {
+            push @{$filesc{$f}}, @{$filesc{$rf}};
+          } else {
+            push @{$filesc{$f}}, $files{$rf};
+          }
+          delete $filesc{$rf};
+        } else {
+          $files{$f} = $files{$rf};
+        }
+        delete $files{$rf};
+        # we cannot really delete the entry from the array, otherwise all files
+        # would have to be renumbered too. So just mark the entry invalid. The
+        # code further down already has a regexp to skip garbage when iterating
+        # over @dirs.
+        $dirs[$rn] = "*** $rd ***";
+      }
+    }
+  }
+}
 
 print STDERR "currently have ".@dirs." dirs and ".@modes." modes\n";
 
@@ -269,6 +336,9 @@ for my $f (sort keys %filesc) {
     $allm = $m unless defined $allm;
     $allm = -1 if $allm != $m;
     $pkgn = $1 unless defined $pkgn;
+    # allc only stays at 1 if packages names of all packages
+    # involved in the conflict are equal but version/release/arch
+    # are not.
     $allc = 0 if $pkgn ne $1;
     $allc = 0 if $pl && $p eq $pl;
     $pl = $p;
@@ -277,6 +347,10 @@ for my $f (sort keys %filesc) {
     delete $filesc{$f};
     next;
   }
+  # all files involved in the conflict have the same mode and are
+  # directories. So files that are completely identicall would still
+  # produce a conflict. No checksums are used in this program
+  # here so we cannot know.
   if (defined($allm) && $allm >= 0 && $modes_type[$allm] == 040000) {
     delete $filesc{$f};
     next;
