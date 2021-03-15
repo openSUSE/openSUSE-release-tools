@@ -42,6 +42,7 @@ class ToTest(object):
         self.main_products = []
         self.ftp_products = []
         self.container_products = []
+        self.containerfile_products = []
         self.livecd_products = []
         self.image_products = []
 
@@ -82,3 +83,4 @@ class ToTest(object):
         setattr(self, 'livecd_products', self.parse_images(products.get('livecds', [])))
         setattr(self, 'image_products', self.parse_images(products.get('images', [])))
         setattr(self, 'container_products', self.parse_images(products.get('container', [])))
+        setattr(self, 'containerfile_products', self.parse_images(products.get('containerfile', [])))
