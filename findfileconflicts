@@ -95,6 +95,7 @@ while(<FL>) {
       $fls = 0;
       next;
     }
+    next if $pkg =~ /^(glibc-usrmerge-bootstrap-helper|bash-legacybin) /;
     if ($pkg =~ /^filesystem / && /^120777 0 root:root (\/(?:s?bin|lib(?:64)?)) -> \/?usr(\/(?:s?bin|lib(?:64)?))$/ && $1 eq $2) {
       $usrmerge = 1;
     }
