@@ -8,5 +8,10 @@
     "version": "15.2",
     "flavor": "DVD-Incidents",
     "distri": "opensuse"
+  },
+  "openSUSE:Leap:15.3:Update" : {
+    "version": "15.3",
+    "flavor": "DVD-Incidents",
+    "distri": "opensuse"
   }
 }
