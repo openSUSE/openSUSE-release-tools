@@ -40,7 +40,9 @@
          "test" : "kde",
          "repos" : [
             "http://download.opensuse.org/update/leap/15.3/oss/",
-            "http://download.opensuse.org/update/leap/15.3/non-oss/"
+            "http://download.opensuse.org/update/leap/15.3/non-oss/",
+            "http://download.opensuse.org/update/leap/15.3/backports/",
+            "http://download.opensuse.org/update/leap/15.3/sle/"
          ]
       }
 }
