@@ -28,5 +28,21 @@
             "http://download.opensuse.org/update/leap/15.2/non-oss/"
          ]
       }
-   }
+   },
+   "openSUSE:Leap:15.3:Update" : {
+         "settings" : {
+            "OS_TEST_ISSUES" : "",
+            "FLAVOR" : "DVD-Updates",
+            "DISTRI" : "opensuse",
+            "VERSION" : "15.3",
+            "ARCH" : "x86_64"
+         },
+         "test" : "kde",
+         "repos" : [
+            "http://download.opensuse.org/update/leap/15.3/oss/",
+            "http://download.opensuse.org/update/leap/15.3/non-oss/",
+            "http://download.opensuse.org/update/leap/15.3/backports/",
+            "http://download.opensuse.org/update/leap/15.3/sle/"
+         ]
+      }
 }
