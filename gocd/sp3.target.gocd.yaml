@@ -108,6 +108,7 @@ pipelines:
         tasks:
         - script: |-
             osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA:TEST
+            osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:CR:ToTest sles15-image -r images --target-project SUSE:SLE-15-SP3:Update:CR:PUBLISH --target-repository images
             sleep 600
             while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP3:GA:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
