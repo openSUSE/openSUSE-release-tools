@@ -42,6 +42,7 @@ DEFAULT = {
         'repo_checker-package-comment-devel': 'True',
         'pkglistgen-product-family-include': 'openSUSE:Leap:N',
         'pkglistgen-locales-from': 'openSUSE.product.in',
+        'pkglistgen-ignore_repos': 'bootstrap_copy',
         'mail-list': 'opensuse-factory@opensuse.org',
         'mail-maintainer': 'Dominique Leuenberger <dimstar@suse.de>',
         'mail-noreply': 'noreply@opensuse.org',
@@ -96,6 +97,7 @@ DEFAULT = {
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-scopes': 'target rings staging',
         'pkglistgen-locales-from': 'openSUSE.product',
+        'pkglistgen-ignore_repos': 'bootstrap_copy',
         'pkglistgen-delete-kiwis-rings': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
         'pkglistgen-delete-kiwis-staging': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
         'mail-list': 'opensuse-factory@opensuse.org',
@@ -158,6 +160,7 @@ DEFAULT = {
         'pkglistgen-archs': 'x86_64 aarch64 ppc64le s390x',
         'pkglistgen-scopes': 'target',
         'pkglistgen-locales-from': 'openSUSE.product',
+        'pkglistgen-ignore_repos': 'bootstrap_copy',
     },
     # Allows devel projects to utilize tools that require config, but not
     # complete StagingAPI support.
