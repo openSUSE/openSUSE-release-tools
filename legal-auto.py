@@ -9,17 +9,15 @@ import re
 import logging
 from optparse import OptionParser
 import cmdln
+from dateutil.parser import parse
+from datetime import timezone, timedelta
 import requests as REQ
 import json
 import time
 import yaml
 
 from urllib.error import HTTPError
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+from lxml import etree as ET
 
 import osc.conf
 import osc.core
@@ -29,7 +27,6 @@ import ReviewBot
 from osclib.comments import CommentAPI
 
 http_GET = osc.core.http_GET
-
 
 class LegalAuto(ReviewBot.ReviewBot):
 
@@ -87,6 +84,18 @@ class LegalAuto(ReviewBot.ReviewBot):
         request = REQ.post(url, headers=self.legaldb_headers).json()
         return [package['id']]
 
+    def valid_for_opensuse(self, target_project, report):
+        if target_project != "openSUSE:Factory":
+            return False
+        indexed = report.get('indexed', None)
+        if not indexed:
+            return False
+        datetime = parse(indexed)
+        # give the legaldb 2 hours to find a match (so we prefer acceptable/correct over preliminary)
+        if datetime.now(timezone.utc) - datetime < timedelta(hours=2):
+            return False
+        return True
+
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project,
                                                 src_package, src_rev, target_project, target_package))
@@ -97,6 +106,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             src_project, src_package, src_rev)
         if not to_review:
             return None
+        self.message = None
         for pack in to_review:
             url = osc.core.makeurl(self.legaldb, ['package', str(pack)])
             report = REQ.get(url, headers=self.legaldb_headers).json()
@@ -112,6 +122,14 @@ class LegalAuto(ReviewBot.ReviewBot):
                 package = REQ.post(url, headers=self.legaldb_headers).json()
                 # reopen
                 return None
+            if state == 'new' and self.valid_for_opensuse(target_project, report):
+                self.message = 'The legal review is accepted preliminary. The package may require actions later on.'
+                # reduce legal review priority - we're no longer waiting
+                url = osc.core.makeurl(
+                    self.legaldb, ['package', str(pack)], {'priority': 1})
+                if not self.dryrun:
+                    REQ.patch(url, headers=self.legaldb_headers)
+                continue
             if not state in ['acceptable', 'correct', 'unacceptable']:
                 return None
             if state == 'unacceptable':
@@ -129,7 +147,8 @@ class LegalAuto(ReviewBot.ReviewBot):
                     return None
                 return False
             # print url, json.dumps(report)
-        self.message = 'ok'
+        if not self.message:
+            self.message = 'ok'
         return True
 
     def check_one_request(self, req):
