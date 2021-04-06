@@ -145,11 +145,29 @@ class PkgListGen(ToolBase.ToolBase):
 
     def solve_module(self, groupname, includes, excludes, use_recommends):
         g = self.groups[groupname]
+        importants = set()
         for i in includes:
-            g.inherit(self.groups[i])
+            name = i
+            if isinstance(i, dict):
+                name = list(i)[0]
+                if i[name] != 'support':
+                    importants.add(name)
+            else:
+                importants.add(name)
+            g.inherit(self.groups[name])
         g.solve(use_recommends)
         for e in excludes:
             g.ignore(self.groups[e])
+        for i in importants:
+            group = self.groups[i]
+            for arch in group.packages:
+                if not arch in g.solved_packages:
+                    continue
+                for package in group.packages[arch]:
+                    if package[0] in g.solved_packages[arch]:
+                        continue
+                    if not package[0] in g.solved_packages['*']:
+                        self.logger.error(f'Missing {package[0]} in {groupname} for {arch}')
 
     def expand_repos(self, project, repo='standard'):
         return repository_path_expand(self.apiurl, project, repo)
