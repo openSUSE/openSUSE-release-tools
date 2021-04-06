@@ -596,7 +596,7 @@ class PkgListGen(ToolBase.ToolBase):
                                 project, scope, force, no_checkout,
                                 only_release_packages, stop_after_solve):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
-        ignore_repos = set(target_config.get('pkglistgen-ignore_repos').split(' '))
+        ignore_repos = set(target_config.get('pkglistgen-ignore_repos', '').split(' '))
         self.repos = [ r for r in self.expand_repos(project, main_repo) if r[0] != project or r[1] not in ignore_repos ]
         print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
 
