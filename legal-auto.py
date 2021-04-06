@@ -284,8 +284,15 @@ class LegalAuto(ReviewBot.ReviewBot):
             return None
         if not 'saved' in obj:
             return None
-        self.logger.debug("PKG {}/{}[{}]->{} is {}".format(sproject, package, revision, tproject, obj['saved']['id']))
-        self.pkg_cache[package] = { revision: obj['saved']['id'] }
+        legaldb_id = obj['saved']['id']
+        self.logger.debug("PKG {}/{}[{}]->{} is {}".format(sproject, package, revision, tproject, legaldb_id))
+        self.pkg_cache[package] = { revision: legaldb_id }
+        if obj['saved']['state'] == 'obsolete':
+            url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(legaldb_id)], {
+                                   'result': f'Reopened for {tproject}', 'state': 'new',
+                                   'external_link': tproject, 'priority': 1})
+            package = REQ.post(url, headers=self.legaldb_headers).json()
+
         return obj['saved']['id']
 
 
@@ -304,6 +311,9 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def do_project(self, subcmd, opts, *projects):
         """${cmd_name}: Overloaded to create/update product
+
+        ${cmd_usage}
+        ${cmd_option_list}
         """
         for project in projects:
             self.checker.update_project(project)
