@@ -62,7 +62,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP2:Update:Products:MicroOS:Staging/dashboard --no-rebuild SUSE:SLE-15-SP2:Update:Products:MicroOS
+            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP3:Update:Products:MicroOS51:Staging/dashboard --no-rebuild SUSE:SLE-15-SP3:Update:Products:MicroOS51
   SLE.Origin.Manager:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -168,12 +168,12 @@ pipelines:
                ln -s $PWD/osclib $tempdir/.osc-plugins
                export HOME=$tempdir
 
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS rebuild
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS list --supersede
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS adi --by-develproject
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS select --non-interactive --merge --try-strategies
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS unselect --cleanup
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP2:Update:Products:MicroOS repair --cleanup
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS51 rebuild
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS51 list --supersede
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS51 adi --by-develproject
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS51 select --non-interactive --merge --try-strategies
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS51 unselect --cleanup
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS51 repair --cleanup
                rm -rf $tempdir
   S15.SP3.Staging.Bot.Report:
     group: SLE.Checkers
@@ -216,7 +216,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP2:Update:Products:MicroOS
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP3:Update:Products:MicroOS51
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
