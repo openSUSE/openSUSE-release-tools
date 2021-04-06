@@ -68,7 +68,7 @@ pipelines:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
-      spec: 0 0 12 ? * *
+      spec: 0 0 */3 ? * *
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-legal-auto
     materials:
