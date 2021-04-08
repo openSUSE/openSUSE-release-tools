@@ -89,7 +89,6 @@ pipelines:
             for product_ndb in sles15-image $PRODUCTS_NDB ; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA $product_ndb -r images-ndb --target-project SUSE:SLE-15-SP3:GA:TEST --target-repository images
             done
-            # For backwards compat, to be removed
             osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:CR sles15-image
             sleep 600
             while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP3:GA:TEST/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
