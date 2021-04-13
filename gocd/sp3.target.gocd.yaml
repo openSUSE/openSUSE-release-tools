@@ -81,13 +81,9 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
-            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP3:GA | grep "^SLES-15-SP3" | grep -v release)
-            for product in kiwi-templates-JeOS 000product $PRODUCTS; do
+            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP3:GA | grep "^SLES15-SP3" | grep -v release)
+            for product in kiwi-templates-JeOS SLES-15-SP3-Vagrant sles15-image 000product $PRODUCTS; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA $product
-            done
-            PRODUCTS_NDB=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP3:GA | grep "^SLES15-SP3" | grep -v release)
-            for product_ndb in sles15-image $PRODUCTS_NDB ; do
-              osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA $product_ndb -r images-ndb --target-project SUSE:SLE-15-SP3:GA:TEST --target-repository images
             done
             osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:CR sles15-image
             sleep 600
@@ -156,13 +152,9 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
-                  PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP3:GA | grep "^SLES-15-SP3" | grep -v release)
-                  for product in kiwi-templates-JeOS 000product $PRODUCTS; do
+                  PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP3:GA | grep "^SLES15-SP3" | grep -v release)
+                  for product in kiwi-templates-JeOS SLES-15-SP3-Vagrant sles15-image 000product $PRODUCTS; do
                     osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA $product
-                  done
-                  PRODUCTS_NDB=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP3:GA | grep "^SLES15-SP3" | grep -v release)
-                  for product_ndb in sles15-image $PRODUCTS_NDB ; do
-                    osc -A https://api.suse.de release SUSE:SLE-15-SP3:GA $product_ndb -r images-ndb --target-project SUSE:SLE-15-SP3:GA:TEST --target-repository images
                   done
                   osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:CR sles15-image
 
