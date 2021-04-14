@@ -25,7 +25,7 @@ nosetests
 Structure of the suite
 ----------------------
 
-Each object is contains functions for the individual tests so split them per
+Each object contains functions for the individual tests so split them per
 area of interest.
 
 In directory fixtures there are resulting xml files obtained from the OBS with
