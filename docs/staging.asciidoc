@@ -22,7 +22,7 @@ different changes working together.
 An staging project is a mere project linked to a subset of Factory
 (MinimalX) , but with some packages that are different as a result of
 one or several requests.  When the release manager assigns a request
-in a staging project, this request is review inside th project.
+in a staging project, this request is review inside the project.
 
 There is a precondition here, the user that has the role of staging
 manager needs to have permission in OBS, and they need to be:
