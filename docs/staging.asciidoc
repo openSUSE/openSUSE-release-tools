@@ -19,7 +19,7 @@ This plugin is used by the release manager to move requests into
 staging projects to evaluate the behavior and inter-compatibility of
 different changes working together.
 
-An\ staging project is a mere project linked to a subset of Factory
+An staging project is a mere project linked to a subset of Factory
 (MinimalX) , but with some packages that are different as a result of
 one or several requests.  When the release manager assigns a request
 in a staging project, this request is review inside th project.
