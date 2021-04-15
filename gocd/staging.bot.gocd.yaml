@@ -52,10 +52,8 @@ pipelines:
                ln -s $PWD/osclib $tempdir/.osc-plugins
                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
                osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
                osc -A https://api.opensuse.org staging -p openSUSE:Factory adi --by-develproject
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory select --non-interactive --merge --try-strategies
                osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
                osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
                rm -rf $tempdir
@@ -116,4 +114,3 @@ pipelines:
                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP3 unselect --cleanup
                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP3 repair --cleanup
                rm -rf $tempdir
-

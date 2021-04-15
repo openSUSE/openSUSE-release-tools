@@ -54,12 +54,9 @@ pipelines:
                ln -s $PWD/osclib $tempdir/.osc-plugins
                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi --by-develproject
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> select --non-interactive --merge --try-strategies
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
                rm -rf $tempdir
-
 <% end -%>
