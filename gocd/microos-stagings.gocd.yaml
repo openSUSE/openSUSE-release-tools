@@ -94,7 +94,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   MicroOS.Staging.B:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:Update:Products:MicroOS51:Staging:B
@@ -157,5 +156,3 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-
-  

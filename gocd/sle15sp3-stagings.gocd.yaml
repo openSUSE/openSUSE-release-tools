@@ -157,7 +157,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.B:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:B
@@ -221,7 +220,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.C:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:C
@@ -285,7 +283,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.D:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:D
@@ -349,7 +346,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.E:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:E
@@ -413,7 +409,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.F:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:F
@@ -477,7 +472,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.G:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:G
@@ -541,7 +535,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.H:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:H
@@ -605,7 +598,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.S:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:S
@@ -669,7 +661,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.V:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:V
@@ -733,7 +724,6 @@ pipelines:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  
   SLE15.SP3.Staging.Y:
     environment_variables:
       STAGING_PROJECT: SUSE:SLE-15-SP3:GA:Staging:Y
@@ -796,5 +786,3 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-
-  
