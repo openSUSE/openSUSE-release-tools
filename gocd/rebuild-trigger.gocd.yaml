@@ -143,3 +143,5 @@ pipelines:
           - script: |-
               echo "SLE15 SP3 Backports"
               ./project-installcheck.py --debug check --store openSUSE:Backports:SLE-15-SP3:Staging/dashboard --no-rebuild openSUSE:Backports:SLE-15-SP3
+              echo "SLE15 SP3 Step Backports (Rebuilds)"
+              ./project-installcheck.py --debug check -r step openSUSE:Backports:SLE-15-SP3
