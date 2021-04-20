@@ -10,7 +10,7 @@ Introduction
 
 The staging plugin is used to enable the new
 https://progress.opensuse.org/workflow/factory-proposal.html[factory
-workflow] to work with staging projects.  This plugin implement some
+workflow] to work with staging projects.  This plugin implements some
 functionality that some day will be directly implemented in OBS
 itself.  Meanwhile this plugin is used as a playground field to
 explore these new concepts and operations.
@@ -21,11 +21,11 @@ different changes working together.
 
 An staging project is a mere project linked to a subset of Factory
 (MinimalX) , but with some packages that are different as a result of
-one or several requests.  When the release manager assign a request
-into a staging project, this request is review inside this project.
+one or several requests.  When the release manager assigns a request
+in a staging project, this request is review inside the project.
 
-There is a precondition here, the user that have the role of staging
-manager need to have permission in OBS, he / she needs to be:
+There is a precondition here, the user that has the role of staging
+manager needs to have permission in OBS, and they need to be:
 
 * Maintainer of openSUSE:Factory:Staging (needs current staging manager)
 
@@ -111,18 +111,18 @@ List
 
 This action will list all the requests that are candidates to be
 assigned to a different staging project.  To decide this list, this
-command will perform to actions with side effects into the requests
+command will perform two actions with side effects into the requests
 status.
 
 The first action is to accept requests that do not affect packages
 that are not inside one of the rings that are defined in Factory.
 This acceptance will move the request to the next status of revision
-(maybe waiting to the manual review or the legal review)
+(maybe waiting to the manual review or the legal review).
 
-The second action is to detect if a request supersede a different one
+The second action is to detect if a request supersedes a different one
 that is currently in a staging project.  If this is the case, this
 command will replace the old request by the new one, declining the
-superseded after this.
+superseded one after this.
 
 Because of the different side effects, this command needs to be
 executed with the proper permissions in OBS.
@@ -138,11 +138,11 @@ Actually we have
 https://build.opensuse.org/project/subprojects/openSUSE:Factory:Staging[ten
 staging projects], that are managed according to some internal rules.
 Every time that the manager decides to move a request to one of those
-projects, a metadata attached to these projects are updated, and a new
-commend is generated.
+projects, a metadata attached to these projects is updated, and a new
+comment is generated.
 
-The metadata associated to a staging project contain the list of
-request that are assigned to this project, and is used by the plugin
+The metadata associated to a staging project contains the list of
+requests that are assigned to the project, and is used by the plugin
 to track and manage the different requests.  For example, the command:
 
 --------------------------------------------------------------------------------
@@ -152,8 +152,8 @@ osc staging select A 12345
 will add the request #12345 into the staging project
 openSUSE:Factory:Staging:A.  This command will take care that this
 request was not previously in the staging project A or in a different
-one.  If this is the case, will show an error message and exit without
-selecting the request.  Is we want to move a request from one staging
+one.  If this is the case, it will show an error message and exit without
+selecting the request.  If we want to move a request from one staging
 project to another one, we need to use the parameter +--move+:
 
 --------------------------------------------------------------------------------
@@ -210,7 +210,7 @@ Cleanup Rings
 ~~~~~~~~~~~~~
 
 https://build.opensuse.org/project/subprojects/openSUSE:Factory:Rings[Rings]
-are collection of packages that are deeply interconnected, and that
+are collections of packages that are deeply interconnected, and that
 are building basis for a different ring or for the rest of the
 distribution.  A ring is a way to organize Factory into
 inter-dependent packages that are again used to build a different
@@ -235,7 +235,7 @@ Freeze
 
 Factory (or the subset MinimalX) is always a moving target, even with
 the staging projects.  If we want to check the status of the request
-assigned to a staging project, sometimes is desirable to have a frozen
+assigned to a staging project, sometimes it is desirable to have a frozen
 status of the source packages that are part of Factory but not of the
 staging project.
 
@@ -251,13 +251,13 @@ Use cases
 Use Case 1: Checking Factory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The staging manager want to see the status of Factory every morning.
+The staging manager wants to see the status of Factory every morning.
 
 --------------------------------------------------------------------------------
 osc staging check
 --------------------------------------------------------------------------------
 
-With this status he / she will contact to the author of the request,
+With this status they will contact the author of the request,
 or will rebuild the packages if there is a suspect or a random fail.
 
 After that, the staging manager can check the important packages that
@@ -268,16 +268,16 @@ osc staging list
 --------------------------------------------------------------------------------
 
 This command can update the request attached to a staging project,
-replacing the superseded one.  The list show the name of the ring
+replacing the superseded one.  The list shows the name of the ring
 where this package is found.
 
 
 Use Case 2: Selecting packages from Ring:0-Bootstrap
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The +list+ command show the name of the ring where we can found the
+The +list+ command shows the name of the ring where we can find the
 package involved in the request.  This information is important,
-because actually only the staging project A support this kind of
+because actually only the staging project A supports these kinds of
 packages.
 
 --------------------------------------------------------------------------------
@@ -292,9 +292,9 @@ new packages from Ring:0.
 Use Case 3: Dispatching packages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The staging manager want to move some packages into different staging
+The staging manager wants to move some packages into different staging
 projects.  The complex part is to decide how to distribute the
-packages here.  The staging manager need to make sure that packages
+packages here.  The staging manager needs to make sure that packages
 that have related changes (e.g. new +rpmlint+ check and the packages
 having fixes for it) are tested in one letter.
 
@@ -355,7 +355,7 @@ Checking the current status
 osc staging check
 --------------------------------------------------------------------------------
 
-In the list we found a request that is independent, we move it to a
+In the list we found a request that is independent, we moved it to a
 isolated staging project.
 
 --------------------------------------------------------------------------------
@@ -375,12 +375,12 @@ osc staging select C 22201 22202 22203
 --------------------------------------------------------------------------------
 
 We wait a bit and we check the result in openQA.  We see that the
-packages works properly in OBS (compile correctly) but there is
+packages work properly in OBS (compile correctly), but there is
 something wrong in openQA: some of the tests are failing.
 
 In this situation we can:
 
-* Rebuild the image in openQA to see if this is a random problem
+* Rebuild the image in openQA to see if this is a random problem.
 
 * If openQA is red again, check the packages that can be problematic
   in the staging project, maybe reading the changelog.

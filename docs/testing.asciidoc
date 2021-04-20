@@ -25,7 +25,7 @@ nosetests
 Structure of the suite
 ----------------------
 
-Each object is containing functions for the individual tests so split them per
+Each object contains functions for the individual tests so split them per
 area of interest.
 
 In directory fixtures there are resulting xml files obtained from the OBS with
@@ -34,13 +34,13 @@ osc api calls.
 Writing tests
 -------------
 
-There are few nice building stones available to implement test.
+There are a few nice building stones available to implement test.
 
 OBS class
 ~~~~~~~~~
 
 +OBS+ class provides simulation of OBS including keeping internal states. It
-supports only limited number of command, but that can be extended.
+supports only a limited number of commands, but that can be extended.
 
 Extending OBS class
 ^^^^^^^^^^^^^^^^^^^
@@ -48,7 +48,7 @@ Extending OBS class
 You can extend the OBS mockup class creating new method, and
 decorating it with one of the @GET, @PUT, @POST or @DELETE.  The
 parameter of the decorator is the PATH of the URL or a regular
-expression that match one of the possible paths.
+expression that matches one of the possible paths.
 
 If the new response can be implemented as a simple fixture, you can
 create the file in the +fixtures/+ directory in a place compatible in

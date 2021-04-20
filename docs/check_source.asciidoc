@@ -8,11 +8,11 @@ Introduction
 ------------
 [id="intro"]
 
-This plugin check for usual mistakes and problems in the source
-packages submitted by the users.  The core of the analysis is done by
-the source-checker Perl script.  This script check, for example, if
+This plugin checks for usual mistakes and problems in the source
+packages submitted by users.  The core of the analysis is done by
+the source-checker Perl script.  This script checks, for example, if
 there is a changelog file, if there is a proper license in the SPEC
-file or if the patch if referenced in the changelog.
+file or if the patch is referenced in the changelog.
 
 
 Installation
@@ -32,7 +32,7 @@ cd openSUSE-release-tools
 ln -sr ./osc-check_source.py ./osclib ~/.osc-plugins
 -------------------------------------------------------------------------------
 
-The program will search also some external scripts (like
+The program will also search some external scripts (like
 check_source.pl) inside the cloned directory (following the symlink).
 
 
@@ -51,17 +51,17 @@ Checks done
 The most important checks are done in the Perl script source-checker,
 and can be enumerated as:
 
-* Check if there are more that one action in the request.
+* Check if there are more than one action in the request.
 
 * Check if the request comes from a valid devel project.
 
-* Check if the package have a proper name.
+* Check if the package has a proper name.
 
 * Check if the service is running in mode='localonly'
 
 * Check if the *.changes file is present.
 
-* Check if there is a SPEC file with the same name of the source
+* Check if there is a SPEC file with the same name as the source
   container.
 
 * No Vendor line is allowed.

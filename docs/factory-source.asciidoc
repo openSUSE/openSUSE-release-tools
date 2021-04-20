@@ -24,7 +24,7 @@ Command line
 ------------
 [id="cli"]
 
-Check all request that have "factory-source" as reviewer:
+Check all requests that have "factory-source" as reviewer:
 
 -------------------------------------------------------------------------------
 ./check_source_in_factory.py review
