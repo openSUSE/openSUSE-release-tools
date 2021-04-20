@@ -32,7 +32,7 @@ cd openSUSE-release-tools
 ln -sr ./osc-check_source.py ./osclib ~/.osc-plugins
 -------------------------------------------------------------------------------
 
-The program will als search some external scripts (like
+The program will also search some external scripts (like
 check_source.pl) inside the cloned directory (following the symlink).
 
 
