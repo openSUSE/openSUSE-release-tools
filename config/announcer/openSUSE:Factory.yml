@@ -27,5 +27,5 @@ changesfile: Changes.{version}.txt
 iso: openSUSE-Tumbleweed-DVD-x86_64-Current.iso
 name: openSUSE:Tumbleweed
 subject: New Tumbleweed snapshot {version} released!
-to: opensuse-factory@opensuse.org
+to: factory@lists.opensuse.org
 url: http://download.opensuse.org/tumbleweed/iso/

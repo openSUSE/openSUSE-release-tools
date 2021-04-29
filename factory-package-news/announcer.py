@@ -19,7 +19,7 @@ logger = logging.getLogger()
 # map of default config entries
 config_defaults = {
     'sender': 'noreply@opensuse.org',
-    'to': 'opensuse-factory@opensuse.org',
+    'to': 'factory@lists.opensuse.org',
     'relay': 'relay.suse.de',
     'changesfile': "Changes.{version}.txt",
 }
