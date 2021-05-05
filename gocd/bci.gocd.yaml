@@ -1,0 +1,41 @@
+format_version: 3
+  BCI.RelPkgs:
+    group: BCI
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Create.Release.Packages:
+        approval: manual
+        resources:
+        - repo-checker
+        tasks:
+        - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p devel:BCI -s target --only-release-packages --force
+
+  Pkglistgen.BCI:
+    group: BCI
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - pkglistgen:
+        approval:
+          type: manual
+        jobs:
+          BCI_target:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p devel:BCI -s target
