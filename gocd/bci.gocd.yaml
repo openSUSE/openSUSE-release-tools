@@ -1,4 +1,5 @@
 format_version: 3
+pipelines:
   BCI.RelPkgs:
     group: BCI
     lock_behavior: unlockWhenFinished
