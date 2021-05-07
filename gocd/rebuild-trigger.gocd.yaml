@@ -144,4 +144,34 @@ pipelines:
               echo "SLE15 SP3 Backports"
               ./project-installcheck.py --debug check --store openSUSE:Backports:SLE-15-SP3:Staging/dashboard --no-rebuild openSUSE:Backports:SLE-15-SP3
               echo "SLE15 SP3 Step Backports (Rebuilds)"
-              ./project-installcheck.py --debug check -r step openSUSE:Backports:SLE-15-SP3
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r step openSUSE:Backports:SLE-15-SP3
+  Trigger.Rebuild.Step:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              echo "Step 15-SP3"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP3:Update
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP3
+              echo "Step 15-SP2"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP2:Update
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP2
+              echo "Step 15-SP1"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP1:Update
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP1
+              echo "Step 15"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15:Update
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15
