@@ -648,7 +648,8 @@ class PkgListGen(ToolBase.ToolBase):
             if no_checkout:
                 print('Skipping checkout of {}/{}'.format(project, package))
                 continue
-            checkout_package(api.apiurl, project, package, expand_link=True, prj_dir=cache_dir)
+            checkout_package(api.apiurl, project, package, expand_link=True,
+                             prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
 
         file_utils.unlink_all_except(release_dir, ['weakremovers.inc'])
         if not only_release_packages:
