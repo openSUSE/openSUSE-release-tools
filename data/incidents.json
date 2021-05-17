@@ -1,10 +1,4 @@
 {
-  "openSUSE:Leap:15.1:Update": {
-     "DISTRI": "opensuse",
-     "FLAVOR": "DVD-Incidents",
-     "VERSION": "15.1",
-     "ARCH": "x86_64"
-  },
   "openSUSE:Leap:15.2:Update": {
      "DISTRI": "opensuse",
      "FLAVOR": "DVD-Incidents",

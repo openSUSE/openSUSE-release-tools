@@ -1,19 +1,5 @@
 {
    "https://openqa.opensuse.org" : {
-      "openSUSE:Leap:15.1:Update" : {
-         "settings" : {
-            "OS_TEST_ISSUES" : "",
-            "FLAVOR" : "DVD-Updates",
-            "DISTRI" : "opensuse",
-            "VERSION" : "15.1",
-            "ARCH" : "x86_64"
-         },
-         "test" : "kde",
-         "repos" : [
-            "http://download.opensuse.org/update/leap/15.1/oss/",
-            "http://download.opensuse.org/update/leap/15.1/non-oss/"
-         ]
-      },
       "openSUSE:Leap:15.2:Update" : {
          "settings" : {
             "OS_TEST_ISSUES" : "",
