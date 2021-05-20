@@ -26,6 +26,6 @@ bodytemplate: '
 changesfile: Changes.{version}.txt
 iso: openSUSE-Tumbleweed-DVD-aarch64-Current.iso
 name: openSUSE:Tumbleweed:ARM
-subject: New ARM Tumbleweed snapshot {version} released!
-to: opensuse-arm@opensuse.org
+subject: New Arm Tumbleweed snapshot {version} released!
+to: arm@lists.opensuse.org
 url: http://download.opensuse.org/ports/aarch64/tumbleweed/iso/
