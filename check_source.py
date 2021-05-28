@@ -114,6 +114,10 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = 'Only one action per request allowed'
             return False
 
+        if source_revision is None:
+            self.review_messages['declined'] = 'Submission not from a pinned source revision'
+            return False
+
         kind = package_kind(self.apiurl, target_project, target_package)
         if kind == 'meta':
             self.review_messages['accepted'] = 'Skipping all checks for meta packages'
