@@ -112,6 +112,7 @@ class Update(object):
                 # but bash.openSUSE_Leap_42.3_Update doesn't leave many options
                 # without reverse engineering OBS :(
                 package = re.sub(r'\.openSUSE_Leap_.*$', '.openSUSE', package)
+                package = re.sub(r'\.openSUSE_Backports_.*$', '.openSUSE', package)
             if not shortest_pkg or len(package) < len(shortest_pkg):
                 shortest_pkg = package
         if not shortest_pkg:
