@@ -30,7 +30,12 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target
+          openSUSE_Factory_ARM_rings:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s rings
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker
