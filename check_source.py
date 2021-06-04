@@ -106,6 +106,40 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return ret
 
+    def check_static_source(self, project, package, revision):
+        # Allow links to openSUSE:, but not Staging
+        if project.startswith('openSUSE:') and ':Staging' not in project:
+            return True
+
+        # The revision has to be a hash
+        if revision is None:
+            self.review_messages['declined'] = 'Revision not set'
+            return False
+
+        if len(revision) != 32:
+            self.review_messages['declined'] = 'Revision not a hash'
+            return False
+
+        url = osc.core.makeurl(self.apiurl, ['source', project, package, '_link'], {'expand': 0, 'rev': revision})
+        try:
+            linkxml = ET.parse(osc.core.http_GET(url)).getroot()
+        except HTTPError as e:
+            if e.code == 404:
+                # Not a link
+                return True
+
+            raise
+
+        # Check links recursively
+        lprj = linkxml.get('project', project)
+        lpkg = linkxml.get('package', package)
+        lrev = linkxml.get('revision', None)
+        if not self.check_static_source(lprj, lpkg, lrev):
+            self.review_messages['declined'] += f' (from {project}/{package}/_link@{revision})'
+            return False
+
+        return True
+
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
         super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
@@ -114,8 +148,7 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = 'Only one action per request allowed'
             return False
 
-        if source_revision is None:
-            self.review_messages['declined'] = 'Submission not from a pinned source revision'
+        if not self.check_static_source(source_project, source_package, source_revision):
             return False
 
         kind = package_kind(self.apiurl, target_project, target_package)
