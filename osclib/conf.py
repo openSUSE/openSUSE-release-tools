@@ -51,6 +51,7 @@ DEFAULT = {
         'product': 'openSUSE.product',
         'openqa': 'https://openqa.opensuse.org',
         'main-repo': 'standard',
+        'rings': 'openSUSE:%(project)s:ARM:Rings',
         'pseudometa_package': 'openSUSE:%(project)s:ARM:Staging/dashboard',
         'download-baseurl': 'http://download.opensuse.org/ports/aarch64/tumbleweed/',
         'mail-list': 'opensuse-arm@opensuse.org',
