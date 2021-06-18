@@ -10,7 +10,7 @@ on:
 
 jobs:
   docker:
-    timeout-minutes: 10
+    timeout-minutes: 40
     runs-on: ubuntu-latest
 
     steps:
