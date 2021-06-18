@@ -189,16 +189,16 @@ class ToTestPublisher(ToTestManager):
 
         self.send_amqp_event(current_snapshot, current_result)
 
-        if current_result == QAResult.failed:
+        if current_result == QAResult.failed and not force:
             self.update_status('failed', current_snapshot)
             return QAResult.failed
         else:
             self.update_status('failed', '')
 
-        if current_result != QAResult.passed:
+        if current_result != QAResult.passed and not force:
             return QAResult.inprogress
 
-        if current_qa_version != current_snapshot:
+        if current_qa_version != current_snapshot and not force:
             # We reached a very bad status: openQA testing is 'done', but not of the same version
             # currently in test project. This can happen when 'releasing' the
             # product failed
