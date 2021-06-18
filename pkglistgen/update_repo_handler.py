@@ -176,6 +176,40 @@ def print_repo_delta(pool, repo2, packages_file):
             print(dep, file=packages_file)
         print('-Prv:', file=packages_file)
 
+def merge_susetags(output, files):
+    pool = solv.Pool()
+    pool.setarch()
+
+    for file in files:
+        oldsysrepo = pool.add_repo(file)
+        defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+        f = tempfile.TemporaryFile()
+        st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+        os.lseek(f.fileno(), 0, os.SEEK_SET)
+        oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+
+    packages = dict()
+    for s in pool.solvables_iter():
+        evr = s.evr.split('-')
+        release = evr.pop()
+        version = '-'.join(evr)
+        key = s.name + "-" + version + "." + s.arch
+        if re.search('-release', s.name): # just take one version of it
+            key = s.name + "." + s.arch
+        packages[key] = { 'name': s.name, 'version': version, 'arch': s.arch, 'release': release, 'provides': set()}
+        for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):
+            packages[key]['provides'].add(str(dep))
+    output_file = open(output, 'w')
+    print("=Ver: 2.0", file=output_file)
+    for package in sorted(packages):
+        infos = packages[package]
+        print('=Pkg:', infos['name'], infos['version'], infos['release'], infos['arch'], file=output_file)
+        print('+Prv:', file=output_file)
+        for dep in sorted(infos['provides']):
+            print(dep, file=output_file)
+        print('-Prv:', file=output_file)
+
+
 def update_project(apiurl, project):
     # Cache dir specific to hostname and project.
     host = urlparse(apiurl).hostname
@@ -190,6 +224,8 @@ def update_project(apiurl, project):
         os.makedirs(cache_dir)
 
         osc.core.checkout_package(apiurl, project, '000update-repos', expand_link=True, prj_dir=cache_dir)
+
+    package = osc.core.Package(repo_dir)
 
     root = yaml.safe_load(open(os.path.join(repo_dir, 'config.yml')))
     for item in root:
@@ -206,6 +242,20 @@ def update_project(apiurl, project):
         else:
             path = key + '.packages'
         packages_file = os.path.join(repo_dir, path)
+
+        if opts.get('refresh', False):
+            oldfiles = glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key)))
+            if len(oldfiles) > 10:
+                oldest = oldfiles[-1]
+                if oldest.count('and_before') > 1:
+                    raise Exception('The oldest is already a compated file')
+                oldest = oldest.replace('.packages.xz', '_and_before.packages')
+                merge_susetags(oldest, oldfiles)
+                for file in oldfiles:
+                    os.unlink(file)
+                    package.delete_file(os.path.basename(file))
+                subprocess.check_call(['xz', oldest])
+                package.addfile(os.path.basename(oldest) + ".xz")
 
         if os.path.exists(packages_file + '.xz'):
             print(path, 'already exists')
@@ -234,11 +284,7 @@ def update_project(apiurl, project):
         subprocess.call(['xz', '-9', packages_file])
         os.unlink(solv_file)
 
-        url = osc.core.makeurl(apiurl, ['source', project, '000update-repos', path + '.xz'])
-        try:
-            osc.core.http_PUT(url, data=open(packages_file + '.xz', 'rb').read())
-        except HTTPError:
-            logger.error(f"Failed to upload to {url}")
-            sys.exit(1)
-
+        package.addfile(os.path.basename(path + '.xz'))
         del pool
+
+    package.commit('Automatic update')
