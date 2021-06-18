@@ -209,6 +209,7 @@ def merge_susetags(output, files):
             print(dep, file=output_file)
         print('-Prv:', file=output_file)
 
+
 def update_project(apiurl, project):
     # Cache dir specific to hostname and project.
     host = urlparse(apiurl).hostname
@@ -223,6 +224,8 @@ def update_project(apiurl, project):
         os.makedirs(cache_dir)
 
         osc.core.checkout_package(apiurl, project, '000update-repos', expand_link=True, prj_dir=cache_dir)
+
+    package = osc.core.Package(repo_dir)
 
     root = yaml.safe_load(open(os.path.join(repo_dir, 'config.yml')))
     for item in root:
@@ -239,6 +242,20 @@ def update_project(apiurl, project):
         else:
             path = key + '.packages'
         packages_file = os.path.join(repo_dir, path)
+
+        if opts.get('refresh', False):
+            oldfiles = glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key)))
+            if len(oldfiles) > 10:
+                oldest = oldfiles[-1]
+                if oldest.count('and_before') > 1:
+                    raise Exception('The oldest is already a compated file')
+                oldest = oldest.replace('.packages.xz', '_and_before.packages')
+                merge_susetags(oldest, oldfiles)
+                for file in oldfiles:
+                    os.unlink(file)
+                    package.delete_file(os.path.basename(file))
+                subprocess.check_call(['xz', oldest])
+                package.addfile(os.path.basename(oldest) + ".xz")
 
         if os.path.exists(packages_file + '.xz'):
             print(path, 'already exists')
@@ -267,11 +284,7 @@ def update_project(apiurl, project):
         subprocess.call(['xz', '-9', packages_file])
         os.unlink(solv_file)
 
-        url = osc.core.makeurl(apiurl, ['source', project, '000update-repos', path + '.xz'])
-        try:
-            osc.core.http_PUT(url, data=open(packages_file + '.xz', 'rb').read())
-        except HTTPError:
-            logger.error(f"Failed to upload to {url}")
-            sys.exit(1)
-
+        package.addfile(os.path.basename(path + '.xz'))
         del pool
+
+    package.commit('Automatic update')
