@@ -10,7 +10,7 @@ on:
 
 jobs:
   docker:
-    timeout-minutes: 10
+    timeout-minutes: 40
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,12 @@ jobs:
     - name: Run tests
       run: docker-compose -f dist/ci/docker-compose.yml run test
 
+    - name: Submit coverage report to Codecov
+      uses: codecov/codecov-action@v1.0.12
+      with:
+        fail_ci_if_error: true
+
     - name: Stop containers
       if: always()
       run: docker-compose -f dist/ci/docker-compose.yml down
+

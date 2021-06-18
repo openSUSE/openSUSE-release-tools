@@ -14,18 +14,12 @@ done
 
 cd /code
 for file in tests/*_tests.py; do
-  if test -f /code/travis.settings; then
-    COVER_ARGS="--with-coverage --cover-package=. --cover-inclusive"
+  if ! test -f /code/.without-coverage; then
+    COVER_ARGS="--with-coverage --cover-xml --cover-package=. --cover-inclusive"
   fi
   echo "running tests from $file..."
   run_as_tester nosetests $COVER_ARGS -c .noserc -s $file
 done
 
 set -x
-
-if test -f /code/travis.settings; then
-  source /code/travis.settings
-  # ignore if coveralls was not setup for the repo/branch
-  run_as_tester TRAVIS_JOB_ID=$TRAVIS_JOB_ID TRAVIS_BRANCH=$TRAVIS_BRANCH TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST TRAVIS=yes coveralls || true
-fi
 
