@@ -9,9 +9,10 @@ pipelines:
       openSUSE:Leap:15.2:ARM:Images
       openSUSE:Leap:15.2:Images
       openSUSE:Leap:15.2:WSL
-      openSUSE:Leap:15.3
-      openSUSE:Leap:15.3:Images
       openSUSE:Leap:15.3:ARM
+      openSUSE:Leap:15.3:ARM:Images
+      openSUSE:Leap:15.3:Images
+      openSUSE:Leap:15.3:WSL
   ) -%>
   TTM.<%= project.gsub('openSUSE:', '').gsub(':', '_') %>:
     group: openSUSE.Checkers
