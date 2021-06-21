@@ -69,8 +69,12 @@ pipelines:
       spec: 0 10 * ? * *
       only_on_changes: false
     materials:
-      git:
+      scripts:
+        auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
     stages:
     - pkglistgen:
         approval:
