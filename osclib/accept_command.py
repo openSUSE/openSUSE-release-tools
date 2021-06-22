@@ -10,6 +10,7 @@ from osc.core import change_request_state, show_package_meta, wipebinaries
 from osc.core import http_GET, http_PUT, http_DELETE, http_POST
 from osc.core import delete_package, search, meta_get_packagelist
 from osc.core import Request
+from osc import conf
 from osc.util.helper import decode_it
 from osclib.core import attribute_value_save
 from osclib.core import attribute_value_load
@@ -22,6 +23,7 @@ from datetime import date
 class AcceptCommand(object):
     def __init__(self, api):
         self.api = api
+        self.config = conf.config[self.api.project]
 
     def find_new_requests(self, project):
         match = f"state/@name='new' and action/target/@project='{project}'"
@@ -239,7 +241,11 @@ class AcceptCommand(object):
         # missleading.
 
         project = self.api.project
-        curr_version = date.today().strftime('%Y%m%d')
+        pred_productversion = self.config.get('always_set_productversion_to', '')
+        if pred_productversion:
+            curr_version = pred_productversion
+        else:
+            curr_version = date.today().strftime('%Y%m%d')
 
         self.update_version_attribute(project, curr_version)
 

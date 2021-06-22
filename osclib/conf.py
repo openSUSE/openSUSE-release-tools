@@ -46,6 +46,7 @@ DEFAULT = {
         'mail-maintainer': 'Dominique Leuenberger <dimstar@suse.de>',
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
+        'always_set_productversion_to': '',
     },
     r'openSUSE:(?P<project>Factory):ARM$': {
         'product': 'openSUSE.product',
