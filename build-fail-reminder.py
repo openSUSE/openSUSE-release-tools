@@ -220,7 +220,7 @@ Kind regards,
         SendMail(logger, project, sender, to, fullname, subject, text)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='boilerplate python commmand line program')
+    parser = argparse.ArgumentParser(description='Send e-mails about packages failing to build for a long time')
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument("--dry", action="store_true", help="dry run")
     parser.add_argument("--debug", action="store_true", help="debug output")
