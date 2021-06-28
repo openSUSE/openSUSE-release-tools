@@ -40,12 +40,13 @@ See the [docs](/docs) directory or a specific tool directory for specific tool d
 
 If working on an `osc` plugin create symlinks for the plugin and `osclib` in either `~/.osc-plugins` or `/usr/lib/osc-plugins`. For example to install the _staging_ plugin do the following.
 
+    mkdir -p ~/.osc-plugins
     ln -sr ./osc-staging.py ./osclib ~/.osc-plugins
 
 It can also be useful to work against a development copy of `osc` either to utilize new features or to debug/fix functionality. To do so one must place the development copy in the path to be loaded and utilize the wrapper script if working on `osc` plugins. One method to accomplish this is shown below.
 
     # outside of openSUSE-release-tools checkout
-    git clone git clone https://github.com/openSUSE/osc.git
+    git clone https://github.com/openSUSE/osc.git
 
     # inside openSUSE-release-tools checkout
     # note the ending /osc which points to the osc directory within the checkout
