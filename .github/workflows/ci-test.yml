@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
 
     - name: Setup path
       run: sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
@@ -27,7 +27,7 @@ jobs:
       run: docker-compose -f dist/ci/docker-compose.yml run test
 
     - name: Submit coverage report to Codecov
-      uses: codecov/codecov-action@v1.0.12
+      uses: codecov/codecov-action@v1.5.2
       with:
         fail_ci_if_error: true
 
