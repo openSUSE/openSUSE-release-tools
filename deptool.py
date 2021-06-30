@@ -8,7 +8,7 @@ import logging
 import cmdln
 
 from fnmatch import fnmatch
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 import solv
 import rpm
 
