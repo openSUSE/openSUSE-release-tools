@@ -92,7 +92,9 @@ are:
 
 * *cleanup_rings* Check the status of the different rings in Factory.
 
-* *freeze* Freeze the packages that are not affected in a staging project.
+* *rebase* Freeze the packages that are not affected in a staging project.
+   In the past, this command used to be called 'freeze', which is still
+   a valid alias.
 
 * *list* Accept all the requests from packages that are not in any
    ring, detect request that supersede the current ones that are
@@ -230,7 +232,7 @@ This command is used to check the current status of the rings and to
 find undesirable dependencies of the packages that conform the rings.
 
 
-Freeze
+Rebase
 ~~~~~~
 
 Factory (or the subset MinimalX) is always a moving target, even with

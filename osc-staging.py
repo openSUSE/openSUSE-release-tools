@@ -141,8 +141,8 @@ def do_staging(self, subcmd, opts, *args):
     "cleanup_rings" will try to cleanup rings content and print
         out problems
 
-    "freeze" will freeze the sources of the project's links while not
-        affecting the source packages
+    "rebase" (or "freeze") will freeze the sources of the project's links while
+        not affecting the source packages
 
     "frozenage" will show when the respective staging project was last frozen
 
@@ -298,7 +298,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging check_duplicate_binaries
         osc staging check_local_links
         osc staging cleanup_rings
-        osc staging freeze [--no-bootstrap] STAGING...
+        osc staging rebase|freeze [--no-bootstrap] STAGING...
         osc staging frozenage [STAGING...]
         osc staging ignore [-m MESSAGE] REQUEST...
         osc staging unignore [--cleanup] [REQUEST...|all]
@@ -340,6 +340,7 @@ def do_staging(self, subcmd, opts, *args):
         min_args, max_args = 0, None
     elif cmd in (
         'freeze',
+        'rebase',
         'setprio',
         'ignore',
     ):
@@ -408,7 +409,7 @@ def do_staging(self, subcmd, opts, *args):
             CheckDuplicateBinariesCommand(api).perform(opts.save)
         elif cmd == 'check_local_links':
             AcceptCommand(api).check_local_links()
-        elif cmd == 'freeze':
+        elif cmd == 'freeze' or cmd == 'rebase':
             for prj in args[1:]:
                 prj = api.prj_from_short(prj)
                 print(Fore.YELLOW + prj)
