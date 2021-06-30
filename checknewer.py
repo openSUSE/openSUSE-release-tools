@@ -11,7 +11,11 @@ import solv
 pool = solv.Pool()
 args = sys.argv[1:]
 if len(args) < 2:
-    print("usage: checknewer NEWREPO OLDREPO1 [OLDREPO2...]")
+    print("Check if all packages in a repo are newer than all other repos")
+    print()
+    print("Usage: checknewer NEWREPO OLDREPO1 [OLDREPO2...]")
+    print()
+    print("A repo is one of: foo.solv, primary.xml, packages (susetags)")
     sys.exit(1)
 
 firstrepo = None
