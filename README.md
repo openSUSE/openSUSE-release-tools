@@ -57,7 +57,7 @@ It can also be useful to work against a development copy of `osc` either to util
 
 A containerized OBS can be started via one command. The default credentials are `Admin` and `opensuse` on [0.0.0.0:3000](http://0.0.0.0:3000).
 
-    ./dist/ci/docker-compose-obs
+    docker-compose -f dist/ci/docker-compose.yml up api
 
 An `osc` alias is automatically configured as `local`.
 

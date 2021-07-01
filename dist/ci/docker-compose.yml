@@ -28,6 +28,8 @@ services:
       - srcserver
       - repserver
       - servicedispatch
+    ports:
+      - 0.0.0.0:3000:3000
   srcserver:
     <<: *obs
     command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_srcserver
