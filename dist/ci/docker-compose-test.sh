@@ -15,7 +15,7 @@ done
 cd /code
 for file in tests/*_tests.py; do
   if ! test -f /code/.without-coverage; then
-    COVER_ARGS="--with-coverage --cover-xml --cover-package=. --cover-inclusive"
+    COVER_ARGS="--with-coverage --cover-xml --cover-package=. --cover-inclusive --cover-no-print"
   fi
   echo "running tests from $file..."
   run_as_tester nosetests $COVER_ARGS -c .noserc -s $file
