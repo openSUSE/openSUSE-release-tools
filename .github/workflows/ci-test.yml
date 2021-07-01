@@ -1,4 +1,4 @@
-name: tests
+name: Checks
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
     - master
 
 jobs:
-  docker:
+  tests:
     timeout-minutes: 40
     runs-on: ubuntu-latest
 
@@ -19,9 +19,6 @@ jobs:
 
     - name: Setup path
       run: sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
-
-    - name: Run Flaker
-      run: docker-compose -f dist/ci/docker-compose.yml run flaker
 
     - name: Run tests
       run: docker-compose -f dist/ci/docker-compose.yml run test
@@ -34,4 +31,22 @@ jobs:
     - name: Stop containers
       if: always()
       run: docker-compose -f dist/ci/docker-compose.yml down
+
+  linters:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup path
+      run: sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
+
+    - name: Run Flaker
+      run: docker-compose -f dist/ci/docker-compose.yml run flaker
+
+    - name: Stop containers
+      if: always()
+      run: docker-compose -f dist/ci/docker-compose.yml down
+
 

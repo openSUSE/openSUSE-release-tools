@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/openSUSE/openSUSE-release-tools.svg?branch=master)](https://travis-ci.org/openSUSE/openSUSE-release-tools)
+[![Build Status](https://github.com/openSUSE/openSUSE-release-tools/workflows/CI/badge.svg?branch=master)](https://github.com/openSUSE/openSUSE-release-tools/actions?query=branch%3Amaster)
 [![Coverage Status](https://coveralls.io/repos/github/openSUSE/openSUSE-release-tools/badge.svg?branch=master)](https://coveralls.io/github/openSUSE/openSUSE-release-tools?branch=master)
 [![openSUSE Tumbleweed package](https://repology.org/badge/version-for-repo/opensuse_tumbleweed/opensuse-release-tools.svg)](https://repology.org/metapackage/opensuse-release-tools)
 
