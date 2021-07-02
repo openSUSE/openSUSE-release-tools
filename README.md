@@ -82,8 +82,11 @@ This repository includes all the needed files to set up and run the Continuous I
     # Run the linter
     docker-compose -f dist/ci/docker-compose.yml run flaker
 
-    # Run the test suite. It may take some time.
+    # Run the test full suite (it may take some time)...
     docker-compose -f dist/ci/docker-compose.yml run test
+
+    # .. or just run a single test (i.e., the 'tests/util_tests.py')
+    docker-compose -f dist/ci/docker-compose.yml run test run_as_tester nosetests tests/util_tests.py
 
     # We are finished. Now you can shut the containers down.
     docker-compose -f dist/ci/docker-compose.yml down
