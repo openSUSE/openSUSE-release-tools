@@ -59,7 +59,17 @@ Using [Docker Compose](https://docs.docker.com/compose/), a containerized OBS ca
 
     docker-compose -f dist/ci/docker-compose.yml up api
 
-An `osc` alias is automatically configured as `local`.
+To make things easier, you can add an alias to refer to this instance (do not forget to adjust the port if you are using a different one):
+
+    cat <<EOF >> ~/.config/osc/oscrc
+
+    [http://0.0.0.0:3000]
+    user = Admin
+    pass = opensuse
+    aliases = local
+    EOF
+
+Then you can use the new `local` alias to access this new instance.
 
     osc -A local api /about
 
