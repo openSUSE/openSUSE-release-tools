@@ -55,7 +55,7 @@ It can also be useful to work against a development copy of `osc` either to util
     # to utilize the wrapper for working on osc plugins from osrt checkout
     $(realpath ./osc)/../osc-wrapper.py --version
 
-Using [Docker Compose](https://docs.docker.com/compose/), a containerized OBS can be started via one command. The default credentials are `Admin` and `opensuse` on [0.0.0.0:3000](http://0.0.0.0:3000).
+Using [Docker Compose](https://docs.docker.com/compose/), a containerized OBS can be started via one command. The default credentials are `Admin` and `opensuse` on [0.0.0.0:3000](http://0.0.0.0:3000). You can change the port by setting the environment variable `OSRT_EXPOSED_OBS_PORT`.
 
     docker-compose -f dist/ci/docker-compose.yml up api
 

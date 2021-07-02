@@ -29,7 +29,7 @@ services:
       - repserver
       - servicedispatch
     ports:
-      - 0.0.0.0:3000:3000
+      - "0.0.0.0:${OSRT_EXPOSED_OBS_PORT:-3000}:3000"
   srcserver:
     <<: *obs
     command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_srcserver
