@@ -1,4 +1,4 @@
 [flake8]
-exclude = .open-build-service/, abichecker, openqa, openqa-maintenance.py
+exclude = .open-build-service/, abichecker
 max-line-length = 100
 ignore = E501,F401,E128,E251,E201,E202,E302,E305,F841,E261,E265,E712,E126,E711,E125,E123,E101,E713,E124,E127,E701,E714,W504,E129,E741,E722,E731
