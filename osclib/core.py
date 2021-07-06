@@ -21,6 +21,7 @@ from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import Request
+from osc.core import Action
 from osc.core import show_package_meta
 from osc.core import show_project_meta
 from osc.core import show_results_meta
@@ -87,6 +88,10 @@ def maintainers_get(apiurl, project, package=None):
 
 @memoize(session=True)
 def package_role_expand(apiurl, project, package, role='maintainer', inherit=True):
+    """
+    All users with a certain role on a package, including those who have the role directly assigned
+    and those who are part of a group with that role.
+    """
     meta = ETL.fromstringlist(show_package_meta(apiurl, project, package))
     users = meta_role_expand(apiurl, meta, role)
 
@@ -97,6 +102,10 @@ def package_role_expand(apiurl, project, package, role='maintainer', inherit=Tru
 
 @memoize(session=True)
 def project_role_expand(apiurl, project, role='maintainer'):
+    """
+    All users with a certain role on a project, including those who have the role directly assigned
+    and those who are part of a group with that role.
+    """
     meta = ETL.fromstringlist(show_project_meta(apiurl, project))
     return meta_role_expand(apiurl, meta, role)
 
@@ -1075,70 +1084,32 @@ def request_create_change_devel(apiurl, source_project, source_package,
     return RequestFuture('change_devel {}/{} -> {}/{}'.format(
         source_project, source_package, target_project, target_package), create_function)
 
-# Should exist within osc.core like create_submit_request(), but rather it was
-# duplicated in osc.commandline.
 def create_delete_request(apiurl, target_project, target_package=None, message=None):
-    if not message:
-        message = message_suffix('created')
+    """Create a delete request"""
 
-    request = ETL.Element('request')
+    action = Action('delete', tgt_project=target_project, tgt_package=target_package)
+    return create_request(apiurl, action, message)
 
-    state = ETL.Element('state')
-    state.set('name', 'new')
-    request.append(state)
-
-    description = ETL.Element('description')
-    description.text = message
-    request.append(description)
-
-    action = ETL.Element('action')
-    action.set('type', 'delete')
-    request.append(action)
-
-    target = ETL.Element('target')
-    target.set('project', target_project)
-    if target_package:
-        target.set('package', target_package)
-    action.append(target)
-
-    url = makeurl(apiurl, ['request'], {'cmd': 'create'})
-    root = ETL.parse(http_POST(url, data=ETL.tostring(request))).getroot()
-    return root.get('id')
-
-# Should exist within osc.core like create_submit_request(), but rather it was
-# duplicated in osc.commandline.
 def create_change_devel_request(apiurl, source_project, source_package,
                                 target_project, target_package=None, message=None):
-    if not message:
-        message = message_suffix('created')
+    """Create a change_devel request"""
 
-    request = ETL.Element('request')
+    action = Action('change_devel', src_project=source_project, src_package=source_package,
+            tgt_project=target_project, tgt_package=target_package)
+    return create_request(apiurl, action, message)
 
-    state = ETL.Element('state')
-    state.set('name', 'new')
-    request.append(state)
+def create_request(apiurl, action, message=None):
+    """Create a request for the given action
 
-    description = ETL.Element('description')
-    description.text = message
-    request.append(description)
+    If no message is given, one is generated (see add_description)
+    """
 
-    action = ETL.Element('action')
-    action.set('type', 'change_devel')
-    request.append(action)
+    r = Request()
+    r.actions.append(action)
+    add_description(r, message)
 
-    source = ETL.Element('source')
-    source.set('project', source_project)
-    source.set('package', source_package)
-    action.append(source)
-
-    target = ETL.Element('target')
-    target.set('project', target_project)
-    target.set('package', target_package)
-    action.append(target)
-
-    url = makeurl(apiurl, ['request'], {'cmd': 'create'})
-    root = ETL.parse(http_POST(url, data=ETL.tostring(request))).getroot()
-    return root.get('id')
+    r.create(apiurl)
+    return r.reqid
 
 class RequestFuture:
     def __init__(self, description, create_function):
@@ -1167,6 +1138,16 @@ class RequestFuture:
 
     def __str__(self):
         return self.description
+
+def add_description(request, text=None):
+    """Add a description to the given request.
+
+    If a text is given, that is used as description. Otherwise a generic text is generated.
+    """
+
+    if not text:
+        text = message_suffix('created')
+    request.description = text
 
 def message_suffix(action, message=None):
     if not message:
