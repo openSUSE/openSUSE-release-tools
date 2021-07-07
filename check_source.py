@@ -21,6 +21,8 @@ from osclib.core import group_members
 from osclib.core import package_kind
 from osclib.core import source_file_load
 from osclib.core import target_archs
+from osclib.core import create_add_role_request
+from osclib.core import maintainers_get
 from urllib.error import HTTPError
 
 import ReviewBot
@@ -52,6 +54,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.mail_release_list = config.get('mail-release-list')
         self.staging_group = config.get('staging-group')
         self.repo_checker = config.get('repo-checker')
+        self.required_maintainer = config.get('required-source-maintainer', '')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
         self.skip_add_reviews = False
         self.security_review_team = config.get('security-review-team', 'security-team')
@@ -158,6 +161,25 @@ class CheckSource(ReviewBot.ReviewBot):
                 match = re.match(r'(.*)\.\d+$', source_package)
                 if match:
                     inair_renamed = target_package != match.group(1)
+
+        if not self.source_has_correct_maintainers(source_project):
+            declined_msg = (
+                'This request cannot be accepted unless %s is a maintainer of %s.' %
+                (self.required_maintainer, source_project)
+            )
+
+            try:
+                add_role_msg = 'Created automatically from request %s' % self.request.reqid
+                add_role_reqid = create_add_role_request(self.apiurl, source_project, self.required_maintainer,
+                                                         'maintainer', message=add_role_msg)
+                declined_msg += ' Created the add_role request %s for addressing this problem.' % add_role_reqid
+            except HTTPError as e:
+                self.logger.error(
+                    'Cannot create the corresponding add_role request for %s: %s' % (self.request.reqid, e)
+                )
+
+            self.review_messages['declined'] = declined_msg
+            return False
 
         if not self.in_air_rename_allow and inair_renamed:
             self.review_messages['declined'] = 'Source and target package names must match'
@@ -312,6 +334,22 @@ class CheckSource(ReviewBot.ReviewBot):
         }
         result = osc.core.search(self.apiurl, **search)
         return result['package'].attrib['matches'] != '0'
+
+    def source_has_correct_maintainers(self, source_project):
+        """Checks whether the source project has the required maintainer
+
+        If a 'required-source-maintainer' is set, it checks whether it is a
+        maintainer for the source project.
+
+        source_project - source project name
+        """
+        self.logger.info(
+            'Checking required maintainer from the source project (%s)' % self.required_maintainer
+        )
+        if not self.required_maintainer: return True
+
+        maintainers = maintainers_get(self.apiurl, source_project)
+        return self.required_maintainer in maintainers
 
     @staticmethod
     def checkout_package(*args, **kwargs):

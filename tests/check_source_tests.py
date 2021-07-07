@@ -3,11 +3,14 @@ from . import OBSLocal
 from check_source import CheckSource
 import random
 import os
+from osclib.core import request_action_list
+from osc.core import get_request_list
 
 PROJECT = 'openSUSE:Factory'
 SRC_PROJECT = 'devel:Fishing'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 REVIEW_TEAM = 'reviewers-team'
+FACTORY_MAINTAINERS = 'group:factory-maintainers'
 
 # NOTE: Since there is no documentation explaining the good practices for creating tests for a
 # review bot, this test is created by mimicking parts of other existing tests. Most decisions are
@@ -22,6 +25,14 @@ class TestCheckSource(OBSLocal.TestCase):
 
         # Using OBSLocal.StagingWorkflow makes it easier to setup testing scenarios
         self.wf = OBSLocal.StagingWorkflow(PROJECT)
+
+        # Set up the reviewers team
+        self.wf.create_group(REVIEW_TEAM)
+
+        self.wf.remote_config_set(
+            { 'required-source-maintainer': 'Admin', 'review-team': REVIEW_TEAM }
+        )
+
         self.bot_user = 'factory-auto'
         self.wf.create_user(self.bot_user)
         self.project = self.wf.create_project(PROJECT)
@@ -58,10 +69,6 @@ class TestCheckSource(OBSLocal.TestCase):
         """Accepts a request coming from a devel project"""
         self._setup_devel_project()
 
-        # Set up the reviewers team
-        self.wf.create_group(REVIEW_TEAM)
-        self.wf.remote_config_set({ 'review-team': REVIEW_TEAM }, replace_all=False)
-
         req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish').reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
@@ -71,6 +78,30 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
+
+    def test_source_maintainer(self):
+        """Declines the request when the 'required_maintainer' is not maintainer of the source project"""
+        self._setup_devel_project()
+
+        # Change the required maintainer
+        self.wf.create_group(FACTORY_MAINTAINERS.replace('group:', ''))
+        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish').reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        add_role_req = get_request_list(self.wf.apiurl, SRC_PROJECT, req_state=['new'], req_type='add_role')[0]
+
+        self.assertIn('unless %s is a maintainer of %s' % (FACTORY_MAINTAINERS, SRC_PROJECT), review.comment)
+        self.assertIn('Created the add_role request %s' % add_role_req.reqid, review.comment)
+
+        self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
+        self.assertEqual('Created automatically from request %s' % req_id, add_role_req.description)
 
     def _setup_devel_project(self):
         devel_project = self.wf.create_project(SRC_PROJECT)

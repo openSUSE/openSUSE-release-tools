@@ -1098,6 +1098,21 @@ def create_change_devel_request(apiurl, source_project, source_package,
             tgt_project=target_project, tgt_package=target_package)
     return create_request(apiurl, action, message)
 
+def create_add_role_request(apiurl, target_project, user, role, target_package=None, message=None):
+    """Create an add_role request
+
+    user -- user or group name. If it is a group, it should start with 'group:'.
+    """
+
+    if user.startswith('group:'):
+        group = user.replace('group:', '')
+        kargs = dict(group_name=group, group_role=role)
+    else:
+        kargs = dict(person_name=user, person_role=role)
+
+    action = Action('add_role', tgt_project=target_project, tgt_package=target_package, **kargs)
+    return create_request(apiurl, action, message)
+
 def create_request(apiurl, action, message=None):
     """Create a request for the given action
 
