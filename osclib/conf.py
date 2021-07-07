@@ -105,7 +105,7 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
     },
-    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)):ARM(:Images)?$': {
+    r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)):ARM$': {
         'product': 'openSUSE.product',
         'openqa': 'https://openqa.opensuse.org',
         'main-repo': 'ports',
