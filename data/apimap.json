@@ -11,7 +11,7 @@
   },
   "openSUSE:Backports:SLE-15-SP3:Update" : {
     "version": "15.3",
-    "flavor": "DVD-Backports",
+    "flavor": "DVD-Backports-Incidents",
     "distri": "opensuse"
   }
 }
