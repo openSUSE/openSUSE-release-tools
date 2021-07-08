@@ -8,8 +8,9 @@ RUN zypper --gpg-auto-import-keys ref
 RUN zypper in -y osc python3-nose python3-httpretty python3-pyxdg python3-PyYAML \
    python3-pika python3-mock python3-cmdln python3-lxml python3-python-dateutil python3-colorama \
    python3-influxdb python3-coverage python3-coveralls libxml2-tools curl python3-flake8 \
-   shadow vim vim-data strace git sudo patch openSUSE-release openSUSE-release-ftp
-
+   shadow vim vim-data strace git sudo patch openSUSE-release openSUSE-release-ftp \
+   perl-Net-SSLeay perl-Text-Diff perl-XML-Simple perl-XML-Parser build \
+   obs-service-download_files
 RUN useradd tester -d /code/tests/home
 
 COPY run_as_tester /usr/bin
