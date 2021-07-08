@@ -2,9 +2,12 @@ import logging
 from . import OBSLocal
 from check_source import CheckSource
 import random
+import os
 
 PROJECT = 'openSUSE:Factory'
 SRC_PROJECT = 'devel:Fishing'
+FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
+REVIEW_TEAM = 'reviewers-team'
 
 # NOTE: Since there is no documentation explaining the good practices for creating tests for a
 # review bot, this test is created by mimicking parts of other existing tests. Most decisions are
@@ -49,3 +52,35 @@ class TestCheckSource(OBSLocal.TestCase):
 
         review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
         self.assertIn('%s is not a devel project of %s' % (SRC_PROJECT, PROJECT), review.comment)
+
+    def test_devel_project(self):
+        self._setup_devel_project()
+
+        # Set up the reviewers team
+        self.wf.create_group(REVIEW_TEAM)
+        self.wf.remote_config_set({ 'review-team': REVIEW_TEAM }, replace_all=False)
+
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish').reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+        self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
+
+    def _setup_devel_project(self):
+        devel_project = self.wf.create_project(SRC_PROJECT)
+        devel_package = OBSLocal.Package('blowfish', project=devel_project)
+
+        blowfish_spec = os.path.join(FIXTURES, 'packages', 'blowfish', 'blowfish.spec')
+        with open(blowfish_spec) as f:
+            devel_package.create_commit(filename='blowfish.spec', text=f.read())
+
+        blowfish_changes = os.path.join(FIXTURES, 'packages', 'blowfish', 'blowfish.changes')
+        with open(blowfish_changes) as f:
+            devel_package.create_commit(filename='blowfish.changes', text=f.read())
+
+        devel_package.create_file(filename='blowfish-1.tar.gz')
+        target_package = OBSLocal.Package('blowfish', self.wf.projects['target'], devel_project=SRC_PROJECT)
