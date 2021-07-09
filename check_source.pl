@@ -132,7 +132,7 @@ for my $test (glob("/usr/lib/obs/service/source_validators/*")) {
 
 my $odir = getcwd();
 
-chdir($dir) || "chdir $dir failed";
+chdir($dir) || die "chdir $dir failed";
 for my $patch (glob("*.diff *.patch *.dif")) {
     $patches{$patch} = 'current';
 }
@@ -213,7 +213,7 @@ if (-d "$old") {
                 $diff = diff "$old/$changes", "$dir/$changes";
             }
             for my $line (split(/\n/, $diff)) {
-                next unless $line =~ m/^+/;
+                next unless $line =~ m/^\+/;
                 $line =~ s/^\+//;
                 for my $patch (keys %patches) {
                     if (index($line, $patch) != -1) {
@@ -238,14 +238,14 @@ if (-d "$old") {
     }
 }
 
-my $odir = getcwd;
+my $odir2 = getcwd;
 my $tmpdir = tempdir("obs-XXXXXXX", TMPDIR => 1, CLEANUP => 1);
 chdir($dir) || die 'tempdir failed';
 if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--enforcelocal", "yes", "--outdir", $tmpdir)) {
     print "Source URLs are not valid. Try \"osc service runall download_files\".\n";
     $ret = 2;
 }
-chdir($odir);
+chdir($odir2);
 
 for my $rpmlint (glob("$dir/*rpmlintrc")) {
     open(RPMLINTRC, $rpmlint);
@@ -295,7 +295,7 @@ if (-f "$dir/_service.bak") {
 my %files;
 chdir($old);
 prepare_package(\%files);
-chdir($odir);
+chdir($odir2);
 chdir($dir);
 prepare_package(\%files);
 exit(0);
