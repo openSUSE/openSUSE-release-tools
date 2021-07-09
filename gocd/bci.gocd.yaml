@@ -63,18 +63,24 @@ pipelines:
   Pkglistgen.SLE_BCI:
     group: BCI
     lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
     timer:
       spec: 0 10 * ? * *
       only_on_changes: false
     materials:
+      repos:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLE-15-SP3:Update_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
     stages:
     - pkglistgen:
         approval:
@@ -84,7 +90,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP3:Update:BCI -s target
+            - script: ./scripts/pkglistgen.py -d -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP3:Update:BCI -s target
     - Expect.Images.To.Finish:
         resources:
         - staging-bot
