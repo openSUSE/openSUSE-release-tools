@@ -1,9 +1,0 @@
-[Unit]
-Description=check ABI of submit requests
-
-[Service]
-Type=forking
-ExecStart=/usr/bin/tmux new-session -P -d -s abichecker -n bot /usr/share/openSUSE-release-tools/abichecker/abichecker.py --no-review --verbose -A https://api.suse.de --web-url=http://abichecker.suse.de project --interval 15 SUSE:Maintenance maintenance_incident
-ExecStop=/usr/bin/tmux kill-session -t abichecker
-WorkingDirectory=/usr/share/openSUSE-release-tools/abichecker
-User=_opensuse.org-abi-checker
