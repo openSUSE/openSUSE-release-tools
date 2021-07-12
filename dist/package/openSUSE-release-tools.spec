@@ -66,12 +66,10 @@ Requires:       perl-XML-Parser
 # Spec related requirements.
 Requires:       osclib = %{version}
 
-# no longer deployed as package
-Obsoletes:      %{name}-totest-manager
 # no longer supported
-Obsoletes:      osc-plugin-check_dups
+Obsoletes:      osc-plugin-check_dups < 20210528
 # vdelreq is no longer needed/supported; delete requests are handled immediately again
-Obsoletes:      osc-plugin-vdelreq
+Obsoletes:      osc-plugin-vdelreq < 20210528
 
 # Avoid needlessly building on s390x and such in various repos.
 # Must include noarch for older systems even though it makes no sense due to
