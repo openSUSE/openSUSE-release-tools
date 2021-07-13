@@ -9,7 +9,6 @@ install:
 		$(DESTDIR)$(oscplugindir)
 	install -d -m 755 $(DESTDIR)$(apachevhostsdir)
 	install -d -m 755 $(DESTDIR)$(abicheckerdir)
-	install -m 644 systemd/*.service $(DESTDIR)$(unitdir)
 	install -m 644 systemd/*.conf $(DESTDIR)$(tmpfilesdir)
 	install -m 644 apache/* $(DESTDIR)$(apachevhostsdir)
 	install -d -m 755 $(DESTDIR)/var/lib/opensuse.org/abi-checker

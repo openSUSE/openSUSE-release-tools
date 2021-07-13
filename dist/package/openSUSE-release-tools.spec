@@ -66,12 +66,10 @@ Requires:       perl-XML-Parser
 # Spec related requirements.
 Requires:       osclib = %{version}
 
-# no longer deployed as package
-Obsoletes:      %{name}-totest-manager
 # no longer supported
-Obsoletes:      osc-plugin-check_dups
+Obsoletes:      osc-plugin-check_dups < 20210528
 # vdelreq is no longer needed/supported; delete requests are handled immediately again
-Obsoletes:      osc-plugin-vdelreq
+Obsoletes:      osc-plugin-vdelreq < 20210528
 
 # Avoid needlessly building on s390x and such in various repos.
 # Must include noarch for older systems even though it makes no sense due to
@@ -460,7 +458,6 @@ exit 0
 %{apache_sysconfdir}/vhosts.d/opensuse-abi-checker.conf.in
 %{_datadir}/%{source_dir}/abichecker
 %{_tmpfilesdir}/opensuse-abi-checker.conf
-%{_unitdir}/opensuse-abi-checker.service
 
 %files announcer
 %defattr(-,root,root,-)
@@ -470,16 +467,12 @@ exit 0
 %{_datadir}/%{source_dir}/%{announcer_filename}
 %config(noreplace) %{_sysconfdir}/openSUSE-release-tools/announcer
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
-%{_unitdir}/osrt-announcer@.service
-%{_unitdir}/osrt-announcer@.timer
 
 %files check-source
 %defattr(-,root,root,-)
 %{_bindir}/osrt-check_source
 %{_datadir}/%{source_dir}/check_source.pl
 %{_datadir}/%{source_dir}/check_source.py
-%{_unitdir}/osrt-check-source.service
-%{_unitdir}/osrt-check-source.timer
 
 %files leaper
 %defattr(-,root,root,-)
@@ -490,20 +483,12 @@ exit 0
 %{_datadir}/%{source_dir}/leaper.py
 %{_datadir}/%{source_dir}/manager_42.py
 %{_datadir}/%{source_dir}/update_crawler.py
-%{_unitdir}/osrt-leaper-crawler@.service
-%{_unitdir}/osrt-leaper-crawler@.timer
-%{_unitdir}/osrt-leaper-manager@.service
-%{_unitdir}/osrt-leaper-manager@.timer
-%{_unitdir}/osrt-leaper-review.service
-%{_unitdir}/osrt-leaper-review.timer
 %config(noreplace) %{_sysconfdir}/openSUSE-release-tools/manager_42
 
 %files maintenance
 %defattr(-,root,root,-)
 %{_bindir}/osrt-check_maintenance_incidents
 %{_datadir}/%{source_dir}/check_maintenance_incidents.py
-%{_unitdir}/osrt-maintenance-incidents.service
-%{_unitdir}/osrt-maintenance-incidents.timer
 
 %files metrics
 %defattr(-,root,root,-)
@@ -544,10 +529,6 @@ exit 0
 %files origin-manager
 %{_bindir}/osrt-origin-manager
 %{_datadir}/%{source_dir}/origin-manager.py
-%{_unitdir}/osrt-origin-manager.service
-%{_unitdir}/osrt-origin-manager.timer
-%{_unitdir}/osrt-origin-manager-report@.service
-%{_unitdir}/osrt-origin-manager-report@.timer
 
 %files repo-checker
 %defattr(-,root,root,-)
@@ -567,28 +548,12 @@ exit 0
 %{_bindir}/osrt-suppkg_rebuild
 %{_datadir}/%{source_dir}/devel-project.py
 %{_datadir}/%{source_dir}/suppkg_rebuild.py
-%{_unitdir}/osrt-staging-bot-check_duplicate_binaries@.service
-%{_unitdir}/osrt-staging-bot-check_duplicate_binaries@.timer
-%{_unitdir}/osrt-staging-bot-daily@.service
-%{_unitdir}/osrt-staging-bot-daily@.timer
-%{_unitdir}/osrt-staging-bot-devel-list.service
-%{_unitdir}/osrt-staging-bot-devel-list.timer
-%{_unitdir}/osrt-staging-bot-staging-report@.service
-%{_unitdir}/osrt-staging-bot-staging-report@.timer
-%{_unitdir}/osrt-staging-bot-regular@.service
-%{_unitdir}/osrt-staging-bot-regular@.timer
-%{_unitdir}/osrt-staging-bot-reminder.service
-%{_unitdir}/osrt-staging-bot-reminder.timer
-%{_unitdir}/osrt-staging-bot-support-rebuild@.service
-%{_unitdir}/osrt-staging-bot-support-rebuild@.timer
 
 %files pkglistgen
 %defattr(-,root,root,-)
 %{_bindir}/osrt-pkglistgen
 %{_datadir}/%{source_dir}/pkglistgen
 %{_datadir}/%{source_dir}/pkglistgen.py
-%{_unitdir}/osrt-pkglistgen@.service
-%{_unitdir}/osrt-pkglistgen@.timer
 
 %files -n osclib
 %defattr(-,root,root,-)
