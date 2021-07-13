@@ -26,7 +26,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings
-          openSUSE_Factory_ARM:
+          openSUSE_Factory_ARM_target:
             resources:
             - repo-checker
             tasks:

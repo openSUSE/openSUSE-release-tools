@@ -16,7 +16,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% ['openSUSE:Factory/target', 'openSUSE:Factory/rings', 'openSUSE:Factory:ARM', 'openSUSE:Factory:PowerPC', 'openSUSE:Factory:zSystems', 'openSUSE:Factory:RISCV'].each do |project|
+<% ['openSUSE:Factory/target', 'openSUSE:Factory/rings', 'openSUSE:Factory:ARM/target', 'openSUSE:Factory:ARM/rings', 'openSUSE:Factory:PowerPC', 'openSUSE:Factory:zSystems', 'openSUSE:Factory:RISCV'].each do |project|
   project=project.split('/')
   name=project[0].gsub(':', '_')
   if project.size > 1

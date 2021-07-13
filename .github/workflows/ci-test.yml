@@ -39,6 +39,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
+    - name: Validate gocd config
+      run: cd gocd && sh generate.sh && git diff --exit-code
+
     - name: Setup path
       run: sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
 
@@ -48,5 +51,4 @@ jobs:
     - name: Stop containers
       if: always()
       run: docker-compose -f dist/ci/docker-compose.yml down
-
 
