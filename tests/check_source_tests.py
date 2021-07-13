@@ -8,7 +8,7 @@ from osc.core import get_request_list
 
 PROJECT = 'openSUSE:Factory'
 SRC_PROJECT = 'devel:Fishing'
-FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 REVIEW_TEAM = 'reviewers-team'
 FACTORY_MAINTAINERS = 'group:factory-maintainers'
 
