@@ -21,7 +21,7 @@ from check_tags_in_requests import TagChecker
 sys.path.append(".")
 
 APIURL = 'http://maintenancetest.example.com'
-FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 
 
 class TestTagChecker(unittest.TestCase):

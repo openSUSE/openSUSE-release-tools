@@ -15,10 +15,13 @@ done
 cd /code
 for file in tests/*_tests.py; do
   if ! test -f /code/.without-coverage; then
-    COVER_ARGS="--with-coverage --cover-xml --cover-package=. --cover-inclusive"
+    COVER_ARGS="--cov=. --cov-append --cov-report=xml"
+  else
+    COVER_ARGS="--no-cov"
   fi
-  echo "running tests from $file..."
-  run_as_tester nosetests $COVER_ARGS -c .noserc -s $file
+  # TODO: Review bot test failed without log-level set to debug
+  # TODO: due to memoize tests cannot be run together, otherwise it start failing
+  run_as_tester pytest $COVER_ARGS --log-level=DEBUG $file
 done
 
 set -x
