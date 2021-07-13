@@ -43,6 +43,7 @@ class TestCheckSource(OBSLocal.TestCase):
         del self.wf
 
     def test_no_devel_project(self):
+        """Declines the request when it does not come from a devel project"""
         req_id = self.wf.create_submit_request(SRC_PROJECT, self.randomString('package')).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
@@ -54,6 +55,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertIn('%s is not a devel project of %s' % (SRC_PROJECT, PROJECT), review.comment)
 
     def test_devel_project(self):
+        """Accepts a request coming from a devel project"""
         self._setup_devel_project()
 
         # Set up the reviewers team
