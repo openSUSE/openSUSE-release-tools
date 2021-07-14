@@ -79,7 +79,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
-    def test_source_maintainer(self):
+    def test_no_source_maintainer(self):
         """Declines the request when the 'required_maintainer' is not maintainer of the source project"""
         self._setup_devel_project()
 
@@ -103,8 +103,26 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
         self.assertEqual('Created automatically from request %s' % req_id, add_role_req.description)
 
-    def _setup_devel_project(self):
-        devel_project = self.wf.create_project(SRC_PROJECT)
+    def test_source_maintainer(self):
+        """Accepts the request when the 'required_maintainer' is a group and is a maintainer for the project"""
+        group_name = FACTORY_MAINTAINERS.replace('group:', '')
+        self.wf.create_group(group_name)
+        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+
+        self._setup_devel_project(maintainer={'groups': [group_name]})
+
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish').reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+        self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
+
+    def _setup_devel_project(self, maintainer={}):
+        devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
         devel_package = OBSLocal.Package('blowfish', project=devel_project)
 
         blowfish_spec = os.path.join(FIXTURES, 'packages', 'blowfish', 'blowfish.spec')

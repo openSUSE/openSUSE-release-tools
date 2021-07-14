@@ -11,6 +11,8 @@ try:
 except ImportError:
     import cElementTree as ET
 
+from lxml import etree as ETL
+
 import osc.conf
 import osc.core
 from osc.util.helper import decode_list
@@ -22,7 +24,7 @@ from osclib.core import package_kind
 from osclib.core import source_file_load
 from osclib.core import target_archs
 from osclib.core import create_add_role_request
-from osclib.core import maintainers_get
+from osc.core import show_project_meta
 from urllib.error import HTTPError
 
 import ReviewBot
@@ -348,7 +350,10 @@ class CheckSource(ReviewBot.ReviewBot):
         )
         if not self.required_maintainer: return True
 
-        maintainers = maintainers_get(self.apiurl, source_project)
+        meta = ETL.fromstringlist(show_project_meta(self.apiurl, source_project))
+        maintainers = meta.xpath('//person[@role="maintainer"]/@userid')
+        maintainers += ['group:' + g for g in meta.xpath('//group[@role="maintainer"]/@groupid')]
+
         return self.required_maintainer in maintainers
 
     @staticmethod
