@@ -11,13 +11,13 @@ tools, including links to documentation, source code and some information about 
 
 Apart from these tools, the repository includes:
 
-* Some documenation in the [docs](docs) directory.
+* Some documentation in the [docs](docs) directory.
 * A Python module called [osclib](osclib) which includes code that is shared by several tools. They
   are available in the `osclib` package.
 * A Docker-based [tests suite](tests). The Docker manifests and the Docker Compose files are
   located in the [dist](dist) directory.
 * [GoCD](https://www.gocd.org) configuration files in [gocd](gocd). GoCD is an open source CI/CD
-  server that it is used to deploy the bots on OBS.
+  server that is used to deploy the bots on OBS.
 * A set of [Tampermonkey](https://www.tampermonkey.net) scripts (see [userscript](userscript)
   directory) to extend OBS features when using the web interface.
 * Several [systemd](systemd) units, as many of the tools (e.g., the `staging-bot`) make use of
