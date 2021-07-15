@@ -45,6 +45,7 @@ Generates email diffs summaries to announce product releases.
 * Sources: [factory-package-news/announcer.py](factory-package-news/announcer.py)
 * Documentation: [factory-package-news/README.asciidoc](factory-package-news/README.asciidoc)
 * Package: openSUSE-release-tools-announcer
+* Usage: gocd
 
 #### pkglistgen
 
@@ -176,7 +177,7 @@ Allows to retrieve requests from OBS with quite elaborated queries.
 * Package: openSUSE-release-tools
 * Usage: ?
 
-#### update_crawler
+#### update_crawler (obsoleted by origin-manager)
 
 Create SRs for Leap.
 
@@ -225,10 +226,9 @@ Keeps track of from what project a package originates, submit updates, review re
 
 #### staging-bot
 
-Assists in management of staging projects. It is composed of Python scripts and a few systemd
-units.
+Assists in management of staging projects.
 
-* Sources: [devel-project.py][devel-project], [staging-report.py](staging-report.py), [suppkg_rebuild.py](suppkg_rebuild.py) and `osrt-staging-bot-*` [systemd units](systemd)
+* Sources: [devel-project.py][devel-project], [staging-report.py](staging-report.py), [suppkg_rebuild.py](suppkg_rebuild.py).
 * Documentation: --
 * Package: openSUSE-release-tools-staging-bot
 * Usage: gocd
@@ -274,16 +274,7 @@ sources exist.
 
 OpenQA stuff, not sure about the details.
 
-* Sources: [openqa-maintenance.py](openqa-maintenance.py) and [oqamaint](uqamaint)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: gocd?
-
-#### check_tags_in_requests.py
-
-Checks that a submit request has corrrect tags specified.
-
-* Sources: [check_tags_in_requests.py](check_tags_in_requests.py)
+* Sources: [openqa-maintenance.py](openqa-maintenance.py) and [oqamaint](oqamaint)
 * Documentation: --
 * Package: openSUSE-release-tools
 * Usage: gocd?
@@ -332,7 +323,7 @@ Tools for working with origin information.
 
 #### osc-cycle.py
 
-Helps with OBS cycles visualization.
+Helps with OBS build cycles visualization. See the [openSUSE:Factory/standard example](https://build.opensuse.org/project/repository_state/openSUSE:Factory/standard).
 
 * Sources: [osc-cycle.py](osc-cycle.py)
 * Documentation: --
