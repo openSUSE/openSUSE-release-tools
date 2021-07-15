@@ -69,6 +69,7 @@ Cleans up the `maintenance_release` projects for containers
 #### metrics
 
 Generates insightful metrics from relevant OBS and annotation data, based on InfluxDB and Grafana.
+See <https://metrics.opensuse.org/>.
 
 * Sources: [metrics.py](metrics.py)
 * Documentation: [docs/metrics.md](./docs/metrics.md)
@@ -77,7 +78,7 @@ Generates insightful metrics from relevant OBS and annotation data, based on Inf
 
 #### metrics-access
 
-Ingests `download.opensuse.org` Apache access logs and generate metrics. It is composed of a PHP.
+Ingests `download.opensuse.org` Apache access logs and generates metrics. It is composed of a PHP
 script and a set of [systemd units](systemd).
 
 * Sources: [metrics/access/aggregate.php](metrics/access/aggregate.php)
@@ -325,7 +326,7 @@ review bot that assigns reviews (?).
 Tools for working with origin information.
 
 * Sources: [osc-origin.py](osc-origin.py)
-* Documentation: [docs/origin-manager.md](docs/origin-manager.py)
+* Documentation: [docs/origin-manager.md](docs/origin-manager.md)
 * Package: openSUSE-release-tools-origin-manager
 * Usage: gocd?
 
