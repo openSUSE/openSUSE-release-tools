@@ -20,7 +20,7 @@ Apart from these tools, the repository includes:
   server that is used to deploy the bots on OBS.
 * A set of [Tampermonkey](https://www.tampermonkey.net) scripts (see [userscript](userscript)
   directory) to extend OBS features when using the web interface.
-* Several [systemd](systemd) units, as many of the tools (e.g., the `staging-bot`) make use of
+* Several [systemd](systemd) units: the Metrics and OBS Operator tools make use of
   them.
 
 ## Tools
