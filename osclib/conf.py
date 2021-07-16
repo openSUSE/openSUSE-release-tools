@@ -47,6 +47,7 @@ DEFAULT = {
         'mail-noreply': 'noreply@opensuse.org',
         'mail-release-list': 'opensuse-releaseteam@opensuse.org',
         'always_set_productversion_to': '',
+        'required-source-maintainer': 'group:factory-maintainers',
     },
     r'openSUSE:(?P<project>Factory):ARM$': {
         'product': 'openSUSE.product',
