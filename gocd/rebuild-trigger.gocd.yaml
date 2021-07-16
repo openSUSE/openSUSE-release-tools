@@ -123,7 +123,7 @@ pipelines:
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_PPC GNOME:Factory
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_Factory GNOME:Next
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_PPC GNOME:Next
-  Trigger.Rebuild.SLE_15_SP3_Backports:
+  Trigger.Rebuild.SLE_15_SP4_Backports:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -141,10 +141,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
-              echo "SLE15 SP3 Backports"
-              ./project-installcheck.py --debug check --store openSUSE:Backports:SLE-15-SP3:Staging/dashboard --no-rebuild openSUSE:Backports:SLE-15-SP3
-              echo "SLE15 SP3 Step Backports (Rebuilds)"
-              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r step openSUSE:Backports:SLE-15-SP3
+              echo "SLE15 SP4 Backports"
+              ./project-installcheck.py --debug check --store openSUSE:Backports:SLE-15-SP4:Staging/dashboard --no-rebuild openSUSE:Backports:SLE-15-SP4
+              echo "SLE15 SP4 Step Backports (Rebuilds)"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r step openSUSE:Backports:SLE-15-SP4
   Trigger.Rebuild.Step:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -163,6 +163,9 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
+              echo "Step 15-SP4"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP4:Update
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP4
               echo "Step 15-SP3"
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP3:Update
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP3

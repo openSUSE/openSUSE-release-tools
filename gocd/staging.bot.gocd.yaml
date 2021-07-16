@@ -57,7 +57,7 @@ pipelines:
                osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
                osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
                rm -rf $tempdir
-  AdiChecker.Backports.SLE-15-SP3:
+  AdiChecker.Backports.SLE-15-SP4:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -70,7 +70,7 @@ pipelines:
         git: git://botmaster.suse.de/opensuse-repos.git
         auto_update: true
         whitelist:
-          - openSUSE:Backports:SLE-15-SP3:Staging:adi*.yaml
+          - openSUSE:Backports:SLE-15-SP4:Staging:adi*.yaml
         destination: repos
     stages:
     - Run:
@@ -80,9 +80,9 @@ pipelines:
             - repo-checker
             tasks:
             - script: |-
-                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Backports:SLE-15-SP3
-  SBot.Regular.Backports.SLE-15-SP3:
-    group: Backports.SLE-15-SP3.pkglistgen
+                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Backports:SLE-15-SP4
+  SBot.Regular.Backports.SLE-15-SP4:
+    group: Backports.SLE-15-SP4.pkglistgen
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
@@ -109,8 +109,8 @@ pipelines:
                ln -s $PWD/osclib $tempdir/.osc-plugins
                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP3 list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP3 adi --by-develproject
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP3 unselect --cleanup
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP3 repair --cleanup
+               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 list --supersede
+               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 unselect --cleanup
+               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 repair --cleanup
                rm -rf $tempdir
