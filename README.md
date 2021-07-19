@@ -128,4 +128,4 @@ To debug problems in the test suite or in the code, place a `breakpoint()` call 
 
 You can access your testing OBS instance at `http://0.0.0.0:3000` and log in using "Admin" as username and "opensuse" as password. To prevent the data being removed while you are inspecting the OBS instance, you can put a call to the `breakpoint()` function.
 
-Finall, is you miss anything for debugging, you can use `zypper` to install it.
+Finally, if you miss anything for debugging, you can use `zypper` to install it.
