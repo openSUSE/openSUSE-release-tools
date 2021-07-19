@@ -96,7 +96,7 @@ This repository includes all the needed files to set up and run the Continuous I
     docker-compose -f dist/ci/docker-compose.yml run test
 
     # .. or just run a single test (i.e., the 'tests/util_tests.py')
-    docker-compose -f dist/ci/docker-compose.yml run test run_as_tester nosetests tests/util_tests.py
+    docker-compose -f dist/ci/docker-compose.yml run test run_as_tester pytest tests/util_tests.py
 
     # We are finished. Now you can shut the containers down.
     docker-compose -f dist/ci/docker-compose.yml down
@@ -108,3 +108,18 @@ The [docker-compose.yml](dist/ci/docker-compose.yml) mentions two container imag
 
 As mentioned before, the main repository uses GitHub Actions to automatically run the tests when a pull request is opened or the code is pushed to the master branch. You can find the details in the
 [workflow definition](.github/workflows/ci-test.yml). Note that, in addition to the steps listed before, code coverage data is submitted to [Codecov](https://app.codecov.io/gh/openSUSE/openSUSE-release-tools).
+
+### Debugging Failures in CI
+
+The first step is to reproduce it when running it locally as described above.
+To see all logs following command can be executed:
+
+  docker-compose -f dist/ci/docker-compose.yml logs -f --tail=10
+
+To check content of any running container use this command ( in this case "api" container ) to get shell:
+
+  docker-compose -f dist/ci/docker-compose.yml exec api sh
+
+Also OBS in container can be reached at `http://0.0.0.0:3000`. There are user "Admin" with password "opensuse".
+To prevent cleaning in testsuite place `breakpoint()` in code to stop execution and drop to debugger.
+If anything is missing for debugging, zypper can be used.
