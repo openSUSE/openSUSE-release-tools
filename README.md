@@ -96,7 +96,7 @@ This repository includes all the needed files to set up and run the Continuous I
     docker-compose -f dist/ci/docker-compose.yml run test
 
     # .. or just run a single test (i.e., the 'tests/util_tests.py')
-    docker-compose -f dist/ci/docker-compose.yml run test run_as_tester nosetests tests/util_tests.py
+    docker-compose -f dist/ci/docker-compose.yml run test run_as_tester pytest tests/util_tests.py
 
     # We are finished. Now you can shut the containers down.
     docker-compose -f dist/ci/docker-compose.yml down
@@ -108,3 +108,24 @@ The [docker-compose.yml](dist/ci/docker-compose.yml) mentions two container imag
 
 As mentioned before, the main repository uses GitHub Actions to automatically run the tests when a pull request is opened or the code is pushed to the master branch. You can find the details in the
 [workflow definition](.github/workflows/ci-test.yml). Note that, in addition to the steps listed before, code coverage data is submitted to [Codecov](https://app.codecov.io/gh/openSUSE/openSUSE-release-tools).
+
+### Debugging Failures in CI
+
+This section lists a few tricks to debug problems in the CI. You will use your local setup so, as a first step, you need to be able to run the tests as described in the previous section.
+To see the logs from all the containers, the following command can be executed:
+
+  docker-compose -f dist/ci/docker-compose.yml logs -f --tail=10
+
+You can run commands in any container by using the docker-compose `exec` command. For instance, you can connect to a container through a shell with the following command (in this case, it will connect to the container behind the `api` service):
+
+  docker-compose -f dist/ci/docker-compose.yml exec api sh
+
+Or you could check the API logs by issuing the following command:
+
+  docker-compose -f dist/ci/docker-compose.yml exec api sh -c 'tail -f /srv/www/obs/api/log/*.log'
+
+To debug problems in the test suite or in the code, place a `breakpoint()` call and you will get access to Python's debugger.
+
+You can access your testing OBS instance at `http://0.0.0.0:3000` and log in using "Admin" as username and "opensuse" as password. To prevent the data being removed while you are inspecting the OBS instance, you can put a call to the `breakpoint()` function.
+
+Finally, if you miss anything for debugging, you can use `zypper` to install it.
