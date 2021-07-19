@@ -111,15 +111,17 @@ As mentioned before, the main repository uses GitHub Actions to automatically ru
 
 ### Debugging Failures in CI
 
-The first step is to reproduce it when running it locally as described above.
-To see all logs following command can be executed:
+This section lists a few tricks to debug problems in the CI. You will use your local setup so, as a first step, you need to be able to run the tests as described in the previous section.
+To see the logs from all the containers, the following command can be executed:
 
   docker-compose -f dist/ci/docker-compose.yml logs -f --tail=10
 
-To check content of any running container use this command ( in this case "api" container ) to get shell:
+You can run commands in any container by using the docker-compose `exec` command. For instance, you can connect to a container through a shell with the following command (in this case, it will connect to the container behind the `api` service):
 
   docker-compose -f dist/ci/docker-compose.yml exec api sh
+Or you could check the API logs by issuing the following command:
 
+  docker-compose -f dist/ci/docker-compose.yml exec api sh -c 'tail -f /srv/www/obs/api/log/*.log'
 Also OBS in container can be reached at `http://0.0.0.0:3000`. There are user "Admin" with password "opensuse".
 To prevent cleaning in testsuite place `breakpoint()` in code to stop execution and drop to debugger.
 If anything is missing for debugging, zypper can be used.
