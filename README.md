@@ -119,9 +119,13 @@ To see the logs from all the containers, the following command can be executed:
 You can run commands in any container by using the docker-compose `exec` command. For instance, you can connect to a container through a shell with the following command (in this case, it will connect to the container behind the `api` service):
 
   docker-compose -f dist/ci/docker-compose.yml exec api sh
+
 Or you could check the API logs by issuing the following command:
 
   docker-compose -f dist/ci/docker-compose.yml exec api sh -c 'tail -f /srv/www/obs/api/log/*.log'
-Also OBS in container can be reached at `http://0.0.0.0:3000`. There are user "Admin" with password "opensuse".
-To prevent cleaning in testsuite place `breakpoint()` in code to stop execution and drop to debugger.
-If anything is missing for debugging, zypper can be used.
+
+To debug problems in the test suite or in the code, place a `breakpoint()` call and you will get access to Python's debugger.
+
+You can access your testing OBS instance at `http://0.0.0.0:3000` and log in using "Admin" as username and "opensuse" as password. To prevent the data being removed while you are inspecting the OBS instance, you can put a call to the `breakpoint()` function.
+
+Finall, is you miss anything for debugging, you can use `zypper` to install it.
