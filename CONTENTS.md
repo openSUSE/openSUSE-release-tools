@@ -125,7 +125,7 @@ Manages bugowner information
 
 #### bs_mirrorfull
 
-Mirrors repositories from build service.
+Mirrors repositories from the build service to a local directory.
 
 * Souces: [bs_mirrorfull](bs_mirrorfull)
 * Documentation: --
@@ -177,7 +177,7 @@ Allows to retrieve requests from OBS with quite elaborated queries.
 * Package: openSUSE-release-tools
 * Usage: ?
 
-#### update_crawler (obsoleted by origin-manager)
+#### update_crawler (obsoleted by [origin-manager](#origin-manager))
 
 Create SRs for Leap.
 
