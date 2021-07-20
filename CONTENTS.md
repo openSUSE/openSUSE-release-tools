@@ -60,7 +60,9 @@ Generates and updates OBS products for openSUSE and SLE. It generates package li
 
 #### container_cleaner
 
-Cleans up the `maintenance_release` projects for containers
+Clean old containers from a given project like
+[openSUSE:Containers:Tumbleweed](https://build.opensuse.org/project/show/openSUSE:Containers:Tumbleweed).
+Only those containers providing binaries to the latest five versions for each architecture are kept.
 
 * Sources: [container_cleaner.py](container_cleaner.py)
 * Documentation: --
