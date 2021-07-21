@@ -169,6 +169,9 @@ class StagingWorkflow(object):
     def __init__(self, project=PROJECT):
         """
         Initialize the configuration
+
+        Parameters:
+          project(str): default target project
         """
         THIS_DIR = os.path.dirname(os.path.abspath(__file__))
         oscrc = os.path.join(THIS_DIR, 'test.oscrc')
@@ -248,6 +251,15 @@ class StagingWorkflow(object):
         attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 
     def create_group(self, name, users=[]):
+        """
+        Creates group and assign users to it.
+
+        If group already exist then it just update users.
+
+        Parameters:
+            name(str): name of group
+            name(list of str): list of users to be in group
+        """
 
         meta = """
         <group>
@@ -268,6 +280,17 @@ class StagingWorkflow(object):
         osc.core.http_PUT(url, data=meta)
 
     def create_user(self, name):
+        """
+        Creates user and its home project.
+
+        Password is always "opensuse".
+        Do nothing if user already exist.
+
+        Parameters:
+            name(str): name of user
+
+        Returns home Project. Project is not created. To create it use update_meta method.
+        """
         if name in self.users: return
         meta = """
         <person>
@@ -285,6 +308,10 @@ class StagingWorkflow(object):
         self.projects[home_project] = Project(home_project, create=False)
 
     def create_target(self):
+        """
+        Creates target project, user staging-bot, group factory-staging,
+        setup staging and also A and B staging projects.
+        """
         if self.projects.get('target'): return
         self.create_user('staging-bot')
         self.create_group('factory-staging', users=['staging-bot'])
@@ -300,6 +327,10 @@ class StagingWorkflow(object):
         self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
 
     def setup_rings(self):
+        """
+        Creates target (see create_target method), ring0 and ring1, wine in
+        target repo and link it to ring1.
+        """
         self.create_target()
         self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
         self.projects['ring1'] = Project(name=self.project + ':Rings:1-MinimalX')
@@ -321,6 +352,13 @@ class StagingWorkflow(object):
         return target_package
 
     def create_project(self, name, reviewer={}, maintainer={}, project_links=[]):
+        """
+        Creates project if it does not already exist.
+
+        For params see Project#__init__
+
+        Returns Project instance for given project.
+        """
         if isinstance(name, Project):
             return name
         if name in self.projects:
@@ -331,6 +369,18 @@ class StagingWorkflow(object):
         return self.projects[name]
 
     def submit_package(self, package=None, project=None):
+        """
+        Creates submit request from package to target project.
+
+        Both have to exist, otherwise looks at create_submit_request method.
+
+        Parameters:
+            package(Package): package to submit TODO: what means None here?
+            project(Project|str): project where to send submit request.
+              None means use the default.
+
+        Returns created request.
+        """
         if not project:
             project = self.project
         request = Request(source_package=package, target_project=project)
@@ -345,6 +395,19 @@ class StagingWorkflow(object):
         return request
 
     def create_submit_request(self, project, package, text=None):
+        """
+        Creates submit request from package in specified project to default project.
+        It creates project if not exist and also package.
+        Package is commited with optional text.
+        Note different parameters than submit_package.
+
+        Parameters:
+            project(Project|str): project where package will live
+            package(str): package name to create
+            text(str): commit message for initial package creation
+
+        Returns created request.
+        """
         project = self.create_project(project)
         package = Package(name=package, project=project)
         package.create_commit(text=text)
@@ -405,6 +468,18 @@ class StagingWorkflow(object):
 
 class Project(object):
     def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True, with_repo=False):
+        """
+        Represents Project in OBS.
+
+            Parameters:
+                name(str): Project name
+                reviewer: TODO
+                maintainer: TODO
+                project_links(list of str): names of linked project from which
+                  it inherits
+                create(bool): if create during instantiation
+                with_repo(bool): TODO
+        """
         self.name = name
         self.packages = []
 
@@ -467,6 +542,15 @@ class Project(object):
 
 class Package(object):
     def __init__(self, name, project, devel_project=None):
+        """
+        Represents Package in OBS. It is created when instantiated.
+
+            Parameters:
+                name(str): Package name
+                project(Project): project where package lives
+                devel_project(str): name of devel project. Package has to
+                  already exists there, otherwise OBS returns 400.
+        """
         self.name = name
         self.project = project
 
