@@ -68,10 +68,10 @@ details about the processes involved in the development of SLE and all its assoc
 
 ## openSUSE Leap Development
 
-Starting with version 15.3, openSUSE Leap shares its base binary packages with the corresponding
-version of SUSE Enterprise Linux (SLE-15-SP3 in the case of Leap 15.3). This development process
-based on binaries generated in IBS was already tested as a proof of concept for Leap 15.2 under the
-codename Jump.
+Starting with [version 15.3](https://en.opensuse.org/Portal:15.3), openSUSE Leap shares its base
+binary packages with the corresponding version of SUSE Enterprise Linux (SLE-15-SP3 in the case of
+Leap 15.3). This development process based on binaries generated in IBS was already tested as a
+proof of concept for Leap 15.2 under the codename Jump.
 
 TODO: document better this process and its relationships with the tools in this repository. For the
 time being, check [this section](https://en.opensuse.org/openSUSE:Packaging_for_Leap) of the
@@ -80,29 +80,24 @@ of the old (prior to Leap 15.3) development process.
 
 ## Maintenance Process for openSUSE Leap and SLE
 
-Having a defined process to release maintenance updates is crucial for distributions like SLE and
-openSUSE Leap, which release a new version approximately once per year instead of getting a constant
-stream of updated packages like it happens in openSUSE Tumbleweed. Those maintenance updates are the
-only mechanism to fix severe bugs and security issues between two releases. 
-
 As explained in the corresponding section, during the development of a product, packages are checked
 into its GA project (eg. `SUSE:SLE-15-SP2:GA` is the corresponding project for SUSE Linux Enterprise
-15 SP2). Once the distribution is considered as ready to be released, the GA project is locked and a
-corresponding update project (like `SUSE:SLE-15-SP2:Update`) is introduced to receive packages that
-will be released as updates.
+15 SP2). Once the distribution is considered as ready to be released, the GA project is locked and
+no further changes are possible. The only mechanism to fix severe bugs and security issues after
+that moment is to release maintenance updates for that distribution.
 
-Maintenance requests (similar to the submit requests created during development) are created to
-release an update of a package for an already released distribution. Those requests also go through
-a review process assisted by some of the tools in this repository. Similar to the staging workflow,
-in which one or more packages are verified in a staging project before their submit requests can be
-accepted into the GA project, the packages from one or several maintenance request are verified in a
-so-called incident project before accepting them in the corresponding update project.
+To make that possible, a corresponding update project (like `SUSE:SLE-15-SP2:Update`) is created to
+receive packages that will be released as updates. This [section of the OBS User
+Guide](https://openbuildservice.org/help/manuals/obs-user-guide/cha.obs.maintenance_setup.html)
+explains the process to introduce a new package version in one of those update projects. That
+process is initiated by a maintenance request, analogous to the submit requests created during
+development, and the packages are verified in a maintenance incident (also known as incident
+project), similar to a staging project. Despite the similarities between the staging workflow and
+the maintenance one, the latter is implemented by the separate mechanisms described in the mentioned
+document, which are not based on any of the tools in this repository.
 
-Despite the similarities between the concept of maintenance incidents and the staging workflow, the
-former is implemented by separate mechanisms not based on any of the tools in this repository.
-
-[This section](https://en.opensuse.org/openSUSE:Maintenance_update_process) of the openSUSE wiki
-offers a high-level view of the maintenance update process for openSUSE Leap. This other
+Additionally, [this section](https://en.opensuse.org/openSUSE:Maintenance_update_process) of the
+openSUSE wiki offers a high-level view of the maintenance update process for openSUSE Leap. This other
 SUSE-internal document offers a [more technical
 view](https://confluence.suse.com/display/maintenancecoordination/Maintenance+Internals) on the
 equivalent process for SLE.
