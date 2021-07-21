@@ -107,9 +107,12 @@ Finds unmaintained binaries sourced from SLE.
 * Package: openSUSE-release-tools
 * Usage: ?
 
-#### sync-rebuild
+#### sync-rebuild (obsolete)
 
-Syncs openSUSE:Factory and openSUSE:Factory:Rebuild.
+Syncs openSUSE:Factory and openSUSE:Factory:Rebuild. This feature was already
+merged into the [accept
+command](https://github.com/openSUSE/openSUSE-release-tools/commit/87c891662015f14421c2315210c248e712e697c8)
+of the staging projects plug-in.
 
 * Sources: [sync-rebuild.py](sync-rebuild.py)
 * Documentation: --
