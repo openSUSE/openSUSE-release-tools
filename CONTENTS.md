@@ -227,7 +227,7 @@ Keeps track of from what project a package originates, submit updates, review re
 * Sources: [origin-manager.py](origin-manager.py) and [web](web)
 * Documentation: [docs/origin-manager.md](docs/origin-manager.md)
 * Package: openSUSE-release-tools-origin-manager
-* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Forigin-manager)
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+origin-manager)
 
 #### staging-bot
 
@@ -283,7 +283,7 @@ OpenQA stuff, not sure about the details.
 * Sources: [openqa-maintenance.py](openqa-maintenance.py) and [oqamaint](oqamaint)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+openqa_maintenance)
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+openqa-maintenance)
 
 #### repo-checker
 
@@ -295,9 +295,7 @@ Inspects built RPMs from staging projects.
   [findfileconflicts](findfileconflicts), [write_repo_susetags_file.pl](write_repo_susetags_file.pl)
 * Documentation: --
 * Package: openSUSE-release-tools-repo-checker
-* Usage: gocd ([project-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+project-installcheck), [staging-installcheck](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+staging-installcheck),
-[maintenance-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+maintenance-installcheck) and
-[findfileconflicts](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+findfileconflicts))
+* Usage: gocd ([project-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+project-installcheck), [staging-installcheck](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+staging-installcheck) and [maintenance-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+maintenance-installcheck)
 
 #### manager_42.py
 
@@ -318,7 +316,7 @@ review bot that assigns reviews (?).
 * Sources: [check_source.py](check_source.py) and [check_source.pl](check_source.pl)
 * Documentation: [docs/check_source.asciidoc](docs/check_source.asciidoc)
 * Package: openSUSE-release-tools-check-source
-* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+osc-check_source)
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+check_source)
 
 #### osc-origin.py
 
