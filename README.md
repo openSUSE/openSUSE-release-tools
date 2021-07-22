@@ -4,6 +4,10 @@
 
 # openSUSE-release-tools
 
+This repository contains a set of tools to aid in the process of building, testing and releasing
+(open)SUSE based distributions and their corresponding maintenance updates. You can find more
+information in the [docs/processes.md](docs/processes.md).
+
 ![Rethink release tooling presentation overview](docs/res/workflow-overview.svg)
 
 Everything denoted with a cloud is largely in this repository while the rest is the [open-build-service (OBS)](https://github.com/openSUSE/open-build-service).
