@@ -6,8 +6,8 @@
 
 This repository contains a set of tools to aid in the process of building, testing and releasing
 (open)SUSE based distributions and their corresponding maintenance updates. You can find more
-information in the [docs/processes.md](docs/processes.md). The [CONTENTS.md](CONTENTS.md) file
-contains a list of the tools that are included in the repository.
+information in [docs/processes.md](docs/processes.md). The [CONTENTS.md](CONTENTS.md) file contains
+a list of the tools that are included in the repository.
 
 ![Rethink release tooling presentation overview](docs/res/workflow-overview.svg)
 
