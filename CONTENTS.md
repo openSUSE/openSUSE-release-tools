@@ -365,7 +365,7 @@ Checks the status of the staging workflow bots.
 * Sources: [status.py](status.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: obsolete?
+* Usage: obsolete (it still checks for the status of some bots that are already retired, like leaper)
 
 #### fcc_submitter.py
 
@@ -378,7 +378,7 @@ packagers and creating SR from FactoryCandidates to the Leap project on successf
 * Sources: [fcc_submitter.py](fcc_submitter.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ???
+* Usage: manually
 
 #### issue-diff.py
 
@@ -397,7 +397,7 @@ Clones projects and dependencies between OBS instances.
 * Sources: [obs_clone.py](obs_clone.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: obsolete
+* Usage: obsolete (initially added for testing, but it was replaced with a container-based approach)
 
 #### obs-operator
 
@@ -416,7 +416,7 @@ Verifies 32bit binaries were imported properly towards a project.
 * Sources: [scan_baselibs.py](scan_baselibs.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: obsolete
+* Usage: obsolete (after https://github.com/openSUSE/open-build-service/pull/7662 was introduced in OBS)
 
 #### k8s-secret.py
 
