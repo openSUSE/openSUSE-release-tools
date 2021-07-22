@@ -38,7 +38,7 @@ Currently, the plugin relies on the OBS capabilities to implement [staging
 workflows](https://github.com/openSUSE/open-build-service/wiki/Staging-Workflow), extending and
 adapting them to the (open)SUSE use case.
 
-# SUSE Linux Enterprise Development
+## SUSE Linux Enterprise Development
 
 The SUSE Linux Enterprise distribution is built in a SUSE-internal instance of OBS usually referred
 as IBS. There is a project in that build service for each SLE release (eg. `SUSE:SLE-15:GA` for
