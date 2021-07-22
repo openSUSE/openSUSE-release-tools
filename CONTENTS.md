@@ -45,7 +45,7 @@ Generates email diffs summaries to announce product releases.
 * Sources: [factory-package-news/announcer.py](factory-package-news/announcer.py)
 * Documentation: [factory-package-news/README.asciidoc](factory-package-news/README.asciidoc)
 * Package: openSUSE-release-tools-announcer
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+announcer)
 
 #### pkglistgen
 
@@ -56,7 +56,7 @@ Generates and updates OBS products for openSUSE and SLE. It generates package li
 * Sources: [pkglistgen.py](pkglistgen.py)
 * Documentation: [docs/pkglistgen.md](docs/pkglistgen.md)
 * Package: openSUSE-release-tools-pkglistgen
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+pkglistgen)
 
 #### container_cleaner
 
@@ -67,7 +67,7 @@ Only those containers providing binaries to the latest five versions for each ar
 * Sources: [container_cleaner.py](container_cleaner.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+container_cleaner)
 
 #### metrics
 
@@ -96,7 +96,7 @@ Releases distribution snapshots to openQA and publishes if the result is positiv
 * Sources: [totest-manager.py](totest-manager.py) and [ttm](ttm)
 * Documentation: [ttm/README.md](ttm/README.md)
 * Package: openSUSE-release-tools
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+totest-manager)
 
 #### unmaintained
 
@@ -105,9 +105,9 @@ Finds unmaintained binaries sourced from SLE.
 * Sources: [unmaintained.py](unmaintained.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ?
+* Usage: obsolete
 
-#### sync-rebuild (obsolete)
+#### sync-rebuild
 
 Syncs openSUSE:Factory and openSUSE:Factory:Rebuild. This feature was already
 merged into the [accept
@@ -117,7 +117,7 @@ of the staging projects plug-in.
 * Sources: [sync-rebuild.py](sync-rebuild.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ?
+* Usage: obsolete
 
 #### bugowner
 
@@ -153,7 +153,7 @@ Sends e-mails about packages failing to build for a long time.
 * Sources: [build-fail-reminder.py](build-fail-reminder.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+build-fail-reminder)
 
 #### checknewer
 
@@ -189,7 +189,7 @@ Create SRs for Leap.
 * Sources: [update_crawler.py](update_crawler.py) and [script](script).
 * Documentation: --
 * Package: openSUSE-release-tools-leaper
-* Usage: see [leaper](#leaper)
+* Usage: obsolete
 
 #### create_staging
 
@@ -209,7 +209,7 @@ Handles maintenance incident requests
 * Sources: [check_maintenance_incidents.py](check_maintenance_incidents.py)
 * Documentation: [docs/maintbot.asciidoc](docs/maintbot.asciidoc)
 * Package: openSUSE-release-tools-maintenance
-* Usage: gocd
+* Usage: obsolete
 
 #### leaper
 
@@ -218,7 +218,7 @@ Implements Leap-style services for non-Factory projects (whatever that means).
 * Sources: [leaper.py](leaper.py)
 * Documentation: --
 * Package: openSUSE-release-tools-leaper
-* Usage: gocd
+* Usage: obsolete
 
 #### origin-manager
 
@@ -227,7 +227,7 @@ Keeps track of from what project a package originates, submit updates, review re
 * Sources: [origin-manager.py](origin-manager.py) and [web](web)
 * Documentation: [docs/origin-manager.md](docs/origin-manager.md)
 * Package: openSUSE-release-tools-origin-manager
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Forigin-manager)
 
 #### staging-bot
 
@@ -236,7 +236,8 @@ Assists in management of staging projects.
 * Sources: [devel-project.py][devel-project], [staging-report.py](staging-report.py), [suppkg_rebuild.py](suppkg_rebuild.py).
 * Documentation: --
 * Package: openSUSE-release-tools-staging-bot
-* Usage: gocd
+* Usage: gocd ([staging-report.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+staging-report)
+[suppkg_rebuild.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+suppkg_rebuild), etc.)
 
 #### legal-auto
 
@@ -245,16 +246,16 @@ Makes automatic legal reviews based on the legaldb API
 * Sources: [legal-auto.py](legal-auto.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+legal-auto)
 
 #### check_tags_in_requests
 
-Checks that a submit request has corrrect tags specified.
+Checks that a submit request has correct tags specified.
 
 * Sources: [check_tags_in_requests.py](check_tags_in_requests.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: gocd
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+check_tags_in_requests)
 
 #### abichecker
 
@@ -263,7 +264,7 @@ Checks ABI compatibility in OBS requests.
 * Sources: [abichecker](abichecker)
 * Documentation: --
 * Package: openSUSE-release-tools-abichecker
-* Usage: gocd
+* Usage: gocd?
 
 #### check_source_in_factory
 
@@ -273,7 +274,7 @@ sources exist.
 * Sources: [check_source_in_factory.py](check_source_in_factory.py)
 * Documentation: [docs/factory-source.asciidoc](docs/factory-source.asciidoc)
 * Package: openSUSE-release-tools
-* Usage: gocd?
+* Usage: obsolete
 
 #### openqa-maintenance
 
@@ -282,7 +283,7 @@ OpenQA stuff, not sure about the details.
 * Sources: [openqa-maintenance.py](openqa-maintenance.py) and [oqamaint](oqamaint)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: gocd?
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+openqa_maintenance)
 
 #### repo-checker
 
@@ -294,7 +295,9 @@ Inspects built RPMs from staging projects.
   [findfileconflicts](findfileconflicts), [write_repo_susetags_file.pl](write_repo_susetags_file.pl)
 * Documentation: --
 * Package: openSUSE-release-tools-repo-checker
-* Usage: gocd?
+* Usage: gocd ([project-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+project-installcheck), [staging-installcheck](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+staging-installcheck),
+[maintenance-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+maintenance-installcheck) and
+[findfileconflicts](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+findfileconflicts))
 
 #### manager_42.py
 
@@ -303,7 +306,7 @@ Maintains `00Meta/lookup.yml`.
 * Sources: [manager_42.py](manager_42.py)
 * Documentation: --
 * Package: openSUSE-release-tools-leaper
-* Usage: Obsoleted by origin-manager?
+* Usage: obsolete (by origin-manager)
 
 ### OSC Plugins
 
@@ -315,7 +318,7 @@ review bot that assigns reviews (?).
 * Sources: [check_source.py](check_source.py) and [check_source.pl](check_source.pl)
 * Documentation: [docs/check_source.asciidoc](docs/check_source.asciidoc)
 * Package: openSUSE-release-tools-check-source
-* Usage: gocd?
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+osc-check_source)
 
 #### osc-origin.py
 
@@ -324,7 +327,7 @@ Tools for working with origin information.
 * Sources: [osc-origin.py](osc-origin.py)
 * Documentation: [docs/origin-manager.md](docs/origin-manager.md)
 * Package: openSUSE-release-tools-origin-manager
-* Usage: gocd?
+* Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+osc-origin)
 
 #### osc-cycle.py
 
