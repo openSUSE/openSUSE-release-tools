@@ -336,11 +336,13 @@ Helps with OBS build cycles visualization. See the [openSUSE:Factory/standard ex
 * Sources: [osc-cycle.py](osc-cycle.py)
 * Documentation: --
 * Package: --
-* Usage: ???
+* Usage: used to debug problems. See https://github.com/openSUSE/openSUSE-release-tools/pull/992 as an example.
 
 #### compare_pkglist.py
 
-Compares packages status between two projects.
+Compares packages status between two projects. It determines which project has the newer version of a package,
+shows the diff, etc. Additionally, it is able to create a submit request from SOURCE to TARGET in case packages
+are different.
 
 * Sources: [compare_pkglist.py](compare_pkglist.py)
 * Documentation: --
@@ -354,7 +356,7 @@ Manages staging projects.
 * Sources: [osc-staging.py](osc-staging.py)
 * Documentation: [docs/staging.asciidoc](docs/staging.asciidoc) and [docs/testing.asciidoc](docs/testing.asciidoc)
 * Package: osc-plugin-staging
-* Usage: ???
+* Usage: staging projects management
 
 #### status.py
 
@@ -363,11 +365,15 @@ Checks the status of the staging workflow bots.
 * Sources: [status.py](status.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ???
+* Usage: obsolete?
 
 #### fcc_submitter.py
 
-Creates SR from FactoryCandidates to openSUSE Leap project for new build succeded packages.
+The FactoryCandidates projects are used to determine whether a new package in Factory does build in
+the Leap version under development (see
+[openSUSE:Leap:15.2:FactoryCandidates](https://build.opensuse.org/project/show/openSUSE:Leap:15.2:FactoryCandidates)
+as example). This tool helps to manage this project by creating/updating project links for new
+packagers and creating SR from FactoryCandidates to the Leap project on successful builds.
 
 * Sources: [fcc_submitter.py](fcc_submitter.py)
 * Documentation: --
@@ -378,7 +384,6 @@ Creates SR from FactoryCandidates to openSUSE Leap project for new build succede
 
 Compares packages from a project against factory for differences in referenced issues and presents
 changes to allow whitelisting before creating Bugzilla entries.
-
 
 * Sources: [issue-diff.py](issue-diff.py)
 * Documentation: --
@@ -392,7 +397,7 @@ Clones projects and dependencies between OBS instances.
 * Sources: [obs_clone.py](obs_clone.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ???
+* Usage: obsolete
 
 #### obs-operator
 
@@ -402,7 +407,7 @@ directly.
 * Sources: [obs_operator.py](obs_operator.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ???
+* Usage: obsolete
 
 #### scan_baselibs.py
 
@@ -411,7 +416,7 @@ Verifies 32bit binaries were imported properly towards a project.
 * Sources: [scan_baselibs.py](scan_baselibs.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ???
+* Usage: obsolete
 
 #### k8s-secret.py
 
