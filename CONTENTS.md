@@ -189,7 +189,7 @@ Create SRs for Leap.
 * Sources: [update_crawler.py](update_crawler.py) and [script](script).
 * Documentation: --
 * Package: openSUSE-release-tools-leaper
-* Usage: obsolete
+* Usage: obsolete (by origin-manager)
 
 #### create_staging
 
@@ -209,7 +209,7 @@ Handles maintenance incident requests
 * Sources: [check_maintenance_incidents.py](check_maintenance_incidents.py)
 * Documentation: [docs/maintbot.asciidoc](docs/maintbot.asciidoc)
 * Package: openSUSE-release-tools-maintenance
-* Usage: obsolete
+* Usage: obsolete (by origin-manager)
 
 #### leaper
 
@@ -420,4 +420,4 @@ Applies kubernetes secrets for OSRT tool osc configuration.
 * Sources: [k8s-secret.py](k8s-secret.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ???
+* Usage: obsolete
