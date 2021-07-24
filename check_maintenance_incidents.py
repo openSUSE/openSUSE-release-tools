@@ -123,8 +123,10 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         self._check_maintainer_review_needed(req, a)
 
+        # backports 15-sp3 no longer has the requirement
         if a.tgt_releaseproject.startswith("openSUSE:Backports:"):
-            self.add_factory_source = True
+            if not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP3"):
+                self.add_factory_source = True
 
         return True
 
