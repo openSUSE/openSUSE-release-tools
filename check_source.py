@@ -348,7 +348,8 @@ class CheckSource(ReviewBot.ReviewBot):
         """Checks whether the source project has the required maintainer
 
         If a 'required-source-maintainer' is set, it checks whether it is a
-        maintainer for the source project.
+        maintainer for the source project. Inherited maintainership is
+        intentionally ignored to have explicit maitainer set.
 
         source_project - source project name
         """
