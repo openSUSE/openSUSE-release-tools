@@ -80,28 +80,39 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
     def test_no_source_maintainer(self):
-        """Declines the request when the 'required_maintainer' is not maintainer of the source project"""
+        """Declines the request when the 'required_maintainer' is not maintainer of the source project
+
+          Create also request to add required maintainers to source project unless it is already open
+        """
         self._setup_devel_project()
 
         # Change the required maintainer
         self.wf.create_group(FACTORY_MAINTAINERS.replace('group:', ''))
         self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
 
-        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish').reqid
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish')
 
-        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+        self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
 
-        self.review_bot.set_request_ids([req_id])
+        self.review_bot.set_request_ids([req.reqid])
         self.review_bot.check_requests()
 
-        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        review = self.assertReview(req.reqid, by_user=(self.bot_user, 'declined'))
         add_role_req = get_request_list(self.wf.apiurl, SRC_PROJECT, req_state=['new'], req_type='add_role')[0]
 
         self.assertIn('unless %s is a maintainer of %s' % (FACTORY_MAINTAINERS, SRC_PROJECT), review.comment)
         self.assertIn('Created the add_role request %s' % add_role_req.reqid, review.comment)
 
         self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
-        self.assertEqual('Created automatically from request %s' % req_id, add_role_req.description)
+        self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
+
+        # reopen request and do it again to test that new add_role request won't be created
+        req.change_state('new')
+
+        self.review_bot.check_requests()
+        add_role_reqs = get_request_list(self.wf.apiurl, SRC_PROJECT, req_state=['new'], req_type='add_role')
+
+        self.assertEqual(len(add_role_reqs), 1)
 
     def test_source_maintainer(self):
         """Accepts the request when the 'required_maintainer' is a group and is a maintainer for the project"""
