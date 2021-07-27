@@ -182,15 +182,6 @@ Allows to retrieve requests from OBS with quite elaborated queries.
 * Package: openSUSE-release-tools
 * Usage: ?
 
-#### update_crawler (obsoleted by [origin-manager](#origin-manager))
-
-Create SRs for Leap.
-
-* Sources: [update_crawler.py](update_crawler.py) and [script](script).
-* Documentation: --
-* Package: openSUSE-release-tools-leaper
-* Usage: obsolete (by origin-manager)
-
 #### create_staging
 
 Scripts and templates to create staging projects.
@@ -210,15 +201,6 @@ Handles maintenance incident requests
 * Documentation: [docs/maintbot.asciidoc](docs/maintbot.asciidoc)
 * Package: openSUSE-release-tools-maintenance
 * Usage: obsolete (by origin-manager)
-
-#### leaper
-
-Implements Leap-style services for non-Factory projects (whatever that means).
-
-* Sources: [leaper.py](leaper.py)
-* Documentation: --
-* Package: openSUSE-release-tools-leaper
-* Usage: obsolete
 
 #### origin-manager
 
@@ -296,15 +278,6 @@ Inspects built RPMs from staging projects.
 * Documentation: --
 * Package: openSUSE-release-tools-repo-checker
 * Usage: gocd ([project-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+project-installcheck), [staging-installcheck](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+staging-installcheck) and [maintenance-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+maintenance-installcheck)
-
-#### manager_42.py
-
-Maintains `00Meta/lookup.yml`.
-
-* Sources: [manager_42.py](manager_42.py)
-* Documentation: --
-* Package: openSUSE-release-tools-leaper
-* Usage: obsolete (by origin-manager)
 
 ### OSC Plugins
 

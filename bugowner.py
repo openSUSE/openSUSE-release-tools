@@ -132,8 +132,6 @@ class BugownerTool(ToolBase.ToolBase):
             root = ET.fromstring(self.cached_GET(url))
             for node in root.findall('.//person[@userid]'):
                 self.release_managers.add(node.get('userid'))
-            # XXX: hardcoded bot
-            self.release_managers.add('leaper')
             logger.debug("release managers %s", self.release_managers)
 
         return name in self.release_managers

@@ -77,7 +77,6 @@ DEFAULT = {
         'openqa': 'https://openqa.opensuse.org',
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
-        'leaper-override-group': 'leap-reviewers',
         'main-repo': 'standard',
         'pseudometa_package': 'openSUSE:%(project)s:Staging/dashboard',
         'download-baseurl': 'http://download.opensuse.org/distribution/leap/%(version)s/',
@@ -118,7 +117,6 @@ DEFAULT = {
     },
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)?:Update)$': {
         'main-repo': 'standard',
-        'leaper-override-group': 'leap-reviewers',
         'repo_checker-arch-whitelist': 'x86_64',
         'repo_checker-no-filter': 'True',
         'repo_checker-package-comment-devel': 'True',
@@ -132,7 +130,6 @@ DEFAULT = {
         'lock': 'openSUSE:%(project)s:Staging',
         'lock-ns': 'openSUSE',
         'onlyadi': 'True',
-        'leaper-override-group': 'backports-reviewers',
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
         # review-team optionally added by leaper.py.
