@@ -356,15 +356,6 @@ Manages staging projects.
 * Package: osc-plugin-staging
 * Usage: staging projects management
 
-#### status.py
-
-Checks the status of the staging workflow bots.
-
-* Sources: [status.py](status.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete (it still checks for the status of some bots that are already retired, like leaper)
-
 #### fcc_submitter.py
 
 The FactoryCandidates projects are used to determine whether a new package in Factory does build in

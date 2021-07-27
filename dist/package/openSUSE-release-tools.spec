@@ -416,7 +416,6 @@ exit 0
 %{_bindir}/osrt-openqa-maintenance
 %{_bindir}/osrt-requestfinder
 %{_bindir}/osrt-scan_baselibs
-%{_bindir}/osrt-status
 %{_bindir}/osrt-sync-rebuild
 %{_bindir}/osrt-unmaintained
 %{_bindir}/osrt-totest-manager
