@@ -331,15 +331,6 @@ changes to allow whitelisting before creating Bugzilla entries.
 * Package: openSUSE-release-tools
 * Usage: ???
 
-#### obs-clone.py
-
-Clones projects and dependencies between OBS instances.
-
-* Sources: [obs_clone.py](obs_clone.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete (initially added for testing, but it was replaced with a container-based approach)
-
 #### obs-operator
 
 Performs staging operations as a service instead of requiring the osc staging plugin to be utilized

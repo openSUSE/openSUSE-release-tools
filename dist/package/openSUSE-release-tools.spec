@@ -393,7 +393,6 @@ exit 0
 %{_bindir}/osrt-issue-diff
 %{_bindir}/osrt-k8s-secret
 %{_bindir}/osrt-legal-auto
-%{_bindir}/osrt-obs_clone
 %{_bindir}/osrt-openqa-maintenance
 %{_bindir}/osrt-requestfinder
 %{_bindir}/osrt-scan_baselibs
