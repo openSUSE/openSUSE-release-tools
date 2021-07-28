@@ -132,6 +132,34 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
+    def test_source_inherited_maintainer(self):
+        """Declines the request when the 'required_maintainer' is only inherited maintainer of the source project"""
+        # Change the required maintainer
+        group_name = FACTORY_MAINTAINERS.replace('group:', '')
+        self.wf.create_group(group_name)
+        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+
+        root_project = self.wf.create_project(SRC_PROJECT.rsplit(':', 1)[0],
+            maintainer={'groups': [group_name]})
+
+        self._setup_devel_project()
+
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish')
+
+        self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req.reqid])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req.reqid, by_user=(self.bot_user, 'declined'))
+        add_role_req = get_request_list(self.wf.apiurl, SRC_PROJECT, req_state=['new'], req_type='add_role')[0]
+
+        self.assertIn('unless %s is a maintainer of %s' % (FACTORY_MAINTAINERS, SRC_PROJECT), review.comment)
+        self.assertIn('Created the add_role request %s' % add_role_req.reqid, review.comment)
+
+        self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
+        self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
+
     def _setup_devel_project(self, maintainer={}):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
         devel_package = OBSLocal.Package('blowfish', project=devel_project)
