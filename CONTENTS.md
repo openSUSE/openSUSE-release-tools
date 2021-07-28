@@ -98,15 +98,6 @@ Releases distribution snapshots to openQA and publishes if the result is positiv
 * Package: openSUSE-release-tools
 * Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+totest-manager)
 
-#### unmaintained
-
-Finds unmaintained binaries sourced from SLE.
-
-* Sources: [unmaintained.py](unmaintained.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete
-
 #### bugowner
 
 Manages bugowner information
