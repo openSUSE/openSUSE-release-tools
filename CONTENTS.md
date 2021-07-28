@@ -341,15 +341,6 @@ directly.
 * Package: openSUSE-release-tools
 * Usage: obsolete
 
-#### scan_baselibs.py
-
-Verifies 32bit binaries were imported properly towards a project.
-
-* Sources: [scan_baselibs.py](scan_baselibs.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete (after https://github.com/openSUSE/open-build-service/pull/7662 was introduced in OBS)
-
 #### k8s-secret.py
 
 Applies kubernetes secrets for OSRT tool osc configuration.

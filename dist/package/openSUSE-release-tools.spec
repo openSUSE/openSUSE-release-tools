@@ -395,7 +395,6 @@ exit 0
 %{_bindir}/osrt-legal-auto
 %{_bindir}/osrt-openqa-maintenance
 %{_bindir}/osrt-requestfinder
-%{_bindir}/osrt-scan_baselibs
 %{_bindir}/osrt-totest-manager
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
