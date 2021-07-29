@@ -28,6 +28,7 @@ services:
       - srcserver
       - repserver
       - servicedispatch
+      - worker
     ports:
       - "0.0.0.0:${OSRT_EXPOSED_OBS_PORT:-3000}:3000"
   srcserver:
@@ -36,6 +37,13 @@ services:
   repserver:
     <<: *obs
     command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_repserver
+    ports:
+      - "5252:5252"
+  worker:
+    <<: *obs
+    command: /bin/bash -c 'sed -i "s/^OBS_REPO_SERVERS=.*/OBS_REPO_SERVERS=\"repserver:5252\"/" /etc/sysconfig/obs-server && /usr/sbin/obsworker run'
+    depends_on:
+      - repserver
   servicedispatch:
     <<: *obs
     command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_servicedispatch
