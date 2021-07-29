@@ -127,27 +127,6 @@ pipelines:
            - staging-bot
            tasks:
            - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Factory
-  Source.In.Factory:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    timer:
-     spec: 0 */30 * ? * *
-    environment_variables:
-     OSC_CONFIG: /home/go/config/oscrc-factory-source
-    materials:
-     git:
-       git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Run:
-       approval:
-         type: manual
-       jobs:
-         Run:
-           timeout: 30
-           resources:
-           - staging-bot
-           tasks:
-           - script: ./check_source_in_factory.py --factory openSUSE:Factory --factory openSUSE:Leap:15.0:Update --factory openSUSE:Leap:15.0 --factory openSUSE:Leap:15.0:Update --factory openSUSE:Leap:15.0 --review-mode=fallback-onfail --fallback-group=backports-reviewers --verbose review
   OS.Origin.Manager:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

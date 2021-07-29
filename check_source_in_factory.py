@@ -22,10 +22,15 @@ import ReviewBot
 
 
 class FactorySourceChecker(ReviewBot.ReviewBot):
-    """ this review bot checks if the sources of a submission are
-    either in Factory or a request for Factory with the same sources
-    exist. If the latter a request is only accepted if the Factory
-    request is reviewed positive."""
+    """ This review bot is obsolete since the introduction of better
+    alternatives like origin-manager. But it's kept because other bots like
+    TagChecker (check_tags_in_request) still call this bot as part of their
+    implementation.
+
+    This review bot was used in the past to check if the sources of a submission
+    are either in Factory or a request for Factory with the same sources exist.
+    If the latter a request is only accepted if the Factory request is reviewed
+    positive."""
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
