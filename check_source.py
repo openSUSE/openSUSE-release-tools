@@ -171,21 +171,9 @@ class CheckSource(ReviewBot.ReviewBot):
                 (self.required_maintainer, source_project)
             )
 
-            try:
-                add_roles = get_request_list(self.apiurl, source_project,
-                    req_state=['new', 'review'], req_type='add_role')
-                add_roles = list(filter(self.select_add_role, add_roles))
-                if len(add_roles) > 0:
-                    add_role_reqid = add_roles[0].reqid
-                else:
-                    add_role_msg = 'Created automatically from request %s' % self.request.reqid
-                    add_role_reqid = create_add_role_request(self.apiurl, source_project, self.required_maintainer,
-                                                            'maintainer', message=add_role_msg)
-                declined_msg += ' Created the add_role request %s for addressing this problem.' % add_role_reqid
-            except HTTPError as e:
-                self.logger.error(
-                    'Cannot create the corresponding add_role request for %s: %s' % (self.request.reqid, e)
-                )
+            req = self.__ensure_add_role_request(source_project)
+            if req:
+                declined_msg += ' Created the add_role request %s for addressing this problem.' % req
 
             self.review_messages['declined'] = declined_msg
             return False
@@ -349,7 +337,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         If a 'required-source-maintainer' is set, it checks whether it is a
         maintainer for the source project. Inherited maintainership is
-        intentionally ignored to have explicit maitainer set.
+        intentionally ignored to have explicit maintainer set.
 
         source_project - source project name
         """
@@ -364,7 +352,25 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return self.required_maintainer in maintainers
 
-    def select_add_role(self, request):
+    def __ensure_add_role_request(self, source_project):
+        """Returns add_role request ID for given source project. Creates that add role if needed."""
+        try:
+            add_roles = get_request_list(self.apiurl, source_project,
+                req_state=['new', 'review'], req_type='add_role')
+            add_roles = list(filter(self.__is_required_maintainer, add_roles))
+            if len(add_roles) > 0:
+                return add_roles[0].reqid
+            else:
+                add_role_msg = 'Created automatically from request %s' % self.request.reqid
+                return create_add_role_request(self.apiurl, source_project, self.required_maintainer,
+                                                        'maintainer', message=add_role_msg)
+        except HTTPError as e:
+            self.logger.error(
+                'Cannot create the corresponding add_role request for %s: %s' % (self.request.reqid, e)
+            )
+
+    def __is_required_maintainer(self, request):
+        """Returns true for add role requests that adds required maintainer user or group"""
         action = request.actions[0]
         user = self.required_maintainer
         if user.startswith('group:'):
