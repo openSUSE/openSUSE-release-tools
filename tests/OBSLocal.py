@@ -168,10 +168,10 @@ class TestCase(unittest.TestCase):
 class StagingWorkflow(object):
     def __init__(self, project=PROJECT):
         """
-        Initialize the configuration
+        Initializes the configuration
 
-        Parameters:
-          project(str): default target project
+        :param project: default target project
+        :type project: str
         """
         THIS_DIR = os.path.dirname(os.path.abspath(__file__))
         oscrc = os.path.join(THIS_DIR, 'test.oscrc')
@@ -256,9 +256,10 @@ class StagingWorkflow(object):
 
         If group already exist then it just update users.
 
-        Parameters:
-            name(str): name of group
-            name(list of str): list of users to be in group
+        :param name: name of group
+        :type name: str
+        :param users: list of users to be in group
+        :type users: list of str
         """
 
         meta = """
@@ -285,11 +286,11 @@ class StagingWorkflow(object):
 
         Password is always "opensuse".
         Do nothing if user already exist.
+        The home project is not really created in the OBS instance, but update_meta can
+        be used to create it.
 
-        Parameters:
-            name(str): name of user
-
-        Returns home Project. Project is not created. To create it use update_meta method.
+        :param name: name of the user
+        :type name: str
         """
         if name in self.users: return
         meta = """
@@ -357,7 +358,8 @@ class StagingWorkflow(object):
 
         For params see Project#__init__
 
-        Returns Project instance for given project.
+        :return: the project instance representing the given project
+        :rtype: Project
         """
         if isinstance(name, Project):
             return name
@@ -374,12 +376,12 @@ class StagingWorkflow(object):
 
         Both have to exist, otherwise looks at create_submit_request method.
 
-        Parameters:
-            package(Package): package to submit TODO: what means None here?
-            project(Project|str): project where to send submit request.
-              None means use the default.
-
-        Returns created request.
+        :param package: package to submit TODO: what means None here?
+        :type package: Package or None
+        :param project: project where to send submit request, None means use the default.
+        :type project: Project or str or None
+        :return: created request.
+        :rtype: Request
         """
         if not project:
             project = self.project
@@ -401,12 +403,14 @@ class StagingWorkflow(object):
         Package is commited with optional text.
         Note different parameters than submit_package.
 
-        Parameters:
-            project(Project|str): project where package will live
-            package(str): package name to create
-            text(str): commit message for initial package creation
-
-        Returns created request.
+        :param project: project where package will live
+        :type project: Project or str
+        :param package: package name to create
+        :type package: str
+        :param text: commit message for initial package creation
+        :type text: str
+        :return: created request.
+        :rtype: Request
         """
         project = self.create_project(project)
         package = Package(name=package, project=project)
@@ -471,14 +475,16 @@ class Project(object):
         """
         Represents Project in OBS.
 
-            Parameters:
-                name(str): Project name
-                reviewer: TODO
-                maintainer: TODO
-                project_links(list of str): names of linked project from which
-                  it inherits
-                create(bool): if create during instantiation
-                with_repo(bool): TODO
+        :param name: project name
+        :type name: str
+        :param reviewer: TODO
+        :param maintainer: TODO
+        :param project_links: names of linked project from which it inherits
+        :type project_links: list of str
+        :param create: if create during instantiation
+        :type create: bool
+        :param with_repo: TODO
+        :type with_repo: bool
         """
         self.name = name
         self.packages = []
@@ -545,12 +551,15 @@ class Package(object):
         """
         Represents Package in OBS. It is created when instantiated.
 
-            Parameters:
-                name(str): Package name
-                project(Project): project where package lives
-                devel_project(str): name of devel project. Package has to
-                  already exists there, otherwise OBS returns 400.
+        :param name: Package name
+        :type name: str
+        :param project: project where package lives
+        :type project: Project
+        :param devel_project: name of devel project. Package has to already exists there,
+            otherwise OBS returns 400.
+        :type devel_project: str
         """
+
         self.name = name
         self.project = project
 
