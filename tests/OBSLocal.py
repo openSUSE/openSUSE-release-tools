@@ -167,8 +167,10 @@ class TestCase(unittest.TestCase):
 
 class StagingWorkflow(object):
     def __init__(self, project=PROJECT):
-        """
-        Initializes the configuration
+        """Initializes the configuration
+
+        Note this constructor calls :func:`create_target`, which implies several projects and users
+        are created right away.
 
         :param project: default target project
         :type project: str
@@ -208,6 +210,8 @@ class StagingWorkflow(object):
         self.api = StagingAPI(APIURL, project)
 
     def load_config(self, project=None):
+        """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``"""
+
         if project is None:
             project = self.project
         self.config = Config(APIURL, project)
@@ -251,17 +255,15 @@ class StagingWorkflow(object):
         attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 
     def create_group(self, name, users=[]):
-        """
-        Creates group and assign users to it.
+        """Creates group and assign users to it.
 
         If group already exist then it just update users.
 
         :param name: name of group
         :type name: str
         :param users: list of users to be in group
-        :type users: list of str
+        :type users: list(str)
         """
-
         meta = """
         <group>
           <title>{}</title>
@@ -281,13 +283,12 @@ class StagingWorkflow(object):
         osc.core.http_PUT(url, data=meta)
 
     def create_user(self, name):
-        """
-        Creates user and its home project.
+        """Creates user and its home project.
 
         Password is always "opensuse".
         Do nothing if user already exist.
-        The home project is not really created in the OBS instance, but update_meta can
-        be used to create it.
+        The home project is not really created in the OBS instance, but :func:`Project.update_meta`
+        can be used to create it.
 
         :param name: name of the user
         :type name: str
@@ -309,9 +310,11 @@ class StagingWorkflow(object):
         self.projects[home_project] = Project(home_project, create=False)
 
     def create_target(self):
-        """
-        Creates target project, user staging-bot, group factory-staging,
-        setup staging and also A and B staging projects.
+        """Creates target project, user staging-bot, group factory-staging, setup staging and
+        also A and B staging projects.
+
+        After the execution, the target project is indexed in the projects dictionary twice,
+        by its name and as 'target'.
         """
         if self.projects.get('target'): return
         self.create_user('staging-bot')
@@ -328,9 +331,8 @@ class StagingWorkflow(object):
         self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
 
     def setup_rings(self):
-        """
-        Creates target (see create_target method), ring0 and ring1, wine in
-        target repo and link it to ring1.
+        """Creates target (see :func:`create_target`), ring0 and ring1, wine in target repo and
+        link it to ring1.
         """
         self.create_target()
         self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
@@ -353,10 +355,9 @@ class StagingWorkflow(object):
         return target_package
 
     def create_project(self, name, reviewer={}, maintainer={}, project_links=[]):
-        """
-        Creates project if it does not already exist.
+        """Creates project if it does not already exist.
 
-        For params see Project#__init__
+        For params see the constructor of :class:`Project`
 
         :return: the project instance representing the given project
         :rtype: Project
@@ -371,8 +372,7 @@ class StagingWorkflow(object):
         return self.projects[name]
 
     def submit_package(self, package=None, project=None):
-        """
-        Creates submit request from package to target project.
+        """Creates submit request from package to target project.
 
         Both have to exist, otherwise looks at create_submit_request method.
 
@@ -397,8 +397,8 @@ class StagingWorkflow(object):
         return request
 
     def create_submit_request(self, project, package, text=None):
-        """
-        Creates submit request from package in specified project to default project.
+        """Creates submit request from package in specified project to default project.
+
         It creates project if not exist and also package.
         Package is commited with optional text.
         Note different parameters than submit_package.
@@ -472,19 +472,20 @@ class StagingWorkflow(object):
 
 class Project(object):
     def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True, with_repo=False):
-        """
-        Represents Project in OBS.
+        """Represents Project in OBS.
+
+        If ``create`` is False, an object is created but the project is not registered in the OBS
+        instance. If ``create`` is True, the project is created in the OBS instance with the given
+        meta information (by passing that information directly to :func:`update_meta`).
 
         :param name: project name
         :type name: str
-        :param reviewer: TODO
-        :param maintainer: TODO
-        :param project_links: names of linked project from which it inherits
-        :type project_links: list of str
-        :param create: if create during instantiation
+        :param reviewer: see the corresponding parameter at :func:`update_meta`
+        :param maintainer: see :func:`update_meta`
+        :param project_links: see :func:`update_meta`
+        :param create: whether the project should be registed in the OBS instance
         :type create: bool
-        :param with_repo: TODO
-        :type with_repo: bool
+        :param with_repo: see :func:`update_meta`
         """
         self.name = name
         self.packages = []
@@ -495,6 +496,10 @@ class Project(object):
         self.update_meta(reviewer, maintainer, project_links, with_repo=with_repo)
 
     def update_meta(self, reviewer={}, maintainer={}, project_links=[], with_repo=False):
+        """Sets the meta information for the project in the OBS instance
+
+        If the project does not exist in the OBS instance, calling this method will register it.
+        """
         meta = """
             <project name="{0}">
               <title></title>
@@ -548,8 +553,7 @@ class Project(object):
 
 class Package(object):
     def __init__(self, name, project, devel_project=None):
-        """
-        Represents Package in OBS. It is created when instantiated.
+        """Represents Package in OBS. It is created when instantiated.
 
         :param name: Package name
         :type name: str
