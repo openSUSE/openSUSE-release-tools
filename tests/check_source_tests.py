@@ -25,6 +25,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         # Using OBSLocal.StagingWorkflow makes it easier to setup testing scenarios
         self.wf = OBSLocal.StagingWorkflow(PROJECT)
+        self.project = self.wf.projects[PROJECT]
 
         # Set up the reviewers team
         self.wf.create_group(REVIEW_TEAM)
@@ -35,7 +36,6 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self.bot_user = 'factory-auto'
         self.wf.create_user(self.bot_user)
-        self.project = self.wf.create_project(PROJECT)
         # When creating a review, set the by_user to bot_user
         self.project.update_meta(reviewer={'users': [self.bot_user]})
 
