@@ -478,6 +478,8 @@ class Project(object):
         instance. If ``create`` is True, the project is created in the OBS instance with the given
         meta information (by passing that information directly to :func:`update_meta`).
 
+        TODO: a class should be introduced to represent the meta information. See :func:`get_meta`.
+
         :param name: project name
         :type name: str
         :param reviewer: see the corresponding parameter at :func:`update_meta`
@@ -499,6 +501,17 @@ class Project(object):
         """Sets the meta information for the project in the OBS instance
 
         If the project does not exist in the OBS instance, calling this method will register it.
+
+        TODO: a class should be introduced to represent the meta. See :func:`get_meta`.
+
+        :param reviewer: see the ``'reviewer'`` key of the meta dictionary at :func:`get_meta`
+        :type reviewer: dict[str, list(str)]
+        :param maintainer: see the ``'maintainer'`` key of the meta dictionary at :func:`get_meta`
+        :type maintainer: dict[str, list(str)]
+        :param project_links: names of linked project from which it inherits
+        :type project_links: list(str)
+        :param with_repo: whether a repository should be created as part of the meta
+        :type with_repo: bool
         """
         meta = """
             <project name="{0}">
@@ -525,6 +538,65 @@ class Project(object):
             ET.SubElement(repo, 'arch').text = 'x86_64'
 
         self.custom_meta(ET.tostring(root))
+
+    def get_meta(self):
+        """Data from the meta section of the project in the OBS instance
+
+        TODO: a class should be introduced to represent the meta, a set of nested dictionaries
+        is definitely not the way to go for the long term. The structure of the dictionary has
+        to be managed at several places and the corresponding keys pollute the signature of the
+        ``Project`` constructor and also other methods like :func:`update_meta`.
+
+        Currently, the meta information is represented by a dictionary with the following keys
+        and values:
+
+        * ``'reviewer'``: contains a dictionary with two keys 'groups' and 'users', each of them
+          containing a list of strings with names of the corresponding reviewers of the project
+        * ``'maintainer'``: same structure as 'reviewer', but with lists of maintainer names
+        * ``'project_links'``: list of names of linked projects
+        * ``'with_repo'``: boolean indicating whether the meta includes some repository
+
+        :return: the meta dictionary, see description above
+        :rtype: dict[str, dict or list(str) or bool]
+        """
+        meta = {
+            'reviewer': { 'groups': [], 'users': [] },
+            'maintainer': { 'groups': [], 'users': [] },
+            'project_links': [],
+            'with_repo': False
+        }
+        url = osc.core.make_meta_url('prj', self.name, APIURL)
+        data = ET.parse(osc.core.http_GET(url))
+        for child in data.getroot():
+            if child.tag == 'repository':
+                meta['with_repo'] = True
+            elif child.tag == 'link':
+                meta['project_links'].append(child.attrib['project'])
+            elif child.tag == 'group':
+                role = child.attrib['role']
+                if role not in ['reviewer', 'maintainer']:
+                    continue
+                meta[role]['groups'].append(child.attrib['groupid'])
+            elif child.tag == 'person':
+                role = child.attrib['role']
+                if role not in ['reviewer', 'maintainer']:
+                    continue
+                meta[role]['users'].append(child.attrib['userid'])
+
+        return meta
+
+    def add_reviewers(self, users = [], groups = []):
+        """Adds the given reviewers to the meta information of the project
+
+        :param users: usernames to add to the current list of reviewers
+        :type users: list(str)
+        :param groups: groups to add to the current list of reviewers
+        :type groups: list(str)
+        """
+        meta = self.get_meta()
+        meta['reviewer']['users'] = list(set(meta['reviewer']['users'] + users))
+        meta['reviewer']['groups'] = list(set(meta['reviewer']['groups'] + groups))
+        self.update_meta(**meta)
 
     def add_package(self, package):
         self.packages.append(package)

@@ -37,7 +37,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.bot_user = 'factory-auto'
         self.wf.create_user(self.bot_user)
         # When creating a review, set the by_user to bot_user
-        self.project.update_meta(reviewer={'users': [self.bot_user]})
+        self.project.add_reviewers(users = [self.bot_user])
 
         # Ensure different test runs operate in unique namespace.
         self.bot_name = '::'.join([type(self).__name__, str(random.getrandbits(8))])
