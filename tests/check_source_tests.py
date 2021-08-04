@@ -164,13 +164,7 @@ class TestCheckSource(OBSLocal.TestCase):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
         devel_package = OBSLocal.Package('blowfish', project=devel_project)
 
-        blowfish_spec = os.path.join(FIXTURES, 'packages', 'blowfish', 'blowfish.spec')
-        with open(blowfish_spec) as f:
-            devel_package.create_commit(filename='blowfish.spec', text=f.read())
+        fixtures_path = os.path.join(FIXTURES, 'packages', 'blowfish')
+        devel_package.commit_files(fixtures_path)
 
-        blowfish_changes = os.path.join(FIXTURES, 'packages', 'blowfish', 'blowfish.changes')
-        with open(blowfish_changes) as f:
-            devel_package.create_commit(filename='blowfish.changes', text=f.read())
-
-        devel_package.create_file(filename='blowfish-1.tar.gz')
-        target_package = OBSLocal.Package('blowfish', self.wf.projects['target'], devel_project=SRC_PROJECT)
+        OBSLocal.Package('blowfish', self.project, devel_project=SRC_PROJECT)

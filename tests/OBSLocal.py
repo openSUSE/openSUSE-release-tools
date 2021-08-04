@@ -330,14 +330,23 @@ class StagingWorkflow(object):
         self.projects['staging:A'] = Project(self.project + ':Staging:A', create=False)
         self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
 
-    def setup_rings(self):
-        """Creates target (see :func:`create_target`), ring0 and ring1, wine in target repo and
-        link it to ring1.
+    def setup_rings(self, devel_project=None):
+        """Creates a typical Factory setup with rings.
+
+        It creates three projects: 'ring0', 'ring1' and the target (see :func:`create_target`).
+        It also creates a 'wine' package in the target project and a link from it to ring1.
+        It sets the devel project for the package if ``devel_project`` is given.
+
+        :param devel_project: name of devel project. It must exist and contain a 'wine' package,
+            otherwise OBS returns an error code.
+        :type devel_project: str or None
         """
         self.create_target()
         self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
         self.projects['ring1'] = Project(name=self.project + ':Rings:1-MinimalX')
-        target_wine = Package(name='wine', project=self.projects['target'])
+        target_wine = Package(
+            name='wine', project=self.projects['target'], devel_project=devel_project
+        )
         target_wine.create_commit()
         self.create_link(target_wine, self.projects['ring1'])
 
@@ -680,6 +689,17 @@ class Package(object):
         if not text:
             text = ''.join([random.choice(string.ascii_letters) for i in range(40)])
         osc.core.http_PUT(url, data=text)
+
+    def commit_files(self, path):
+        """Commits to the package the files in the given directory
+
+        Useful to load fixtures.
+
+        :param path: path to a directory containing the files that must be added to the package
+        """
+        for filename in os.listdir(path):
+            with open(os.path.join(path, filename)) as f:
+                self.create_commit(filename=filename, text=f.read())
 
 class Request(object):
     def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
