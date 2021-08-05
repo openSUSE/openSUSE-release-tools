@@ -166,9 +166,18 @@ class TestCase(unittest.TestCase):
 
 
 class StagingWorkflow(object):
+    """This class is intended to setup and manipulate the environment (projects, users, etc.) in
+    the local OBS instance used to tests the release tools. It makes easy to setup scenarios similar
+    to the ones used during the real (open)SUSE development, with staging projects, rings, etc.
+    """
     def __init__(self, project=PROJECT):
-        """
-        Initialize the configuration
+        """Initializes the configuration
+
+        Note this constructor calls :func:`create_target`, which implies several projects and users
+        are created right away.
+
+        :param project: default target project
+        :type project: str
         """
         THIS_DIR = os.path.dirname(os.path.abspath(__file__))
         oscrc = os.path.join(THIS_DIR, 'test.oscrc')
@@ -205,6 +214,12 @@ class StagingWorkflow(object):
         self.api = StagingAPI(APIURL, project)
 
     def load_config(self, project=None):
+        """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
+
+        :param project: target project name
+        :type project: str
+        """
+
         if project is None:
             project = self.project
         self.config = Config(APIURL, project)
@@ -248,7 +263,15 @@ class StagingWorkflow(object):
         attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 
     def create_group(self, name, users=[]):
+        """Creates a group and assigns users to it.
 
+        If the group already exists then it just updates it users.
+
+        :param name: name of group
+        :type name: str
+        :param users: list of users to be in group
+        :type users: list(str)
+        """
         meta = """
         <group>
           <title>{}</title>
@@ -268,6 +291,17 @@ class StagingWorkflow(object):
         osc.core.http_PUT(url, data=meta)
 
     def create_user(self, name):
+        """Creates a user and their home project.
+
+        Do nothing if the user already exists.
+        Password is always "opensuse".
+
+        The home project is not really created in the OBS instance, but :func:`Project.update_meta`
+        can be used to create it.
+
+        :param name: name of the user
+        :type name: str
+        """
         if name in self.users: return
         meta = """
         <person>
@@ -285,6 +319,17 @@ class StagingWorkflow(object):
         self.projects[home_project] = Project(home_project, create=False)
 
     def create_target(self):
+        """Creates
+
+        - target project
+        - "staging-bot" user
+        - "factory-staging" group
+
+        setup staging and also ``*:Staging:A`` and ``*:Staging:B`` projects.
+
+        After the execution, the target project is indexed in the projects dictionary twice,
+        by its name and as 'target'.
+        """
         if self.projects.get('target'): return
         self.create_user('staging-bot')
         self.create_group('factory-staging', users=['staging-bot'])
@@ -299,11 +344,23 @@ class StagingWorkflow(object):
         self.projects['staging:A'] = Project(self.project + ':Staging:A', create=False)
         self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
 
-    def setup_rings(self):
+    def setup_rings(self, devel_project=None):
+        """Creates a typical Factory setup with rings.
+
+        It creates three projects: 'ring0', 'ring1' and the target (see :func:`create_target`).
+        It also creates a 'wine' package in the target project and a link from it to ring1.
+        It sets the devel project for the package if ``devel_project`` is given.
+
+        :param devel_project: name of devel project. It must exist and contain a 'wine' package,
+            otherwise OBS returns an error code.
+        :type devel_project: str or None
+        """
         self.create_target()
         self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
         self.projects['ring1'] = Project(name=self.project + ':Rings:1-MinimalX')
-        target_wine = Package(name='wine', project=self.projects['target'])
+        target_wine = Package(
+            name='wine', project=self.projects['target'], devel_project=devel_project
+        )
         target_wine.create_commit()
         self.create_link(target_wine, self.projects['ring1'])
 
@@ -321,6 +378,13 @@ class StagingWorkflow(object):
         return target_package
 
     def create_project(self, name, reviewer={}, maintainer={}, project_links=[]):
+        """Creates project if it does not already exist.
+
+        For params see the constructor of :class:`Project`
+
+        :return: the project instance representing the given project
+        :rtype: Project
+        """
         if isinstance(name, Project):
             return name
         if name in self.projects:
@@ -330,7 +394,18 @@ class StagingWorkflow(object):
                                       project_links=project_links)
         return self.projects[name]
 
-    def submit_package(self, package=None, project=None):
+    def submit_package(self, package, project=None):
+        """Creates submit request from package to target project.
+
+        Both have to exist (Use :func:`create_submit_request` otherwise).
+
+        :param package: package to submit
+        :type package: Package
+        :param project: project where to send submit request, None means use the default.
+        :type project: Project or str or None
+        :return: created request.
+        :rtype: Request
+        """
         if not project:
             project = self.project
         request = Request(source_package=package, target_project=project)
@@ -345,6 +420,21 @@ class StagingWorkflow(object):
         return request
 
     def create_submit_request(self, project, package, text=None):
+        """Creates submit request from package in specified project to default project.
+
+        It creates project if not exist and also package.
+        Package is commited with optional text.
+        Note different parameters than submit_package.
+
+        :param project: project where package will live
+        :type project: Project or str
+        :param package: package name to create
+        :type package: str
+        :param text: commit message for initial package creation
+        :type text: str
+        :return: created request.
+        :rtype: Request
+        """
         project = self.create_project(project)
         package = Package(name=package, project=project)
         package.create_commit(text=text)
@@ -404,7 +494,36 @@ class StagingWorkflow(object):
             self.api._invalidate_all()
 
 class Project(object):
+    """This class represents a project in the testing environment of the release tools. It usually
+    corresponds to a project in the local OBS instance that is used by the tests.
+
+    The class offers methods to setup and configure such projects to simulate the different testing
+    scenarios.
+
+    Not to be confused with the class Project in osc.core_, aimed to allow osc to manage projects
+    from real OBS instances
+
+    .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+
+    """
     def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True, with_repo=False):
+        """Initializes a new Project object.
+
+        If ``create`` is False, an object is created but the project is not registered in the OBS
+        instance. If ``create`` is True, the project is created in the OBS instance with the given
+        meta information (by passing that information directly to :func:`update_meta`).
+
+        TODO: a class should be introduced to represent the meta information. See :func:`get_meta`.
+
+        :param name: project name
+        :type name: str
+        :param reviewer: see the corresponding parameter at :func:`update_meta`
+        :param maintainer: see :func:`update_meta`
+        :param project_links: see :func:`update_meta`
+        :param create: whether the project should be registed in the OBS instance
+        :type create: bool
+        :param with_repo: see :func:`update_meta`
+        """
         self.name = name
         self.packages = []
 
@@ -414,6 +533,21 @@ class Project(object):
         self.update_meta(reviewer, maintainer, project_links, with_repo=with_repo)
 
     def update_meta(self, reviewer={}, maintainer={}, project_links=[], with_repo=False):
+        """Sets the meta information for the project in the OBS instance
+
+        If the project does not exist in the OBS instance, calling this method will register it.
+
+        TODO: a class should be introduced to represent the meta. See :func:`get_meta`.
+
+        :param reviewer: see the ``'reviewer'`` key of the meta dictionary at :func:`get_meta`
+        :type reviewer: dict[str, list(str)]
+        :param maintainer: see the ``'maintainer'`` key of the meta dictionary at :func:`get_meta`
+        :type maintainer: dict[str, list(str)]
+        :param project_links: names of linked project from which it inherits
+        :type project_links: list(str)
+        :param with_repo: whether a repository should be created as part of the meta
+        :type with_repo: bool
+        """
         meta = """
             <project name="{0}">
               <title></title>
@@ -439,6 +573,65 @@ class Project(object):
             ET.SubElement(repo, 'arch').text = 'x86_64'
 
         self.custom_meta(ET.tostring(root))
+
+    def get_meta(self):
+        """Data from the meta section of the project in the OBS instance
+
+        TODO: a class should be introduced to represent the meta, a set of nested dictionaries
+        is definitely not the way to go for the long term. The structure of the dictionary has
+        to be managed at several places and the corresponding keys pollute the signature of the
+        ``Project`` constructor and also other methods like :func:`update_meta`.
+
+        Currently, the meta information is represented by a dictionary with the following keys
+        and values:
+
+        * ``'reviewer'``: contains a dictionary with two keys 'groups' and 'users', each of them
+          containing a list of strings with names of the corresponding reviewers of the project
+        * ``'maintainer'``: same structure as 'reviewer', but with lists of maintainer names
+        * ``'project_links'``: list of names of linked projects
+        * ``'with_repo'``: boolean indicating whether the meta includes some repository
+
+        :return: the meta dictionary, see description above
+        :rtype: dict[str, dict or list(str) or bool]
+        """
+        meta = {
+            'reviewer': { 'groups': [], 'users': [] },
+            'maintainer': { 'groups': [], 'users': [] },
+            'project_links': [],
+            'with_repo': False
+        }
+        url = osc.core.make_meta_url('prj', self.name, APIURL)
+        data = ET.parse(osc.core.http_GET(url))
+        for child in data.getroot():
+            if child.tag == 'repository':
+                meta['with_repo'] = True
+            elif child.tag == 'link':
+                meta['project_links'].append(child.attrib['project'])
+            elif child.tag == 'group':
+                role = child.attrib['role']
+                if role not in ['reviewer', 'maintainer']:
+                    continue
+                meta[role]['groups'].append(child.attrib['groupid'])
+            elif child.tag == 'person':
+                role = child.attrib['role']
+                if role not in ['reviewer', 'maintainer']:
+                    continue
+                meta[role]['users'].append(child.attrib['userid'])
+
+        return meta
+
+    def add_reviewers(self, users = [], groups = []):
+        """Adds the given reviewers to the meta information of the project
+
+        :param users: usernames to add to the current list of reviewers
+        :type users: list(str)
+        :param groups: groups to add to the current list of reviewers
+        :type groups: list(str)
+        """
+        meta = self.get_meta()
+        meta['reviewer']['users'] = list(set(meta['reviewer']['users'] + users))
+        meta['reviewer']['groups'] = list(set(meta['reviewer']['groups'] + groups))
+        self.update_meta(**meta)
 
     def add_package(self, package):
         self.packages.append(package)
@@ -466,7 +659,27 @@ class Project(object):
         self.remove()
 
 class Package(object):
+    """This class represents a package in the local OBS instance used to test the release tools and
+    offers methods to create and modify such packages in order to simulate the different testing
+    scenarios.
+
+    Not to be confused with the class Package in osc.core_, aimed to allow osc to manage packages
+    from real OBS instances
+
+    .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+    """
     def __init__(self, name, project, devel_project=None):
+        """Creates a package in the OBS instance and instantiates an object to represent it
+
+        :param name: Package name
+        :type name: str
+        :param project: project where package lives
+        :type project: Project
+        :param devel_project: name of devel project. Package has to already exists there,
+            otherwise OBS returns 400.
+        :type devel_project: str
+        """
+
         self.name = name
         self.project = project
 
@@ -512,8 +725,29 @@ class Package(object):
             text = ''.join([random.choice(string.ascii_letters) for i in range(40)])
         osc.core.http_PUT(url, data=text)
 
+    def commit_files(self, path):
+        """Commits to the package the files in the given directory
+
+        Useful to load fixtures.
+
+        :param path: path to a directory containing the files that must be added to the package
+        """
+        for filename in os.listdir(path):
+            with open(os.path.join(path, filename)) as f:
+                self.create_commit(filename=filename, text=f.read())
+
 class Request(object):
+    """This class represents a request in the local OBS instance used to test the release tools and
+    offers methods to create and modify such requests in order to simulate the different testing
+    scenarios.
+
+    Not to be confused with the class Request in osc.core_, aimed to allow osc to create and
+    manage requests on real OBS instances
+
+    .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+    """
     def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
+        """Creates a request in the OBS instance and instantiates an object to represent it"""
         self.revoked = True
 
         if type == 'submit':
