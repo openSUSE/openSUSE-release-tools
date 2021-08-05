@@ -210,7 +210,11 @@ class StagingWorkflow(object):
         self.api = StagingAPI(APIURL, project)
 
     def load_config(self, project=None):
-        """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``"""
+        """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
+
+        :param project: target project name
+        :type project: str
+        """
 
         if project is None:
             project = self.project
@@ -255,9 +259,9 @@ class StagingWorkflow(object):
         attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 
     def create_group(self, name, users=[]):
-        """Creates group and assign users to it.
+        """Creates a group and assigns users to it.
 
-        If group already exist then it just update users.
+        If the group already exists then it just updates it users.
 
         :param name: name of group
         :type name: str
@@ -283,10 +287,11 @@ class StagingWorkflow(object):
         osc.core.http_PUT(url, data=meta)
 
     def create_user(self, name):
-        """Creates user and its home project.
+        """Creates a user and their home project.
 
+        Do nothing if the user already exists.
         Password is always "opensuse".
-        Do nothing if user already exist.
+
         The home project is not really created in the OBS instance, but :func:`Project.update_meta`
         can be used to create it.
 
@@ -310,8 +315,13 @@ class StagingWorkflow(object):
         self.projects[home_project] = Project(home_project, create=False)
 
     def create_target(self):
-        """Creates target project, user staging-bot, group factory-staging, setup staging and
-        also A and B staging projects.
+        """Creates
+
+        - target project
+        - "staging-bot" user
+        - "factory-staging" group
+
+        setup staging and also ``*:Staging:A`` and ``*:Staging:B`` projects.
 
         After the execution, the target project is indexed in the projects dictionary twice,
         by its name and as 'target'.
