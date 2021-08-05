@@ -499,6 +499,10 @@ class Project(object):
 
         TODO: a class should be introduced to represent the meta information. See :func:`get_meta`.
 
+        Compare with Project in osc.core_
+
+        .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+
         :param name: project name
         :type name: str
         :param reviewer: see the corresponding parameter at :func:`update_meta`
@@ -646,6 +650,10 @@ class Package(object):
     def __init__(self, name, project, devel_project=None):
         """Represents Package in OBS. It is created when instantiated.
 
+        Compare with Package in osc.core_
+
+        .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+
         :param name: Package name
         :type name: str
         :param project: project where package lives
@@ -713,6 +721,10 @@ class Package(object):
 
 class Request(object):
     def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
+        """Compare with Request in osc.core_
+
+        .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+        """
         self.revoked = True
 
         if type == 'submit':
