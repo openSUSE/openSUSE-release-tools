@@ -265,7 +265,7 @@ def common_args_add(parser):
 def main():
     parser = argparse.ArgumentParser(description='Operate on devel projects for a given project.')
     subparsers = parser.add_subparsers(title='subcommands')
-    parser.set_defaults(func=list)
+
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debuging')
     parser.add_argument('-p', '--project', default='openSUSE:Factory', metavar='PROJECT', help='project from which to source devel projects')
@@ -291,6 +291,8 @@ def main():
     parser_reviews.set_defaults(func=reviews)
     common_args_add(parser_reviews)
 
+    if not sys.argv[1:]:
+        sys.argv.append("list")
     args = parser.parse_args()
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
