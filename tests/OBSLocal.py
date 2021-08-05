@@ -380,13 +380,13 @@ class StagingWorkflow(object):
                                       project_links=project_links)
         return self.projects[name]
 
-    def submit_package(self, package=None, project=None):
+    def submit_package(self, package, project=None):
         """Creates submit request from package to target project.
 
-        Both have to exist, otherwise looks at create_submit_request method.
+        Both have to exist (Use :func:`create_submit_request` otherwise).
 
-        :param package: package to submit TODO: what means None here?
-        :type package: Package or None
+        :param package: package to submit
+        :type package: Package
         :param project: project where to send submit request, None means use the default.
         :type project: Project or str or None
         :return: created request.
