@@ -166,6 +166,10 @@ class TestCase(unittest.TestCase):
 
 
 class StagingWorkflow(object):
+    """This class is intended to setup and manipulate the environment (projects, users, etc.) in
+    the local OBS instance used to tests the release tools. It makes easy to setup scenarios similar
+    to the ones used during the real (open)SUSE development, with staging projects, rings, etc.
+    """
     def __init__(self, project=PROJECT):
         """Initializes the configuration
 
@@ -490,18 +494,26 @@ class StagingWorkflow(object):
             self.api._invalidate_all()
 
 class Project(object):
+    """This class represents a project in the testing environment of the release tools. It usually
+    corresponds to a project in the local OBS instance that is used by the tests.
+
+    The class offers methods to setup and configure such projects to simulate the different testing
+    scenarios.
+
+    Not to be confused with the class Project in osc.core_, aimed to allow osc to manage projects
+    from real OBS instances
+
+    .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+
+    """
     def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True, with_repo=False):
-        """Represents Project in OBS.
+        """Initializes a new Project object.
 
         If ``create`` is False, an object is created but the project is not registered in the OBS
         instance. If ``create`` is True, the project is created in the OBS instance with the given
         meta information (by passing that information directly to :func:`update_meta`).
 
         TODO: a class should be introduced to represent the meta information. See :func:`get_meta`.
-
-        Compare with Project in osc.core_
-
-        .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
 
         :param name: project name
         :type name: str
@@ -647,12 +659,17 @@ class Project(object):
         self.remove()
 
 class Package(object):
+    """This class represents a package in the local OBS instance used to test the release tools and
+    offers methods to create and modify such packages in order to simulate the different testing
+    scenarios.
+
+    Not to be confused with the class Package in osc.core_, aimed to allow osc to manage packages
+    from real OBS instances
+
+    .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+    """
     def __init__(self, name, project, devel_project=None):
-        """Represents Package in OBS. It is created when instantiated.
-
-        Compare with Package in osc.core_
-
-        .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+        """Creates a package in the OBS instance and instantiates an object to represent it
 
         :param name: Package name
         :type name: str
@@ -720,11 +737,17 @@ class Package(object):
                 self.create_commit(filename=filename, text=f.read())
 
 class Request(object):
-    def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
-        """Compare with Request in osc.core_
+    """This class represents a request in the local OBS instance used to test the release tools and
+    offers methods to create and modify such requests in order to simulate the different testing
+    scenarios.
 
-        .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
-        """
+    Not to be confused with the class Request in osc.core_, aimed to allow osc to create and
+    manage requests on real OBS instances
+
+    .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
+    """
+    def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
+        """Creates a request in the OBS instance and instantiates an object to represent it"""
         self.revoked = True
 
         if type == 'submit':
