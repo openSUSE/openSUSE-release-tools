@@ -419,8 +419,10 @@ def attribute_value_delete(apiurl, project, name, namespace='OSRT', package=None
         apiurl, list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))))
 
 @memoize(session=True)
-def repository_path_expand(apiurl, project, repo):
+def repository_path_expand(apiurl, project, repo, visited_repos=None):
     """Recursively list underlying projects."""
+    if visited_repos is None:
+        visited_repos = set()
     repos = [[project, repo]]
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
     paths = meta.findall('.//repository[@name="{}"]/path'.format(repo))
@@ -431,7 +433,11 @@ def repository_path_expand(apiurl, project, repo):
 
     # ...which is expanded recursively
     if len(paths) > 0:
-        repos += repository_path_expand(apiurl, paths[-1].get('project', project), paths[-1].get('repository'))
+        p_project = paths[-1].get('project', project)
+        p_repository = paths[-1].get('repository')
+        if (p_project, p_repository) not in visited_repos:
+            visited_repos.add((p_project, p_repository))
+            repos += repository_path_expand(apiurl, p_project, p_repository, visited_repos)
     return repos
 
 @memoize(session=True)
