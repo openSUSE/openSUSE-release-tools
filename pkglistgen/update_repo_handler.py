@@ -259,6 +259,13 @@ def update_project(apiurl, project):
 
         if os.path.exists(packages_file + '.xz'):
             print(path, 'already exists')
+
+            # Some old versions didn't do cleanup, do it now. Can be removed once everything was cleaned up
+            if not opts.get('refresh', False):
+                for file in glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key))):
+                    os.unlink(file)
+                    package.delete_file(os.path.basename(file))
+
             continue
 
         solv_file = packages_file + '.solv'
@@ -286,5 +293,10 @@ def update_project(apiurl, project):
 
         package.addfile(os.path.basename(path + '.xz'))
         del pool
+
+        if not opts.get('refresh', False):
+            for file in glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key))):
+                os.unlink(file)
+                package.delete_file(os.path.basename(file))
 
     package.commit('Automatic update')
