@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import sys
 
 import osc.core
 import osc.conf
@@ -20,8 +21,8 @@ class RebuildabilityChecker(object):
         rebuild_project = self.project.create_subproject("Rebuild") # how to handle if it exists? Clean it and use? What if we do not have permission to create subproject?
         testing_packages = [package.copy(rebuild_project) for package in packages]
         while not all([p.builds.is_finished for p in testing_packages]): # builds is object for handling building and is_finished means that all builds are finished ( or disabled )
-          # write some progress about number of pass, failures, what is waiting, etc. using p.builds query ( ensure it is not memoized )
-          print("Working like a crazy monk")
+            # write some progress about number of pass, failures, what is waiting, etc. using p.builds query ( ensure it is not memoized )
+            print("Working like a crazy monk")
 
         # TODO: delete rebuild project or keep it for inspection?
         return all([not p.builds.any_failed for p in testing_packages])

@@ -59,4 +59,3 @@ class ProjectMetadata(object):
                 raise ProjectNotFound("Project %s not found" % (project_name))
             else:
                 raise
-
