@@ -49,6 +49,8 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
+    logging.debug("All linked projects: %s" % [p.name for p in rebuild_report.project.metadata.linked_projects(recursive = True)])
+
     result = rebuild_report.result()
 
     # TODO: maybe print some final report?

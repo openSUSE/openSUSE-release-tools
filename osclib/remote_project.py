@@ -36,8 +36,21 @@ class RemoteProject(object):
         return res
 
 class ProjectMetadata(object):
-    def __init__(self, linked_projects):
-        self.linked_projects = linked_projects
+    def __init__(self, linked_projects_names):
+        self.linked_projects_names = linked_projects_names
+
+    def linked_projects(self, recursive = False):
+        to_process = self.linked_projects_names
+        result = []
+        while(to_process):
+            name = to_process.pop(0)
+            if (all([r.name != name for r in result])):
+              project = RemoteProject.find(name)
+              result.append(project)
+              if recursive:
+                  to_process += project.metadata.linked_projects_names
+
+        return result
 
     @classmethod
     def parse(cls, content):
