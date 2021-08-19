@@ -38,6 +38,10 @@ Currently, the plugin relies on the OBS capabilities to implement [staging
 workflows](https://github.com/openSUSE/open-build-service/wiki/Staging-Workflow), extending and
 adapting them to the (open)SUSE use case.
 
+This [testcase](../tests/factory_submit_request_test.py) showcases the whole submission process
+explaining how the different reviews are created and processed by OBS and by the involved bots and
+release tools.
+
 ## SUSE Linux Enterprise Development
 
 The SUSE Linux Enterprise distribution is built in a SUSE-internal instance of OBS usually referred

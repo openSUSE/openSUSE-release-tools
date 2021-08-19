@@ -157,6 +157,11 @@ class TestCase(unittest.TestCase):
         if comment:
             self.assertEqual(review.comment, comment)
 
+    def assertRequestState(self, rid, **kwargs):
+        request = get_request(self.apiurl, rid)
+        for key, value in kwargs.items():
+            self.assertEqual(getattr(request.state, key), value)
+
     def randomString(self, prefix='', length=None):
         if prefix and not prefix.endswith('_'):
             prefix += '_'
