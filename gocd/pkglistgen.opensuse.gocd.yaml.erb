@@ -89,7 +89,7 @@ pipelines:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     timer:
-      spec: 0 0 21 ? * *
+      spec: 0 0 0 */3 * *
       only_on_changes: false
     materials:
       git:
