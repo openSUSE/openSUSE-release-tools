@@ -53,8 +53,8 @@ class RemoteProject(object):
             return res
 
     def _merge_inherited(self, res, linked_projects):
-        merge_dict = { pkg.name : pkg for pkg in res }
-        cleaning_regex = re.compile('\.[0-9]+$')
+        merge_dict = { pkg.name: pkg for pkg in res }
+        cleaning_regex = re.compile(r'\.[0-9]+$')
         for project in linked_projects:
             for pkg in project.get_packages(inherited = False):
                 # TODO: is there better way then regex?
