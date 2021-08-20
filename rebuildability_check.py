@@ -23,7 +23,7 @@ class RebuildabilityChecker(object):
         description = "Temporary project including expanded copy of parent to verify if everything can be rebuild from scratch"
         rebuild_project = self.project.create_subproject("Rebuild", title, description) # how to handle if it exists? Clean it and use? What if we do not have permission to create subproject?
 
-        testing_packages = [package.copy(rebuild_project) for package in packages]
+        testing_packages = [package.copy(rebuild_project.name, expand=True) for package in packages]
         while not all([p.builds.is_finished for p in testing_packages]): # builds is object for handling building and is_finished means that all builds are finished ( or disabled )
             # write some progress about number of pass, failures, what is waiting, etc. using p.builds query ( ensure it is not memoized )
             print("Working like a crazy monk")

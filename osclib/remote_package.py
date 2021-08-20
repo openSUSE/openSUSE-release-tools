@@ -16,6 +16,11 @@ class RemotePackage(object):
         self.name = name
         self.project_name = project
 
+    def copy(self, target_project_name, expand=False):
+        apiurl = osc.conf.config['apiurl']
+        osc.core.copy_pac(apiurl, self.project_name, self.name, apiurl, target_project_name, self.name, expand=expand)
+        return RemotePackage(self.name, target_project_name)
+
     @classmethod
     def from_xml(cls, content):
         """ Returns a project from an XML node (lxml.etree._ElementTree) """
