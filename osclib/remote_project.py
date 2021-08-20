@@ -26,10 +26,24 @@ class RemoteProject(object):
         self.name = name
         self.metadata = None
 
+    def create_subproject(self, name, title=None, description=None):
+        """Creates subproject with given name. Title and description can be passed,
+        rest of metadata is copied from self."""
+        raw_metadata = ProjectMetadata.load(self.name)
+        fullname = self.name + ":" + name
+        root = ET.parse(raw_metadata)
+        root.getroot().set('name', fullname)
+        for child in root.getroot():
+            if child.tag == "title" and title:
+                child.text = title
+            elif child.tag == "description" and description:
+                child.text = description
+        ProjectMetadata.save(fullname, ET.tostring(root))
+
     @classmethod
     def find(cls, name):
         """Raise ProjectNotFound if not found"""
-        metadata = ProjectMetadata.load(name)
+        metadata = ProjectMetadata.parse(ProjectMetadata.load(name))
         res = cls(name)
         res.metadata = metadata
 
@@ -54,6 +68,7 @@ class ProjectMetadata(object):
 
     @classmethod
     def parse(cls, content):
+        """Parses metadata string passed in argument"""
         data = ET.parse(content)
         linked_projects = []
         for child in data.getroot():
@@ -64,11 +79,22 @@ class ProjectMetadata(object):
 
     @classmethod
     def load(cls, project_name):
+        """Loads metadata as string from BS instance"""
         url = osc.core.make_meta_url('prj', project_name, osc.conf.config['apiurl'])
         try:
-            return cls.parse(osc.core.http_GET(url))
+            return osc.core.http_GET(url)
         except HTTPError as e:
             if e.code == 404:
                 raise ProjectNotFound("Project %s not found" % (project_name))
             else:
                 raise
+
+    @classmethod
+    def save(cls, project_name, content):
+        """Saves given content as project metadata"""
+        url = osc.core.make_meta_url('prj', project_name, osc.conf.config['apiurl'])
+        try:
+            return osc.core.http_PUT(url, data=content)
+        except HTTPError as e:
+            # TODO: better error handling like detection of wrong content
+            raise
