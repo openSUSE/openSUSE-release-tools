@@ -45,10 +45,10 @@ class ProjectMetadata(object):
         while(to_process):
             name = to_process.pop(0)
             if (all([r.name != name for r in result])):
-              project = RemoteProject.find(name)
-              result.append(project)
-              if recursive:
-                  to_process += project.metadata.linked_projects_names
+                project = RemoteProject.find(name)
+                result.append(project)
+                if recursive:
+                    to_process += project.metadata.linked_projects_names
 
         return result
 
