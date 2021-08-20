@@ -5,6 +5,9 @@ from lxml import etree as ET
 import osc.core
 import osc.conf
 
+import osclib.remote_package
+from osclib.remote_package import RemotePackage
+
 from urllib.error import HTTPError, URLError
 
 class ProjectNotFound(Exception):
@@ -40,6 +43,23 @@ class RemoteProject(object):
                 child.text = description
         ProjectMetadata.save(fullname, ET.tostring(root))
 
+    def get_packages(self, inherited = False):
+        pkg_list = osc.core.meta_get_packagelist(osc.conf.config['apiurl'], self.name)
+        res = [RemotePackage(pkg_name, project=self.name) for pkg_name in pkg_list]
+        if inherited:
+            return self._merge_inherited(res, self.metadata.linked_projects(recursive=True))
+        else:
+            return res
+
+    def _merge_inherited(self, res, linked_projects):
+        merge_dict = { pkg.name : pkg for pkg in res }
+        for project in linked_projects:
+            for pkg in project.get_packages(inherited = False):
+                if not pkg.name in merge_dict:
+                    merge_dict[pkg.name] = pkg
+
+        return merge_dict.values()
+
     @classmethod
     def find(cls, name):
         """Raise ProjectNotFound if not found"""
@@ -54,7 +74,7 @@ class ProjectMetadata(object):
         self.linked_projects_names = linked_projects_names
 
     def linked_projects(self, recursive = False):
-        to_process = self.linked_projects_names
+        to_process = self.linked_projects_names.copy()
         result = []
         while(to_process):
             name = to_process.pop(0)

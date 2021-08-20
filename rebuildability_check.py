@@ -16,10 +16,12 @@ class RebuildabilityChecker(object):
         self.project = RemoteProject.find(project_str) # apiurl should be read from osc.conf.config['apiurl'], osclib config class looks like has different goal?
 
     def result(self):
+        packages = self.project.get_packages(inherited = True) # package should include also project from which it comes. Recursive means include also inherited packages so reading meta and linked projects are needed
+        self.logger.debug("Packages %s" % [pkg.project_name + " -> " + pkg.name for pkg in packages])
+
         title = "Testing rebuild of whole parent project"
         description = "Temporary project including expanded copy of parent to verify if everything can be rebuild from scratch"
         rebuild_project = self.project.create_subproject("Rebuild", title, description) # how to handle if it exists? Clean it and use? What if we do not have permission to create subproject?
-        packages = self.project.get_packages(recursive = True) # package should include also project from which it comes. Recursive means include also inherited packages so reading meta and linked projects are needed
 
         testing_packages = [package.copy(rebuild_project) for package in packages]
         while not all([p.builds.is_finished for p in testing_packages]): # builds is object for handling building and is_finished means that all builds are finished ( or disabled )
