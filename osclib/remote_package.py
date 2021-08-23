@@ -57,6 +57,10 @@ class RemotePackage(object):
         osc.core.copy_pac(apiurl, self.project_name, self.name, apiurl, target_project_name, self.name, expand=expand)
         return RemotePackage(self.name, target_project_name)
 
+    def link(self, target_project_name):
+        osc.core.link_pac(self.project_name, self.name, target_project_name, self.name, force=False)
+        return RemotePackage(self.name, target_project_name)
+
     def releasename(self):
         """ Returns the releasename for the package
 
