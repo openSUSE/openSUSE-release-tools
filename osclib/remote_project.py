@@ -61,8 +61,8 @@ class RemoteProject(object):
         merge_dict = { pkg.name: pkg for pkg in res }
         for project in linked_projects:
             for pkg in project.get_packages(inherited = False):
-                if not pkg.metadata.releasename in merge_dict:
-                    merge_dict[pkg.metadata.releasename] = pkg
+                if not pkg.releasename() in merge_dict:
+                    merge_dict[pkg.releasename()] = pkg
 
         return merge_dict.values()
 
