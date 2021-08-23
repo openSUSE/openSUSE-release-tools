@@ -59,14 +59,10 @@ class RemoteProject(object):
 
     def _merge_inherited(self, res, linked_projects):
         merge_dict = { pkg.name: pkg for pkg in res }
-        cleaning_regex = re.compile(r'\.[0-9]+$')
         for project in linked_projects:
             for pkg in project.get_packages(inherited = False):
-                # TODO: is there better way then regex?
-                # avoid maintenance specific names like zypper.5864
-                cleaned_name = cleaning_regex.sub("", pkg.name)
-                if not cleaned_name in merge_dict:
-                    merge_dict[cleaned_name] = pkg
+                if not pkg.metadata.releasename in merge_dict:
+                    merge_dict[pkg.metadata.releasename] = pkg
 
         return merge_dict.values()
 
