@@ -37,6 +37,17 @@ class RemotePackage(object):
         osc.core.copy_pac(apiurl, self.project_name, self.name, apiurl, target_project_name, self.name, expand=expand)
         return RemotePackage(self.name, target_project_name)
 
+    def releasename(self):
+        """ Returns the releasename for the package
+
+        If it is not explictly defined as part of the metadata, just return the package's name.
+        """
+        if self.metadata.releasename:
+            return self.metadata.releasename
+
+        return self.name
+
+
     @classmethod
     def from_xml(cls, xml_tree):
         """ Returns a project from an XML node (lxml.etree._ElementTree) """
