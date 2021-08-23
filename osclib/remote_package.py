@@ -27,10 +27,10 @@ class PackageMetadata(object):
 
 class RemotePackage(object):
     """ This class represents a package on the build service side """
-    def __init__(self, name, project=None, meta=PackageMetadata()):
+    def __init__(self, name, project=None, metadata=PackageMetadata()):
         self.name = name
         self.project_name = project
-        self.meta = meta
+        self.metadata = metadata
 
     def copy(self, target_project_name, expand=False):
         apiurl = osc.conf.config['apiurl']
@@ -45,7 +45,7 @@ class RemotePackage(object):
         return RemotePackage(
             node.get('name'),
             project=node.get('project'),
-            meta=PackageMetadata.from_xml_node(node)
+            metadata=PackageMetadata.from_xml_node(node)
         )
 
     @classmethod
