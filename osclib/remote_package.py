@@ -52,13 +52,28 @@ class RemotePackage(object):
         self._metadata = PackageMetadata.load(self.project_name, self.name)
         return self._metadata
 
+    def revision(self):
+        apiurl = osc.conf.config['apiurl']
+        url = osc.core.makeurl(apiurl, ['source', self.project_name, self.name, '_history'],
+                               {'limit': 1 })
+        try:
+            xml_tree = ET.parse(osc.core.http_GET(url))
+            root = xml_tree.getroot()
+            return root.find('revision').get('rev')
+        except HTTPError as e:
+            if e.code == 404:
+                raise PackageNotFound('Package %s/%s not found' % (self.project_name, self.name))
+            else:
+                raise
+
     def copy(self, target_project_name, expand=False):
         apiurl = osc.conf.config['apiurl']
         osc.core.copy_pac(apiurl, self.project_name, self.name, apiurl, target_project_name, self.name, expand=expand)
         return RemotePackage(self.name, target_project_name)
 
     def link(self, target_project_name):
-        osc.core.link_pac(self.project_name, self.name, target_project_name, self.name, force=False)
+        osc.core.link_pac(self.project_name, self.name, target_project_name, self.name,
+                          force=True, rev=self.revision())
         return RemotePackage(self.name, target_project_name)
 
     def releasename(self):
@@ -70,6 +85,7 @@ class RemotePackage(object):
             return self.metadata().releasename
 
         return self.name
+
 
     @classmethod
     def from_xml(cls, xml_tree):
