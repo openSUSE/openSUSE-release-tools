@@ -81,7 +81,7 @@ class RemotePackage(object):
 
         If it is not explictly defined as part of the metadata, just return the package's name.
         """
-        if self.metadata():
+        if self.metadata() and self.metadata().releasename:
             return self.metadata().releasename
 
         return self.name
