@@ -86,7 +86,6 @@ class RemotePackage(object):
 
         return self.name
 
-
     @classmethod
     def from_xml(cls, xml_tree):
         """ Returns a project from an XML node (lxml.etree._ElementTree) """
@@ -112,3 +111,5 @@ class RemotePackage(object):
         except HTTPError as e:
             if e.code == 404:
                 raise PackageNotFound('Package %s not found' % (package_name))
+            else
+                raise
