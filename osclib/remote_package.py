@@ -111,5 +111,5 @@ class RemotePackage(object):
         except HTTPError as e:
             if e.code == 404:
                 raise PackageNotFound('Package %s not found' % (package_name))
-            else
+            else:
                 raise
