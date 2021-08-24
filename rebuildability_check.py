@@ -9,15 +9,25 @@ import osc.conf
 
 import osclib.remote_project
 from osclib.remote_project import RemoteProject
+import osclib.dependencies
 
 class RebuildabilityChecker(object):
-    def __init__(self, project_str):
+    def __init__(self, project_str, triggered_by_str):
         self.logger = logging.getLogger('RebuildibilityChecker')
         self.project = RemoteProject.find(project_str) # apiurl should be read from osc.conf.config['apiurl'], osclib config class looks like has different goal?
+        self.triggered_by = triggered_by_str
+        if self.triggered_by:
+            self.triggered_by = self.triggered_by.split(",")
 
     def result(self):
         packages = self.project.get_packages(inherited = True) # package should include also project from which it comes. Recursive means include also inherited packages so reading meta and linked projects are needed
         self.logger.debug("Packages %s" % [pkg.project_name + " -> " + pkg.name for pkg in packages])
+
+        if self.triggered_by:
+            package_names = [pkg.name for pkg in packages]
+            triggered_packages = list(filter(lambda pkg: pkg.name in self.triggered_by, packages))
+            # filter packages to include only ones affected by triggered packages
+            packages = osclib.Dependencies.compute_depends_on(triggered_packages, packages)
 
         title = "Testing rebuild of whole parent project"
         description = "Temporary project including expanded copy of parent to verify if everything can be rebuild from scratch"
@@ -40,13 +50,16 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
+    parser.add_argument('-t', '--triggered_by', default=None,
+        help='Comma separated list of packages that trigger rebuild check. '
+            'Without it full rebuild is done.')
 
     args = parser.parse_args()
 
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    rebuild_report = RebuildabilityChecker(args.project)
+    rebuild_report = RebuildabilityChecker(args.project, args.triggered_by)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
