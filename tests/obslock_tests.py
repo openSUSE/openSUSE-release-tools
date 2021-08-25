@@ -119,7 +119,7 @@ class TestOBSLock(unittest.TestCase):
                 self.assertEqual(reason_sub, None, 'does not inherit hold')
 
     def setup_vcr(self):
-        wf = OBSLocal.StagingWorkflow()
+        wf = OBSLocal.FactoryWorkflow()
         wf.create_target()
         # we should most likely create this as part of create_target, but
         # it just slows down all other tests

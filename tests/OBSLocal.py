@@ -170,7 +170,7 @@ class TestCase(unittest.TestCase):
         return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
 
 
-class StagingWorkflow(object):
+class FactoryWorkflow(object):
     """This class is intended to setup and manipulate the environment (projects, users, etc.) in
     the local OBS instance used to tests the release tools. It makes easy to setup scenarios similar
     to the ones used during the real (open)SUSE development, with staging projects, rings, etc.

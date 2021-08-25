@@ -9,7 +9,7 @@ from . import OBSLocal
 
 class TestConfig(unittest.TestCase):
     def setup_vcr(self):
-        return OBSLocal.StagingWorkflow()
+        return OBSLocal.FactoryWorkflow()
 
     def test_basic(self):
         wf = self.setup_vcr()

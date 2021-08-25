@@ -7,7 +7,7 @@ from . import OBSLocal
 class TestUnselect(OBSLocal.TestCase):
 
     def test_cleanup_filter(self):
-        wf = OBSLocal.StagingWorkflow()
+        wf = OBSLocal.FactoryWorkflow()
         UnselectCommand.config_init(wf.api)
         UnselectCommand.cleanup_days = 1
         obsolete = wf.api.project_status_requests('obsolete', UnselectCommand.filter_obsolete)

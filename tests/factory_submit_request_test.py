@@ -41,8 +41,8 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         super(TestFactorySubmitRequest, self).setUp()
 
         # Setup the basic scenario, with manual reviewers, staging projects, rings and wine as
-        # example package (wine is in ring1, see OBSLocal.StagingWorkflow.setup_rings)
-        self.wf = OBSLocal.StagingWorkflow(PROJECT)
+        # example package (wine is in ring1, see OBSLocal.FactoryWorkflow.setup_rings)
+        self.wf = OBSLocal.FactoryWorkflow(PROJECT)
         self.__setup_review_team()
         self.__setup_devel_package('wine')
         self.wf.setup_rings(devel_project=DEVEL_PROJECT)

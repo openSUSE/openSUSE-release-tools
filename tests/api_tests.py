@@ -17,7 +17,7 @@ class TestApiCalls(OBSLocal.TestCase):
 
     def setUp(self):
         super(TestApiCalls, self).setUp()
-        self.wf = OBSLocal.StagingWorkflow()
+        self.wf = OBSLocal.FactoryWorkflow()
         self.wf.setup_rings()
         self.staging_b = self.wf.create_staging('B')
         prj = self.staging_b.name

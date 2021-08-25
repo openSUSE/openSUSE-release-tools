@@ -28,7 +28,7 @@ class TestOrigin(OBSLocal.TestCase):
         super().setUp()
 
         self.target_project = self.randomString('target')
-        self.wf = OBSLocal.StagingWorkflow(self.target_project)
+        self.wf = OBSLocal.FactoryWorkflow(self.target_project)
 
         self.wf.create_attribute_type('OSRT', 'OriginConfig', 1)
 

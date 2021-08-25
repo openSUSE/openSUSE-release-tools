@@ -93,7 +93,7 @@ handle
 class TestCommentOBS(OBSLocal.TestCase):
     def setUp(self):
         super(TestCommentOBS, self).setUp()
-        self.wf = OBSLocal.StagingWorkflow()
+        self.wf = OBSLocal.FactoryWorkflow()
         self.wf.create_user('factory-auto')
         self.wf.create_user('repo-checker')
         self.wf.create_user('staging-bot')

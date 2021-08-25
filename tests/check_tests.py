@@ -24,7 +24,7 @@ class TestCheckCommand(unittest.TestCase):
     def test_check_command_single(self):
         """Validate json conversion for a single project."""
 
-        wf = OBSLocal.StagingWorkflow()
+        wf = OBSLocal.FactoryWorkflow()
         wf.create_staging('H')
         self.checkcommand = CheckCommand(wf.api)
 

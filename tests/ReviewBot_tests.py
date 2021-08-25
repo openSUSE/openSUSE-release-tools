@@ -11,7 +11,7 @@ class TestReviewBotComment(OBSLocal.TestCase):
     def setUp(self):
         super(TestReviewBotComment, self).setUp()
         self.api = CommentAPI(self.apiurl)
-        self.wf = OBSLocal.StagingWorkflow()
+        self.wf = OBSLocal.FactoryWorkflow()
         self.wf.create_user('factory-auto')
         self.project = self.wf.create_project(PROJECT)
 
