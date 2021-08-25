@@ -29,6 +29,8 @@ from osclib.memoize import memoize_session_reset
 
 from urllib.error import HTTPError, URLError
 
+from abc import ABC, abstractmethod
+
 # pointing to other docker container
 APIURL = 'http://api:3000'
 PROJECT = 'openSUSE:Factory'
@@ -170,10 +172,11 @@ class TestCase(unittest.TestCase):
         return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
 
 
-class FactoryWorkflow(object):
-    """This class is intended to setup and manipulate the environment (projects, users, etc.) in
-    the local OBS instance used to tests the release tools. It makes easy to setup scenarios similar
-    to the ones used during the real (open)SUSE development, with staging projects, rings, etc.
+class StagingWorkflow(ABC):
+    """This abstract base class is intended to setup and manipulate the environment (projects,
+    users, etc.) in the local OBS instance used to tests the release tools. Thus, the derivative
+    classes make easy to setup scenarios similar to the ones used during the real (open)SUSE
+    development.
     """
     def __init__(self, project=PROJECT):
         """Initializes the configuration
@@ -221,6 +224,16 @@ class FactoryWorkflow(object):
         # The ProductVersion is required for some actions, for example, when a request is accepted
         self.create_attribute_type('OSRT', 'ProductVersion', 1)
 
+    @abstractmethod
+    def initial_config(self):
+        """Values to use to initialize the 'Config' attribute at :func:`setup_remote_config`"""
+        pass
+
+    @abstractmethod
+    def staging_group_name(self):
+        """Name of the group in charge of the staging workflow"""
+        pass
+
     def load_config(self, project=None):
         """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
 
@@ -263,17 +276,11 @@ class FactoryWorkflow(object):
 
         Note this calls :func:`create_target` to ensure the target project exists.
         """
-
         # First ensure the existence of both the target project and the 'Config' attribute type
         self.create_target()
         self.create_attribute_type('OSRT', 'Config', 1)
 
-        config = {
-            'overridden-by-local': 'remote-nope',
-            'staging-group': 'factory-staging',
-            'remote-only': 'remote-indeed',
-        }
-        self.remote_config_set(config, replace_all=True)
+        self.remote_config_set(self.initial_config(), replace_all=True)
 
     def remote_config_set(self, config, replace_all=False):
         """Sets the values of the 'Config' attribute for the target project.
@@ -356,50 +363,27 @@ class FactoryWorkflow(object):
         self.projects[home_project] = Project(home_project, create=False)
 
     def create_target(self):
-        """Creates
+        """Creates the main project that represents the product being developed and, as such, is
+        expected to be the target for requests. It also creates all the associated projects, users
+        and groups involved in the development workflow.
 
-        - target project
-        - "staging-bot" user
-        - "factory-staging" group
+        In the base implementation, that includes:
 
-        setup staging and also ``*:Staging:A`` and ``*:Staging:B`` projects.
+            - The target project (see :func:`create_target_project`)
+            - A group of staging managers including the "staging-bot" user
+              (see :func:`create_staging_users`)
+            - A couple of staging projects for the target one
 
         After the execution, the target project is indexed in the projects dictionary twice,
         by its name and as 'target'.
         """
         if self.projects.get('target'): return
-        self.create_user('staging-bot')
-        self.create_group('factory-staging', users=['staging-bot'])
-        p = Project(name=self.project, reviewer={'groups': ['factory-staging']})
-        self.projects['target'] = p
-        self.projects[self.project] = p
 
-        url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
-        data = "<workflow managers='factory-staging'/>"
-        osc.core.http_POST(url, data=data)
-        # creates A and B as well
+        self.create_target_project()
+        self.create_staging_users()
+
         self.projects['staging:A'] = Project(self.project + ':Staging:A', create=False)
         self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
-
-    def setup_rings(self, devel_project=None):
-        """Creates a typical Factory setup with rings.
-
-        It creates three projects: 'ring0', 'ring1' and the target (see :func:`create_target`).
-        It also creates a 'wine' package in the target project and a link from it to ring1.
-        It sets the devel project for the package if ``devel_project`` is given.
-
-        :param devel_project: name of devel project. It must exist and contain a 'wine' package,
-            otherwise OBS returns an error code.
-        :type devel_project: str or None
-        """
-        self.create_target()
-        self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
-        self.projects['ring1'] = Project(name=self.project + ':Rings:1-MinimalX')
-        target_wine = Package(
-            name='wine', project=self.projects['target'], devel_project=devel_project
-        )
-        target_wine.create_commit()
-        self.create_link(target_wine, self.projects['ring1'])
 
     def create_package(self, project, package):
         project = self.create_project(project)
@@ -477,32 +461,6 @@ class FactoryWorkflow(object):
         package.create_commit(text=text)
         return self.submit_package(package)
 
-    def create_staging(self, suffix, freeze=False, rings=None, with_repo=False):
-        staging_key = 'staging:{}'.format(suffix)
-        # do not reattach if already present
-        if not staging_key in self.projects:
-            staging_name = self.project + ':Staging:' + suffix
-            staging = Project(staging_name, create=False, with_repo=with_repo)
-            url = osc.core.makeurl(APIURL, ['staging', self.project, 'staging_projects'])
-            data = '<workflow><staging_project>{}</staging_project></workflow>'
-            osc.core.http_POST(url, data=data.format(staging_name))
-            self.projects[staging_key] = staging
-        else:
-            staging = self.projects[staging_key]
-
-        project_links = []
-        if rings == 0:
-            project_links.append(self.project + ":Rings:0-Bootstrap")
-        if rings == 1 or rings == 0:
-            project_links.append(self.project + ":Rings:1-MinimalX")
-        staging.update_meta(project_links=project_links, maintainer={'groups': ['factory-staging']},
-                            with_repo=with_repo)
-
-        if freeze:
-            FreezeCommand(self.api).perform(staging.name)
-
-        return staging
-
     def __del__(self):
         if not self.api:
             return
@@ -565,6 +523,88 @@ class FactoryWorkflow(object):
             osc.core.http_DELETE(url)
         except HTTPError:
             pass
+
+    def create_target_project(self):
+        """Creates the main target project (see :func:`create_target`)"""
+        p = Project(name=self.project)
+        self.projects['target'] = p
+        self.projects[self.project] = p
+
+    def create_staging_users(self):
+        """Creates users and groups for the staging workflow for the target project
+        (see :func:`create_target`)
+        """
+        group = self.staging_group_name()
+
+        self.create_user('staging-bot')
+        self.create_group(group, users=['staging-bot'])
+        self.projects['target'].add_reviewers(groups = [group])
+
+        url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
+        data = f"<workflow managers='{group}'/>"
+        osc.core.http_POST(url, data=data)
+
+class FactoryWorkflow(StagingWorkflow):
+    """A class that makes easy to setup scenarios similar to the one used during the real
+    openSUSE Factory development, with staging projects, rings, etc.
+    """
+    def staging_group_name(self):
+        return 'factory-staging'
+
+    def initial_config(self):
+        return {
+            'overridden-by-local': 'remote-nope',
+            'staging-group': 'factory-staging',
+            'remote-only': 'remote-indeed',
+        }
+
+    def setup_rings(self, devel_project=None):
+        """Creates a typical Factory setup with rings.
+
+        It creates three projects: 'ring0', 'ring1' and the target (see :func:`create_target`).
+        It also creates a 'wine' package in the target project and a link from it to ring1.
+        It sets the devel project for the package if ``devel_project`` is given.
+
+        :param devel_project: name of devel project. It must exist and contain a 'wine' package,
+            otherwise OBS returns an error code.
+        :type devel_project: str or None
+        """
+        self.create_target()
+        self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
+        self.projects['ring1'] = Project(name=self.project + ':Rings:1-MinimalX')
+        target_wine = Package(
+            name='wine', project=self.projects['target'], devel_project=devel_project
+        )
+        target_wine.create_commit()
+        self.create_link(target_wine, self.projects['ring1'])
+
+    def create_staging(self, suffix, freeze=False, rings=None, with_repo=False):
+        staging_key = 'staging:{}'.format(suffix)
+        # do not reattach if already present
+        if not staging_key in self.projects:
+            staging_name = self.project + ':Staging:' + suffix
+            staging = Project(staging_name, create=False, with_repo=with_repo)
+            url = osc.core.makeurl(APIURL, ['staging', self.project, 'staging_projects'])
+            data = '<workflow><staging_project>{}</staging_project></workflow>'
+            osc.core.http_POST(url, data=data.format(staging_name))
+            self.projects[staging_key] = staging
+        else:
+            staging = self.projects[staging_key]
+
+        project_links = []
+        if rings == 0:
+            project_links.append(self.project + ":Rings:0-Bootstrap")
+        if rings == 1 or rings == 0:
+            project_links.append(self.project + ":Rings:1-MinimalX")
+
+        group = self.staging_group_name()
+        staging.update_meta(project_links=project_links, maintainer={'groups': [group]},
+                            with_repo=with_repo)
+
+        if freeze:
+            FreezeCommand(self.api).perform(staging.name)
+
+        return staging
 
 class Project(object):
     """This class represents a project in the testing environment of the release tools. It usually
