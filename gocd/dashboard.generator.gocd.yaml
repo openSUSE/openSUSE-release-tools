@@ -5,7 +5,7 @@ pipelines:
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-totest-manager
-      RSYNC_PASSWORD: '{{SECRET:[RSYNC_FOR_COOLO][RSYNC_FOR_COOLO]}}'
+      RSYNC_PASSWORD: '{{SECRET:[opensuse.secrets][RSYNC_FOR_COOLO]}}'
     materials:
       script:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
