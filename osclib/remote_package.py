@@ -54,8 +54,8 @@ class RemotePackagesReader(object):
         if name.endswith(self.IGNORED_PKG_SUFFIXES):
             return False
 
-        if self.INCIDENT_REGEXP.match(name):
-            if not name.startswith(IGNORED_PKG_DOTNAMES) or name.count('.') > 1:
+        if self.INCIDENT_REGEXP.search(name):
+            if not name.startswith(self.IGNORED_PKG_DOTNAMES) or name.count('.') > 1:
                 return False
 
         return True
