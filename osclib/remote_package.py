@@ -17,16 +17,16 @@ class RemotePackagesReader(object):
     def from_project(self, project_name, apiurl):
         """ Returns the list of packages from the build service for a given project """
         url = osc.core.makeurl(apiurl, ['source', project_name], {'view': 'info'})
-        return self.from_string(osc.core.http_GET(url))
+        return self.from_string(osc.core.http_GET(url), project_name)
 
-    def from_string(self, string):
+    def from_string(self, string, project_name):
         """ Return a list of packages from the string """
         xml_tree = ET.parse(string)
         root = xml_tree.getroot()
-        packages = [self._sourceinfo_to_package(s) for s in root]
+        packages = [self._sourceinfo_to_package(s, project_name) for s in root]
         return list(filter(None, packages))
 
-    def _sourceinfo_to_package(self, sourceinfo):
+    def _sourceinfo_to_package(self, sourceinfo, project_name):
         """ Turns a sourceinfo element into a package if possible """
         name = sourceinfo.get('package')
         if not self._is_package(name):
@@ -37,6 +37,7 @@ class RemotePackagesReader(object):
             name=sourceinfo.get('package'),
             rev=sourceinfo.get('rev'),
             origin=sourceinfo.findtext('originproject'),
+            project_name=project_name,
             linked=linked
         )
 
@@ -61,18 +62,22 @@ class RemotePackagesReader(object):
 
 class RemotePackage(object):
     """ This class represents a package on the build service side """
-    def __init__(self, name, rev, origin, linked={}):
+    def __init__(self, name, project_name, rev=None, origin=None, linked={}):
         self.name = name
+        self.project_name = project_name
         self.rev = rev
         self.origin = origin
         self.linked = linked
 
     def copy(self, target_project_name, expand=False):
         apiurl = osc.conf.config['apiurl']
-        osc.core.copy_pac(apiurl, self.project_name, self.name, apiurl, target_project_name, self.name, expand=expand)
-        return RemotePackage(self.name, target_project_name)
+        osc.core.copy_pac(apiurl, self.source_project_name(), self.name, apiurl, target_project_name, self.name, expand=expand)
+        return RemotePackage(self.name, origin=self.origin, project_name=target_project_name)
 
     def link(self, target_project_name):
-        osc.core.link_pac(self.project_name, self.name, target_project_name, self.name,
+        osc.core.link_pac(self.source_project_name(), self.name, target_project_name, self.name,
                           force=True, rev=self.rev)
-        return RemotePackage(self.name, target_project_name)
+        return RemotePackage(self.name, origin=self.origin, project_name=target_project_name)
+
+    def source_project_name(self):
+        return self.origin or self.project_name

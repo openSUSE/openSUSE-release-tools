@@ -16,8 +16,8 @@ class RebuildabilityChecker(object):
         self.project = RemoteProject.find(project_str) # apiurl should be read from osc.conf.config['apiurl'], osclib config class looks like has different goal?
 
     def result(self):
-        packages = self.project.get_packages(inherited = True) # package should include also project from which it comes. Recursive means include also inherited packages so reading meta and linked projects are needed
-        self.logger.debug("Packages %s" % [pkg.project_name + " -> " + pkg.name for pkg in packages])
+        packages = self.project.get_packages() # package should include also project from which it comes. Recursive means include also inherited packages so reading meta and linked projects are needed
+        self.logger.debug("Packages %s" % ["%s / %s" % (p.source_project_name(), p.name) for p in packages])
 
         title = "Testing rebuild of whole parent project"
         description = "Temporary project including expanded copy of parent to verify if everything can be rebuild from scratch"
