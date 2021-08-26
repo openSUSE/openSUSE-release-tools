@@ -20,8 +20,8 @@ class RebuildabilityChecker(object):
             self.triggered_by = self.triggered_by.split(",")
 
     def result(self):
-        packages = self.project.get_packages(inherited = True) # package should include also project from which it comes. Recursive means include also inherited packages so reading meta and linked projects are needed
-        self.logger.debug("Packages %s" % [pkg.project_name + " -> " + pkg.name for pkg in packages])
+        packages = self.project.get_packages()
+        self.logger.debug("Packages %s" % ["%s / %s" % (p.source_project_name(), p.name) for p in packages])
 
         if self.triggered_by:
             package_names = [pkg.name for pkg in packages]

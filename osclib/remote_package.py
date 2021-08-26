@@ -1,115 +1,83 @@
 
 import logging
+import re
+
 import osc.core
 import osc.conf
 
 from lxml import etree as ET
 from urllib.error import HTTPError, URLError
 
-class PackageNotFound(Exception):
-    """ The package was not found in the build service """
-    pass
+class RemotePackagesReader(object):
+    """ This service class reads the packages for a given project
 
-
-class PackageMetadata(object):
-    """ It holds package meta information
-
-    NOTE: to be extended with more elements. Otherwise, it could live within RemotePackage.
+    The idea is to extract the logic to read the packages from their representation and avoid
+    coupling our model to the build service API.
     """
-    def __init__(self, releasename=None):
-        self.releasename = releasename
+    def from_project(self, project_name, apiurl):
+        """ Returns the list of packages from the build service for a given project """
+        url = osc.core.makeurl(apiurl, ['source', project_name], {'view': 'info'})
+        return self.from_string(osc.core.http_GET(url), project_name)
 
-    @classmethod
-    def from_xml_node(cls, node):
-        return PackageMetadata(
-            releasename=node.findtext('releasename')
+    def from_string(self, string, project_name):
+        """ Return a list of packages from the string """
+        xml_tree = ET.parse(string)
+        root = xml_tree.getroot()
+        packages = [self._sourceinfo_to_package(s, project_name) for s in root]
+        return list(filter(None, packages))
+
+    def _sourceinfo_to_package(self, sourceinfo, project_name):
+        """ Turns a sourceinfo element into a package if possible """
+        name = sourceinfo.get('package')
+        if not self._is_package(name):
+            return None
+
+        linked = {l.get('project'): l.get('package') for l in sourceinfo.findall('linked')}
+        return RemotePackage(
+            name=sourceinfo.get('package'),
+            rev=sourceinfo.get('rev'),
+            origin=sourceinfo.findtext('originproject'),
+            project_name=project_name,
+            linked=linked
         )
 
-    @classmethod
-    def load(cls, project_name, package_name):
-        url = osc.core.make_meta_url('pkg', (project_name, package_name), osc.conf.config['apiurl'])
-        try:
-            xml_tree = ET.parse(osc.core.http_GET(url))
-            node = xml_tree.getroot()
-            return cls.from_xml_node(node)
-        except HTTPError as e:
-            if e.code == 404:
-                raise PackageNotFound("Package %s/%s not found" % (project_name, package_name))
-            else:
-                raise
+    IGNORED_PKG_PREFIXES = ('00', '_', 'patchinfo.', 'skelcd-', 'installation-images', 'kernel-livepatch-')
+    IGNORED_PKG_SUFFIXES = ('-mini')
+    IGNORED_PKG_DOTNAMES = ('go1', 'bazel0', 'dotnet', 'ruby2', 'rust1')
+    INCIDENT_REGEXP = re.compile(r'\.\d+$')
+
+    def _is_package(self, name):
+        """ Determines whether it is a valid package (exclude incidents, updates and so on) """
+        if name.startswith(self.IGNORED_PKG_PREFIXES):
+            return False
+
+        if name.endswith(self.IGNORED_PKG_SUFFIXES):
+            return False
+
+        if self.INCIDENT_REGEXP.search(name):
+            if not name.startswith(self.IGNORED_PKG_DOTNAMES) or name.count('.') > 1:
+                return False
+
+        return True
 
 class RemotePackage(object):
     """ This class represents a package on the build service side """
-    def __init__(self, name, project=None, metadata=None):
+    def __init__(self, name, project_name, rev=None, origin=None, linked={}):
         self.name = name
-        self.project_name = project
-        self._metadata = metadata
-
-    def metadata(self):
-        if self._metadata:
-            return self._metadata
-
-        self._metadata = PackageMetadata.load(self.project_name, self.name)
-        return self._metadata
-
-    def revision(self):
-        apiurl = osc.conf.config['apiurl']
-        url = osc.core.makeurl(apiurl, ['source', self.project_name, self.name, '_history'],
-                               {'limit': 1 })
-        try:
-            xml_tree = ET.parse(osc.core.http_GET(url))
-            root = xml_tree.getroot()
-            return root.find('revision').get('rev')
-        except HTTPError as e:
-            if e.code == 404:
-                raise PackageNotFound('Package %s/%s not found' % (self.project_name, self.name))
-            else:
-                raise
+        self.project_name = project_name
+        self.rev = rev
+        self.origin = origin
+        self.linked = linked
 
     def copy(self, target_project_name, expand=False):
         apiurl = osc.conf.config['apiurl']
-        osc.core.copy_pac(apiurl, self.project_name, self.name, apiurl, target_project_name, self.name, expand=expand)
-        return RemotePackage(self.name, target_project_name)
+        osc.core.copy_pac(apiurl, self.source_project_name(), self.name, apiurl, target_project_name, self.name, expand=expand)
+        return RemotePackage(self.name, origin=self.origin, project_name=target_project_name)
 
     def link(self, target_project_name):
-        osc.core.link_pac(self.project_name, self.name, target_project_name, self.name,
-                          force=True, rev=self.revision())
-        return RemotePackage(self.name, target_project_name)
+        osc.core.link_pac(self.source_project_name(), self.name, target_project_name, self.name,
+                          force=True, rev=self.rev)
+        return RemotePackage(self.name, origin=self.origin, project_name=target_project_name)
 
-    def releasename(self):
-        """ Returns the releasename for the package
-
-        If it is not explictly defined as part of the metadata, just return the package's name.
-        """
-        if self.metadata() and self.metadata().releasename:
-            return self.metadata().releasename
-
-        return self.name
-
-    @classmethod
-    def from_xml(cls, xml_tree):
-        """ Returns a project from an XML node (lxml.etree._ElementTree) """
-        node = xml_tree.getroot()
-
-        return RemotePackage(
-            node.get('name'),
-            project=node.get('project'),
-            metadata=PackageMetadata.from_xml_node(node)
-        )
-
-    @classmethod
-    def find(cls, project_name, package_name):
-        """ Returns a package from the build service
-
-        :raises:
-          PackageNotFound: if the package is not found in the given project
-        """
-        url = osc.core.make_meta_url('pkg', (project_name, package_name), osc.conf.config['apiurl'])
-        try:
-            xml_tree = ET.parse(osc.core.http_GET(url))
-            return cls.from_xml(xml_tree)
-        except HTTPError as e:
-            if e.code == 404:
-                raise PackageNotFound('Package %s not found' % (package_name))
-            else:
-                raise
+    def source_project_name(self):
+        return self.origin or self.project_name

@@ -7,7 +7,7 @@ import osc.core
 import osc.conf
 
 import osclib.remote_package
-from osclib.remote_package import RemotePackage
+from osclib.remote_package import RemotePackagesReader
 
 from urllib.error import HTTPError, URLError
 
@@ -49,39 +49,12 @@ class RemoteProject(object):
         result.metadata = ProjectMetadata.parse(modified_metadata)
         return result
 
-    def get_packages(self, inherited = False):
+    def get_packages(self):
         """Gets packages. If needed also inherited is included.
         Inherited just skips patchinfos and kernel live patches as it is usually not needed.
         """
-        pkg_list = osc.core.meta_get_packagelist(osc.conf.config['apiurl'], self.name)
-        res = [RemotePackage(pkg_name, project=self.name) for pkg_name in pkg_list]
-        if inherited:
-            return self._merge_inherited(res, self.metadata.linked_projects(recursive=True))
-        else:
-            return res
-
-    def _merge_inherited(self, res, linked_projects):
-        patchinfo_re = re.compile(r'^patchinfo\.[0-9]+$')
-        kernel_live_patch_re = re.compile(r'^kernel-livepatch-')
-        merge_dict = { pkg.name: pkg for pkg in res }
-        for project in linked_projects:
-            for pkg in project.get_packages(inherited = False):
-                # quick name check
-                if pkg.name in merge_dict:
-                    continue
-                # skip patchinfos
-                if patchinfo_re.match(pkg.name):
-                    continue
-                # skip kernel live patches
-                if kernel_live_patch_re.match(pkg.name):
-                    continue
-                # avoid special maintenance names like autoyast2.10233
-                if pkg.releasename() in merge_dict:
-                    continue
-
-                merge_dict[pkg.releasename()] = pkg
-
-        return merge_dict.values()
+        reader = RemotePackagesReader()
+        return reader.from_project(self.name, osc.conf.config['apiurl'])
 
     @classmethod
     def find(cls, name):
