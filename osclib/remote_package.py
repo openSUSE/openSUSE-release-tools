@@ -43,7 +43,7 @@ class RemotePackagesReader(object):
 
     IGNORED_PKG_PREFIXES = ('00', '_', 'patchinfo.', 'skelcd-', 'installation-images', 'kernel-livepatch-')
     IGNORED_PKG_SUFFIXES = ('-mini')
-    IGNORED_PKG_DOTNAMES = ('go1', 'bazel0', 'dotnet', 'ruby2')
+    IGNORED_PKG_DOTNAMES = ('go1', 'bazel0', 'dotnet', 'ruby2', 'rust1')
     INCIDENT_REGEXP = re.compile(r'\.\d+$')
 
     def _is_package(self, name):
