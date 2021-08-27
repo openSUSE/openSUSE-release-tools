@@ -9,37 +9,45 @@ import osc.conf
 
 import osclib.remote_project
 from osclib.remote_project import RemoteProject
-import osclib.dependencies
+import osclib.dependency
 
 class RebuildabilityChecker(object):
-    def __init__(self, project_str, triggered_by_str):
+    def __init__(self, project_str, packages, repository, dry_run):
         self.logger = logging.getLogger('RebuildibilityChecker')
         self.project = RemoteProject.find(project_str) # apiurl should be read from osc.conf.config['apiurl'], osclib config class looks like has different goal?
-        self.triggered_by = triggered_by_str
-        if self.triggered_by:
-            self.triggered_by = self.triggered_by.split(",")
+        self.packages = packages
+        if self.packages:
+            self.packages = self.packages.split(",")
+        self.repository = repository
+        self.dry_run = dry_run
 
     def result(self):
         packages = self.project.get_packages()
         self.logger.debug("Packages %s" % ["%s / %s" % (p.source_project_name(), p.name) for p in packages])
 
-        if self.triggered_by:
+        if self.packages:
             package_names = [pkg.name for pkg in packages]
-            triggered_packages = list(filter(lambda pkg: pkg.name in self.triggered_by, packages))
             # filter packages to include only ones affected by triggered packages
-            packages = osclib.Dependencies.compute_depends_on(triggered_packages, packages)
+            filtered_packages = list(filter(lambda pkg: pkg.name in self.packages, packages))
+            if self.repository:
+                packages = osclib.dependency.Dependency.compute_rebuilds(filtered_packages, packages, repository=self.repository)
+            else:
+                packages = filtered_packages
+
+        if self.dry_run:
+            for pkg in packages:
+                print(pkg.name)
+
+            return True
 
         title = "Testing rebuild of whole parent project"
         description = "Temporary project including expanded copy of parent to verify if everything can be rebuild from scratch"
         rebuild_project = self.project.create_subproject("Rebuild", title, description) # how to handle if it exists? Clean it and use? What if we do not have permission to create subproject?
 
         testing_packages = [package.link(rebuild_project.name) for package in packages]
-        while not all([p.builds.is_finished for p in testing_packages]): # builds is object for handling building and is_finished means that all builds are finished ( or disabled )
-            # write some progress about number of pass, failures, what is waiting, etc. using p.builds query ( ensure it is not memoized )
-            print("Working like a crazy monk")
 
-        # TODO: delete rebuild project or keep it for inspection?
-        return all([not p.builds.any_failed for p in testing_packages])
+        self.logger.info("Rebuild project '%s' created." % rebuild_project.name)
+
 
 
 if __name__ == '__main__':
@@ -50,16 +58,21 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
-    parser.add_argument('-t', '--triggered_by', default=None,
-        help='Comma separated list of packages that trigger rebuild check. '
-            'Without it full rebuild is done.')
+    parser.add_argument('-P', '--packages', default=None,
+        help='Comma separated list of packages to rebuild. '
+            'Without it full rebuild of all packages in project is done.')
+    parser.add_argument('-n', '--dependencies', default=None,
+        help='Use together with --packages to add also dependencies of given packages in the repository.'
+            'Example "--packages=glibc --dependencies=openSUSE_Factory --project=Staging:A".')
+    parser.add_argument('-D', '--dry-run', action='store_true',
+        help='Do not create rebuild project and just print out list of packages to rebuild.')
 
     args = parser.parse_args()
 
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    rebuild_report = RebuildabilityChecker(args.project, args.triggered_by)
+    rebuild_report = RebuildabilityChecker(args.project, args.packages, args.dependencies, args.dry_run)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
