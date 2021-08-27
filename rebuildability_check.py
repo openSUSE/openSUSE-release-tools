@@ -48,8 +48,6 @@ class RebuildabilityChecker(object):
 
         self.logger.info("Rebuild project '%s' created." % rebuild_project.name)
 
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Do testing rebuild of packages including inherited ones')

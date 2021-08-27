@@ -40,7 +40,7 @@ class Dependency(object):
             return cls.cached_dependencies[project_name]
 
         if not archs:
-          archs = osclib.core.target_archs(osc.conf.config['apiurl'], project_name, target)
+            archs = osclib.core.target_archs(osc.conf.config['apiurl'], project_name, target)
 
         pkg_mapping = { pkg.name: pkg for pkg in all_packages }
         res = {}
