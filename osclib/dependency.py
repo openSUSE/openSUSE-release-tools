@@ -24,7 +24,8 @@ class Dependency(object):
         while to_process:
             pkg = to_process.pop()
             result.add(pkg)
-            for dep in cls.project_dependencies(all_packages, pkg.project_name, repository, archs)[pkg.name]:
+            logging.info("Processing %s from %s" % (pkg.name, pkg.source_project_name()))
+            for dep in cls.project_dependencies(all_packages, pkg.source_project_name(), repository, archs)[pkg.name]:
                 if dep in processed:
                     continue
 
@@ -43,6 +44,7 @@ class Dependency(object):
             archs = osclib.core.target_archs(osc.conf.config['apiurl'], project_name, target)
 
         pkg_mapping = { pkg.name: pkg for pkg in all_packages }
+        logging.debug(pkg_mapping)
         res = {}
         for arch in archs:
             raw = osc.core.get_dependson(osc.conf.config['apiurl'], project_name, target, arch, reverse=True)
