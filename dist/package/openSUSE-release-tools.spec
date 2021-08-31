@@ -439,6 +439,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/maintenance-installcheck.py
 %exclude %{_datadir}/%{source_dir}/project-installcheck.py
 %exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
+%exclude %{_datadir}/%{source_dir}/skippkg-finder.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-origin.py
@@ -552,8 +553,10 @@ exit 0
 %files pkglistgen
 %defattr(-,root,root,-)
 %{_bindir}/osrt-pkglistgen
+%{_bindir}/osrt-skippkg-finder
 %{_datadir}/%{source_dir}/pkglistgen
 %{_datadir}/%{source_dir}/pkglistgen.py
+%{_datadir}/%{source_dir}/skippkg-finder.py
 
 %files -n osclib
 %defattr(-,root,root,-)

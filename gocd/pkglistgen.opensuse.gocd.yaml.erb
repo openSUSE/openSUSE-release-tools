@@ -81,6 +81,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
+            - script: python3 ./skippkg-finder.py-A https://api.opensuse.org -o openSUSE:Leap:15.4 -s SUSE:SLE-15-SP4:GA
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
   Update.Repos.Leap:
