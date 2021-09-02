@@ -42,6 +42,18 @@ This [testcase](../tests/factory_submit_request_test.py) showcases the whole sub
 explaining how the different reviews are created and processed by OBS and by the involved bots and
 release tools.
 
+### Rings and Staging Projects
+
+As said before, Factory contains a huge amount of packages. The project receives a lot of new request all the time. These requests have to be reviewed, adjusted and tested before being accepted. Reviewing all these packages one by one would be almost impossible. Moreover, some changes in a package could conflict with other packages. Rings and Staging Projects help to deal with these problems, making the review and testing processes more efficient.
+
+[A ring](https://www.youtube.com/watch?v=K-wTVGqKFR8) is an OBS sub-project that links to certain set of packages from the parent project. The goal of a ring is to group essential packages in order to build a smaller testable image. The core of Factory is divided into [two rings (0-Bootstrap, 1-MinimalX)](https://build.opensuse.org/project/subprojects/openSUSE:Factory:Rings). The ring 0 contains packages that form the most basic, minimalist system that can compile itself. On top of that Ring 1 adds what is in the default installation of the two primary Desktops. All other packages are not part of a ring.
+
+[A Staging Project](https://github.com/openSUSE/open-build-service/wiki/Staging-Workflow) is a copy of the original project, and it serves as a playground for testing a set of requests. When a submit request is done to a package that belongs to any of the rings, the request is automatically put in a backlog for the Staging Master to review and to assign it to a specific Staging Project. The Staging Manager selects some of the requests he considers they belong together and assigns the corresponding packages to the same Staging Project. This way, a group of packages is built in one go. Once the Staging Project gets built and tested, all the requests can be accepted and the changes merged into the target project.
+
+The Staging Manager can create as many Staging Projects as he considers and can assign different selections of requests to each of them. It is still tedious solving the conflicts that appear between different Staging Projects, but being able to test a lot of packages in parallel is much more efficient than doing the same package by package.
+
+An ISO installation image is generated for each Staging Project regularly, and this image is tested on openQA in order to verify those packages would not break the current Factory. Similarly, a testing image is generated from each ring. The whole Factory would be tested only if the openQA tests for the ring images success.
+
 ## SUSE Linux Enterprise Development
 
 The SUSE Linux Enterprise distribution is built in a SUSE-internal instance of OBS usually referred
