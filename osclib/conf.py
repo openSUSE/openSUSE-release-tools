@@ -2,7 +2,6 @@ from __future__ import print_function
 
 from osc import OscConfigParser
 from collections import OrderedDict
-import io
 import os
 import operator
 import re
@@ -274,7 +273,7 @@ class Config(object):
         if config:
             cp = OscConfigParser.OscConfigParser()
             config = u'[remote]\n' + config
-            cp.readfp(io.StringIO(config))
+            cp.read_string(config)
             return dict(cp.items('remote'))
 
         return None
