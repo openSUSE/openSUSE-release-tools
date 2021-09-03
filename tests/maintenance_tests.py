@@ -4,6 +4,7 @@ import logging
 import httpretty
 import osc
 import re
+from . import OBSLocal
 
 try:
     from urllib.parse import urlparse, parse_qs
@@ -13,25 +14,19 @@ except ImportError:
 
 from check_maintenance_incidents import MaintenanceChecker
 
-APIURL = 'http://maintenancetest.example.com'
+APIURL = 'http://0.0.0.0:3000'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 
 
-class TestMaintenance(unittest.TestCase):
-
+class TestMaintenance(OBSLocal.TestCase):
     def setUp(self):
         """
         Initialize the configuration
         """
+        super().setUp()
 
         httpretty.reset()
         httpretty.enable()
-
-        oscrc = os.path.join(FIXTURES, 'oscrc')
-        osc.core.conf.get_config(override_conffile=oscrc,
-                                 override_no_keyring=True,
-                                 override_no_gnome_keyring=True)
-        #osc.conf.config['debug'] = 1
 
         logging.basicConfig()
         self.logger = logging.getLogger(__file__)

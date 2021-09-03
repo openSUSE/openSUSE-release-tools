@@ -6,6 +6,7 @@ import unittest
 import logging
 import httpretty
 import osc
+from . import OBSLocal
 
 try:
     from urllib.parse import urlparse, parse_qs
@@ -24,7 +25,7 @@ APIURL = 'http://maintenancetest.example.com'
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 
 
-class TestTagChecker(unittest.TestCase):
+class TestTagChecker(OBSLocal.TestCase):
 
     def tearDown(self):
         httpretty.reset()
@@ -35,15 +36,10 @@ class TestTagChecker(unittest.TestCase):
         Initialize the configuration
         """
 
+        super().setUp()
         Cache.last_updated[APIURL] = {'__oldest': '2016-12-18T11:49:37Z'}
         httpretty.reset()
         httpretty.enable()
-
-        oscrc = os.path.join(FIXTURES, 'oscrc')
-        osc.core.conf.get_config(override_conffile=oscrc,
-                                 override_no_keyring=True,
-                                 override_no_gnome_keyring=True)
-        # osc.conf.config['debug'] = 1
 
         logging.basicConfig()
         self.logger = logging.getLogger(__file__)
