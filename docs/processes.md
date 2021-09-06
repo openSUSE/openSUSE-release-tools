@@ -65,14 +65,14 @@ named with a letter (e.g., [Staging:A](https://build.opensuse.org/project/show/o
 [Staging:B](https://build.opensuse.org/project/show/openSUSE:Factory:Staging:A), etc). When a submit
 request is done to a package that belongs to any of the rings, the request is automatically put in a
 backlog for the Staging Manager (person in charge of Staging Projects) to review and to assign it to
-a specific Staging Project. The Staging Manager selects some of the requests he considers they
+a specific Staging Project. The Staging Manager selects some of the requests he/she considers they
 belong together and assigns the corresponding packages to the same Staging Project. For example, it
 might be possible that other packages fail due to a submit request. In that case, those packages are
 added to the same staging project, so they are built against each other. Once the Staging Project
 gets built and tested, all the requests can be accepted and the changes merged into the target
 project.
 
-The Staging Manager can create as many Staging Projects as he considers and can assign different
+The Staging Manager can create as many Staging Projects as needed and can assign different
 selections of requests to each of them. It is still tedious solving the conflicts that appear
 between different Staging Projects, but being able to test a lot of packages in parallel is much
 more efficient than doing the same package by package.
