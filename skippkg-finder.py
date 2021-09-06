@@ -292,7 +292,10 @@ class SkippkgFinder(object):
                 # gnome-builder requirement
                 'SUSE:SLE-15-SP2:GA_vala',
                 # hfst-ospell requirement
-                'SUSE:SLE-15:Update_icu.14528'
+                'SUSE:SLE-15:Update_icu.14528',
+                # for zypper dup reason
+                'SUSE:SLE-15-SP2:Update_icu.18168',
+                'SUSE:SLE-15-SP2:Update_gnome-desktop.16620',
                 ]
         for pkg in extra_packagelist:
             selected_binarylist += package_binaries[pkg]
