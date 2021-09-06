@@ -16,8 +16,6 @@ class RebuildabilityChecker(object):
         self.logger = logging.getLogger('RebuildibilityChecker')
         self.project = RemoteProject.find(project_str) # apiurl should be read from osc.conf.config['apiurl'], osclib config class looks like has different goal?
         self.packages = packages
-        if self.packages:
-            self.packages = self.packages.split(",")
         self.repository = repository
         self.dry_run = dry_run
 
@@ -59,6 +57,9 @@ if __name__ == '__main__':
     parser.add_argument('-P', '--packages', default=None,
         help='Comma separated list of packages to rebuild. '
             'Without it full rebuild of all packages in project is done.')
+    parser.add_argument('-f', '--packages-file', default=None,
+        help='Same as --packages, just list of packages are read from file. '
+            'Format is one package per line.')
     parser.add_argument('-n', '--dependencies', default=None,
         help='Use together with --packages to add also dependencies of given packages in the repository.'
             'Example "--packages=glibc --dependencies=openSUSE_Factory --project=Staging:A".')
@@ -70,7 +71,14 @@ if __name__ == '__main__':
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
-    rebuild_report = RebuildabilityChecker(args.project, args.packages, args.dependencies, args.dry_run)
+    packages = None
+    if args.packages:
+        packages = args.packages.split(",")
+    if not packages and args.packages_file:
+        file = open(args.packages_file, "r")
+        packages = [l.strip() for l in file.readlines()]
+
+    rebuild_report = RebuildabilityChecker(args.project, packages, args.dependencies, args.dry_run)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
