@@ -218,6 +218,8 @@ class StagingWorkflow(object):
         self.setup_remote_config()
         self.load_config()
         self.api = StagingAPI(APIURL, project)
+        # The ProductVersion is required for some actions, for example, when a request is accepted
+        self.create_attribute_type('OSRT', 'ProductVersion', 1)
 
     def load_config(self, project=None):
         """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
