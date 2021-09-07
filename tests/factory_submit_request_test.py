@@ -93,8 +93,12 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         # for the staging work
         self.assertReview(reqid, by_user=('factory-auto', 'accepted'))
         self.assertReview(reqid, by_user=('licensedigger', 'accepted'))
-        self.assertReview(reqid, by_group=('opensuse-review-team', 'new'))
+
+        # This review will be accepted when the Staging Manager puts it into a staging project
         self.assertReview(reqid, by_group=('factory-staging', 'new'))
+
+        # Review created by CheckSource bot. This review should be manually accepted.
+        self.assertReview(reqid, by_group=('opensuse-review-team', 'new'))
 
         # Let's first accept the manual review
         change_review_state(
@@ -108,7 +112,7 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         self.assertReview(reqid, by_group=('opensuse-review-team', 'accepted'))
         self.assertReview(reqid, by_group=('factory-staging', 'new'))
 
-        # Let's put the request into the staging project
+        # The Staging Manager puts the request into a staging project
         SelectCommand(self.wf.api, STAGING_PROJECT_NAME).perform(['wine'])
 
         # The factory-staging review is now accepted and a new review associated to the
@@ -116,7 +120,7 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         self.assertReview(reqid, by_group=('factory-staging', 'accepted'))
         self.assertReview(reqid, by_project=(STAGING_PROJECT_NAME, 'new'))
 
-        # Let's say everything looks good in the staging project and it can be accepted
+        # Let's say everything looks good in the staging project and the Staging Manager accepts it
         AcceptCommand(self.wf.api).accept_all([STAGING_PROJECT_NAME], True)
 
         # Finally, all the reviews are accepted: one for each bot, one for manual review and
