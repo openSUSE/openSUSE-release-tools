@@ -24,7 +24,12 @@ class RebuildabilityChecker(object):
         self.logger.debug("Packages %s" % ["%s / %s" % (p.source_project_name(), p.name) for p in packages])
 
         if self.packages:
-            package_names = [pkg.name for pkg in packages]
+            package_names = {pkg.name for pkg in packages}
+            not_found = list(filter(lambda pkg: not pkg in package_names, self.packages))
+            if not_found:
+                self.logger.error("Following packages not found: %s" % not_found)
+                return False
+
             # filter packages to include only ones affected by triggered packages
             filtered_packages = list(filter(lambda pkg: pkg.name in self.packages, packages))
             if self.repository:
