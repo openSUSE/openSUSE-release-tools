@@ -195,6 +195,7 @@ class StagingWorkflow(object):
         self.requests = []
         self.groups = []
         self.users = []
+        self.attributes = {}
         logging.basicConfig()
 
         # clear cache from other tests - otherwise the VCR is replayed depending
@@ -217,6 +218,8 @@ class StagingWorkflow(object):
         self.setup_remote_config()
         self.load_config()
         self.api = StagingAPI(APIURL, project)
+        # The ProductVersion is required for some actions, for example, when a request is accepted
+        self.create_attribute_type('OSRT', 'ProductVersion', 1)
 
     def load_config(self, project=None):
         """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
@@ -230,6 +233,10 @@ class StagingWorkflow(object):
         self.config = Config(APIURL, project)
 
     def create_attribute_type(self, namespace, name, values=None):
+        if not namespace in self.attributes: self.attributes[namespace] = []
+
+        if not name in self.attributes[namespace]: self.attributes[namespace].append(name)
+
         meta = """
         <namespace name='{}'>
             <modifiable_by user='Admin'/>
@@ -484,19 +491,55 @@ class StagingWorkflow(object):
 
     def remove(self):
         print('deleting staging workflow')
+
         for project in self.projects.values():
             project.remove()
         for request in self.requests:
             request.revoke()
         for group in self.groups:
-            url = osc.core.makeurl(APIURL, ['group', group])
-            try:
-                osc.core.http_DELETE(url)
-            except HTTPError:
-                pass
+            self.remove_group(group)
+        for namespace in self.attributes:
+            self.remove_attributes(namespace)
+
         print('done')
+
         if hasattr(self.api, '_invalidate_all'):
             self.api._invalidate_all()
+
+    def remove_group(self, group):
+        """Removes a group from the OBS instance
+
+        :param group: name of the group to remove
+        :type group: str
+        """
+        print('deleting group', group)
+        url = osc.core.makeurl(APIURL, ['group', group])
+        self._safe_delete(url)
+
+    def remove_attributes(self, namespace):
+        """Removes an attributes namespace and all the attributes it contains
+
+        :param namespace: attributes namespace to remove
+        :type namespace: str
+        """
+        for name in self.attributes[namespace]:
+            print('deleting attribute {}:{}'.format(namespace, name))
+            url = osc.core.makeurl(APIURL, ['attribute', namespace, name, '_meta'])
+            self._safe_delete(url)
+        print('deleting namespace', namespace)
+        url = osc.core.makeurl(APIURL, ['attribute', namespace, '_meta'])
+        self._safe_delete(url)
+
+    def _safe_delete(self, url):
+        """Performs a delete request to the OBS instance, ignoring possible http errors
+
+        :param url: url to use for the http delete request
+        :type url: str
+        """
+        try:
+            osc.core.http_DELETE(url)
+        except HTTPError:
+            pass
 
 class Project(object):
     """This class represents a project in the testing environment of the release tools. It usually
