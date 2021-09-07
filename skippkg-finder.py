@@ -17,6 +17,7 @@ from osc.core import makeurl
 from osc import oscerr
 import osclib
 from osclib.core import source_file_ensure
+from osclib.conf import Config
 
 SUPPORTED_ARCHS = ['x86_64', 'i586', 'aarch64', 'ppc64le', 's390x']
 DEFAULT_REPOSITORY = 'standard'
@@ -31,6 +32,12 @@ class SkippkgFinder(object):
         self.verbose = verbose
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
+
+        config = Config.get(self.apiurl, self.opensuse_project)
+        # binary rpms of packages from `skippkg-finder-skiplist-ignores`
+        # be found in the `package_binaries` thus format must to be like
+        # SUSE:SLE-15:Update_libcdio.12032, PROJECT-NAME_PACKAGE-NAME
+        self.skiplist_ignored = set(config.get('skippkg-finder-skiplist-ignores', '').split(' '))
 
     def is_sle_specific(self, package):
         """
@@ -274,30 +281,7 @@ class SkippkgFinder(object):
         # eg. SUSE:SLE-15-SP3:GA has qpdf/libqpdf28 but cups-filter was build
         # in/when SLE15 SP2 which requiring qpdf/libqpdf6, therefore old
         # qpdf/libqpdf6 from SLE15 SP2 should not to be missed.
-        extra_packagelist = [
-                # gnome-software requirement
-                'SUSE:SLE-15-SP2:Update_libxmlb.15999',
-                # cups-filter requirement
-                'SUSE:SLE-15-SP2:GA_qpdf',
-                # libcdio_paranoia2 requirement
-                'SUSE:SLE-15:Update_libcdio.12032',
-                # libstoken1 requirement
-                'SUSE:SLE-15:Update_libnettle.19992',
-                # python2-Pillow requirement
-                'SUSE:SLE-15:Update_libwebp.19719',
-                # amarok requirement
-                'SUSE:SLE-15:Update_mariadb.20531',
-                # bogofilter requirement
-                'SUSE:SLE-15:GA_gsl',
-                # gnome-builder requirement
-                'SUSE:SLE-15-SP2:GA_vala',
-                # hfst-ospell requirement
-                'SUSE:SLE-15:Update_icu.14528',
-                # for zypper dup reason
-                'SUSE:SLE-15-SP2:Update_icu.18168',
-                'SUSE:SLE-15-SP2:Update_gnome-desktop.16620',
-                ]
-        for pkg in extra_packagelist:
+        for pkg in self.skiplist_ignored:
             selected_binarylist += package_binaries[pkg]
 
         # Preparing a packagelist for the skipping candidate
