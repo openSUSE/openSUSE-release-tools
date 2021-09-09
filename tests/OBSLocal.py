@@ -195,7 +195,7 @@ class FactoryWorkflow(object):
         self.requests = []
         self.groups = []
         self.users = []
-        self.attributes = {}
+        self.attr_types = {}
         logging.basicConfig()
 
         # clear cache from other tests - otherwise the VCR is replayed depending
@@ -224,6 +224,9 @@ class FactoryWorkflow(object):
     def load_config(self, project=None):
         """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
 
+        Such an object represents the set of values stored on the attribute 'Config' of the
+        target project. See :func:`remote_config_set`.
+
         :param project: target project name
         :type project: str
         """
@@ -233,9 +236,11 @@ class FactoryWorkflow(object):
         self.config = Config(APIURL, project)
 
     def create_attribute_type(self, namespace, name, values=None):
-        if not namespace in self.attributes: self.attributes[namespace] = []
+        """Creates a new attribute type in the OBS instance."""
 
-        if not name in self.attributes[namespace]: self.attributes[namespace].append(name)
+        if not namespace in self.attr_types: self.attr_types[namespace] = []
+
+        if not name in self.attr_types[namespace]: self.attr_types[namespace].append(name)
 
         meta = """
         <namespace name='{}'>
@@ -252,6 +257,14 @@ class FactoryWorkflow(object):
         osc.core.http_PUT(url, data=meta)
 
     def setup_remote_config(self):
+        """Creates the attribute 'Config' for the target project, with proper initial content.
+
+        See :func:`remote_config_set` for more information about that attribute.
+
+        Note this calls :func:`create_target` to ensure the target project exists.
+        """
+
+        # First ensure the existence of both the target project and the 'Config' attribute type
         self.create_target()
         self.create_attribute_type('OSRT', 'Config', 1)
 
@@ -263,6 +276,18 @@ class FactoryWorkflow(object):
         self.remote_config_set(config, replace_all=True)
 
     def remote_config_set(self, config, replace_all=False):
+        """Sets the values of the 'Config' attribute for the target project.
+
+        That attribute stores a set of values that are useful to influence the behavior of several
+        tools and bots in the context of the given project. For convenience, such a collection of
+        values is usually accessed using a :class:`osclib.Config` object. See :func:`load_config`.
+
+        :param config: values to write into the attribute
+        :type config: dict[str, str]
+        :param replace_all: whether the previous content of 'Config' should be cleared up
+        :type replace_all: bool
+        """
+
         if not replace_all:
             config_existing = Config.get(self.apiurl, self.project)
             config_existing.update(config)
@@ -498,8 +523,8 @@ class FactoryWorkflow(object):
             request.revoke()
         for group in self.groups:
             self.remove_group(group)
-        for namespace in self.attributes:
-            self.remove_attributes(namespace)
+        for namespace in self.attr_types:
+            self.remove_attribute_types(namespace)
 
         print('done')
 
@@ -516,14 +541,14 @@ class FactoryWorkflow(object):
         url = osc.core.makeurl(APIURL, ['group', group])
         self._safe_delete(url)
 
-    def remove_attributes(self, namespace):
-        """Removes an attributes namespace and all the attributes it contains
+    def remove_attribute_types(self, namespace):
+        """Removes an attributes namespace and all the attribute types it contains
 
         :param namespace: attributes namespace to remove
         :type namespace: str
         """
-        for name in self.attributes[namespace]:
-            print('deleting attribute {}:{}'.format(namespace, name))
+        for name in self.attr_types[namespace]:
+            print('deleting attribute type {}:{}'.format(namespace, name))
             url = osc.core.makeurl(APIURL, ['attribute', namespace, name, '_meta'])
             self._safe_delete(url)
         print('deleting namespace', namespace)
