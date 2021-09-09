@@ -218,11 +218,10 @@ class StagingWorkflow(ABC):
         Cache.CACHE_DIR = None
         Cache.PATTERNS = {}
         Cache.init()
+        # Note this implicitly calls create_target()
         self.setup_remote_config()
         self.load_config()
         self.api = StagingAPI(APIURL, project)
-        # The ProductVersion is required for some actions, for example, when a request is accepted
-        self.create_attribute_type('OSRT', 'ProductVersion', 1)
 
     @abstractmethod
     def initial_config(self):
@@ -373,6 +372,7 @@ class StagingWorkflow(ABC):
             - A group of staging managers including the "staging-bot" user
               (see :func:`create_staging_users`)
             - A couple of staging projects for the target one
+            - The ProductVersion attribute type, that is used by the staging tools
 
         After the execution, the target project is indexed in the projects dictionary twice,
         by its name and as 'target'.
@@ -384,6 +384,9 @@ class StagingWorkflow(ABC):
 
         self.projects['staging:A'] = Project(self.project + ':Staging:A', create=False)
         self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
+
+        # The ProductVersion is required for some actions, like accepting a staging project
+        self.create_attribute_type('OSRT', 'ProductVersion', 1)
 
     def create_package(self, project, package):
         project = self.create_project(project)
