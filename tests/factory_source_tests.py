@@ -5,6 +5,7 @@ import httpretty
 import osc
 import re
 from osclib.cache import Cache
+from . import OBSLocal
 
 from urllib.parse import urlparse, parse_qs
 from check_source_in_factory import FactorySourceChecker
@@ -12,7 +13,7 @@ from check_source_in_factory import FactorySourceChecker
 APIURL = 'http://testhost.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 
-class TestFactorySourceAccept(unittest.TestCase):
+class TestFactorySourceAccept(OBSLocal.TestCase):
 
     def tearDown(self):
         httpretty.disable()
@@ -22,17 +23,11 @@ class TestFactorySourceAccept(unittest.TestCase):
         """
         Initialize the configuration
         """
+        super().setUp()
 
         Cache.last_updated[APIURL] = {'__oldest': '2016-12-18T11:49:37Z'}
         httpretty.reset()
         httpretty.enable(allow_net_connect=False)
-
-        oscrc = os.path.join(FIXTURES, 'oscrc')
-        osc.core.conf.get_config(override_conffile=oscrc,
-                                 override_no_keyring=True,
-                                 override_no_gnome_keyring=True)
-        #osc.conf.config['debug'] = 1
-        #osc.conf.config['http_debug'] = 1
 
         logging.basicConfig()
         self.logger = logging.getLogger(__file__)
