@@ -312,3 +312,28 @@ pipelines:
                 osc ci -m 'Fix repoid'
                 osc sr --yes SUSE:SLE-15-<%= servicepack %>:Update:QR -m 'Update Package List'
 <% end -%>
+<% ['SP3'].each do |servicepack| -%>
+  SLE15.<%= servicepack %>.QR.Setup:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-maintenance-installcheck
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        destination: scripts
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            resources:
+            - repo-checker
+            tasks:
+            - script: |-
+                osc -A https://api.suse.de bco SUSE:SLE-15-<%= servicepack %>:Update:QR 000package-groups home:maintenance-installcheck:15-<%= servicepack %>:QR
+                for package in 000product 000release-packages; do
+                  osc -A https://api.suse.de copypac SUSE:SLE-15-<%= servicepack %>:GA $package home:maintenance-installcheck:15-<%= servicepack %>:QR
+                done
+<% end -%>
