@@ -178,7 +178,7 @@ class TestCase(unittest.TestCase):
 
         self.fail('{} not found'.format(kwargs))
 
-    def assertReviewBot(self, request_id, user, before, after, comment=None):
+    def assertReviewScript(self, request_id, user, before, after, comment=None):
         """Asserts the review script pointed by the ``script`` attribute of the current test can
         be executed and it produces the expected change in the reviews of a request.
 
