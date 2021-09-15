@@ -84,7 +84,7 @@ A facsimile of `openSUSE:Factory` in the form of a subset of the related data ca
 
 Some tests will attempt to run against the local OBS, but not all.
 
-    nosetests
+    pytest
 
 ## Running Continuous Integration
 

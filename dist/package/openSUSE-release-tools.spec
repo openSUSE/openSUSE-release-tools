@@ -89,7 +89,7 @@ BuildArch:      noarch
 Requires:       libxml2-tools
 Requires:       python3-httpretty
 Requires:       python3-mock
-Requires:       python3-nose
+Requires:       python3-pytest
 
 %description devel
 Development requirements for openSUSE-release-tools to be used in conjunction

@@ -34,8 +34,8 @@ install:
 check: test
 
 test:
-	# to see more add -v -d -s --nologcapture
-	$(wildcard /usr/bin/nosetests-2.*) -c .noserc
+	# to see more add -vv
+	/usr/bin/pytest
 
 package:
 	touch dist/package/$(package_name).changes

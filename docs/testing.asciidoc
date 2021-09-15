@@ -4,12 +4,12 @@ Testing
 Dependencies
 ------------
 
-Test suite is using +nose+, +httpretty+ and +mock+ for testing. You need these
-three python modules installed to run tests. In openSUSE, you can do it using
-the following command as a root:
+Test suite is using +pytest+, +httpretty+ and +mock+ for testing. You need
+these three python modules installed to run tests. In openSUSE, you can do it
+using the following command as a root:
 
 --------------------------------------------------------------------------------
-zypper in python-nose python-httpretty python-mock
+zypper in python3-pytest python3-httpretty python3-mock
 --------------------------------------------------------------------------------
 
 Running tests
@@ -19,7 +19,7 @@ To run the tests, you need to be in the topmost directory of your checkout and
 run the following command there:
 
 --------------------------------------------------------------------------------
-nosetests
+pytest
 --------------------------------------------------------------------------------
 
 Structure of the suite

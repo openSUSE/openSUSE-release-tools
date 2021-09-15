@@ -1,2 +1,0 @@
-[nosetests]
-ignore-files=metrics_release\.py
