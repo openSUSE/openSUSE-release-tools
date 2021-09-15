@@ -31,12 +31,6 @@ install:
 	  $(DESTDIR)$(pkgdatadir)/metrics/grafana/provisioning/dashboards.yaml \
 	  $(DESTDIR)$(unitdir)/osrt-metrics-telegraf.service
 
-check: test
-
-test:
-	# to see more add -v -d -s --nologcapture
-	$(wildcard /usr/bin/nosetests-2.*) -c .noserc
-
 package:
 	touch dist/package/$(package_name).changes
 	tar -cJf dist/package/$(package_name)-0.tar.xz --exclude=.git* --exclude=dist/package/*.tar.xz --transform 's,^\.,$(package_name)-0,' .
@@ -45,4 +39,4 @@ package-clean:
 	rm -f dist/package/$(package_name).changes
 	rm -f dist/package/$(package_name).tar.xz
 
-.PHONY: all install test check
+.PHONY: all install
