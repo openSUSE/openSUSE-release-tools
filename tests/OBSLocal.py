@@ -107,6 +107,14 @@ class TestCase(unittest.TestCase):
         os.environ['OSRT_DISABLE_CACHE'] = 'true'
 
     def execute_script(self, args):
+        """Executes the script stored in the ``script`` attribute of the current test.
+
+        If the attributes ``script_debug`` or ``script_debug_osc`` are set to true for the current
+        test, the function will add the corresponding ``--debug`` and/or ``--osc-debug`` argument
+        when invoking the script.
+
+        This function ensures the executed code is taken into account for the coverage calculation.
+        """
         if self.script:
             args.insert(0, self.script)
         if self.script_debug:
@@ -118,6 +126,18 @@ class TestCase(unittest.TestCase):
         args.insert(0, 'coverage')
 
         self.execute(args)
+
+    def execute_review_script(self, request_id, user):
+        """Executes the review bot that corresponds to the script pointed by the ``script``
+        attribute, targeting the given request and as the given user.
+
+        See :func:`execute_script`.
+
+        The script must follow the commandline syntax of a review bot.
+        """
+        self.osc_user(user)
+        self.execute_script(['id', request_id])
+        self.osc_user_pop()
 
     def execute_osc(self, args):
         # The wrapper allows this to work properly when osc installed via pip.
@@ -139,6 +159,16 @@ class TestCase(unittest.TestCase):
         self.assertTrue(text in self.output, '[MISSING] ' + text)
 
     def assertReview(self, rid, **kwargs):
+        """Asserts there is a review for the given request that is assigned to the given target
+        (user, group or project) and that is in the expected state.
+
+        For example, this asserts there is a new review for the user 'jdoe' in the request 20:
+
+        ``assertReview(20, by_user=('jdoe', 'new'))``
+
+        :return: the found review, if the assertion suceeds
+        :rtype: Review or None
+        """
         request = get_request(self.apiurl, rid)
         for review in request.reviews:
             for key, value in kwargs.items():
@@ -149,11 +179,29 @@ class TestCase(unittest.TestCase):
         self.fail('{} not found'.format(kwargs))
 
     def assertReviewBot(self, request_id, user, before, after, comment=None):
+        """Asserts the review script pointed by the ``script`` attribute of the current test can
+        be executed and it produces the expected change in the reviews of a request.
+
+        For this assertion to succeed the request must contain initially a review in the original
+        state targeting the given user, then the script will be executed and it will be asserted
+        that the request then has the final expected state (and, optionally, the expected comment).
+
+        See :func:`execute_review_script`.
+
+        :param request_id: request for which the script will be executed
+        :type request_id: int
+        :param user: target of the review, it will also be used to execute the script
+        :type user: str
+        :param before: expected state of the review before executing the script
+        :type before: str
+        :param before: expected state of the review after executing the script
+        :type before: str
+        :param comment: expected message for the review after executing the script
+        :type comment: str
+        """
         self.assertReview(request_id, by_user=(user, before))
 
-        self.osc_user(user)
-        self.execute_script(['id', request_id])
-        self.osc_user_pop()
+        self.execute_review_script(request_id, user)
 
         review = self.assertReview(request_id, by_user=(user, after))
         if comment:
