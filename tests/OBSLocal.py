@@ -43,6 +43,7 @@ class TestCase(unittest.TestCase):
     script_apiurl = True
     script_debug = True
     script_debug_osc = True
+    review_bots = {}
 
     def setUp(self):
         if os.path.exists(OSCCOOKIEJAR):
@@ -219,6 +220,42 @@ class TestCase(unittest.TestCase):
             length = 2
         return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
 
+    def setup_review_bot(self, wf, project, user, bot_class):
+        """Instantiates a bot for the given project, adding the associated user as reviewer.
+
+        :param wf: workflow containing the project, users, etc.
+        :type wf: StagingWorkflow
+        :param project: name of the project the bot will act on
+        :type project: str
+        :param user: user to create for the bot
+        :type user: str
+        :param bot_class: type of bot to setup
+        """
+        wf.create_user(user)
+        prj = wf.projects[project]
+        prj.add_reviewers(users = [user])
+
+        bot_name = self.generate_bot_name(user)
+        bot = bot_class(wf.apiurl, user=user, logger=logging.getLogger(bot_name))
+        bot.bot_name = bot_name
+
+        self.review_bots[user] = bot
+
+    def execute_review_bot(self, requests, user):
+        """Checks the given requests using the bot associated to the given user.
+
+        The bot must have been previously configured via :func:`setup_review_bot`.
+        """
+        bot = self.review_bots[user]
+        bot.set_request_ids(requests)
+
+        self.osc_user(user)
+        bot.check_requests()
+        self.osc_user_pop()
+
+    def generate_bot_name(self, user):
+        """Used to ensure different test runs operate in unique namespace."""
+        return '::'.join([type(self).__name__, user, str(random.getrandbits(8))])
 
 class StagingWorkflow(ABC):
     """This abstract base class is intended to setup and manipulate the environment (projects,
