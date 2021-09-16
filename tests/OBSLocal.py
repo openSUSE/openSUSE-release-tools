@@ -30,6 +30,7 @@ from osclib.memoize import memoize_session_reset
 from urllib.error import HTTPError, URLError
 
 from abc import ABC, abstractmethod
+import re
 
 # pointing to other docker container
 APIURL = 'http://api:3000'
@@ -256,6 +257,21 @@ class TestCase(unittest.TestCase):
     def generate_bot_name(self, user):
         """Used to ensure different test runs operate in unique namespace."""
         return '::'.join([type(self).__name__, user, str(random.getrandbits(8))])
+
+    def assertReviewBot(self, request_id, user, before, after, comment=None):
+        """Asserts the review bot associated to the given user produces the expected change in the
+        reviews of a request.
+
+        This is very similar to :func:`assertReviewScript`, but it executes the corresponding review
+        bot instead of the script pointed by the ``script`` attribute.
+        """
+        self.assertReview(request_id, by_user=(user, before))
+
+        self.execute_review_bot([request_id], user)
+
+        review = self.assertReview(request_id, by_user=(user, after))
+        if comment:
+            self.assertEqual(review.comment, comment)
 
 class StagingWorkflow(ABC):
     """This abstract base class is intended to setup and manipulate the environment (projects,
@@ -693,6 +709,71 @@ class FactoryWorkflow(StagingWorkflow):
             FreezeCommand(self.api).perform(staging.name)
 
         return staging
+
+class SLEWorkflow(StagingWorkflow):
+    """A class that makes easy to setup scenarios similar to the one used during the real
+    SLE development, with projects that inherit some packages from previous service packs, etc.
+    """
+    def staging_group_name(self):
+        return 'sle-staging-managers'
+
+    def initial_config(self):
+        return {
+            'staging-group': self.staging_group_name()
+        }
+
+    def create_target_project(self):
+        """Creates the main target project (see :func:`create_target`)
+
+        If the name of the target project follows the SLE naming convention of using "SP" to
+        indicate a service pack and a prefix "GA" or "Update", this also creates all the linked
+        projects needed to implement package inheritance. For example, if the target name is
+        "SLE-15-SP1:Update", the method will create that project and also the projects
+        "SLE-15-SP1:GA", "SLE-15:Update", "SLE-15:GA", linking each project to the corresponding one
+        in the inheritance chain.
+        """
+        if not re.search(r'.+:(GA|Update)$', self.project):
+            super().create_target_project()
+            return
+
+        suffixes = ["GA", "Update"]
+        basename, number, suffix = self._prj_name_components(self.project)
+        last = number * 2 + suffixes.index(suffix)
+
+        previous = None
+        for num in range(0, last + 1):
+            name = self._sp_name(basename, int(num / 2))
+            suffix = suffixes[num % 2]
+            name = name + ":" + suffix
+
+            if previous:
+                p = Project(name, project_links=[previous])
+            else:
+                p = Project(name)
+
+            self.projects[name] = p
+            previous = name
+
+        self.projects['target'] = self.projects[self.project]
+
+    def _prj_name_components(self, prj_name):
+        """Internal function to break a SLE-like name into pieces"""
+        distro, suffix = prj_name.rsplit(":", 1)
+        match = re.search(r'(.*)-SP(\d+)$', distro)
+        if match:
+            number = int(match.group(2))
+            basename = match.group(1)
+        else:
+            number = 0
+            basename = distro
+        return [basename, number, suffix]
+
+    def _sp_name(self, basename, number):
+        """Internal function to build a SLE-like name"""
+        if number > 0:
+            return f'{basename}-SP{number}'
+        else:
+            return basename
 
 class Project(object):
     """This class represents a project in the testing environment of the release tools. It usually
