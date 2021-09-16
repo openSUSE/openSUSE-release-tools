@@ -11,7 +11,7 @@ class TestRepository(unittest.TestCase):
 
     def setUp(self):
         super(TestRepository, self).setUp()
-        self.wf = OBSLocal.StagingWorkflow()
+        self.wf = OBSLocal.FactoryWorkflow()
 
     def tearDown(self):
         del self.wf

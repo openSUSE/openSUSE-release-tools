@@ -29,6 +29,8 @@ from osclib.memoize import memoize_session_reset
 
 from urllib.error import HTTPError, URLError
 
+from abc import ABC, abstractmethod
+
 # pointing to other docker container
 APIURL = 'http://api:3000'
 PROJECT = 'openSUSE:Factory'
@@ -41,6 +43,7 @@ class TestCase(unittest.TestCase):
     script_apiurl = True
     script_debug = True
     script_debug_osc = True
+    review_bots = {}
 
     def setUp(self):
         if os.path.exists(OSCCOOKIEJAR):
@@ -105,6 +108,14 @@ class TestCase(unittest.TestCase):
         os.environ['OSRT_DISABLE_CACHE'] = 'true'
 
     def execute_script(self, args):
+        """Executes the script stored in the ``script`` attribute of the current test.
+
+        If the attributes ``script_debug`` or ``script_debug_osc`` are set to true for the current
+        test, the function will add the corresponding ``--debug`` and/or ``--osc-debug`` argument
+        when invoking the script.
+
+        This function ensures the executed code is taken into account for the coverage calculation.
+        """
         if self.script:
             args.insert(0, self.script)
         if self.script_debug:
@@ -116,6 +127,18 @@ class TestCase(unittest.TestCase):
         args.insert(0, 'coverage')
 
         self.execute(args)
+
+    def execute_review_script(self, request_id, user):
+        """Executes the review bot that corresponds to the script pointed by the ``script``
+        attribute, targeting the given request and as the given user.
+
+        See :func:`execute_script`.
+
+        The script must follow the commandline syntax of a review bot.
+        """
+        self.osc_user(user)
+        self.execute_script(['id', request_id])
+        self.osc_user_pop()
 
     def execute_osc(self, args):
         # The wrapper allows this to work properly when osc installed via pip.
@@ -137,6 +160,16 @@ class TestCase(unittest.TestCase):
         self.assertTrue(text in self.output, '[MISSING] ' + text)
 
     def assertReview(self, rid, **kwargs):
+        """Asserts there is a review for the given request that is assigned to the given target
+        (user, group or project) and that is in the expected state.
+
+        For example, this asserts there is a new review for the user 'jdoe' in the request 20:
+
+        ``assertReview(20, by_user=('jdoe', 'new'))``
+
+        :return: the found review, if the assertion succeeds
+        :rtype: Review or None
+        """
         request = get_request(self.apiurl, rid)
         for review in request.reviews:
             for key, value in kwargs.items():
@@ -146,12 +179,30 @@ class TestCase(unittest.TestCase):
 
         self.fail('{} not found'.format(kwargs))
 
-    def assertReviewBot(self, request_id, user, before, after, comment=None):
+    def assertReviewScript(self, request_id, user, before, after, comment=None):
+        """Asserts the review script pointed by the ``script`` attribute of the current test can
+        be executed and it produces the expected change in the reviews of a request.
+
+        For this assertion to succeed the request must contain initially a review in the original
+        state targeting the given user, then the script will be executed and it will be asserted
+        that the request then has the final expected state (and, optionally, the expected comment).
+
+        See :func:`execute_review_script`.
+
+        :param request_id: request for which the script will be executed
+        :type request_id: int
+        :param user: target of the review, it will also be used to execute the script
+        :type user: str
+        :param before: expected state of the review before executing the script
+        :type before: str
+        :param before: expected state of the review after executing the script
+        :type before: str
+        :param comment: expected message for the review after executing the script
+        :type comment: str
+        """
         self.assertReview(request_id, by_user=(user, before))
 
-        self.osc_user(user)
-        self.execute_script(['id', request_id])
-        self.osc_user_pop()
+        self.execute_review_script(request_id, user)
 
         review = self.assertReview(request_id, by_user=(user, after))
         if comment:
@@ -169,11 +220,48 @@ class TestCase(unittest.TestCase):
             length = 2
         return prefix + ''.join([random.choice(string.ascii_letters) for i in range(length)])
 
+    def setup_review_bot(self, wf, project, user, bot_class):
+        """Instantiates a bot for the given project, adding the associated user as reviewer.
 
-class StagingWorkflow(object):
-    """This class is intended to setup and manipulate the environment (projects, users, etc.) in
-    the local OBS instance used to tests the release tools. It makes easy to setup scenarios similar
-    to the ones used during the real (open)SUSE development, with staging projects, rings, etc.
+        :param wf: workflow containing the project, users, etc.
+        :type wf: StagingWorkflow
+        :param project: name of the project the bot will act on
+        :type project: str
+        :param user: user to create for the bot
+        :type user: str
+        :param bot_class: type of bot to setup
+        """
+        wf.create_user(user)
+        prj = wf.projects[project]
+        prj.add_reviewers(users = [user])
+
+        bot_name = self.generate_bot_name(user)
+        bot = bot_class(wf.apiurl, user=user, logger=logging.getLogger(bot_name))
+        bot.bot_name = bot_name
+
+        self.review_bots[user] = bot
+
+    def execute_review_bot(self, requests, user):
+        """Checks the given requests using the bot associated to the given user.
+
+        The bot must have been previously configured via :func:`setup_review_bot`.
+        """
+        bot = self.review_bots[user]
+        bot.set_request_ids(requests)
+
+        self.osc_user(user)
+        bot.check_requests()
+        self.osc_user_pop()
+
+    def generate_bot_name(self, user):
+        """Used to ensure different test runs operate in unique namespace."""
+        return '::'.join([type(self).__name__, user, str(random.getrandbits(8))])
+
+class StagingWorkflow(ABC):
+    """This abstract base class is intended to setup and manipulate the environment (projects,
+    users, etc.) in the local OBS instance used to tests the release tools. Thus, the derivative
+    classes make easy to setup scenarios similar to the ones used during the real (open)SUSE
+    development.
     """
     def __init__(self, project=PROJECT):
         """Initializes the configuration
@@ -195,7 +283,7 @@ class StagingWorkflow(object):
         self.requests = []
         self.groups = []
         self.users = []
-        self.attributes = {}
+        self.attr_types = {}
         logging.basicConfig()
 
         # clear cache from other tests - otherwise the VCR is replayed depending
@@ -215,14 +303,26 @@ class StagingWorkflow(object):
         Cache.CACHE_DIR = None
         Cache.PATTERNS = {}
         Cache.init()
+        # Note this implicitly calls create_target()
         self.setup_remote_config()
         self.load_config()
         self.api = StagingAPI(APIURL, project)
-        # The ProductVersion is required for some actions, for example, when a request is accepted
-        self.create_attribute_type('OSRT', 'ProductVersion', 1)
+
+    @abstractmethod
+    def initial_config(self):
+        """Values to use to initialize the 'Config' attribute at :func:`setup_remote_config`"""
+        pass
+
+    @abstractmethod
+    def staging_group_name(self):
+        """Name of the group in charge of the staging workflow"""
+        pass
 
     def load_config(self, project=None):
         """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
+
+        Such an object represents the set of values stored on the attribute 'Config' of the
+        target project. See :func:`remote_config_set`.
 
         :param project: target project name
         :type project: str
@@ -233,9 +333,11 @@ class StagingWorkflow(object):
         self.config = Config(APIURL, project)
 
     def create_attribute_type(self, namespace, name, values=None):
-        if not namespace in self.attributes: self.attributes[namespace] = []
+        """Creates a new attribute type in the OBS instance."""
 
-        if not name in self.attributes[namespace]: self.attributes[namespace].append(name)
+        if not namespace in self.attr_types: self.attr_types[namespace] = []
+
+        if not name in self.attr_types[namespace]: self.attr_types[namespace].append(name)
 
         meta = """
         <namespace name='{}'>
@@ -252,17 +354,31 @@ class StagingWorkflow(object):
         osc.core.http_PUT(url, data=meta)
 
     def setup_remote_config(self):
+        """Creates the attribute 'Config' for the target project, with proper initial content.
+
+        See :func:`remote_config_set` for more information about that attribute.
+
+        Note this calls :func:`create_target` to ensure the target project exists.
+        """
+        # First ensure the existence of both the target project and the 'Config' attribute type
         self.create_target()
         self.create_attribute_type('OSRT', 'Config', 1)
 
-        config = {
-            'overridden-by-local': 'remote-nope',
-            'staging-group': 'factory-staging',
-            'remote-only': 'remote-indeed',
-        }
-        self.remote_config_set(config, replace_all=True)
+        self.remote_config_set(self.initial_config(), replace_all=True)
 
     def remote_config_set(self, config, replace_all=False):
+        """Sets the values of the 'Config' attribute for the target project.
+
+        That attribute stores a set of values that are useful to influence the behavior of several
+        tools and bots in the context of the given project. For convenience, such a collection of
+        values is usually accessed using a :class:`osclib.Config` object. See :func:`load_config`.
+
+        :param config: values to write into the attribute
+        :type config: dict[str, str]
+        :param replace_all: whether the previous content of 'Config' should be cleared up
+        :type replace_all: bool
+        """
+
         if not replace_all:
             config_existing = Config.get(self.apiurl, self.project)
             config_existing.update(config)
@@ -331,50 +447,31 @@ class StagingWorkflow(object):
         self.projects[home_project] = Project(home_project, create=False)
 
     def create_target(self):
-        """Creates
+        """Creates the main project that represents the product being developed and, as such, is
+        expected to be the target for requests. It also creates all the associated projects, users
+        and groups involved in the development workflow.
 
-        - target project
-        - "staging-bot" user
-        - "factory-staging" group
+        In the base implementation, that includes:
 
-        setup staging and also ``*:Staging:A`` and ``*:Staging:B`` projects.
+            - The target project (see :func:`create_target_project`)
+            - A group of staging managers including the "staging-bot" user
+              (see :func:`create_staging_users`)
+            - A couple of staging projects for the target one
+            - The ProductVersion attribute type, that is used by the staging tools
 
         After the execution, the target project is indexed in the projects dictionary twice,
         by its name and as 'target'.
         """
         if self.projects.get('target'): return
-        self.create_user('staging-bot')
-        self.create_group('factory-staging', users=['staging-bot'])
-        p = Project(name=self.project, reviewer={'groups': ['factory-staging']})
-        self.projects['target'] = p
-        self.projects[self.project] = p
 
-        url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
-        data = "<workflow managers='factory-staging'/>"
-        osc.core.http_POST(url, data=data)
-        # creates A and B as well
+        self.create_target_project()
+        self.create_staging_users()
+
         self.projects['staging:A'] = Project(self.project + ':Staging:A', create=False)
         self.projects['staging:B'] = Project(self.project + ':Staging:B', create=False)
 
-    def setup_rings(self, devel_project=None):
-        """Creates a typical Factory setup with rings.
-
-        It creates three projects: 'ring0', 'ring1' and the target (see :func:`create_target`).
-        It also creates a 'wine' package in the target project and a link from it to ring1.
-        It sets the devel project for the package if ``devel_project`` is given.
-
-        :param devel_project: name of devel project. It must exist and contain a 'wine' package,
-            otherwise OBS returns an error code.
-        :type devel_project: str or None
-        """
-        self.create_target()
-        self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
-        self.projects['ring1'] = Project(name=self.project + ':Rings:1-MinimalX')
-        target_wine = Package(
-            name='wine', project=self.projects['target'], devel_project=devel_project
-        )
-        target_wine.create_commit()
-        self.create_link(target_wine, self.projects['ring1'])
+        # The ProductVersion is required for some actions, like accepting a staging project
+        self.create_attribute_type('OSRT', 'ProductVersion', 1)
 
     def create_package(self, project, package):
         project = self.create_project(project)
@@ -452,32 +549,6 @@ class StagingWorkflow(object):
         package.create_commit(text=text)
         return self.submit_package(package)
 
-    def create_staging(self, suffix, freeze=False, rings=None, with_repo=False):
-        staging_key = 'staging:{}'.format(suffix)
-        # do not reattach if already present
-        if not staging_key in self.projects:
-            staging_name = self.project + ':Staging:' + suffix
-            staging = Project(staging_name, create=False, with_repo=with_repo)
-            url = osc.core.makeurl(APIURL, ['staging', self.project, 'staging_projects'])
-            data = '<workflow><staging_project>{}</staging_project></workflow>'
-            osc.core.http_POST(url, data=data.format(staging_name))
-            self.projects[staging_key] = staging
-        else:
-            staging = self.projects[staging_key]
-
-        project_links = []
-        if rings == 0:
-            project_links.append(self.project + ":Rings:0-Bootstrap")
-        if rings == 1 or rings == 0:
-            project_links.append(self.project + ":Rings:1-MinimalX")
-        staging.update_meta(project_links=project_links, maintainer={'groups': ['factory-staging']},
-                            with_repo=with_repo)
-
-        if freeze:
-            FreezeCommand(self.api).perform(staging.name)
-
-        return staging
-
     def __del__(self):
         if not self.api:
             return
@@ -498,8 +569,8 @@ class StagingWorkflow(object):
             request.revoke()
         for group in self.groups:
             self.remove_group(group)
-        for namespace in self.attributes:
-            self.remove_attributes(namespace)
+        for namespace in self.attr_types:
+            self.remove_attribute_types(namespace)
 
         print('done')
 
@@ -516,14 +587,14 @@ class StagingWorkflow(object):
         url = osc.core.makeurl(APIURL, ['group', group])
         self._safe_delete(url)
 
-    def remove_attributes(self, namespace):
-        """Removes an attributes namespace and all the attributes it contains
+    def remove_attribute_types(self, namespace):
+        """Removes an attributes namespace and all the attribute types it contains
 
         :param namespace: attributes namespace to remove
         :type namespace: str
         """
-        for name in self.attributes[namespace]:
-            print('deleting attribute {}:{}'.format(namespace, name))
+        for name in self.attr_types[namespace]:
+            print('deleting attribute type {}:{}'.format(namespace, name))
             url = osc.core.makeurl(APIURL, ['attribute', namespace, name, '_meta'])
             self._safe_delete(url)
         print('deleting namespace', namespace)
@@ -540,6 +611,88 @@ class StagingWorkflow(object):
             osc.core.http_DELETE(url)
         except HTTPError:
             pass
+
+    def create_target_project(self):
+        """Creates the main target project (see :func:`create_target`)"""
+        p = Project(name=self.project)
+        self.projects['target'] = p
+        self.projects[self.project] = p
+
+    def create_staging_users(self):
+        """Creates users and groups for the staging workflow for the target project
+        (see :func:`create_target`)
+        """
+        group = self.staging_group_name()
+
+        self.create_user('staging-bot')
+        self.create_group(group, users=['staging-bot'])
+        self.projects['target'].add_reviewers(groups = [group])
+
+        url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
+        data = f"<workflow managers='{group}'/>"
+        osc.core.http_POST(url, data=data)
+
+class FactoryWorkflow(StagingWorkflow):
+    """A class that makes easy to setup scenarios similar to the one used during the real
+    openSUSE Factory development, with staging projects, rings, etc.
+    """
+    def staging_group_name(self):
+        return 'factory-staging'
+
+    def initial_config(self):
+        return {
+            'overridden-by-local': 'remote-nope',
+            'staging-group': 'factory-staging',
+            'remote-only': 'remote-indeed',
+        }
+
+    def setup_rings(self, devel_project=None):
+        """Creates a typical Factory setup with rings.
+
+        It creates three projects: 'ring0', 'ring1' and the target (see :func:`create_target`).
+        It also creates a 'wine' package in the target project and a link from it to ring1.
+        It sets the devel project for the package if ``devel_project`` is given.
+
+        :param devel_project: name of devel project. It must exist and contain a 'wine' package,
+            otherwise OBS returns an error code.
+        :type devel_project: str or None
+        """
+        self.create_target()
+        self.projects['ring0'] = Project(name=self.project + ':Rings:0-Bootstrap')
+        self.projects['ring1'] = Project(name=self.project + ':Rings:1-MinimalX')
+        target_wine = Package(
+            name='wine', project=self.projects['target'], devel_project=devel_project
+        )
+        target_wine.create_commit()
+        self.create_link(target_wine, self.projects['ring1'])
+
+    def create_staging(self, suffix, freeze=False, rings=None, with_repo=False):
+        staging_key = 'staging:{}'.format(suffix)
+        # do not reattach if already present
+        if not staging_key in self.projects:
+            staging_name = self.project + ':Staging:' + suffix
+            staging = Project(staging_name, create=False, with_repo=with_repo)
+            url = osc.core.makeurl(APIURL, ['staging', self.project, 'staging_projects'])
+            data = '<workflow><staging_project>{}</staging_project></workflow>'
+            osc.core.http_POST(url, data=data.format(staging_name))
+            self.projects[staging_key] = staging
+        else:
+            staging = self.projects[staging_key]
+
+        project_links = []
+        if rings == 0:
+            project_links.append(self.project + ":Rings:0-Bootstrap")
+        if rings == 1 or rings == 0:
+            project_links.append(self.project + ":Rings:1-MinimalX")
+
+        group = self.staging_group_name()
+        staging.update_meta(project_links=project_links, maintainer={'groups': [group]},
+                            with_repo=with_repo)
+
+        if freeze:
+            FreezeCommand(self.api).perform(staging.name)
+
+        return staging
 
 class Project(object):
     """This class represents a project in the testing environment of the release tools. It usually

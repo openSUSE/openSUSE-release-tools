@@ -28,7 +28,7 @@ class TestOrigin(OBSLocal.TestCase):
         super().setUp()
 
         self.target_project = self.randomString('target')
-        self.wf = OBSLocal.StagingWorkflow(self.target_project)
+        self.wf = OBSLocal.FactoryWorkflow(self.target_project)
 
         self.wf.create_attribute_type('OSRT', 'OriginConfig', 1)
 
@@ -111,7 +111,7 @@ class TestOrigin(OBSLocal.TestCase):
         self.origin_config_write([])
 
         request = self.wf.create_submit_request(self.randomString('devel'), self.randomString('package'))
-        self.assertReviewBot(request.reqid, self.bot_user, 'new', 'new')
+        self.assertReviewScript(request.reqid, self.bot_user, 'new', 'new')
         self.assertOutput(f'skipping {request.reqid} of age')
         self.assertOutput('since it is younger than 1800s')
 
@@ -130,14 +130,14 @@ class TestOrigin(OBSLocal.TestCase):
 
     def test_no_config(self):
         request = self.wf.create_submit_request(self.randomString('devel'), self.randomString('package'))
-        self.assertReviewBot(request.reqid, self.bot_user, 'new', 'accepted', 'skipping since no OSRT:OriginConfig')
+        self.assertReviewScript(request.reqid, self.bot_user, 'new', 'accepted', 'skipping since no OSRT:OriginConfig')
 
     def test_not_allowed_origin(self):
         self.remote_config_set_age_minimum()
         self.origin_config_write([{'fakeProject': {}}], {'unknown_origin_wait': True})
 
         request = self.wf.create_submit_request(self.randomString('devel'), self.randomString('package'))
-        self.assertReviewBot(request.reqid, self.bot_user, 'new', 'new')
+        self.assertReviewScript(request.reqid, self.bot_user, 'new', 'new')
 
         comment = [
             '<!-- OriginManager state=seen result=None -->',
@@ -148,7 +148,7 @@ class TestOrigin(OBSLocal.TestCase):
         self.assertComment(request.reqid, comment)
 
         self.origin_config_write([{'fakeProject': {}}], {'unknown_origin_wait': False})
-        self.assertReviewBot(request.reqid, self.bot_user, 'new', 'declined', 'review failed')
+        self.assertReviewScript(request.reqid, self.bot_user, 'new', 'declined', 'review failed')
         comment.pop()
         self.assertComment(request.reqid, comment)
 
@@ -173,7 +173,7 @@ class TestOrigin(OBSLocal.TestCase):
         attribute_value_save(self.wf.apiurl, devel_project, 'ApprovedRequestSource', '', 'OBS')
 
         if not only_devel:
-            self.assertReviewBot(request.reqid, self.bot_user, 'new', 'new')
+            self.assertReviewScript(request.reqid, self.bot_user, 'new', 'new')
 
             comment = [
                 '<!-- OriginManager state=seen result=None -->',
@@ -190,7 +190,7 @@ class TestOrigin(OBSLocal.TestCase):
         else:
             comment = 'only devel origin allowed'
 
-        self.assertReviewBot(request.reqid, self.bot_user, 'new', 'accepted')
+        self.assertReviewScript(request.reqid, self.bot_user, 'new', 'accepted')
         self.assertAnnotation(request.reqid, {
             'comment': comment,
             'origin': devel_project,
@@ -214,7 +214,7 @@ class TestOrigin(OBSLocal.TestCase):
         origin_info = origin_find(self.wf.apiurl, self.wf.project, package)
         self.assertEqual(origin_info, None)
 
-        self.assertReviewBot(request_id_change_devel, self.bot_user, 'new', 'accepted')
+        self.assertReviewScript(request_id_change_devel, self.bot_user, 'new', 'accepted')
         self.assertAnnotation(request_id_change_devel, {
             'origin': devel_project,
         })
@@ -237,7 +237,7 @@ class TestOrigin(OBSLocal.TestCase):
         self.assertEqual(request_future, False)
         self.osc_user_pop()
 
-        self.assertReviewBot(request_id_update, self.bot_user, 'new', 'accepted')
+        self.assertReviewScript(request_id_update, self.bot_user, 'new', 'accepted')
         self.assertAnnotation(request_id_update, {
             'origin': devel_project,
         })
@@ -271,7 +271,7 @@ class TestOrigin(OBSLocal.TestCase):
         if request_future:
             request_id_change_devel_new = request_future.print_and_create()
 
-        self.assertReviewBot(request_id_change_devel_new, self.bot_user, 'new', 'accepted')
+        self.assertReviewScript(request_id_change_devel_new, self.bot_user, 'new', 'accepted')
         self.assertAnnotation(request_id_change_devel_new, {
             'origin': devel_project_new,
             'origin_old': devel_project,
@@ -324,7 +324,7 @@ class TestOrigin(OBSLocal.TestCase):
         request_upstream2 = self.wf.submit_package(devel_package, upstream2_project)
         request_target = self.wf.submit_package(devel_package, self.target_project)
 
-        self.assertReviewBot(request_target.reqid, self.bot_user, 'new', 'new')
+        self.assertReviewScript(request_target.reqid, self.bot_user, 'new', 'new')
         comment = [
             '<!-- OriginManager state=seen result=None -->',
             f'Waiting on acceptance of request#{request_upstream2.reqid}.',
@@ -333,7 +333,7 @@ class TestOrigin(OBSLocal.TestCase):
 
         request_upstream2.change_state('accepted')
 
-        self.assertReviewBot(request_target.reqid, self.bot_user, 'new', 'accepted')
+        self.assertReviewScript(request_target.reqid, self.bot_user, 'new', 'accepted')
         self.assertAnnotation(request_target.reqid, {
             'origin': upstream2_project,
             'origin_old': upstream1_project,
@@ -490,7 +490,7 @@ class TestOrigin(OBSLocal.TestCase):
         self.assertNoUpdate(package1)
 
         # Accept request and ensure update since no request to supersede.
-        self.assertReviewBot(request_id_package1_1, self.bot_user, 'new', 'accepted')
+        self.assertReviewScript(request_id_package1_1, self.bot_user, 'new', 'accepted')
         request_state_change(self.wf.apiurl, request_id_package1_1, 'accepted')
 
         request_id_package1_2 = self.assertUpdate(package1)

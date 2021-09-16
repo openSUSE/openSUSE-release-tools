@@ -1,4 +1,3 @@
-import logging
 from . import OBSLocal
 import random
 import os
@@ -16,7 +15,6 @@ from osclib.accept_command import AcceptCommand
 from check_source import CheckSource
 legal_auto = __import__("legal-auto") # Needed because of the dash in the filename
 LegalAuto = legal_auto.LegalAuto
-
 
 PROJECT = 'openSUSE:Factory'
 DEVEL_PROJECT = 'devel:drinking'
@@ -41,8 +39,8 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         super(TestFactorySubmitRequest, self).setUp()
 
         # Setup the basic scenario, with manual reviewers, staging projects, rings and wine as
-        # example package (wine is in ring1, see OBSLocal.StagingWorkflow.setup_rings)
-        self.wf = OBSLocal.StagingWorkflow(PROJECT)
+        # example package (wine is in ring1, see OBSLocal.FactoryWorkflow.setup_rings)
+        self.wf = OBSLocal.FactoryWorkflow(PROJECT)
         self.__setup_review_team()
         self.__setup_devel_package('wine')
         self.wf.setup_rings(devel_project=DEVEL_PROJECT)
@@ -52,9 +50,8 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         self.wf.remote_config_set({'required-source-maintainer': ''})
 
         # Setup the different bots typically used for Factory
-        self.review_bots = {}
-        self.__setup_review_bot('factory-auto', CheckSource)
-        self.__setup_review_bot('licensedigger', LegalAuto)
+        self.setup_review_bot(self.wf, PROJECT, 'factory-auto', CheckSource)
+        self.setup_review_bot(self.wf, PROJECT, 'licensedigger', LegalAuto)
 
         # Sorry, but LegalAuto is simply too hard to test while keeping this test readable,
         # see the description of __mock_licendigger for more rationale
@@ -70,12 +67,6 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         super().tearDown()
         del self.wf
 
-    def project(self):
-        return self.wf.projects[PROJECT]
-
-    def devel_project(self):
-        return self.wf.projects[DEVEL_PROJECT]
-
     def test_happy_path(self):
         """Tests the ideal case in which all bots are happy and the request successfully goes
         through staging"""
@@ -86,8 +77,8 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         self.assertReview(reqid, by_group=('factory-staging', 'new'))
 
         # Let bots come into play
-        self.__execute_review_bot('factory-auto', [reqid])
-        self.__execute_review_bot('licensedigger', [reqid])
+        self.execute_review_bot([reqid], 'factory-auto')
+        self.execute_review_bot([reqid], 'licensedigger')
 
         # Bots are happy, now it's time for manual review (requested by the bots) and
         # for the staging work
@@ -111,6 +102,10 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         self.assertReview(reqid, by_user=('licensedigger', 'accepted'))
         self.assertReview(reqid, by_group=('opensuse-review-team', 'accepted'))
         self.assertReview(reqid, by_group=('factory-staging', 'new'))
+
+        # Before using the staging plugin, we need to force a reload of the configuration
+        # because execute_review_bot temporarily switches the user and that causes problems
+        self.wf.load_config()
 
         # The Staging Manager puts the request into a staging project
         SelectCommand(self.wf.api, STAGING_PROJECT_NAME).perform(['wine'])
@@ -151,32 +146,6 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         """
         self.wf.create_user(HUMAN_REVIEWER)
         self.wf.create_group('opensuse-review-team', users=[HUMAN_REVIEWER])
-
-    def __setup_review_bot(self, user, bot_class):
-        """Instantiates a bot and adds the associated user as reviewer of PROJECT
-
-        :param user: user to create for the bot
-        :type user: str
-        :param bot_class: type of bot to setup
-        """
-        self.wf.create_user(user)
-        self.project().add_reviewers(users = [user])
-
-        bot_name = self.__generate_bot_name(user)
-        bot = bot_class(self.wf.apiurl, user=user, logger=logging.getLogger(bot_name))
-        bot.bot_name = bot_name
-
-        self.review_bots[user] = bot
-
-    def __execute_review_bot(self, user, requests):
-        bot = self.review_bots[user]
-        bot.set_request_ids(requests)
-        bot.check_requests()
-
-    def __generate_bot_name(self, user):
-        """Used to ensure different test runs operate in unique namespace."""
-
-        return '::'.join([type(self).__name__, user, str(random.getrandbits(8))])
 
     def __mock_licensedigger(self):
         """Mocks the execution of the LegalAuto bot, so it always succeeds and accepts the review

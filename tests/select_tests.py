@@ -25,7 +25,7 @@ class TestSelect(OBSLocal.TestCase):
     def setUp(self):
         super().setUp()
         super(TestSelect, self).setUp()
-        self.wf = OBSLocal.StagingWorkflow()
+        self.wf = OBSLocal.FactoryWorkflow()
 
     def tearDown(self):
         super(TestSelect, self).tearDown()

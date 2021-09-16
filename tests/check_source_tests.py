@@ -23,8 +23,8 @@ class TestCheckSource(OBSLocal.TestCase):
     def setUp(self):
         super(TestCheckSource, self).setUp()
 
-        # Using OBSLocal.StagingWorkflow makes it easier to setup testing scenarios
-        self.wf = OBSLocal.StagingWorkflow(PROJECT)
+        # Using OBSLocal.FactoryWorkflow makes it easier to setup testing scenarios
+        self.wf = OBSLocal.FactoryWorkflow(PROJECT)
         self.project = self.wf.projects[PROJECT]
 
         # Set up the reviewers team

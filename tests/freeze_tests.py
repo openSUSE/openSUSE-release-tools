@@ -24,7 +24,7 @@ class TestFreeze(OBSLocal.TestCase):
         return os.path.join(os.getcwd(), 'tests/fixtures')
 
     def test_bootstrap_copy(self):
-        wf = OBSLocal.StagingWorkflow()
+        wf = OBSLocal.FactoryWorkflow()
 
         fc = FreezeCommand(wf.api)
 

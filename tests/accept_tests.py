@@ -13,7 +13,7 @@ from . import OBSLocal
 class TestAccept(unittest.TestCase):
 
     def setup_wf(self):
-        wf = OBSLocal.StagingWorkflow()
+        wf = OBSLocal.FactoryWorkflow()
         wf.setup_rings()
 
         self.c_api = CommentAPI(wf.api.apiurl)

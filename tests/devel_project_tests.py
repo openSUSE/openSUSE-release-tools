@@ -7,7 +7,7 @@ class TestDevelProject(OBSLocal.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.wf = OBSLocal.StagingWorkflow()
+        self.wf = OBSLocal.FactoryWorkflow()
         spa = self.wf.create_project('server:php:applications')
         OBSLocal.Package('drush', project=spa)
         OBSLocal.Package('drush', self.wf.projects['target'], devel_project='server:php:applications')
