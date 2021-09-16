@@ -167,7 +167,7 @@ class TestCase(unittest.TestCase):
 
         ``assertReview(20, by_user=('jdoe', 'new'))``
 
-        :return: the found review, if the assertion suceeds
+        :return: the found review, if the assertion succeeds
         :rtype: Review or None
         """
         request = get_request(self.apiurl, rid)
