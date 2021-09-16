@@ -214,7 +214,9 @@ class Listener(PubSubConsumer):
             'scope': 'current',
             'latest': '1',
         }
-        return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
+        jobs = self.openqa.openqa_request('GET', 'jobs', values)['jobs']
+        # Ignore PR verification runs
+        return [job for job in jobs if '/' not in job['settings']['BUILD']]
 
     def get_step_url(self, testurl, modulename):
         failurl = testurl + '/modules/{!s}/fails'.format(quote_plus(modulename))
@@ -244,7 +246,10 @@ class Listener(PubSubConsumer):
         if method.routing_key == '{}.obs.repo.published'.format(amqp_prefix):
             self.on_published_repo(json.loads(body))
         elif re.search(r'.openqa.', method.routing_key):
-            self.on_openqa_job(json.loads(body).get('ISO'))
+            data = json.loads(body)
+            if '/' in data.get('BUILD'):
+                return # Ignore PR verification runs
+            self.on_openqa_job(data.get('ISO'))
         else:
             self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))
 
