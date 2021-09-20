@@ -38,7 +38,7 @@ Currently, the plugin relies on the OBS capabilities to implement [staging
 workflows](https://github.com/openSUSE/open-build-service/wiki/Staging-Workflow), extending and
 adapting them to the (open)SUSE use case.
 
-This [testcase](../tests/factory_submit_request_test.py) showcases the whole submission process
+This [testcase](../tests/factory_submit_request_tests.py) showcases the whole submission process
 explaining how the different reviews are created and processed by OBS and by the involved bots and
 release tools.
 
@@ -114,7 +114,9 @@ common but configured in a slightly different way. On the other hand, there are 
 like the [Origin Manager](./origin-manager.md) to verify aspects that are not relevant for
 Tumbleweed.
 
-The following [SUSE-internal
+This [testcase](../tests/sle_submit_request_tests.py) showcases the whole submission process
+explaining how the different reviews are created and processed by IBS and by the involved bots and
+release tools. Additionally, the following [SUSE-internal
 document](https://confluence.suse.com/display/projectmanagement/Product+Handbook) offers all kind of
 details about the processes involved in the development of SLE and all its associated products.
 
