@@ -161,12 +161,12 @@ class PkgListGen(ToolBase.ToolBase):
         for i in importants:
             group = self.groups[i]
             for arch in group.packages:
-                if not arch in g.solved_packages:
+                if arch not in g.solved_packages:
                     continue
                 for package in group.packages[arch]:
                     if package[0] in g.solved_packages[arch]:
                         continue
-                    if not package[0] in g.solved_packages['*']:
+                    if package[0] not in g.solved_packages['*']:
                         self.logger.error(f'Missing {package[0]} in {groupname} for {arch}')
 
     def expand_repos(self, project, repo='standard'):
@@ -435,7 +435,7 @@ class PkgListGen(ToolBase.ToolBase):
                 accepted_archs.add('noarch')
 
                 for s in oldsysrepo.solvables_iter():
-                    if not s.arch in accepted_archs:
+                    if s.arch not in accepted_archs:
                         continue
 
                     oldarch = s.arch
