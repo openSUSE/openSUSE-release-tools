@@ -20,37 +20,37 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target
           openSUSE_Factory_rings:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings
           openSUSE_Factory_ARM_target:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target
           openSUSE_Factory_ARM_rings:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s rings
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s rings
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC
           openSUSE_Factory_zSystems:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems
           openSUSE_Factory_RISCV:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV
   Update.Repos.Factory:
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished
@@ -71,22 +71,22 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory
+             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory
           openSUSE_Factory_ARM:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:ARM
+             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:ARM
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
+             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
           openSUSE_Factory_RISCV:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
+             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
   Pkglistgen.openSUSE_Leap_15.4:
     group: Leap.pkglistgen
     lock_behavior: unlockWhenFinished
