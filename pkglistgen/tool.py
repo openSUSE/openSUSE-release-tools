@@ -435,12 +435,12 @@ class PkgListGen(ToolBase.ToolBase):
                 accepted_archs.add('noarch')
 
                 for s in oldsysrepo.solvables_iter():
-                    if s.arch not in accepted_archs:
-                        continue
-
                     oldarch = s.arch
                     if oldarch == 'i686':
                         oldarch = 'i586'
+
+                    if oldarch not in accepted_archs:
+                        continue
 
                     haveit = False
                     for s2 in pool.whatprovides(s.nameid):
