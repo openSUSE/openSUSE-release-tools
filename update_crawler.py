@@ -245,12 +245,12 @@ class UpdateCrawler(object):
             if origin.startswith('Devel;'):
                 (dummy, origin, dummy) = origin.split(';')
 
-            if self.filter_lookup and not origin in self.filter_lookup:
+            if self.filter_lookup and origin not in self.filter_lookup:
                 if not origin.startswith('subpackage of'):
                     self.skipped.setdefault(origin, set()).add(package)
                 continue
 
-            if not package in targets:
+            if package not in targets:
                 if not self.submit_new:
                     logging.info('Package %s not found in targets' % (package))
                     continue

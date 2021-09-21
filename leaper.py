@@ -75,7 +75,7 @@ class Leaper(ReviewBot.ReviewBot):
         return packages
 
     def is_package_in_project(self, project, package):
-        if not project in self.packages:
+        if project not in self.packages:
             self.packages[project] = self.get_source_packages(project)
         return True if package in self.packages[project] else False
 

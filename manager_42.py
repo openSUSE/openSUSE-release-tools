@@ -245,7 +245,7 @@ class Manager42(object):
 
         self._fill_package_list(project)
 
-        if not deleted and not package in self.packages[project]:
+        if not deleted and package not in self.packages[project]:
             return None, None
 
         his = self.get_package_history(project, package, deleted)
@@ -273,7 +273,7 @@ class Manager42(object):
     def check_one_package(self, package):
         self.sle_workarounds_sourced = False
         lproject = self.lookup.get(package, None)
-        if not package in self.packages[self.config.from_prj]:
+        if package not in self.packages[self.config.from_prj]:
             if not self._is_ignored(package):
                 logger.info("{} vanished".format(package))
             if self.lookup.get(package):
@@ -308,7 +308,7 @@ class Manager42(object):
                                                        root.get('verifymd5'))
             if srcmd5:
                 lstring = 'Devel;{};{}'.format(develprj, develpkg)
-                if not package in self.lookup or lstring != self.lookup[package]:
+                if package not in self.lookup or lstring != self.lookup[package]:
                     logger.debug("{} from devel {}/{} (was {})".format(package, develprj, develpkg, lproject))
                     self.lookup[package] = lstring
                     self.lookup_changes += 1
@@ -323,7 +323,7 @@ class Manager42(object):
                 # if it's from Factory we check if the package can be found elsewhere meanwhile
                 if not self.force and lproject != self.config.factory:
                     return
-            elif lproject == self.config.factory and not package in self.packages[lproject]:
+            elif lproject == self.config.factory and package not in self.packages[lproject]:
                 his = self.get_package_history(lproject, package, deleted=True)
                 if his:
                     logger.debug("{} got dropped from {}".format(package, lproject))

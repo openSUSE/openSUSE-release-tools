@@ -86,7 +86,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             mapping = MaintenanceChecker._get_lookup_yml(self.apiurl, project)
             if mapping is None:
                 self.logger.error("error loading mapping for {}".format(project))
-            elif not pkgname in mapping:
+            elif pkgname not in mapping:
                 self.logger.debug("{} not tracked".format(pkgname))
             else:
                 origin = mapping[pkgname]

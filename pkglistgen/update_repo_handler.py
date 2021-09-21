@@ -166,7 +166,7 @@ def print_repo_delta(pool, repo2, packages_file):
         key = '{}/{}'.format(s.name, s.arch)
         if present.get(key, {}).get(s.evr):
             continue
-        elif not key in present:
+        elif key not in present:
             print('# NEW', s.name, s.arch, file=packages_file)
         evr = s.evr.split('-')
         release = evr.pop()

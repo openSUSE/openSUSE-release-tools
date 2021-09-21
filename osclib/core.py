@@ -932,7 +932,7 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
 
     xpath = '({})'.format(xpath)
 
-    if not 'all' in states:
+    if 'all' not in states:
         xpath_states = ''
         for state in states:
             xpath_states = xpath_join(xpath_states, 'state/@name="{}"'.format(state), inner=True)
@@ -960,7 +960,7 @@ def request_action_list_maintenance_release(apiurl, project, package, states=['n
     xpath = xpath_join(xpath, 'action/source/@package="{}"'.format(package_repository), op='and', inner=True)
     xpath = '({})'.format(xpath)
 
-    if not 'all' in states:
+    if 'all' not in states:
         xpath_states = ''
         for state in states:
             xpath_states = xpath_join(xpath_states, 'state/@name="{}"'.format(state), inner=True)

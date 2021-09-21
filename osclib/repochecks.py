@@ -120,7 +120,7 @@ def parsed_installcheck(repos, arch, target_packages, whitelist):
             if match:
                 package = match.group(1)
                 in_problem = False
-                if not package in target_packages:
+                if package not in target_packages:
                     continue
                 if package in whitelist:
                     logger.debug("{} fails installcheck but is white listed".format(package))

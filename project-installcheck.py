@@ -236,7 +236,7 @@ class RepoChecker():
 
         # calculate build info hashes
         for package in packages:
-            if not package in succeeding:
+            if package not in succeeding:
                 self.logger.debug("Ignore %s for the moment, not succeeding", package)
                 continue
             m = hashlib.sha256()

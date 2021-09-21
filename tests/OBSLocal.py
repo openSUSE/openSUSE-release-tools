@@ -351,9 +351,9 @@ class StagingWorkflow(ABC):
     def create_attribute_type(self, namespace, name, values=None):
         """Creates a new attribute type in the OBS instance."""
 
-        if not namespace in self.attr_types: self.attr_types[namespace] = []
+        if namespace not in self.attr_types: self.attr_types[namespace] = []
 
-        if not name in self.attr_types[namespace]: self.attr_types[namespace].append(name)
+        if name not in self.attr_types[namespace]: self.attr_types[namespace].append(name)
 
         meta = """
         <namespace name='{}'>
@@ -429,7 +429,7 @@ class StagingWorkflow(ABC):
                 ET.SubElement(persons, 'person', {'userid': user} )
             meta = ET.tostring(root)
 
-        if not name in self.groups:
+        if name not in self.groups:
             self.groups.append(name)
         url = osc.core.makeurl(APIURL, ['group', name])
         osc.core.http_PUT(url, data=meta)
@@ -685,7 +685,7 @@ class FactoryWorkflow(StagingWorkflow):
     def create_staging(self, suffix, freeze=False, rings=None, with_repo=False):
         staging_key = 'staging:{}'.format(suffix)
         # do not reattach if already present
-        if not staging_key in self.projects:
+        if staging_key not in self.projects:
             staging_name = self.project + ':Staging:' + suffix
             staging = Project(staging_name, create=False, with_repo=with_repo)
             url = osc.core.makeurl(APIURL, ['staging', self.project, 'staging_projects'])

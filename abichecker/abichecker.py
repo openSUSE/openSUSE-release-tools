@@ -658,7 +658,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 ]
         self.logger.debug(cmd)
         r = subprocess.Popen(cmd, close_fds=True, cwd=CACHEDIR).wait()
-        if not r in (0, 1):
+        if r not in (0, 1):
             self.logger.error('abi-compliance-checker failed')
             # XXX: record error
             return None
@@ -706,7 +706,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             for fn in fetchlist:
                 self.logger.debug("extract %s"%fn)
                 with open(tmpfile, 'wb') as tmpfd:
-                    if not fn in downloaded:
+                    if fn not in downloaded:
                         raise FetchError("%s was not downloaded!"%fn)
                     self.logger.debug(downloaded[fn])
                     r = subprocess.call(['rpm2cpio', downloaded[fn]], stdout=tmpfd, close_fds=True)
@@ -721,7 +721,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         if fn.startswith('./'): # rpm payload is relative
                             fn = fn[1:]
                         self.logger.debug("cpio fn %s", fn)
-                        if not fn in liblist and not fn in debugfiles:
+                        if fn not in liblist and fn not in debugfiles:
                             continue
                         dst = os.path.join(UNPACKDIR, project, package, repo, arch)
                         dst += fn
@@ -745,7 +745,7 @@ class ABIChecker(ReviewBot.ReviewBot):
     def download_files(self, project, package, repo, arch, filenames, mtimes):
         downloaded = dict()
         for fn in filenames:
-            if not fn in mtimes:
+            if fn not in mtimes:
                 raise FetchError("missing mtime information for %s, can't check"% fn)
             repodir = os.path.join(DOWNLOADS, package, project, repo)
             if not os.path.exists(repodir):
@@ -885,7 +885,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                 arch = [ mr.arch for mr in matchrepos])
         for result in results:
             for res, _ in osc.core.result_xml_to_dicts(result):
-                if not 'package' in res or res['package'] != src_srcinfo.package:
+                if 'package' not in res or res['package'] != src_srcinfo.package:
                     continue
                 rmap[(res['repository'], res['arch'])] = res
 
@@ -1032,7 +1032,7 @@ class ABIChecker(ReviewBot.ReviewBot):
         # check whether debug info exists for each lib
         for pkgname in sorted(lib_packages.keys()):
             dpkgname = pkgname+'-debuginfo'
-            if not dpkgname in pkgs:
+            if dpkgname not in pkgs:
                 missing_debuginfo.add((prj, pkg, repo, arch, pkgname))
                 continue
 
@@ -1042,7 +1042,7 @@ class ABIChecker(ReviewBot.ReviewBot):
             ok = True
             for lib in lib_packages[pkgname]:
                 libdebug = '/usr/lib/debug%s.debug'%lib
-                if not libdebug in files:
+                if libdebug not in files:
                     # some new format that includes version, release and arch in debuginfo?
                     # FIXME: version and release are actually the
                     # one from the main package, sub packages may
@@ -1054,7 +1054,7 @@ class ABIChecker(ReviewBot.ReviewBot):
                         arch = 'i386'
                     libdebug = '/usr/lib/debug%s-%s-%s.%s.debug'%(lib,
                             h['version'].decode('utf-8'), h['release'].decode('utf-8'), arch)
-                    if not libdebug in files:
+                    if libdebug not in files:
                         missing_debuginfo.add((prj, pkg, repo, arch, pkgname, lib))
                         ok = False
 
