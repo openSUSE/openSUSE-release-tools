@@ -28,7 +28,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
   Update.Repos.Factory:
     group: Factory.pkglistgen
@@ -51,7 +51,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
+             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>
   Pkglistgen.openSUSE_Leap_15.4:
     group: Leap.pkglistgen

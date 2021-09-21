@@ -165,7 +165,7 @@ def main(args):
             maintainers = set([p.get('name') for p in root.findall('.//person') if p.get('role') in ('maintainer', 'bugowner')])
             # TODO: expand groups if no persons found
             for userid in maintainers:
-                if not userid in Person:
+                if userid not in Person:
                     Person[userid] = osc.core.get_user_data(apiurl, userid, 'login', 'realname', 'email')
             if Reminded[package].remindCount in (1, 2):
                 for userid in maintainers:

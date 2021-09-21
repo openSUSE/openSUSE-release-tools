@@ -76,7 +76,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.legaldb, ['packages'], params)
 
         package = REQ.post(url, headers=self.legaldb_headers).json()
-        if not 'saved' in package:
+        if 'saved' not in package:
             return None
         package = package['saved']
         url = osc.core.makeurl(self.legaldb, ['requests'], {'external_link': self.request_nick(),
@@ -130,7 +130,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 if not self.dryrun:
                     REQ.patch(url, headers=self.legaldb_headers)
                 continue
-            if not state in ['acceptable', 'correct', 'unacceptable']:
+            if state not in ['acceptable', 'correct', 'unacceptable']:
                 return None
             if state == 'unacceptable':
                 user = report.get('reviewing_user', None)
@@ -282,7 +282,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             obj = REQ.post(url, headers=self.legaldb_headers).json()
         except HTTPError:
             return None
-        if not 'saved' in obj:
+        if 'saved' not in obj:
             return None
         legaldb_id = obj['saved']['id']
         self.logger.debug("PKG {}/{}[{}]->{} is {}".format(sproject, package, revision, tproject, legaldb_id))

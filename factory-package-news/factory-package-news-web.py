@@ -41,7 +41,7 @@ def current():
     _dir = get_dir(request.url_root)
     fn = os.path.join(_dir, 'current')
     if request.method == 'POST':
-        if not 'version' in request.form:
+        if 'version' not in request.form:
             return "missing version", 400
         version = request.form['version']
         if not digits_re.match(version):

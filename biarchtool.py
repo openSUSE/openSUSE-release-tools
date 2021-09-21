@@ -185,7 +185,7 @@ class BiArchTool(ToolBase.ToolBase):
             changed = False
 
             logger.debug("processing %s", pkg)
-            if not pkg in self.package_metas:
+            if pkg not in self.package_metas:
                 logger.error("%s not found", pkg)
                 continue
             pkgmeta = self.package_metas[pkg]
@@ -217,7 +217,7 @@ class BiArchTool(ToolBase.ToolBase):
             changed = False
 
             logger.debug("processing %s", pkg)
-            if not pkg in self.package_metas:
+            if pkg not in self.package_metas:
                 logger.error("%s not found", pkg)
                 continue
             pkgmeta = self.package_metas[pkg]
@@ -250,7 +250,7 @@ class BiArchTool(ToolBase.ToolBase):
         todo = dict()
         for pkg in self.packages:
             logger.debug("processing %s", pkg)
-            if not pkg in self.package_metas:
+            if pkg not in self.package_metas:
                 logger.error("%s not found", pkg)
                 continue
             pkgmeta = self.package_metas[pkg]

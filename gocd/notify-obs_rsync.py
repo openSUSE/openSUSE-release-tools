@@ -62,6 +62,6 @@ if __name__ == '__main__':
     openqa = OpenQA_Client(server=args.openqa)
     for state in glob.glob('{}/*.yaml'.format(args.repos)):
         state = basename(state).replace('.yaml', '')
-        if not state in interesting_repos:
+        if state not in interesting_repos:
             continue
         notify_project(openqa, state)

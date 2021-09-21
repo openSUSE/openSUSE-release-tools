@@ -51,7 +51,7 @@ class PackageLookup(object):
         self.lookup = {}
 
     def get(self, project, package):
-        if not project in self.lookup:
+        if project not in self.lookup:
             self.load(project)
 
         return self.lookup[project].get(package, None)

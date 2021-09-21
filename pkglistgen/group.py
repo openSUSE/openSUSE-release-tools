@@ -52,7 +52,7 @@ class Group(object):
         for a in archs:
             # we use groups.yml for powerpc through a branch,
             # so ignore inapplicable architectures
-            if not a in self.packages: continue
+            if a not in self.packages: continue
             self.packages[a].append([package, self.name])
 
     def parse_yml(self, packages):
@@ -106,7 +106,7 @@ class Group(object):
             for p in s:
                 self.solved_packages[arch].pop(p, None)
         for p in without.not_found.keys():
-            if not p in self.not_found:
+            if p not in self.not_found:
                 continue
             self.not_found[p] -= without.not_found[p]
             if not self.not_found[p]:
