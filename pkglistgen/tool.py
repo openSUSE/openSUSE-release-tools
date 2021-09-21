@@ -431,15 +431,17 @@ class PkgListGen(ToolBase.ToolBase):
 
                 pool.createwhatprovides()
 
+                accepted_archs = set(self.all_architectures)
+                accepted_archs.add('noarch')
+
                 for s in oldsysrepo.solvables_iter():
-                    if s.arch == 'src':
+                    if not s.arch in accepted_archs:
                         continue
 
                     oldarch = s.arch
                     if oldarch == 'i686':
                         oldarch = 'i586'
 
-                    #print('check', s.name, oldarch)
                     haveit = False
                     for s2 in pool.whatprovides(s.nameid):
                         if s2.repo == oldsysrepo or s.nameid != s2.nameid:
@@ -463,7 +465,8 @@ class PkgListGen(ToolBase.ToolBase):
                         break
                     if haveit:
                         continue
-                    drops.setdefault(s.name, {'repo': key, 'archs': set()})
+                    if s.name not in drops:
+                        drops[s.name] = {'repo': key, 'archs': set()}
                     if oldarch == 'noarch':
                         drops[s.name]['archs'] |= set(self.all_architectures)
                     else:
@@ -478,7 +481,7 @@ class PkgListGen(ToolBase.ToolBase):
             for name in sorted(drops):
                 if drops[name]['repo'] != repo:
                     continue
-                if len(drops[name]['archs']) == len(self.all_architectures):
+                if drops[name]['archs'] == set(self.all_architectures):
                     if not repo_output:
                         print('#', repo, file=output)
                         repo_output = True
