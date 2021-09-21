@@ -222,7 +222,7 @@ class ChangeLogger(cmdln.Cmdln):
         details = ''
         for srpm in sorted(group.keys()):
             srpm1 = v1pkgs[group[srpm][0]]['sourcerpm']
-            #print group[srpm], srpm, srpm1
+            # print group[srpm], srpm, srpm1
             if srpm1 == srpm:
                 continue # source package unchanged
             try:

@@ -89,7 +89,6 @@ class Fetcher(object):
                 unresolvable += count
                 continue
             building += count
-            #print(code, file=sys.stderr)
         # let's count them as building
         if building > 0:
             building += unresolvable

@@ -8,7 +8,7 @@ from osclib.core import builddepinfo
 try:
     from urllib.error import HTTPError
 except ImportError:
-    #python 2.x
+    # python 2.x
     from urllib2 import HTTPError
 
 class CleanupRings(object):

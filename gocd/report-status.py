@@ -86,7 +86,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
-    #osc.conf.config['debug'] = 1
+    # osc.conf.config['debug'] = 1
 
     architectures = sorted(target_archs(args.apiurl, args.project, args.repository))
     for arch in architectures:

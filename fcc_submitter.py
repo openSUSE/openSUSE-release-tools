@@ -183,7 +183,7 @@ class FccSubmitter(object):
 
         f = osc.core.show_prj_results_meta(self.apiurl, project)
         root = ET.fromstringlist(f)
-        #print ET.dump(root)
+        # print ET.dump(root)
 
         failed_multibuild_pacs = []
         pacs = []

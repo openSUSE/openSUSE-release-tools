@@ -206,7 +206,7 @@ class UpdateCrawler(object):
                                 ['source', prj, '00Meta', 'lookup.yml']))
 
     def follow_link(self, project, package, rev, verifymd5):
-        #print "follow", project, package, rev
+        # print "follow", project, package, rev
         # verify it's still the same package
         xml = ET.fromstring(self._get_source_package(project, package, rev))
         if xml.get('verifymd5') != verifymd5:
@@ -272,7 +272,7 @@ class UpdateCrawler(object):
                 md5_from = sourceinfo.get('verifymd5')
                 md5_to = targetinfo.get('verifymd5')
                 if md5_from == md5_to:
-                    #logging.info('Package %s not marked for update' % package)
+                    # logging.info('Package %s not marked for update' % package)
                     continue
 
                 if self.is_source_innerlink(self.to_prj, package):

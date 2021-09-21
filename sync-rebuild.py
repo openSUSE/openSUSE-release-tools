@@ -15,7 +15,7 @@ architectures = ["x86_64", "i586"]
 pkg = ""
 projects = ['openSUSE:Factory', 'openSUSE:Factory:Rebuild']
 
-#initialize osc config
+# initialize osc config
 osc.conf.get_config()
 
 def get_prj_results(prj, arch):
@@ -61,7 +61,6 @@ def check_pkgs(rebuild_list):
 
 def rebuild_pkg_in_factory(package, prj, arch, testmode, code=None):
     query = { 'cmd': 'rebuild', 'arch': arch }
-    #prj = "home:jzwickl"
     if package:
         query['package'] = package
     pkg = query['package']

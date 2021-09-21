@@ -378,7 +378,7 @@ class PubSubConsumer(object):
             self.logger.debug('Stopping')
             if self._consuming:
                 self.stop_consuming()
-                #self._connection.ioloop.start()
+                # self._connection.ioloop.start()
             else:
                 self._connection.ioloop.stop()
             self.logger.debug('Stopped')
