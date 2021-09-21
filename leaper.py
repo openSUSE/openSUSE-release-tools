@@ -285,7 +285,7 @@ class Leaper(ReviewBot.ReviewBot):
 
             # TODO #1662: Uncomment once maintbot has been superseded and leaper
             # is no longer run in comment-only mode.
-            #self.do_check_maintainer_review = True
+            # self.do_check_maintainer_review = True
 
             return None
         elif self.action.type == 'maintenance_incident':
