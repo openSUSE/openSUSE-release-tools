@@ -28,13 +28,19 @@ def project_list_family(apiurl, project, include_update=False):
         return [project + project_suffix]
 
     count_original = project.count(':')
+
+    def filter_sle_updates(p):
+        return p.count(':') == count_original and (p.endswith(':GA') or (include_update and p.endswith(':Update')))
+
+    def filter_opensuse_updates(p):
+        return p.count(':') == count_original or (include_update and p.count(':') == count_original + 1 and p.endswith(':Update'))
+
     if project.startswith('SUSE:SLE'):
         project = ':'.join(project.split(':')[:2])
-        family_filter = lambda p: p.count(':') == count_original and (
-            p.endswith(':GA') or (include_update and p.endswith(':Update')))
+
+        family_filter = filter_sle_updates
     else:
-        family_filter = lambda p: p.count(':') == count_original or (
-            include_update and p.count(':') == count_original + 1 and p.endswith(':Update'))
+        family_filter = filter_opensuse_updates
 
     prefix = ':'.join(project.split(':')[:-1])
     projects = project_list_prefix(apiurl, prefix)
