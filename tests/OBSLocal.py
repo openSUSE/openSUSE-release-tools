@@ -544,7 +544,7 @@ class StagingWorkflow(ABC):
         self.requests.append(request)
         return request
 
-    def create_submit_request(self, project, package, text=None):
+    def create_submit_request(self, project, package, text=None, add_commit=True):
         """Creates submit request from package in specified project to default project.
 
         It creates project if not exist and also package.
@@ -557,12 +557,16 @@ class StagingWorkflow(ABC):
         :type package: str
         :param text: commit message for initial package creation
         :type text: str
+        :param add_commit: whether add initial package commit. Useful to disable
+               if package already exists
+        :type add_commit: bool
         :return: created request.
         :rtype: Request
         """
         project = self.create_project(project)
         package = Package(name=package, project=project)
-        package.create_commit(text=text)
+        if add_commit:
+            package.create_commit(text=text)
         return self.submit_package(package)
 
     def __del__(self):
@@ -1015,7 +1019,8 @@ class Package(object):
         :param path: path to a directory containing the files that must be added to the package
         """
         for filename in os.listdir(path):
-            with open(os.path.join(path, filename)) as f:
+            # Opening as binary is needed e.g. for compressed tarball sources
+            with open(os.path.join(path, filename), 'rb') as f:
                 self.create_commit(filename=filename, text=f.read())
 
 class Request(object):

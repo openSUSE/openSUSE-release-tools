@@ -69,7 +69,59 @@ class TestCheckSource(OBSLocal.TestCase):
         """Accepts a request coming from a devel project"""
         self._setup_devel_project()
 
-        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish').reqid
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+        self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
+
+    def test_missing_patch_in_changelog(self):
+        """Reject a request if it adds patch and it is not mentioned in changelog"""
+        # devel files contain patch but not changes
+        self._setup_devel_project(devel_files='blowfish-with-patch')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+            self.devel_package.name, add_commit = False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        self.assertIn(
+            'A patch (test.patch) is being added without this addition being mentioned in the changelog.',
+            review.comment
+        )
+
+    def test_patch_in_changelog(self):
+        """Accepts a request if it adds patch and it is mentioned in changelog"""
+        self._setup_devel_project()
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+            self.devel_package.name, add_commit = False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+        self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
+
+    def test_revert_of_patch(self):
+        """Accepts a request if it reverts addition of patch"""
+        # switch target and devel, so basically do revert of changes done
+        # with patch and changes
+        self._setup_devel_project(devel_files='blowfish',
+            target_files='blowfish-with-patch-changes')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+            self.devel_package.name, add_commit = False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -90,7 +142,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.wf.create_group(FACTORY_MAINTAINERS.replace('group:', ''))
         self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
 
-        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish')
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False)
 
         self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
 
@@ -122,7 +174,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self._setup_devel_project(maintainer={'groups': [group_name]})
 
-        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish').reqid
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -144,7 +196,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self._setup_devel_project()
 
-        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish')
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False)
 
         self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
 
@@ -160,11 +212,14 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
         self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
 
-    def _setup_devel_project(self, maintainer={}):
+    def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
+            target_files='blowfish'):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
-        devel_package = OBSLocal.Package('blowfish', project=devel_project)
+        self.devel_package = OBSLocal.Package('blowfish', project=devel_project)
 
-        fixtures_path = os.path.join(FIXTURES, 'packages', 'blowfish')
-        devel_package.commit_files(fixtures_path)
+        fixtures_path = os.path.join(FIXTURES, 'packages', devel_files)
+        self.devel_package.commit_files(fixtures_path)
 
-        OBSLocal.Package('blowfish', self.project, devel_project=SRC_PROJECT)
+        fixtures_path = os.path.join(FIXTURES, 'packages', target_files)
+        self.target_package = OBSLocal.Package('blowfish', self.project, devel_project=SRC_PROJECT)
+        self.target_package.commit_files(fixtures_path)
