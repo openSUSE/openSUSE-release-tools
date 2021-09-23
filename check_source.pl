@@ -144,7 +144,6 @@ if (-d "$old") {
     my $cf = Build::read_config("x86_64", "/usr/lib/build/configs/default.conf");
 
     my %thash = ();
-    my %rhash = ();
     for my $spec (glob("*.spec")) {
         my $ps = Build::Rpm::parse($cf, $spec);
 
@@ -213,8 +212,11 @@ if (-d "$old") {
                 $diff = diff "$old/$changes", "$dir/$changes";
             }
             for my $line (split(/\n/, $diff)) {
-                next unless $line =~ m/^\+/;
-                $line =~ s/^\+//;
+                # Check if the line mentions a patch being added (starts with +)
+                # or removed (starts with -)
+                next unless $line =~ m/^[+-]/;
+                # In any of those cases, remove the patch from the list
+                $line =~ s/^[+-]//;
                 for my $patch (keys %patches) {
                     if (index($line, $patch) != -1) {
                         delete $patches{$patch};
