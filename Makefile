@@ -21,7 +21,6 @@ install:
 	sed -i "s/VERSION = .*/VERSION = '$(VERSION)'/" \
 	  $(DESTDIR)$(pkgdatadir)/osclib/common.py
 	for i in $(pkgdata_BINS); do ln -s $(pkgdatadir)/$$i $(DESTDIR)$(bindir)/osrt-$${i%.*}; done
-	install -m 755 script/* $(DESTDIR)$(bindir)
 	ln -s $(pkgdatadir)/metrics/access/aggregate.php $(DESTDIR)$(bindir)/osrt-metrics-access-aggregate
 	ln -s $(pkgdatadir)/metrics/access/ingest.php $(DESTDIR)$(bindir)/osrt-metrics-access-ingest
 	cp -R config/* $(DESTDIR)$(sysconfdir)/$(package_name)

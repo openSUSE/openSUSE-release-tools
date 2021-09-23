@@ -98,27 +98,6 @@ Releases distribution snapshots to openQA and publishes if the result is positiv
 * Package: openSUSE-release-tools
 * Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+totest-manager)
 
-#### unmaintained
-
-Finds unmaintained binaries sourced from SLE.
-
-* Sources: [unmaintained.py](unmaintained.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete
-
-#### sync-rebuild
-
-Syncs openSUSE:Factory and openSUSE:Factory:Rebuild. This feature was already
-merged into the [accept
-command](https://github.com/openSUSE/openSUSE-release-tools/commit/87c891662015f14421c2315210c248e712e697c8)
-of the staging projects plug-in.
-
-* Sources: [sync-rebuild.py](sync-rebuild.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete
-
 #### bugowner
 
 Manages bugowner information
@@ -182,15 +161,6 @@ Allows to retrieve requests from OBS with quite elaborated queries.
 * Package: openSUSE-release-tools
 * Usage: ?
 
-#### update_crawler (obsoleted by [origin-manager](#origin-manager))
-
-Create SRs for Leap.
-
-* Sources: [update_crawler.py](update_crawler.py) and [script](script).
-* Documentation: --
-* Package: openSUSE-release-tools-leaper
-* Usage: obsolete (by origin-manager)
-
 #### create_staging
 
 Scripts and templates to create staging projects.
@@ -210,15 +180,6 @@ Handles maintenance incident requests
 * Documentation: [docs/maintbot.asciidoc](docs/maintbot.asciidoc)
 * Package: openSUSE-release-tools-maintenance
 * Usage: obsolete (by origin-manager)
-
-#### leaper
-
-Implements Leap-style services for non-Factory projects (whatever that means).
-
-* Sources: [leaper.py](leaper.py)
-* Documentation: --
-* Package: openSUSE-release-tools-leaper
-* Usage: obsolete
 
 #### origin-manager
 
@@ -269,12 +230,13 @@ Checks ABI compatibility in OBS requests.
 #### check_source_in_factory
 
 Checks if the sources of a submission are either in Factory or a request for Factory with the same
-sources exist.
+sources exist. Not used as a standalone bot anymore, but called internally from
+check_tags_in_requests.
 
 * Sources: [check_source_in_factory.py](check_source_in_factory.py)
 * Documentation: [docs/factory-source.asciidoc](docs/factory-source.asciidoc)
 * Package: openSUSE-release-tools
-* Usage: obsolete
+* Usage: used from other bots (check_tags_in_requests)
 
 #### openqa-maintenance
 
@@ -296,15 +258,6 @@ Inspects built RPMs from staging projects.
 * Documentation: --
 * Package: openSUSE-release-tools-repo-checker
 * Usage: gocd ([project-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+project-installcheck), [staging-installcheck](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+staging-installcheck) and [maintenance-installcheck.py](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+maintenance-installcheck)
-
-#### manager_42.py
-
-Maintains `00Meta/lookup.yml`.
-
-* Sources: [manager_42.py](manager_42.py)
-* Documentation: --
-* Package: openSUSE-release-tools-leaper
-* Usage: obsolete (by origin-manager)
 
 ### OSC Plugins
 
@@ -356,15 +309,6 @@ Manages staging projects.
 * Package: osc-plugin-staging
 * Usage: staging projects management
 
-#### status.py
-
-Checks the status of the staging workflow bots.
-
-* Sources: [status.py](status.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete (it still checks for the status of some bots that are already retired, like leaper)
-
 #### fcc_submitter.py
 
 The FactoryCandidates projects are used to determine whether a new package in Factory does build in
@@ -388,15 +332,6 @@ changes to allow whitelisting before creating Bugzilla entries.
 * Package: openSUSE-release-tools
 * Usage: ???
 
-#### obs-clone.py
-
-Clones projects and dependencies between OBS instances.
-
-* Sources: [obs_clone.py](obs_clone.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete (initially added for testing, but it was replaced with a container-based approach)
-
 #### obs-operator
 
 Performs staging operations as a service instead of requiring the osc staging plugin to be utilized
@@ -406,15 +341,6 @@ directly.
 * Documentation: --
 * Package: openSUSE-release-tools
 * Usage: obsolete
-
-#### scan_baselibs.py
-
-Verifies 32bit binaries were imported properly towards a project.
-
-* Sources: [scan_baselibs.py](scan_baselibs.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete (after https://github.com/openSUSE/open-build-service/pull/7662 was introduced in OBS)
 
 #### k8s-secret.py
 

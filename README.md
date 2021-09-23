@@ -78,10 +78,6 @@ Then you can use the new `local` alias to access this new instance.
 
     osc -A local api /about
 
-A facsimile of `openSUSE:Factory` in the form of a subset of the related data can be quickly created in a local OBS instance using the `obs_clone` tool.
-
-    ./obs_clone.py --debug --apiurl-target local
-
 Some tests will attempt to run against the local OBS, but not all.
 
     nosetests
