@@ -25,15 +25,18 @@ DEFAULT_REPOSITORY = 'standard'
 META_PACKAGE = '000package-groups'
 
 class SkippkgFinder(object):
-    def __init__(self, opensuse_project, sle_project, print_only, verbose):
+    def __init__(self, opensuse_project, sle_project, alternative_project, print_only, verbose):
+        self.upload_project = opensuse_project
         self.opensuse_project = opensuse_project
+        if alternative_project:
+            self.opensuse_project = alternative_project
         self.sle_project = sle_project
         self.print_only = print_only
         self.verbose = verbose
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
 
-        config = Config.get(self.apiurl, self.opensuse_project)
+        config = Config.get(self.apiurl, opensuse_project)
         # binary rpms of packages from `skippkg-finder-skiplist-ignores`
         # be found in the `package_binaries` thus format must to be like
         # SUSE:SLE-15:Update_libcdio.12032, PROJECT-NAME_PACKAGE-NAME
@@ -128,7 +131,9 @@ class SkippkgFinder(object):
                     pkgname.startswith('patchinfo.') or\
                     pkgname.startswith('skelcd-') or\
                     pkgname.startswith('installation-images') or\
-                    pkgname.endswith('-mini'):
+                    pkgname.startswith('Leap-release') or\
+                    pkgname.endswith('-mini') or\
+                    '-mini.' in pkgname:
                 continue
             # Ugly hack for package has dot in source package name
             # eg. go1.x incidents as the name would be go1.x.xxx
@@ -315,7 +320,7 @@ class SkippkgFinder(object):
             attr = {'name': pkg}
             ET.SubElement(packagelist, 'package', attr)
         if not self.print_only:
-            source_file_ensure(self.apiurl, self.opensuse_project, META_PACKAGE, 'NON_FTP_PACKAGES.group',
+            source_file_ensure(self.apiurl, self.upload_project, META_PACKAGE, 'NON_FTP_PACKAGES.group',
                                ET.tostring(skip_list, pretty_print=True, encoding='unicode'),
                                'Update the skip list')
         else:
@@ -331,7 +336,7 @@ def main(args):
         print("Please pass --opensuse-project and --sle-project argument. See usage with --help.")
         quit()
 
-    uc = SkippkgFinder(args.opensuse_project, args.sle_project, args.print_only, args.verbose)
+    uc = SkippkgFinder(args.opensuse_project, args.sle_project, args.alternative_project, args.print_only, args.verbose)
     uc.crawl()
 
 
@@ -346,6 +351,8 @@ if __name__ == '__main__':
                         help='openSUSE project on buildservice')
     parser.add_argument('-s', '--sle-project', dest='sle_project', metavar='SLE_PROJECT',
                         help='SLE project on buildservice')
+    parser.add_argument('-t', '--alternative-project', dest='alternative_project', metavar='ALTERNATIVE_PROJECT',
+                        help='check the given project instead of OPENSUSE_PROJECT')
     parser.add_argument('-p', '--print-only', action='store_true',
                         help='show the result instead of the uploading')
     parser.add_argument('-v', '--verbose', action='store_true',
