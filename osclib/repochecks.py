@@ -108,7 +108,7 @@ def parsed_installcheck(repos, arch, target_packages, whitelist):
         repos = [repos]
 
     p = subprocess.run(['/usr/bin/installcheck', maparch2installarch(arch)] + repos,
-                       stdout=subprocess.PIPE, errors='backslashreplace', text=True)
+                       stdout=subprocess.PIPE, errors='backslashreplace', universal_newlines=True)
     if p.returncode:
         in_problem = False
         package = None
