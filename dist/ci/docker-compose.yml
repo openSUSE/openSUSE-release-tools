@@ -4,7 +4,7 @@ x-obs: &obs
   image: registry.opensuse.org/opensuse/tools/images/containers153/osrt_miniobs:latest
 
 x-testenv: &testenv
-  image: registry.opensuse.org/opensuse/tools/images/containers_tumbleweed/osrt_testenv_tumbleweed:latest
+  image: registry.opensuse.org/opensuse/tools/images/containers153/osrt_testenv_leap:latest
   volumes:
     - "../..:/code"
 
