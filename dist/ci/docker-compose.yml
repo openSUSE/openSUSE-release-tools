@@ -7,6 +7,7 @@ x-testenv: &testenv
   image: registry.opensuse.org/opensuse/tools/images/containers_tumbleweed/osrt_testenv_tumbleweed:latest
   volumes:
     - "../..:/code"
+  privileged: true
 
 services:
   db:
