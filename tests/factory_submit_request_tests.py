@@ -160,7 +160,9 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
 
     def __accept_license(self):
         """See :func:`__mock_licensedigger`"""
+        self.osc_user('Admin')
         change_review_state(
             apiurl = self.wf.apiurl, reqid = self.request.reqid,
             newstate = 'accepted', by_user='licensedigger'
         )
+        self.osc_user_pop()
