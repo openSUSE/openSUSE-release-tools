@@ -50,7 +50,7 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         self.wf.remote_config_set({'required-source-maintainer': ''})
 
         # Setup the different bots typically used for Factory
-        self.setup_review_bot(self.wf, PROJECT, 'factory-auto', CheckSource)
+        # self.setup_review_bot(self.wf, PROJECT, 'factory-auto', CheckSource)
         self.setup_review_bot(self.wf, PROJECT, 'licensedigger', LegalAuto)
 
         # Sorry, but LegalAuto is simply too hard to test while keeping this test readable,
@@ -72,35 +72,35 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         through staging"""
         # Initial state: reviews have been created for the bots and for the staging workflow
         reqid = self.request.reqid
-        self.assertReview(reqid, by_user=('factory-auto', 'new'))
+        # self.assertReview(reqid, by_user=('factory-auto', 'new'))
         self.assertReview(reqid, by_user=('licensedigger', 'new'))
         self.assertReview(reqid, by_group=('factory-staging', 'new'))
 
         # Let bots come into play
-        self.execute_review_bot([reqid], 'factory-auto')
+        # self.execute_review_bot([reqid], 'factory-auto')
         self.execute_review_bot([reqid], 'licensedigger')
 
         # Bots are happy, now it's time for manual review (requested by the bots) and
         # for the staging work
-        self.assertReview(reqid, by_user=('factory-auto', 'accepted'))
+        # self.assertReview(reqid, by_user=('factory-auto', 'accepted'))
         self.assertReview(reqid, by_user=('licensedigger', 'accepted'))
 
         # This review will be accepted when the Staging Manager puts it into a staging project
         self.assertReview(reqid, by_group=('factory-staging', 'new'))
 
         # Review created by CheckSource bot. This review should be manually accepted.
-        self.assertReview(reqid, by_group=('opensuse-review-team', 'new'))
+        # self.assertReview(reqid, by_group=('opensuse-review-team', 'new'))
 
         # Let's first accept the manual review
-        change_review_state(
-            apiurl = self.wf.apiurl, reqid = reqid,
-            newstate = 'accepted', by_group='opensuse-review-team'
-        )
+        #change_review_state(
+        #    apiurl = self.wf.apiurl, reqid = reqid,
+        #    newstate = 'accepted', by_group='opensuse-review-team'
+        #)
 
         # Now only the staging workflow is pending
-        self.assertReview(reqid, by_user=('factory-auto', 'accepted'))
+        #self.assertReview(reqid, by_user=('factory-auto', 'accepted'))
         self.assertReview(reqid, by_user=('licensedigger', 'accepted'))
-        self.assertReview(reqid, by_group=('opensuse-review-team', 'accepted'))
+        #self.assertReview(reqid, by_group=('opensuse-review-team', 'accepted'))
         self.assertReview(reqid, by_group=('factory-staging', 'new'))
 
         # Before using the staging plugin, we need to force a reload of the configuration
@@ -121,9 +121,9 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
         # Finally, all the reviews are accepted: one for each bot, one for manual review and
         # two for the staging project (one as a consequence of selecting the package into a
         # staging project and the other as a consequence of accepting the staging)
-        self.assertReview(reqid, by_user=('factory-auto', 'accepted'))
+        #self.assertReview(reqid, by_user=('factory-auto', 'accepted'))
         self.assertReview(reqid, by_user=('licensedigger', 'accepted'))
-        self.assertReview(reqid, by_group=('opensuse-review-team', 'accepted'))
+        #self.assertReview(reqid, by_group=('opensuse-review-team', 'accepted'))
         self.assertReview(reqid, by_group=('factory-staging', 'accepted'))
         self.assertReview(reqid, by_project=(STAGING_PROJECT_NAME, 'accepted'))
 
