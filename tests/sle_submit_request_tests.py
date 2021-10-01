@@ -62,7 +62,7 @@ class TestSLESubmitRequest(OBSLocal.TestCase):
         FreezeCommand(self.wf.api).perform(STAGING_PROJECT_NAME)
 
         # Create the submit request
-        self.request = self.wf.create_submit_request(DEVEL_PROJECT, 'wine')
+        self.request = self.wf.create_submit_request(DEVEL_PROJECT, 'wine', add_commit=False)
 
     def tearDown(self):
         super().tearDown()
