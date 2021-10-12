@@ -233,6 +233,8 @@ class LegalAuto(ReviewBot.ReviewBot):
                 continue
             if package == 'patchinfo' or package.startswith('patchinfo.'):
                 continue
+            if package.endswith('.SUSE_Channels'):
+                continue
             # skip packages that have _channel inside
             if si.find('filename').text == '_channel':
                 self.logger.info("SKIP {}".format(si.find('filename').text))
