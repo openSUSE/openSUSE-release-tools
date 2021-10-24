@@ -684,7 +684,7 @@ class PkgListGen(ToolBase.ToolBase):
         if stop_after_solve:
             return
 
-        if drop_list:
+        if drop_list and not only_release_packages:
             weakremovers_file = os.path.join(release_dir, 'weakremovers.inc')
             self.create_weakremovers(project, target_config, oldrepos_dir, output=open(weakremovers_file, 'w'))
 
