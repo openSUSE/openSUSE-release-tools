@@ -15,7 +15,7 @@ pipelines:
     - Run:
         approval: manual
         resources:
-        - obs-to-vagrantcloud
+        - staging-bot
         tasks:
         - script: |
             ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/Tumbleweed.x86_64.json --organization opensuse --new-box-name Tumbleweed.x86_64 --provider libvirt
