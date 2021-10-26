@@ -217,9 +217,11 @@ class PkgListGen(ToolBase.ToolBase):
 
         for project, reponame in self.repos:
             repo = pool.add_repo(project)
-            s = 'repo-{}-{}-{}.solv'.format(project, reponame, arch)
+            # check back the repo state to avoid suprises
+            state = repository_arch_state(self.apiurl, project, reponame, arch)
+            s = f'repo-{project}-{reponame}-{arch}-{state}.solv'
             if not repo.add_solv(s):
-                raise Exception('failed to add repo {}/{}/{}.'.format(project, reponame, arch))
+                raise Exception('failed to add repo {}/{}/{}'.format(project, reponame, arch))
             for solvable in repo.solvables_iter():
                 if ignore_conflicts:
                     solvable.unset(solv.SOLVABLE_CONFLICTS)
@@ -331,10 +333,45 @@ class PkgListGen(ToolBase.ToolBase):
                 return 'devel package of ' + g.develpkgs[package]
         return None
 
-    def update_repos(self, architectures):
+    def update_one_repo(self, project, repo, arch, solv_file, solv_file_hash):
+        # Either hash changed or new, so remove any old hash files.
+        file_utils.unlink_list(None, glob.glob(solv_file + '::*'))
+
+        d = os.path.join(CACHEDIR, project, repo, arch)
+        if not os.path.exists(d):
+            os.makedirs(d)
+
+        self.logger.debug('updating %s', d)
+
         # only there to parse the repos
         bs_mirrorfull = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
 
+        args = [bs_mirrorfull]
+        args.append('--nodebug')
+        args.append('{}/public/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
+        args.append(d)
+        with subprocess.Popen(args, stdout=subprocess.PIPE) as p:
+            for line in p.stdout:
+                self.logger.info(line.decode('utf-8').rstrip())
+            if p.wait() != 0:
+                raise Exception("Mirroring repository failed")
+
+        files = [os.path.join(d, f)
+                    for f in os.listdir(d) if f.endswith('.rpm')]
+        suffix = f'.{os.getpid()}.tmp'
+        fh = open(solv_file + suffix, 'w')
+        p = subprocess.Popen(
+            ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
+        p.communicate(bytes('\0'.join(files), 'utf-8'))
+        fh.close()
+        if p.wait() != 0:
+            raise Exception("rpm2solv failed")
+        os.rename(solv_file + suffix, solv_file)
+
+        # Create hash file now that solv creation is complete.
+        open(solv_file_hash, 'a').close()
+
+    def update_repos(self, architectures):
         for project, repo in self.repos:
             for arch in architectures:
                 # Fetch state before mirroring in-case it changes during download.
@@ -344,32 +381,18 @@ class PkgListGen(ToolBase.ToolBase):
                     # Repo might not have this architecture
                     continue
 
-                d = os.path.join(CACHEDIR, project, repo, arch)
-                if not os.path.exists(d):
-                    os.makedirs(d)
-
-                solv_file = 'repo-{}-{}-{}.solv'.format(project, repo, arch)
-
-                self.logger.debug('updating %s', d)
-                args = [bs_mirrorfull]
-                args.append('--nodebug')
-                args.append('{}/public/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
-                args.append(d)
-                with subprocess.Popen(args, stdout=subprocess.PIPE) as p:
-                    for line in p.stdout:
-                        self.logger.info(line.decode('utf-8').rstrip())
-                    if p.wait() != 0:
-                        raise Exception("Mirroring repository failed")
-
-                files = [os.path.join(d, f)
-                         for f in os.listdir(d) if f.endswith('.rpm')]
-                fh = open(solv_file, 'w')
-                p = subprocess.Popen(
-                    ['rpms2solv', '-m', '-', '-0'], stdin=subprocess.PIPE, stdout=fh)
-                p.communicate(bytes('\0'.join(files), 'utf-8'))
-                fh.close()
-                if p.wait() != 0:
-                    raise Exception("rpm2solv failed")
+                repo_solv_name = 'repo-{}-{}-{}.solv'.format(project, repo, arch)
+                # Would be preferable to include hash in name, but cumbersome to handle without
+                # reworking a fair bit since the state needs to be tracked.
+                solv_file = os.path.join(CACHEDIR, repo_solv_name)
+                solv_file_hash = '{}::{}'.format(solv_file, state)
+                if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
+                    # Solve file exists and hash unchanged, skip updating solv.
+                    self.logger.debug('skipping solv generation for {} due to matching state {}'.format(
+                        '/'.join([project, repo, arch]), state))
+                else:
+                    self.update_one_repo(project, repo, arch, solv_file, solv_file_hash)
+                shutil.copy(solv_file, f'./repo-{project}-{repo}-{arch}-{state}.solv')
 
     def create_weakremovers(self, target, target_config, directory, output):
         drops = dict()
@@ -399,11 +422,13 @@ class PkgListGen(ToolBase.ToolBase):
                 oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
                 for arch in self.all_architectures:
-                    for project, reponame in self.repos:
-                        fn = 'repo-{}-{}-{}.solv'.format(project, reponame, arch)
-                        repo = pool.add_repo('/'.join([project, reponame]))
-                        if not repo.add_solv(fn):
-                            raise Exception('failed to add repo {}/{}/{}.'.format(project, reponame, arch))
+                    for project, repo in self.repos:
+                        # check back the repo state to avoid suprises
+                        state = repository_arch_state(self.apiurl, project, repo, arch)
+                        fn = f'repo-{project}-{repo}-{arch}-{state}.solv'
+                        r = pool.add_repo('/'.join([project, repo]))
+                        if not r.add_solv(fn):
+                            raise Exception('failed to add repo {}/{}/{}.'.format(project, repo, arch))
 
                 pool.createwhatprovides()
 
