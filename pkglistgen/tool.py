@@ -57,7 +57,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.unwanted = set()
         self.output = None
         self.locales = set()
-        self.did_update = False
         self.filtered_architectures = None
         self.dry_run = False
         self.all_architectures = None
@@ -218,13 +217,9 @@ class PkgListGen(ToolBase.ToolBase):
 
         for project, reponame in self.repos:
             repo = pool.add_repo(project)
-            s = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, reponame, arch))
-            r = repo.add_solv(s)
-            if not r:
-                if not self.did_update:
-                    raise Exception(
-                        'failed to add repo {}/{}/{}. Need to run update first?'.format(project, reponame, arch))
-                continue
+            s = 'repo-{}-{}-{}.solv'.format(project, reponame, arch)
+            if not repo.add_solv(s):
+                raise Exception('failed to add repo {}/{}/{}.'.format(project, reponame, arch))
             for solvable in repo.solvables_iter():
                 if ignore_conflicts:
                     solvable.unset(solv.SOLVABLE_CONFLICTS)
@@ -339,15 +334,9 @@ class PkgListGen(ToolBase.ToolBase):
     def update_repos(self, architectures):
         # only there to parse the repos
         bs_mirrorfull = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
-        global_update = False
 
         for project, repo in self.repos:
             for arch in architectures:
-                # TODO: refactor to common function with repo_checker.py
-                d = os.path.join(CACHEDIR, project, repo, arch)
-                if not os.path.exists(d):
-                    os.makedirs(d)
-
                 # Fetch state before mirroring in-case it changes during download.
                 state = repository_arch_state(self.apiurl, project, repo, arch)
 
@@ -355,19 +344,11 @@ class PkgListGen(ToolBase.ToolBase):
                     # Repo might not have this architecture
                     continue
 
-                # Would be preferable to include hash in name, but cumbersome to handle without
-                # reworking a fair bit since the state needs to be tracked.
-                solv_file = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                solv_file_hash = '{}::{}'.format(solv_file, state)
-                if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
-                    # Solve file exists and hash unchanged, skip updating solv.
-                    self.logger.debug('skipping solv generation for {} due to matching state {}'.format(
-                        '/'.join([project, repo, arch]), state))
-                    continue
+                d = os.path.join(CACHEDIR, project, repo, arch)
+                if not os.path.exists(d):
+                    os.makedirs(d)
 
-                # Either hash changed or new, so remove any old hash files.
-                file_utils.unlink_list(None, glob.glob(solv_file + '::*'))
-                global_update = True
+                solv_file = 'repo-{}-{}-{}.solv'.format(project, repo, arch)
 
                 self.logger.debug('updating %s', d)
                 args = [bs_mirrorfull]
@@ -389,12 +370,6 @@ class PkgListGen(ToolBase.ToolBase):
                 fh.close()
                 if p.wait() != 0:
                     raise Exception("rpm2solv failed")
-
-                # Create hash file now that solv creation is complete.
-                open(solv_file_hash, 'a').close()
-        self.did_update = True
-
-        return global_update
 
     def create_weakremovers(self, target, target_config, directory, output):
         drops = dict()
@@ -424,10 +399,11 @@ class PkgListGen(ToolBase.ToolBase):
                 oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
                 for arch in self.all_architectures:
-                    for project, repo in self.repos:
-                        fn = os.path.join(CACHEDIR, 'repo-{}-{}-{}.solv'.format(project, repo, arch))
-                        r = pool.add_repo('/'.join([project, repo]))
-                        r.add_solv(fn)
+                    for project, reponame in self.repos:
+                        fn = 'repo-{}-{}-{}.solv'.format(project, reponame, arch)
+                        repo = pool.add_repo('/'.join([project, reponame]))
+                        if not repo.add_solv(fn):
+                            raise Exception('failed to add repo {}/{}/{}.'.format(project, reponame, arch))
 
                 pool.createwhatprovides()
 
