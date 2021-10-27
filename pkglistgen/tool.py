@@ -219,6 +219,9 @@ class PkgListGen(ToolBase.ToolBase):
             repo = pool.add_repo(project)
             # check back the repo state to avoid suprises
             state = repository_arch_state(self.apiurl, project, reponame, arch)
+            if state is None:
+                self.logger.debug(f'Skipping {project}/{reponame}/{arch}')
+                continue
             s = f'repo-{project}-{reponame}-{arch}-{state}.solv'
             if not repo.add_solv(s):
                 raise Exception('failed to add repo {}/{}/{}'.format(project, reponame, arch))
@@ -376,7 +379,6 @@ class PkgListGen(ToolBase.ToolBase):
             for arch in architectures:
                 # Fetch state before mirroring in-case it changes during download.
                 state = repository_arch_state(self.apiurl, project, repo, arch)
-
                 if state is None:
                     # Repo might not have this architecture
                     continue
@@ -425,6 +427,8 @@ class PkgListGen(ToolBase.ToolBase):
                     for project, repo in self.repos:
                         # check back the repo state to avoid suprises
                         state = repository_arch_state(self.apiurl, project, repo, arch)
+                        if state is None:
+                            self.logger.debug(f'Skipping {project}/{repo}/{arch}')
                         fn = f'repo-{project}-{repo}-{arch}-{state}.solv'
                         r = pool.add_repo('/'.join([project, repo]))
                         if not r.add_solv(fn):
