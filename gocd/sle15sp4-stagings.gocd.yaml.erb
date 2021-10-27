@@ -8,7 +8,7 @@ pipelines:
     group: SLE15.SP4.Stagings
     lock_behavior: unlockWhenFinished
     timer:
-      spec: 0 */10 * ? * *
+      spec: 0 0 * ? * *
       only_on_changes: false
     materials:
       scripts:
