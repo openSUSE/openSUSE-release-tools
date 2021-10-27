@@ -45,5 +45,5 @@ if __name__ == '__main__':
             continue
         if count.get('code') in ['succeeded', 'excluded', 'disabled']:
             continue
-        logger.error('Repository {}/{} is has {} packages'.format(args.project, args.repository, count.get('code')))
+        logger.error('Repository {}/{} has {} packages'.format(args.project, args.repository, count.get('code')))
         sys.exit(1)
