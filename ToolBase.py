@@ -9,7 +9,7 @@ import signal
 import sys
 import time
 
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 
 import osc.conf
@@ -55,6 +55,14 @@ class ToolBase(object):
                 time.sleep(1)
                 return self.retried_GET(url)
             logging.error('%s: %s', e, url)
+            raise e
+        except URLError as e:
+            logging.error('%s: "%s - %s" %s', e, e.reason, type(e.reason), url)
+            # connection timeout
+            if type(e.reason) == TimeoutError:
+                print('Retrying {}'.format(url))
+                time.sleep(1)
+                return self.retried_GET(url)
             raise e
 
     def http_PUT(self, *args, **kwargs):
