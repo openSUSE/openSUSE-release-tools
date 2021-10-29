@@ -112,7 +112,9 @@ class ContainerCleaner(ToolBase.ToolBase):
         return can_delete
 
     def run(self, project):
-        packages = self.findSourcepkgsToDelete(project)
+        while True:
+            url = self.makeurl(['about'])
+            osc.core.http_GET(url)
 
         for package in packages:
             url = self.makeurl(["source", project, package])
