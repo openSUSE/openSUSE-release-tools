@@ -112,15 +112,7 @@ class ContainerCleaner(ToolBase.ToolBase):
         return can_delete
 
     def run(self, project):
-        while True:
-            from urllib.error import HTTPError, URLError
-
-            url = osc.core.makeurl('https://api.opensuse.org', ['503.html'])
-            try:
-              osc.core.http_GET(url)
-            except HTTPError as e:
-              if e.code != 401:
-                  raise e
+        packages = self.findSourcepkgsToDelete(project)
 
         for package in packages:
             url = self.makeurl(["source", project, package])
