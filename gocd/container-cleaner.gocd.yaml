@@ -20,4 +20,5 @@ pipelines:
         - staging-bot-reuse-1
         tasks:
         - script: |-
-            scripts/container_cleaner.py --debug --osc-debug  --http-full-debug --http-debug --verbose run openSUSE:Containers:Tumbleweed
+            export OSRT_DISABLE_CACHE=1
+            python3 -u scripts/container_cleaner.py --debug --osc-debug  --http-full-debug --http-debug --verbose run openSUSE:Containers:Tumbleweed
