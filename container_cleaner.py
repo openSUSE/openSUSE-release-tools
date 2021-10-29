@@ -113,8 +113,14 @@ class ContainerCleaner(ToolBase.ToolBase):
 
     def run(self, project):
         while True:
-            url = osc.core.makeurl('https://dist.suse.de', ['ibs'])
-            osc.core.http_GET(url)
+            from urllib.error import HTTPError, URLError
+
+            url = osc.core.makeurl('https://obs-login.opensuse.org', [])
+            try:
+              osc.core.http_GET(url)
+            except HTTPError as e:
+              if e.code != 401:
+                  raise e
 
         for package in packages:
             url = self.makeurl(["source", project, package])
