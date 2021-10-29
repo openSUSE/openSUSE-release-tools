@@ -115,7 +115,7 @@ class ContainerCleaner(ToolBase.ToolBase):
         while True:
             from urllib.error import HTTPError, URLError
 
-            url = osc.core.makeurl('https://obs-login.opensuse.org', [])
+            url = osc.core.makeurl('https://api.opensuse.org', ['503.html'])
             try:
               osc.core.http_GET(url)
             except HTTPError as e:
