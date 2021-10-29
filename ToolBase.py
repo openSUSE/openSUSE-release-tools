@@ -121,7 +121,9 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("-d", "--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")
         parser.add_option("--verbose", action="store_true", help="verbose")
-
+        parser.add_option("--http-debug", action="store_true", help="osc http debug output")
+        parser.add_option('--http-full-debug', action='store_true',
+                          help='debug HTTP traffic (filters no headers)')
         parser.add_option('--cache-requests', action='store_true', default=False,
                         help='cache GET requests. Not recommended for daily use.')
 
@@ -136,10 +138,10 @@ class CommandLineInterface(cmdln.Cmdln):
 
         logging.basicConfig(level=level)
 
-        osc.conf.get_config(override_apiurl = self.options.apiurl)
-
-        if self.options.osc_debug:
-            osc.conf.config['debug'] = 1
+        osc.conf.get_config(override_apiurl = self.options.apiurl,
+                            override_debug = self.options.debug,
+                            override_http_debug = self.options.http_debug,
+                            override_http_full_debug = self.options.http_full_debug)
 
         self.tool = self.setup_tool()
         self.tool.dryrun = self.options.dry

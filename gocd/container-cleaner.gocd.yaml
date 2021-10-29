@@ -20,4 +20,4 @@ pipelines:
         - staging-bot-reuse-1
         tasks:
         - script: |-
-            scripts/container_cleaner.py --verbose run openSUSE:Containers:Tumbleweed
+            scripts/container_cleaner.py --debug --osc-debug  --http-full-debug --http-debug --verbose run openSUSE:Containers:Tumbleweed
