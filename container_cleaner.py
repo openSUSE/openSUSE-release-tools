@@ -113,7 +113,7 @@ class ContainerCleaner(ToolBase.ToolBase):
 
     def run(self, project):
         while True:
-            url = self.makeurl(['about'])
+            url = osc.core.makeurl('https://dist.suse.de', ['ibs'])
             osc.core.http_GET(url)
 
         for package in packages:
