@@ -14,9 +14,76 @@ pipelines:
     stages:
     - Run:
         approval: manual
-        resources:
-        - staging-bot
-        tasks:
-        - script: |
-            ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/Tumbleweed.x86_64.json --organization opensuse --new-box-name Tumbleweed.x86_64 --provider libvirt
-            ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/Tumbleweed.x86_64.json --organization opensuse --new-box-name Tumbleweed.x86_64 --provider virtualbox
+        jobs:
+          publish_Tumbleweed_x86_64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/Tumbleweed.x86_64.json --organization opensuse --new-box-name Tumbleweed.x86_64
+          publish_Tumbleweed_aarch64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/Tumbleweed.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Tumbleweed.aarch64
+          publish_MicroOS_x86_64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-Vagrant.json --organization opensuse --new-box-name MicroOS.x86_64
+          publish_Kubic_x86_64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-Kubic-kubeadm-Vagrant.json --organization opensuse --new-box-name Kubic.x86_64
+          publish_MicroOS-ContainerHost_x86_64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-ContainerHost-Vagrant.json --organization opensuse --new-box-name MicroOS-ContainerHost.x86_64
+          publish_MicroOS_aarch64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-Vagrant.json --organization opensuse --new-box-name MicroOS.aarch64
+          publish_Kubic_aarch64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-Kubic-kubeadm-Vagrant.json --organization opensuse --new-box-name Kubic.aarch64
+          publish_MicroOS-ContainerHost_aarch64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-ContainerHost-Vagrant.json --organization opensuse --new-box-name MicroOS-ContainerHost.aarch64
+          publish_Leap-15_3_x86_64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap/15.3/appliances/boxes/Leap-15.3.x86_64.json --organization opensuse --new-box-name Leap-15.3.x86_64
+          publish_Leap-15_3_aarch64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/distribution/leap/15.3/appliances/boxes/Leap-15.3.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.3.aarch64
+          publish_Leap-15_2_x86_64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap/15.2/appliances/boxes/Leap-15.2.x86_64.json --organization opensuse --new-box-name Leap-15.2.x86_64
+          publish_Leap-15_2_aarch64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/distribution/leap/15.2/appliances/boxes/Leap-15.2.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.2.aarch64

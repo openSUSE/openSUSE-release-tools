@@ -1,0 +1,36 @@
+format_version: 3
+pipelines:
+  openSUSE.Vagrant.Publish:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      ATLAS_TOKEN: '{{SECRET:[opensuse.secrets][ATLAS_TOKEN]}}'
+    materials:
+      git:
+        git: https://github.com/openSUSE/opensuse-release-tools.git
+    timer:
+      spec: 0 0 0 ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        jobs:<% [
+['https://download.opensuse.org/tumbleweed/appliances/boxes/Tumbleweed.x86_64.json', 'Tumbleweed.x86_64'],
+['https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/Tumbleweed.aarch64-libvirt_aarch64.json', 'Tumbleweed.aarch64'],
+['https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-Vagrant.json', 'MicroOS.x86_64'],
+['https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-Kubic-kubeadm-Vagrant.json', 'Kubic.x86_64'],
+['https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-ContainerHost-Vagrant.json', 'MicroOS-ContainerHost.x86_64'],
+['https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-Vagrant.json', 'MicroOS.aarch64'],
+['https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-Kubic-kubeadm-Vagrant.json', 'Kubic.aarch64'],
+['https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-ContainerHost-Vagrant.json', 'MicroOS-ContainerHost.aarch64'],
+['https://download.opensuse.org/distribution/leap/15.3/appliances/boxes/Leap-15.3.x86_64.json', 'Leap-15.3.x86_64'],
+['https://download.opensuse.org/ports/aarch64/distribution/leap/15.3/appliances/boxes/Leap-15.3.aarch64-libvirt_aarch64.json', 'Leap-15.3.aarch64'],
+['https://download.opensuse.org/distribution/leap/15.2/appliances/boxes/Leap-15.2.x86_64.json', 'Leap-15.2.x86_64'],
+['https://download.opensuse.org/ports/aarch64/distribution/leap/15.2/appliances/boxes/Leap-15.2.aarch64-libvirt_aarch64.json', 'Leap-15.2.aarch64']
+].each do |url, box_name| %>
+          publish_<%= box_name.gsub('.', '_') %>:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url <%= url %> --organization opensuse --new-box-name <%= box_name %><% end -%>
