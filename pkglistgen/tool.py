@@ -230,7 +230,7 @@ class PkgListGen(ToolBase.ToolBase):
                     solvable.unset(solv.SOLVABLE_CONFLICTS)
                     solvable.unset(solv.SOLVABLE_OBSOLETES)
                 # only take the first solvable in the repo chain
-                if solvable.name in solvables:
+                if not self.use_newest_version and solvable.name in solvables:
                     self.lockjobs[arch].append(pool.Job(solv.Job.SOLVER_SOLVABLE | solv.Job.SOLVER_LOCK, solvable.id))
                 solvables.add(solvable.name)
 
@@ -604,6 +604,7 @@ class PkgListGen(ToolBase.ToolBase):
                                 project, scope, force, no_checkout,
                                 only_release_packages, stop_after_solve):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
+        self.use_newest_version = str2bool(target_config.get('pkglistgen-use-newest-version', 'False'))
         self.repos = self.expand_repos(project, main_repo)
         print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
 
