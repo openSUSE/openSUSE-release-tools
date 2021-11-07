@@ -262,8 +262,7 @@ def common_args_add(parser):
     parser.add_argument('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')
     parser.add_argument('--remind', action='store_true', help='remind maintainers to review')
 
-
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Operate on devel projects for a given project.')
     subparsers = parser.add_subparsers(title='subcommands')
 
@@ -292,7 +291,12 @@ if __name__ == '__main__':
     parser_reviews.set_defaults(func=reviews)
     common_args_add(parser_reviews)
 
+    if not sys.argv[1:]:
+        sys.argv.append("list")
     args = parser.parse_args()
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
     sys.exit(args.func(args))
+
+if __name__ == '__main__':
+    main()
