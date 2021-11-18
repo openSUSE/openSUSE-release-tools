@@ -22,12 +22,14 @@ $source_map = [
     '2014-04-14' => sprintf(LANGLEY, 2) . '/' . VHOST,
     '2017-12-04' => sprintf(LANGLEY, 3) . '/' . VHOST,
     // 2017-12-05 has bad permissions on langley and is still on origin.
+    '2021-09-05' => false,
     $begin->format('Y-m-d') => PONTIFEX . '/' . VHOST,
     'filename' => FILENAME,
   ],
   'ipv6' => [
     '2012-12-31' => false,
     '2017-12-04' => sprintf(LANGLEY, 3) . '/' . IPV6_PREFIX . VHOST,
+    '2021-09-05' => false,
     $begin->format('Y-m-d') => PONTIFEX . '/' . IPV6_PREFIX . VHOST,
     'filename' => IPV6_PREFIX . FILENAME,
   ],
@@ -408,8 +410,6 @@ function write($points)
 
   if (!$database) {
     $database = InfluxDB\Client::fromDSN('influxdb://0.0.0.0:8086/osrt_access');
-    $database->drop();
-    $database->create();
   }
 
   if (!$database->writePoints($points, Database::PRECISION_SECONDS)) die('failed to write points');
