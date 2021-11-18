@@ -164,7 +164,7 @@ function aggregate_all($period)
     $data = null;
     foreach (PROTOCOLS as $protocol) {
       $cache_file = "$CACHE_DIR/$protocol/$date_string.json";
-      if (!file_exists($cache_file)) continue;
+      if (!file_exists($cache_file) or !filesize($cache_file)) continue;
 
       error_log("[$date_string] [$protocol] load cache");
       $data_new = json_decode(file_get_contents($cache_file), true);
