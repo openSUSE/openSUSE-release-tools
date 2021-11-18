@@ -61,11 +61,13 @@ error_log('found ' . number_format($total) . ' requests across ' .
 
 ksort($total_product);
 ksort($unique_product);
-echo json_encode([
-  'total' => $total,
-  'total_product' => $total_product,
-  'unique_product' => $unique_product,
-  'total_image_product' => $total_image_product,
-  'total_invalid' => $total_invalid,
-  'bytes' => $position,
-]) . "\n"; // JSON_PRETTY_PRINT for debugging.
+if ($position) {
+  echo json_encode([
+    'total' => $total,
+    'total_product' => $total_product,
+    'unique_product' => $unique_product,
+    'total_image_product' => $total_image_product,
+    'total_invalid' => $total_invalid,
+    'bytes' => $position,
+  ]) . "\n"; // JSON_PRETTY_PRINT for debugging.
+}
