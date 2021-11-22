@@ -235,11 +235,12 @@ class LegalAuto(ReviewBot.ReviewBot):
         f = self.retried_GET(url)
         root = ET.parse(f).getroot()
         for si in root.findall('sourceinfo'):
-            print(ET.tostring(si))
             if si.findall('error'):
                 continue
             package = si.get('package')
             if ':' in package:
+                continue
+            if package == 'patchinfo' or package.startswith('patchinfo.'):
                 continue
             # handle maintenance links - we only want the latest
             match = re.match(r'(\S+)\.\d+$', package)
