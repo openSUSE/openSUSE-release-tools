@@ -96,9 +96,18 @@ class LegalAuto(ReviewBot.ReviewBot):
             return False
         return True
 
+    def default_good(self, _, package):
+        if package == 'patchinfo' or package.startswith('patchinfo.'):
+            return True
+        if package.endswith('.SUSE_Channels'):
+            return True
+        return False
+
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project,
                                                 src_package, src_rev, target_project, target_package))
+        if self.default_good(src_project, src_package):
+            return True
         to_review = self.open_reviews.get(self.request_nick(), None)
         if to_review:
             self.logger.info("Found {}".format(json.dumps(to_review)))
@@ -214,30 +223,23 @@ class LegalAuto(ReviewBot.ReviewBot):
             self.pkg_cache = {}
 
         self.packages = []
-        self._query_sources(project)
+        self._query_sources_for_product_import(project)
         with open(yaml_path, 'w') as file:
             yaml.dump(self.pkg_cache, file)
         url = osc.core.makeurl(self.legaldb, ['products', project])
         request = REQ.patch(url, headers=self.legaldb_headers, data={'id': self.packages}).json()
 
-    def _query_sources(self, project):
+    def _query_sources_for_product_import(self, project):
         url = osc.core.makeurl(
             self.apiurl, ['source', project], {'view': 'info'})
         f = self.retried_GET(url)
         root = ET.parse(f).getroot()
         for si in root.findall('sourceinfo'):
+            print(ET.tostring(si))
             if si.findall('error'):
                 continue
             package = si.get('package')
             if ':' in package:
-                continue
-            if package == 'patchinfo' or package.startswith('patchinfo.'):
-                continue
-            if package.endswith('.SUSE_Channels'):
-                continue
-            # skip packages that have _channel inside
-            if si.find('filename').text == '_channel':
-                self.logger.info("SKIP {}".format(si.find('filename').text))
                 continue
             # handle maintenance links - we only want the latest
             match = re.match(r'(\S+)\.\d+$', package)
@@ -249,10 +251,6 @@ class LegalAuto(ReviewBot.ReviewBot):
                 continue
             skip = False
             for l in si.findall('linked'):
-                if l.get('project') == 'SUSE:Channels':
-                    self.logger.info("SKIP {}, it links to {}".format(package, l.get('project')))
-                    skip = True
-                    break
                 lpackage = l.get('package')
                 # strip sle11's .imported_ suffix
                 lpackage = re.sub(r'\.imported_\d+$', '', lpackage)
