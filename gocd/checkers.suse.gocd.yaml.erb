@@ -258,8 +258,8 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de --group=legal-auto review
-            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de --user=licensedigger review
+            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb https://legaldb.suse.de --group=legal-auto review
+            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb https://legaldb.suse.de --user=licensedigger review
   SLE.Legal.Import:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -280,7 +280,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb http://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-suse)
+            - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb https://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-suse)
 <% ['SP1', 'SP2', 'SP3'].each do |servicepack| -%>
   SLE15.<%= servicepack %>.QR:
     group: SLE.Checkers

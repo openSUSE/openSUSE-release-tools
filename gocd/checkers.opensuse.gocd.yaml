@@ -62,8 +62,8 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb http://legaldb.suse.de --group=legal-auto review
-            - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb http://legaldb.suse.de --user=licensedigger review
+            - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb https://legaldb.suse.de --group=legal-auto review
+            - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb https://legaldb.suse.de --user=licensedigger review
   openSUSE.Legal.Import:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -84,7 +84,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb http://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-opensuse)
+            - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb https://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-opensuse)
   openSUSE.Maintenance:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
