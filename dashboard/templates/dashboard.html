@@ -23,6 +23,7 @@
           <th scope="col">Part</th>
           <th scope="col">standard</th>
           <th scope="col">images</th>
+          <th scope="col">containerfile</th>
           <th scope="col">source</th>
           <th scope="col">testing</th>
           <th scope="col">published</th>
@@ -39,6 +40,11 @@
         </td>
         <td>
           {% with repository = 'images' %}
+            {% include "repository.html" %}
+          {% endwith %}
+        </td>
+        <td>
+          {% with repository = 'containerfile' %}
             {% include "repository.html" %}
           {% endwith %}
         </td>
