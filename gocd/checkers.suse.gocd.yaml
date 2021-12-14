@@ -16,7 +16,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -37,7 +36,6 @@ pipelines:
         approval: manual
         jobs:
           SLE_15_SP4:
-            timeout: 30
             resources:
             - repo-checker
             tasks:
@@ -58,7 +56,6 @@ pipelines:
         approval: manual
         jobs:
           MicroOS:
-            timeout: 30
             resources:
             - repo-checker
             tasks:
@@ -121,7 +118,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -156,7 +152,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -191,7 +186,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -212,7 +206,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -233,7 +226,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -254,7 +246,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -276,7 +267,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -298,7 +288,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - repo-checker
             tasks:
@@ -327,7 +316,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - repo-checker
             tasks:
@@ -356,7 +344,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - repo-checker
             tasks:

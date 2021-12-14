@@ -16,7 +16,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -37,7 +36,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - repo-checker
             tasks:
@@ -58,7 +56,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -80,7 +77,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -101,7 +97,6 @@ pipelines:
           type: manual
         jobs:
           Run:
-            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -122,7 +117,6 @@ pipelines:
          type: manual
        jobs:
          Run:
-           timeout: 30
            resources:
            - staging-bot
            tasks:
@@ -169,3 +163,42 @@ pipelines:
               ln -s $PWD/osclib $tempdir/.osc-plugins
               HOME=$tempdir osc -A https://api.opensuse.org origin update
               rm -rf $tempdir
+  openSUSE.QA.Maint:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-openqa-maintenance
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+             ./openqa-maintenance.py --group qam-openqa --review-mode=accept-onpass --debug --openqa https://openqa.opensuse.org  --apiurl https://api.opensuse.org review
+  openSUSE.Devel.Reminder:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 15 ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        resources:
+        - staging-bot
+        tasks:
+        - script: ./devel-project.py reviews --min-age 3 --remind
+        - script: ./devel-project.py requests --min-age 3 --remind
+
