@@ -1,3 +1,8 @@
+{% if "Factory" in projects[0].name %}
+{% set is_leap = False %}
+{% else %}
+{% set is_leap = True %}
+{% endif%}
 <!doctype html>
 <html lang="en">
 
@@ -22,8 +27,14 @@
         <tr>
           <th scope="col">Part</th>
           <th scope="col">standard</th>
+          {% if is_leap %}
+          <th scope="col">ports</th>
+          <th scope="col">step</th>
+          {% endif %}
           <th scope="col">images</th>
+          {% if not is_leap %}
           <th scope="col">containerfile</th>
+          {% endif %}
           <th scope="col">source</th>
           <th scope="col">testing</th>
           <th scope="col">published</th>
@@ -38,6 +49,18 @@
             {% include "repository.html" %}
           {% endwith %}
         </td>
+        {% if is_leap %}
+        <td>
+          {% with repository = 'ports' %}
+            {% include "repository.html" %}
+          {% endwith %}
+        </td>
+        <td>
+          {% with repository = 'step' %}
+            {% include "repository.html" %}
+          {% endwith %}
+        </td>
+        {% endif %}
         <td>
           {% with repository = 'images' %}
             {% include "repository.html" %}
