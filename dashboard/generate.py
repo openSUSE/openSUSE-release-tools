@@ -161,17 +161,27 @@ if __name__ == '__main__':
 
     app = Flask(__name__)
 
-    fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
-    fetcher.add('openSUSE:Factory:Live', nick='Live')
-    fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
-    fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
-    fetcher.add('openSUSE:Factory:ARM', nick='ARM', download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed AArch64', openqa_version='Tumbleweed', openqa_groupid=3)
-    fetcher.add('openSUSE:Factory:ARM:Live', nick='ARM Live')
-    fetcher.add('openSUSE:Factory:ARM:Rings:0-Bootstrap', nick='ARM Ring 0')
-    fetcher.add('openSUSE:Factory:ARM:Rings:1-MinimalX', nick='ARM Ring 1')
-    fetcher.add('openSUSE:Factory:PowerPC', nick='Power', download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
-    fetcher.add('openSUSE:Factory:zSystems', nick='System Z', download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
-    fetcher.add('openSUSE:Factory:RISCV', nick='Risc V', download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
+    if ("Factory" in args.project):
+        fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
+        fetcher.add('openSUSE:Factory:Live', nick='Live')
+        fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
+        fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
+        fetcher.add('openSUSE:Factory:ARM', nick='ARM', download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed AArch64', openqa_version='Tumbleweed', openqa_groupid=3)
+        fetcher.add('openSUSE:Factory:ARM:Live', nick='ARM Live')
+        fetcher.add('openSUSE:Factory:ARM:Rings:0-Bootstrap', nick='ARM Ring 0')
+        fetcher.add('openSUSE:Factory:ARM:Rings:1-MinimalX', nick='ARM Ring 1')
+        fetcher.add('openSUSE:Factory:PowerPC', nick='Power', download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
+        fetcher.add('openSUSE:Factory:zSystems', nick='System Z', download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
+        fetcher.add('openSUSE:Factory:RISCV', nick='Risc V', download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
+    else:
+        fetcher.add('openSUSE:Leap:15.4', nick='Leap:15.4', download_url='https://download.opensuse.org/distribution/leap/15.4/iso', openqa_group='openSUSE Leap 15', openqa_version='15.4', openqa_groupid=50)
+        fetcher.add('openSUSE:Backports:SLE-15-SP4', nick='Backports:SLE-15-SP4')
+        fetcher.add('openSUSE:Leap:15.4:Images', nick='Leap:15.4:Images', openqa_group='openSUSE Leap 15.4 Images', openqa_version='15.4', openqa_groupid=89)
+        fetcher.add('openSUSE:Leap:15.4:ARM', nick='Leap:15.4:ARM', download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.4/iso', openqa_group='openSUSE Leap 15.4 ARMv7', openqa_version='15.4', openqa_groupid=92)
+        fetcher.add('openSUSE:Leap:15.4:ARM:Images', nick='Leap:15.4:ARM:Images', openqa_group='openSUSE Leap 15.4 ARMv7 Images', openqa_version='15.4', openqa_groupid=91)
+        fetcher.add('openSUSE:Leap:15.3:Images', nick='Leap:15.3:Images', openqa_group='openSUSE Leap 15.3 Images', openqa_version='15.3', openqa_groupid=77)
+        fetcher.add('openSUSE:Leap:15.3:ARM', nick='Leap:15.3:ARM', download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.3/iso', openqa_group='openSUSE Leap 15 ARM', openqa_version='15.3', openqa_groupid=79)
+        fetcher.add('openSUSE:Leap:15.3:ARM:Images', nick='Leap:15.3:ARM:Images', openqa_group='openSUSE Leap 15.3 ARMv7 Images', openqa_version='15.3', openqa_groupid=83)
 
     with app.app_context():
         rendered = render_template('dashboard.html',
