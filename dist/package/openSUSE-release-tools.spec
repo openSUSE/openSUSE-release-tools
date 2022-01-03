@@ -1,7 +1,7 @@
 #
 # spec file for package openSUSE-release-tools
 #
-# Copyright (c) 2018 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2022 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -12,7 +12,7 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
+# Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
 
 
@@ -483,6 +483,7 @@ exit 0
 %{_bindir}/osrt-findfileconflicts
 %{_bindir}/osrt-maintenance-installcheck
 %{_bindir}/osrt-write_repo_susetags_file
+%{_datadir}/%{source_dir}/project-installcheck.py
 %{_datadir}/%{source_dir}/findfileconflicts
 %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
 
