@@ -25,16 +25,16 @@ Release:        0
 Summary:        Tools to aid in staging and release work for openSUSE/SUSE
 License:        GPL-2.0-or-later AND MIT
 Group:          Development/Tools/Other
-Url:            https://github.com/openSUSE/openSUSE-release-tools
+URL:            https://github.com/openSUSE/openSUSE-release-tools
 Source:         %{name}-%{version}.tar.xz
 BuildArch:      noarch
 # Requires sr#704176
 BuildRequires:  osc >= 0.165.1
-BuildRequires:  python3-osc
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-cmdln
 BuildRequires:  python3-colorama
 BuildRequires:  python3-lxml
+BuildRequires:  python3-osc
 BuildRequires:  python3-pycurl
 BuildRequires:  python3-python-dateutil
 BuildRequires:  python3-pyxdg
@@ -85,8 +85,8 @@ plugins, and automation aids.
 %package abichecker
 Summary:        ABI review bot
 Group:          Development/Tools/Other
-BuildArch:      noarch
 Requires:       osclib = %{version}
+BuildArch:      noarch
 
 %description abichecker
 ABI review bot for checking OBS requests.
@@ -103,14 +103,14 @@ OBS product release announcer for generating email diffs summaries.
 %package check-source
 Summary:        Check source review bot
 Group:          Development/Tools/Other
-BuildArch:      noarch
-Requires:       osclib = %{version}
 # check_source.pl
 Requires:       obs-service-download_files
 Requires:       obs-service-format_spec_file
 Requires:       obs-service-source_validator
+Requires:       osclib = %{version}
 Requires:       perl-Text-Diff
 Requires(pre):  shadow
+BuildArch:      noarch
 
 %description check-source
 Check source review bot that performs basic source analysis and assigns reviews.
@@ -118,10 +118,10 @@ Check source review bot that performs basic source analysis and assigns reviews.
 %package maintenance
 Summary:        Maintenance related services
 Group:          Development/Tools/Other
-BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
 Requires(pre):  shadow
+BuildArch:      noarch
 
 %description maintenance
 Maintenance related services like incident check.
@@ -129,11 +129,11 @@ Maintenance related services like incident check.
 %package metrics
 Summary:        Ingest relevant data to generate insightful metrics
 Group:          Development/Tools/Other
-BuildArch:      noarch
 # TODO Update requirements.
 Requires:       osclib = %{version}
 Requires(pre):  shadow
 Suggests:       grafana
+BuildArch:      noarch
 %if 0%{?suse_version} > 1500
 Requires:       influxdb
 Requires:       python3-influxdb
@@ -150,10 +150,9 @@ Ingest relevant OBS and annotation data to generate insightful metrics.
 %package metrics-access
 Summary:        Ingest access logs to generate metrics
 Group:          Development/Tools/Other
-BuildArch:      noarch
+Requires:       %{name}-metrics = %{version}
 # Used to stream log files.
 Requires:       curl
-Requires:       %{name}-metrics = %{version}
 Requires:       php > 7
 # Used to install influxdb/influxdb-php.
 Requires:       php-composer
@@ -161,6 +160,7 @@ Requires:       php-composer
 Requires:       procps
 # xzcat for decompressing log files.
 Requires:       xz
+BuildArch:      noarch
 
 %description metrics-access
 Ingest download.o.o Apache access logs and generate metrics.
@@ -168,10 +168,10 @@ Ingest download.o.o Apache access logs and generate metrics.
 %package origin-manager
 Summary:        Package origin management tools
 Group:          Development/Tools/Other
-BuildArch:      noarch
-Requires:       osclib = %{version}
 Requires:       osc-plugin-origin = %{version}
+Requires:       osclib = %{version}
 Requires(pre):  shadow
+BuildArch:      noarch
 
 %description origin-manager
 Tools for managing the origin of package sources and keeping them in sync.
@@ -179,21 +179,21 @@ Tools for managing the origin of package sources and keeping them in sync.
 %package repo-checker
 Summary:        Repository checker service
 Group:          Development/Tools/Other
-BuildArch:      noarch
-# TODO Update requirements.
-Requires:       osclib = %{version}
 # write_repo_susetags_file.pl
 Requires:       build
+# TODO Update requirements.
+Requires:       osclib = %{version}
 Requires:       perl-XML-Simple
 Requires(pre):  shadow
+BuildArch:      noarch
 
 %package obs-operator
 Summary:        Server used to perform staging operations
 Group:          Development/Tools/Other
-BuildArch:      noarch
 Requires:       osc-plugin-origin = %{version}
 Requires:       osc-plugin-staging = %{version}
 Requires(pre):  shadow
+BuildArch:      noarch
 
 %description obs-operator
 Server used to perform staging operations as a service instead of requiring
@@ -205,11 +205,11 @@ Repository checker service that inspects built RPMs from stagings.
 %package staging-bot
 Summary:        Staging bot services
 Group:          Development/Tools/Other
-BuildArch:      noarch
 # devel-project.py
 Requires:       %{name} = %{version}
 Requires:       osc-plugin-staging = %{version}
 Requires(pre):  shadow
+BuildArch:      noarch
 
 %description staging-bot
 Staging bot services and system user.
@@ -217,31 +217,30 @@ Staging bot services and system user.
 %package pkglistgen
 Summary:        Generates package lists in 000product
 Group:          Development/Tools/Other
-BuildArch:      noarch
+# for compressing the .packages files in 000update-repos
+Requires:       %{_bindir}/xz
 Requires:       obs-service-product_converter
 Requires:       osclib = %{version}
 Requires:       python3-requests
 Requires:       python3-solv
-# for compressing the .packages files in 000update-repos
-Requires:       /usr/bin/xz
 # we use the same user as repo-checker
 PreReq:         openSUSE-release-tools-repo-checker
+BuildArch:      noarch
 
 %description pkglistgen
 Generates package lists based on 000package-groups and puts them
 in 000product, resp 000release-packages
 
-
 %package -n osclib
 Summary:        Supplemental osc libraries
 Group:          Development/Tools/Other
-BuildArch:      noarch
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
 Requires:       osc >= 0.165.1
 Requires:       python3-osc
 # internal API change related to accessing DSN in osclib/sentry.py
 Suggests:       python3-sentry-sdk >= 0.11.0
+BuildArch:      noarch
 
 %description -n osclib
 Supplemental osc libraries utilized by release tools.
@@ -249,9 +248,9 @@ Supplemental osc libraries utilized by release tools.
 %package -n osc-plugin-cycle
 Summary:        OSC plugin for cycle visualization
 Group:          Development/Tools/Other
-BuildArch:      noarch
 Requires:       osc >= 0.165.1
 Requires:       osclib = %{version}
+BuildArch:      noarch
 
 %description -n osc-plugin-cycle
 OSC plugin for cycle visualization, see `osc cycle --help`.
@@ -259,9 +258,9 @@ OSC plugin for cycle visualization, see `osc cycle --help`.
 %package -n osc-plugin-origin
 Summary:        OSC plugin for origin management
 Group:          Development/Tools/Other
-BuildArch:      noarch
 Requires:       osc >= 0.165.1
 Requires:       osclib = %{version}
+BuildArch:      noarch
 
 %description -n osc-plugin-origin
 OSC plugin for for working with origin information, see `osc origin --help`.
@@ -269,10 +268,10 @@ OSC plugin for for working with origin information, see `osc origin --help`.
 %package -n osc-plugin-staging
 Summary:        OSC plugin for the staging workflow
 Group:          Development/Tools/Other
-BuildArch:      noarch
 # devel-project.py needs 0.160.0 for get_request_list(withfullhistory) param.
 Requires:       osc >= 0.160.0
 Requires:       osclib = %{version}
+BuildArch:      noarch
 
 %description -n osc-plugin-staging
 OSC plugin for the staging workflow, see `osc staging --help`.
@@ -281,7 +280,7 @@ OSC plugin for the staging workflow, see `osc staging --help`.
 %setup -q
 
 %build
-make %{?_smp_mflags}
+%make_build
 
 %install
 %make_install \
@@ -295,7 +294,7 @@ getent passwd osrt-announcer > /dev/null || \
 exit 0
 
 %postun announcer
-%systemd_postun
+%{systemd_postun}
 
 %pre check-source
 getent passwd osrt-check-source > /dev/null || \
@@ -303,7 +302,7 @@ getent passwd osrt-check-source > /dev/null || \
 exit 0
 
 %postun check-source
-%systemd_postun
+%{systemd_postun}
 
 %pre maintenance
 getent passwd osrt-maintenance > /dev/null || \
@@ -311,7 +310,7 @@ getent passwd osrt-maintenance > /dev/null || \
 exit 0
 
 %postun maintenance
-%systemd_postun
+%{systemd_postun}
 
 %pre metrics
 getent passwd osrt-metrics > /dev/null || \
@@ -319,10 +318,10 @@ getent passwd osrt-metrics > /dev/null || \
 exit 0
 
 %postun metrics
-%systemd_postun
+%{systemd_postun}
 # If grafana-server.service is enabled then restart it to load new dashboards.
-if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled grafana-server ; then
-  /usr/bin/systemctl try-restart --no-block grafana-server
+if [ -x %{_bindir}/systemctl ] && %{_bindir}/systemctl is-enabled grafana-server ; then
+  %{_bindir}/systemctl try-restart --no-block grafana-server
 fi
 
 %pre obs-operator
@@ -331,9 +330,9 @@ getent passwd osrt-obs-operator > /dev/null || \
 exit 0
 
 %postun obs-operator
-%systemd_postun
-if [ -x /usr/bin/systemctl ] && /usr/bin/systemctl is-enabled osrt-obs-operator ; then
-  /usr/bin/systemctl try-restart --no-block osrt-obs-operator
+%{systemd_postun}
+if [ -x %{_bindir}/systemctl ] && %{_bindir}/systemctl is-enabled osrt-obs-operator ; then
+  %{_bindir}/systemctl try-restart --no-block osrt-obs-operator
 fi
 
 %pre origin-manager
@@ -342,7 +341,7 @@ getent passwd osrt-origin-manager > /dev/null || \
 exit 0
 
 %postun origin-manager
-%systemd_postun
+%{systemd_postun}
 
 %pre repo-checker
 getent passwd osrt-repo-checker > /dev/null || \
@@ -350,7 +349,7 @@ getent passwd osrt-repo-checker > /dev/null || \
 exit 0
 
 %postun repo-checker
-%systemd_postun
+%{systemd_postun}
 
 %pre staging-bot
 getent passwd osrt-staging-bot > /dev/null || \
@@ -358,13 +357,12 @@ getent passwd osrt-staging-bot > /dev/null || \
 exit 0
 
 %postun staging-bot
-%systemd_postun
+%{systemd_postun}
 
 %postun pkglistgen
-%systemd_postun
+%{systemd_postun}
 
 %files
-%defattr(-,root,root,-)
 %doc README.md
 %{_bindir}/osrt-biarchtool
 %{_bindir}/osrt-bs_mirrorfull
@@ -410,13 +408,11 @@ exit 0
 %dir %{_sysconfdir}/openSUSE-release-tools
 
 %files abichecker
-%defattr(-,root,root,-)
 %{apache_sysconfdir}/vhosts.d/opensuse-abi-checker.conf.in
 %{_datadir}/%{source_dir}/abichecker
 %{_tmpfilesdir}/opensuse-abi-checker.conf
 
 %files announcer
-%defattr(-,root,root,-)
 %doc %{announcer_filename}/README.asciidoc
 %{_bindir}/osrt-announcer
 %{apache_sysconfdir}/conf.d/%{announcer_filename}.conf.in
@@ -425,18 +421,15 @@ exit 0
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
 
 %files check-source
-%defattr(-,root,root,-)
 %{_bindir}/osrt-check_source
 %{_datadir}/%{source_dir}/check_source.pl
 %{_datadir}/%{source_dir}/check_source.py
 
 %files maintenance
-%defattr(-,root,root,-)
 %{_bindir}/osrt-check_maintenance_incidents
 %{_datadir}/%{source_dir}/check_maintenance_incidents.py
 
 %files metrics
-%defattr(-,root,root,-)
 %{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics/access
@@ -457,7 +450,6 @@ exit 0
 %{_unitdir}/osrt-metrics-telegraf.service
 
 %files metrics-access
-%defattr(-,root,root,-)
 %{_bindir}/osrt-metrics-access-aggregate
 %{_bindir}/osrt-metrics-access-ingest
 %{_datadir}/%{source_dir}/metrics/access
@@ -476,7 +468,6 @@ exit 0
 %{_datadir}/%{source_dir}/origin-manager.py
 
 %files repo-checker
-%defattr(-,root,root,-)
 %{_bindir}/osrt-project-installcheck
 %{_bindir}/osrt-staging-installcheck
 %{_bindir}/osrt-maintenance-installcheck
@@ -488,7 +479,6 @@ exit 0
 %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
 
 %files staging-bot
-%defattr(-,root,root,-)
 %{_bindir}/osrt-devel-project
 %{_bindir}/osrt-staging-report
 %{_bindir}/osrt-suppkg_rebuild
@@ -496,7 +486,6 @@ exit 0
 %{_datadir}/%{source_dir}/suppkg_rebuild.py
 
 %files pkglistgen
-%defattr(-,root,root,-)
 %{_bindir}/osrt-pkglistgen
 %{_bindir}/osrt-skippkg-finder
 %{_datadir}/%{source_dir}/pkglistgen
@@ -504,22 +493,18 @@ exit 0
 %{_datadir}/%{source_dir}/skippkg-finder.py
 
 %files -n osclib
-%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osclib
 %{osc_plugin_dir}/osclib
 
 %files -n osc-plugin-cycle
-%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-cycle.py
 %{osc_plugin_dir}/osc-cycle.py
 
 %files -n osc-plugin-origin
-%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-origin.py
 %{osc_plugin_dir}/osc-origin.py
 
 %files -n osc-plugin-staging
-%defattr(-,root,root,-)
 %{_datadir}/%{source_dir}/osc-staging.py
 %{osc_plugin_dir}/osc-staging.py
 
