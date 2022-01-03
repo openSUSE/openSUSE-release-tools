@@ -66,11 +66,13 @@
             {% include "repository.html" %}
           {% endwith %}
         </td>
+        {% if not is_leap %}
         <td>
           {% with repository = 'containerfile' %}
             {% include "repository.html" %}
           {% endwith %}
         </td>
+        {% endif %}
         <td>
 	  {% if project.ttm_version %}
 	    <a href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
