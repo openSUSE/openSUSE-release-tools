@@ -75,15 +75,3 @@ pipelines:
             tasks:
               - script: |
                   ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/distribution/leap/15.3/appliances/boxes/Leap-15.3.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.3.aarch64
-          publish_Leap-15_2_x86_64:
-            resources:
-            - staging-bot
-            tasks:
-              - script: |
-                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap/15.2/appliances/boxes/Leap-15.2.x86_64.json --organization opensuse --new-box-name Leap-15.2.x86_64
-          publish_Leap-15_2_aarch64:
-            resources:
-            - staging-bot
-            tasks:
-              - script: |
-                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/distribution/leap/15.2/appliances/boxes/Leap-15.2.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.2.aarch64
