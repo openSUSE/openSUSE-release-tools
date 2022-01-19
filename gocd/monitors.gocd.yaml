@@ -121,7 +121,7 @@ pipelines:
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
                 cd repos
-                ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap openSUSE:Backports Virtualization:WSL
+                ../scripts/gocd/rabbit-repoid.py -A https://api.opensuse.org openSUSE:Factory openSUSE:Leap openSUSE:Backports Virtualization:WSL KDE:Medias
   openSUSE.ObsRsync:
     group: Monitors
     lock_behavior: unlockWhenFinished
