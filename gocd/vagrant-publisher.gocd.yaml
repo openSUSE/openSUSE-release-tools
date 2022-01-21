@@ -74,4 +74,4 @@ pipelines:
             - staging-bot
             tasks:
               - script: |
-                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/distribution/leap/15.3/appliances/boxes/Leap-15.3.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.3.aarch64
+                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap/15.3/appliances/boxes/Leap-15.3.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.3.aarch64
