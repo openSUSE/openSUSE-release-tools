@@ -252,7 +252,7 @@ class ChangeLogger(cmdln.Cmdln):
             if len(pkgs) > 1:
                 details += "Subpackages: %s\n" % " ".join([p for p in pkgs if p != name])
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
-                if t2 == t1:
+                if t2 <= t1:
                     break
                 details += "\n" + v2changelogs[srpm]['changelogtext'][i2]
             details += '\n'
