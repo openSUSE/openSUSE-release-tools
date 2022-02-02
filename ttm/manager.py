@@ -124,6 +124,9 @@ class ToTestManager(ToolBase.ToolBase):
     def get_status(self, status):
         return self.get_status_dict().get(status)
 
+    def get_product_version(self):
+        return self.api.attribute_value_load('ProductVersion')
+
     def release_package(self, project, package, set_release=None, repository=None,
                          target_project=None, target_repository=None):
         query = {'cmd': 'release'}

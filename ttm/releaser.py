@@ -229,6 +229,17 @@ class ToTestReleaser(ToTestManager):
                                            self.project.product_repo, arch):
                         return False
 
+        # The FTP tree isn't released with setrelease, so it needs to contain
+        # the product version already.
+        product_version = self.get_product_version()
+        if product_version is not None:
+            for product in self.project.ftp_products:
+                for binary in self.binaries_of_product(self.project.name, product):
+                    # The NonOSS tree doesn't include the version...
+                    if binary.endswith('.report') and 'NonOss' not in binary and product_version not in binary:
+                        self.logger.debug(f'{binary} in {product} does not include {product_version}')
+                        return False
+
         if self.project.need_same_build_number:
             # make sure all medias have the same build number
             builds = set()
