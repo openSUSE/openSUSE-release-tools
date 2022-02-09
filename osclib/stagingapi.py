@@ -1397,6 +1397,7 @@ class StagingAPI(object):
                <repository name="images">
                  <path project="{name}" repository="standard"/>
                  {containerfile_path}
+                 <path project="{self.cstaging}" repository="standard"/>
                  <path project="{self.project}" repository="images"/>
                  <arch>x86_64</arch>
               </repository>"""
@@ -1411,6 +1412,7 @@ class StagingAPI(object):
                <repository name="containerfile">
                  <path project="{name}" repository="standard"/>
                  {images_path}
+                 <path project="{self.cstaging}" repository="standard"/>
                  <path project="{self.project}" repository="containerfile"/>
                  <arch>x86_64</arch>
               </repository>"""
