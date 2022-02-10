@@ -147,7 +147,7 @@ class CommandLineInterface(cmdln.Cmdln):
         logging.basicConfig(level=level)
 
         osc.conf.get_config(override_apiurl = self.options.apiurl,
-                            override_debug = self.options.debug,
+                            override_debug = self.options.osc_debug,
                             override_http_debug = self.options.http_debug,
                             override_http_full_debug = self.options.http_full_debug)
 
