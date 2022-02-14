@@ -118,6 +118,7 @@ def clean_args(args):
 @cmdln.option('--try-strategies', action='store_true', default=False, help='apply strategies and keep any with desireable outcome')
 @cmdln.option('--strategy', help='apply a specific strategy')
 @cmdln.option('--no-color', action='store_true', help='strip colors from output (or add staging.color = 0 to the .oscrc general section')
+@cmdln.option('--remove-exclusion', action='store_true', help='unignore selected requests automatically', default=False)
 @cmdln.option('--save', action='store_true', help='save the result to the pseudometa package')
 def do_staging(self, subcmd, opts, *args):
     """${cmd_name}: Commands to work with staging projects
@@ -266,6 +267,9 @@ def do_staging(self, subcmd, opts, *args):
 
         select --move --filter-from A B $(< package.list)
 
+        select --remove-exclusion will unignore the requests selected (ignored requests
+        are called excluded in the OBS API)
+
     "unselect" will remove from the project - pushing them back to the backlog
         If a message is included the requests will be ignored first.
 
@@ -304,7 +308,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging unignore [--cleanup] [REQUEST...|all]
         osc staging list [--supersede]
         osc staging lock [-m MESSAGE]
-        osc staging select [--no-freeze] [--move [--filter-from STAGING]]
+        osc staging select [--no-freeze] [--remove-exclusion] [--move [--filter-from STAGING]]
             STAGING REQUEST...
         osc staging select [--no-freeze] [--interactive|--non-interactive]
             [--filter-by...] [--group-by...]
@@ -559,13 +563,13 @@ def do_staging(self, subcmd, opts, *args):
                     #    api.set_splitter_info_in_prj_pseudometa(target_project, info['group'], info['strategy'])
 
                     SelectCommand(api, target_project) \
-                        .perform(request_ids, no_freeze=opts.no_freeze)
+                        .perform(request_ids, no_freeze=opts.no_freeze, remove_exclusion=opts.remove_exclusion)
             else:
                 target_project = api.prj_from_short(stagings[0])
                 filter_from = api.prj_from_short(opts.filter_from) if opts.filter_from else None
                 SelectCommand(api, target_project) \
                     .perform(requests, opts.move,
-                             filter_from, opts.no_freeze)
+                             filter_from, no_freeze=opts.no_freeze, remove_exclusion=opts.remove_exclusion)
         elif cmd == 'cleanup_rings':
             CleanupRings(api).perform()
         elif cmd == 'ignore':

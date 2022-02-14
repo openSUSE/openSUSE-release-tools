@@ -55,7 +55,7 @@ class SelectCommand(object):
 
         return candidates[0] if candidates else None
 
-    def select_request(self, request, move, filter_from):
+    def select_request(self, request, move, filter_from, remove_exclusion=False):
         supersede = False
 
         staged_requests = {
@@ -68,7 +68,7 @@ class SelectCommand(object):
             # Normal 'select' command
             print('Adding request "{}" to project "{}"'.format(request, self.target_project))
 
-            return self.api.rq_to_prj(request, self.target_project)
+            return self.api.rq_to_prj(request, self.target_project, remove_exclusion)
         elif request in staged_requests and (move or supersede):
             # 'select' command becomes a 'move'
             # supersede = (new_rq, package, project)
@@ -106,7 +106,7 @@ class SelectCommand(object):
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
     def perform(self, requests, move=False,
-                filter_from=None, no_freeze=False):
+                filter_from=None, no_freeze=False, remove_exclusion=False):
         """
         Select package and move it accordingly by arguments
         :param target_project: project we want to target
@@ -132,7 +132,7 @@ class SelectCommand(object):
         requests_count = len(requests)
         for index, request in enumerate(requests, start=1):
             print('({}/{}) '.format(index, requests_count), end='')
-            if not self.select_request(request, move, filter_from):
+            if not self.select_request(request, move, filter_from, remove_exclusion=remove_exclusion):
                 return False
 
         # Notify everybody about the changes
