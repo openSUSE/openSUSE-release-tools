@@ -68,8 +68,6 @@ class StagingReport(object):
         return report
 
     def report_checks(self, info):
-        failing_lines, green_lines = [], []
-
         links_state = {}
         for check in info.findall('checks/check'):
             state = check.find('state').text
@@ -120,6 +118,7 @@ class StagingReport(object):
             report = 'Congratulations! All fine now.'
             only_replace = True
 
+        report = self.cc_list(project, info) + report
         self.update_status_comment(project, report, force=force, only_replace=only_replace)
 
         if osc.conf.config['debug']:
@@ -127,6 +126,14 @@ class StagingReport(object):
             print('-' * len(project))
             print(report)
 
+    def cc_list(self, project, info):
+        if not self.api.is_adi_project(project):
+            return ""
+        ccs = set()
+        for req in info.findall('staged_requests/request'):
+            ccs.add("@" + req.get('creator'))
+        str = "Submitters: " + " ".join(sorted(list(ccs))) + "\n\n"
+        return str
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
