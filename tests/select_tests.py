@@ -1,22 +1,13 @@
-import unittest
-import os.path
 from osc import oscerr
-import osc.conf
-from osc.core import http_GET, http_POST, makeurl
-from lxml import etree as ET
-from osclib.cache import Cache
-from osclib.cache_manager import CacheManager
-from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.core import package_list
 from osclib.select_command import SelectCommand
 from osclib.unselect_command import UnselectCommand
 from osclib.supersede_command import SupersedeCommand
-from osclib.stagingapi import StagingAPI
-from osclib.memoize import memoize_session_reset
+from osclib.ignore_command import IgnoreCommand
 from osclib.core import source_file_load
-import logging
-
+from urllib.error import HTTPError
+from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
 
@@ -136,3 +127,27 @@ class TestSelect(OBSLocal.TestCase):
         # TODO: record which URLs were called so we can verify them
         # but we wont' be able to test the actual wipe unless we really build something
         # which is too expensive
+
+    def test_select_excluded_package(self):
+        self.wf.setup_rings()
+        staging = self.wf.create_staging('A', freeze=True, with_repo=True)
+
+        self.wf.create_submit_request('devel:wine', 'wine')
+        IgnoreCommand(self.wf.api).perform(['wine'])
+
+        with self.assertRaises(HTTPError) as context:
+            SelectCommand(self.wf.api, staging.name).perform(['wine'])
+
+        root = ET.fromstring(context.exception.fp.read())
+        self.assertRegex(root.find('summary').text, r'Use --remove-exclusion')
+
+    def test_excluded_package(self):
+        self.wf.setup_rings()
+        staging = self.wf.create_staging('A', freeze=True, with_repo=True)
+
+        self.wf.create_submit_request('devel:wine', 'wine')
+        IgnoreCommand(self.wf.api).perform(['wine'])
+
+        ret = SelectCommand(self.wf.api, staging.name).perform(['wine'], remove_exclusion=True)
+        self.assertEqual(True, ret)
+        self.assertEqual(0, len(self.wf.api.get_ignored_requests()))

@@ -895,7 +895,7 @@ class StagingAPI(object):
                 return (time.time() - float(entry.get('mtime'))) / 3600 / 24
         return 100000  # quite some!
 
-    def rq_to_prj(self, request_id, project):
+    def rq_to_prj(self, request_id, project, remove_exclusion=False):
         """
         Links request to project - delete or submit
         :param request_id: request to link
@@ -923,7 +923,10 @@ class StagingAPI(object):
             raise oscerr.WrongArgs(msg)
 
         requestxml = f"<requests><request id='{request_id}'/></requests>"
-        u = makeurl(self.apiurl, ['staging', self.project, 'staging_projects', project, 'staged_requests'])
+        opts = {}
+        if remove_exclusion:
+            opts['remove_exclusion'] = 1
+        u = makeurl(self.apiurl, ['staging', self.project, 'staging_projects', project, 'staged_requests'], opts)
         f = http_POST(u, data=requestxml)
 
         if act_type == 'delete':
