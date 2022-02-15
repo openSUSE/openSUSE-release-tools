@@ -128,7 +128,7 @@ class SelectCommand(object):
         # ie. the review state of staging-project must be new if newcand is True
         newcand = not move
 
-        requests = RequestFinder.find_sr(requests, self.api, newcand)
+        requests = RequestFinder.find_sr(requests, self.api, newcand, consider_stagings=move)
         requests_count = len(requests)
         for index, request in enumerate(requests, start=1):
             print('({}/{}) '.format(index, requests_count), end='')
