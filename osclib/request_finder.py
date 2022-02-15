@@ -131,7 +131,7 @@ class RequestFinder(object):
 
         return ret
 
-    def find(self, pkgs, newcand):
+    def find(self, pkgs, newcand, consider_stagings):
         """
         Search for all various mutations and return list of SR#s
         :param pkgs: mesh of argumets to search for
@@ -145,6 +145,8 @@ class RequestFinder(object):
             if self.find_request_package(p):
                 continue
             if self.find_request_project(p, newcand):
+                continue
+            if consider_stagings and self.find_staging_project(p):
                 continue
             raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
@@ -172,16 +174,32 @@ class RequestFinder(object):
             if not found:
                 raise oscerr.WrongArgs('No SR# found for: {}'.format(p))
 
+    def find_staging_project(self, project):
+        """
+        Check if project is an existing staging project. If so, return
+        all requests staged in it
+        """
+        project = self.api.prj_from_short(project)
+        url = self.api.makeurl(['staging', self.api.project, 'staging_projects', project], { 'requests': 1 })
+        try:
+            staging = ET.parse(self.api.retried_GET(url)).getroot()
+        except HTTPError:
+            return False
+        for request in staging.findall('staged_requests/request'):
+            self.srs[int(request.get('id'))] = {'staging': staging.get('name')}
+        return True
+
     @classmethod
-    def find_sr(cls, pkgs, api, newcand=False):
+    def find_sr(cls, pkgs, api, newcand=False, consider_stagings=False):
         """
         Search for all various mutations and return list of SR#s
         :param pkgs: mesh of argumets to search for
         :param api: StagingAPI instance
         :param newcand: the review state of staging-group must be new
+        :param consider_stagings: consider names of staging projects
         """
         finder = cls(api)
-        finder.find(pkgs, newcand)
+        finder.find(pkgs, newcand, consider_stagings)
         return finder.srs
 
     @classmethod

@@ -159,12 +159,19 @@ selecting the request.  If we want to move a request from one staging
 project to another one, we need to use the parameter +--move+:
 
 --------------------------------------------------------------------------------
-osc staging select --move B 12345
+osc staging select B --move 12345
 --------------------------------------------------------------------------------
 
 This command will move #12345 from openSUSE:Factory:Staging:A to
 openSUSE:Factory:Staging:B
 
+You can also merge staging projects by giving other staging projects as arguments:
+
+--------------------------------------------------------------------------------
+osc staging select B --move A C
+--------------------------------------------------------------------------------
+
+This moves all requests currently staged in A and C into B
 
 Unselect
 ~~~~~~~~

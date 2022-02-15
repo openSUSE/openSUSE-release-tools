@@ -449,7 +449,9 @@ def do_staging(self, subcmd, opts, *args):
                 # special staging with a capital letter which makes them unique.
                 # lastly adi stagings are consistently prefix with adi: which
                 # also makes it consistent to distinguish them from request IDs.
-                if arg in existing_stagings and arg not in stagings:
+                #
+                # also support --move passing 2 or more staging projects to merge
+                if arg in existing_stagings and arg not in stagings and (len(stagings) == 0 and opts.move):
                     stagings.append(api.extract_staging_short(arg))
                 elif arg not in requests:
                     requests.append(arg)
