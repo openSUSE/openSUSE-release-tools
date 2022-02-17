@@ -82,7 +82,7 @@ pipelines:
         tasks:
         - script: |-
             PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
-            for product in kiwi-templates-JeOS SLES-15-SP4-Vagrant sles15-image 000product $PRODUCTS; do
+            for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
             done
             sleep 600
@@ -151,7 +151,7 @@ pipelines:
             tasks:
               - script: |-
                   PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
-                  for product in kiwi-templates-JeOS SLES-15-SP4-Vagrant sles15-image 000product $PRODUCTS; do
+                  for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
                     osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
                   done
 
