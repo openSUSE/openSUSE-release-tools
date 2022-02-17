@@ -4,15 +4,11 @@ from urllib.error import HTTPError
 from colorama import Fore
 
 from osc import oscerr
-from osc.core import get_request
-from osc.core import show_package_meta
 from osc import conf
 
-from osclib.select_command import SelectCommand
 from osclib.supersede_command import SupersedeCommand
 from osclib.request_finder import RequestFinder
 from osclib.request_splitter import RequestSplitter
-from xml.etree import cElementTree as ET
 
 class AdiCommand:
     def __init__(self, api):
@@ -73,7 +69,7 @@ class AdiCommand:
         for p in self.api.get_adi_projects():
             self.check_adi_project(p)
 
-    def create_new_adi(self, wanted_requests, by_dp=False, split=False):
+    def create_new_adi(self, wanted_requests, split=False):
         source_projects_expand = self.config.get('source_projects_expand', '').split()
         # if we don't call it, there is no invalidate function added
         requests = self.api.get_open_requests()
@@ -91,8 +87,6 @@ class AdiCommand:
         else:
             if split:
                 splitter.group_by('./@id')
-            elif by_dp:
-                splitter.group_by('./action/target/@devel_project')
             else:
                 splitter.group_by('./action/source/@project')
 
@@ -130,7 +124,7 @@ class AdiCommand:
 
                 print(line + Fore.GREEN + ' (staged in {})'.format(name) + Fore.RESET)
 
-    def perform(self, packages, move=False, by_dp=False, split=False):
+    def perform(self, packages, move=False, split=False):
         """
         Perform the list command
         """
@@ -152,4 +146,4 @@ class AdiCommand:
         else:
             self.check_adi_projects()
             if self.api.is_user_member_of(self.api.user, self.api.cstaging_group):
-                self.create_new_adi((), by_dp=by_dp, split=split)
+                self.create_new_adi((), split=split)

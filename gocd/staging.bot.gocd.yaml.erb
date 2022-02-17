@@ -54,7 +54,7 @@ pipelines:
                export HOME=$tempdir
 
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
                rm -rf $tempdir

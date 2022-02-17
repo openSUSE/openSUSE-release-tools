@@ -52,7 +52,7 @@ pipelines:
                export HOME=$tempdir
 
                osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:Factory adi
                osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
                osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
                rm -rf $tempdir
@@ -108,7 +108,7 @@ pipelines:
                export HOME=$tempdir
 
                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 adi --by-develproject
+               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 adi
                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 unselect --cleanup
                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP4 repair --cleanup
                rm -rf $tempdir
