@@ -451,7 +451,7 @@ def do_staging(self, subcmd, opts, *args):
                 # also makes it consistent to distinguish them from request IDs.
                 #
                 # also support --move passing 2 or more staging projects to merge
-                if arg in existing_stagings and arg not in stagings and (len(stagings) == 0 and opts.move):
+                if arg in existing_stagings and arg not in stagings and not (len(stagings) > 0 and opts.move):
                     stagings.append(api.extract_staging_short(arg))
                 elif arg not in requests:
                     requests.append(arg)
