@@ -86,8 +86,6 @@ def clean_args(args):
 
 @cmdln.option('--move', action='store_true',
               help='force the selection to become a move')
-@cmdln.option('--by-develproject', action='store_true',
-              help='split the requests by devel project')
 @cmdln.option('--split', action='store_true',
               help='split the requests into individual groups')
 @cmdln.option('--supersede', action='store_true',
@@ -297,7 +295,7 @@ def do_staging(self, subcmd, opts, *args):
 
     Usage:
         osc staging accept [--force] [--no-cleanup] [STAGING...]
-        osc staging adi [--move] [--by-develproject] [--split] [REQUEST...]
+        osc staging adi [--move] [--split] [REQUEST...]
         osc staging check [STAGING...]
         osc staging check_duplicate_binaries
         osc staging check_local_links
@@ -583,7 +581,7 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'lock':
             lock.hold(opts.message)
         elif cmd == 'adi':
-            AdiCommand(api).perform(args[1:], move=opts.move, by_dp=opts.by_develproject, split=opts.split)
+            AdiCommand(api).perform(args[1:], move=opts.move, split=opts.split)
         elif cmd == 'rebuild':
             RebuildCommand(api).perform(args[1:], opts.force)
         elif cmd == 'repair':
