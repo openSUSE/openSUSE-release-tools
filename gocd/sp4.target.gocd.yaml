@@ -81,6 +81,7 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
+            set -e
             PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
             for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
@@ -150,6 +151,7 @@ pipelines:
               - staging-bot
             tasks:
               - script: |-
+                  set -e
                   PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
                   for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
                     osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
