@@ -360,7 +360,7 @@ class PkgListGen(ToolBase.ToolBase):
                 raise Exception("Mirroring repository failed")
 
         files = [os.path.join(d, f)
-                    for f in os.listdir(d) if f.endswith('.rpm')]
+                 for f in os.listdir(d) if f.endswith('.rpm')]
         suffix = f'.{os.getpid()}.tmp'
         fh = open(solv_file + suffix, 'w')
         p = subprocess.Popen(

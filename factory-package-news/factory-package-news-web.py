@@ -70,7 +70,7 @@ def diff(version):
         return "invalid version", 400
     import subprocess
     cmd = [os.path.dirname(os.path.abspath(__file__)) + '/factory-package-news.py',
-            'diff', '--dir', _dir, "current", version]
+           'diff', '--dir', _dir, "current", version]
     app.logger.debug(cmd)
     response = make_response(subprocess.check_output(cmd))
     response.content_type = "text/plain"
