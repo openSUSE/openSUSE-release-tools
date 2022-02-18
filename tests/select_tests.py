@@ -110,9 +110,11 @@ class TestSelect(OBSLocal.TestCase):
 
         SupersedeCommand(self.wf.api).perform()
 
-        self.assertEqual(rq1.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'accepted', 'by_project': 'openSUSE:Factory:Staging:A'},
+        self.assertEqual(rq1.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'},
+                                         {'state': 'accepted', 'by_project': 'openSUSE:Factory:Staging:A'},
                                          {'state': 'declined', 'by_group': 'factory-staging'}])
-        self.assertEqual(rq2.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'new', 'by_project': 'openSUSE:Factory:Staging:A'}])
+        self.assertEqual(rq2.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'},
+                         {'state': 'new', 'by_project': 'openSUSE:Factory:Staging:A'}])
 
     def test_delete_multibuild_package(self):
         self.wf.setup_rings()

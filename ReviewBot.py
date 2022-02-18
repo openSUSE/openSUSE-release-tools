@@ -291,7 +291,8 @@ class ReviewBot(object):
         if state == 'declined':
             if self.review_mode == 'fallback-onfail':
                 self.logger.info("%s needs fallback reviewer" % req.reqid)
-                self.add_review(req, by_group=by_group, by_user=by_user, msg="Automated review failed. Needs fallback reviewer.")
+                self.add_review(req, by_group=by_group, by_user=by_user,
+                                msg="Automated review failed. Needs fallback reviewer.")
                 newstate = 'accepted'
         elif self.review_mode == 'fallback-always':
             self.add_review(req, by_group=by_group, by_user=by_user, msg='Adding fallback reviewer')
@@ -637,7 +638,8 @@ class ReviewBot(object):
             review = "@by_user='%s' and @state='new'" % self.review_user
         if self.review_group:
             review = osc.core.xpath_join(review, "@by_group='%s' and @state='new'" % self.review_group)
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'), {'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1})
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'), {
+                               'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -649,8 +651,9 @@ class ReviewBot(object):
 
     # also used by openqabot
     def ids_project(self, project, typename):
+        xpath = "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename)
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
-                               {'match': "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename),
+                               {'match': xpath,
                                 'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 

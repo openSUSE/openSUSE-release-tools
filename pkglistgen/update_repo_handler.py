@@ -193,7 +193,8 @@ def merge_susetags(output, files):
         f = tempfile.TemporaryFile()
         subprocess.call(['xz', '-cd', file], stdout=f.fileno())
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+        oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                                solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
     packages = dict()
     for s in pool.solvables_iter():
@@ -282,7 +283,8 @@ def update_project(apiurl, project):
                 # FIXME: port to lzma module with python3
                 subprocess.call(['xz', '-cd', file], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
-                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                                  solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
         repo1 = pool.add_repo(''.join(random.choice(string.ascii_letters) for _ in range(5)))
         repo1.add_solv(solv_file)

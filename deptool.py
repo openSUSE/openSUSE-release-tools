@@ -304,7 +304,8 @@ class DepTool(cmdln.Cmdln):
                             logger.error("%s doesn't provide anything")
                             continue
                         for p in prov:
-                            sel = self.pool.matchdepid(p, solv.Selection.SELECTION_REL | solv.Selection.SELECTION_FLAT, kindid)
+                            sel = self.pool.matchdepid(p, solv.Selection.SELECTION_REL |
+                                                       solv.Selection.SELECTION_FLAT, kindid)
                             if sel.isempty():
                                 logger.debug('nothing %s %s', kind.lower(), p)
                                 continue

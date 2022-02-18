@@ -29,7 +29,11 @@ from osclib.git import sync
 # unicode character in its summary.
 BUG_SUMMARY = '[patch-lost-in-sle] Missing issues in {factory}/{package}'
 BUG_TEMPLATE = u'{message_start}\n\n{issues}'
-MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version. For more information and details on how to go about submitting the changes see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html.'
+MESSAGE_START = """The following issues were referenced in the changelog for {project}/{package},
+but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes
+to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version.
+For more information and details on how to go about submitting the changes
+see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html."""
 ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
 ISSUE_SUMMARY_BUGZILLA = u'{label} owned by {owner}: {summary}'
 ISSUE_SUMMARY_PLAIN = u'[{label}]({url})'
@@ -407,14 +411,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', default='https://api.suse.de', metavar='URL', help='OBS instance API URL')
     parser.add_argument('--bugzilla-apiurl', required=True, metavar='URL', help='bugzilla API URL')
-    parser.add_argument('--bugzilla-product', default='SUSE Linux Enterprise Server 15', metavar='PRODUCT', help='default bugzilla product')
+    parser.add_argument('--bugzilla-product', default='SUSE Linux Enterprise Server 15',
+                        metavar='PRODUCT', help='default bugzilla product')
     parser.add_argument('--bugzilla-component', default='Other', metavar='COMPONENT', help='default bugzilla component')
     parser.add_argument('--bugzilla-version', default='unspecified', metavar='VERSION', help='default bugzilla version')
     parser.add_argument('--bugzilla-cc', metavar='EMAIL', help='bugzilla address added to cc on all bugs created')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debugging')
-    parser.add_argument('-f', '--factory', default='openSUSE:Factory', metavar='PROJECT', help='factory project to use as baseline for comparison')
-    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
-    parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
+    parser.add_argument('-f', '--factory', default='openSUSE:Factory', metavar='PROJECT',
+                        help='factory project to use as baseline for comparison')
+    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT',
+                        help='project to check for issues that have are not found in factory')
+    parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS',
+                        help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
     parser.add_argument('--cache-dir', help='cache directory containing git-sync tool and issue db')
     parser.add_argument('--print-stats', action='store_true', help='print statistics based on database')

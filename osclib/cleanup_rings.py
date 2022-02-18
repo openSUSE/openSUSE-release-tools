@@ -112,7 +112,8 @@ class CleanupRings(object):
             for package in repo.findall('status'):
                 code = package.get('code')
                 if code not in ['succeeded', 'excluded', 'disabled']:
-                    print('Package {}/{}/{} is {}'.format(repo.get('project'), repo.get('repository'), package.get('package'), code))
+                    print('Package {}/{}/{} is {}'.format(repo.get('project'),
+                          repo.get('repository'), package.get('package'), code))
                     return False
         return True
 

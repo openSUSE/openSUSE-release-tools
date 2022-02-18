@@ -118,7 +118,8 @@ class RequestFinder(object):
         for sr in root.findall('request'):
             # ensure staging tool don't picks the processed request again
             if newcand:
-                staging_group_states = [review.get('state') for review in sr.findall('review') if review.get('by_group') == self.api.cstaging_group]
+                staging_group_states = [review.get('state') for review in sr.findall(
+                    'review') if review.get('by_group') == self.api.cstaging_group]
                 if 'new' not in staging_group_states:
                     continue
             for act in sr.findall('action'):

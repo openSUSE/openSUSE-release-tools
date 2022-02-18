@@ -517,7 +517,8 @@ class StagingAPI(object):
                         message = 'sr#{} has newer source and is from the same project'.format(request_new.get('id'))
 
                         self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'])
-                        self.do_change_review_state(stage_info['rq_id'], 'declined', by_group=self.cstaging_group, message=message)
+                        self.do_change_review_state(stage_info['rq_id'], 'declined',
+                                                    by_group=self.cstaging_group, message=message)
                         return stage_info, None
                     # Ingore the new request pending manual review.
                     IgnoreCommand(self).perform([str(request_id)], message)

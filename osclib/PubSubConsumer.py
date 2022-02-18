@@ -81,7 +81,8 @@ class PubSubConsumer(object):
         credentials = pika.PlainCredentials(account, account)
         context = ssl.create_default_context()
         ssl_options = pika.SSLOptions(context, server)
-        parameters = pika.ConnectionParameters(server, 5671, '/', credentials, ssl_options=ssl_options, socket_timeout=10)
+        parameters = pika.ConnectionParameters(server, 5671, '/', credentials,
+                                               ssl_options=ssl_options, socket_timeout=10)
         return pika.SelectConnection(parameters,
                                      on_open_callback=self.on_connection_open)
 

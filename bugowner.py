@@ -187,7 +187,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     name = o.name
                     if o.kind == 'group':
                         name = 'group:' + name
-                    print("osc -A {} reqbs -r bugowner -m 'copy bug owner from previous codestream' {} {} {}".format(self.tool.apiurl, self.tool.project, p, name))
+                    print("osc -A {} reqbs -r bugowner -m 'copy bug owner from previous codestream' {} {} {}".format(
+                        self.tool.apiurl, self.tool.project, p, name))
                 elif opts.employee:
                     if o.kind != 'person':
                         logger.debug('%s not a person', o.name)
@@ -236,7 +237,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                     name = o.name
                     if o.kind == 'group':
                         name = 'group:' + name
-                    print("osc -A {} reqbs -r bugowner -m 'add last submitter as bug owner' {} {} {}".format(self.tool.apiurl, self.tool.project, p, name))
+                    print("osc -A {} reqbs -r bugowner -m 'add last submitter as bug owner' {} {} {}".format(
+                        self.tool.apiurl, self.tool.project, p, name))
 
 
 if __name__ == "__main__":

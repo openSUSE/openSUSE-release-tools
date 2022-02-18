@@ -31,7 +31,10 @@ class CheckSource(ReviewBot.ReviewBot):
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
     AUDIT_BUG_URL = "https://en.opensuse.org/openSUSE:Package_security_guidelines#audit_bugs"
-    AUDIT_BUG_MESSAGE = "The package is submitted to an official product and it has warnings that indicate that it need to go through a security review. Those warnings can only be ignored in devel projects. For more information please read: {}.".format(AUDIT_BUG_URL)
+    AUDIT_BUG_MESSAGE = """The package is submitted to an official product and it has warnings that indicate
+that it need to go through a security review.
+Those warnings can only be ignored in devel projects. For more information please read: {}.""".format(
+        AUDIT_BUG_URL)
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
@@ -109,7 +112,8 @@ class CheckSource(ReviewBot.ReviewBot):
         return ret
 
     def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
-        super(CheckSource, self).check_source_submission(source_project, source_package, source_revision, target_project, target_package)
+        super(CheckSource, self).check_source_submission(source_project,
+                                                         source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
 
         if self.single_action_require and len(self.request.actions) != 1:
@@ -137,7 +141,8 @@ class CheckSource(ReviewBot.ReviewBot):
                 if (source_project != devel_project or source_package != devel_package) and \
                    not(source_project == target_project and source_package == target_package):
                     # Not from proper devel project/package and not self-submission.
-                    self.review_messages['declined'] = 'Expected submission from devel package %s/%s' % (devel_project, devel_package)
+                    self.review_messages['declined'] = 'Expected submission from devel package %s/%s' % (
+                        devel_project, devel_package)
                     return False
             else:
                 # Check to see if other packages exist with the same source project
@@ -208,7 +213,8 @@ class CheckSource(ReviewBot.ReviewBot):
         filename = new_info.get('filename', '')
         if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != target_package:
             shutil.rmtree(dir)
-            self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (target_package, target_package, new_info['name'])
+            self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (
+                target_package, target_package, new_info['name'])
             return False
 
         # Run check_source.pl script and interpret output.
@@ -229,7 +235,8 @@ class CheckSource(ReviewBot.ReviewBot):
         # ret = 0 : Good
         # ret = 1 : Bad
         # ret = 2 : Bad but can be non-fatal in some cases
-        if ret > 1 and target_project.startswith('openSUSE:Leap:') and (source_project.startswith('SUSE:SLE-15:') or source_project.startswith('openSUSE:Factory')):
+        if ret > 1 and target_project.startswith('openSUSE:Leap:') and (source_project.startswith('SUSE:SLE-15:') or
+                                                                        source_project.startswith('openSUSE:Factory')):
             pass
         elif ret != 0:
             shutil.rmtree(dir)
@@ -263,11 +270,13 @@ class CheckSource(ReviewBot.ReviewBot):
             if warnings:
                 # if there are any add a review for the security team
                 # maybe add the found warnings to the message for the review
-                message = CheckSource.AUDIT_BUG_MESSAGE + "\nTriggered by whitelist warnings:\n{}".format("\n".join(warnings))
+                message = CheckSource.AUDIT_BUG_MESSAGE + \
+                    "\nTriggered by whitelist warnings:\n{}".format("\n".join(warnings))
                 self.add_review(self.request, by_group=self.security_review_team, msg=message)
             warnings = self.suppresses_whitelist_warnings(source_project, source_package)
             if warnings:
-                message = CheckSource.AUDIT_BUG_MESSAGE + "\nTriggered by suppressed whitelist warning:\n{}".format("\n".join(warnings))
+                message = CheckSource.AUDIT_BUG_MESSAGE + \
+                    "\nTriggered by suppressed whitelist warning:\n{}".format("\n".join(warnings))
                 self.add_review(self.request, by_group=self.security_review_team, msg=message)
 
         return True
@@ -305,7 +314,8 @@ class CheckSource(ReviewBot.ReviewBot):
             repo = f.attrib['name']
             query = {'last': 1, }
             for arch in target_archs(self.apiurl, source_project, repo):
-                url = osc.core.makeurl(self.apiurl, ['build', source_project, repo, arch, source_package, '_log'], query=query)
+                url = osc.core.makeurl(self.apiurl, ['build', source_project, repo,
+                                       arch, source_package, '_log'], query=query)
                 try:
                     result = osc.core.http_GET(url)
                     contents = str(result.read())
@@ -460,7 +470,8 @@ class CheckSource(ReviewBot.ReviewBot):
         matches = ET.parse(osc.core.http_GET(url)).getroot()
         if int(matches.attrib['matches']) > 1:
             ids = [rq.attrib['id'] for rq in matches.findall('request')]
-            self.review_messages['declined'] = "There is a pending request %s to %s/%s in process." % (','.join(ids), action.tgt_project, action.tgt_package)
+            self.review_messages['declined'] = "There is a pending request %s to %s/%s in process." % (
+                ','.join(ids), action.tgt_project, action.tgt_package)
             return False
 
         # Decline delete requests against linked flavor package
@@ -510,7 +521,8 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def get_optparser(self):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
-        parser.add_option('--skip-add-reviews', action='store_true', default=False, help='skip adding review after completing checks')
+        parser.add_option('--skip-add-reviews', action='store_true', default=False,
+                          help='skip adding review after completing checks')
 
         return parser
 

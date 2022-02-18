@@ -421,7 +421,8 @@ class PkgListGen(ToolBase.ToolBase):
                 # FIXME: port to lzma module with python3
                 subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
-                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                                        solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
                 for arch in self.all_architectures:
                     for project, repo in self.repos:
@@ -683,7 +684,8 @@ class PkgListGen(ToolBase.ToolBase):
             self.write_group_stubs()
         else:
             summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
-                                         ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
+                                         ignore_recommended=str2bool(
+                                             target_config.get('pkglistgen-ignore-recommended')),
                                          locale=target_config.get('pkglistgen-locale'),
                                          locales_from=target_config.get('pkglistgen-locales-from'))
 

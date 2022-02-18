@@ -181,7 +181,8 @@ class CompareList(object):
                             if self.submit_new_package(self.submitfrom, self.submitto, pkg, msg):
                                 submit_counter += 1
                         else:
-                            msg = "Automated submission of a package from %s that is new in %s" % (self.old_prj, self.new_prj)
+                            msg = "Automated submission of a package from %s that is new in %s" % (
+                                self.old_prj, self.new_prj)
                             if self.submit_new_package(self.old_prj, self.new_prj, pkg, msg):
                                 submit_counter += 1
                 elif not self.newonly:

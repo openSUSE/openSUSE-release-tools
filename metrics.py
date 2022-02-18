@@ -143,7 +143,9 @@ def ingest_requests(api, project):
                 # All letter where whitelisted since no restriction.
                 request_tags['whitelisted'] = request_tags['type'] == 'letter'
 
-        ready_to_accept = request.xpath('review[contains(@by_project, "{}:Staging:adi:") and @state="accepted"]/history[comment[text() = "ready to accept"]]/@when'.format(project))
+        xpath = 'review[contains(@by_project, "{}:Staging:adi:") and @state="accepted"]/'.format(project)
+        xpath += 'history[comment[text() = "ready to accept"]]/@when'
+        ready_to_accept = request.xpath(xpath)
         if len(ready_to_accept):
             ready_to_accept = date_parse(ready_to_accept[0])
             request_fields['ready'] = (final_at - ready_to_accept).total_seconds()

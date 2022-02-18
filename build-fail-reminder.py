@@ -166,7 +166,8 @@ def main(args):
             }
             url = osc.core.makeurl(apiurl, ('search', 'owner'), query=query)
             root = ET.parse(osc.core.http_GET(url)).getroot()
-            maintainers = set([p.get('name') for p in root.findall('.//person') if p.get('role') in ('maintainer', 'bugowner')])
+            maintainers = set([p.get('name') for p in root.findall('.//person')
+                              if p.get('role') in ('maintainer', 'bugowner')])
             # TODO: expand groups if no persons found
             for userid in maintainers:
                 if userid not in Person:

@@ -38,8 +38,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             if prj.startswith('openSUSE:Leap') or prj.startswith('openSUSE:1'):
                 self.logger.debug("%s looks wrong as maintainer, skipped", prj)
                 continue
-            self.add_review(req, by_project=prj, by_package=pkg,
-                            msg='Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj))
+            msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj)
+            self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
 
     @staticmethod
     @memoize(session=True)
@@ -113,7 +113,9 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         self._check_maintainer_review_needed(req, a)
 
-        if a.tgt_releaseproject.startswith("openSUSE:Backports:") and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP3") and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP4"):
+        if a.tgt_releaseproject.startswith("openSUSE:Backports:") \
+            and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP3") \
+                and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP4"):
             self.add_factory_source = True
 
         return True

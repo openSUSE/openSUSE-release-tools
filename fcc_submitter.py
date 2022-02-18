@@ -241,7 +241,8 @@ class FccSubmitter(object):
         else:
             data['linkinfo'] = None
 
-        files = [entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec')]
+        files = [entry.get('name').replace('.spec', '')
+                 for entry in root.findall('entry') if entry.get('name').endswith('.spec')]
         data['specs'] = files
 
         if len(files) > 1:
@@ -340,7 +341,8 @@ class FccSubmitter(object):
 
             if multi_specs:
                 if multi_specs['linkinfo']:
-                    logging.info('%s in %s is sub-package of %s, skip it!' % (package, 'openSUSE:Factory', multi_specs['linkinfo']))
+                    logging.info('%s in %s is sub-package of %s, skip it!' %
+                                 (package, 'openSUSE:Factory', multi_specs['linkinfo']))
                     ms_packages.append(package)
                     submit_ok = False
 
@@ -357,7 +359,8 @@ class FccSubmitter(object):
                 # make sure there is no request against same package
                 request = self.get_request_list(package)
                 if request:
-                    logging.debug("There is a request to %s / %s already or it has been declined/revoked, skip!" % (package, self.to_prj))
+                    logging.debug("There is a request to %s / %s already or it has been declined/revoked, skip!" %
+                                  (package, self.to_prj))
                 else:
                     logging.info("%d - Preparing submit %s to %s" % (i, package, self.to_prj))
                     # get devel project
@@ -440,7 +443,8 @@ if __name__ == '__main__':
                         default=OPENSUSE)
     parser.add_argument('-r', '--freeze', dest='freeze', action='store_true', help='rebase FCC project')
     parser.add_argument('-s', '--list', dest='list_packages', action='store_true', help='list build succeeded packages')
-    parser.add_argument('-l', '--limit', dest='submit_limit', metavar='NUMBERS', help='limit numbers packages to submit (default: 100)', default=100)
+    parser.add_argument('-l', '--limit', dest='submit_limit', metavar='NUMBERS',
+                        help='limit numbers packages to submit (default: 100)', default=100)
 
     args = parser.parse_args()
 

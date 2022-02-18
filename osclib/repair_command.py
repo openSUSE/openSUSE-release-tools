@@ -27,7 +27,8 @@ class RepairCommand(object):
 
         if reviews:
             if len(reviews) > 1:
-                raise oscerr.WrongArgs('Request {} had multiple review opened by different staging project'.format(reqid))
+                raise oscerr.WrongArgs(
+                    'Request {} had multiple review opened by different staging project'.format(reqid))
         else:
             raise oscerr.WrongArgs('Request {} is not for staging project'.format(reqid))
 
@@ -51,7 +52,8 @@ class RepairCommand(object):
 
         # a bad request setup found
         print('Repairing "{}"'.format(reqid))
-        change_review_state(self.api.apiurl, reqid, newstate='accepted', message='Re-evaluation needed', by_project=staging_project)
+        change_review_state(self.api.apiurl, reqid, newstate='accepted',
+                            message='Re-evaluation needed', by_project=staging_project)
         self.api.add_review(reqid, by_group=self.api.cstaging_group, msg='Requesting new staging review')
 
     def perform(self, packages, cleanup=False):

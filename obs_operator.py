@@ -59,7 +59,8 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             with OSCRequestEnvironment(self, require_session=False):
                 self.send_header('Access-Control-Allow-Methods', 'GET, POST')
-                self.send_header('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
+                self.send_header('Access-Control-Allow-Headers',
+                                 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
         except OSCRequestEnvironmentException:
             self.send_header('Allow', 'OPTIONS, GET, POST')
         self.end_headers()

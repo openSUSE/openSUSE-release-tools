@@ -26,7 +26,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         self.history_limit = 5
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
-        super(FactorySourceChecker, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
+        super(FactorySourceChecker, self).check_source_submission(
+            src_project, src_package, src_rev, target_project, target_package)
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         if src_srcinfo is None:
             # source package does not exist?
@@ -94,7 +95,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         for req in requests:
             for a in req.actions:
                 si = self.get_sourceinfo(prjprefix + a.src_project, a.src_package, a.src_rev)
-                self.logger.debug("rq %s: %s/%s@%s" % (req.reqid, prjprefix + a.src_project, a.src_package, si.verifymd5))
+                self.logger.debug("rq %s: %s/%s@%s" % (req.reqid, prjprefix +
+                                  a.src_project, a.src_package, si.verifymd5))
                 if si.verifymd5 == rev:
                     if req.state.name == 'new':
                         self.logger.info("%s ok", srref(req.reqid))
@@ -121,7 +123,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                                     self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_group)
                                 elif r.by_project:
                                     if r.by_package:
-                                        self.logger.info("%s waiting for review by %s/%s", srref(req.reqid), r.by_project, r.by_package)
+                                        self.logger.info("%s waiting for review by %s/%s",
+                                                         srref(req.reqid), r.by_project, r.by_package)
                                     else:
                                         self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_project)
                                 return None

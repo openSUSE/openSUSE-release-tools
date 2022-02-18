@@ -94,7 +94,12 @@ class ToolBase(object):
 
     def meta_get_packagelist(self, prj, deleted=None, expand=False):
         root = ET.fromstring(self._meta_get_packagelist(prj, deleted, expand))
-        return [node.get('name') for node in root.findall('entry') if not node.get('name') == '000product' and not node.get('name').startswith('patchinfo.')]
+        res = list()
+        for node in root.findall('entry'):
+            name = node.get('name')
+            if not (name == '000product' or name.startswith('patchinfo.')):
+                res.push(name)
+        return res
 
     def latest_packages(self, project):
         data = self.cached_GET(self.makeurl(['project', 'latest_commits', project]))

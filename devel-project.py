@@ -272,7 +272,8 @@ def remind_comment(apiurl, repeat_age, request_id, project, package=None):
 
 def common_args_add(parser):
     parser.add_argument('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')
-    parser.add_argument('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')
+    parser.add_argument('--repeat-age', type=int, default=7, metavar='DAYS',
+                        help='age after which a new reminder will be sent')
     parser.add_argument('--remind', action='store_true', help='remind maintainers to review')
 
 
@@ -282,7 +283,8 @@ def main():
 
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debuging')
-    parser.add_argument('-p', '--project', default='openSUSE:Factory', metavar='PROJECT', help='project from which to source devel projects')
+    parser.add_argument('-p', '--project', default='openSUSE:Factory', metavar='PROJECT',
+                        help='project from which to source devel projects')
 
     parser_list = subparsers.add_parser('list', help='List devel projects.')
     parser_list.set_defaults(func=list)

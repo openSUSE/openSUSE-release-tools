@@ -51,7 +51,8 @@ class SelectCommand(object):
                 if int(req.get('id')) < int(request) and req.get('package') == package:
                     candidates.append((req.get('id'), package, prj.get('name')))
 
-        assert len(candidates) <= 1, 'There are more than one candidate to supersede {} ({}): {}'.format(request, package, candidates)
+        assert len(candidates) <= 1, 'There are more than one candidate to supersede {} ({}): {}'.format(
+            request, package, candidates)
 
         return candidates[0] if candidates else None
 

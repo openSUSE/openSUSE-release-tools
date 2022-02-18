@@ -200,7 +200,8 @@ class AcceptCommand(object):
 
             # Remove package from Rings in case 2nd specfile was removed
             if self.api.ring_packages.get(link):
-                delete_package(self.api.apiurl, self.api.ring_packages.get(link), link, force=True, msg="Cleanup package in Rings")
+                delete_package(self.api.apiurl, self.api.ring_packages.get(
+                    link), link, force=True, msg="Cleanup package in Rings")
 
         for link in needed_links - local_links:
             # There is more than one .spec file in the package; link package containers as needed

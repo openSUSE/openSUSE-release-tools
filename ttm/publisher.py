@@ -50,7 +50,8 @@ class ToTestPublisher(ToTestManager):
         in_progress = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
-            if job['result'] in ('failed', 'incomplete', 'timeout_exceeded', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
+            if job['result'] in ('failed', 'incomplete', 'timeout_exceeded', 'skipped',
+                                 'user_cancelled', 'obsoleted', 'parallel_failed'):
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
                 url = makeurl(self.project.openqa_server,
                               ['api', 'v1', 'jobs', str(job['id']), 'comments'])
@@ -216,9 +217,11 @@ class ToTestPublisher(ToTestManager):
             wait_time = 20
             while not self.all_repos_done(self.project.test_project):
                 if self.dryrun:
-                    self.logger.info('{} is still not published, do not wait as dryrun.'.format(self.project.test_project))
+                    self.logger.info('{} is still not published, do not wait as dryrun.'.format(
+                        self.project.test_project))
                     return
-                self.logger.info('{} is still not published, waiting {} seconds'.format(self.project.test_project, wait_time))
+                self.logger.info('{} is still not published, waiting {} seconds'.format(
+                    self.project.test_project, wait_time))
                 time.sleep(wait_time)
 
         current_snapshot = self.get_status('publishing')

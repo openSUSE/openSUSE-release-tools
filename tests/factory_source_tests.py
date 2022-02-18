@@ -180,15 +180,17 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
         self.assertTrue(result['status'])
 
     def test_source_not_in_factory(self):
-
+        url = '/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D'
+        url += '%27factory-source%27+and+%40state%3D%27new%27%5D&withfullhistory=1'
         httpretty.register_uri(httpretty.GET,
-                               APIURL + '/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D&withfullhistory=1',
+                               APIURL + url,
                                match_querystring=True,
                                body="""
                 <collection matches="1">
                     <request id="261411" creator="lnussel">
                       <action type="maintenance_incident">
-                        <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
+                        <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan"
+                                rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
                         <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
                       </action>
                       <state name="review" who="maintbot" when="2014-11-13T13:22:02">
@@ -219,7 +221,8 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
                                body="""
                 <request id="261411" creator="lnussel">
                   <action type="maintenance_incident">
-                    <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
+                    <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan"
+                            rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
                     <target project="openSUSE:Maintenance" releaseproject="openSUSE:Backports:SLE-12"/>
                   </action>
                   <state name="review" who="maintbot" when="2014-11-13T13:22:02">
@@ -248,11 +251,12 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
                                APIURL + "/source/home:lnussel:branches:openSUSE:Backports:SLE-12/plan",
                                body="""
                 <directory name="plan" rev="1" vrev="1" srcmd5="b4ed19dc30c1b328168bc62a81ec6998">
-                  <linkinfo project="home:lnussel:plan" package="plan" srcmd5="7a2353f73b29dba970702053229542a0" baserev="7a2353f73b29dba970702053229542a0" xsrcmd5="71e76daf2c2e9ddb0b9208f54a14f608" lsrcmd5="b4ed19dc30c1b328168bc62a81ec6998" />
+                  <linkinfo project="home:lnussel:plan" package="plan" srcmd5="7a2353f73b29dba970702053229542a0"
+                            baserev="7a2353f73b29dba970702053229542a0" xsrcmd5="71e76daf2c2e9ddb0b9208f54a14f608"
+                            lsrcmd5="b4ed19dc30c1b328168bc62a81ec6998" />
                   <entry name="_link" md5="91f81d88456818a18a7332999fb2da18" size="125" mtime="1415807350" />
                   <entry name="plan.spec" md5="b6814215f6d2e8559b43de9a214b2cbd" size="8103" mtime="1413627959" />
                 </directory>
-
             """)
 
         httpretty.register_uri(httpretty.GET,

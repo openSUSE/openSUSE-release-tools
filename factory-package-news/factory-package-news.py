@@ -252,11 +252,14 @@ class ChangeLogger(cmdln.Cmdln):
 
             # if a changelog is too long, cut it off after changelog_max_lines lines
             changedetails_lines = changedetails.splitlines()
-            if len(changedetails_lines) > changelog_max_lines + 5:  # apply 5 lines tolerance to avoid silly-looking "skipping 2 lines"
+            # apply 5 lines tolerance to avoid silly-looking "skipping 2 lines"
+            if len(changedetails_lines) > changelog_max_lines + 5:
                 changedetails = '\n'.join(changedetails_lines[0:changelog_max_lines])
-                changedetails += '\n    ... changelog too long, skipping %s lines ...\n' % (len(changedetails_lines) - changelog_max_lines - 1)
-                changedetails += changedetails_lines[-1]  # add last line of changelog diff so that it's possible to find out the end of the changelog section
-
+                left = len(changedetails_lines) - changelog_max_lines - 1
+                changedetails += '\n    ... changelog too long, skipping {} lines ...\n'.format(left)
+                # add last line of changelog diff so that it's possible to
+                # find out the end of the changelog section
+                changedetails += changedetails_lines[-1]
             details += changedetails
             details += '\n'
 

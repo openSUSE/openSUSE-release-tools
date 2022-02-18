@@ -51,7 +51,9 @@ class TestAccept(unittest.TestCase):
         # check which id was added
         new_id = (set(comments.keys()) - set(self.comments.keys())).pop()
         comment = comments[new_id]['comment']
-        self.assertEqual('Project "{}" accepted. The following packages have been submitted to openSUSE:Factory: wine.'.format(self.prj), comment)
+        ncomment = 'Project "{}" accepted. '.format(self.prj)
+        ncomment += "The following packages have been submitted to openSUSE:Factory: wine."
+        self.assertEqual(ncomment, comment)
 
     def test_accept_new_multibuild_package(self):
         wf = self.setup_wf()
