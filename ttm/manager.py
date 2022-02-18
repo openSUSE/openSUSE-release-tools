@@ -175,10 +175,10 @@ class ToTestManager(ToolBase.ToolBase):
                 continue
             if repo.get('dirty') == 'true':
                 self.logger.info('%s %s %s -> %s' % (repo.get('project'),
-                                                repo.get('repository'), repo.get('arch'), 'dirty'))
+                                                     repo.get('repository'), repo.get('arch'), 'dirty'))
                 ready = False
             if repo.get('code') not in codes:
                 self.logger.info('%s %s %s -> %s' % (repo.get('project'),
-                                                repo.get('repository'), repo.get('arch'), repo.get('code')))
+                                                     repo.get('repository'), repo.get('arch'), repo.get('code')))
                 ready = False
         return ready

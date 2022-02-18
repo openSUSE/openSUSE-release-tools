@@ -309,8 +309,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def get_optparser(self):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
         parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
-                        help='project to process (default: %s)' % FACTORY,
-                        default=FACTORY)
+                          help='project to process (default: %s)' % FACTORY,
+                          default=FACTORY)
         return parser
 
     def setup_tool(self):

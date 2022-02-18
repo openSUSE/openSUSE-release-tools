@@ -58,14 +58,14 @@ class TestContainerCleaner(unittest.TestCase):
     def test_nothingToDo(self):
         """Non-empty project, still do nothing"""
         container_arch_map = {"c": ["i586", "x86_64"],
-                        "c.01": ["i586"],
-                        "c.02": ["x86_64"],
-                        "c.04": ["i586", "x86_64"],
-                        "c.06": ["i586"],
-                        "c.07": ["x86_64"],
-                        "c.08": ["i586", "x86_64"],
-                        "c.11": [],
-                        "d.42": [], "d.43": []}
+                              "c.01": ["i586"],
+                              "c.02": ["x86_64"],
+                              "c.04": ["i586", "x86_64"],
+                              "c.06": ["i586"],
+                              "c.07": ["x86_64"],
+                              "c.08": ["i586", "x86_64"],
+                              "c.11": [],
+                              "d.42": [], "d.43": []}
 
         to_be_deleted_exp = []
 
@@ -74,25 +74,25 @@ class TestContainerCleaner(unittest.TestCase):
     def test_multiplePackages(self):
         """Multiple packages in one project"""
         container_arch_map = {"c": ["i586", "x86_64"],
-                        "c.01": ["i586"],
-                        "c.02": ["x86_64"],
-                        "c.03": [],
-                        "c.04": ["i586", "x86_64"],
-                        "c.05": ["i586", "x86_64"],
-                        "c.06": ["i586"],
-                        "c.07": ["x86_64"],
-                        "c.08": ["i586", "x86_64"],
-                        "c.09": ["i586", "x86_64"],
-                        "c.10": ["i586", "x86_64"],
-                        "c.11": [],
-                        "d.42": [], "d.43": [],
-                        "e.51": ["i586"],
-                        "e.52": ["aarch64"],
-                        "e.53": ["i586"],
-                        "e.54": ["i586"],
-                        "e.55": ["i586"],
-                        "e.56": ["i586"],
-                        "e.57": ["i586"]}
+                              "c.01": ["i586"],
+                              "c.02": ["x86_64"],
+                              "c.03": [],
+                              "c.04": ["i586", "x86_64"],
+                              "c.05": ["i586", "x86_64"],
+                              "c.06": ["i586"],
+                              "c.07": ["x86_64"],
+                              "c.08": ["i586", "x86_64"],
+                              "c.09": ["i586", "x86_64"],
+                              "c.10": ["i586", "x86_64"],
+                              "c.11": [],
+                              "d.42": [], "d.43": [],
+                              "e.51": ["i586"],
+                              "e.52": ["aarch64"],
+                              "e.53": ["i586"],
+                              "e.54": ["i586"],
+                              "e.55": ["i586"],
+                              "e.56": ["i586"],
+                              "e.57": ["i586"]}
 
         to_be_deleted_exp = ["c", "c.01", "c.02", "c.03", "c.04",
                              "e.51"]
@@ -103,25 +103,25 @@ class TestContainerCleaner(unittest.TestCase):
         """Packages using _multbuild.
         There is no special handling for _multibuild - It's enough if any flavor has binaries."""
         container_arch_map = {"c:docker": ["i586", "x86_64"],
-                        "c.01:docker": ["i586"],
-                        "c.02:lxc": ["x86_64"],
-                        "c.03:docker": [],
-                        "c.04": ["i586", "x86_64"],
-                        "c.05:docker": ["i586", "x86_64"],
-                        "c.06:docker": ["i586"],
-                        "c.07:docker": ["x86_64"],
-                        "c.08:docker": ["i586", "x86_64"],
-                        "c.09:docker": ["i586", "x86_64"],
-                        "c.10:docker": ["i586", "x86_64"],
-                        "c.11:docker": [],
-                        "d.42:lxc": [], "d.43": [],
-                        "e.51": ["i586"],
-                        "e.52": ["aarch64"],
-                        "e.53": ["i586"],
-                        "e.54:docker": ["i586"],
-                        "e.55:docker": ["i586"],
-                        "e.56": ["i586"],
-                        "e.57": ["i586"]}
+                              "c.01:docker": ["i586"],
+                              "c.02:lxc": ["x86_64"],
+                              "c.03:docker": [],
+                              "c.04": ["i586", "x86_64"],
+                              "c.05:docker": ["i586", "x86_64"],
+                              "c.06:docker": ["i586"],
+                              "c.07:docker": ["x86_64"],
+                              "c.08:docker": ["i586", "x86_64"],
+                              "c.09:docker": ["i586", "x86_64"],
+                              "c.10:docker": ["i586", "x86_64"],
+                              "c.11:docker": [],
+                              "d.42:lxc": [], "d.43": [],
+                              "e.51": ["i586"],
+                              "e.52": ["aarch64"],
+                              "e.53": ["i586"],
+                              "e.54:docker": ["i586"],
+                              "e.55:docker": ["i586"],
+                              "e.56": ["i586"],
+                              "e.57": ["i586"]}
 
         to_be_deleted_exp = ["c", "c.01", "c.02", "c.03", "c.04",
                              "e.51"]

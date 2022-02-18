@@ -61,7 +61,7 @@ class PackageLookup(object):
     def _load_lookup_file(self, prj):
         try:
             return osc.core.http_GET(osc.core.makeurl(self.apiurl,
-                                ['source', prj, '00Meta', 'lookup.yml']))
+                                                      ['source', prj, '00Meta', 'lookup.yml']))
         except HTTPError as e:
             # in case the project doesn't exist yet (like sle update)
             if e.code != 404:
@@ -301,9 +301,9 @@ class ReviewBot(object):
             if not self.dryrun:
                 try:
                     osc.core.change_review_state(apiurl=self.apiurl,
-                        reqid=req.reqid, newstate=newstate,
-                        by_group=self.review_group,
-                        by_user=self.review_user, message=msg)
+                                                 reqid=req.reqid, newstate=newstate,
+                                                 by_group=self.review_group,
+                                                 by_user=self.review_user, message=msg)
                 except HTTPError as e:
                     if e.code != 403:
                         raise e
@@ -912,10 +912,10 @@ class CommandLineInterface(cmdln.Cmdln):
             user = conf.get_apiurl_usr(apiurl)
 
         return self.clazz(apiurl=apiurl,
-                dryrun=self.options.dry,
-                user=user,
-                group=group,
-                logger=self.logger)
+                          dryrun=self.options.dry,
+                          user=user,
+                          group=group,
+                          logger=self.logger)
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids

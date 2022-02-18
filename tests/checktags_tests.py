@@ -186,8 +186,8 @@ Pico text editor while also offering a few enhancements.</description>
                                body='<collection matches="0"></collection>')
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/openSUSE:Factory/00Meta/lookup.yml",
-            status=404)
+                               APIURL + "/source/openSUSE:Factory/00Meta/lookup.yml",
+                               status=404)
 
         result = {'state_accepted': None}
 

@@ -53,7 +53,7 @@ maintainer if the package has no explicit maintainer assigned)
 Kind regards,
 %(sender)s
 """,
-u"""Dear %(recipient)s,
+                  u"""Dear %(recipient)s,
 
 Following-up the reminder of one week ago, we have to inform you that
 '%(package)s' is still failing in %(project)s. See
@@ -81,8 +81,8 @@ def SendMail(logger, project, sender, to, fullname, subject, text):
         xmailer = '{} - Failure Notification'.format(project)
         to = email.utils.formataddr((fullname, to))
         mail_send_with_details(sender=sender, to=to,
-                        subject=subject, text=text, xmailer=xmailer,
-                        relay=args.relay, dry=args.dry)
+                               subject=subject, text=text, xmailer=xmailer,
+                               relay=args.relay, dry=args.dry)
     except Exception as e:
         print(e)
         logger.error("Failed to send an email to %s (%s)" % (fullname, to))
@@ -103,11 +103,11 @@ def main(args):
 
     logger.debug('loading build fails for %s' % project)
     url = osc.core.makeurl(apiurl, ['projects', project, 'status'],
-        {'ignore_pending': True,
-         'limit_to_fails': True,
-         'include_versions': False,
-         'format': 'json'
-         })
+                           {'ignore_pending': True,
+                            'limit_to_fails': True,
+                            'include_versions': False,
+                            'format': 'json'
+                            })
     json_data = osc.core.http_GET(url)
     data = json.load(json_data)
     json_data.close()

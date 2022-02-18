@@ -111,7 +111,7 @@ class RepoChecker():
         self.store_filename = 'rebuildpacs.{}-{}.yaml'.format(project, repository)
         if self.store_project and self.store_package:
             state_yaml = source_file_load(self.apiurl, self.store_project, self.store_package,
-                                        self.store_filename)
+                                          self.store_filename)
             if state_yaml:
                 oldstate = yaml.safe_load(state_yaml)
 

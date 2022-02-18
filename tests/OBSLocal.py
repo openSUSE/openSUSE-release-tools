@@ -1056,10 +1056,10 @@ class Request(object):
 
         if type == 'submit':
             self.reqid = osc.core.create_submit_request(APIURL,
-                                     src_project=source_package.project.name,
-                                     src_package=source_package.name,
-                                     dst_project=target_project,
-                                     dst_package=target_package)
+                                                        src_project=source_package.project.name,
+                                                        src_package=source_package.name,
+                                                        dst_project=target_project,
+                                                        dst_package=target_package)
             print('created submit request {}/{} -> {}'.format(
                 source_package.project.name, source_package.name, target_project))
         elif type == 'delete':

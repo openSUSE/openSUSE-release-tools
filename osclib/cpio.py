@@ -36,9 +36,9 @@ class CpioFile(object):
             raise Exception("invalid cpio header %s" % self.c_magic)
 
         names = ("c_ino", "c_mode", "c_uid", "c_gid",
-                "c_nlink", "c_mtime", "c_filesize",
-                "c_devmajor", "c_devminor", "c_rdevmajor",
-                "c_rdevminor", "c_namesize", "c_check")
+                 "c_nlink", "c_mtime", "c_filesize",
+                 "c_devmajor", "c_devminor", "c_rdevmajor",
+                 "c_rdevminor", "c_namesize", "c_check")
         for (n, v) in zip(names, fields[1:]):
             setattr(self, n, int(v, 16))
 

@@ -135,7 +135,7 @@ class TestApiCalls(OBSLocal.TestCase):
                    {'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'}]
         self.assertEqual(self.winerq.reviews(), reviews)
         self.assertEqual(self.wf.api.packages_staged,
-                {'wine': {'prj': 'openSUSE:Factory:Staging:B', 'rq_id': num}})
+                         {'wine': {'prj': 'openSUSE:Factory:Staging:B', 'rq_id': num}})
 
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""

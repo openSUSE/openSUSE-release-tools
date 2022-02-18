@@ -202,7 +202,7 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     uc = CompareList(args.old_prj, args.new_prj, args.verbose, args.newonly,
-            args.removedonly, args.existin, args.submit, args.submitfrom, args.submitto, args.submit_limit)
+                     args.removedonly, args.existin, args.submit, args.submitfrom, args.submitto, args.submit_limit)
     uc.crawl()
 
 

@@ -49,7 +49,7 @@ class StagingHelper(object):
     def get_project_binarylist(self, project, repository, arch):
         query = {'view': 'binaryversions'}
         root = ET.parse(http_GET(makeurl(self.apiurl, ['build', project, repository, arch],
-            query=query))).getroot()
+                                         query=query))).getroot()
         return root
 
     def process_project_binarylist(self, project, repository, arch):
@@ -172,15 +172,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
-            help='print info useful for debuging')
+                        help='print info useful for debuging')
     parser.add_argument('-p', '--project', dest='project', metavar='PROJECT',
-            help='deafult project (default: %s)' % OPENSUSE,
-            default=OPENSUSE)
+                        help='deafult project (default: %s)' % OPENSUSE,
+                        default=OPENSUSE)
 
     args = parser.parse_args()
 
     # Set logging configuration
     logging.basicConfig(level=logging.DEBUG if args.debug
-            else logging.INFO)
+                        else logging.INFO)
 
     sys.exit(main(args))

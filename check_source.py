@@ -189,7 +189,7 @@ class CheckSource(ReviewBot.ReviewBot):
         old_info = {'version': None}
         try:
             CheckSource.checkout_package(self.apiurl, target_project, target_package, pathname=dir,
-                         server_service_files=True, expand_link=True)
+                                         server_service_files=True, expand_link=True)
             shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
             old_info = self.package_source_parse(target_project, target_package)
@@ -200,7 +200,7 @@ class CheckSource(ReviewBot.ReviewBot):
                 raise e
 
         CheckSource.checkout_package(self.apiurl, source_project, source_package, revision=source_revision,
-                        pathname=dir, server_service_files=True, expand_link=True)
+                                     pathname=dir, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
         shutil.rmtree(os.path.join(target_package, '.osc'))
 
@@ -251,8 +251,8 @@ class CheckSource(ReviewBot.ReviewBot):
                 if self.staging_group and self.review_user in group_members(self.apiurl, self.staging_group):
                     if not self.dryrun:
                         osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
-                            by_group=self.staging_group,
-                            message='skipping the staging process since only .changes modifications')
+                                                     by_group=self.staging_group,
+                                                     message='skipping the staging process since only .changes modifications')
                 else:
                     self.logger.debug('unable to skip staging review since not a member of staging group')
             elif self.repo_checker is not None:
@@ -353,7 +353,7 @@ class CheckSource(ReviewBot.ReviewBot):
         """Returns add_role request ID for given source project. Creates that add role if needed."""
         try:
             add_roles = get_request_list(self.apiurl, source_project,
-                req_state=['new', 'review'], req_type='add_role')
+                                         req_state=['new', 'review'], req_type='add_role')
             add_roles = list(filter(self.__is_required_maintainer, add_roles))
             if len(add_roles) > 0:
                 return add_roles[0].reqid

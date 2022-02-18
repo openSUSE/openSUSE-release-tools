@@ -87,7 +87,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self._setup_devel_project(devel_files='blowfish-with-patch')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit=False).reqid
+                                               self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -105,7 +105,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self._setup_devel_project()
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit=False).reqid
+                                               self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -120,10 +120,10 @@ class TestCheckSource(OBSLocal.TestCase):
         # switch target and devel, so basically do revert of changes done
         # with patch and changes
         self._setup_devel_project(devel_files='blowfish',
-            target_files='blowfish-with-patch-changes')
+                                  target_files='blowfish-with-patch-changes')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit=False).reqid
+                                               self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -214,7 +214,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
 
     def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
-            target_files='blowfish'):
+                             target_files='blowfish'):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
         self.devel_package = OBSLocal.Package('blowfish', project=devel_project)
 

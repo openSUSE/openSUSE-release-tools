@@ -194,12 +194,12 @@ class ChangeLogger(cmdln.Cmdln):
 
         f = open(os.path.join(opts.dir, version1), 'rb')
         (v, (v1pkgs, v1changelogs)) = pickle.load(f,
-            encoding='utf-8', errors='backslashreplace')
+                                                  encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s" % (v, version1))
         f = open(os.path.join(opts.dir, version2), 'rb')
         (v, (v2pkgs, v2changelogs)) = pickle.load(f,
-            encoding='utf-8', errors='backslashreplace')
+                                                  encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s" % (v, version2))
 

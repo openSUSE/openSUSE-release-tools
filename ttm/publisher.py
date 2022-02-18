@@ -300,4 +300,4 @@ class ToTestPublisher(ToTestManager):
         if self.project.totest_images_repo != self.project.product_repo:
             self.logger.info('Publish test project content (image_products)')
             self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='enable',
-            repository=self.project.totest_images_repo)
+                                        repository=self.project.totest_images_repo)

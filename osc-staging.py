@@ -384,7 +384,7 @@ def do_staging(self, subcmd, opts, *args):
     Config(opts.apiurl, opts.project)
 
     colorama.init(autoreset=True,
-        strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
+                  strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
     # Allow colors to be changed.
     for name in dir(Fore):
         if not name.startswith('_'):

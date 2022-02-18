@@ -205,11 +205,11 @@ class RequestHandler(BaseHTTPRequestHandler):
     def cookiejar_create(self, cookiejar_file, session):
         cookie_jar = LWPCookieJar(cookiejar_file.name)
         cookie_jar.set_cookie(Cookie(0, self.COOKIE_NAME, session,
-            None, False,
-            '', False, True,
-            '/', True,
-            True,
-            None, None, None, None, {}))
+                                     None, False,
+                                     '', False, True,
+                                     '/', True,
+                                     True,
+                                     None, None, None, None, {}))
         cookie_jar.save()
         cookiejar_file.flush()
 
@@ -389,11 +389,11 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='', help='host name to which to bind')
     parser.add_argument('--port', type=int, default=8080, help='port number to which to bind')
     parser.add_argument('-A', '--apiurl',
-        help='OBS instance API URL to use instead of basing from request origin')
+                        help='OBS instance API URL to use instead of basing from request origin')
     parser.add_argument('--session',
-        help='session cookie value to use instead of any passed cookie')
+                        help='session cookie value to use instead of any passed cookie')
     parser.add_argument('-d', '--debug', action='store_true',
-        help='print debugging information')
+                        help='print debugging information')
 
     args = parser.parse_args()
     sys.exit(args.func(args))

@@ -35,19 +35,19 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
         self.logger.setLevel(logging.DEBUG)
 
         self.checker = FactorySourceChecker(apiurl=APIURL,
-                user='factory-source',
-                logger=self.logger)
+                                            user='factory-source',
+                                            logger=self.logger)
         self.checker.override_allow = False  # Test setup cannot handle.
 
     def test_accept_request(self):
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + '/source/openSUSE:Factory/00Meta/lookup.yml',
-            status=404)
+                               APIURL + '/source/openSUSE:Factory/00Meta/lookup.yml',
+                               status=404)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/request/770001",
-            body="""
+                               APIURL + "/request/770001",
+                               body="""
                 <request id="770001" creator="chameleon">
                   <action type="submit">
                     <source project="Base:System" package="timezone" rev="481ecbe0dfc63ece3a1f1b5598f7d96c"/>
@@ -62,9 +62,9 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/Base:System/timezone?view=info&rev=481ecbe0dfc63ece3a1f1b5598f7d96c",
-            match_querystring=True,
-            body="""
+                               APIURL + "/source/Base:System/timezone?view=info&rev=481ecbe0dfc63ece3a1f1b5598f7d96c",
+                               match_querystring=True,
+                               body="""
                 <sourceinfo package="timezone"
                     rev="481ecbe0dfc63ece3a1f1b5598f7d96c"
                     srcmd5="481ecbe0dfc63ece3a1f1b5598f7d96c"
@@ -74,8 +74,8 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/openSUSE:Factory/timezone/_meta",
-            body="""
+                               APIURL + "/source/openSUSE:Factory/timezone/_meta",
+                               body="""
                <package name="timezone" project="openSUSE:Factory">
                  <title>timezone</title>
                  <description></description>
@@ -83,8 +83,8 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/Base:System/timezone/_meta",
-            body="""
+                               APIURL + "/source/Base:System/timezone/_meta",
+                               body="""
                <package name="timezone" project="Base:System">
                  <title>timezone</title>
                  <description></description>
@@ -92,9 +92,9 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/openSUSE:Factory/timezone?view=info",
-            match_querystring=True,
-            body="""
+                               APIURL + "/source/openSUSE:Factory/timezone?view=info",
+                               match_querystring=True,
+                               body="""
                 <sourceinfo package="timezone"
                     rev="89"
                     vrev="1"
@@ -105,9 +105,9 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/openSUSE:Factory/timezone/_history?limit=5",
-            match_querystring=True,
-            body="""
+                               APIURL + "/source/openSUSE:Factory/timezone/_history?limit=5",
+                               match_querystring=True,
+                               body="""
                 <sourceinfo package="timezone"
                     rev="89"
                     vrev="1"
@@ -118,9 +118,9 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + '/search/request',
-            responses=[
-                httpretty.Response(body="""
+                               APIURL + '/search/request',
+                               responses=[
+                                   httpretty.Response(body="""
                     <collection matches="1">
                       <request id="254684" creator="chameleon">
                         <action type="submit">
@@ -137,7 +137,7 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
                       </request>
                     </collection>
                     """),
-                httpretty.Response(body="""
+                                   httpretty.Response(body="""
                     <collection matches="1">
                       <request id="254684" creator="chameleon">
                         <action type="submit">
@@ -151,7 +151,7 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
                       </request>
                     </collection>
                     """)
-            ])
+                               ])
 
         result = {'status': None}
 
@@ -164,8 +164,8 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             return (200, headers, '<status code="blah"/>')
 
         httpretty.register_uri(httpretty.POST,
-            APIURL + "/request/770001",
-            body=lambda method, uri, headers: change_request(result, method, uri, headers))
+                               APIURL + "/request/770001",
+                               body=lambda method, uri, headers: change_request(result, method, uri, headers))
 
         # first time request is in in review
         self.checker.set_request_ids(['770001'])
@@ -182,9 +182,9 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
     def test_source_not_in_factory(self):
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + '/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D&withfullhistory=1',
-            match_querystring=True,
-            body="""
+                               APIURL + '/search/request?match=state%2F%40name%3D%27review%27+and+review%5B%40by_user%3D%27factory-source%27+and+%40state%3D%27new%27%5D&withfullhistory=1',
+                               match_querystring=True,
+                               body="""
                 <collection matches="1">
                     <request id="261411" creator="lnussel">
                       <action type="maintenance_incident">
@@ -215,8 +215,8 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/request/261411",
-            body="""
+                               APIURL + "/request/261411",
+                               body="""
                 <request id="261411" creator="lnussel">
                   <action type="maintenance_incident">
                     <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
@@ -245,8 +245,8 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/home:lnussel:branches:openSUSE:Backports:SLE-12/plan",
-            body="""
+                               APIURL + "/source/home:lnussel:branches:openSUSE:Backports:SLE-12/plan",
+                               body="""
                 <directory name="plan" rev="1" vrev="1" srcmd5="b4ed19dc30c1b328168bc62a81ec6998">
                   <linkinfo project="home:lnussel:plan" package="plan" srcmd5="7a2353f73b29dba970702053229542a0" baserev="7a2353f73b29dba970702053229542a0" xsrcmd5="71e76daf2c2e9ddb0b9208f54a14f608" lsrcmd5="b4ed19dc30c1b328168bc62a81ec6998" />
                   <entry name="_link" md5="91f81d88456818a18a7332999fb2da18" size="125" mtime="1415807350" />
@@ -256,21 +256,21 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/openSUSE:Factory/plan/_meta",
-            status=404,
-            body="""
+                               APIURL + "/source/openSUSE:Factory/plan/_meta",
+                               status=404,
+                               body="""
                 <status code="unknown_package">
                     <summary>openSUSE:Factory/plan</summary>
                 </status>
             """)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + '/source/openSUSE:Factory/00Meta/lookup.yml',
-            status=404)
+                               APIURL + '/source/openSUSE:Factory/00Meta/lookup.yml',
+                               status=404)
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + '/search/request',
-            body="""
+                               APIURL + '/search/request',
+                               body="""
                 <collection matches="0">
                 </collection>
             """)
@@ -284,8 +284,8 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
             return (200, headers, '<status code="ok"/>')
 
         httpretty.register_uri(httpretty.POST,
-            APIURL + "/request/261411",
-            body=lambda method, uri, headers: change_request(result, method, uri, headers))
+                               APIURL + "/request/261411",
+                               body=lambda method, uri, headers: change_request(result, method, uri, headers))
 
         self.checker.requests = []
         self.checker.set_request_ids_search_review()

@@ -1188,7 +1188,7 @@ def create_change_devel_request(apiurl, source_project, source_package,
     """Create a change_devel request"""
 
     action = Action('change_devel', src_project=source_project, src_package=source_package,
-            tgt_project=target_project, tgt_package=target_package)
+                    tgt_project=target_project, tgt_package=target_package)
     return create_request(apiurl, action, message)
 
 

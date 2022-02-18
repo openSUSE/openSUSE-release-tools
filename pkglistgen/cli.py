@@ -103,10 +103,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 self.tool.reset()
                 self.tool.dry_run = self.options.dry
                 if self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
-                                project=project, scope=scope, force=opts.force,
-                                no_checkout=opts.no_checkout,
-                                only_release_packages=opts.only_release_packages,
-                                stop_after_solve=opts.stop_after_solve):
+                                                     project=project, scope=scope, force=opts.force,
+                                                     no_checkout=opts.no_checkout,
+                                                     only_release_packages=opts.only_release_packages,
+                                                     stop_after_solve=opts.stop_after_solve):
                     self.error_occured = True
             except Exception:
                 # Print exception, but continue to prevent problems effecting one

@@ -664,9 +664,9 @@ class PkgListGen(ToolBase.ToolBase):
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
         file_utils.copy_directory_contents(group_dir, product_dir,
-                                     ['supportstatus.txt', 'groups.yml',
-                                      'reference-unsorted.yml', 'reference-summary.yml',
-                                      'package-groups.changes'])
+                                           ['supportstatus.txt', 'groups.yml',
+                                            'reference-unsorted.yml', 'reference-summary.yml',
+                                            'package-groups.changes'])
         file_utils.change_extension(product_dir, '.spec.in', '.spec')
         file_utils.change_extension(product_dir, '.product.in', '.product')
 

@@ -310,6 +310,6 @@ class ToTestReleaser(ToTestManager):
 
             if self.project.totest_images_repo != self.project.product_repo:
                 self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
-                repository=self.project.totest_images_repo)
+                                            repository=self.project.totest_images_repo)
 
         self._release(set_release=release)

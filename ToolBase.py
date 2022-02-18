@@ -134,7 +134,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option('--http-full-debug', action='store_true',
                           help='debug HTTP traffic (filters no headers)')
         parser.add_option('--cache-requests', action='store_true', default=False,
-                        help='cache GET requests. Not recommended for daily use.')
+                          help='cache GET requests. Not recommended for daily use.')
 
         return parser
 

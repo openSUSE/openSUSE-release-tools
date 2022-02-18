@@ -174,7 +174,7 @@ if __name__ == '__main__':
 
     with app.app_context():
         rendered = render_template('dashboard.html',
-            projectname=args.project,
-            lastupdate=datetime.now(timezone.utc),
-            projects=fetcher.projects)
+                                   projectname=args.project,
+                                   lastupdate=datetime.now(timezone.utc),
+                                   projects=fetcher.projects)
         print(rendered)
