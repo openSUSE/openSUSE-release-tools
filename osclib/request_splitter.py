@@ -176,7 +176,7 @@ class RequestSplitter(object):
         staging = self.stagings[staging]
         if (not staging['bootstrapped'] and
             staging['splitter_info']['strategy']['name'] in ('devel', 'super') and
-            staging['status'].get('state') not in ('acceptable', 'review')):
+                staging['status'].get('state') not in ('acceptable', 'review')):
             # Simplistic attempt to allow for followup requests to be staged
             # after age max has been passed while still stopping when ready.
             return True

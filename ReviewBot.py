@@ -337,7 +337,7 @@ class ReviewBot(object):
                 r.by_package == by_package and
                 r.by_user == by_user and
                 # Only duplicate when allow_duplicate and state != new.
-                (not allow_duplicate or r.state == 'new')):
+                    (not allow_duplicate or r.state == 'new')):
                 del query['cmd']
                 self.logger.debug('skipped adding duplicate review for {}'.format(
                     '/'.join(query.values())))
@@ -445,7 +445,7 @@ class ReviewBot(object):
             # order from lowest to highest is: False, None, True.
             if overall is not False:
                 if ((overall is True and ret is not True) or
-                    (overall is None and ret is False)):
+                        (overall is None and ret is False)):
                     overall = ret
 
             if self.multiple_actions and ret is not None:

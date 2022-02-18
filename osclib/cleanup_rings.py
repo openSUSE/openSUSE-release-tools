@@ -176,7 +176,7 @@ class CleanupRings(object):
         for source in self.sources:
             if (source not in self.pkgdeps and
                 source not in self.links and
-                source not in self.whitelist):
+                    source not in self.whitelist):
                 if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
                     continue
                 # Expensive check so left until last.

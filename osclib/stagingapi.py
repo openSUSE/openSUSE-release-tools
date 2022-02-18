@@ -470,7 +470,7 @@ class StagingAPI(object):
                 replace_old = request_old.find('state').get('name') in ['revoked', 'superseded', 'declined']
 
                 if (request_new.find('action').get('type') == 'delete' and
-                    request_old.find('action').get('type') == 'delete'):
+                        request_old.find('action').get('type') == 'delete'):
                     # Both delete requests.
                     if replace_old:
                         # Pointless since identical requests, but user desires.
@@ -484,7 +484,7 @@ class StagingAPI(object):
                         return stage_info, True
 
                 if (request_new.find('action').get('type') !=
-                    request_old.find('action').get('type')):
+                        request_old.find('action').get('type')):
                     # One delete and one submit.
                     if replace_old:
                         if self.ring_packages.get(target_package):

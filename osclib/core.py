@@ -955,7 +955,7 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
             if action.type == 'maintenance_incident' and action.tgt_releaseproject == project and (
                 (action.tgt_package is None and
                     (action.src_package == package or action.src_package == package_repository)) or
-                (action.tgt_package == package_repository)):
+                    (action.tgt_package == package_repository)):
                 yield request, action
                 break
 
@@ -981,7 +981,7 @@ def request_action_list_maintenance_release(apiurl, project, package, states=['n
 
         for action in request.actions:
             if (action.type == 'maintenance_release' and
-                action.tgt_project == project and action.src_package == package_repository):
+                    action.tgt_project == project and action.src_package == package_repository):
                 yield request, action
                 break
 

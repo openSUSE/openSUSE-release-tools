@@ -871,7 +871,7 @@ class devel_project_simulate:
     def get(self, apiurl, target_project, target_package):
         if (apiurl == self.apiurl and
             target_project == self.target_project and
-            target_package == self.target_package):
+                target_package == self.target_package):
             return self.devel_project, self.devel_package
 
         return False, False
