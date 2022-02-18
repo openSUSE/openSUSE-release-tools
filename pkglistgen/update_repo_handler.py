@@ -185,7 +185,7 @@ def merge_susetags(output, files):
         oldsysrepo = pool.add_repo(file)
         defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
         f = tempfile.TemporaryFile()
-        st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+        subprocess.call(['xz', '-cd', file], stdout=f.fileno())
         os.lseek(f.fileno(), 0, os.SEEK_SET)
         oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
@@ -274,7 +274,7 @@ def update_project(apiurl, project):
                 defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
                 f = tempfile.TemporaryFile()
                 # FIXME: port to lzma module with python3
-                st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+                subprocess.call(['xz', '-cd', file], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
                 repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 

@@ -143,7 +143,7 @@ in charge of the following packages:
         try:
             mail_send(apiurl, args.project, email, subject, message, dry=args.dry)
             print(log)
-        except smtplib.SMTPRecipientsRefused as e:
+        except smtplib.SMTPRecipientsRefused:
             print('[FAILED ADDRESS] {} ({})'.format(log, email))
         except smtplib.SMTPException as e:
             print('[FAILED SMTP] {} ({})'.format(log, e))

@@ -2,27 +2,16 @@
 
 import argparse
 import logging
-import pika
-import sys
-import json
 import osc
-import re
 import yaml
-from time import sleep
-from osc.core import http_GET, http_POST, makeurl, show_project_meta
+from osc.core import http_GET, makeurl, show_project_meta
 from M2Crypto.SSL import SSLError as SSLError
-from osclib.conf import Config
 from osclib.core import attribute_value_load
-from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from openqa_client.exceptions import ConnectionError, RequestError
-from urllib.error import HTTPError, URLError
-from urllib.parse import quote_plus
+from urllib.error import HTTPError
 from datetime import datetime, timezone
 
-import requests
-from osclib.PubSubConsumer import PubSubConsumer
 from flask import Flask, render_template
 
 class Fetcher(object):
@@ -31,10 +20,8 @@ class Fetcher(object):
         self.opts = opts
         self.apiurl = apiurl
         if apiurl.endswith('suse.de'):
-            amqp_prefix = 'suse'
             openqa_url = 'https://openqa.suse.de'
         else:
-            amqp_prefix = 'opensuse'
             openqa_url = 'https://openqa.opensuse.org'
         self.openqa = OpenQA_Client(openqa_url)
 
@@ -46,7 +33,6 @@ class Fetcher(object):
         for job in result['jobs']:
             if job['clone_id'] or job['result'] == 'obsoleted':
                 continue
-            name = job['name'].replace(snapshot, '')
             key = job['result']
             if job['state'] != 'done':
                 key = job['state']
@@ -63,7 +49,7 @@ class Fetcher(object):
         url = makeurl(self.apiurl, ['build', project, '_result'], { 'repository': repository, 'view': 'summary' })
         try:
             f = http_GET(url)
-        except HTTPError as e:
+        except HTTPError:
             return { 'building': -1 }
         root = ET.parse(f).getroot()
         failed = 0

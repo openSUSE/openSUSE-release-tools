@@ -360,7 +360,7 @@ def revision_index(api):
         try:
             root = ET.fromstringlist(
                 get_commitlog(api.apiurl, project, package, None, format='xml'))
-        except HTTPError as e:
+        except HTTPError:
             return revision_index.index
 
         for logentry in root.findall('logentry'):

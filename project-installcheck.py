@@ -44,8 +44,6 @@ class RepoChecker():
             self.logger.error('a repository must be specified via OSRT:Config main-repo for {}'.format(project))
             return
 
-        config = Config.get(self.apiurl, project)
-
         archs = target_archs(self.apiurl, project, repository)
         if not len(archs):
             self.logger.debug('{} has no relevant architectures'.format(project))

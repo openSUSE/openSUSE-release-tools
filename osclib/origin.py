@@ -355,7 +355,7 @@ def origin_annotation_load(request, action, user):
 
     try:
         annotation = yaml.safe_load(review.comment)
-    except yaml.scanner.ScannerError as e:
+    except yaml.scanner.ScannerError:
         # OBS used to prefix subsequent review lines with two spaces. At some
         # point it was changed to no longer indent, but still need to be able
         # to load older annotations.

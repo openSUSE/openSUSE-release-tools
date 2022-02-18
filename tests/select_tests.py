@@ -100,7 +100,7 @@ class TestSelect(OBSLocal.TestCase):
         staging = self.wf.create_staging('A', freeze=True)
 
         rq1 = self.wf.create_submit_request('devel:wine', 'wine')
-        ret = SelectCommand(self.wf.api, staging.name).perform(['wine'])
+        SelectCommand(self.wf.api, staging.name).perform(['wine'])
         rq2 = self.wf.create_submit_request('devel:wine', 'wine', text='Something new')
         self.wf.api._packages_staged = None
 
@@ -120,7 +120,7 @@ class TestSelect(OBSLocal.TestCase):
         package = self.wf.create_package(self.wf.project, 'wine')
         package.create_commit('<multibuild><flavor>libs</flavor></multibuild>', filename='_multibuild')
 
-        rq = self.wf.request_package_delete(package)
+        self.wf.request_package_delete(package)
         ret = SelectCommand(self.wf.api, staging.name).perform(['wine'])
         self.assertEqual(True, ret)
 

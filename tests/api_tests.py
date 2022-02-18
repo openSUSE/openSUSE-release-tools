@@ -43,9 +43,9 @@ class TestApiCalls(OBSLocal.TestCase):
         curl = self.wf.create_package('target', 'curl')
         curl.create_file('curl.spec')
         curl.create_file('curl-mini.spec')
-        cmini = self.wf.create_link(curl, target_project=self.wf.projects['target'], target_package='curl-mini')
+        self.wf.create_link(curl, target_project=self.wf.projects['target'], target_package='curl-mini')
         cring1 = self.wf.create_link(curl, target_project=self.wf.projects['ring1'], target_package='curl')
-        cring0 = self.wf.create_link(cring1, target_project=self.wf.projects['ring0'], target_package='curl-mini')
+        self.wf.create_link(cring1, target_project=self.wf.projects['ring0'], target_package='curl-mini')
 
         # test content for listonly ie. list command
         ring_packages = {
@@ -127,8 +127,6 @@ class TestApiCalls(OBSLocal.TestCase):
 
     def test_add_sr(self):
         # setup is already adding the request, we just verify
-        prj = self.staging_b.name
-        pkg = 'wine'
         num = self.winerq.reqid
 
         # Verify that review is there
@@ -217,7 +215,7 @@ class TestApiCalls(OBSLocal.TestCase):
     def test_move(self):
         """Test package movement."""
 
-        staging_a = self.wf.create_staging('A')
+        self.wf.create_staging('A')
 
         self.assertTrue(self.wf.api.item_exists('openSUSE:Factory:Staging:B', 'wine'))
         self.assertFalse(self.wf.api.item_exists('openSUSE:Factory:Staging:A', 'wine'))

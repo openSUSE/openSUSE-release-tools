@@ -619,7 +619,6 @@ class ReviewBot(object):
 
     def can_accept_review(self, request_id):
         """return True if there is a new review for the specified reviewer"""
-        states = set()
         url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
@@ -793,7 +792,7 @@ class ReviewBot(object):
             u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': history_limit })
             try:
                 r = osc.core.http_GET(u)
-            except HTTPError as e:
+            except HTTPError:
                 self.logger.debug("package has no history!?")
                 return None
 
@@ -895,7 +894,7 @@ class CommandLineInterface(cmdln.Cmdln):
         if self.options.fallback_group:
             self.checker.fallback_group = self.options.fallback_group
 
-        sentry_sdk = sentry_init(conf.config['apiurl'], {
+        sentry_init(conf.config['apiurl'], {
             'review_bot': self.clazz.__name__,
             'review_user': self.checker.review_user,
         })

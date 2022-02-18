@@ -171,8 +171,6 @@ class ToTestPublisher(ToTestManager):
 
         current_snapshot = self.get_status('testing')
 
-        group_id = self.openqa_group_id()
-
         if self.get_status('publishing') == current_snapshot:
             self.logger.info('{} is already publishing'.format(current_snapshot))
             # migrating - if there is no published entry, the last publish call
@@ -254,9 +252,6 @@ class ToTestPublisher(ToTestManager):
     def add_published_tag(self, group_id, snapshot):
         if self.dryrun:
             return
-
-        url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'groups', str(group_id), 'comments'])
 
         status_flag = 'published'
         data = {'text': 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag) }

@@ -81,7 +81,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         package = package['saved']
         url = osc.core.makeurl(self.legaldb, ['requests'], {'external_link': self.request_nick(),
                                                             'package': package['id']})
-        request = REQ.post(url, headers=self.legaldb_headers).json()
+        REQ.post(url, headers=self.legaldb_headers)
         return [package['id']]
 
     def valid_for_opensuse(self, target_project, report):
@@ -128,7 +128,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             if state == 'obsolete':
                 url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(pack)], {
                                        'result': 'reopened in obs', 'state': 'new'})
-                package = REQ.post(url, headers=self.legaldb_headers).json()
+                REQ.post(url, headers=self.legaldb_headers)
                 # reopen
                 return None
             if state == 'new' and self.valid_for_opensuse(target_project, report):
@@ -227,7 +227,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         with open(yaml_path, 'w') as file:
             yaml.dump(self.pkg_cache, file)
         url = osc.core.makeurl(self.legaldb, ['products', project])
-        request = REQ.patch(url, headers=self.legaldb_headers, data={'id': self.packages}).json()
+        REQ.patch(url, headers=self.legaldb_headers, data={'id': self.packages})
 
     def _query_sources_for_product_import(self, project):
         url = osc.core.makeurl(

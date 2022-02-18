@@ -47,7 +47,7 @@ class RepairCommand(object):
         else:
             # this situation should only happen on adi staging
             print('Project is not exist, re-creating "{}"'.format(staging_project))
-            name = self.api.create_adi_project(staging_project)
+            self.api.create_adi_project(staging_project)
 
         # a bad request setup found
         print('Repairing "{}"'.format(reqid))

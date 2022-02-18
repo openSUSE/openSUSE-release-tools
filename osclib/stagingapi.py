@@ -366,12 +366,6 @@ class StagingAPI(object):
         return sorted(projects, key=lambda project: self.extract_adi_number(project))
 
     def find_devel_project_from_adi_frozenlinks(self, prj):
-        try:
-            url = self.makeurl(['source', prj, '_project', '_frozenlinks'], {'meta': '1'})
-            root = ET.parse(http_GET(url)).getroot()
-        except HTTPError as e:
-            if e.code == 404:
-                return None
         meta = self.get_prj_pseudometa(prj)
         # the first package's devel project is good enough
         return devel_project_get(self.apiurl, self.project, meta['requests'][0].get('package'))[0]
@@ -572,13 +566,13 @@ class StagingAPI(object):
     def add_ignored_request(self, request_id, comment):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        req = ET.SubElement(root, 'request', { 'id': str(request_id), 'description': comment })
+        ET.SubElement(root, 'request', { 'id': str(request_id), 'description': comment })
         http_POST(url, data=ET.tostring(root))
 
     def del_ignored_request(self, request_id):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        req = ET.SubElement(root, 'request', { 'id': str(request_id) })
+        ET.SubElement(root, 'request', { 'id': str(request_id) })
         http_DELETE(url, data=ET.tostring(root))
 
     @memoize(session=True, add_invalidate=True)
@@ -681,7 +675,6 @@ class StagingAPI(object):
             print('no package or no request_id')
             return False
 
-        orig_project = project
         if self._supersede:
             self.is_package_disabled(project, package, store=True)
 
@@ -902,7 +895,6 @@ class StagingAPI(object):
         :param project: project to link into
         """
         # read info from sr
-        tar_pkg = None
         act_type = None
 
         req = get_request(self.apiurl, str(request_id))
@@ -927,7 +919,7 @@ class StagingAPI(object):
         if remove_exclusion:
             opts['remove_exclusion'] = 1
         u = makeurl(self.apiurl, ['staging', self.project, 'staging_projects', project, 'staged_requests'], opts)
-        f = http_POST(u, data=requestxml)
+        http_POST(u, data=requestxml)
 
         if act_type == 'delete':
             self.delete_to_prj(act[0], project)

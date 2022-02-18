@@ -139,31 +139,9 @@ class BiArchTool(ToolBase.ToolBase):
         if packages == '__all__':
             self.packages = self.meta_get_packagelist(self.project)
         elif packages == '__latest__':
-            # only works when called in packagelists loop
-            # self.packages = self._filter_packages_by_time(self.latest_packages(self.project))
             self.packages = self.latest_packages(self.project)
         else:
             self.packages = packages
-
-    # check when 000product was last changed, eg by packagelist
-    # generator. Yield only packges that got checked in after that
-    # point in time.
-    def _filter_packages_by_time(self, packages):
-        x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '000product', '_history'], {'limit': '1'})))
-        producttime = int(x.find('./revision/time').text)
-        for pkg in packages:
-            try:
-                x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev': '1'})))
-            # catch deleted packages
-            except HTTPError as e:
-                if e.code == 404:
-                    continue
-                raise e
-
-            packagetime = int(x.find('./revision/time').text)
-#            if producttime > packagetime:
-#                continue
-            yield pkg
 
     def remove_explicit_enable(self):
 
@@ -205,9 +183,6 @@ class BiArchTool(ToolBase.ToolBase):
     def add_explicit_disable(self, wipebinaries=False):
 
         self._init_biarch_packages()
-
-        resulturl = self.makeurl(['source', self.project])
-        result = ET.fromstring(self.cached_GET(resulturl))
 
         for pkg in self.packages:
 
@@ -254,7 +229,6 @@ class BiArchTool(ToolBase.ToolBase):
 
             is_enabled = None
             is_disabled = None
-            has_baselibs = None
             must_disable = None
             changed = None
 

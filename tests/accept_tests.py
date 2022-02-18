@@ -64,7 +64,7 @@ class TestAccept(unittest.TestCase):
         package.create_commit('<multibuild><flavor>gcc9-tests.spec</flavor></multibuild>', filename='_multibuild')
         wf.submit_package(package)
 
-        ret = SelectCommand(wf.api, staging.name).perform(['gcc9'])
+        SelectCommand(wf.api, staging.name).perform(['gcc9'])
         ac = AcceptCommand(wf.api)
         self.assertEqual(True, ac.accept_all(['A'], True))
 
@@ -83,7 +83,7 @@ class TestAccept(unittest.TestCase):
         package.create_commit(filename='gcc9-tests.spec')
         wf.submit_package(package)
 
-        ret = SelectCommand(wf.api, staging.name).perform(['gcc9'])
+        SelectCommand(wf.api, staging.name).perform(['gcc9'])
         ac = AcceptCommand(wf.api)
         self.assertEqual(True, ac.accept_all(['A'], True))
 
@@ -110,7 +110,7 @@ class TestAccept(unittest.TestCase):
 
         wf.submit_package(package)
 
-        ret = SelectCommand(wf.api, staging.name).perform(['gcc9'])
+        SelectCommand(wf.api, staging.name).perform(['gcc9'])
         ac = AcceptCommand(wf.api)
         self.assertEqual(True, ac.accept_all(['A'], True))
 

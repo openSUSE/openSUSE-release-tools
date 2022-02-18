@@ -191,8 +191,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.wf.create_group(group_name)
         self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
 
-        root_project = self.wf.create_project(SRC_PROJECT.rsplit(':', 1)[0],
-            maintainer={'groups': [group_name]})
+        self.wf.create_project(SRC_PROJECT.rsplit(':', 1)[0], maintainer={'groups': [group_name]})
 
         self._setup_devel_project()
 

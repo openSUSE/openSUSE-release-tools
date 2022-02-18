@@ -111,11 +111,6 @@ class ChangeLogger(cmdln.Cmdln):
                     for stat in file_stats:
                         filename = stat[0]
                         LSN = stat[1]
-                        size = stat[2]
-                        sec_size = stat[3]
-                        is_dir = stat[4] == 2
-#                       print("%s [LSN %6d] %8d %s%s" % (dir_tr[is_dir], LSN, size, path,
-#                           iso9660.name_translate(filename)))
 
                         if (filename.endswith('.rpm')):
                             os.lseek(fd, LSN * pycdio.ISO_BLOCKSIZE, io.SEEK_SET)

@@ -65,7 +65,7 @@ class TestConfig(unittest.TestCase):
         # Ensure each pattern is match instead of catch-all pattern.
         patterns = set()
         for project in projects:
-            config = Config(wf.apiurl, project)
+            Config(wf.apiurl, project)
             patterns.add(conf.config[project]['pattern'])
 
         self.assertEqual(len(patterns), len(DEFAULT))

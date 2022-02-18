@@ -18,7 +18,6 @@ class MockedContainerCleaner(ContainerCleaner):
 
             return list(set(all_archs))
         elif path[0:3] == ["build", "mock:prj", "containers"] and len(path) == 4:
-            arch = path[3]
             ret = []
             for srccontainer in self.container_arch_map:
                 ret += [srccontainer]

@@ -365,7 +365,7 @@ class RequestSplitter(object):
 
         group = splitter_info['group']
         if group in self.grouped:
-            key = self.requests_assign(group, staging, merge=True)
+            self.requests_assign(group, staging, merge=True)
 
     def merge(self, strategy_none=False):
         stagings = self.stagings_mergeable_none if strategy_none else self.stagings_mergeable

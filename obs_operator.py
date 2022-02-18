@@ -54,10 +54,10 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         try:
-            with OSCRequestEnvironment(self, require_session=False) as oscrc_file:
+            with OSCRequestEnvironment(self, require_session=False):
                 self.send_header('Access-Control-Allow-Methods', 'GET, POST')
                 self.send_header('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
-        except OSCRequestEnvironmentException as e:
+        except OSCRequestEnvironmentException:
             self.send_header('Allow', 'OPTIONS, GET, POST')
         self.end_headers()
 
@@ -365,7 +365,7 @@ class OSCRequestEnvironmentException(Exception):
 
 def main(args):
     conf.get_config()  # Allow sentry DSN to be available.
-    sentry_sdk = sentry_init()
+    sentry_init()
 
     RequestHandler.apiurl = args.apiurl
     RequestHandler.session = args.session

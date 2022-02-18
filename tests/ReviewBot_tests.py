@@ -29,7 +29,6 @@ class TestReviewBotComment(OBSLocal.TestCase):
         del self.wf
 
     def test_basic_logger(self):
-        comment_count = len(self.api.get_comments(project_name=PROJECT))
         self.assertFalse(self.comments_filtered(self.bot)[0])
 
         # Initial comment.

@@ -403,7 +403,6 @@ class PkgListGen(ToolBase.ToolBase):
         root = yaml.safe_load(open(os.path.join(directory, 'config.yml')))
         for item in root:
             key = list(item)[0]
-            opts = item[key]
             # cast 15.1 to string :)
             key = str(key)
 
@@ -419,7 +418,7 @@ class PkgListGen(ToolBase.ToolBase):
                 defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
                 f = tempfile.TemporaryFile()
                 # FIXME: port to lzma module with python3
-                st = subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
+                subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
                 oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 

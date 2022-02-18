@@ -324,10 +324,8 @@ class Group(object):
             root.append(c)
 
         if arch != '*':
-            cond = ET.SubElement(root, 'conditional', {
-                                 'name': 'only_{}'.format(arch)})
-        packagelist = ET.SubElement(
-            root, 'packagelist', {'relationship': 'recommends'})
+            ET.SubElement(root, 'conditional', {'name': 'only_{}'.format(arch)})
+        packagelist = ET.SubElement(root, 'packagelist', {'relationship': 'recommends'})
 
         missing = dict()
         if arch == '*':
