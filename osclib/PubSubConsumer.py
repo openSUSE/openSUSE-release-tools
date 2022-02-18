@@ -168,7 +168,7 @@ class PubSubConsumer(object):
 
         """
         self.logger.info('Channel %i was closed: %s',
-                            channel, reason)
+                         channel, reason)
         self._connection.close()
 
     def on_channel_open(self, channel):

@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+
 import pika
 import sys
 import json
@@ -282,14 +283,14 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
 
-    l = Listener(amqp_prefix, openqa_url)
+    listener = Listener(amqp_prefix, openqa_url)
     url = makeurl(apiurl, ['search', 'project', 'id'], {'match': 'attribute/@name="OSRT:OpenQAMapping"'})
     f = http_GET(url)
     root = ET.parse(f).getroot()
     for entry in root.findall('project'):
-        l.add(Project(entry.get('name')))
+        listener.add(Project(entry.get('name')))
 
     try:
-        l.run(runtime=10800)
+        listener.run(runtime=10800)
     except KeyboardInterrupt:
-        l.stop()
+        listener.stop()

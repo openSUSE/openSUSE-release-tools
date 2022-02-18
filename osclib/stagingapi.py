@@ -153,13 +153,13 @@ class StagingAPI(object):
         xpath = f'repository[@name="{repo_name}"]'
         return len(meta.xpath(xpath)) > 0
 
-    def makeurl(self, l, query=None):
+    def makeurl(self, paths, query=None):
         """
         Wrapper around osc's makeurl passing our apiurl
         :return url made for l and query
         """
         query = [] if not query else query
-        return makeurl(self.apiurl, l, query)
+        return makeurl(self.apiurl, paths, query)
 
     def _retried_request(self, url, func, data=None):
         retry_sleep_seconds = 1
@@ -1366,8 +1366,8 @@ class StagingAPI(object):
 
         # commit frozenlinks
         url = self.makeurl(['source', name, '_project', '_frozenlinks'], {'meta': '1'})
-        l = ET.tostring(flink)
-        http_PUT(url, data=l)
+        link = ET.tostring(flink)
+        http_PUT(url, data=link)
 
     def create_adi_project(self, name, use_frozenlinks=False, src_prj=None):
         """Create an ADI project."""

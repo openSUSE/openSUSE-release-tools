@@ -251,8 +251,8 @@ class LegalAuto(ReviewBot.ReviewBot):
             if match:
                 continue
             skip = False
-            for l in si.findall('linked'):
-                lpackage = l.get('package')
+            for link in si.findall('linked'):
+                lpackage = link.get('package')
                 # strip sle11's .imported_ suffix
                 lpackage = re.sub(r'\.imported_\d+$', '', lpackage)
                 # check if the lpackage is origpackage.NUMBER

@@ -57,10 +57,10 @@ class CpioFile(object):
         return self.buf[self.payloadstart:self.payloadstart + self.c_filesize]
 
     def length(self):
-        l = self.payloadstart - self.off + self.c_filesize
+        len = self.payloadstart - self.off + self.c_filesize
         if (self.c_filesize & 3):
-            l = l + 4 - (self.c_filesize & 3)
-        return l
+            len = len + 4 - (self.c_filesize & 3)
+        return len
 
 if __name__ == '__main__':
     from optparse import OptionParser

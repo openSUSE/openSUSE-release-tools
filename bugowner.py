@@ -20,21 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from __future__ import print_function
-
-from osc import OscConfigParser
-from xdg.BaseDirectory import load_first_config
 from lxml import etree as ET
 from collections import namedtuple
 
 import sys
 import cmdln
 import logging
-import urllib
 import osc.core
-import yaml
-import os
-import ldap
 
 import ToolBase
 
@@ -180,9 +172,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-
-        l = ldap.initialize("ldap://pan.suse.de")
-        l.simple_bind_s()
 
         for p in package:
             owners = self.tool.find_owner(p, opts.role)

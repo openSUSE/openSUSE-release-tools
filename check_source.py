@@ -359,7 +359,7 @@ class CheckSource(ReviewBot.ReviewBot):
             else:
                 add_role_msg = 'Created automatically from request %s' % self.request.reqid
                 return create_add_role_request(self.apiurl, source_project, self.required_maintainer,
-                                                        'maintainer', message=add_role_msg)
+                                               'maintainer', message=add_role_msg)
         except HTTPError as e:
             self.logger.error(
                 'Cannot create the corresponding add_role request for %s: %s' % (self.request.reqid, e)

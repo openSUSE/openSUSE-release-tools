@@ -70,11 +70,11 @@ class PkgListGen(ToolBase.ToolBase):
         self._supportstatus = dict()
         if os.path.exists(fn):
             with open(fn, 'r') as fh:
-                for l in fh:
+                for line in fh:
                     # pkg, status
-                    a = l.rstrip().split(' ')
-                    if len(a) > 1:
-                        self._supportstatus[a[0]] = a[1]
+                    fields = line.rstrip().split(' ')
+                    if len(fields) > 1:
+                        self._supportstatus[fields[0]] = fields[1]
 
     def supportstatus(self, package):
         if self._supportstatus is None:
@@ -186,9 +186,9 @@ class PkgListGen(ToolBase.ToolBase):
                         if d.startswith('namespace:modalias') or d.startswith('namespace:filesystem'):
                             tocheck.add(s.name)
 
-            for l in self.locales:
-                i = pool.str2id('locale({})'.format(l))
-                for s in pool.whatprovides(i):
+            for locale in self.locales:
+                id = pool.str2id('locale({})'.format(locale))
+                for s in pool.whatprovides(id):
                     tocheck_locales.add(s.name)
 
         all_grouped = set()
@@ -237,8 +237,8 @@ class PkgListGen(ToolBase.ToolBase):
         pool.addfileprovides()
         pool.createwhatprovides()
 
-        for l in self.locales:
-            pool.set_namespaceproviders(solv.NAMESPACE_LANGUAGE, pool.Dep(l), True)
+        for locale in self.locales:
+            pool.set_namespaceproviders(solv.NAMESPACE_LANGUAGE, pool.Dep(locale), True)
 
         return pool
 
@@ -250,7 +250,7 @@ class PkgListGen(ToolBase.ToolBase):
         fh = open(filename, 'r')
         self.logger.debug('reading %s', filename)
         result = set()
-        for groupname, group in yaml.safe_load(fh).items():
+        for group in yaml.safe_load(fh).values():
             result.update(group)
         return result
 
@@ -360,7 +360,7 @@ class PkgListGen(ToolBase.ToolBase):
                 raise Exception("Mirroring repository failed")
 
         files = [os.path.join(d, f)
-                    for f in os.listdir(d) if f.endswith('.rpm')]
+                 for f in os.listdir(d) if f.endswith('.rpm')]
         suffix = f'.{os.getpid()}.tmp'
         fh = open(solv_file + suffix, 'w')
         p = subprocess.Popen(
@@ -571,7 +571,7 @@ class PkgListGen(ToolBase.ToolBase):
         medium = re.compile('name="(DEBUG|SOURCE)MEDIUM"')
         for name in glob.glob(os.path.join(path, '*.kiwi')):
             lines = open(name).readlines()
-            lines = [l for l in lines if not medium.search(l)]
+            lines = [x for x in lines if not medium.search(x)]
             open(name, 'w').writelines(lines)
 
     def build_stub(self, destination, extension):

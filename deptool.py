@@ -117,9 +117,9 @@ class DepTool(cmdln.Cmdln):
 
         locked = []
         if opts.lock:
-            for l in opts.lock:
-                for i in l.split(','):
-                    locked.append(i)
+            for list in opts.lock:
+                for lock in list.split(','):
+                    locked.append(lock)
 
         good = True
 
@@ -129,11 +129,11 @@ class DepTool(cmdln.Cmdln):
 
         def solveit(packages):
             jobs = []
-            for l in locked:
-                sel = self.pool.select(str(l), solv.Selection.SELECTION_NAME)
+            for lock in locked:
+                sel = self.pool.select(str(lock), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
                     # if we can't find it, it probably is not as important
-                    logger.debug('locked package {} not found'.format(l))
+                    logger.debug('locked package {} not found'.format(lock))
                 else:
                     jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
