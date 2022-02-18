@@ -342,11 +342,3 @@ directly.
 * Package: openSUSE-release-tools
 * Usage: obsolete
 
-#### k8s-secret.py
-
-Applies kubernetes secrets for OSRT tool osc configuration.
-
-* Sources: [k8s-secret.py](k8s-secret.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete

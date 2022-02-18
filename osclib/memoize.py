@@ -4,10 +4,7 @@ from functools import wraps
 import os
 from osclib.cache_manager import CacheManager
 import shelve
-try:
-    import cPickle as pickle
-except:
-    import pickle
+import pickle
 
 # Where the cache files are stored
 CACHEDIR = CacheManager.directory('memoize')

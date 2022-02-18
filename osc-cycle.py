@@ -2,6 +2,7 @@ import osc.core
 from osc.core import get_dependson
 from xml.etree import cElementTree as ET
 from osc import cmdln
+from urllib.error import HTTPError
 
 @cmdln.option('-p', '--project', metavar='PROJECT', dest='project', default='openSUSE:Factory')
 @cmdln.option('-r', '--repository', metavar='REPOSITORY', dest='repository', default='standard')
@@ -30,7 +31,7 @@ def do_cycle(self, subcmd, opts, *args):
             for deps in pkg.findall('pkgdep'):
                 if deps.text in args:
                     print("\"%s\" -> \"%s\"" % (deps.text, pkgname))
-        except:
+        except HTTPError:
             # Ignore packages that do not exist
             print("[color=red]")
             continue
