@@ -742,7 +742,7 @@ class ReviewBot(object):
               self.comment_api.remove_marker(comment['comment']) ==
               self.comment_api.remove_marker(message)) or
              (not identical and comment['comment'].count('\n') == message.count('\n')))
-        ):
+            ):
             # Assume same state/result and number of lines in message is duplicate.
             self.logger.debug('previous comment too similar on {}'.format(debug_key))
             return

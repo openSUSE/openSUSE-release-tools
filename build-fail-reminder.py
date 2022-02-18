@@ -102,7 +102,7 @@ def main(args):
           'limit_to_fails': True,
           'include_versions': False,
           'format': 'json'
-        })
+          })
     json_data = osc.core.http_GET(url)
     data = json.load(json_data)
     json_data.close()
