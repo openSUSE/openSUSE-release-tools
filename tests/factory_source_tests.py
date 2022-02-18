@@ -292,5 +292,6 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
 
         self.assertTrue(result['factory_source_declined'])
 
+
 if __name__ == '__main__':
     unittest.main()

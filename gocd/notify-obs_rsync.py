@@ -38,6 +38,7 @@ def notify_project(openqa, state):
     copyfile(old_filename(state), new_filename(state))
     subprocess.run(f'cd {args.to} && git add . && git commit -m "Update of {project}/{repository}" && git push', shell=True, check=True)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bot to sync openQA status to OBS')

@@ -164,6 +164,7 @@ def main(args):
     uc = StagingHelper(args.project)
     uc.crawl()
 
+
 if __name__ == '__main__':
     description = 'Rebuild project if support package were staged in the staging project'
     parser = argparse.ArgumentParser(description=description)

@@ -28,6 +28,7 @@ class RemindedPackage(object):
 def jdefault(o):
     return o.__dict__
 
+
 MAIL_TEMPLATES = ( u"""Dear %(recipient)s,
 
 Please be informed that '%(package)s' in %(project)s has
@@ -217,6 +218,7 @@ Kind regards,
 %(sender)s
 """ % { 'project': project, 'sender': sender }
         SendMail(logger, project, sender, to, fullname, subject, text)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send e-mails about packages failing to build for a long time')

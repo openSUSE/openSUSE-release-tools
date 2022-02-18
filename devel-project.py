@@ -36,6 +36,7 @@ def search(apiurl, queries=None, **kwargs):
 
     return osc.core._search(apiurl, queries, **kwargs)
 
+
 osc.core._search = osc.core.search
 osc.core.search = search
 
@@ -297,6 +298,7 @@ def main():
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
     sys.exit(args.func(args))
+
 
 if __name__ == '__main__':
     main()

@@ -144,6 +144,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.tool.run(project)
 
+
 if __name__ == "__main__":
     cli = CommandLineInterface()
     sys.exit(cli.main())

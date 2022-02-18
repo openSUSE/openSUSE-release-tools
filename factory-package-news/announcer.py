@@ -32,6 +32,7 @@ def _load_config(handle = None):
         y[key] = y.get(key, d.get(key, None))
     return y
 
+
 parser = argparse.ArgumentParser(description="Announce new snapshots")
 parser.add_argument("--dry", action="store_true", help="dry run")
 parser.add_argument("--debug", action="store_true", help="debug output")

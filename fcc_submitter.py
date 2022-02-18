@@ -422,6 +422,7 @@ def main(args):
         else:
             uc.crawl()
 
+
 if __name__ == '__main__':
     description = 'Create SR from FactoryCandidates to '\
                   'openSUSE Leap project for new build succeded packages.'

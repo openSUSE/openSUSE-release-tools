@@ -303,6 +303,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.tool.apiurl = conf.config['apiurl']
         self.tool.check(project, opts.repo)
 
+
 if __name__ == '__main__':
     app = CommandLineInterface()
     sys.exit(app.main())

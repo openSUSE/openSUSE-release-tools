@@ -121,6 +121,7 @@ class Listener(PubSubConsumer):
             self.logger.warning(
                 'unknown rabbitmq message {}'.format(method.routing_key))
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Monitor to commit repo status to git (for gocd trigger)')

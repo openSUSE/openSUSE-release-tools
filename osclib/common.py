@@ -11,4 +11,5 @@ def version_calculate():
 
     return '0.0.0-dev'
 
+
 VERSION = version_calculate()

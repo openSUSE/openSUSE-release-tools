@@ -129,6 +129,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         return bot
 
+
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit(app.main())

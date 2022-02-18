@@ -237,6 +237,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                         name = 'group:' + name
                     print("osc -A {} reqbs -r bugowner -m 'add last submitter as bug owner' {} {} {}".format(self.tool.apiurl, self.tool.project, p, name))
 
+
 if __name__ == "__main__":
     app = CommandLineInterface()
     sys.exit(app.main())

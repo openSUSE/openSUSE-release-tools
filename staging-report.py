@@ -135,6 +135,7 @@ class StagingReport(object):
         str = "Submitters: " + " ".join(sorted(list(ccs))) + "\n\n"
         return str
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Publish report on staging status as comment on staging project')

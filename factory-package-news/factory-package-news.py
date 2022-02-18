@@ -277,6 +277,7 @@ class ChangeLogger(cmdln.Cmdln):
         elif (self.options.verbose):
             self.logger.setLevel(logging.INFO)
 
+
 if __name__ == "__main__":
     app = ChangeLogger()
     sys.exit( app.main() )

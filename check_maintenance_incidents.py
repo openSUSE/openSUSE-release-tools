@@ -152,6 +152,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         return ret
 
+
 if __name__ == "__main__":
     app = ReviewBot.CommandLineInterface()
     app.clazz = MaintenanceChecker

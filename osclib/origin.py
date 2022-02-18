@@ -70,6 +70,8 @@ PolicyResult = namedtuple('PolicyResult', ['wait', 'accept', 'reviews', 'comment
 
 def origin_info_str(self):
     return self.project + ('+' if self.pending else '')
+
+
 OriginInfo.__str__ = origin_info_str
 
 @memoize(session=True)

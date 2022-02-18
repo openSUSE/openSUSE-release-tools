@@ -62,6 +62,7 @@ class CpioFile(object):
             len = len + 4 - (self.c_filesize & 3)
         return len
 
+
 if __name__ == '__main__':
     from optparse import OptionParser
 

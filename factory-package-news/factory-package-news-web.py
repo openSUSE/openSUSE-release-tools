@@ -76,6 +76,7 @@ def diff(version):
     response.content_type = "text/plain"
     return response
 
+
 if __name__ == '__main__':
     from optparse import OptionParser
     parser = OptionParser()

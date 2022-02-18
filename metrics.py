@@ -83,6 +83,7 @@ def search_paginated_generator(apiurl, queries=None, **kwargs):
         collection.clear()
         queries['request']['offset'] += queries['request']['limit']
 
+
 points = []
 
 def point(measurement, fields, datetime, tags={}, delta=False):

@@ -127,6 +127,7 @@ class Project(object):
     def openqa_summary(self):
         return self.fetcher.openqa_results(self.openqa_id, self.ttm_status.get('testing'))
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bot to sync openQA status to OBS')

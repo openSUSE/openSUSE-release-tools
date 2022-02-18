@@ -375,6 +375,7 @@ def main(args):
         print('listening on {}:{}'.format(args.host, args.port))
         httpd.serve_forever()
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OBS Operator server used to perform staging operations.')
     parser.set_defaults(func=main)
