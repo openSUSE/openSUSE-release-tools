@@ -99,9 +99,9 @@ def main(args):
     logger.debug('loading build fails for %s' % project)
     url = osc.core.makeurl(apiurl, ['projects', project, 'status'],
         { 'ignore_pending': True,
-           'limit_to_fails': True,
-           'include_versions': False,
-           'format': 'json'
+          'limit_to_fails': True,
+          'include_versions': False,
+          'format': 'json'
         })
     json_data = osc.core.http_GET(url)
     data = json.load(json_data)

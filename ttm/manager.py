@@ -128,7 +128,7 @@ class ToTestManager(ToolBase.ToolBase):
         return self.api.attribute_value_load('ProductVersion')
 
     def release_package(self, project, package, set_release=None, repository=None,
-                         target_project=None, target_repository=None):
+                        target_project=None, target_repository=None):
         query = {'cmd': 'release'}
 
         if set_release:

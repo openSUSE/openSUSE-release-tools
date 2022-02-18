@@ -265,15 +265,15 @@ class ToTestReleaser(ToTestManager):
             # Containers are built in the same repo as other image products,
             # but released into a different repo in :ToTest
             self.release_package(self.project.name, container.package, repository=self.project.product_repo,
-                                  target_project=self.project.test_project,
-                                  target_repository=self.project.totest_container_repo)
+                                 target_project=self.project.test_project,
+                                 target_repository=self.project.totest_container_repo)
 
         for container in self.project.containerfile_products:
             # Dockerfile builds are done in a separate repo, but released into the same location
             # as container_products
             self.release_package(self.project.name, container.package, repository='containerfile',
-                                  target_project=self.project.test_project,
-                                  target_repository=self.project.totest_container_repo)
+                                 target_project=self.project.test_project,
+                                 target_repository=self.project.totest_container_repo)
 
         if len(self.project.main_products):
             for product in self.project.ftp_products:
@@ -281,12 +281,12 @@ class ToTestReleaser(ToTestManager):
 
             for cd in self.project.main_products:
                 self.release_package(self.project.name, cd, set_release=set_release,
-                                      repository=self.project.product_repo)
+                                     repository=self.project.product_repo)
 
         for cd in self.project.livecd_products:
             self.release_package('%s:Live' %
-                                  self.project.name, cd.package, set_release=set_release,
-                                  repository=self.project.livecd_repo)
+                                 self.project.name, cd.package, set_release=set_release,
+                                 repository=self.project.livecd_repo)
 
         for image in self.project.image_products:
             self.release_package(self.project.name, image.package, set_release=set_release,
