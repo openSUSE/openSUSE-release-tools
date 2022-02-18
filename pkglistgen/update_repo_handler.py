@@ -203,7 +203,7 @@ def merge_susetags(output, files):
         key = s.name + "-" + version + "." + s.arch
         if re.search('-release', s.name):  # just take one version of it
             key = s.name + "." + s.arch
-        packages[key] = { 'name': s.name, 'version': version, 'arch': s.arch, 'release': release, 'provides': set()}
+        packages[key] = {'name': s.name, 'version': version, 'arch': s.arch, 'release': release, 'provides': set()}
         for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):
             packages[key]['provides'].add(str(dep))
     output_file = open(output, 'w')

@@ -85,7 +85,7 @@ class ChangeLogger(cmdln.Cmdln):
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(binrpm)
             else:
-                data = { 'packages': [ binrpm]}
+                data = {'packages': [binrpm]}
                 data['changelogtime'] = h['changelogtime']
                 data['changelogtext'] = h['changelogtext']
                 for (t, txt) in enumerate(data['changelogtext']):
@@ -122,10 +122,10 @@ class ChangeLogger(cmdln.Cmdln):
 
             elif os.path.isdir(arg):
                 for root, dirs, files in os.walk(arg):
-                    for pkg in [ os.path.join(root, file) for file in files]:
+                    for pkg in [os.path.join(root, file) for file in files]:
                         if not pkg.endswith('.rpm'):
                             continue
-                        h = self.readRpmHeader( pkg)
+                        h = self.readRpmHeader(pkg)
                         _getdata(h)
             else:
                 raise Exception("don't know what to do with %s" % arg)
@@ -281,4 +281,4 @@ class ChangeLogger(cmdln.Cmdln):
 
 if __name__ == "__main__":
     app = ChangeLogger()
-    sys.exit( app.main())
+    sys.exit(app.main())

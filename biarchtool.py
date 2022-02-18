@@ -53,7 +53,7 @@ class BiArchTool(ToolBase.ToolBase):
         if expand:
             query['expand'] = 1
         root = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package], query)))
-        return [ node.get('name') for node in root.findall('entry')]
+        return [node.get('name') for node in root.findall('entry')]
 
     def has_baselibs(self, package):
         if package in self._has_baselibs:
@@ -201,7 +201,7 @@ class BiArchTool(ToolBase.ToolBase):
                 bn = pkgmeta.find('build')
                 if bn is None:
                     bn = ET.SubElement(pkgmeta, 'build')
-                ET.SubElement(bn, 'disable', { 'arch': self.arch})
+                ET.SubElement(bn, 'disable', {'arch': self.arch})
                 changed = True
 
             if changed:
@@ -264,7 +264,7 @@ class BiArchTool(ToolBase.ToolBase):
                     bn = pkgmeta.find('build')
                     if bn is None:
                         bn = ET.SubElement(pkgmeta, 'build')
-                    ET.SubElement(bn, 'disable', { 'arch': self.arch})
+                    ET.SubElement(bn, 'disable', {'arch': self.arch})
                     changed = True
                 else:
                     logger.debug('%s already disabled for %s', pkg, self.arch)
@@ -371,4 +371,4 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main())
+    sys.exit(app.main())

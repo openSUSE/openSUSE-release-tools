@@ -55,13 +55,13 @@ class BugownerTool(ToolBase.ToolBase):
         url = self.makeurl(['person', name])
         root = ET.fromstring(self.cached_GET(url))
 
-        person = Person(*[ root.find('./{}'.format(field)).text for field in Person._fields])
+        person = Person(*[root.find('./{}'.format(field)).text for field in Person._fields])
         self.persons[name] = person
 
         return person
 
     def find_packages_with_missing_bugowner(self):
-        url = self.makeurl(['search', 'missing_owner'], { 'project': self.project, 'filter': 'bugowner'})
+        url = self.makeurl(['search', 'missing_owner'], {'project': self.project, 'filter': 'bugowner'})
         root = ET.fromstring(self.cached_GET(url))
 
         missing = []
@@ -73,7 +73,7 @@ class BugownerTool(ToolBase.ToolBase):
     def find_owner(self, package, role = 'bugowner'):
         # XXX: not actually looking for package but binary
         # https://github.com/openSUSE/open-build-service/issues/4359
-        url = self.makeurl(['search', 'owner'], { 'binary': package})
+        url = self.makeurl(['search', 'owner'], {'binary': package})
         root = ET.fromstring(self.cached_GET(url))
         ret = []
         for node in root.findall('./owner/person[@role="{}"]'.format(role)):
@@ -116,7 +116,7 @@ class BugownerTool(ToolBase.ToolBase):
             logging.debug("%s was last touched by %s, ignored." % (package, user))
             return None
 
-        return [ Owner('person', user)]
+        return [Owner('person', user)]
 
     def is_release_manager(self, name):
         if self.release_managers is None:

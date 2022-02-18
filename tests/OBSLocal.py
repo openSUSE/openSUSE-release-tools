@@ -855,20 +855,20 @@ class Project(object):
 
         root = ET.fromstring(meta)
         for group in reviewer.get('groups', []):
-            ET.SubElement(root, 'group', { 'groupid': group, 'role': 'reviewer'})
+            ET.SubElement(root, 'group', {'groupid': group, 'role': 'reviewer'})
         for group in reviewer.get('users', []):
-            ET.SubElement(root, 'person', { 'userid': group, 'role': 'reviewer'})
+            ET.SubElement(root, 'person', {'userid': group, 'role': 'reviewer'})
         # TODO: avoid this duplication
         for group in maintainer.get('groups', []):
-            ET.SubElement(root, 'group', { 'groupid': group, 'role': 'maintainer'})
+            ET.SubElement(root, 'group', {'groupid': group, 'role': 'maintainer'})
         for group in maintainer.get('users', []):
-            ET.SubElement(root, 'person', { 'userid': group, 'role': 'maintainer'})
+            ET.SubElement(root, 'person', {'userid': group, 'role': 'maintainer'})
 
         for link in project_links:
-            ET.SubElement(root, 'link', { 'project': link})
+            ET.SubElement(root, 'link', {'project': link})
 
         if with_repo:
-            repo = ET.SubElement(root, 'repository', { 'name': 'standard'})
+            repo = ET.SubElement(root, 'repository', {'name': 'standard'})
             ET.SubElement(repo, 'arch').text = 'x86_64'
 
         self.custom_meta(ET.tostring(root))
@@ -894,8 +894,8 @@ class Project(object):
         :rtype: dict[str, dict or list(str) or bool]
         """
         meta = {
-            'reviewer': { 'groups': [], 'users': []},
-            'maintainer': { 'groups': [], 'users': []},
+            'reviewer': {'groups': [], 'users': []},
+            'maintainer': {'groups': [], 'users': []},
             'project_links': [],
             'with_repo': False
         }
@@ -992,7 +992,7 @@ class Package(object):
 
         if devel_project:
             root = ET.fromstring(meta)
-            ET.SubElement(root, 'devel', { 'project': devel_project})
+            ET.SubElement(root, 'devel', {'project': devel_project})
             meta = ET.tostring(root)
 
         url = osc.core.make_meta_url('pkg', (self.project.name, self.name), APIURL)

@@ -194,9 +194,9 @@ Pico text editor while also offering a few enhancements.</description>
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)
 
-            if query == { 'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['accepted']}:
+            if query == {'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['accepted']}:
                 result['state_accepted'] = True
-            elif query == { 'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['declined']}:
+            elif query == {'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['declined']}:
                 result['state_accepted'] = False
             return (200, headers, '<status code="ok"/>')
 

@@ -160,7 +160,7 @@ class RequestFinder(object):
         This function is only called for its side effect.
         """
 
-        url = self.api.makeurl(['staging', self.api.project, 'staging_projects'], { 'requests': 1})
+        url = self.api.makeurl(['staging', self.api.project, 'staging_projects'], {'requests': 1})
         status = ET.parse(self.api.retried_GET(url)).getroot()
 
         for p in pkgs:
@@ -180,7 +180,7 @@ class RequestFinder(object):
         all requests staged in it
         """
         project = self.api.prj_from_short(project)
-        url = self.api.makeurl(['staging', self.api.project, 'staging_projects', project], { 'requests': 1})
+        url = self.api.makeurl(['staging', self.api.project, 'staging_projects', project], {'requests': 1})
         try:
             staging = ET.parse(self.api.retried_GET(url)).getroot()
         except HTTPError:

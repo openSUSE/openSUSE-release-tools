@@ -229,7 +229,7 @@ class RequestSplitter(object):
                 'project': project,
                 'bootstrapped': bootstrapped,
                 # TODO: find better place for splitter info
-                'splitter_info': { 'strategy': { 'name': 'none'}},
+                'splitter_info': {'strategy': {'name': 'none'}},
                 'status': status
             }
 

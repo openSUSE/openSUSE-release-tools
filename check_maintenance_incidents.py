@@ -157,4 +157,4 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 if __name__ == "__main__":
     app = ReviewBot.CommandLineInterface()
     app.clazz = MaintenanceChecker
-    sys.exit( app.main())
+    sys.exit(app.main())

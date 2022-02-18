@@ -44,7 +44,7 @@ class SelectCommand(object):
         package = self._package(request)
 
         candidates = []   # Store candidates to be supersede by 'request'
-        url = self.api.makeurl(['staging', self.api.project, 'staging_projects'], { 'requests': 1})
+        url = self.api.makeurl(['staging', self.api.project, 'staging_projects'], {'requests': 1})
         status = ET.parse(self.api.retried_GET(url)).getroot()
         for prj in status.findall('staging_project'):
             for req in prj.findall('./staged_requests/request'):

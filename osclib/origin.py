@@ -198,13 +198,13 @@ def config_resolve_create_workarounds(config, values_workaround, origins_skip):
 
         values_new = deepcopy(values)
         values_new.update(values_workaround)
-        origins.insert(i, { origin_new: values_new})
+        origins.insert(i, {origin_new: values_new})
 
 
 def config_resolve_create_family(apiurl, project, config, position, origin, values):
     projects = project_list_family_prior_pattern(apiurl, origin, project)
     for origin_expanded in reversed(projects):
-        config['origins'].insert(position, { str(origin_expanded): values})
+        config['origins'].insert(position, {str(origin_expanded): values})
 
 
 def config_resolve_apply(config, values_apply, key=None, workaround=False, until=None):

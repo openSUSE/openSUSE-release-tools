@@ -31,7 +31,7 @@ def jdefault(o):
     return o.__dict__
 
 
-MAIL_TEMPLATES = ( u"""Dear %(recipient)s,
+MAIL_TEMPLATES = (u"""Dear %(recipient)s,
 
 Please be informed that '%(package)s' in %(project)s has
 not had a successful build since %(date)s. See
@@ -103,11 +103,11 @@ def main(args):
 
     logger.debug('loading build fails for %s' % project)
     url = osc.core.makeurl(apiurl, ['projects', project, 'status'],
-        { 'ignore_pending': True,
-          'limit_to_fails': True,
-          'include_versions': False,
-          'format': 'json'
-          })
+        {'ignore_pending': True,
+         'limit_to_fails': True,
+         'include_versions': False,
+         'format': 'json'
+         })
     json_data = osc.core.http_GET(url)
     data = json.load(json_data)
     json_data.close()
@@ -211,7 +211,7 @@ maintainer/bugowner did not yet find the time to look into the
 matter and he/she would certainly appreciate help to get this
 sorted.
 
-""" % { 'project': project}
+""" % {'project': project}
         for pkg in ProjectComplainList:
             text += "- %s\n" % pkg
         text += u"""
@@ -220,7 +220,7 @@ package(s) are going to be removed from %(project)s.
 
 Kind regards,
 %(sender)s
-""" % { 'project': project, 'sender': sender}
+""" % {'project': project, 'sender': sender}
         SendMail(logger, project, sender, to, fullname, subject, text)
 
 

@@ -22,7 +22,7 @@ class AcceptCommand(object):
 
     def find_new_requests(self, project):
         match = f"state/@name='new' and action/target/@project='{project}'"
-        url = self.api.makeurl(['search', 'request'], { 'match': match})
+        url = self.api.makeurl(['search', 'request'], {'match': match})
 
         f = http_GET(url)
         root = ET.parse(f).getroot()
@@ -70,7 +70,7 @@ class AcceptCommand(object):
                 print('ERROR: Not compatible with force option')
                 return False
 
-        self.requests = { 'delete': [], 'submit': []}
+        self.requests = {'delete': [], 'submit': []}
         staging_packages = {}
 
         if accept_all_green:
@@ -104,7 +104,7 @@ class AcceptCommand(object):
 
         # we have checked ourselves and accepting one staging project creates a race
         # for the other staging projects to appear building again
-        opts = { 'force': '1'}
+        opts = {'force': '1'}
 
         print('triggering staging accepts...')
         for project in staging_packages.keys():

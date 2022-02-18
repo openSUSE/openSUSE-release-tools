@@ -309,7 +309,7 @@ class TestOrigin(OBSLocal.TestCase):
         self.origin_config_write([
             {'<devel>': {}},
             {upstream1_project: {}},
-            {upstream2_project: { 'pending_submission_consider': True}},
+            {upstream2_project: {'pending_submission_consider': True}},
             {'*~': {}},
         ], {'unknown_origin_wait': True})
 
@@ -385,8 +385,8 @@ class TestOrigin(OBSLocal.TestCase):
         attribute_value_save(self.wf.apiurl, upstream3_project, 'ApprovedRequestSource', '', 'OBS')
 
         self.origin_config_write([
-            {upstream1_project: { 'automatic_updates_initial': True}},
-            {upstream2_project: { 'automatic_updates_initial': True}},
+            {upstream1_project: {'automatic_updates_initial': True}},
+            {upstream2_project: {'automatic_updates_initial': True}},
             {upstream3_project: {}},
         ])
 

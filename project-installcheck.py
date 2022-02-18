@@ -263,7 +263,7 @@ class RepoChecker():
 
         query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
         url = makeurl(self.apiurl, ['build', project])
-        headers = { 'Content-Type': 'application/x-www-form-urlencoded'}
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         http_request('POST', url, headers, data=urlencode(query, doseq=True))
 
         self.store_yaml(oldstate, project, repository, arch)

@@ -272,7 +272,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return True
 
-    def suppresses_whitelist_warnings( self, source_project, source_package):
+    def suppresses_whitelist_warnings(self, source_project, source_package):
         # checks if there's a rpmlintrc that suppresses warnings that we check
         found_entries = set()
         contents = source_file_load(self.apiurl, source_project, source_package, source_package + '-rpmlintrc')
@@ -295,7 +295,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return found_entries
 
-    def has_whitelist_warnings( self, source_project, source_package, target_project, target_package):
+    def has_whitelist_warnings(self, source_project, source_package, target_project, target_package):
         # this checks if this is a submit to an product project and it has warnings for non-whitelisted permissions/files
         found_entries = set()
         url = osc.core.makeurl(self.apiurl, ['build', target_project])
@@ -303,7 +303,7 @@ class CheckSource(ReviewBot.ReviewBot):
         for f in xml.findall('entry'):
             # we check all repos in the source project for errors that exist in the target project
             repo = f.attrib['name']
-            query = { 'last': 1, }
+            query = {'last': 1, }
             for arch in target_archs(self.apiurl, source_project, repo):
                 url = osc.core.makeurl(self.apiurl, ['build', source_project, repo, arch, source_package, '_log'], query = query)
                 try:

@@ -228,7 +228,7 @@ class FccSubmitter(object):
 
     def check_multiple_specfiles(self, project, package):
         try:
-            url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1'})
+            url = makeurl(self.apiurl, ['source', project, package], {'expand': '1'})
         except HTTPError as e:
             if e.code == 404:
                 return None
@@ -241,7 +241,7 @@ class FccSubmitter(object):
         else:
             data['linkinfo'] = None
 
-        files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec')]
+        files = [entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec')]
         data['specs'] = files
 
         if len(files) > 1:
