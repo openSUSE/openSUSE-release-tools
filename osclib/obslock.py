@@ -74,7 +74,8 @@ class OBSLock(object):
         http_POST(url, data=data)
 
     def acquire(self):
-        if not self.needed: return self
+        if not self.needed:
+            return self
 
         # If the project doesn't have locks configured, raise a
         # Warning (but continue the operation)
@@ -114,7 +115,8 @@ class OBSLock(object):
         return self
 
     def release(self, force=False):
-        if not force and not self.needed: return
+        if not force and not self.needed:
+            return
 
         # If the project do not have locks configured, simply ignore
         # the operation.

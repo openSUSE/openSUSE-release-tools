@@ -52,7 +52,8 @@ class Group(object):
         for a in archs:
             # we use groups.yml for powerpc through a branch,
             # so ignore inapplicable architectures
-            if a not in self.packages: continue
+            if a not in self.packages:
+                continue
             self.packages[a].append([package, self.name])
 
     def parse_yml(self, packages):
@@ -222,7 +223,8 @@ class Group(object):
                     jobs += sel.jobs(solv.Job.SOLVER_LOCK)
 
             for n in list(solved[arch]) + list(suggested):
-                if n in locked: continue
+                if n in locked:
+                    continue
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 

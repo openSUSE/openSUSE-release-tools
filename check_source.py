@@ -339,7 +339,8 @@ class CheckSource(ReviewBot.ReviewBot):
         self.logger.info(
             'Checking required maintainer from the source project (%s)' % self.required_maintainer
         )
-        if not self.required_maintainer: return True
+        if not self.required_maintainer:
+            return True
 
         meta = ET.fromstringlist(show_project_meta(self.apiurl, source_project))
         maintainers = meta.xpath('//person[@role="maintainer"]/@userid')
