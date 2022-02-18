@@ -38,8 +38,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             if prj.startswith('openSUSE:Leap') or prj.startswith('openSUSE:1'):
                 self.logger.debug("%s looks wrong as maintainer, skipped", prj)
                 continue
-            self.add_review(req, by_project = prj, by_package = pkg,
-                    msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj))
+            self.add_review(req, by_project=prj, by_package=pkg,
+                    msg='Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj))
 
     @staticmethod
     @memoize(session=True)

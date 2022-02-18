@@ -40,7 +40,7 @@ class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
     """
 
-    def __init__(self, apiurl = None):
+    def __init__(self, apiurl=None):
         self.apiurl = apiurl
         # dict[project][package]
         self.lookup = {}
@@ -92,7 +92,7 @@ class ReviewBot(object):
             ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
         ]}
 
-    def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
+    def __init__(self, apiurl=None, dryrun=False, logger=None, user=None, group=None):
         self.apiurl = apiurl
         self.ibs = apiurl.startswith('https://api.suse.de')
         self.dryrun = dryrun
@@ -117,12 +117,12 @@ class ReviewBot(object):
 
         self.load_config()
 
-    def _load_config(self, handle = None):
+    def _load_config(self, handle=None):
         d = self.__class__.config_defaults
         y = yaml.safe_load(handle) if handle is not None else {}
         return namedtuple('BotConfig', sorted(d.keys()))(*[y.get(p, d[p]) for p in sorted(d.keys())])
 
-    def load_config(self, filename = None):
+    def load_config(self, filename=None):
         if filename:
             with open(filename, 'r') as fh:
                 self.config = self._load_config(fh)
@@ -301,7 +301,7 @@ class ReviewBot(object):
             if not self.dryrun:
                 try:
                     osc.core.change_review_state(apiurl=self.apiurl,
-                        reqid = req.reqid, newstate = newstate,
+                        reqid=req.reqid, newstate=newstate,
                         by_group=self.review_group,
                         by_user=self.review_user, message=msg)
                 except HTTPError as e:
@@ -774,7 +774,7 @@ class ReviewBot(object):
         else:
             return comment['comment'].count('\n') == message.count('\n')
 
-    def _check_matching_srcmd5(self, project, package, rev, history_limit = 5):
+    def _check_matching_srcmd5(self, project, package, rev, history_limit=5):
         """check if factory sources contain the package and revision. check head and history"""
         self.logger.debug("checking %s in %s" % (package, project))
         try:
@@ -877,7 +877,7 @@ class CommandLineInterface(cmdln.Cmdln):
         logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
         self.logger = logging.getLogger(self.optparser.prog)
 
-        conf.get_config(override_apiurl = self.options.apiurl)
+        conf.get_config(override_apiurl=self.options.apiurl)
 
         if (self.options.osc_debug):
             conf.config['debug'] = 1
@@ -911,11 +911,11 @@ class CommandLineInterface(cmdln.Cmdln):
         if user is None and group is None:
             user = conf.get_apiurl_usr(apiurl)
 
-        return self.clazz(apiurl = apiurl,
-                dryrun = self.options.dry,
-                user = user,
-                group = group,
-                logger = self.logger)
+        return self.clazz(apiurl=apiurl,
+                dryrun=self.options.dry,
+                user=user,
+                group=group,
+                logger=self.logger)
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids

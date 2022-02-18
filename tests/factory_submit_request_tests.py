@@ -94,8 +94,8 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
 
         # Let's first accept the manual review
         change_review_state(
-            apiurl = self.wf.apiurl, reqid = reqid,
-            newstate = 'accepted', by_group='opensuse-review-team'
+            apiurl=self.wf.apiurl, reqid=reqid,
+            newstate='accepted', by_group='opensuse-review-team'
         )
 
         # Now only the staging workflow is pending
@@ -162,6 +162,6 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
     def __accept_license(self):
         """See :func:`__mock_licensedigger`"""
         change_review_state(
-            apiurl = self.wf.apiurl, reqid = self.request.reqid,
-            newstate = 'accepted', by_user='licensedigger'
+            apiurl=self.wf.apiurl, reqid=self.request.reqid,
+            newstate='accepted', by_user='licensedigger'
         )

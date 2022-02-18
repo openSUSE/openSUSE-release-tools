@@ -163,7 +163,7 @@ class TestSLESubmitRequest(OBSLocal.TestCase):
         groups = ['sle-release-managers', 'origin-reviewers', 'autobuild-team']
         for group in groups:
             self.wf.create_group(group, users=[HUMAN_REVIEWER])
-            self.project().add_reviewers(groups = [group])
+            self.project().add_reviewers(groups=[group])
 
     def __config_origin_manager(self):
         """Creates the very minimal configuration needed by origin-manager to work"""
@@ -186,7 +186,7 @@ class TestSLESubmitRequest(OBSLocal.TestCase):
         for simplicity (the rest of the execution of the bot still takes place normally).
         """
         bot = self.review_bots['sle-changelog-checker']
-        bot.checkTagInRequest = MagicMock(return_value = True)
+        bot.checkTagInRequest = MagicMock(return_value=True)
 
     def __mock_licensedigger(self):
         """Mocks the execution of the LegalAuto bot, so it always succeeds and accepts the review
@@ -201,6 +201,6 @@ class TestSLESubmitRequest(OBSLocal.TestCase):
     def __accept_license(self):
         """See :func:`__mock_licensedigger`"""
         change_review_state(
-            apiurl = self.wf.apiurl, reqid = self.request.reqid,
-            newstate = 'accepted', by_user='licensedigger'
+            apiurl=self.wf.apiurl, reqid=self.request.reqid,
+            newstate='accepted', by_user='licensedigger'
         )

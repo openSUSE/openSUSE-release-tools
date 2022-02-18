@@ -26,9 +26,9 @@ class TestMaintenance(OBSLocal.TestCase):
         self.logger = logging.getLogger(__file__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.checker = MaintenanceChecker(apiurl = APIURL,
-                user = 'maintbot',
-                logger = self.logger)
+        self.checker = MaintenanceChecker(apiurl=APIURL,
+                user='maintbot',
+                logger=self.logger)
         self.checker.override_allow = False  # Test setup cannot handle.
 
     def test_non_maintainer_submit(self):
@@ -37,7 +37,7 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + '/search/request',
-            body = """
+            body="""
                 <collection matches="1">
                   <request id="261355" creator="brassh">
                     <action type="maintenance_incident">
@@ -64,8 +64,8 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/request/261355",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
               <request id="261355" creator="brassh">
                 <action type="maintenance_incident">
                   <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
@@ -90,8 +90,8 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/source/home:brassh/mysql-workbench",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
                 <directory name="mysql-workbench" rev="6" vrev="6" srcmd5="858204decf53f923d5574dbe6ae63b15">
                   <linkinfo project="openSUSE:13.2" package="mysql-workbench" srcmd5="ed9c3b12388cbd14868eb3faabe34685" baserev="ed9c3b12388cbd14868eb3faabe34685" xsrcmd5="08bfb4f40cb1e2de8f9cd4633bf02eb1" lsrcmd5="858204decf53f923d5574dbe6ae63b15" />
                   <serviceinfo code="succeeded" xsrcmd5="6ec4305a8e5363e26a7f4895a0ae12d2" />
@@ -118,19 +118,19 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.POST,
             APIURL + "/request/261355",
-            body = lambda method, uri, headers: change_request(result, method, uri, headers))
+            body=lambda method, uri, headers: change_request(result, method, uri, headers))
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/search/owner?project=openSUSE:13.2:Update&binary=mysql-workbench",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
                 <collection/>
             """)
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/search/owner?binary=mysql-workbench",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
                 <collection>
                   <owner rootproject="openSUSE" project="server:database" package="mysql-workbench">
                     <person name="Gankov" role="maintainer"/>
@@ -149,7 +149,7 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + '/search/request',
-            body = """
+            body="""
                 <collection matches="1">
                   <request id="261355" creator="brassh">
                     <action type="maintenance_incident">
@@ -179,8 +179,8 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/request/261355",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
               <request id="261355" creator="brassh">
                 <action type="maintenance_incident">
                   <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
@@ -208,8 +208,8 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/source/home:brassh/mysql-workbench",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
                 <directory name="mysql-workbench" rev="6" vrev="6" srcmd5="858204decf53f923d5574dbe6ae63b15">
                   <linkinfo project="openSUSE:13.2" package="mysql-workbench" srcmd5="ed9c3b12388cbd14868eb3faabe34685" baserev="ed9c3b12388cbd14868eb3faabe34685" xsrcmd5="08bfb4f40cb1e2de8f9cd4633bf02eb1" lsrcmd5="858204decf53f923d5574dbe6ae63b15" />
                   <serviceinfo code="succeeded" xsrcmd5="6ec4305a8e5363e26a7f4895a0ae12d2" />
@@ -236,19 +236,19 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.POST,
             APIURL + "/request/261355",
-            body = lambda method, uri, headers: change_request(result, method, uri, headers))
+            body=lambda method, uri, headers: change_request(result, method, uri, headers))
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/search/owner?project=openSUSE:13.2:Update&binary=mysql-workbench",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
                 <collection/>
             """)
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/search/owner?binary=mysql-workbench",
-            match_querystring = True,
-            body = """
+            match_querystring=True,
+            body="""
                 <collection>
                   <owner rootproject="openSUSE" project="server:database" package="mysql-workbench">
                     <person name="Gankov" role="maintainer"/>
@@ -267,7 +267,7 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + '/search/request',
-            body = """
+            body="""
                 <collection matches="1">
                     <request id="261411" creator="lnussel">
                       <action type="maintenance_incident">
@@ -289,7 +289,7 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/request/261411",
-            body = """
+            body="""
                 <request id="261411" creator="lnussel">
                   <action type="maintenance_incident">
                     <source project="home:lnussel:branches:openSUSE:Backports:SLE-12" package="plan" rev="71e76daf2c2e9ddb0b9208f54a14f608"/>
@@ -309,7 +309,7 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + "/source/home:lnussel:branches:openSUSE:Backports:SLE-12/plan",
-            body = """
+            body="""
                 <directory name="plan" rev="1" vrev="1" srcmd5="b4ed19dc30c1b328168bc62a81ec6998">
                   <linkinfo project="home:lnussel:plan" package="plan" srcmd5="7a2353f73b29dba970702053229542a0" baserev="7a2353f73b29dba970702053229542a0" xsrcmd5="71e76daf2c2e9ddb0b9208f54a14f608" lsrcmd5="b4ed19dc30c1b328168bc62a81ec6998" />
                   <entry name="_link" md5="91f81d88456818a18a7332999fb2da18" size="125" mtime="1415807350" />
@@ -320,7 +320,7 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.GET,
             APIURL + '/search/owner',
-            body = """
+            body="""
                 <collection/>
             """)
 
@@ -334,7 +334,7 @@ class TestMaintenance(OBSLocal.TestCase):
 
         httpretty.register_uri(httpretty.POST,
             APIURL + "/request/261411",
-            body = lambda method, uri, headers: change_request(result, method, uri, headers))
+            body=lambda method, uri, headers: change_request(result, method, uri, headers))
 
         self.checker.requests = []
         self.checker.set_request_ids_search_review()

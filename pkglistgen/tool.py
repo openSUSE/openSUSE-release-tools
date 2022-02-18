@@ -684,8 +684,8 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
                                          ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
-                                         locale = target_config.get('pkglistgen-locale'),
-                                         locales_from = target_config.get('pkglistgen-locales-from'))
+                                         locale=target_config.get('pkglistgen-locale'),
+                                         locales_from=target_config.get('pkglistgen-locales-from'))
 
         if stop_after_solve:
             return

@@ -235,7 +235,7 @@ class TestCase(unittest.TestCase):
         """
         wf.create_user(user)
         prj = wf.projects[project]
-        prj.add_reviewers(users = [user])
+        prj.add_reviewers(users=[user])
 
         bot_name = self.generate_bot_name(user)
         bot = bot_class(wf.apiurl, user=user, logger=logging.getLogger(bot_name))
@@ -653,7 +653,7 @@ class StagingWorkflow(ABC):
 
         self.create_user('staging-bot')
         self.create_group(group, users=['staging-bot'])
-        self.projects['target'].add_reviewers(groups = [group])
+        self.projects['target'].add_reviewers(groups=[group])
 
         url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
         data = f"<workflow managers='{group}'/>"
@@ -919,7 +919,7 @@ class Project(object):
 
         return meta
 
-    def add_reviewers(self, users = [], groups = []):
+    def add_reviewers(self, users=[], groups=[]):
         """Adds the given reviewers to the meta information of the project
 
         :param users: usernames to add to the current list of reviewers

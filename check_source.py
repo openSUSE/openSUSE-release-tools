@@ -305,7 +305,7 @@ class CheckSource(ReviewBot.ReviewBot):
             repo = f.attrib['name']
             query = {'last': 1, }
             for arch in target_archs(self.apiurl, source_project, repo):
-                url = osc.core.makeurl(self.apiurl, ['build', source_project, repo, arch, source_package, '_log'], query = query)
+                url = osc.core.makeurl(self.apiurl, ['build', source_project, repo, arch, source_package, '_log'], query=query)
                 try:
                     result = osc.core.http_GET(url)
                     contents = str(result.read())

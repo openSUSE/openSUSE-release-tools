@@ -39,7 +39,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.bot_user = 'factory-auto'
         self.wf.create_user(self.bot_user)
         # When creating a review, set the by_user to bot_user
-        self.project.add_reviewers(users = [self.bot_user])
+        self.project.add_reviewers(users=[self.bot_user])
 
         # Ensure different test runs operate in unique namespace.
         self.bot_name = '::'.join([type(self).__name__, str(random.getrandbits(8))])
@@ -71,7 +71,7 @@ class TestCheckSource(OBSLocal.TestCase):
         """Accepts a request coming from a devel project"""
         self._setup_devel_project()
 
-        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False).reqid
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -87,7 +87,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self._setup_devel_project(devel_files='blowfish-with-patch')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit = False).reqid
+            self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -105,7 +105,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self._setup_devel_project()
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit = False).reqid
+            self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -123,7 +123,7 @@ class TestCheckSource(OBSLocal.TestCase):
             target_files='blowfish-with-patch-changes')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit = False).reqid
+            self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -144,7 +144,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.wf.create_group(FACTORY_MAINTAINERS.replace('group:', ''))
         self.wf.remote_config_set({'required-source-maintainer': FACTORY_MAINTAINERS})
 
-        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False)
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False)
 
         self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
 
@@ -176,7 +176,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self._setup_devel_project(maintainer={'groups': [group_name]})
 
-        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False).reqid
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -197,7 +197,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self._setup_devel_project()
 
-        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False)
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False)
 
         self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
 

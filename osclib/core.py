@@ -313,7 +313,7 @@ def fileinfo_ext(apiurl, project, repo, arch, package, filename):
     return ET.parse(http_GET(url)).getroot()
 
 
-def builddepinfo(apiurl, project, repo, arch, order = False):
+def builddepinfo(apiurl, project, repo, arch, order=False):
     query = {}
     if order:
         query['view'] = 'order'

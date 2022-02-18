@@ -271,7 +271,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    osc.conf.get_config(override_apiurl = args.apiurl)
+    osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
     apiurl = osc.conf.config['apiurl']

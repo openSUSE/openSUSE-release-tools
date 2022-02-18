@@ -48,7 +48,7 @@ class BiArchTool(ToolBase.ToolBase):
                 '000release-packages'])
         }
 
-    def get_filelist(self, project, package, expand = False):
+    def get_filelist(self, project, package, expand=False):
         query = {}
         if expand:
             query['expand'] = 1
@@ -74,7 +74,7 @@ class BiArchTool(ToolBase.ToolBase):
             else:
                 ret = True
         elif '_link' in files:
-            files = self.get_filelist(self.project, srcpkgname, expand = True)
+            files = self.get_filelist(self.project, srcpkgname, expand=True)
             if 'baselibs.conf' in files:
                 logger.warning('%s is linked to a baselibs package', package)
         elif is_multibuild:
@@ -310,7 +310,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
         parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
                         help='project to process (default: %s)' % FACTORY,
-                        default = FACTORY)
+                        default=FACTORY)
         return parser
 
     def setup_tool(self):

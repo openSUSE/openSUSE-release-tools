@@ -25,7 +25,7 @@ config_defaults = {
 }
 
 
-def _load_config(handle = None):
+def _load_config(handle=None):
     d = config_defaults
     y = yaml.safe_load(handle) if handle is not None else {}
     keys = set(d.keys()) | set(y.keys())

@@ -147,16 +147,16 @@ class CommandLineInterface(cmdln.Cmdln):
 
         logging.basicConfig(level=level)
 
-        osc.conf.get_config(override_apiurl = self.options.apiurl,
-                            override_debug = self.options.osc_debug,
-                            override_http_debug = self.options.http_debug,
-                            override_http_full_debug = self.options.http_full_debug)
+        osc.conf.get_config(override_apiurl=self.options.apiurl,
+                            override_debug=self.options.osc_debug,
+                            override_http_debug=self.options.http_debug,
+                            override_http_full_debug=self.options.http_full_debug)
 
         self.tool = self.setup_tool()
         self.tool.dryrun = self.options.dry
         self.tool.caching = self.options.cache_requests
 
-    def setup_tool(self, toolclass = ToolBase):
+    def setup_tool(self, toolclass=ToolBase):
         """ reimplement this """
 
         tool = toolclass()

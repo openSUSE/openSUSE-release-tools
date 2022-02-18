@@ -70,7 +70,7 @@ class BugownerTool(ToolBase.ToolBase):
 
         return missing
 
-    def find_owner(self, package, role = 'bugowner'):
+    def find_owner(self, package, role='bugowner'):
         # XXX: not actually looking for package but binary
         # https://github.com/openSUSE/open-build-service/issues/4359
         url = self.makeurl(['search', 'owner'], {'binary': package})
@@ -139,7 +139,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
         parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
                         help='project to process (default: %s)' % FACTORY,
-                        default = FACTORY)
+                        default=FACTORY)
         parser.add_option('--reference-project', metavar='PROJECT',
                 action='append', help='reference project')
         return parser

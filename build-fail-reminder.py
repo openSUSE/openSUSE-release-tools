@@ -245,6 +245,6 @@ if __name__ == '__main__':
     else:
         level = None
 
-    logging.basicConfig(level = level)
+    logging.basicConfig(level=level)
 
     sys.exit(main(args))
