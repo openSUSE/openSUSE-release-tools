@@ -150,7 +150,7 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
                       </request>
                     </collection>
                     """)
-                ])
+            ])
 
         result = { 'status': None }
 

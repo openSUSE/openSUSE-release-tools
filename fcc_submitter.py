@@ -142,12 +142,10 @@ class FccSubmitter(object):
                 'SUSE:SLE-12-SP1:Update',
                 'SUSE:SLE-12-SP1:GA',
                 'SUSE:SLE-12:Update',
-                'SUSE:SLE-12:GA',
-                ]
+                'SUSE:SLE-12:GA']
         # the skip list against devel project
         self.skip_devel_project_list = [
-                'mobile:synchronization:FACTORY'
-                ]
+                'mobile:synchronization:FACTORY']
         # put the except packages from skip_devel_project_list, use regex in this list, eg. "^golang-x-(\w+)", "^nodejs$"
         self.except_pkgs_list = []
 

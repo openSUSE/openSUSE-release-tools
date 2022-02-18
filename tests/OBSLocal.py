@@ -279,6 +279,7 @@ class StagingWorkflow(ABC):
     classes make easy to setup scenarios similar to the ones used during the real (open)SUSE
     development.
     """
+
     def __init__(self, project=PROJECT):
         """Initializes the configuration
 
@@ -660,6 +661,7 @@ class FactoryWorkflow(StagingWorkflow):
     """A class that makes easy to setup scenarios similar to the one used during the real
     openSUSE Factory development, with staging projects, rings, etc.
     """
+
     def staging_group_name(self):
         return 'factory-staging'
 
@@ -722,6 +724,7 @@ class SLEWorkflow(StagingWorkflow):
     """A class that makes easy to setup scenarios similar to the one used during the real
     SLE development, with projects that inherit some packages from previous service packs, etc.
     """
+
     def staging_group_name(self):
         return 'sle-staging-managers'
 
@@ -796,6 +799,7 @@ class Project(object):
     .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
 
     """
+
     def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True, with_repo=False):
         """Initializes a new Project object.
 
@@ -958,6 +962,7 @@ class Package(object):
 
     .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
     """
+
     def __init__(self, name, project, devel_project=None):
         """Creates a package in the OBS instance and instantiates an object to represent it
 
@@ -1037,6 +1042,7 @@ class Request(object):
 
     .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
     """
+
     def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
         """Creates a request in the OBS instance and instantiates an object to represent it"""
         self.revoked = True

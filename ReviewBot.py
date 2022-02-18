@@ -89,8 +89,7 @@ class ReviewBot(object):
             # namespace
             'project_namespace_api_map': [
                 ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
-                ],
-            }
+            ]}
 
     def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
         self.apiurl = apiurl

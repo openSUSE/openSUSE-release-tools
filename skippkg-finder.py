@@ -55,62 +55,60 @@ class SkippkgFinder(object):
         """
         pkg = package.lower()
         prefixes = (
-                'desktop-data',
-                'libyui-bindings',
-                'libyui-doc',
-                'libyui-ncurses',
-                'libyui-qt',
-                'libyui-rest',
-                'lifecycle-data-sle',
-                'kernel-livepatch',
-                'kiwi-template',
-                'mgr-',
-                'migrate',
-                'patterns',
-                'release-notes',
-                'sap',
-                'sca-',
-                'skelcd',
-                'sle-',
-                'sle_',
-                'sle15',
-                'sles15',
-                'spacewalk',
-                'supportutils-plugin',
-                'suse-migration',
-                'susemanager-',
-                'yast2-hana'
-                )
-        suffixes = (
-                '-caasp',
-                '-sle',
-                'bootstrap'
-                )
+            'desktop-data',
+            'libyui-bindings',
+            'libyui-doc',
+            'libyui-ncurses',
+            'libyui-qt',
+            'libyui-rest',
+            'lifecycle-data-sle',
+            'kernel-livepatch',
+            'kiwi-template',
+            'mgr-',
+            'migrate',
+            'patterns',
+            'release-notes',
+            'sap',
+            'sca-',
+            'skelcd',
+            'sle-',
+            'sle_',
+            'sle15',
+            'sles15',
+            'spacewalk',
+            'supportutils-plugin',
+            'suse-migration',
+            'susemanager-',
+            'yast2-hana',
+        )
+        suffixes = ('-caasp', '-sle', 'bootstrap')
         matches = (
-                'gtk-vnc2',
-                'ibus-googlepinyin',
-                'infiniband-diags',
-                'llvm',
-                'lua51-luajit',
-                'lvm2-clvm',
-                'osad',
-                'rhncfg',
-                'python-ibus',
-                'python-pymemcache',
-                'suse-build-key',
-                'suse-hpc',
-                'txt2tags',
-                'zypp-plugin-spacewalk',
-                'zypper-search-packages-plugin'
-                )
+            'gtk-vnc2',
+            'ibus-googlepinyin',
+            'infiniband-diags',
+            'llvm',
+            'lua51-luajit',
+            'lvm2-clvm',
+            'osad',
+            'rhncfg',
+            'python-ibus',
+            'python-pymemcache',
+            'suse-build-key',
+            'suse-hpc',
+            'txt2tags',
+            'zypp-plugin-spacewalk',
+            'zypper-search-packages-plugin',
+        )
         if pkg.startswith(prefixes) or pkg.endswith(suffixes) or pkg in matches:
             return True
-        if 'sles' in pkg or\
-                'sled' in pkg or\
-                'sap-' in pkg or\
-                '-sap' in pkg or\
-                'eula' in pkg or\
-                'branding' in pkg:
+        if (
+            'sles' in pkg
+            or 'sled' in pkg
+            or 'sap-' in pkg
+            or '-sap' in pkg
+            or 'eula' in pkg
+            or 'branding' in pkg
+        ):
             return True
         return False
 

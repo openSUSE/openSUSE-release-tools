@@ -76,7 +76,7 @@ class ChangeLogger(cmdln.Cmdln):
                 'kernel-syms',
                 'kernel-vanilla',
                 'kernel-xen',
-                ):
+            ):
                 srpm = '%s-%s-%s.src.rpm' % ('kernel-source', m.group('version'), m.group('release'))
                 pkgdata[binrpm]['sourcerpm'] = srpm
                 print("%s -> %s" % (str(h['sourcerpm'], 'utf-8'), srpm))

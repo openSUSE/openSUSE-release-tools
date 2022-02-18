@@ -31,9 +31,8 @@ class BiArchTool(ToolBase.ToolBase):
                     'libjpeg62-turbo',
                     'mercurial',
                     'subversion',
-                    'ovmf'
-                    ]),
-                }
+                    'ovmf'])
+        }
         self.blacklist = {
                 'i586': set([
                     'belle-sip',
@@ -45,9 +44,8 @@ class BiArchTool(ToolBase.ToolBase):
                     'patterns-fonts',
                     'patterns-rpm-macros',
                     'patterns-yast',
-                    '000release-packages',
-                    ]),
-                }
+                    '000release-packages'])
+        }
 
     def get_filelist(self, project, package, expand = False):
         query = {}

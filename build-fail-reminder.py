@@ -176,8 +176,8 @@ def main(args):
                                 'sender': sender,
                                 'project': project,
                                 'package': package,
-                                'date': time.ctime(Reminded[package].firstfail),
-                                }
+                                'date': time.ctime(Reminded[package].firstfail)
+                    }
                     SendMail(logger, project, sender, to, fullname, subject, text)
             elif Reminded[package].remindCount == 4:
                 # Package has failed for 4 weeks - Collect packages to send a mail to openSUSE-factory@ (one mail per day max)
