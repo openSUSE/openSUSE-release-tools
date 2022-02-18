@@ -27,7 +27,8 @@ class ListCommand:
             SupersedeCommand(self.api).perform()
 
         requests = self.api.get_open_requests()
-        if not len(requests): return
+        if not len(requests):
+            return
 
         splitter = RequestSplitter(self.api, requests, in_ring=True)
         splitter.group_by('./action/target/@devel_project')

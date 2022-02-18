@@ -112,7 +112,8 @@ class Cache(object):
         Cache.patterns = []
 
         if str2bool(os.environ.get('OSRT_DISABLE_CACHE', '')):
-            if conf.config['debug']: print('CACHE_DISABLE via $OSRT_DISABLE_CACHE', file=sys.stderr)
+            if conf.config['debug']:
+                print('CACHE_DISABLE via $OSRT_DISABLE_CACHE', file=sys.stderr)
             return
 
         for pattern in Cache.PATTERNS:
@@ -170,11 +171,13 @@ class Cache(object):
                     Cache.delete_project(apiurl, project)
 
             if os.path.exists(path) and time() - os.path.getmtime(path) <= ttl:
-                if conf.config['debug']: print('CACHE_GET', url, file=sys.stderr)
+                if conf.config['debug']:
+                    print('CACHE_GET', url, file=sys.stderr)
                 return urlopen('file://' + path)
             else:
                 reason = '(' + ('expired' if os.path.exists(path) else 'does not exist') + ')'
-                if conf.config['debug']: print('CACHE_MISS', url, reason, file=sys.stderr)
+                if conf.config['debug']:
+                    print('CACHE_MISS', url, reason, file=sys.stderr)
 
         return None
 
@@ -195,7 +198,8 @@ class Cache(object):
             text = data.read()
             data = BytesIO(text)
 
-            if conf.config['debug']: print('CACHE_PUT', url, project, file=sys.stderr)
+            if conf.config['debug']:
+                print('CACHE_PUT', url, project, file=sys.stderr)
             f = open(path, 'wb')
             f.write(text)
             f.close()
@@ -219,7 +223,8 @@ class Cache(object):
                 Cache.delete_project(apiurl, project)
 
             if os.path.exists(path):
-                if conf.config['debug']: print('CACHE_DELETE', url, file=sys.stderr)
+                if conf.config['debug']:
+                    print('CACHE_DELETE', url, file=sys.stderr)
                 os.remove(path)
 
         # Also delete version without query. This does not handle other
@@ -234,7 +239,8 @@ class Cache(object):
         path = Cache.path(apiurl, project)
 
         if os.path.exists(path):
-            if conf.config['debug']: print('CACHE_DELETE_PROJECT', apiurl, project, file=sys.stderr)
+            if conf.config['debug']:
+                print('CACHE_DELETE_PROJECT', apiurl, project, file=sys.stderr)
             rmtree_nfs_safe(path)
 
     @staticmethod

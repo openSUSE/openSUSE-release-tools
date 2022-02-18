@@ -351,9 +351,11 @@ class StagingWorkflow(ABC):
     def create_attribute_type(self, namespace, name, values=None):
         """Creates a new attribute type in the OBS instance."""
 
-        if namespace not in self.attr_types: self.attr_types[namespace] = []
+        if namespace not in self.attr_types:
+            self.attr_types[namespace] = []
 
-        if name not in self.attr_types[namespace]: self.attr_types[namespace].append(name)
+        if name not in self.attr_types[namespace]:
+            self.attr_types[namespace].append(name)
 
         meta = """
         <namespace name='{}'>
@@ -446,7 +448,8 @@ class StagingWorkflow(ABC):
         :param name: name of the user
         :type name: str
         """
-        if name in self.users: return
+        if name in self.users:
+            return
         meta = """
         <person>
           <login>{}</login>
@@ -478,7 +481,8 @@ class StagingWorkflow(ABC):
         After the execution, the target project is indexed in the projects dictionary twice,
         by its name and as 'target'.
         """
-        if self.projects.get('target'): return
+        if self.projects.get('target'):
+            return
 
         self.create_target_project()
         self.create_staging_users()
@@ -1056,7 +1060,8 @@ class Request(object):
         self.revoke()
 
     def revoke(self):
-        if self.revoked: return
+        if self.revoked:
+            return
         self.change_state('revoked')
         self.revoked = True
 

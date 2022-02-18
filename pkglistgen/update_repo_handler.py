@@ -162,7 +162,8 @@ def print_repo_delta(pool, repo2, packages_file):
             present.setdefault(key, {})
             present[key][s.evr] = s.repo
     for s in repo2.solvables:
-        if s.arch == 'src': continue
+        if s.arch == 'src':
+            continue
         key = '{}/{}'.format(s.name, s.arch)
         if present.get(key, {}).get(s.evr):
             continue
