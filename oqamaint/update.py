@@ -5,7 +5,7 @@ import requests
 
 
 from gzip import decompress
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 import osc.core
 
 from osclib.memoize import memoize

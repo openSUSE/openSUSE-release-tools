@@ -1,20 +1,14 @@
-from __future__ import print_function
-
 from datetime import datetime
 import time
 import warnings
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 from osc import conf
 from osc.core import makeurl
 from osc.core import http_GET
 from osc.core import http_POST
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 class OBSLock(object):
     """Implement a distributed lock using a shared OBS resource."""

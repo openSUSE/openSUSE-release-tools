@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-from optparse import OptionParser
-from pprint import pformat, pprint
+from pprint import pformat
 from stat import S_ISREG, S_ISLNK
 from tempfile import NamedTemporaryFile
 import cmdln
@@ -15,7 +14,7 @@ import time
 import abichecker_dbmodel as DB
 import sqlalchemy.orm.exc
 
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import osc.conf
 import osc.core

@@ -1,7 +1,7 @@
 from datetime import datetime
 from dateutil.parser import parse as date_parse
 import re
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 from osc.core import http_DELETE
 from osc.core import http_GET

@@ -1,22 +1,17 @@
-import re
 import time
 
 from urllib.error import HTTPError
 
-import warnings
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
-from osc.core import change_request_state, show_package_meta, wipebinaries
-from osc.core import http_GET, http_PUT, http_DELETE, http_POST
-from osc.core import delete_package, search, meta_get_packagelist
-from osc.core import Request
+from osc.core import change_request_state
+from osc.core import http_GET, http_POST
+from osc.core import delete_package, meta_get_packagelist
 from osc import conf
-from osc.util.helper import decode_it
 from osclib.core import attribute_value_save
 from osclib.core import attribute_value_load
 from osclib.core import source_file_load
 from osclib.core import source_file_save
-from osclib.request_finder import RequestFinder
 from datetime import date
 
 

@@ -1,6 +1,5 @@
-import osc.core
 from osc.core import get_dependson
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 from osc import cmdln
 from urllib.error import HTTPError
 

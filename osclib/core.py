@@ -1,12 +1,10 @@
 from collections import namedtuple
-from collections import OrderedDict
 from datetime import datetime
 from datetime import timezone
 from dateutil.parser import parse as date_parse
 import re
 import socket
-from xml.etree import cElementTree as ET
-from lxml import etree as ETL
+from lxml import etree as ET
 from urllib.error import HTTPError
 
 from osc.core import create_submit_request
@@ -30,7 +28,6 @@ from osc.util.helper import decode_it
 from osc import conf
 from osclib.conf import Config
 from osclib.memoize import memoize
-import subprocess
 import traceback
 
 BINARY_REGEX = r'(?:.*::)?(?P<filename>(?P<name>.*)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<arch>[^-\.]+))'
@@ -41,7 +38,7 @@ REQUEST_STATES_MINUS_ACCEPTED = ['new', 'review', 'declined', 'revoked', 'supers
 @memoize(session=True)
 def group_members(apiurl, group, maintainers=False):
     url = makeurl(apiurl, ['group', group])
-    root = ETL.parse(http_GET(url)).getroot()
+    root = ET.parse(http_GET(url)).getroot()
 
     if maintainers:
         return root.xpath('maintainer/@userid')
@@ -56,6 +53,11 @@ def groups_members(apiurl, groups):
 
     return members
 
+# osc uses xml.etree while we rely on lxml
+def convert_from_osc_et(xml):
+    from xml.etree import ElementTree as oscET
+    return ET.fromstring(oscET.tostring(xml))
+
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
     root = owner(apiurl, package, project=project)
@@ -63,12 +65,12 @@ def owner_fallback(apiurl, project, package):
     if not entry or project.startswith(entry.get('project')):
         # Fallback to global (ex Factory) maintainer.
         root = owner(apiurl, package)
-    return root
+    return convert_from_osc_et(root)
 
 @memoize(session=True)
 def maintainers_get(apiurl, project, package=None):
     if package is None:
-        meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+        meta = ET.fromstringlist(show_project_meta(apiurl, project))
         maintainers = meta.xpath('//person[@role="maintainer"]/@userid')
 
         groups = meta.xpath('//group[@role="maintainer"]/@groupid')
@@ -76,9 +78,7 @@ def maintainers_get(apiurl, project, package=None):
 
         return maintainers
 
-    # Ugly reparse, but real xpath makes the rest much cleaner.
     root = owner_fallback(apiurl, project, package)
-    root = ETL.fromstringlist(ET.tostringlist(root))
     maintainers = root.xpath('//person[@role="maintainer"]/@name')
 
     groups = root.xpath('//group[@role="maintainer"]/@name')
@@ -92,7 +92,7 @@ def package_role_expand(apiurl, project, package, role='maintainer', inherit=Tru
     All users with a certain role on a package, including those who have the role directly assigned
     and those who are part of a group with that role.
     """
-    meta = ETL.fromstringlist(show_package_meta(apiurl, project, package))
+    meta = ET.fromstringlist(show_package_meta(apiurl, project, package))
     users = meta_role_expand(apiurl, meta, role)
 
     if inherit:
@@ -106,7 +106,7 @@ def project_role_expand(apiurl, project, role='maintainer'):
     All users with a certain role on a project, including those who have the role directly assigned
     and those who are part of a group with that role.
     """
-    meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+    meta = ET.fromstringlist(show_project_meta(apiurl, project))
     return meta_role_expand(apiurl, meta, role)
 
 def meta_role_expand(apiurl, meta, role='maintainer'):
@@ -129,7 +129,7 @@ def package_list(apiurl, project):
 
 @memoize(session=True)
 def target_archs(apiurl, project, repository='standard'):
-    meta = ETL.fromstringlist(show_project_meta(apiurl, project))
+    meta = ET.fromstringlist(show_project_meta(apiurl, project))
     return meta.xpath('repository[@name="{}"]/arch/text()'.format(repository))
 
 @memoize(session=True)
@@ -260,7 +260,7 @@ def project_list_prefix(apiurl, prefix):
     """Get a list of project with the same prefix."""
     query = {'match': 'starts-with(@name, "{}")'.format(prefix)}
     url = makeurl(apiurl, ['search', 'project', 'id'], query)
-    root = ETL.parse(http_GET(url)).getroot()
+    root = ET.parse(http_GET(url)).getroot()
     return root.xpath('project/@name')
 
 def project_locked(apiurl, project):
@@ -291,7 +291,7 @@ def builddepinfo(apiurl, project, repo, arch, order = False):
     if order:
         query['view'] = 'order'
     url = makeurl(apiurl, ['build', project, repo, arch, '_builddepinfo'], query)
-    return ETL.parse(http_GET(url)).getroot()
+    return ET.parse(http_GET(url)).getroot()
 
 def entity_email(apiurl, key, entity_type='person', include_name=False):
     url = makeurl(apiurl, [entity_type, key])
@@ -363,7 +363,7 @@ def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
         'nofilename': '1',
     }
     url = makeurl(apiurl, ['source', project], query)
-    root = ETL.parse(http_GET(url)).getroot()
+    root = ET.parse(http_GET(url)).getroot()
 
     for package in root.xpath('sourceinfo/@package'):
         kind = package_kind(apiurl, project, package)
@@ -377,7 +377,7 @@ def attribute_value_load(apiurl, project, name, namespace='OSRT', package=None):
     url = makeurl(apiurl, path)
 
     try:
-        root = ETL.parse(http_GET(url)).getroot()
+        root = ET.parse(http_GET(url)).getroot()
     except HTTPError as e:
         if e.code == 404:
             return None
@@ -445,7 +445,7 @@ def repository_path_search(apiurl, project, search_project, search_repository):
     queue = []
 
     # Initialize breadth first search queue with repositories from top project.
-    root = ETL.fromstringlist(show_project_meta(apiurl, project))
+    root = ET.fromstringlist(show_project_meta(apiurl, project))
     for repository in root.xpath('repository[path[@project and @repository]]/@name'):
         queue.append((repository, project, repository))
 
@@ -454,7 +454,7 @@ def repository_path_search(apiurl, project, search_project, search_repository):
     for repository_top, project, repository in queue:
         if root.get('name') != project:
             # Repositories for a single project are in a row so cache parsing.
-            root = ETL.fromstringlist(show_project_meta(apiurl, project))
+            root = ET.fromstringlist(show_project_meta(apiurl, project))
 
         paths = root.findall('repository[@name="{}"]/path'.format(repository))
         for path in paths:
@@ -515,7 +515,7 @@ def repository_published(apiurl, project, repository, archs=[]):
         archs = list(archs)
         archs.append('i586')
 
-    root = ETL.fromstringlist(show_results_meta(
+    root = ET.fromstringlist(show_results_meta(
         apiurl, project, multibuild=True, repository=[repository], arch=archs))
     return not len(root.xpath('result[@state!="published" and @state!="unpublished"]'))
 
@@ -533,7 +533,7 @@ def project_meta_revision(apiurl, project):
 
 def package_source_changed(apiurl, project, package):
     url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
-    root = ETL.parse(http_GET(url)).getroot()
+    root = ET.parse(http_GET(url)).getroot()
     return datetime.fromtimestamp(int(root.find('revision/time').text), timezone.utc).replace(tzinfo=None)
 
 def package_source_age(apiurl, project, package):
@@ -562,7 +562,7 @@ def package_kind(apiurl, project, package):
 
     try:
         url = makeurl(apiurl, ['source', project, package, '_meta'])
-        root = ETL.parse(http_GET(url)).getroot()
+        root = ET.parse(http_GET(url)).getroot()
     except HTTPError as e:
         if e.code == 404:
             return None
@@ -590,7 +590,7 @@ def entity_source_link(apiurl, project, package=None):
         else:
             parts = ['source', project, '_meta']
         url = makeurl(apiurl, parts)
-        root = ETL.parse(http_GET(url)).getroot()
+        root = ET.parse(http_GET(url)).getroot()
     except HTTPError as e:
         if e.code == 404:
             return None
@@ -631,7 +631,7 @@ def package_source_hash(apiurl, project, package, revision=None):
 
     try:
         url = makeurl(apiurl, ['source', project, package], query)
-        root = ETL.parse(http_GET(url)).getroot()
+        root = ET.parse(http_GET(url)).getroot()
     except HTTPError as e:
         if e.code == 400 or e.code == 404:
             # 400: revision not found, 404: package not found.
@@ -649,7 +649,7 @@ def package_source_hash(apiurl, project, package, revision=None):
 def package_source_hash_history(apiurl, project, package, limit=5, include_project_link=False):
     try:
         # get_commitlog() reverses the order so newest revisions are first.
-        root = ETL.fromstringlist(
+        root = ET.fromstringlist(
             get_commitlog(apiurl, project, package, None, format='xml'))
     except HTTPError as e:
         if e.code == 404:
@@ -692,7 +692,7 @@ def package_source_hash_history(apiurl, project, package, limit=5, include_proje
 def package_version(apiurl, project, package):
     try:
         url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
-        root = ETL.parse(http_GET(url)).getroot()
+        root = ET.parse(http_GET(url)).getroot()
     except HTTPError as e:
         if e.code == 404:
             return False
@@ -801,7 +801,7 @@ def issue_trackers(apiurl):
 
 def issue_tracker_by_url(apiurl, tracker_url):
     url = makeurl(apiurl, ['issue_trackers'])
-    root = ETL.parse(http_GET(url)).getroot()
+    root = ET.parse(http_GET(url)).getroot()
     if not tracker_url.endswith('/'):
         # All trackers are formatted with trailing slash.
         tracker_url += '/'
@@ -854,7 +854,7 @@ def duplicated_binaries_in_repo(apiurl, project, repository):
 def search(apiurl, path, xpath, query={}):
     query['match'] = xpath
     url = makeurl(apiurl, ['search', path], query)
-    return ETL.parse(http_GET(url)).getroot()
+    return ET.parse(http_GET(url)).getroot()
 
 def action_is_patchinfo(action):
     return (action.type == 'maintenance_incident' and (
@@ -1180,4 +1180,4 @@ def message_suffix(action, message=None):
 def request_state_change(apiurl, request_id, state):
     query = { 'newstate': state, 'cmd': 'changestate' }
     url = makeurl(apiurl, ['request', request_id], query)
-    return ETL.parse(http_POST(url)).getroot().get('code')
+    return ET.parse(http_POST(url)).getroot().get('code')

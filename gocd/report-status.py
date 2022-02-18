@@ -23,7 +23,7 @@
 import argparse
 import os
 import sys
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import osc.core
 from osclib.core import target_archs

@@ -9,7 +9,7 @@
 # Distribute under GPLv2 or GPLv3
 
 import re
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 from ttm.manager import ToTestManager, NotFoundException, QAResult
 

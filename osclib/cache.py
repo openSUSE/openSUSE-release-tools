@@ -7,7 +7,6 @@ import sys
 
 from urllib.parse import unquote
 from urllib.parse import urlsplit, SplitResult
-from urllib.error import URLError, HTTPError
 from io import BytesIO
 
 from osc import conf
@@ -16,7 +15,7 @@ from osclib.cache_manager import CacheManager
 from osclib.conf import str2bool
 from osclib.util import rmtree_nfs_safe
 from time import time
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 def http_request(method, url, headers={}, data=None, file=None):
     """

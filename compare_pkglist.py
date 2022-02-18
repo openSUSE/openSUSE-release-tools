@@ -3,19 +3,11 @@
 import argparse
 import logging
 import sys
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
-import re
-from xml.etree import cElementTree as ET
-
+from lxml import etree as ET
 import osc.conf
 import osc.core
-
-from osc import oscerr
 
 OPENSUSE = 'openSUSE:Leap:15.2'
 SLE = 'SUSE:SLE-15-SP2:GA'

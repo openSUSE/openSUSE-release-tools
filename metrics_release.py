@@ -1,12 +1,7 @@
 from dateutil.parser import parse as date_parse
 from metrics import timestamp
 import requests
-
-try:
-    from urllib.parse import urljoin
-except ImportError:
-    # python 2.x
-    from urlparse import urljoin
+from urllib.parse import urljoin
 
 import yaml
 

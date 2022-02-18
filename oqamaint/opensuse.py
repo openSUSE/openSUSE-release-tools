@@ -4,11 +4,7 @@ import re
 from collections import namedtuple
 import osc.core
 from oqamaint.update import Update
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    from xml.etree import ElementTree as ET
+from lxml import etree as ET
 
 Package = namedtuple('Package', ('name', 'version', 'release'))
 

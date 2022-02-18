@@ -1,6 +1,3 @@
-import json
-from urllib.error import HTTPError
-
 from colorama import Fore
 
 from osc import oscerr

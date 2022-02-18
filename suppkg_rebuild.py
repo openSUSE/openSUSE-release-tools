@@ -6,14 +6,12 @@ import sys
 from urllib.error import HTTPError
 
 import re
-import yaml
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 from collections import defaultdict
 
 import osc.conf
 import osc.core
 
-from osc import oscerr
 from osc.util.helper import decode_list
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI

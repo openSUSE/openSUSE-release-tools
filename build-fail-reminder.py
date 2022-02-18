@@ -5,11 +5,10 @@ import time
 import osc
 import osc.core
 import osc.conf
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
 import logging
 import argparse
 import sys
-from collections import namedtuple
 from osclib.util import mail_send_with_details
 import email.utils
 

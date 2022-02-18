@@ -14,7 +14,7 @@ import ReviewBot
 
 from oqamaint.suse import SUSEUpdate
 
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 import json
 
 QA_UNKNOWN = 0

@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 import sys
 import cmdln
 import logging
 from urllib.error import HTTPError
-import osc.core
 
 import ToolBase
 

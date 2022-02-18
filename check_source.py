@@ -6,12 +6,7 @@ import shutil
 import subprocess
 import sys
 
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
-
-from lxml import etree as ETL
+from lxml import etree as ET
 
 import osc.conf
 import osc.core
@@ -346,7 +341,7 @@ class CheckSource(ReviewBot.ReviewBot):
         )
         if not self.required_maintainer: return True
 
-        meta = ETL.fromstringlist(show_project_meta(self.apiurl, source_project))
+        meta = ET.fromstringlist(show_project_meta(self.apiurl, source_project))
         maintainers = meta.xpath('//person[@role="maintainer"]/@userid')
         maintainers += ['group:' + g for g in meta.xpath('//group[@role="maintainer"]/@groupid')]
 

@@ -8,11 +8,7 @@ import httpretty
 import osc
 from . import OBSLocal
 
-try:
-    from urllib.parse import urlparse, parse_qs
-except ImportError:
-    # python 2.x
-    from urlparse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs
 
 import sys
 import re

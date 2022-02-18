@@ -1,4 +1,4 @@
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 from osc import oscerr
 from osc.core import http_GET

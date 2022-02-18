@@ -13,7 +13,7 @@ import logging
 import re
 import yaml
 from enum import IntEnum
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 from osclib.stagingapi import StagingAPI
 from urllib.error import HTTPError
 from ttm.totest import ToTest
