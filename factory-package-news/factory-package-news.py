@@ -220,7 +220,7 @@ class ChangeLogger(cmdln.Cmdln):
             srpm1 = v1pkgs[group[srpm][0]]['sourcerpm']
             # print group[srpm], srpm, srpm1
             if srpm1 == srpm:
-                continue # source package unchanged
+                continue  # source package unchanged
             try:
                 t1 = v1changelogs[srpm1]['changelogtime'][0]
             except IndexError:
@@ -235,7 +235,7 @@ class ChangeLogger(cmdln.Cmdln):
                 print('  {} ERROR: no changelog'.format(name))
                 continue
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
-                continue # no new changelog entry, probably just rebuilt
+                continue  # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
             details += "\n==== %s ====\n" % name
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:

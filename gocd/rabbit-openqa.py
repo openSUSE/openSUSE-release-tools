@@ -249,7 +249,7 @@ class Listener(PubSubConsumer):
         elif re.search(r'.openqa.', method.routing_key):
             data = json.loads(body)
             if '/' in data.get('BUILD'):
-                return # Ignore PR verification runs
+                return  # Ignore PR verification runs
             self.on_openqa_job(data.get('ISO'))
         else:
             self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))

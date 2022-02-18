@@ -75,7 +75,7 @@ class Fetcher(object):
             code = result.get('code')
             count = int(result.get('count'))
             if code == 'excluded' or code == 'disabled' or code == 'locked':
-                continue # ignore
+                continue  # ignore
             if code == 'succeeded':
                 succeeded += count
                 continue

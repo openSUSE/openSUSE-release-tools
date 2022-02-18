@@ -13,7 +13,7 @@ from osclib.accept_command import AcceptCommand
 
 # Import the involved bots
 from check_source import CheckSource
-legal_auto = __import__("legal-auto") # Needed because of the dash in the filename
+legal_auto = __import__("legal-auto")  # Needed because of the dash in the filename
 LegalAuto = legal_auto.LegalAuto
 
 PROJECT = 'openSUSE:Factory'

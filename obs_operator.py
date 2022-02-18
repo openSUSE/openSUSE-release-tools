@@ -36,7 +36,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
         sentry_sdk.capture_exception()
 
 class RequestHandler(BaseHTTPRequestHandler):
-    COOKIE_NAME = 'openSUSE_session' # Both OBS and IBS.
+    COOKIE_NAME = 'openSUSE_session'  # Both OBS and IBS.
     GET_PATHS = [
         'origin/config',
         'origin/history',
@@ -282,9 +282,9 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def handle_package_diff(self, args, query):
         # source_project source_package target_project [target_package] [source_revision] [target_revision]
-        command = ['osc', 'rdiff', args[0], args[1], args[2]] # len(args) == 3
+        command = ['osc', 'rdiff', args[0], args[1], args[2]]  # len(args) == 3
         if len(args) >= 4:
-            command.append(args[3]) # target_package
+            command.append(args[3])  # target_package
         if len(args) >= 5:
             command.append('--revision')
             command.append(':'.join(args[4:6]))
@@ -364,7 +364,7 @@ class OSCRequestEnvironmentException(Exception):
     pass
 
 def main(args):
-    conf.get_config() # Allow sentry DSN to be available.
+    conf.get_config()  # Allow sentry DSN to be available.
     sentry_sdk = sentry_init()
 
     RequestHandler.apiurl = args.apiurl

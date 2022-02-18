@@ -212,7 +212,7 @@ class RepoChecker():
                 del oldstate['check'][source]
 
         packages = config.get('rebuildpacs-leafs', '').split()
-        if not self.rebuild: # ignore in this case
+        if not self.rebuild:  # ignore in this case
             packages = []
 
         # first round: collect all infos from obs

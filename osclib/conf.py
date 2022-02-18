@@ -175,7 +175,7 @@ DEFAULT = {
         'openqa': '',
         'lock': '',
         'lock-ns': '',
-        '_priority': '0', # Apply defaults first
+        '_priority': '0',  # Apply defaults first
     },
 }
 
@@ -210,7 +210,7 @@ class Config(object):
         self.populate_conf()
 
     @staticmethod
-    @memoize(session=True) # Allow reset by memoize_session_reset() for ReviewBot.
+    @memoize(session=True)  # Allow reset by memoize_session_reset() for ReviewBot.
     def get(apiurl, project):
         """Cached version for directly accessing project config."""
         # Properly handle loading the config for interconnect projects.

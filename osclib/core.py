@@ -177,7 +177,7 @@ def package_binary_list(apiurl, project, repository, arch, package=None, strip_m
     root = ET.parse(http_GET(url)).getroot()
 
     package_binaries = []
-    binary_map = {} # last duplicate wins
+    binary_map = {}  # last duplicate wins
     for binary_list in root:
         package = binary_list.get('package')
         if strip_multibuild:

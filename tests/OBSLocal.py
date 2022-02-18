@@ -147,7 +147,7 @@ class TestCase(unittest.TestCase):
         self.execute(args)
 
     def execute(self, args):
-        print('$ ' + ' '.join(args)) # Print command for debugging.
+        print('$ ' + ' '.join(args))  # Print command for debugging.
         try:
             env = os.environ
             env['OSC_CONFIG'] = OSCRC
@@ -155,7 +155,7 @@ class TestCase(unittest.TestCase):
         except subprocess.CalledProcessError as e:
             print(e.output)
             raise e
-        print(self.output) # For debugging assertion failures.
+        print(self.output)  # For debugging assertion failures.
 
     def assertOutput(self, text):
         self.assertTrue(text in self.output, '[MISSING] ' + text)

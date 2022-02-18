@@ -19,9 +19,9 @@ from osclib.accept_command import AcceptCommand
 # Import the involved bots
 from check_source import CheckSource
 from check_tags_in_requests import TagChecker
-legal_auto = __import__("legal-auto") # Needed because of the dash in the filename
+legal_auto = __import__("legal-auto")  # Needed because of the dash in the filename
 LegalAuto = legal_auto.LegalAuto
-origin_manager = __import__("origin-manager") # Same than above, dash in the filename
+origin_manager = __import__("origin-manager")  # Same than above, dash in the filename
 OriginManager = origin_manager.OriginManager
 
 PROJECT = 'SUSE:SLE-15-SP3:GA'

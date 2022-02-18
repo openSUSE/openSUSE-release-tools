@@ -10,7 +10,7 @@ class MockedContainerCleaner(ContainerCleaner):
         """Mock certain OBS APIs returning directory entries"""
         if path == ["source", "mock:prj"]:
             srccontainers = [a.split(":")[0] for a in self.container_arch_map.keys()]
-            return list(set(srccontainers)) # Remove duplicates
+            return list(set(srccontainers))  # Remove duplicates
         elif path == ["build", "mock:prj", "containers"]:
             all_archs = []
             for archs in self.container_arch_map.values():

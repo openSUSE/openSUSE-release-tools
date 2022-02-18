@@ -44,7 +44,7 @@ class TestTagChecker(OBSLocal.TestCase):
         self.checker = TagChecker(apiurl=APIURL,
                                   user='maintbot',
                                   logger=self.logger)
-        self.checker.override_allow = False # Test setup cannot handle.
+        self.checker.override_allow = False  # Test setup cannot handle.
 
         self._request_data = """
                 <request id="293129" creator="darix">

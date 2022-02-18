@@ -195,7 +195,7 @@ def merge_susetags(output, files):
         release = evr.pop()
         version = '-'.join(evr)
         key = s.name + "-" + version + "." + s.arch
-        if re.search('-release', s.name): # just take one version of it
+        if re.search('-release', s.name):  # just take one version of it
             key = s.name + "." + s.arch
         packages[key] = { 'name': s.name, 'version': version, 'arch': s.arch, 'release': release, 'provides': set()}
         for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):

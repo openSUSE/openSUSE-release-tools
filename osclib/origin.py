@@ -96,7 +96,7 @@ def config_origin_generator(origins, apiurl=None, project=None, package=None, sk
                     origin = origin_workaround_ensure(origin)
 
             yield origin, values
-            break # Only support single value inside list item.
+            break  # Only support single value inside list item.
 
 def config_resolve(apiurl, project, config):
     defaults = POLICY_DEFAULTS.copy()
@@ -803,7 +803,7 @@ def origin_updatable(apiurl):
     projects = project_attributes_list(apiurl, [
         'OSRT:OriginConfig',
     ], [
-        'OBS:Maintained', # Submitting maintenance updates not currently supported.
+        'OBS:Maintained',  # Submitting maintenance updates not currently supported.
         'OSRT:OriginUpdateSkip',
     ], locked=False)
 

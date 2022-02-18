@@ -212,7 +212,7 @@ class FccSubmitter(object):
 
     def create_submitrequest(self, package):
         """Create a submit request using the osc.commandline.Osc class."""
-        src_project = self.factory # submit from Factory only
+        src_project = self.factory  # submit from Factory only
         dst_project = self.to_prj
 
         msg = 'Automatic request from %s by F-C-C Submitter. Please review this change and decline it if Leap do not need it.' % src_project
@@ -311,7 +311,7 @@ class FccSubmitter(object):
         pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, 'openSUSE:Factory')
         skip_pkgs_list = self.load_skip_pkgs_list(pseudometa_project, pseudometa_package).splitlines()
 
-        ms_packages = [] # collect multi specs packages
+        ms_packages = []  # collect multi specs packages
 
         for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]

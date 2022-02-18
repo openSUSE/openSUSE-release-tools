@@ -157,7 +157,7 @@ def issues_get(apiurl, project, package, trackers, db):
     url = osc.core.makeurl(apiurl, ['source', project, package], {'view': 'issues'})
     root = ET.parse(osc.core.http_GET(url)).getroot()
 
-    now = datetime.now(tzlocal()) # Much harder than should be.
+    now = datetime.now(tzlocal())  # Much harder than should be.
     for issue in root.findall('issue'):
         # Normalize issues to active API instance issue-tracker definitions.
         # Assumes the two servers have the name trackers, but different labels.

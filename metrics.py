@@ -246,7 +246,7 @@ def who_workaround(request, review, relax=False):
     # - openSUSE/open-build-service#3898
     global who_workaround_swap, who_workaround_miss
 
-    who = review.get('who') # All that should be required (used as fallback).
+    who = review.get('who')  # All that should be required (used as fallback).
     when = review.get('when')
     if relax:
         # Super hack, chop off seconds to relax in hopes of finding potential.

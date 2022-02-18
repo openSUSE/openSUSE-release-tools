@@ -37,7 +37,7 @@ class BiArchTool(ToolBase.ToolBase):
             'i586': set([
                 'belle-sip',
                 'release-notes-openSUSE',
-                'openSUSE-EULAs', # translate-toolkit
+                'openSUSE-EULAs',  # translate-toolkit
                 'skelcd-openSUSE',
                 'plasma5-workspace',
                 'patterns-base',

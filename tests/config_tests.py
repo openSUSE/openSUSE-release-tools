@@ -33,7 +33,7 @@ class TestConfig(unittest.TestCase):
     def test_remote_none(self):
         wf = self.setup_vcr()
         wf.load_config('not_real_project')
-        self.assertTrue(True) # Did not crash!
+        self.assertTrue(True)  # Did not crash!
 
     def test_pattern_order(self):
         wf = self.setup_vcr()

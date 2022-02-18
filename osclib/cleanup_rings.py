@@ -63,7 +63,7 @@ class CleanupRings(object):
                             print('# {} links to {} but is not in a ring'.format(pkg, mainpkg))
                             print("osc linkpac {}/{} {}/{}".format(mainprj, mainpkg, prj, mainpkg))
                         else:
-                            if pkg != 'glibc.i686': # FIXME: ugly exception
+                            if pkg != 'glibc.i686':  # FIXME: ugly exception
                                 print("osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg))
                                 self.links[mainpkg] = pkg
 
@@ -94,7 +94,7 @@ class CleanupRings(object):
             name = package.attrib['name'].split(':')[0]
             for pkg in package.findall('pkgdep'):
                 if pkg.text not in self.bin2src:
-                    if not pkg.text.startswith('texlive-'): # XXX: texlive bullshit packaging
+                    if not pkg.text.startswith('texlive-'):  # XXX: texlive bullshit packaging
                         print('Package {} not found in place'.format(pkg.text))
                     continue
                 b = self.bin2src[pkg.text]
@@ -177,7 +177,7 @@ class CleanupRings(object):
             if (source not in self.pkgdeps and
                 source not in self.links and
                     source not in self.whitelist):
-                if source.startswith('texlive-specs-'): # XXX: texlive bullshit packaging
+                if source.startswith('texlive-specs-'):  # XXX: texlive bullshit packaging
                     continue
                 # Expensive check so left until last.
                 if self.check_requiredby(prj, source):
