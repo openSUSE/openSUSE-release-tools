@@ -5,7 +5,6 @@ import io
 import os
 import sys
 import logging
-from optparse import OptionParser
 import rpm
 import pickle
 import cmdln
@@ -17,11 +16,6 @@ SRPM_RE = re.compile(
 data_version = 3
 
 changelog_max_lines = 100  # maximum number of changelog lines per package
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
 
 class ChangeLogger(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):

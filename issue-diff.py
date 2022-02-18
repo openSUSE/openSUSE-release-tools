@@ -3,17 +3,16 @@
 import argparse
 import bugzilla
 import dateutil.parser
-from datetime import timedelta, datetime
+from datetime import datetime
 from dateutil.tz import tzlocal
 import os
 from random import shuffle
-import requests.exceptions
 import subprocess
 import sys
 import tempfile
 from xmlrpclib import Fault
 import yaml
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import osc.conf
 import osc.core

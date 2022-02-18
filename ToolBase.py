@@ -1,16 +1,14 @@
 #!/usr/bin/python3
 
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 import cmdln
 import datetime
-import itertools
 import logging
 import signal
 import sys
 import time
 
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote_plus
 
 import osc.conf
 import osc.core

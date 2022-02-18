@@ -1,16 +1,10 @@
 #!/usr/bin/python3
 
 import sys
-import re
 
 import osc.conf
 import osc.core
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
-
+from lxml import etree as ET
 from urllib.error import HTTPError, URLError
 
 import ReviewBot

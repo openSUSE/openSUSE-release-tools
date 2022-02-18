@@ -1,18 +1,11 @@
-import json
-from urllib.error import HTTPError
-
 from colorama import Fore
 
 from osc import oscerr
-from osc.core import get_request
-from osc.core import show_package_meta
 from osc import conf
 
-from osclib.select_command import SelectCommand
 from osclib.supersede_command import SupersedeCommand
 from osclib.request_finder import RequestFinder
 from osclib.request_splitter import RequestSplitter
-from xml.etree import cElementTree as ET
 
 class AdiCommand:
     def __init__(self, api):

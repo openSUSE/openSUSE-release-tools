@@ -1,15 +1,10 @@
-from xml.etree import cElementTree as ET
-
+from lxml import etree as ET
 from osc.core import makeurl
 from osc.core import http_GET
 from osclib.core import fileinfo_ext_all
 from osclib.core import builddepinfo
 
-try:
-    from urllib.error import HTTPError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError
+from urllib.error import HTTPError
 
 class CleanupRings(object):
     def __init__(self, api):

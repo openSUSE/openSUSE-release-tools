@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 
-from pprint import pprint
 import os
 import sys
 import re
 import logging
-from optparse import OptionParser
 import cmdln
 from collections import namedtuple
 from collections import OrderedDict
@@ -26,11 +24,7 @@ import signal
 import datetime
 import time
 import yaml
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+from lxml import etree as ET
 
 from osc import conf
 import osc.core

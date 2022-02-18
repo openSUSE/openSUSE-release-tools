@@ -2,11 +2,10 @@
 
 from configparser import ConfigParser
 from xdg.BaseDirectory import load_first_config
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import sys
 import cmdln
-import logging
 import os
 
 import osc.core

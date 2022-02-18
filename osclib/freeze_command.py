@@ -1,8 +1,5 @@
-from osclib.core import source_file_load
-from osclib.core import source_file_save
 import time
-import re
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 MAX_FROZEN_AGE = 6.5
 

@@ -1,17 +1,6 @@
 #!/usr/bin/python3
 
-from pprint import pprint
-import os
-import re
 import sys
-import logging
-from optparse import OptionParser
-import cmdln
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    import cElementTree as ET
 
 import osc.conf
 import osc.core

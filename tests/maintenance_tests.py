@@ -2,15 +2,9 @@ import os
 import unittest
 import logging
 import httpretty
-import osc
-import re
 from . import OBSLocal
 
-try:
-    from urllib.parse import urlparse, parse_qs
-except ImportError:
-    # python 2.x
-    from urlparse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs
 
 from check_maintenance_incidents import MaintenanceChecker
 

@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import glob
 from fnmatch import fnmatch
-from lxml import etree as ETL
+from lxml import etree as ET
 from osc.core import http_GET
 
 import yaml
@@ -171,7 +171,7 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
 
 def mirrorRepomd(cachedir, url):
     # Use repomd.xml to get the location of primary.xml.gz
-    repoindex = ETL.fromstring(requests.get('{}/repodata/repomd.xml'.format(url)).content)
+    repoindex = ET.fromstring(requests.get('{}/repodata/repomd.xml'.format(url)).content)
     primarypath = repoindex.xpath("string(./repo:data[@type='primary']/repo:location/@href)",
                                   namespaces={'repo': 'http://linux.duke.edu/metadata/repo'})
     if not primarypath.endswith(".xml.gz"):
@@ -195,7 +195,7 @@ def mirror(apiurl, project, repository, arch):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    meta = ETL.parse(http_GET('{}/public/source/{}/_meta'.format(apiurl, project))).getroot()
+    meta = ET.parse(http_GET('{}/public/source/{}/_meta'.format(apiurl, project))).getroot()
     repotag = meta.xpath("/project/repository[@name='{}']".format(repository))[0]
     if arch not in repotag.xpath("./arch/text()"):
         # Arch not in this project, skip mirroring

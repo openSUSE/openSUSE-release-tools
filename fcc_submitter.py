@@ -5,23 +5,16 @@ import logging
 import sys
 import time
 
-try:
-    from urllib.error import HTTPError, URLError
-except ImportError:
-    # python 2.x
-    from urllib2 import HTTPError, URLError
+from urllib.error import HTTPError, URLError
 
 import random
 import re
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
 
 import osc.conf
 import osc.core
 from osclib.core import devel_project_get
 from osclib.core import project_pseudometa_package
-
-from osc import oscerr
-from osclib.memoize import memoize
 
 OPENSUSE = 'openSUSE:Leap:15.2'
 OPENSUSE_PREVERSION = 'openSUSE:Leap:15.1'
