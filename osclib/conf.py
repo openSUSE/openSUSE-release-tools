@@ -3,7 +3,6 @@ from __future__ import print_function
 from osc import OscConfigParser
 from collections import OrderedDict
 import os
-import operator
 import re
 
 from osc import conf

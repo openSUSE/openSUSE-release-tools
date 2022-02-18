@@ -2,7 +2,6 @@
 
 import argparse
 from datetime import datetime
-import dateutil.parser
 import sys
 from lxml import etree as ET
 

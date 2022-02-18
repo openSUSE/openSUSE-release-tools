@@ -4,17 +4,14 @@ import argparse
 import logging
 import sys
 
-from urllib.error import HTTPError
 
 import re
 from lxml import etree as ET
-from collections import namedtuple
 
 import osc.conf
 import osc.core
 from osc.core import http_GET
 from osc.core import makeurl
-from osc import oscerr
 import osclib
 from osclib.core import source_file_ensure
 from osclib.conf import Config

@@ -7,7 +7,7 @@ import subprocess
 from os.path import basename
 import glob
 from openqa_client.client import OpenQA_Client
-from openqa_client.exceptions import ConnectionError, RequestError
+from openqa_client.exceptions import RequestError
 
 
 def old_filename(state):

@@ -1,12 +1,6 @@
-import sys
-import unittest
-import re
 
 import osc.core
 
-from osclib.conf import Config
-from osclib.stagingapi import StagingAPI
-from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
 

@@ -2,9 +2,7 @@ import unittest
 
 from osclib.accept_command import AcceptCommand
 from osclib.select_command import SelectCommand
-from osclib.conf import Config
 from osclib.comments import CommentAPI
-from osclib.stagingapi import StagingAPI
 from osclib.core import package_list
 
 from mock import MagicMock

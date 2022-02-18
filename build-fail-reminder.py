@@ -122,7 +122,6 @@ def main(args):
         json_data.close()
     except FileNotFoundError:
         RemindedLoaded = {}
-        pass
 
     seconds_to_remember = 7 * 86400
     now = int(time.time())

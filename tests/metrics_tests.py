@@ -1,5 +1,4 @@
 from . import OBSLocal
-import unittest
 
 
 class TestMetrics(OBSLocal.TestCase):

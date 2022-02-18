@@ -5,14 +5,11 @@ import re
 from urllib.parse import urlparse, urljoin
 import smtplib
 from email.mime.text import MIMEText
-import os
 import sys
 import email.utils
 import argparse
 import logging
 import yaml
-from xdg.BaseDirectory import save_data_path
-from collections import namedtuple
 
 logger = logging.getLogger()
 

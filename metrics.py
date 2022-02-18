@@ -410,7 +410,6 @@ def dashboard_at(api, filename, datetime=None, revision=None):
         if content:
             # TODO re-use from osclib.conf.
             from configparser import ConfigParser
-            import io
 
             cp = ConfigParser()
             config = '[remote]\n' + content

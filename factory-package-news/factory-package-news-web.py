@@ -6,7 +6,6 @@ from flask import make_response
 
 import re
 import os
-import sys
 from urllib.parse import urlparse
 
 digits_re = re.compile('^[0-9.]+$')

@@ -1,7 +1,6 @@
 from io import StringIO
 from datetime import datetime
 import dateutil.parser
-import json
 import logging
 import textwrap
 from urllib.error import HTTPError, URLError
@@ -10,7 +9,6 @@ import time
 import re
 from lxml import etree as ET
 
-import yaml
 
 from osc import conf
 from osc import oscerr
@@ -19,7 +17,6 @@ from osclib.core import attribute_value_save
 from osc.core import show_package_meta
 from osc.core import buildlog_strip_time
 from osc.core import change_review_state
-from osc.core import delete_package
 from osc.core import delete_project
 from osc.core import get_commitlog
 from osc.core import get_group
@@ -40,7 +37,6 @@ from osc.util.helper import decode_it
 from osclib.cache import Cache
 from osclib.core import devel_project_get
 from osclib.core import entity_exists
-from osclib.core import project_list_prefix
 from osclib.core import project_pseudometa_file_load
 from osclib.core import project_pseudometa_file_save
 from osclib.core import project_pseudometa_file_ensure
@@ -1519,4 +1515,3 @@ class StagingAPI(object):
             delete_project(self.apiurl, project, force=True)
         except HTTPError as e:
             print(e)
-            pass

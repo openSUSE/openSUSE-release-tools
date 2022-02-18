@@ -3,12 +3,10 @@
 import argparse
 from datetime import datetime, timedelta
 from collections import defaultdict
-import json
 
 from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-from lxml import etree as ET
 import osc
 
 MARGIN_HOURS = 4

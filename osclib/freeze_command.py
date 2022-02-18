@@ -87,7 +87,6 @@ class FreezeCommand(object):
         for f in pkgmeta.find('build'):
             if f.get('repository', None) == 'bootstrap_copy':
                 f.tag = state
-                pass
         self.api.retried_PUT(url, ET.tostring(pkgmeta))
 
     def verify_bootstrap_copy_codes(self, codes):

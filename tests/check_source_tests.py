@@ -3,7 +3,6 @@ from . import OBSLocal
 from check_source import CheckSource
 import random
 import os
-from osclib.core import request_action_list
 from osc.core import get_request_list
 
 PROJECT = 'openSUSE:Factory'

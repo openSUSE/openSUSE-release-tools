@@ -1,12 +1,9 @@
 #!/usr/bin/python3
 
 import argparse
-import datetime
 import glob
 import json
 import logging
-import os.path
-import time
 import subprocess
 
 import osc

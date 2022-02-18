@@ -7,7 +7,6 @@ import solv
 import shutil
 import subprocess
 import yaml
-import sys
 import tempfile
 
 from lxml import etree as ET
@@ -15,7 +14,6 @@ from lxml import etree as ET
 from osc.core import checkout_package
 
 from osc.core import http_GET
-from osc.core import HTTPError
 from osc.core import show_results_meta
 from osc.core import Package
 from osc.core import undelete_package

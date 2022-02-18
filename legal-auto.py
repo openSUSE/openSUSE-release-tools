@@ -7,8 +7,6 @@ import os.path
 import sys
 import re
 import logging
-from optparse import OptionParser
-import cmdln
 from dateutil.parser import parse
 from datetime import timezone, timedelta
 import requests as REQ
@@ -23,8 +21,6 @@ import osc.conf
 import osc.core
 from osclib.cache_manager import CacheManager
 import ReviewBot
-
-from osclib.comments import CommentAPI
 
 http_GET = osc.core.http_GET
 

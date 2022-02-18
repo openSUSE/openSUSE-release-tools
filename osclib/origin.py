@@ -1,7 +1,6 @@
 from copy import deepcopy
 from collections import namedtuple
 import logging
-from osc.core import get_request_list
 from osclib.conf import Config
 from osclib.conf import str2bool
 from osclib.core import attribute_value_load

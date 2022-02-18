@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-from lxml import etree as ET
 import osc.conf
 import osc.core
 from urllib.error import HTTPError, URLError

@@ -1,5 +1,4 @@
 from . import OBSLocal
-import unittest
 
 
 class TestDevelProject(OBSLocal.TestCase):

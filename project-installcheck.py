@@ -6,7 +6,6 @@ import hashlib
 import logging
 import os
 import os.path
-import re
 import subprocess
 import sys
 import tempfile
@@ -20,8 +19,7 @@ from osc.core import http_request
 
 import ToolBase
 from osclib.conf import Config
-from osclib.core import (http_GET, http_POST, makeurl,
-                         project_pseudometa_file_ensure,
+from osclib.core import (http_GET, makeurl,
                          repository_path_expand, repository_path_search,
                          target_archs, source_file_load, source_file_ensure)
 from osclib.repochecks import mirror, parsed_installcheck, CorruptRepos

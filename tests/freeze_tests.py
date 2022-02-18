@@ -1,12 +1,9 @@
 import os
-import unittest
 import difflib
 import subprocess
 import tempfile
 
-from osclib.conf import Config
 from osclib.freeze_command import FreezeCommand
-from osclib.stagingapi import StagingAPI
 from . import OBSLocal
 
 

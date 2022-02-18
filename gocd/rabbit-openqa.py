@@ -3,20 +3,15 @@
 import argparse
 import logging
 
-import pika
-import sys
 import json
 import osc
 import re
-from time import sleep
 from osc.core import http_GET, http_POST, makeurl
-from M2Crypto.SSL import SSLError as SSLError
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from openqa_client.exceptions import ConnectionError, RequestError
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.parse import quote_plus
 
 import requests

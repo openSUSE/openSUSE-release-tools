@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from colorama import Fore
-from osc import oscerr
 from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
 

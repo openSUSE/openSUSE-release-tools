@@ -4,7 +4,6 @@ from osclib.conf import DEFAULT
 from osclib.conf import Config
 from osclib.core import attribute_value_save
 from osclib.memoize import memoize_session_reset
-from osclib.stagingapi import StagingAPI
 from . import OBSLocal
 
 

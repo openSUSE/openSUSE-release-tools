@@ -5,7 +5,6 @@ import logging
 import osc
 import yaml
 from osc.core import http_GET, makeurl, show_project_meta
-from M2Crypto.SSL import SSLError as SSLError
 from osclib.core import attribute_value_load
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client

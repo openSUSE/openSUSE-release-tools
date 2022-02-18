@@ -27,7 +27,7 @@ from osclib.core import request_state_change
 from osclib.core import create_delete_request
 from osclib.memoize import memoize_session_reset
 
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 
 from abc import ABC, abstractmethod
 import re
@@ -330,12 +330,10 @@ class StagingWorkflow(ABC):
     @abstractmethod
     def initial_config(self):
         """Values to use to initialize the 'Config' attribute at :func:`setup_remote_config`"""
-        pass
 
     @abstractmethod
     def staging_group_name(self):
         """Name of the group in charge of the staging workflow"""
-        pass
 
     def load_config(self, project=None):
         """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``

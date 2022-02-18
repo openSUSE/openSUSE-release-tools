@@ -1,8 +1,5 @@
 from colorama import Fore
 
-from osc.core import get_request
-from osclib.comments import CommentAPI
-
 
 class RebuildCommand(object):
     KEY_COLOR = {

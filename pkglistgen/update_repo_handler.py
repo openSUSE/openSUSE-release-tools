@@ -9,15 +9,12 @@ import re
 import random
 import string
 import subprocess
-import sys
 import shutil
 import tempfile
 
 from lxml import etree as ET
 
-from osc import conf
 import osc.core
-from urllib.error import HTTPError
 from osclib.cache_manager import CacheManager
 
 import requests

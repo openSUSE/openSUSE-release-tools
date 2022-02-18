@@ -1,4 +1,3 @@
-import re
 from urllib.error import HTTPError
 from osc import oscerr
 from osc.core import change_review_state

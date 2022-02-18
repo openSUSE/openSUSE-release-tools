@@ -1,5 +1,4 @@
 from . import OBSLocal
-import random
 import os
 
 # Needed to mock LegalAuto

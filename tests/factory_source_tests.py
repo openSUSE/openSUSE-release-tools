@@ -2,8 +2,6 @@ import os
 import unittest
 import logging
 import httpretty
-import osc
-import re
 from osclib.cache import Cache
 from . import OBSLocal
 

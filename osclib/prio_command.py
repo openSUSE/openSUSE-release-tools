@@ -1,7 +1,5 @@
-import json
 import osc
 
-from lxml import etree as ET
 from urllib.error import HTTPError
 
 

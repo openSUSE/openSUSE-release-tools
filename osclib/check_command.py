@@ -1,5 +1,3 @@
-import json
-from lxml import etree as ET
 
 
 class CheckCommand(object):

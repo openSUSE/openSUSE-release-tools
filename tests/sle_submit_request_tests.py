@@ -1,6 +1,4 @@
-import logging
 from . import OBSLocal
-import random
 import os
 
 # Needed to configure OriginManager

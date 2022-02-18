@@ -1,16 +1,13 @@
 #!/usr/bin/python3
 
-from pprint import pprint
 import os
 import sys
-import re
 import logging
 import cmdln
 
 from fnmatch import fnmatch
 from configparser import SafeConfigParser
 import solv
-import rpm
 
 logger = None
 

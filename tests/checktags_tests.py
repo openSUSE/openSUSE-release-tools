@@ -11,7 +11,6 @@ from . import OBSLocal
 from urllib.parse import urlparse, parse_qs
 
 import sys
-import re
 from osclib.cache import Cache
 from check_tags_in_requests import TagChecker
 

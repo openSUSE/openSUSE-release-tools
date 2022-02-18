@@ -1,9 +1,6 @@
 import unittest
-import json
 
-from osclib.conf import Config
 from osclib.check_command import CheckCommand
-from osclib.stagingapi import StagingAPI
 
 from lxml import etree
 from mock import MagicMock

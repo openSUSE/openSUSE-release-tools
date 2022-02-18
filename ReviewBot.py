@@ -138,7 +138,6 @@ class ReviewBot(object):
             if e.code != 404:
                 self.logger.error('ERROR in URL %s [%s]' % (url, e))
                 raise
-            pass
         return False
 
     def staging_api(self, project):
