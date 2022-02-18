@@ -214,7 +214,7 @@ class FreezeCommand(object):
 
         # Ignore packages with an origing (i.e. with an origin
         # different from the current project)
-        if si.find('originproject') != None:
+        if si.find('originproject') is not None:
             return None
 
         if package in ['rpmlint-mini-AGGR']:

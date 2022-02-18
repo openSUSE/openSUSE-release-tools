@@ -796,7 +796,7 @@ class StagingAPI(object):
         query = {}
         if package:
             query['package'] = package
-        if limit != None and int(limit) > 0:
+        if limit is not None and int(limit) > 0:
             query['limit'] = int(limit)
         u = makeurl(self.apiurl, ['build', project, repository, architecture, '_jobhistory'], query)
         return ET.parse(http_GET(u)).getroot()
