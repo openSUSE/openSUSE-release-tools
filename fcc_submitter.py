@@ -128,24 +128,24 @@ class FccSubmitter(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         self.sle_base_prjs = [
-                'SUSE:SLE-15-SP2:GA',
-                'SUSE:SLE-15-SP1:Update',
-                'SUSE:SLE-15-SP1:GA',
-                'SUSE:SLE-15:Update',
-                'SUSE:SLE-15:GA',
-                'SUSE:SLE-12-SP4:Update',
-                'SUSE:SLE-12-SP4:GA',
-                'SUSE:SLE-12-SP3:Update',
-                'SUSE:SLE-12-SP3:GA',
-                'SUSE:SLE-12-SP2:Update',
-                'SUSE:SLE-12-SP2:GA',
-                'SUSE:SLE-12-SP1:Update',
-                'SUSE:SLE-12-SP1:GA',
-                'SUSE:SLE-12:Update',
-                'SUSE:SLE-12:GA']
+            'SUSE:SLE-15-SP2:GA',
+            'SUSE:SLE-15-SP1:Update',
+            'SUSE:SLE-15-SP1:GA',
+            'SUSE:SLE-15:Update',
+            'SUSE:SLE-15:GA',
+            'SUSE:SLE-12-SP4:Update',
+            'SUSE:SLE-12-SP4:GA',
+            'SUSE:SLE-12-SP3:Update',
+            'SUSE:SLE-12-SP3:GA',
+            'SUSE:SLE-12-SP2:Update',
+            'SUSE:SLE-12-SP2:GA',
+            'SUSE:SLE-12-SP1:Update',
+            'SUSE:SLE-12-SP1:GA',
+            'SUSE:SLE-12:Update',
+            'SUSE:SLE-12:GA']
         # the skip list against devel project
         self.skip_devel_project_list = [
-                'mobile:synchronization:FACTORY']
+            'mobile:synchronization:FACTORY']
         # put the except packages from skip_devel_project_list, use regex in this list, eg. "^golang-x-(\w+)", "^nodejs$"
         self.except_pkgs_list = []
 

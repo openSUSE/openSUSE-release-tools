@@ -24,27 +24,27 @@ class BiArchTool(ToolBase.ToolBase):
         self.rdeps = None
         self.package_metas = dict()
         self.whitelist = {
-                'i586': set([
-                    'bzr',
-                    'git',
-                    # _link to baselibs package
-                    'libjpeg62-turbo',
-                    'mercurial',
-                    'subversion',
-                    'ovmf'])
+            'i586': set([
+                'bzr',
+                'git',
+                # _link to baselibs package
+                'libjpeg62-turbo',
+                'mercurial',
+                'subversion',
+                'ovmf'])
         }
         self.blacklist = {
-                'i586': set([
-                    'belle-sip',
-                    'release-notes-openSUSE',
-                    'openSUSE-EULAs', # translate-toolkit
-                    'skelcd-openSUSE',
-                    'plasma5-workspace',
-                    'patterns-base',
-                    'patterns-fonts',
-                    'patterns-rpm-macros',
-                    'patterns-yast',
-                    '000release-packages'])
+            'i586': set([
+                'belle-sip',
+                'release-notes-openSUSE',
+                'openSUSE-EULAs', # translate-toolkit
+                'skelcd-openSUSE',
+                'plasma5-workspace',
+                'patterns-base',
+                'patterns-fonts',
+                'patterns-rpm-macros',
+                'patterns-yast',
+                '000release-packages'])
         }
 
     def get_filelist(self, project, package, expand = False):

@@ -172,11 +172,11 @@ def main(args):
                     fullname = Person[userid][1]
                     subject = '%s - %s - Build fail notification' % (project, package)
                     text = MAIL_TEMPLATES[Reminded[package].remindCount - 1] % {
-                                'recipient': fullname,
-                                'sender': sender,
-                                'project': project,
-                                'package': package,
-                                'date': time.ctime(Reminded[package].firstfail)
+                        'recipient': fullname,
+                        'sender': sender,
+                        'project': project,
+                        'package': package,
+                        'date': time.ctime(Reminded[package].firstfail)
                     }
                     SendMail(logger, project, sender, to, fullname, subject, text)
             elif Reminded[package].remindCount == 4:
