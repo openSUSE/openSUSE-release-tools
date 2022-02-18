@@ -22,11 +22,11 @@ http_DELETE = osc.core.http_DELETE
 http_POST = osc.core.http_POST
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
-def chunks(l, n):
+def chunks(line, n):
     """ Yield successive n-sized chunks from l.
     """
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+    for i in range(0, len(line), n):
+        yield line[i:i + n]
 
 class ToolBase(object):
     def __init__(self):
@@ -104,13 +104,13 @@ class ToolBase(object):
                 packages.add(title[3:].split(' ')[0])
         return sorted(packages)
 
-    def makeurl(self, l, query=None):
+    def makeurl(self, paths, query=None):
         """
         Wrapper around osc's makeurl passing our apiurl
         :return url made for l and query
         """
         query = [] if not query else query
-        return osc.core.makeurl(self.apiurl, l, query)
+        return osc.core.makeurl(self.apiurl, paths, query)
 
     def process(self, packages):
         """ reimplement this """

@@ -113,9 +113,9 @@ class FccFreezer(object):
                 logging.debug("Ignored source: %s" % source)
 
         url = makeurl(self.apiurl, ['source', FCC, '_project', '_frozenlinks'], {'meta': '1'})
-        l = ET.tostring(flink)
+        link = ET.tostring(flink)
         try:
-            http_PUT(url, data=l)
+            http_PUT(url, data=link)
         except HTTPError as e:
             raise e
 

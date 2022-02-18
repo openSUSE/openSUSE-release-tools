@@ -40,14 +40,13 @@ class FreezeCommand(object):
         url = self.api.makeurl(['build', '{}:0-Bootstrap'.format(self.api.crings), '_result'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot().find('result')
-        l = list()
+        res = list()
         for e in root.findall('status'):
             name = e.get('package')
             if name in ['rpmlint-mini-AGGR']:
                 continue
-            l.append(name)
-        l.sort()
-        return l
+            res.append(name)
+        return sorted(res)
 
     def create_bootstrap_aggregate_file(self):
         url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_aggregate'])

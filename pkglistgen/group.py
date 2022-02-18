@@ -157,8 +157,8 @@ class Group(object):
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
                 locked = self.locked | self.pkglist.unwanted
-                for l in locked:
-                    sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
+                for lock in locked:
+                    sel = pool.select(str(lock), solv.Selection.SELECTION_NAME)
                     # if we can't find it, it probably is not as important
                     if not sel.isempty():
                         jobs += sel.jobs(solv.Job.SOLVER_LOCK)
@@ -216,8 +216,8 @@ class Group(object):
 
             jobs = list(self.pkglist.lockjobs[arch])
             locked = self.locked | self.pkglist.unwanted
-            for l in locked:
-                sel = pool.select(str(l), solv.Selection.SELECTION_NAME)
+            for lock in locked:
+                sel = pool.select(str(lock), solv.Selection.SELECTION_NAME)
                 # if we can't find it, it probably is not as important
                 if not sel.isempty():
                     jobs += sel.jobs(solv.Job.SOLVER_LOCK)
