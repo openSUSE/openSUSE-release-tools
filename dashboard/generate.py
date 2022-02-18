@@ -47,11 +47,11 @@ class Fetcher(object):
         self.projects.append(Project(self, name, kwargs))
 
     def build_summary(self, project, repository):
-        url = makeurl(self.apiurl, ['build', project, '_result'], { 'repository': repository, 'view': 'summary' })
+        url = makeurl(self.apiurl, ['build', project, '_result'], { 'repository': repository, 'view': 'summary'})
         try:
             f = http_GET(url)
         except HTTPError:
-            return { 'building': -1 }
+            return { 'building': -1}
         root = ET.parse(f).getroot()
         failed = 0
         unresolvable = 0
@@ -85,7 +85,7 @@ class Fetcher(object):
         return { 'building': 10000 - int(building * 10000 / (building + failed + succeeded + broken)),
                  'failed': failed,
                  'broken': broken,
-                 'unresolvable': unresolvable }
+                 'unresolvable': unresolvable}
 
     def generate_all_archs(self, project):
         meta = ET.fromstringlist(show_project_meta(self.apiurl, project))

@@ -247,7 +247,7 @@ class StagingAPI(object):
         """
 
         packages_staged = {}
-        url = self.makeurl(['staging', self.project, 'staging_projects'], { 'requests': 1 })
+        url = self.makeurl(['staging', self.project, 'staging_projects'], { 'requests': 1})
         status = ET.parse(self.retried_GET(url)).getroot()
         for prj in status.findall('staging_project'):
             for req in prj.findall('./staged_requests/request'):
@@ -566,13 +566,13 @@ class StagingAPI(object):
     def add_ignored_request(self, request_id, comment):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        ET.SubElement(root, 'request', { 'id': str(request_id), 'description': comment })
+        ET.SubElement(root, 'request', { 'id': str(request_id), 'description': comment})
         http_POST(url, data=ET.tostring(root))
 
     def del_ignored_request(self, request_id):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        ET.SubElement(root, 'request', { 'id': str(request_id) })
+        ET.SubElement(root, 'request', { 'id': str(request_id)})
         http_DELETE(url, data=ET.tostring(root))
 
     @memoize(session=True, add_invalidate=True)
@@ -592,7 +592,7 @@ class StagingAPI(object):
         where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
         target = "target[@project='{}']".format(self.project)
 
-        query = {'match': f"state/@name='review' and review[{where}] and {target}" }
+        query = {'match': f"state/@name='review' and review[{where}] and {target}"}
         if query_extra is not None:
             query.update(query_extra)
         url = self.makeurl(['search', 'request'], query)
@@ -957,7 +957,7 @@ class StagingAPI(object):
         if not project:
             project = self.project
 
-        url = self.makeurl(['source', project, package], { 'cmd': 'showlinked' })
+        url = self.makeurl(['source', project, package], { 'cmd': 'showlinked'})
         f = http_POST(url)
         root = ET.parse(f).getroot()
         result = []
@@ -984,7 +984,7 @@ class StagingAPI(object):
         # now trigger wipebinaries to emulate a delete
         self._wipe_package(project, package)
 
-        url = self.makeurl(['source', project, package], { 'view': 'getmultibuild' })
+        url = self.makeurl(['source', project, package], { 'view': 'getmultibuild'})
         f = http_GET(url)
         root = ET.parse(f).getroot()
         for entry in root.findall('entry'):
@@ -1148,7 +1148,7 @@ class StagingAPI(object):
                 return status.tag
 
     def switch_flag_in_prj(self, project, flag='build', state='disable', repository=None, arch=None):
-        query = { 'cmd': 'set_flag', 'flag': flag, 'status': state }
+        query = { 'cmd': 'set_flag', 'flag': flag, 'status': state}
         if repository:
             query['repository'] = repository
         if arch:

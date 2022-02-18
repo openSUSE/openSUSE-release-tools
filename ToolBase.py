@@ -94,7 +94,7 @@ class ToolBase(object):
 
     def meta_get_packagelist(self, prj, deleted=None, expand=False):
         root = ET.fromstring(self._meta_get_packagelist(prj, deleted, expand))
-        return [ node.get('name') for node in root.findall('entry') if not node.get('name') == '000product' and not node.get('name').startswith('patchinfo.') ]
+        return [ node.get('name') for node in root.findall('entry') if not node.get('name') == '000product' and not node.get('name').startswith('patchinfo.')]
 
     def latest_packages(self, project):
         data = self.cached_GET(self.makeurl(['project', 'latest_commits', project]))
@@ -204,4 +204,4 @@ class CommandLineInterface(cmdln.Cmdln):
 
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit( app.main())

@@ -108,7 +108,7 @@ class TestMaintenance(OBSLocal.TestCase):
                 </directory>
             """)
 
-        result = { 'devel_review_added': None }
+        result = { 'devel_review_added': None}
 
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)
@@ -226,7 +226,7 @@ class TestMaintenance(OBSLocal.TestCase):
                 </directory>
             """)
 
-        result = { 'devel_review_added': None }
+        result = { 'devel_review_added': None}
 
         def change_request(result, method, uri, headers):
             u = urlparse(uri)
@@ -324,11 +324,11 @@ class TestMaintenance(OBSLocal.TestCase):
                 <collection/>
             """)
 
-        result = { 'factory_review_added': None }
+        result = { 'factory_review_added': None}
 
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)
-            if query == { 'cmd': ['addreview'], 'by_user': ['factory-source'] }:
+            if query == { 'cmd': ['addreview'], 'by_user': ['factory-source']}:
                 result['factory_review_added'] = True
             return (200, headers, '<status code="ok"/>')
 

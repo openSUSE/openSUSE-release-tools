@@ -153,7 +153,7 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
                     """)
             ])
 
-        result = { 'status': None }
+        result = { 'status': None}
 
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)
@@ -275,7 +275,7 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
                 </collection>
             """)
 
-        result = { 'factory_source_declined': None }
+        result = { 'factory_source_declined': None}
 
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)

@@ -158,7 +158,7 @@ def mail_send_with_details(relay, sender, subject, to, text, xmailer=None, follo
         return
     logger.info("%s: %s", msg['To'], msg['Subject'])
     s = smtplib.SMTP(relay)
-    s.sendmail(msg['From'], {msg['To'], sender }, msg.as_string())
+    s.sendmail(msg['From'], {msg['To'], sender}, msg.as_string())
     s.quit()
 
 

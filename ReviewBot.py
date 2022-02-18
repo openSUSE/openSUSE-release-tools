@@ -78,7 +78,7 @@ class ReviewBot(object):
         return (None|True|False)
     """
 
-    DEFAULT_REVIEW_MESSAGES = { 'accepted': 'ok', 'declined': 'review failed' }
+    DEFAULT_REVIEW_MESSAGES = { 'accepted': 'ok', 'declined': 'review failed'}
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
     COMMENT_MARKER_REGEX = re.compile(r'<!-- (?P<bot>[^ ]+) state=(?P<state>[^ ]+)(?: result=(?P<result>[^ ]+))? -->')
@@ -120,7 +120,7 @@ class ReviewBot(object):
     def _load_config(self, handle = None):
         d = self.__class__.config_defaults
         y = yaml.safe_load(handle) if handle is not None else {}
-        return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
+        return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys())])
 
     def load_config(self, filename = None):
         if filename:
@@ -166,7 +166,7 @@ class ReviewBot(object):
 
     def set_request_ids(self, ids):
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withfullhistory': '1' })
+            u = osc.core.makeurl(self.apiurl, [ 'request', rqid], { 'withfullhistory': '1'})
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
             req = osc.core.Request()
@@ -559,7 +559,7 @@ class ReviewBot(object):
     @staticmethod
     @memoize(session=True)
     def _get_sourceinfo(apiurl, project, package, rev=None):
-        query = { 'view': 'info' }
+        query = { 'view': 'info'}
         if rev is not None:
             query['rev'] = rev
         url = osc.core.makeurl(apiurl, ('source', project, package), query=query)
@@ -585,7 +585,7 @@ class ReviewBot(object):
             return None
 
         props = ('package', 'rev', 'vrev', 'srcmd5', 'lsrcmd5', 'verifymd5')
-        return namedtuple('SourceInfo', props)(*[ root.get(p) for p in props ])
+        return namedtuple('SourceInfo', props)(*[ root.get(p) for p in props])
 
     # TODO: what if there is more than _link?
     def _get_linktarget_self(self, src_project, src_package):
@@ -637,7 +637,7 @@ class ReviewBot(object):
             review = "@by_user='%s' and @state='new'" % self.review_user
         if self.review_group:
             review = osc.core.xpath_join(review, "@by_group='%s' and @state='new'" % self.review_group)
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1 } )
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -651,7 +651,7 @@ class ReviewBot(object):
     def ids_project(self, project, typename):
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
                                { 'match': "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename),
-                                 'withfullhistory': 1 })
+                                 'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         ret = []
@@ -790,7 +790,7 @@ class ReviewBot(object):
 
         if history_limit:
             self.logger.debug("%s not the latest version, checking history", rev)
-            u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': history_limit })
+            u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history'], { 'limit': history_limit})
             try:
                 r = osc.core.http_GET(u)
             except HTTPError:
@@ -1002,4 +1002,4 @@ class CommandLineInterface(cmdln.Cmdln):
 
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit( app.main())

@@ -21,8 +21,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
-        self.factory = [ "openSUSE:Factory" ]
-        self.review_messages = { 'accepted': 'ok', 'declined': 'the package needs to be accepted in Factory first' }
+        self.factory = [ "openSUSE:Factory"]
+        self.review_messages = { 'accepted': 'ok', 'declined': 'the package needs to be accepted in Factory first'}
         self.history_limit = 5
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
@@ -165,4 +165,4 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit( app.main())

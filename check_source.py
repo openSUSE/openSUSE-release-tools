@@ -272,7 +272,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return True
 
-    def suppresses_whitelist_warnings( self, source_project, source_package ):
+    def suppresses_whitelist_warnings( self, source_project, source_package):
         # checks if there's a rpmlintrc that suppresses warnings that we check
         found_entries = set()
         contents = source_file_load(self.apiurl, source_project, source_package, source_package + '-rpmlintrc')
@@ -295,7 +295,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return found_entries
 
-    def has_whitelist_warnings( self, source_project, source_package, target_project, target_package ):
+    def has_whitelist_warnings( self, source_project, source_package, target_project, target_package):
         # this checks if this is a submit to an product project and it has warnings for non-whitelisted permissions/files
         found_entries = set()
         url = osc.core.makeurl(self.apiurl, ['build', target_project])

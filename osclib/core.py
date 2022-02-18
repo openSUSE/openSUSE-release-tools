@@ -1271,6 +1271,6 @@ def message_suffix(action, message=None):
 
 
 def request_state_change(apiurl, request_id, state):
-    query = { 'newstate': state, 'cmd': 'changestate' }
+    query = { 'newstate': state, 'cmd': 'changestate'}
     url = makeurl(apiurl, ['request', request_id], query)
     return ET.parse(http_POST(url)).getroot().get('code')

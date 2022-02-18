@@ -255,7 +255,7 @@ class ToTestPublisher(ToTestManager):
             return
 
         status_flag = 'published'
-        data = {'text': 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag) }
+        data = {'text': 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag)}
         self.openqa.openqa_request('POST', 'groups/%s/comments' % group_id, data=data)
 
     def openqa_group_id(self):

@@ -211,7 +211,7 @@ maintainer/bugowner did not yet find the time to look into the
 matter and he/she would certainly appreciate help to get this
 sorted.
 
-""" % { 'project': project }
+""" % { 'project': project}
         for pkg in ProjectComplainList:
             text += "- %s\n" % pkg
         text += u"""
@@ -220,7 +220,7 @@ package(s) are going to be removed from %(project)s.
 
 Kind regards,
 %(sender)s
-""" % { 'project': project, 'sender': sender }
+""" % { 'project': project, 'sender': sender}
         SendMail(logger, project, sender, to, fullname, subject, text)
 
 

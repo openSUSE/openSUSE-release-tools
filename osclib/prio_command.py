@@ -21,7 +21,7 @@ class PrioCommand(object):
             req = osc.core.get_request(self.api.apiurl, reqid)
             if req.priority == priority:
                 continue
-            query = { 'cmd': 'setpriority', 'priority': priority }
+            query = { 'cmd': 'setpriority', 'priority': priority}
             url = osc.core.makeurl(self.api.apiurl, ['request', reqid], query)
             print(f"raising priority of {r.get('package')} [{r.get('request')}] to {priority}")
             try:

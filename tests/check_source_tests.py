@@ -33,7 +33,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.wf.create_group(REVIEW_TEAM)
 
         self.wf.remote_config_set(
-            { 'required-source-maintainer': 'Admin', 'review-team': REVIEW_TEAM }
+            { 'required-source-maintainer': 'Admin', 'review-team': REVIEW_TEAM}
         )
 
         self.bot_user = 'factory-auto'
@@ -142,7 +142,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         # Change the required maintainer
         self.wf.create_group(FACTORY_MAINTAINERS.replace('group:', ''))
-        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS})
 
         req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False)
 
@@ -172,7 +172,7 @@ class TestCheckSource(OBSLocal.TestCase):
         """Accepts the request when the 'required_maintainer' is a group and is a maintainer for the project"""
         group_name = FACTORY_MAINTAINERS.replace('group:', '')
         self.wf.create_group(group_name)
-        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS})
 
         self._setup_devel_project(maintainer={'groups': [group_name]})
 
@@ -191,7 +191,7 @@ class TestCheckSource(OBSLocal.TestCase):
         # Change the required maintainer
         group_name = FACTORY_MAINTAINERS.replace('group:', '')
         self.wf.create_group(group_name)
-        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS})
 
         self.wf.create_project(SRC_PROJECT.rsplit(':', 1)[0], maintainer={'groups': [group_name]})
 

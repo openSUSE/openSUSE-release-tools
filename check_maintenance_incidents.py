@@ -39,7 +39,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                 self.logger.debug("%s looks wrong as maintainer, skipped", prj)
                 continue
             self.add_review(req, by_project = prj, by_package = pkg,
-                    msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj) )
+                    msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj))
 
     @staticmethod
     @memoize(session=True)
@@ -157,4 +157,4 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 if __name__ == "__main__":
     app = ReviewBot.CommandLineInterface()
     app.clazz = MaintenanceChecker
-    sys.exit( app.main() )
+    sys.exit( app.main())
