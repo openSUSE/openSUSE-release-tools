@@ -574,7 +574,7 @@ class StagingWorkflow(ABC):
             return
         try:
             self.remove()
-        except:
+        except Exception:
             # normally exceptions in destructors are ignored but a info
             # message is displayed. Make this a little more useful by
             # printing it into the capture log

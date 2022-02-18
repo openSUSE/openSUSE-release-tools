@@ -1328,7 +1328,7 @@ class StagingAPI(object):
         try:
             print("tried to trigger rebuild for project '%s' package '%s'" % (prj, pkg))
             http_POST(u)
-        except:
+        except HTTPError:
             print("could not trigger rebuild for project '%s' package '%s'" % (prj, pkg))
 
     def _candidate_adi_project(self):

@@ -376,7 +376,6 @@ exit 0
 %{_bindir}/osrt-deptool
 %{_bindir}/osrt-fcc_submitter
 %{_bindir}/osrt-issue-diff
-%{_bindir}/osrt-k8s-secret
 %{_bindir}/osrt-legal-auto
 %{_bindir}/osrt-openqa-maintenance
 %{_bindir}/osrt-requestfinder

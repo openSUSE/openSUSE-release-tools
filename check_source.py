@@ -432,7 +432,7 @@ class CheckSource(ReviewBot.ReviewBot):
                 if not f.get('name').endswith('.changes'):
                     return False
             return True
-        except:
+        except HTTPError:
             pass
         return False
 

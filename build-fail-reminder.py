@@ -116,7 +116,7 @@ def main(args):
         with open(reminded_json) as json_data:
             RemindedLoaded = json.load(json_data)
         json_data.close()
-    except:
+    except FileNotFoundError:
         RemindedLoaded = {}
         pass
 
