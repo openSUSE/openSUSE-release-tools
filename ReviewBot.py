@@ -310,6 +310,18 @@ class ReviewBot(object):
         else:
             self.logger.debug("%s review not changed" % (req.reqid))
 
+    def _is_duplicate_review(self, review, query, allow_duplicate):
+        if review.by_group != query.get('by_group'):
+            return False
+        if review.by_project != query.get('by_project'):
+            return False
+        if review.by_package != query.get('by_package'):
+            return False
+        if review.by_user != query.get('by_user'):
+            return False
+        # Only duplicate when allow_duplicate and state != new.
+        return (not allow_duplicate or review.state == 'new')
+
     # allow_duplicate=True should only be used if it makes sense to force a
     # re-review in a scenario where the bot adding the review will rerun.
     # Normally a declined review will automatically be reopened along with the
@@ -331,13 +343,8 @@ class ReviewBot(object):
         else:
             raise osc.oscerr.WrongArgs("missing by_*")
 
-        for r in req.reviews:
-            if (r.by_group == by_group and
-                r.by_project == by_project and
-                r.by_package == by_package and
-                r.by_user == by_user and
-                # Only duplicate when allow_duplicate and state != new.
-                    (not allow_duplicate or r.state == 'new')):
+        for review in req.reviews:
+            if self._is_duplicate_review(review, query, allow_duplicate):
                 del query['cmd']
                 self.logger.debug('skipped adding duplicate review for {}'.format(
                     '/'.join(query.values())))
@@ -736,13 +743,7 @@ class ReviewBot(object):
         message = self.comment_api.add_marker(message, bot_name, info)
         message = self.comment_api.truncate(message.strip())
 
-        if (comment is not None and
-            ((identical and
-              # Remove marker from comments since handled during comment_find().
-              self.comment_api.remove_marker(comment['comment']) ==
-              self.comment_api.remove_marker(message)) or
-             (not identical and comment['comment'].count('\n') == message.count('\n')))
-            ):
+        if self._is_comment_identical(comment, message, identical):
             # Assume same state/result and number of lines in message is duplicate.
             self.logger.debug('previous comment too similar on {}'.format(debug_key))
             return
@@ -763,6 +764,15 @@ class ReviewBot(object):
             self.comment_api.add_comment(comment=message, **kwargs)
 
         self.comment_handler_remove()
+
+    def _is_comment_identical(self, comment, message, identical):
+        if comment is None:
+            return False
+        if identical:
+            # Remove marker from comments since handled during comment_find().
+            return self.comment_api.remove_marker(comment['comment']) == self.comment_api.remove_marker(message)
+        else:
+            return comment['comment'].count('\n') == message.count('\n')
 
     def _check_matching_srcmd5(self, project, package, rev, history_limit = 5):
         """check if factory sources contain the package and revision. check head and history"""

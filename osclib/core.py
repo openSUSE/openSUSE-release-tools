@@ -1035,7 +1035,7 @@ def request_create_submit(apiurl, source_project, source_package,
         return False
 
     for request, action in request_action_list(
-        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['submit']):
+            apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['submit']):
         if ignore_if_any_request:
             return False
         if not supersede and request.state.name in ('new', 'review'):
@@ -1061,7 +1061,7 @@ def request_create_submit(apiurl, source_project, source_package,
 
 def request_create_delete(apiurl, target_project, target_package, message=None):
     for request, action in request_action_list(
-        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['delete']):
+            apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['delete']):
         return False
 
     # No proper API function to perform the same operation.
@@ -1078,7 +1078,7 @@ def request_create_change_devel(apiurl, source_project, source_package,
         target_package = source_package
 
     for request, action in request_action_list(
-        apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['change_devel']):
+            apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['change_devel']):
         return False
 
     message = message_suffix('created', message)

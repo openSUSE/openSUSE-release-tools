@@ -170,7 +170,7 @@ def config_resolve_variable(value, config_project, key='config'):
 def config_origin_list(config, apiurl=None, project=None, package=None, skip_workarounds=False):
     origin_list = []
     for origin, values in config_origin_generator(
-        config['origins'], apiurl, project, package, skip_workarounds):
+            config['origins'], apiurl, project, package, skip_workarounds):
         origin_list.append(origin)
     return origin_list
 
@@ -266,7 +266,7 @@ def origin_find(apiurl, target_project, package, source_hash=None, current=False
 
 def project_source_contain(apiurl, project, package, source_hash):
     for source_hash_consider in package_source_hash_history(
-        apiurl, project, package, include_project_link=True):
+            apiurl, project, package, include_project_link=True):
         project_source_log('contain', project, source_hash_consider, source_hash)
         if source_hash_consider == source_hash:
             return True
@@ -314,7 +314,7 @@ def origin_find_fallback(apiurl, target_project, package, source_hash, user):
     # Attempt to find a revision of target package that matches an origin.
     first = True
     for source_hash_consider in package_source_hash_history(
-        apiurl, target_project, package, include_project_link=True):
+            apiurl, target_project, package, include_project_link=True):
         if first:
             first = False
             continue

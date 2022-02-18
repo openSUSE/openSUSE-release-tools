@@ -158,7 +158,7 @@ def ingest_requests(api, project):
 
         # Staging related reviews.
         for number, review in enumerate(
-            request.xpath('review[contains(@by_project, "{}:Staging:")]'.format(project)), start=1):
+                request.xpath('review[contains(@by_project, "{}:Staging:")]'.format(project)), start=1):
             staged_at = date_parse(review.get('when'))
 
             project_type = 'adi' if api.is_adi_project(review.get('by_project')) else 'letter'
