@@ -216,8 +216,8 @@ class Listener(PubSubConsumer):
             'latest': '1',
         }
         jobs = self.openqa.openqa_request('GET', 'jobs', values)['jobs']
-        # Ignore PR verification runs
-        return [job for job in jobs if '/' not in job['settings']['BUILD']]
+        # Ignore PR verification runs (and jobs without 'BUILD')
+        return [job for job in jobs if '/' not in job['settings'].get('BUILD', '/')]
 
     def get_step_url(self, testurl, modulename):
         failurl = testurl + '/modules/{!s}/fails'.format(quote_plus(modulename))
